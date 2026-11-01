@@ -267,7 +267,20 @@ Targets: 60 frames per second on an average laptop, a download under 20 MB, work
 
 Development goes from the riskiest part to the simplest: first one section and summit day, then the whole route. Every stage ends with a playable version that can be played through and shown.
 
-&#91;embedded content: development plan · 9 stages, 3 checks\]
+**Summit push first, then the whole route: the hardest part is tested earliest.** Nine stages, with a check after the second, the third and the eighth; the diagram highlights stage 3 as the milestone.
+
+1. **Knowledge base.** Facts with sources and check dates, questions for an expert.
+2. **Prototype: Icefall.** Walking, fixed ropes, ladders, fatigue and oxygen on one section.
+   - Check: re-clipping and fatigue feel plausible in playtests.
+3. **Vertical slice: summit push.** South Col → summit → descent, solo and as a pair online.
+   - Check: the push takes 60–90 min, and the turnaround decisions are clear.
+4. **Whole route.** Trek, Base Camp, rotations and tour choice.
+5. **Training and real accidents.** Modules, "In real life" cards, debriefs, 15–20 scenarios.
+6. **Co-op and leader role.** Up to 4 players by code, radio, camp coordinator, NPC Sherpas.
+7. **Graphics, sound, languages.** Final style, sound synthesis, RU and EN, performance.
+8. **Open beta.** Free release marked "not reviewed by an expert".
+   - Check: a guide and a doctor reviewed the facts and scenarios.
+9. **Release 1.0.** Free on GitHub Pages or itch.io.
 
 Timelines are deliberately not given here: it is more honest to estimate them after the prototype, once the pace of work is clear.
 
