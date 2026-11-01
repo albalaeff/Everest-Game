@@ -60,6 +60,11 @@ strict = true
 plugins = ["pydantic.mypy"]
 exclude = ["^optional/"]
 
+# asyncpg: in the `db` group, which CI doesn't install, and untyped where it is.
+[[tool.mypy.overrides]]
+module = ["asyncpg"]
+ignore_missing_imports = true
+
 [tool.pydantic-mypy]
 init_forbid_extra = true
 init_typed = true
