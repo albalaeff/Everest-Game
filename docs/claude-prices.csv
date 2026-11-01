@@ -1,0 +1,6 @@
+seen,model,tier,input,output,cache_read,cache_write_5m,cache_write_1h
+2026-10-12,claude-fable-5-1,,10,50,0.25,12.50,20
+2026-10-12,claude-opus-5-5,,4,20,0.20,5,8
+2026-10-12,claude-sonnet-5-5,,2,10,0.10,2.50,4
+2026-10-12,claude-haiku-5-5,<=100K,0.10,0.50,0.01,0.125,0.20
+2026-10-12,claude-haiku-5-5,>100K,0.50,2.50,0.05,0.625,1.00

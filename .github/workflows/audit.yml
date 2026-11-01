@@ -1,0 +1,34 @@
+name: Dependency audit
+
+# pip-audit over the locked dependencies (#59, #538): every Monday, and on a PR that changes
+# uv.lock. A vulnerability found on a Monday isn't a PR's fault, so no PR needs this check:
+# GitHub mails a failed scheduled run to whoever last changed the schedule below.
+on:
+  schedule:
+    - cron: "0 6 * * 1"
+  pull_request:
+    paths: [uv.lock, .github/workflows/audit.yml]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  pip-audit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+
+      - uses: astral-sh/setup-uv@v7
+        with:
+          python-version: "3.14"
+          enable-cache: true
+
+      - name: The locked dependencies
+        run: uv export --frozen --no-hashes --all-groups --no-emit-project -o "$RUNNER_TEMP/requirements.txt"
+
+      - name: Known vulnerabilities
+        run: uvx pip-audit -r "$RUNNER_TEMP/requirements.txt" --no-deps

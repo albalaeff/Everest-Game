@@ -1,0 +1,7 @@
+- [Concise replies](concise-replies.md) — every chat reply opens with its essence (what, why, what to do, 2–4 lines), detail after; always in English; texts for others stay complete
+- [Issue hyperlinks](issue-hyperlinks.md) — every issue or PR named in chat is a link to its GitHub page, never a bare #number
+- [Loop reply time](loop-reply-time.md) — status replies quote the check's time, e.g. "Nothing to do (06:47): …"
+- [Comment on pickup](comment-on-pickup.md) — comment on an issue the moment it's taken, before reading code
+- [OOP approach](oop-approach.md) — the user wants OOP everywhere; the shared rule is docs/conventions.md → Objects (DoD item 7)
+- [Review to issues](review-to-issues.md) — a review's findings become a few issues grouped by the piece they touch, one agent each, effort:max, every finding kept, siblings cross-linked
+- [Merge without asking](merge-without-asking.md) — issues are picked up, PR'd and merged into develop without asking each time; never master
