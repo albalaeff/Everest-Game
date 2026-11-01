@@ -1,0 +1,44 @@
+# Secrets and local configuration: never committed
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+build/
+dist/
+*.egg-info/
+.pytest_cache/
+.coverage
+htmlcov/
+.hypothesis/
+.mypy_cache/
+.ruff_cache/
+
+# Editors and OS
+.vscode/*
+!.vscode/tasks.json
+!.vscode/launch.json
+!.vscode/extensions.json
+.idea/
+*.swp
+.DS_Store
+Thumbs.db
+
+# Runtime data
+*.log
+*.sqlite
+*.tmp
+
+# Claude Code: per-session and personal files (the shared skills in .claude/skills are kept)
+.claude/*.lock
+.claude/settings.local.json
+.claude/prices-checked
+.claude/setup-checked
+
+# The agent manager (#387): its lock and each agent's log, on this machine only
+.agent-runs/

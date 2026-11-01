@@ -1,0 +1,53 @@
+# CLAUDE.md
+
+myapp is <one line on what it is>: Python 3.14, uv. [README.md](README.md) covers the architecture and local setup. The repository started from [claude-workflow-template](https://github.com/bateks/claude-workflow-template): `PEB#n` names the issue of bateks/PersonalExchangeBot a rule was learned on, and [docs/lessons.md](docs/lessons.md) lists them with links.
+
+## Read first
+
+- [docs/conventions.md](docs/conventions.md): the Git workflow, layers, objects, money, time, tests and the definition of done. Every change follows it; its table names the areas with rules of their own: read those your change touches, not all of them (PEB#424).
+- [docs/workflow.md](docs/workflow.md): how work goes from an issue to a merge, in full: what this file says in brief, and why. Read the part your step touches.
+
+## Words used here
+
+- **A session** is Claude Code in VS Code, with a person at the keyboard. **An agent** is Claude Code run headless by the agent manager, alone in a worktree, on one issue (How agents work here). Both follow this file: "Claude" below means either.
+- **`scripts/github.py`** talks to GitHub without `gh`, as the account whose token it finds; its docstring lists its commands. **The watcher** is `scripts/github.py watch`: it looks at GitHub every 2 minutes and ends when something needs doing. **The agent manager** (`scripts/agent_manager.py`) runs a watcher of its own and starts an agent for each thing it finds (README → Agents).
+- **`status`** (`scripts/github.py status`) sorts the open issues and PRs by whose move it is: *to start*, *a reply waiting* and *Claude's move* need doing; *in progress* waits for a person, a review or CI; *stale*, *others'* and *releases* are left alone (docs/workflow.md → What status shows). Issues labelled `postponed` or `release` are left out, with their PRs (PEB#540).
+- **A handoff** is a comment that ends with **Next** (the next step, and whose move it is), **Waiting on** (what and where, or nothing) and a folded "For the next session" block, in the format of [.claude/skills/handoff/SKILL.md](.claude/skills/handoff/SKILL.md). The next session or agent, on any machine, carries on from the latest one. **A milestone comment** (the plan, the PR opened, CI's result, the closing comment) is a handoff.
+
+## Sessions
+
+At the start of every session, before anything else and unasked, run `/carryon` ([.claude/skills/carryon/SKILL.md](.claude/skills/carryon/SKILL.md), PEB#342, PEB#399): it checks the machine, carries on the work from the handoffs and starts the watcher. When the watcher ends, act on what it prints, then start it again, every time, unasked. It is the only way to watch: no `/loop`, scheduled task or periodic scan of your own, even when asked to "check every hour". While the agent manager, or another session's watcher, runs on the machine, the watcher ends at once, saying so, and the session takes no issue: only what its user asks directly (PEB#597).
+
+Before a session is compacted or closed, `/handoff` ([.claude/skills/handoff/SKILL.md](.claude/skills/handoff/SKILL.md), PEB#349) puts its work where the next session finds it, on any machine; the Stop hook asks for it in time.
+
+## Working from GitHub issues
+
+Each piece of work is a GitHub issue; only a small change that needs no discussion (a line in the docs, the price rows) goes in a `chore/<what>` PR without one (docs/conventions.md → Git workflow). **An issue belongs to whoever opened it**, unless a `claude:<login>` label hands it to that login (PEB#222). Each developer has their own Claude; a session works only on the issues that belong to the account its GitHub token belongs to (`status` sorts them). A teammate's issue is theirs even before anyone has commented on it: leave it alone unless your user asks you to take it over, and then say so on the issue first. An issue that waits for a person's answer or review carries `waiting:<login>`, put on and taken off by the scripts, never by hand (PEB#449).
+
+Everything Claude posts appears under its user's account, so everything Claude writes starts with a line saying whose Claude it is: `_Claude Code (<login>)_`, the login of the account it works for, on a line of its own before the text (PEB#226, PEB#298). `scripts/github.py comment` and `pr open` add the line by themselves; in an issue, or a PR description changed through `api`, write it yourself as the first line.
+
+**Comments are short**, and so are the issues and PR descriptions Claude writes, an agent's as much as a session's (PEB#419): say each thing once, no preamble, no announcing what follows, nothing the handoff's **Next** already says. **The essence first** (PEB#458): everything Claude writes for a person opens with two to four lines, in plain words, that say what this is, why it matters, and what the reader should do or decide; the detail follows, in bullets.
+
+For each issue, in this order (docs/workflow.md → Working from GitHub issues has the why and the details):
+
+1. **The first comment, when starting: the plan**, in a few lines, or a **preview** (a mockup of the screens, the texts and the `[buttons]`) when the issue changes what users see (PEB#246). If the issue is unclear, ask in that comment and wait for the answer before writing code. An answer given in chat goes on the issue too, as a comment. On an issue nobody has started on yet, that comment is a handoff (`--handoff --closing`, ending **Next:** … (Claude's) and **Waiting on:** nothing): a plain comment of Claude's makes the issue "in progress", and no agent starts on it (PEB#575). With the first comment, the estimate: `scripts/github.py title <n> --estimate 40` makes the title `[~$40] …`, one significant figure, for the whole issue (PEB#390).
+2. **Before every comment, read the new ones:** `scripts/github.py show <n> --new` shows only those since your last. `comment` refuses while a reply is unread, and shows it: answer it in the comment you post, and pass `--read` (PEB#208).
+3. **The work**, as docs/conventions.md says: a `feature/<issue>-<short-description>` branch from the latest `develop`, tests first, then the PR into `develop`: `scripts/github.py pr open <file>` with `title`, `head`, `base` (`develop`) and a `body` that is [.github/pull_request_template.md](.github/pull_request_template.md) filled in, with `Closes #<issue>`. Not a draft: a draft PR can't be merged.
+4. **Milestone comments, not one per commit:** the plan (step 1), the PR opened, CI's result, and the closing comment (step 5). Each is a handoff: `scripts/github.py comment <n> <file> --handoff`, ending with **Next**, **Waiting on** and the folded block. The one that leaves CI as the only wait names the merge as **Next**, and ends its folded block with the closing comment between `<!-- closing -->` and `<!-- /closing -->`: once CI is green, the agent manager posts it and merges, with no agent (PEB#550).
+5. **When CI is green, merge**, in this order: `scripts/github.py title <n> --done` (what it cost, before the estimate); the closing comment (what changed, what to check by hand, what it cost); `scripts/github.py merge <pr>`, a squash into `develop`, never into `master` (a release is the user's call: `scripts/github.py release`, or the label `release` on an issue); then `git switch develop`, `git pull --ff-only`, `git branch -D <branch>`. A PR that closes no issue leaves the issue open: `scripts/github.py close <n>` after the closing comment.
+
+## How agents work here
+
+The agent manager gives each task its watcher finds to an **agent**: headless Claude Code in a worktree of its own, `<worktree_dir>/<issue>`, on the issue's branch; the issue's `model:*`, `effort:*` and `priority:*` labels pick its power and its turn (README → Agents).
+
+- **An agent** skips "Sessions" and works on its issue only. It reads the issue and all of its comments with `scripts/github.py show <n>`, carries on from `scripts/github.py handoffs <n>`, takes the next step of "Working from GitHub issues", and stops when the next move is someone else's: an answer, a review, CI. Its last comment then is a handoff posted with `--handoff --closing`, and that comment is its whole handoff: an agent has no Claude memory (PEB#551). Nobody answers a dialog or a permission prompt: questions go on the issue. The `comment` command signs its comments `_Claude Code agent (<login>, <model>/<effort>)_` by itself. It writes the files it comments from in `.agent-runs/` of its worktree (gitignored), and its tests use a database of their own (`TEST_DATABASE_URL`) when the project has one, so they run beside other agents' tests.
+- **An agent's commands** run unasked only when every part of them is allowed (`.claude/settings.json`), so an agent runs one command per call in Bash: no `;` or `&&` chains, no `> file` redirects; it filters output through `grep`, `head`, `wc`, `tail` and `sed -n`. A background task, such as the full `pytest`, wakes it when it ends. It tries an idea as a test, not with `python -c` or a script of its own: those stay refused (PEB#411).
+- **What an agent needs of a person** goes on the issue (PEB#415). Commands it asks someone to run on the issue's branch end with `git switch develop`: a checkout left on the branch keeps the manager from making the next agent's worktree. A command it needs and isn't allowed, it asks for as the exact rules to add, `Bash(…)` and `PowerShell(…)`; anything under `.claude/`, the skills included, goes on the issue as a diff, for a session to commit.
+
+## Compacting
+
+When the conversation is compacted, the summary keeps: the issue, branch and PR being worked on, the step reached and the next step, and the link to its latest handoff; decisions and answers from the chat that aren't on GitHub yet; questions waiting for an answer, and where they were asked; the background processes, with the exact command of each; what's been learned about the machine. It can drop tool output that's been acted on, files that were read, and anything git, GitHub or the docs already record.
+
+## Checks
+
+`uv run ruff check`, `uv run ruff format --check`, `uv run mypy myapp scripts` and `uv run pytest`. The full `pytest` run goes to pytest-xdist workers (README → Tests): run it in the background; a run naming files or tests stays in one process. Never run two `pytest` runs at once on the same `TEST_DATABASE_URL`: they share its databases, and each run drops their tables. If `uv` or Docker isn't available on the machine, CI is the only check: say so in the PR. CI that fails while setting up, or on every branch within seconds, may not be the change's fault: README → Tests → When CI fails says how to tell.

@@ -1,0 +1,13 @@
+#!/bin/sh
+# Refuse direct pushes to develop and master: they change only through pull requests.
+# Turn it on once per clone:  git config core.hooksPath .githooks
+while read -r local_ref local_sha remote_ref remote_sha; do
+  case "$remote_ref" in
+    refs/heads/develop | refs/heads/master)
+      echo "Refusing to push to ${remote_ref#refs/heads/}: it changes only through pull requests." >&2
+      echo "Push a task branch (feature/<issue>-<description>) and open a PR into develop." >&2
+      exit 1
+      ;;
+  esac
+done
+exit 0

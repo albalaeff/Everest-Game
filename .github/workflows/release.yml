@@ -1,0 +1,29 @@
+name: Release
+
+# A release PR merged or closed (docs/production.md → A release, #510). Merged, the release on
+# trial on prod becomes the stable one; closed unmerged, prod goes back to the stable one.
+on:
+  pull_request:
+    types: [closed]
+    branches: [master]
+
+jobs:
+  confirm:
+    if: github.event.pull_request.merged && startsWith(github.event.pull_request.head.ref, 'release/')
+    uses: ./.github/workflows/release-tool.yml
+    with:
+      command: confirm
+    secrets: inherit
+    permissions:
+      contents: read
+      pull-requests: write
+
+  rollback:
+    if: ${{ !github.event.pull_request.merged && startsWith(github.event.pull_request.head.ref, 'release/') }}
+    uses: ./.github/workflows/release-tool.yml
+    with:
+      command: rollback
+    secrets: inherit
+    permissions:
+      contents: read
+      pull-requests: write

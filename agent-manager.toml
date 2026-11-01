@@ -1,0 +1,34 @@
+# The agent manager's settings (scripts/agent_manager.py, PEB#387). Without this file, or
+# without a key, the same defaults hold (scripts/agents.py, ManagerConfig).
+
+# An agent's model and effort when its issue has no model:* or effort:* label, in Claude
+# Code's own words: haiku, sonnet, opus; low, medium, high, xhigh, max.
+default_model = "opus"
+default_effort = "xhigh"
+
+# Agents at once; the rest wait their turn. One agent per issue, always.
+max_parallel = 3
+
+# Where the agents' worktrees go, from this checkout: an agent's is <worktree_dir>/<issue>.
+worktree_dir = "../worktrees"
+
+# The tests' PostgreSQL server, as the URL of its `<name>_test` database: each agent then
+# gets `<name>_<issue>_test` of its own, as its TEST_DATABASE_URL, so two agents' test runs
+# never drop each other's tables. Needs `uv sync --group db` (asyncpg). Empty: the
+# machine's TEST_DATABASE_URL, or, unset too, no database at all.
+test_database_url = ""
+# test_database_url = "postgresql://myapp:myapp@localhost:5433/myapp_test"
+
+# How often the watcher looks at GitHub for something to do, in seconds, at least 60
+# (PEB#445). A look that finds nothing changed costs nothing against GitHub's rate limit.
+watch_every_seconds = 120
+
+# When the watcher fails, the wait before it starts again: this many seconds, doubling after
+# each failure, up to the maximum. After an ordinary end it starts again at once.
+watcher_backoff_seconds = 10
+watcher_backoff_max_seconds = 600
+
+# Where Claude Code compacts an agent's conversation, in percent of its window (about 967K
+# tokens): each reply reads all of it again, so compacted early, a long run costs less
+# (PEB#441). 100 compacts where a session does.
+compact_at_percent = 25

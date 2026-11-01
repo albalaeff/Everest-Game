@@ -1,0 +1,105 @@
+name: CI
+
+# Every pull request is checked before it may be merged; develop and master are checked
+# again after each merge. Task branches aren't checked on push: their PR is. A release PR,
+# into master, then goes live on trial (`deploy`, PEB#510).
+on:
+  pull_request:
+  push:
+    branches: [develop, master]
+  workflow_dispatch:
+
+concurrency:
+  # One run per PR (a newer push cancels the older run); merges to develop/master all run. A
+  # release PR's run is never cut off, since it may be deploying: the newer one waits for it.
+  group: ci-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' && github.base_ref != 'master' }}
+
+jobs:
+  checks:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    # A project with a database: PostgreSQL for the tests (scripts/instantiate.py keeps these
+    # lines with the database, and drops them with --no-db).
+    #db services:
+    #db   postgres:
+    #db     image: postgres:16
+    #db     env:
+    #db       POSTGRES_USER: myapp
+    #db       POSTGRES_PASSWORD: myapp
+    #db       POSTGRES_DB: myapp_test
+    #db     ports:
+    #db       - 5433:5432
+    #db     options: >-
+    #db       --health-cmd "pg_isready -U myapp -d myapp_test"
+    #db       --health-interval 5s
+    #db       --health-timeout 5s
+    #db       --health-retries 10
+    #db
+    #db env:
+    #db   TEST_DATABASE_URL: postgresql://myapp:myapp@localhost:5433/myapp_test
+
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: astral-sh/setup-uv@v7
+        with:
+          python-version: "3.14"
+          enable-cache: true
+
+      - name: Install dependencies
+        run: uv sync --locked
+
+      - name: Lint
+        run: uv run ruff check
+
+      - name: Format
+        run: uv run ruff format --check
+
+      - name: Type check
+        run: uv run mypy myapp scripts
+
+      - name: Tests
+        run: uv run pytest
+
+  secrets:
+    # No secret in the history (PEB#59, PEB#538): gitleaks over every commit of what's checked
+    # out, a PR's with develop's or what's live on a push, but for the findings .gitleaksignore
+    # lists. Not every branch's (PEB#546): a stray branch's finding would fail every PR. It
+    # prints what it finds redacted: the log is as public as the repository.
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    env:
+      GITLEAKS_VERSION: 8.28.0
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+
+      - name: Install gitleaks
+        working-directory: ${{ runner.temp }}
+        run: |
+          release=https://github.com/gitleaks/gitleaks/releases/download/v$GITLEAKS_VERSION
+          archive=gitleaks_${GITLEAKS_VERSION}_linux_x64.tar.gz
+          curl -sSfLO "$release/$archive"
+          curl -sSfLO "$release/gitleaks_${GITLEAKS_VERSION}_checksums.txt"
+          sha256sum --check --ignore-missing "gitleaks_${GITLEAKS_VERSION}_checksums.txt"
+          tar -xzf "$archive" gitleaks
+          echo "$PWD" >> "$GITHUB_PATH"
+
+      - name: Scan the history
+        run: gitleaks git --redact --verbose --no-banner
+
+  deploy:
+    # A release PR goes live on trial once the rest has passed, so merging it confirms a
+    # release that runs (docs/production.md → A release). Any other PR into master fails here.
+    needs: [checks, secrets]
+    if: github.event_name == 'pull_request' && github.base_ref == 'master'
+    uses: ./.github/workflows/release-tool.yml
+    with:
+      command: deploy
+    secrets: inherit
+    permissions:
+      contents: read
+      pull-requests: write
