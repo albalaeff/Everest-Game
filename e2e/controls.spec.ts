@@ -39,6 +39,14 @@ async function expectReceived(page: Page, actions: readonly string[]): Promise<v
   await expect(received(page)).toHaveText([...actions].reverse());
 }
 
+/**
+ * A finger on the slope, through the locator, which waits for the page to settle: a touch sent as
+ * it loads can land scaled by 640/980, Chromium's phone layout from before the viewport tag.
+ */
+async function tap(page: Page, x: number, y: number): Promise<void> {
+  await page.locator("#slope").tap({ position: { x, y } });
+}
+
 /** A thumb's drag: Playwright's touchscreen only taps, so its Pointer Events are made by hand. */
 async function drag(page: Page, from: [number, number], to: [number, number]): Promise<void> {
   const slope = page.locator("#slope");
@@ -85,9 +93,9 @@ test.describe("on a screen of 640 by 360", () => {
     test.skip(!hasTouch, "a phone's story");
     await page.goto("/");
 
-    await page.touchscreen.tap(400, 130);
-    await page.touchscreen.tap(400, 230);
-    await page.touchscreen.tap(200, 130);
+    await tap(page, 400, 130);
+    await tap(page, 400, 230);
+    await tap(page, 200, 130);
     await drag(page, [100, 250], [160, 250]);
     await drag(page, [100, 250], [100, 230]);
     await button(page, "clip-first").tap();
@@ -106,7 +114,7 @@ test.describe("on a screen of 640 by 360", () => {
   test("a player walks and holds the jumar at once", async ({ page, hasTouch }) => {
     test.skip(!hasTouch, "a phone's story");
     await page.goto("/");
-    await page.touchscreen.tap(400, 130);
+    await tap(page, 400, 130);
     const thumb = { pointerId: 7, pointerType: "touch", isPrimary: true };
     const other = { pointerId: 8, pointerType: "touch", isPrimary: false };
     const slope = page.locator("#slope");
@@ -149,7 +157,7 @@ test.describe("on a screen of 640 by 360", () => {
   }) => {
     test.skip(!hasTouch, "a phone's story");
     await page.goto("/");
-    await page.touchscreen.tap(400, 130);
+    await tap(page, 400, 130);
 
     const buttons = await page.locator(".action-button").all();
 
@@ -165,7 +173,7 @@ test.describe("on a screen of 640 by 360", () => {
   test("the right thumb's buttons are about a centimetre wide", async ({ page, hasTouch }) => {
     test.skip(!hasTouch, "a phone's story");
     await page.goto("/");
-    await page.touchscreen.tap(400, 130);
+    await tap(page, 400, 130);
 
     for (const name of ["clip-first", "clip-second", "jumar", "oxygen-up", "oxygen-down"]) {
       const box = await button(page, name).boundingBox();
@@ -242,7 +250,7 @@ test("a phone in landscape says nothing about turning it", async ({ page, hasTou
   test.skip(!hasTouch, "a phone's story");
   await page.setViewportSize({ width: 640, height: 360 });
   await page.goto("/");
-  await page.touchscreen.tap(400, 130);
+  await tap(page, 400, 130);
 
   await expect(page.getByText("Turn your phone sideways to climb")).toBeHidden();
 });

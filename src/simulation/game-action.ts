@@ -78,13 +78,4 @@ export interface SetUpTent extends ClimberAction {
  * agent sends the same. Plain data, because replays and the room server keep and send them.
  */
 export type GameAction =
-  | Walk
-  | Pace
-  | Clip
-  | Unclip
-  | Jumar
-  | Tool
-  | Oxygen
-  | CheckSelf
-  | Radio
-  | SetUpTent;
+  Walk | Pace | Clip | Unclip | Jumar | Tool | Oxygen | CheckSelf | Radio | SetUpTent;
