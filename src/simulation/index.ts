@@ -12,6 +12,7 @@ export type {
   Oxygen,
   Pace,
   Radio,
+  SetUpTent,
   Tool,
   Unclip,
   Walk,

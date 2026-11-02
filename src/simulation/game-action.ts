@@ -5,10 +5,16 @@ interface ClimberAction {
   readonly climber: ClimberId;
 }
 
-/** Walks up or down the slope until another `walk` says otherwise: a held key is two actions. */
+type Vertical = "up" | "down";
+type Horizontal = "left" | "right";
+
+/**
+ * Walks one of eight ways until another `walk` says otherwise: a held key is two actions. Left and
+ * right go along the slope, up and down on ladders and ropes, and a diagonal is both at once.
+ */
 export interface Walk extends ClimberAction {
   readonly kind: "walk";
-  readonly direction: "up" | "down" | "stop";
+  readonly direction: Vertical | Horizontal | `${Vertical}-${Horizontal}` | "stop";
 }
 
 /** Sets the walking pace, until another `pace` says otherwise. */
@@ -61,6 +67,11 @@ export interface Radio extends ClimberAction {
   readonly phrase: string;
 }
 
+/** Sets up a tent where the climber stands, in camp. */
+export interface SetUpTent extends ClimberAction {
+  readonly kind: "set-up-tent";
+}
+
 /**
  * Everything a climber can do: the spec's controls table (Gameplay). It's all the core ever hears:
  * the input layer (#18) turns keys, the mouse, touch and a gamepad into these, and an NPC's
@@ -75,4 +86,5 @@ export type GameAction =
   | Tool
   | Oxygen
   | CheckSelf
-  | Radio;
+  | Radio
+  | SetUpTent;

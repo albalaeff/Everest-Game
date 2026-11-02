@@ -2,17 +2,31 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
     <title>Everest</title>
     <link rel="stylesheet" href="/src/style.css" />
     <script type="module" src="/src/main.ts"></script>
   </head>
   <body>
+    <div id="slope"></div>
     <main>
-      <h1>Everest</h1>
-      <p>A simulator-trainer for climbing Everest by the South route. Being built.</p>
-      <p lang="ru">Симулятор-тренажёр восхождения на Эверест по Южному маршруту. В разработке.</p>
-      <p id="build"></p>
+      <header>
+        <p id="readouts"><span>06:42</span> <span>8,412 m</span> <span>180 bar</span></p>
+        <h1>Everest</h1>
+        <p id="build"></p>
+      </header>
+      <p id="hint-click"></p>
+      <p id="hint-tap"></p>
+      <ol id="received"></ol>
+      <div id="controls">
+        <div class="menu"></div>
+        <div class="oxygen"><output>3 L/min</output></div>
+        <div class="thumb"></div>
+      </div>
+      <div id="joystick" hidden>
+        <div id="knob"></div>
+      </div>
+      <p id="turn-phone"></p>
     </main>
   </body>
 </html>

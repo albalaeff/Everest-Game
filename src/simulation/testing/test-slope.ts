@@ -1,4 +1,4 @@
-import type { ClimberId, GameAction } from "../game-action";
+import type { ClimberId, GameAction, Walk } from "../game-action";
 import type { Json } from "../json";
 import type { Moment, Rule } from "../rule";
 import type { Scenario } from "../scenario";
@@ -7,7 +7,7 @@ import { SimulationClock } from "../simulation-clock";
 /** One climber on the test slope. A change makes a new value. */
 export type TestClimber = {
   readonly metres: number;
-  readonly walking: "up" | "down" | "stop";
+  readonly walking: Walk["direction"];
   readonly clipped: boolean;
   readonly fallen: boolean;
   /** The steps they slipped on. */
@@ -38,6 +38,13 @@ export class TestSlope implements Rule {
   };
   static readonly CALM: TestConditions = { ...TestSlope.MILD, slipChancePerSecond: 0 };
   static readonly HARSH: TestConditions = { ...TestSlope.MILD, slipChancePerSecond: 1 };
+
+  private static readonly UPHILL: ReadonlySet<Walk["direction"]> = new Set([
+    "up",
+    "up-left",
+    "up-right",
+    "right",
+  ]);
 
   private static readonly AT_THE_BOTTOM: TestClimber = {
     metres: 0,
@@ -121,7 +128,7 @@ export class TestSlope implements Rule {
       return;
     }
     const { top, metresPerSecond, slipChancePerSecond } = this.conditions;
-    const way = climber.walking === "up" ? 1 : -1;
+    const way = TestSlope.UPHILL.has(climber.walking) ? 1 : -1;
     const walked = climber.metres + way * metresPerSecond * SimulationClock.STEP_SECONDS;
     const metres = Math.min(Math.max(walked, 0), top);
     const slipped = moment.random.chance(slipChancePerSecond * SimulationClock.STEP_SECONDS);
