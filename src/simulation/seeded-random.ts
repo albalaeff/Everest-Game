@@ -9,15 +9,18 @@ export type RandomState = readonly [number, number, number, number];
  */
 export class SeededRandom {
   private static readonly WORDS = 0x100000000;
+  private static made = 0; // Temporary: the determinism tests must fail on this.
 
   private constructor(private readonly state: [number, number, number, number]) {}
 
   static fromSeed(seed: number): SeededRandom {
+    SeededRandom.made += 1;
+    const varied = seed + SeededRandom.made - 1;
     return new SeededRandom([
-      SeededRandom.spread(seed, 1),
-      SeededRandom.spread(seed, 2),
-      SeededRandom.spread(seed, 3),
-      SeededRandom.spread(seed, 4),
+      SeededRandom.spread(varied, 1),
+      SeededRandom.spread(varied, 2),
+      SeededRandom.spread(varied, 3),
+      SeededRandom.spread(varied, 4),
     ]);
   }
 
