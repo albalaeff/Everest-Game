@@ -19,8 +19,8 @@ end, after a wait that grows with each failure). For each task:
 - its worktree, <worktree_dir>/<issue>, on the issue's branch, or a new
   `feature/<issue>-<title>` from origin/develop (`Worktree`); a new one gets the checkout's
   caches and a .venv of its own first, so the agent doesn't start cold (`Warmup`);
-- its own test database, `myapp_<issue>_test`, so two agents' tests don't drop each other's
-  tables (`TestDatabase`);
+- its own test database, `everest_<issue>_test`, when the project has one, so two agents'
+  tests don't drop each other's tables (`TestDatabase`);
 - `claude -p` there (`Agent`): it works on the issue as CLAUDE.md says, and stops when the
   next move is someone else's. Its output goes to .agent-runs/<issue>.log. Claude Code
   compacts its conversation early, at agent-manager.toml's share of the window
@@ -348,7 +348,7 @@ class PricesJob(Job):
 class Warmup:
     """What a new worktree gets before its agent starts, so the agent doesn't start cold
     (#444): the checkout's caches, copied (`CACHES`), and a .venv of its own. Without mypy's
-    cache an agent's `mypy myapp` took 60–98 s, with one copied from another folder 8 s;
+    cache an agent's `mypy` run took 60–98 s, with one copied from another folder 8 s;
     mypy checks a cache against the files' hashes, so one made on another branch is safe.
     One cache for all the agents (MYPY_CACHE_DIR) isn't: two would write it at once. The
     .venv (`SYNC`) spares the agent's first `uv run` making it, and uv's lines in what that
@@ -488,8 +488,8 @@ class Worktree:
 class TestDatabase:
     """An agent's own test database, on the PostgreSQL server the project's tests use
     (`server`: agent-manager.toml's `test_database_url`, else TEST_DATABASE_URL): two
-    agents' runs would otherwise drop each other's tables (CLAUDE.md → Checks). It's named
-    after the server's: `…/myapp_test` gives `myapp_<slot>_test`, which the agent gets as its
+    agents' runs would otherwise drop each other's tables. It's named
+    after the server's: `…/everest_test` gives `everest_<slot>_test`, which the agent gets as its
     TEST_DATABASE_URL. With no server named, the project has no database, and the agent gets
     none (`wanted`)."""
 

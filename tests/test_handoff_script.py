@@ -302,7 +302,7 @@ READY = (
     "- Closing comment:\n"
     "  <!-- closing -->\n"
     "  Done: the location rule is finer.\n\n"
-    "  - To check by hand: nothing in Telegram.\n"
+    "  - To check by hand: nothing in the browser.\n"
     "  <!-- /closing -->\n\n"
     "</details>"
 )
@@ -313,7 +313,7 @@ def test_a_handoff_carries_the_closing_comment_the_merge_posts() -> None:
     handoff = Handoff(ME, URL, READY, HandoffMark(HERE, AT), 0)
 
     assert handoff.closing_comment == (
-        "Done: the location rule is finer.\n\n- To check by hand: nothing in Telegram."
+        "Done: the location rule is finer.\n\n- To check by hand: nothing in the browser."
     )
 
 

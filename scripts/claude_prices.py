@@ -330,7 +330,7 @@ SOURCES: tuple[PricingPage, ...] = (ClaudeComPricing(), DocsPricing())
 
 def fetch(url: str) -> str:
     response = httpx.get(
-        url, follow_redirects=True, timeout=30, headers={"User-Agent": "Mozilla/5.0 (myapp)"}
+        url, follow_redirects=True, timeout=30, headers={"User-Agent": "Mozilla/5.0 (everest)"}
     )
     response.raise_for_status()
     return response.text

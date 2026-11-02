@@ -157,7 +157,9 @@ def token(env: Mapping[str, str] = os.environ, run: Run = subprocess.run) -> str
     """$GITHUB_TOKEN, else the GitHub CLI's, else the one Git stores for github.com."""
     if env.get("GITHUB_TOKEN"):
         return env["GITHUB_TOKEN"]
-    quiet = {**env, "GIT_TERMINAL_PROMPT": "0"}  # never stop to ask for a password
+    # Git's own terminal prompt stays quiet; Git Credential Manager's window still opens when
+    # it has nothing stored, and what it takes is kept below
+    quiet = {**env, "GIT_TERMINAL_PROMPT": "0"}
     try:
         found = run(["gh", "auth", "token"], capture_output=True, text=True, check=False)
         if found.returncode == 0 and found.stdout.strip():
@@ -177,6 +179,17 @@ def token(env: Mapping[str, str] = os.environ, run: Run = subprocess.run) -> str
         stored = ""
     for line in stored.splitlines():
         if line.startswith("password="):
+            # `fill` alone uses a credential once: Git Credential Manager keeps the token its
+            # window took only when Git says `approve`, as Git itself does after a push that
+            # worked. Without it, every command opened the window again.
+            run(
+                ["git", "credential", "approve"],
+                input=stored,
+                capture_output=True,
+                text=True,
+                check=False,
+                env=quiet,
+            )
             return line.removeprefix("password=")
     raise SystemExit(
         "No GitHub token: set GITHUB_TOKEN, sign in with `gh auth login`, or let Git store "
@@ -784,7 +797,7 @@ FOLLOWED = "develop"  # the branch every machine follows while idle (#347)
 
 def follow_develop(run: Run = subprocess.run) -> str | None:
     """Brings `develop` up to date while this machine is idle (#347), so what either Claude
-    merged reaches every running dev bot: scripts/run_dev.py restarts it on the new commit.
+    merged reaches what runs here without anyone pulling.
 
     Idle means `develop` checked out with no uncommitted changes; on a task branch it only
     fetches. A `develop` with commits of its own is never overwritten: it says so instead.

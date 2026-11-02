@@ -1,13 +1,16 @@
 # Developer setup
 
-From a bare machine to a running app, whether you're new to the project or moving to a
+From a bare machine to a working checkout, whether you're new to the project or moving to a
 new workstation. You need three things yourself; Claude does the rest with you.
 
 1. **VS Code** with Anthropic's **Claude Code** extension, signed in.
-2. **The repository**: in VS Code, *Clone Git Repository* → this repository's URL. Sign in
-   to GitHub in the window that opens; Git keeps the token, and Claude uses it to work with
-   issues as you.
-3. **Claude**: open the Claude Code panel in the cloned folder and say hello.
+2. **The repository**: in VS Code, *Clone Git Repository* → this repository's URL. The
+   repository is public: the clone asks for nothing.
+3. **Claude**: open the Claude Code panel in the cloned folder and say hello. Its first check
+   asks Git for a GitHub token, and Git Credential Manager opens GitHub's window: sign in
+   there, or paste a classic token with the `repo` scope; the scripts keep what the window
+   took, as a `git push` would. `gh auth login`, or `GITHUB_TOKEN`, is found first and asks
+   nothing. Claude uses the token to work with issues as you.
 
 Claude starts every session by checking the machine (the carryon skill, `/carryon`), unless
 a session checked it within the last 8 hours (PEB#597). When something is missing, it says
@@ -21,13 +24,9 @@ missing one, and never prints a secret. Without uv yet, Claude installs it first
 
 | Piece | Why | Who fixes it |
 |---|---|---|
-| uv and Python 3.14 | runs everything; `uv sync` fetches Python and the dependencies | Claude: `winget install --id astral-sh.uv`, `uv sync` |
+| uv and Python 3.14 | runs the workflow's scripts; `uv sync` fetches Python and the dependencies | Claude: `winget install --id astral-sh.uv`, `uv sync` |
 | Git hooks | refuse pushes to `develop` and `master` from your clone | Claude: `git config core.hooksPath .githooks` |
-| Docker (a project with a database) | runs PostgreSQL for the app and the tests | **You**: install Docker Desktop (needs an admin) and start it |
-| Database (a project with one) | `docker compose up -d db`: PostgreSQL on localhost:5433 plus the `myapp_test` database | Claude |
-| `.env` | the local settings, copied from `.env.example`, with its blank lines filled in | Claude copies it; **you** fill in any secret |
-| `.env`'s settings (a note) | the lines a `.env` copied from an older template still has: each pins its setting, so a changed default doesn't reach it (PEB#564, README → Configuration) | **You**: delete the lines you don't mean to pin |
-| GitHub | the token Git stored at clone, and push access to the repository | **You**: sign in when asked; the owner adds new collaborators |
+| GitHub | a token for the scripts (`GITHUB_TOKEN`, else `gh auth token`, else the one Git stores for github.com), and push access to the repository | **You**: sign in when asked; the owner adds new collaborators. A fine-grained token of yours can't write to a repository another person owns (403 on a push, an issue or a label, though the check says you can push): sign in through GitHub's window instead, or use a classic token with the `repo` scope |
 | Claude's prices | `docs/claude-prices.csv`, which prices Claude's work on each issue (PEB#390); in the repo, kept current by the watcher | Claude: `uv run python scripts/claude_prices.py refresh` |
 | Claude Code CLI | `claude`, which the agent manager runs each agent with (PEB#387); signed in with your own account, the one the extension uses | Claude: Anthropic's installer (`irm https://claude.ai/install.ps1 \| iex` in PowerShell, `curl -fsSL https://claude.ai/install.sh \| bash` elsewhere); **you** sign in if `claude auth login` asks |
 | Claude Code trust | the checkout trusted, so the agents get the allow list in `.claude/settings.json`; the extension doesn't record it | **You**: run `claude` in the checkout once, accept the trust dialog, then `/exit` |
@@ -35,8 +34,9 @@ missing one, and never prints a secret. Without uv yet, Claude installs it first
 | VS Code's Python | `.venv` as VS Code's interpreter: with uv's own Python chosen, every `uv` call warns that `VIRTUAL_ENV` doesn't match `.venv`, and `python` is the Microsoft Store's stub; checked only inside VS Code | **You**: *Python: Select Interpreter* → `.venv\Scripts\python.exe`, then *Developer: Reload Window* |
 | poppler (optional) | `pdftoppm`, which Claude's Read needs for a PDF | Claude: `winget install --id oschwartz10612.Poppler`; if `pdftoppm` still isn't found in a new terminal, its `Library\bin` goes on the user PATH |
 
-The project's own pieces (its schema at head, a token the app needs) are added to
-`PROJECT_CHECKS` in `scripts/check_setup.py`, and to this table.
+The project's own pieces (a token the game's tooling needs, once there is one) are added to
+`PROJECT_CHECKS` in `scripts/check_setup.py`, and to this table; an `.env` is checked by
+itself once the project has an `.env.example` to copy it from.
 
 Claude's Bash tool runs `bash -c`, which reads no profile but the file `BASH_ENV` names. This
 snippet, for Git Bash, exports the scratchpad's path, the same one Claude Code's prompt names:
@@ -44,7 +44,7 @@ snippet, for Git Bash, exports the scratchpad's path, the same one Claude Code's
 ```bash
 # Claude Code's scratchpad, which its prompt names but no variable does (PEB#530)
 if [ -n "${CLAUDE_CODE_SESSION_ID:-}" ]; then
-  _cwd=$(pwd -W)  # C:/git/myapp: the slug is C--git-myapp
+  _cwd=$(pwd -W)  # C:/git/Everest-Game: the slug is C--git-Everest-Game
   export CLAUDE_SCRATCHPAD="$(cygpath -m "$TEMP")/claude/${_cwd//[^[:alnum:]]/-}/$CLAUDE_CODE_SESSION_ID/scratchpad"
   unset _cwd
 fi
@@ -52,14 +52,15 @@ fi
 
 ## Secrets of your own
 
-A token or a key the app needs locally goes into `.env` yourself, on the line already there:
-the last line for a key wins. Don't paste it into the chat. Keep `.env` to your machine: it
-is gitignored, and its secrets never go into commits, issues or PRs. Each developer uses
-their own (a dev bot of their own, a sandbox key), never production's.
+The project has no secrets of its own yet. When one comes (the Cloudflare account for the
+co-op's room server), it goes into a gitignored file on your machine, which you fill in
+yourself: don't paste it into the chat, and it never goes into commits, issues or PRs. Each
+developer uses their own (a sandbox account, a test key), never production's.
 
 ## Running it
 
-<How to start the app locally: README → Local development.>
+Nothing to run yet: the game's TypeScript project comes with its first issue, and README →
+Local development will say how to start it.
 
 ## What Claude keeps running
 

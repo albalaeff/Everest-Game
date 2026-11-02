@@ -18,7 +18,7 @@ worktree_dir = "../worktrees"
 # never drop each other's tables. Needs `uv sync --group db` (asyncpg). Empty: the
 # machine's TEST_DATABASE_URL, or, unset too, no database at all.
 test_database_url = ""
-# test_database_url = "postgresql://myapp:myapp@localhost:5433/myapp_test"
+# test_database_url = "postgresql://everest:everest@localhost:5433/everest_test"
 
 # How often the watcher looks at GitHub for something to do, in seconds, at least 60
 # (PEB#445). A look that finds nothing changed costs nothing against GitHub's rate limit.

@@ -114,6 +114,25 @@ def test_then_the_token_git_stores() -> None:
     assert token({}, run) == "from-git"  # type: ignore[arg-type]
 
 
+def test_the_token_git_gave_is_kept() -> None:
+    """`fill` alone would use a token Git Credential Manager's window took once and lose it:
+    `approve` with the same answer keeps it."""
+    answer = "protocol=https\nhost=github.com\nusername=x\npassword=from-git\n"
+    calls: list[tuple[Sequence[str], object]] = []
+
+    def run(args: Sequence[str], **kwargs: object) -> subprocess.CompletedProcess[str]:
+        calls.append((args, kwargs.get("input")))
+        if args[0] == "gh":
+            raise FileNotFoundError("gh")
+        return subprocess.CompletedProcess(args, 0, stdout=answer, stderr="")
+
+    assert token({}, run) == "from-git"
+    assert calls[1:] == [
+        (["git", "credential", "fill"], "protocol=https\nhost=github.com\n\n"),
+        (["git", "credential", "approve"], answer),
+    ]
+
+
 def test_no_token_anywhere_is_an_error() -> None:
     with pytest.raises(SystemExit):
         token({}, runner({"gh": None, "git": "protocol=https\n"}))  # type: ignore[arg-type]

@@ -1,34 +1,6 @@
-<!-- template -->
-# claude-workflow-template
+# Everest
 
-A GitHub template for a repository two developers work on with their own Claude Code, from GitHub issues: sessions in VS Code that carry the work on across machines through handoffs, and headless agents that take the issues by themselves. It was taken from [bateks/PersonalExchangeBot](https://github.com/bateks/PersonalExchangeBot) after six weeks of use; [docs/lessons.md](docs/lessons.md) says what was learned where.
-
-**What's in it:**
-
-- [CLAUDE.md](CLAUDE.md): the rules every turn of Claude's obeys, lean; [docs/workflow.md](docs/workflow.md) is the long form, with the reasons.
-- `.claude/skills/`: `/carryon` (a session's start), `/handoff` (its close), `/setup` (a new machine); `.claude/settings.json`: the allow list agents run with, and the Stop hook that asks for the handoff in time.
-- `scripts/`: `github.py` (GitHub without `gh`: status, the watcher, handoffs, comments, PRs, merges, releases, costs), `agent_manager.py` (one headless agent per task), `check_setup.py` (the machine check), `claude_prices.py` and `claude_cost.py` (what the work cost), `handoff_due.py` (the Stop hook), `setup.sh` (a developer's machine), `instantiate.py` (this template into a project).
-- `.github/`: CI (lint, format, types, tests, gitleaks), a dependency audit, the release cut by label, a release's deploy, confirm and rollback through a stub to fill in; the PR template.
-- `docs/`: the conventions, the workflow, the developer setup, a production stub, the lessons, Claude's prices.
-- `myapp/` and `tests/`: a minimal package with settings, the scripts' tests, and the test infrastructure (parallel workers).
-- `memory-seed/`: Claude Code memory files for a developer's own preferences, copied into the machine's memory folder on request.
-- `optional/telegram-bot/`: reference copies for a Telegram bot (screen IDs, the bot and text conventions, the dev runner, the screen map), to adapt or delete.
-
-**To start a project from it:**
-
-1. On GitHub, *Use this template* → a new repository (private or not). Clone it.
-2. In the clone, name the project (the package, the `MYAPP_` prefix of the settings) and drop what it doesn't need:
-
-       uv run python scripts/instantiate.py --name shopbot [--no-db] [--no-bot] [--keep-template-readme]
-
-   It renames `myapp` → `shopbot` and `MYAPP_` → `SHOPBOT_` everywhere, removes the database pieces with `--no-db` and `optional/telegram-bot/` with `--no-bot`, strips this template section from the README, and deletes itself. Commit the result.
-3. On GitHub: make `develop` the default branch (push it first), the rulesets and the secrets (Repository settings, below). `scripts/setup.sh` makes the labels.
-4. Fill in CLAUDE.md's first line, README's Architecture, `docs/conventions.md`'s table of areas and `docs/production.md` as the project grows. Each developer: `scripts/setup.sh`, then open the folder in VS Code and say hello to Claude.
-<!-- /template -->
-
-# myapp
-
-<What the app is, in a paragraph: what people do with it, what it never does, where the spec is.>
+A 2D browser game: a simulator-trainer for climbing Everest by the South route. The player completes a whole expedition in 5–7 hours and learns the decisions that save lives in real mountains: the turnaround time, the symptoms of altitude illness, the oxygen arithmetic, staying clipped in. Every number and piece of advice comes from an open source and says so; the game replaces no course, instructor or doctor, and says that too. [spec.md](spec.md) is the plan: the concept, the systems, the gameplay, co-op, the training, the real accidents, the architecture and the development plan.
 
 ## Contents
 
@@ -37,26 +9,25 @@ A GitHub template for a repository two developers work on with their own Claude 
 - [Agents](#agents)
 - [Tests](#tests)
 - [Deployment](#deployment)
-- [Configuration](#configuration)
 - [Repository settings](#repository-settings)
 
 ## Architecture
 
-<The parts, the layers ([docs/conventions.md](docs/conventions.md) → Layers), the data, what talks to what.>
+The game is a static TypeScript site that runs in the browser ([spec.md](spec.md) → Technical architecture): a simulation core (body, oxygen, weather, time, hazards; the same result for the same seed), agents and slope physics on it, PixiJS rendering with HTML and CSS for the interface and Web Audio for sound, and JSON content: the route, the scenarios, and the knowledge base of facts with their sources. For co-op, a room server on Cloudflare Workers runs the same core. [docs/conventions.md](docs/conventions.md) → Modules has the rules between them.
+
+The TypeScript project isn't in the repository yet: its first issue sets it up. Until then the repository holds the spec, the workflow ([CLAUDE.md](CLAUDE.md), `scripts/`, `.claude/`) and the docs.
 
 ## Local development
 
-New here, or on a new workstation? [docs/developer-setup.md](docs/developer-setup.md) goes from a bare machine to a running app, with Claude Code doing most of it, and `uv run python scripts/check_setup.py` shows what's still missing.
+New here, or on a new workstation? [docs/developer-setup.md](docs/developer-setup.md) goes from a bare machine to a working checkout, with Claude Code doing most of it, and `uv run python scripts/check_setup.py` shows what's still missing.
 
-You need Python 3.14 and [uv](https://docs.astral.sh/uv/); Docker when the project has a database.
+You need Python 3.14 and [uv](https://docs.astral.sh/uv/) for the workflow's scripts; the game's own toolchain (Node) comes with its TypeScript project.
 
 ```
-uv sync                              # dependencies, including the dev tools
-cp .env.example .env                 # then fill in what's blank
-docker compose up -d db              # PostgreSQL on localhost:5433, plus the myapp_test database (a project with one)
+uv sync                              # the scripts' dependencies, including the dev tools
 ```
 
-<How to run the app locally, each process in its own terminal.>
+The game: nothing to run yet. This section says how once the TypeScript project is in.
 
 ## Agents
 
@@ -106,9 +77,9 @@ manager keeps its task and starts no agent until the time the limit names, sayin
 ("Usage limit: agents wait until 12:00."), or for an hour when it names none. Agents still
 running go on, and the next agent on that task carries on in its worktree.
 
-An agent in a new worktree doesn't start cold: the manager first copies the checkout's caches
-into it (mypy's, and hypothesis's examples) and makes its `.venv` (`uv sync --locked`), and
-the log's first line says so. Without the cache, `mypy` took an agent a minute or more.
+An agent in a new worktree doesn't start cold: the manager first copies the checkout's mypy
+cache into it and makes its `.venv` (`uv sync --locked`), and the log's first line says so.
+Without the cache, `mypy` took an agent a minute or more.
 
 **How strong an agent is.** An issue's labels choose the agent's model and effort, in Claude
 Code's own words: `model:haiku`, `model:sonnet`, `model:opus` or `model:fable`, and
@@ -177,9 +148,9 @@ runs per machine. To move to another machine, stop the manager here first.
 
 ```
 uv run pytest                 # everything, in parallel
-uv run pytest -m unit         # only the tests that need no database
+uv run pytest -m unit         # only the pure tests
 uv run pytest tests/x.py      # files or tests named: in one process, as with -n 0
-uv run ruff check && uv run ruff format --check && uv run mypy myapp scripts
+uv run ruff check && uv run ruff format --check && uv run mypy scripts
 ```
 
 - **In parallel.** A run of the suite, or of a folder of it, goes to pytest-xdist workers:
@@ -187,11 +158,10 @@ uv run ruff check && uv run ruff format --check && uv run mypy myapp scripts
   (`tests/parallel.py`). So tests run in any order, at once: none may rely on another's
   leftovers or write outside its `tmp_path`. A worker takes seconds to start, so a run
   naming files or tests stays in one process.
-- **The test database** (a project with one). Tests use `TEST_DATABASE_URL` (default: the
-  compose `myapp_test` database, whose name must end in `_test`). The suite rebuilds its
-  schema on every run, and each worker runs on a database of its own beside it
-  (`myapp_gw0_test`, …), made at its start and dropped at its end. The `db` mark names the
-  tests that need it; the template's own `db` test is skipped without `TEST_DATABASE_URL`.
+- **The game's checks** (its lint and type check, Vitest for the simulation, Playwright for
+  the page) come with the TypeScript project, and CI runs them beside these. The agent
+  manager's one `db` test, for a project whose agents get test databases of their own, is
+  skipped without `TEST_DATABASE_URL`.
 
 How to write code and tests here, and the definition of done, are in
 [docs/conventions.md](docs/conventions.md). Every change goes through a pull request into
@@ -211,11 +181,8 @@ CI also scans for what mustn't be in the repository:
 
 ### When CI fails
 
-Two failures aren't the change's:
+One failure isn't the change's:
 
-- **Docker Hub's 429.** CI fails while setting up ("Initialize containers") when Docker Hub
-  refuses with 429, its pull rate limit. A fine-grained token can't re-run jobs, so push an
-  empty commit to the branch (`git commit --allow-empty`) to start CI again.
 - **Actions billing.** When every run on every branch fails within seconds, its jobs never
   given a runner, it's the account's billing: the run's page on GitHub says "recent account
   payments have failed or your spending limit needs to be increased". Only the repository's
@@ -224,17 +191,7 @@ Two failures aren't the change's:
 
 ## Deployment
 
-A release is a PR from a `release/<date>-NN` branch into `master`, cut by `scripts/github.py release` or the label `release` on an issue. Once its checks pass, CI runs the deploy step of `.github/workflows/release-tool.yml`, which is a stub until the project has a host: it says so on the PR and passes. Merging the PR confirms the release, closing it rolls back: the same workflow's `confirm` and `rollback`. [docs/production.md](docs/production.md) is where the host, the pipeline and its secrets get written down.
-
-## Configuration
-
-Every setting is read from a `MYAPP_*` environment variable or `.env` (`myapp/config.py`); `.env.example` lists them at their defaults.
-
-| Setting | Default | What it is |
-|---|---|---|
-| `MYAPP_LOG_LEVEL` | `INFO` | DEBUG, INFO, WARNING, ERROR or CRITICAL |
-| `MYAPP_LOG_FORMAT` | `text` | `text` (key=value lines) or `json` (one object per line) |
-| `MYAPP_DATABASE_URL` | unset | the database, as a SQLAlchemy-style URL; unset for a project without one |
+The game is a static site, to be published free on GitHub Pages or itch.io, with a small room server on Cloudflare for co-op ([spec.md](spec.md) → Technical architecture). The release flow is in place already: a release is a PR from a `release/<date>-NN` branch into `master`, cut by `scripts/github.py release` or the label `release` on an issue. Once its checks pass, CI runs the deploy step of `.github/workflows/release-tool.yml`, which is a stub until the game has a build to publish: it says so on the PR and passes. Merging the PR confirms the release, closing it rolls back: the same workflow's `confirm` and `rollback`. [docs/production.md](docs/production.md) is where the hosting, the pipeline and its secrets get written down.
 
 ## Repository settings
 

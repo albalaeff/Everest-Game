@@ -1,16 +1,16 @@
 #!/usr/bin/env bash
-# One entry point for a developer's machine (PEB#387): what the app needs, then what the
-# agent manager needs. Safe to run again: each step looks before it acts. On Windows, run it
-# in Git Bash, which comes with Git.
+# One entry point for a developer's machine (PEB#387): what the workflow's scripts need,
+# then what the agent manager needs. Safe to run again: each step looks before it acts. On
+# Windows, run it in Git Bash, which comes with Git.
 #
 #     scripts/setup.sh
 #
 # It checks for Git and uv (which fetches Python 3.14 and the dependencies), installs the
-# dependencies, turns Git's hooks on and makes .env from .env.example when there's none, runs
-# the machine check (scripts/check_setup.py: Docker and the database when the project has
-# one, .env, the GitHub token, Claude Code's command line and its sign-in, …) and says how to
-# fix what's missing, puts the model:*, effort:* and priority:* labels on the repository, and
-# ends with the command that starts the manager.
+# dependencies, turns Git's hooks on and makes .env from .env.example when the project has
+# one and there's none, runs the machine check (scripts/check_setup.py: Docker, the database
+# and .env when the project has them, the GitHub token, Claude Code's command line and its
+# sign-in, …) and says how to fix what's missing, puts the model:*, effort:* and priority:*
+# labels on the repository, and ends with the command that starts the manager.
 # Each developer signs in with their own accounts: nothing secret is kept in the repository.
 
 set -u
@@ -39,7 +39,7 @@ echo
 echo "Installing the dependencies (uv sync) ..."
 uv sync --quiet || exit 1
 git config core.hooksPath .githooks  # pushes to develop and master are refused
-if [ ! -f .env ]; then
+if [ -f .env.example ] && [ ! -f .env ]; then
   cp .env.example .env
   echo "Made .env from .env.example: fill in what's blank in it."
 fi

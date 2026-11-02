@@ -27,6 +27,7 @@ from scripts.check_setup import (
     git_hooks,
     github_access,
     has_database,
+    has_settings,
     main_checkout,
     poppler,
     python,
@@ -91,15 +92,22 @@ def test_docker_missing_or_stopped(answers: dict[str, tuple[int, str]]) -> None:
 
 
 def test_the_project_has_a_database_while_the_compose_file_is_there(tmp_path: Path) -> None:
-    # scripts/instantiate.py --no-db deletes it, and the database checks go with it.
-    assert has_database()  # the template's own
+    # all_checks() runs the database checks only while it's there.
+    assert not has_database()  # this project has no database
     assert not has_database(tmp_path)
     (tmp_path / "docker-compose.yml").write_text("services: {}\n", encoding="utf-8")
     assert has_database(tmp_path)
 
 
+def test_has_settings_means_an_env_example_to_copy(tmp_path: Path) -> None:
+    assert not has_settings()  # this project has no settings to fill in yet
+    assert not has_settings(tmp_path)
+    (tmp_path / ".env.example").write_text("# X=1\n", encoding="utf-8")
+    assert has_settings(tmp_path)
+
+
 def test_database_answering() -> None:
-    assert database("postgresql://u:p@localhost:5433/myapp", lambda host, port: True).ok
+    assert database("postgresql://u:p@localhost:5433/everest", lambda host, port: True).ok
 
 
 def test_database_not_answering_says_where_and_how_to_start_it() -> None:
@@ -109,7 +117,7 @@ def test_database_not_answering_says_where_and_how_to_start_it() -> None:
         tried.append((host, port))
         return False
 
-    check = database("postgresql://u:p@db.local:6000/myapp", connect)
+    check = database("postgresql://u:p@db.local:6000/everest", connect)
 
     assert tried == [("db.local", 6000)]
     assert not check.ok
@@ -130,19 +138,19 @@ def test_an_env_example_is_read_as_defaults_and_blanks(tmp_path: Path) -> None:
     _, example = env_files(
         tmp_path,
         None,
-        "# Copy to .env.\n# MYAPP_LOG_LEVEL=INFO\nMYAPP_TOKEN=\n# A note: python -c x\n",
+        "# Copy to .env.\n# EVEREST_LOG_LEVEL=INFO\nEVEREST_TOKEN=\n# A note: python -c x\n",
     )
 
     found = EnvFile.read(example)
 
-    assert found.defaults == {"MYAPP_LOG_LEVEL": "INFO"}
-    assert found.blank == ("MYAPP_TOKEN",)
+    assert found.defaults == {"EVEREST_LOG_LEVEL": "INFO"}
+    assert found.blank == ("EVEREST_TOKEN",)
     assert found.values == {}
     assert EnvFile.read(tmp_path / "none") == EnvFile({}, {}, ())
 
 
 def test_no_env_file_says_to_copy_the_example(tmp_path: Path) -> None:
-    path, example = env_files(tmp_path, None, "MYAPP_TOKEN=\n")
+    path, example = env_files(tmp_path, None, "EVEREST_TOKEN=\n")
 
     check = env_file(path, example)
 
@@ -151,34 +159,39 @@ def test_no_env_file_says_to_copy_the_example(tmp_path: Path) -> None:
 
 
 def test_a_blank_line_of_the_example_must_be_filled_in(tmp_path: Path) -> None:
-    path, example = env_files(tmp_path, "MYAPP_TOKEN=\nMYAPP_LOG_LEVEL=DEBUG\n", "MYAPP_TOKEN=\n")
+    path, example = env_files(
+        tmp_path, "EVEREST_TOKEN=\nEVEREST_LOG_LEVEL=DEBUG\n", "EVEREST_TOKEN=\n"
+    )
 
     check = env_file(path, example)
 
     assert not check.ok
-    assert check.detail == "not filled in: MYAPP_TOKEN"
+    assert check.detail == "not filled in: EVEREST_TOKEN"
     assert "the last line for a key wins" in check.fix
 
 
 def test_a_filled_env_names_no_value(tmp_path: Path) -> None:
-    path, example = env_files(tmp_path, "MYAPP_TOKEN=123:abc\n", "MYAPP_TOKEN=\n")
+    path, example = env_files(tmp_path, "EVEREST_TOKEN=123:abc\n", "EVEREST_TOKEN=\n")
 
     check = env_file(path, example)
 
     assert check.ok
-    assert check.detail == "MYAPP_TOKEN set"
+    assert check.detail == "EVEREST_TOKEN set"
     assert "123:abc" not in check.detail + check.fix  # never the secret
 
 
 def test_the_last_value_of_a_key_counts(tmp_path: Path) -> None:
-    """As for the app itself: a token pasted at the top loses to the template's empty line."""
-    path, example = env_files(tmp_path, "MYAPP_TOKEN=123:abc\n\nMYAPP_TOKEN=\n", "MYAPP_TOKEN=\n")
+    """As python-dotenv reads it, the last line for a key wins: a token pasted at the top loses
+    to the template's empty line."""
+    path, example = env_files(
+        tmp_path, "EVEREST_TOKEN=123:abc\n\nEVEREST_TOKEN=\n", "EVEREST_TOKEN=\n"
+    )
 
     assert not env_file(path, example).ok
 
 
 def test_an_env_without_blank_lines_to_fill_is_just_there(tmp_path: Path) -> None:
-    path, example = env_files(tmp_path, "", "# MYAPP_LOG_LEVEL=INFO\n")
+    path, example = env_files(tmp_path, "", "# EVEREST_LOG_LEVEL=INFO\n")
 
     assert env_file(path, example).detail == "there"
 
@@ -187,17 +200,17 @@ def test_what_env_pins_is_a_note(tmp_path: Path) -> None:
     # PEB#564: a copy of an older .env.example keeps that day's values when the defaults move.
     path, example = env_files(
         tmp_path,
-        "MYAPP_TOKEN=123:abc\nMYAPP_COUNTRIES=CZ\nMYAPP_LOG_LEVEL=INFO\nMYAPP_OLD_URL=x\n",
-        "MYAPP_TOKEN=\n# MYAPP_COUNTRIES=CZ,TR\n# MYAPP_LOG_LEVEL=INFO\n",
+        "EVEREST_TOKEN=123:abc\nEVEREST_COUNTRIES=CZ\nEVEREST_LOG_LEVEL=INFO\nEVEREST_OLD_URL=x\n",
+        "EVEREST_TOKEN=\n# EVEREST_COUNTRIES=CZ,TR\n# EVEREST_LOG_LEVEL=INFO\n",
     )
 
     check = env_pins(path, example)
 
     assert not check.ok and check.note  # never "missing": pinning on purpose is allowed
     assert check.detail == (
-        "`.env` pins `MYAPP_COUNTRIES=CZ` (by default `CZ,TR`). 1 line is at today's default,"
+        "`.env` pins `EVEREST_COUNTRIES=CZ` (by default `CZ,TR`). 1 line is at today's default,"
         " and would pin it once that changes: it could go. Unknown to the code, so ignored:"
-        " `MYAPP_OLD_URL`."
+        " `EVEREST_OLD_URL`."
     )
     assert "an absent line follows the code" in check.fix
     assert "123:abc" not in check.detail + check.fix  # never the token
@@ -215,11 +228,11 @@ def test_pins_between_two_env_files() -> None:
 
 
 def test_a_fresh_copy_of_the_env_example_pins_nothing(tmp_path: Path) -> None:
-    env = tmp_path / ".env"
-    env.write_text((ROOT / ".env.example").read_text(encoding="utf-8"), encoding="utf-8")
+    template = "EVEREST_TOKEN=\n# EVEREST_LOG_LEVEL=INFO\n"
+    path, example = env_files(tmp_path, template, template)
 
-    assert env_pins(env).ok
-    assert env_pins(tmp_path / "none").ok  # no .env yet: the .env check says so
+    assert env_pins(path, example).ok
+    assert env_pins(tmp_path / "none", example).ok  # no .env yet: the .env check says so
 
 
 def test_github_access_names_the_account() -> None:
@@ -250,7 +263,7 @@ def test_no_github_token() -> None:
     check = github_access(no_token, lambda path: {})
 
     assert not check.ok
-    assert "git fetch" in check.fix
+    assert "sign in to GitHub" in check.fix
 
 
 def test_claude_s_prices_are_in_the_repository() -> None:
@@ -300,7 +313,7 @@ def claude_config(tmp_path: Path, projects: dict[str, Any]) -> Path:
 def test_a_trusted_checkout_gives_agents_the_allow_list(tmp_path: Path) -> None:
     # PEB#387's trial: in a checkout Claude Code hasn't been trusted in, a headless agent
     # ignores .claude/settings.json's allow list and is refused nearly everything.
-    root = tmp_path / "git" / "myapp"
+    root = tmp_path / "git" / "everest"
     config = claude_config(tmp_path, {root.as_posix(): {"hasTrustDialogAccepted": True}})
 
     check = claude_trust(config, root)
@@ -310,9 +323,9 @@ def test_a_trusted_checkout_gives_agents_the_allow_list(tmp_path: Path) -> None:
 
 
 def test_the_trust_is_the_main_checkout_s_also_in_a_worktree() -> None:
-    found = main_checkout(runner({"--git-common-dir": (0, "C:/git/myapp/.git\n")}))
+    found = main_checkout(runner({"--git-common-dir": (0, "C:/git/everest/.git\n")}))
 
-    assert found == Path("C:/git/myapp")
+    assert found == Path("C:/git/everest")
     assert main_checkout(runner({})) == ROOT  # without git: this checkout
 
 
@@ -329,7 +342,7 @@ def test_the_trust_is_the_main_checkout_s_also_in_a_worktree() -> None:
 def test_an_untrusted_checkout_says_how_to_trust_it(
     tmp_path: Path, projects: dict[str, Any]
 ) -> None:
-    root = tmp_path / "git" / "myapp"
+    root = tmp_path / "git" / "everest"
     names = {"ROOT": root.as_posix(), "PARENT": root.parent.as_posix()}
     projects = {names.get(key, key): value for key, value in projects.items()}
 
@@ -417,7 +430,7 @@ def test_a_profile_without_the_variable_says_to_add_the_snippet(tmp_path: Path) 
 
 
 UV_PYTHONS = "/home/dev/.local/share/uv/python"  # what `uv python dir` says
-VENV = "/work/myapp/.venv/bin"  # this script's interpreter's folder
+VENV = "/work/everest/.venv/bin"  # this script's interpreter's folder
 STORE = "/Users/dev/AppData/Local/Microsoft/WindowsApps"  # no C: in a PATH split on ":"
 
 
