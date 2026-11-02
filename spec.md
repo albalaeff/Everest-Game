@@ -4,7 +4,7 @@ Nov 1, 2026 · @Alex
 
 ## Concept and requirements
 
-A 2D browser game: a simulator-trainer for climbing Everest by the South route. The player completes a full expedition in 5–7 hours and learns the decisions that save lives in real mountains. The main goal is fewer deaths caused by mistakes, lack of professionalism and inexperience.
+A 2D browser game for PC and phone: a simulator-trainer for climbing Everest by the South route. The player completes a full expedition in 5–7 hours and learns the decisions that save lives in real mountains. The main goal is fewer deaths caused by mistakes, lack of professionalism and inexperience.
 
 | Parameter | Decision |
 | --- | --- |
@@ -17,7 +17,7 @@ A 2D browser game: a simulator-trainer for climbing Everest by the South route. 
 | Real accidents | All real accidents, including the most recent, plus fictional scenarios |
 | Route | South route, from Nepal |
 | Length | One expedition takes 5–7 hours, possibly up to 10 |
-| Platform | Browser on PC |
+| Platform | One game in the browser on PC and on the phone, installable on the phone's home screen like an app; players on phones and PCs play together |
 | Graphics | Silhouettes and gradients |
 | Language | Russian and English |
 | Publishing | Free online |
@@ -126,6 +126,8 @@ You can also turn around earlier: symptoms, strong wind or a queue at any stage 
 | Check yourself: symptoms, pulse oximeter, fingers | Tab |
 | Radio: guide, Base Camp, your group | Q |
 
+On a phone, every action in the table has a touch control instead of its key (see Phone and PC). No action depends on reaction speed, so a player on a phone is not at a disadvantage in co-op.
+
 | Stage of one expedition | Play time, h |
 | --- | --- |
 | Preparation: tour, gear, trek to Base Camp | 0.75 |
@@ -144,6 +146,7 @@ About 6 hours in total without training; training adds another 0.5–1 hour. Sav
 **How it works**
 
 - One player creates an expedition and sends friends a code or a link. There is no matchmaking with strangers, so no moderation is needed.
+- Phones and PCs play in the same rooms: it is the same game and the same server, and the server checks that every player has the same version of the game (see Phone and PC).
 - The room server runs on Cloudflare Durable Objects: one expedition is one object that stores its state and sends updates to the players. Durable Objects have been available on the free Workers plan since April 2025 ([Tech Insider](https://tech-insider.org/cloudflare-durable-objects-multiplayer-game-server-2026/)); the free limit is 100,000 requests per day ([Cloudflare](https://www.cloudflare.com/developer-platform/products/durable-objects/)).
 - The server runs the same simulation as the single-player game. Players send their actions, and the server calculates body, weather and time, so the expedition does not break if the room creator closes their tab.
 - The fallback option is a direct browser-to-browser connection via WebRTC (PeerJS). It is free too, but players behind some routers need a relay (a TURN server) ([PeerJS](https://peerjs.com/docs)), and the expedition ends when the room creator leaves.
@@ -244,9 +247,38 @@ The style is silhouettes and gradients: the mountain is drawn in layers, and lig
 - The player sets the turnaround time before the summit push, and it is shown on the clock as a red mark.
 - Russian and English are switched in the menu; units are metres and °C, with an option to switch to feet and °F.
 
+## Phone and PC
+
+The game is one web application for every device: the same build runs in a browser on a PC and on a phone. On a phone it can also be installed on the home screen as a progressive web app (PWA): its own icon, full screen, single-player without a network. Players on phones and PCs meet in the same rooms, because they run the same code against the same server.
+
+| Option | For | Against | Decision |
+| --- | --- | --- | --- |
+| Browser and PWA | One code base; free; an update reaches every player at once, so a room never mixes versions; no store review | Not in the App Store or Google Play; on an iPhone, installing goes through Share → Add to Home Screen, which the game has to show | Main way |
+| A store app wrapping the same web code (Capacitor) | A listing in the stores | USD 99 a year for Apple, USD 25 once for Google Play; every update waits for the stores' review, and players update when they choose, so the server has to accept the previous version for a while | Later, if a listing is needed: the same code, not a second game |
+| A separate native app (Swift and Kotlin, or Unity) | The best performance | A second game to write and keep identical to the first, the simulation included | No |
+
+Sources: [Capacitor](https://capacitorjs.com/), [Apple Developer Program](https://developer.apple.com/programs/), [Google Play Console](https://support.google.com/googleplay/android-developer/answer/6112435).
+
+**What changes on a phone**
+
+- **Controls.** An input layer turns keys, the mouse, touch and a gamepad into the same game actions, and the simulation sees only the actions. On a phone the left thumb walks and sets the pace; the right one has the cowstails, the jumar (hold) and the oxygen flow; the ice axe and crampons are taps on the slope. “Check yourself” and the radio are buttons, and the radio has ready phrases, because typing on a phone in the middle of a climb is slow.
+- **Screen.** Climbing is in landscape; camp, menus, training cards and the debrief work in portrait too. The HTML interface adapts to the screen, and every button is at least the size of a fingertip.
+- **Performance.** Target: 30 frames per second on a mid-range phone, 60 where it can. A quality setting reduces the parallax layers and the particles. In camp, when nothing moves, the frame rate drops to save the battery.
+- **Interruptions.** A call, another app or a locked screen pauses the single-player game and keeps a resume point. The resume point only continues the expedition: it is overwritten as the player goes, so it cannot replay a decision, and saves stay in camps only. In co-op, leaving the game is a disconnection: the AI takes the climber to the nearest camp, and the player rejoins with the same code.
+- **Saves on an iPhone.** Safari deletes a site's stored data after seven days of Safari use without a visit to the site; a web app installed on the home screen keeps its data ([WebKit](https://webkit.org/blog/10218/full-third-party-cookie-blocking-and-more/)). So on an iPhone the game offers to install itself, keeps the export to a file, and co-op expeditions are stored on the server.
+- **Sound.** Phones start sound only after the player's first touch, so the game starts it with the first button in the menu.
+- **Long sessions.** Camps already split the expedition into parts; on a phone, the game says in each camp how long the next section takes.
+
+**Cross-play**
+
+- The server does not know or care which device a player uses: it receives the same actions from all of them.
+- The server checks the game's version when a player joins, and asks an old one to reload. An installed PWA updates on its next launch.
+- No action depends on reaction speed, and pace comes from the body model, not from how fast a finger moves; the step-and-breathing rhythm has the same tolerance on every device. So a player on a phone is as strong a teammate as one on a PC.
+- Tests: Playwright emulates phones (screen size, touch), so the co-op test puts a PC browser and a phone browser in one room. Before each release, the game is checked on a real iPhone and a real Android phone.
+
 ## Technical architecture
 
-The game is a static TypeScript website that runs in the browser and is published for free on GitHub Pages or itch.io. For co-op, a small room server on Cloudflare is added. The simulation is separate from the graphics, so it can be tested automatically and thousands of expeditions can be run to check the balance.
+The game is a static TypeScript website that runs in the browser on a PC and on a phone and is published for free on GitHub Pages or itch.io. For co-op, a small room server on Cloudflare is added. The simulation is separate from the graphics, so it can be tested automatically and thousands of expeditions can be run to check the balance.
 
 | Module | Responsibility | Technology |
 | --- | --- | --- |
@@ -254,14 +286,16 @@ The game is a static TypeScript website that runs in the browser and is publishe
 | Agent AI | Sherpas, clients, other expeditions and queues on the fixed ropes | TypeScript, simple finite-state machines |
 | Slope physics | Movement over terrain, falls, ropes and belaying | Our own simple physics, rope using Verlet integration |
 | Rendering | Layers, gradients, particles, animation, hypoxia effects | PixiJS (WebGL) |
-| Interface | Menus, camp, training cards, debrief | HTML and CSS on top of the canvas |
+| Interface | Menus, camp, training cards, debrief; adapts to the screen, PC and phone | HTML and CSS on top of the canvas |
+| Input | Keys, mouse, touch and gamepad turned into the same game actions | Pointer Events, our own layer |
+| Installing and offline | Install on a phone's home screen, single-player without a network, updates | PWA: web app manifest and service worker |
 | Sound | Wind, breathing, footsteps, regulator | Web Audio API |
 | Content and knowledge base | Route, scenarios, events, facts with sources, RU/EN texts | JSON files |
 | Saves | Progress, settings, expedition history; export to a file | IndexedDB |
-| Tests | Physiology models, balance, end-to-end scenarios, screenshots | Vitest, Playwright |
+| Tests | Physiology models, balance, end-to-end scenarios, screenshots, on PC and phone screens | Vitest, Playwright (with phone emulation) |
 | Network and rooms | Room by code, shared simulation on the server, chat, radio, reconnection | Cloudflare Workers and Durable Objects, WebSocket |
 
-Targets: 60 frames per second on an average laptop, a download under 20 MB, works in Chrome, Firefox, Edge and Safari. All graphics and sound are generated in code, so no licences for third-party assets are needed.
+Targets: 60 frames per second on an average laptop and 30 on a mid-range phone, a download under 20 MB, works in Chrome, Firefox, Edge and Safari, and on phones in Chrome on Android and Safari on iPhone. All graphics and sound are generated in code, so no licences for third-party assets are needed.
 
 ## Development plan
 
@@ -282,11 +316,13 @@ Development goes from the riskiest part to the simplest: first one section and s
    - Check: a guide and a doctor reviewed the facts and scenarios.
 9. **Release 1.0.** Free on GitHub Pages or itch.io.
 
+The phone, like the network layer, is in from the first prototype: the first playable section is played in one room from a PC and a phone. Adding touch controls and a small screen to a finished PC game costs far more.
+
 Timelines are deliberately not given here: it is more honest to estimate them after the prototype, once the pace of work is clear.
 
 ## Open questions and risks
 
-Six questions need to be settled before the prototype starts or during it.
+Eight questions need to be settled before the prototype starts or during it.
 
 - [ ] Player money: is the tour chosen freely, or does the player have to save up for an expensive tour?
 - [ ] Death: does the expedition end at once, or can the player return to the last camp?
@@ -294,6 +330,8 @@ Six questions need to be settled before the prototype starts or during it.
 - [ ] How many other expeditions and climbers are on the mountain at once (realism versus browser performance)?
 - [ ] Which experts are needed: an IFMGA mountain guide for technique and a mountain medicine doctor for physiology?
 - [ ] Co-op: who leads the group — one of the players or an NPC guide?
+- [ ] Progress across devices: starting an expedition on a PC and going on with it on a phone needs an account or a transfer code. Which one?
+- [ ] App Store and Google Play: is a listing through Capacitor needed, and when?
 
 | Risk | Why it is dangerous | What we do |
 | --- | --- | --- |
@@ -304,6 +342,7 @@ Six questions need to be settled before the prototype starts or during it.
 | Sensitivity of real tragedies | Relatives of the dead may see the game as disrespectful | A fictional hero in a real situation; facts and sources only |
 | Performance with crowds | Hundreds of agents can slow the browser down | Distant groups are simulated in a simplified way, in detail only near the player |
 | Disconnections in co-op | A player drops out mid-route, and the expedition breaks for everyone | The simulation runs on the server, the player can rejoin with the same code; an AI takes a climber without a player to the nearest camp |
+| The phone as a second-class platform | A weak phone slows down, small buttons make re-clipping fiddly, and phone players fall behind PC players | The phone is in from the first prototype; a quality setting; touch controls checked on real phones; no action depends on reaction speed |
 
 ## Sources
 
@@ -351,3 +390,10 @@ Co-op
 - [Tech Insider: Multiplayer game servers on Cloudflare Durable Objects (2026)](https://tech-insider.org/cloudflare-durable-objects-multiplayer-game-server-2026/)
 - [PeerJS: docs](https://peerjs.com/docs)
 - [Advnture: The 1996 Everest disaster](https://www.advnture.com/climbing-mountaineering/what-was-the-1996-everest-disaster-the-chain-of-events-that-claimed-eight-lives-and-sparked-never-ending-controversy)
+
+Phone
+
+- [WebKit: Full Third-Party Cookie Blocking and More (the seven-day storage cap)](https://webkit.org/blog/10218/full-third-party-cookie-blocking-and-more/)
+- [Capacitor](https://capacitorjs.com/)
+- [Apple Developer Program](https://developer.apple.com/programs/)
+- [Google Play Console: registration fee](https://support.google.com/googleplay/android-developer/answer/6112435)

@@ -553,7 +553,7 @@ class TestDatabase:
             await connection.close()
 
     async def _connect(self) -> Any:
-        import asyncpg  # type: ignore[import-untyped]  # the `db` dependency group
+        import asyncpg  # the `db` dependency group, often not installed (pyproject's mypy)
 
         url = urlsplit(self.server)
         return await asyncpg.connect(
