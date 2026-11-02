@@ -201,7 +201,9 @@ CI also scans for what mustn't be in the repository:
   `npm audit` over `package-lock.json`'s every Monday and on a PR that changes either. A
   vulnerability found on a Monday isn't a PR's fault, so no PR needs this check: GitHub mails
   a failed scheduled run to whoever last changed its schedule. Actions → Dependency audit →
-  Run workflow runs it now.
+  Run workflow runs it now. `overrides` in `package.json` holds `minimatch` at the fix of
+  GHSA-g3hv-75wg-m249, which eslint and typescript-eslint don't ask for yet: drop it once they
+  do.
 
 ### When CI fails
 
