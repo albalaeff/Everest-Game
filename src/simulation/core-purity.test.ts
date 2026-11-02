@@ -36,8 +36,8 @@ describe("The simulation core", () => {
   it("imports nothing but itself: no dependency, and none of the modules above it", () => {
     const outside = sources.flatMap(([name, code]) =>
       [...code.matchAll(/\bfrom\s+"([^"]+)"/g)]
-        .map((found) => found[1])
-        .filter((path) => path === undefined || !path.startsWith("./") || path.includes("/testing"))
+        .map((found) => found[1] ?? "")
+        .filter((path) => !path.startsWith("./") || path.includes("/testing"))
         .map((path) => `${name}: ${path}`),
     );
 

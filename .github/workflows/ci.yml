@@ -58,6 +58,7 @@ jobs:
         run: npm run lint
 
       - name: Check the game's format
+        id: format
         if: ${{ !cancelled() }}
         run: npm run format:check
 
@@ -76,6 +77,13 @@ jobs:
       - name: Test the page on a PC and on phones
         if: ${{ !cancelled() }}
         run: npm run e2e
+
+      # For an agent, whose machine may have no Node: last, because it rewrites the checkout.
+      - name: Show what the format check wants
+        if: ${{ !cancelled() && steps.format.outcome == 'failure' }}
+        run: |
+          npm run format
+          git diff
 
   secrets:
     # No secret in the history (PEB#59, PEB#538): gitleaks over every commit of what's checked

@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import { SeededRandom } from "./seeded-random";
+import type { RandomState } from "./seeded-random";
 
 const draws = (random: SeededRandom, count: number): number[] =>
   Array.from({ length: count }, () => random.word());
@@ -72,7 +73,8 @@ describe("SeededRandom", () => {
     const random = SeededRandom.fromSeed(9);
     draws(random, 10);
 
-    const restored = SeededRandom.restore(JSON.parse(JSON.stringify(random.save())));
+    const saved = JSON.parse(JSON.stringify(random.save())) as RandomState;
+    const restored = SeededRandom.restore(saved);
 
     expect(draws(restored, 100)).toEqual(draws(random, 100));
   });
