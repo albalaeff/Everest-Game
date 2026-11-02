@@ -15,7 +15,7 @@ A 2D browser game: a simulator-trainer for climbing Everest by the South route. 
 
 The game is a static TypeScript site that runs in the browser ([spec.md](spec.md) → Technical architecture): a simulation core (body, oxygen, weather, time, hazards; the same result for the same seed), agents and slope physics on it, PixiJS rendering with HTML and CSS for the interface and Web Audio for sound, and JSON content: the route, the scenarios, and the knowledge base of facts with their sources. For co-op, a room server on Cloudflare Workers runs the same core. [docs/conventions.md](docs/conventions.md) → Modules has the rules between them.
 
-The TypeScript project isn't in the repository yet: its first issue sets it up. Until then the repository holds the spec, the workflow ([CLAUDE.md](CLAUDE.md), `scripts/`, `.claude/`) and the docs.
+The TypeScript project isn't in the repository yet: its first issue sets it up. Until then the repository holds the spec, the workflow ([CLAUDE.md](CLAUDE.md), `scripts/`, `.claude/`), the docs and the knowledge base: the fact records in `content/facts/` ([docs/conventions/knowledge-base.md](docs/conventions/knowledge-base.md)).
 
 ## Local development
 
@@ -158,6 +158,10 @@ uv run ruff check && uv run ruff format --check && uv run mypy scripts
   (`tests/parallel.py`). So tests run in any order, at once: none may rely on another's
   leftovers or write outside its `tmp_path`. A worker takes seconds to start, so a run
   naming files or tests stays in one process.
+- **The knowledge base** is checked with the tests: `uv run pytest` fails on a record in
+  `content/facts/` without a source or a check date, and `uv run python scripts/check_facts.py`
+  lists every problem by file and record
+  ([docs/conventions/knowledge-base.md](docs/conventions/knowledge-base.md)).
 - **The game's checks** (its lint and type check, Vitest for the simulation, Playwright for
   the page) come with the TypeScript project, and CI runs them beside these. The agent
   manager's one `db` test, for a project whose agents get test databases of their own, is

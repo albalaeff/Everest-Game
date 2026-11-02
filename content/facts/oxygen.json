@@ -1,0 +1,39 @@
+{
+  "$schema": "../facts.schema.json",
+  "facts": [
+    {
+      "id": "oxygen.usual-flow",
+      "kind": "fact",
+      "claim": "Climbers usually breathe bottled oxygen at this flow.",
+      "status": "source only",
+      "versions": [
+        {
+          "range": { "min": 2, "max": 4 },
+          "unit": "L/min",
+          "source": {
+            "title": "Explorersweb: Everest technology, safety or something else",
+            "url": "https://explorersweb.com/2021/04/07/everest-technology-safety-or-something-else/"
+          },
+          "checked": "2026-11-01"
+        }
+      ]
+    },
+    {
+      "id": "oxygen.peak-flow",
+      "kind": "fact",
+      "claim": "Modern regulators give up to this flow on short sections.",
+      "status": "source only",
+      "versions": [
+        {
+          "value": 8,
+          "unit": "L/min",
+          "source": {
+            "title": "Explorersweb: Everest technology, safety or something else",
+            "url": "https://explorersweb.com/2021/04/07/everest-technology-safety-or-something-else/"
+          },
+          "checked": "2026-11-01"
+        }
+      ]
+    }
+  ]
+}

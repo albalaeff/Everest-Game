@@ -1,0 +1,20 @@
+{
+  "$schema": "../facts.schema.json",
+  "facts": [
+    {
+      "id": "medicine.hace-descent",
+      "kind": "fact",
+      "claim": "High-altitude cerebral edema requires immediate descent: without it, death can occur within 24 hours of the onset of ataxia.",
+      "status": "source only",
+      "versions": [
+        {
+          "source": {
+            "title": "CDC Yellow Book 2026: High-Altitude Travel and Altitude Illness",
+            "url": "https://www.cdc.gov/yellow-book/hcp/environmental-hazards-risks/high-altitude-travel-and-altitude-illness.html"
+          },
+          "checked": "2026-11-01"
+        }
+      ]
+    }
+  ]
+}
