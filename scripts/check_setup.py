@@ -487,8 +487,8 @@ def poppler(which: Which = shutil.which) -> Check:
 
 
 def node(run: Run = subprocess.run) -> Check:
-    """Node 24 or later, with its npm, which runs the game's type check and tests."""
-    fix = "winget install --id OpenJS.NodeJS.LTS (or brew install node), then a new terminal"
+    """Node, which builds and tests the game (package.json → engines). npm comes with it."""
+    fix = "winget install --id OpenJS.NodeJS.LTS (or https://nodejs.org), then a new terminal"
     found = _run(run, ["node", "--version"])
     if found is None or found.returncode != 0:
         return Check("Node", False, "not installed", fix)
@@ -496,7 +496,7 @@ def node(run: Run = subprocess.run) -> Check:
     major = re.match(r"v(\d+)", version)
     if major and int(major.group(1)) >= 24:
         return Check("Node", True, version)
-    return Check("Node", False, f"{version}, and the game needs 24 or later", fix)
+    return Check("Node", False, f"{version}, needs 24", fix)
 
 
 # The project's own pieces, each a function that returns a Check, run after the generic ones.

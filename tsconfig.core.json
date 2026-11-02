@@ -3,6 +3,7 @@
   // one of them in it fails the type check (docs/conventions/simulation-core.md).
   "extends": "./tsconfig.json",
   "compilerOptions": {
+    "lib": ["ES2023"],
     "types": []
   },
   "include": ["src/simulation"],

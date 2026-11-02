@@ -8,7 +8,7 @@ Every change to this codebase follows the rules in this file, and those of each 
 | the simulation core: `src/simulation/` | [conventions/simulation-core.md](conventions/simulation-core.md) |
 | the game's other areas, once they have rules of their own: the rendering, the room server | their file in `docs/conventions/`, named here when it comes |
 
-A change to `scripts/` or to the docs alone follows this file only. (Fill the table in as areas get rules of their own, one file each in `docs/conventions/`; [../spec.md](../spec.md) is what they implement.)
+A change to `scripts/` or to the docs alone follows this file only. (Fill the table in as areas get rules of their own, one file each in `docs/conventions/`; [../spec.md](../spec.md) is what the game's areas implement.)
 
 ## Git workflow
 
@@ -22,7 +22,7 @@ A change to `scripts/` or to the docs alone follows this file only. (Fill the ta
 
 ## Modules
 
-The game is a static TypeScript site; the Python under `scripts/` runs the workflow, not the game ([../spec.md](../spec.md) → Technical architecture).
+The game is a static TypeScript site; the Python under `scripts/` runs the workflow, not the game ([../spec.md](../spec.md) → Technical architecture). Its code is in `src/`, which Vite bundles from `index.html`; a module below gets its folder there with its first issue.
 
 ```
 simulation core  →  agents, slope physics  →  rendering, interface, sound  →  the page
@@ -70,7 +70,7 @@ Text files use LF line endings on every OS (`.gitattributes`, and ruff formats w
 ## Tests
 
 - Write the tests first, watch them fail, then implement.
-- The game's tests: Vitest for the simulation, the agents and the physics, each on a seed, so a failure replays; Playwright for the page, as a story a player would recognise; and a balance check that plays many seeded expeditions headless and holds the outcomes to the knowledge base (the summit times and death rates the spec cites). Vitest runs in CI beside the scripts' checks (README → Tests); Playwright joins it with the page, and the balance check with #47.
+- The game's tests: Vitest for the simulation, the agents and the physics, each on a seed, so a failure replays; Playwright for the page, as a story a player would recognise; and a balance check that plays many seeded expeditions headless and holds the outcomes to the knowledge base (the summit times and death rates the spec cites). A Vitest test sits beside its code as `<name>.test.ts`; a Playwright story goes in `e2e/`, and runs on a PC and on each phone of `playwright.config.ts`. CI runs them beside the scripts' checks (README → Tests has the commands); the balance check joins them with #47.
 - The scripts' tests, in `tests/`: mark pure tests `pytest.mark.unit`; the agent manager's database test is `pytest.mark.db`, skipped without `TEST_DATABASE_URL`. Deprecation warnings fail the run (`filterwarnings` in `pyproject.toml`): fix them when they appear; ignore one only for third-party code, with a comment. Shared helpers live in `tests/fakes.py`.
 - Tests run in parallel (pytest-xdist; README → Tests), so a test never relies on another having run before it, writes files only under its `tmp_path`, and never depends on the developer's environment.
 - End-to-end tests run the real parts together: the game's on one seed and a recorded sequence of actions, as a story a player would recognise; the scripts' on a fake clock and a fake GitHub, as a story a user would recognise. Add one when a change crosses modules.
@@ -83,7 +83,7 @@ A step is done when:
 2. `uv run ruff format --check` passes.
 3. `uv run mypy scripts` passes.
 4. `uv run pytest` passes.
-5. The game's own checks pass: `npm run typecheck` and `npm test`, and its lint and Playwright once they're in; README → Tests names them.
+5. The game's own checks pass (its lint, format, type check, Vitest and Playwright); README → Tests names them.
 6. CI is green on the task's PR, and the PR is merged into `develop`.
 7. Nothing is left unwired: every new piece of code is reachable from an entry point, or is used by the very next step.
 8. The code it adds or touches follows **Objects** above.

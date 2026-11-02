@@ -15,20 +15,28 @@ A 2D browser game: a simulator-trainer for climbing Everest by the South route. 
 
 The game is a static TypeScript site that runs in the browser ([spec.md](spec.md) → Technical architecture): a simulation core (body, oxygen, weather, time, hazards; the same result for the same seed), agents and slope physics on it, PixiJS rendering with HTML and CSS for the interface and Web Audio for sound, and JSON content: the route, the scenarios, and the knowledge base of facts with their sources. For co-op, a room server on Cloudflare Workers runs the same core. [docs/conventions.md](docs/conventions.md) → Modules has the rules between them.
 
-So far the game is its simulation core, in `src/simulation/` ([docs/conventions/simulation-core.md](docs/conventions/simulation-core.md)), with no page yet. Beside it the repository holds the spec, the workflow ([CLAUDE.md](CLAUDE.md), `scripts/`, `.claude/`), the docs and the knowledge base: the fact records in `content/facts/` ([docs/conventions/knowledge-base.md](docs/conventions/knowledge-base.md)).
+The game's project is at the root of the repository: Vite builds `index.html` and `src/` into the static site, on Node 24 and npm. So far it's a placeholder page and the simulation core, in `src/simulation/` ([docs/conventions/simulation-core.md](docs/conventions/simulation-core.md)); the other modules come with their issues. Beside it the repository holds the spec, the workflow ([CLAUDE.md](CLAUDE.md), `scripts/`, `.claude/`), the docs and the knowledge base: the fact records in `content/facts/` ([docs/conventions/knowledge-base.md](docs/conventions/knowledge-base.md)).
 
 ## Local development
 
 New here, or on a new workstation? [docs/developer-setup.md](docs/developer-setup.md) goes from a bare machine to a working checkout, with Claude Code doing most of it, and `uv run python scripts/check_setup.py` shows what's still missing.
 
-You need Python 3.14 and [uv](https://docs.astral.sh/uv/) for the workflow's scripts, and Node 24 with its npm for the game.
+You need Python 3.14 and [uv](https://docs.astral.sh/uv/) for the workflow's scripts, and Node 24 or later, with its npm, for the game.
 
 ```
-uv sync                              # the scripts' dependencies, including the dev tools
-npm install                          # the game's
+uv sync                                  # the scripts' dependencies, including the dev tools
+npm ci                                   # the game's
+npx playwright install chromium webkit   # the browsers of its page tests, once per machine
 ```
 
-The game has no page to open yet: `npm test` plays its simulation core (Tests below). This section says how to run the page once it's in.
+The game:
+
+```
+npm run dev              # at http://localhost:5173, reloading as you edit
+npm run dev -- --host    # on your network too, to open it on a phone
+npm run build            # the static site, in dist/
+npm run preview          # what's in dist/, at http://localhost:4173
+```
 
 ## Agents
 
@@ -152,8 +160,12 @@ uv run pytest                 # everything, in parallel
 uv run pytest -m unit         # only the pure tests
 uv run pytest tests/x.py      # files or tests named: in one process, as with -n 0
 uv run ruff check && uv run ruff format --check && uv run mypy scripts
-npm run typecheck             # the game's types, and the simulation core alone: no DOM, no Node
-npm test                      # the game's tests, with Vitest
+
+npm run lint && npm run format:check && npm run typecheck
+npm run format                # rewrites what format:check refuses
+npm test                      # Vitest
+npm run e2e                   # Playwright: on a PC, an Android phone and an iPhone
+npm run e2e -- --project=iphone   # on one of them
 ```
 
 - **In parallel.** A run of the suite, or of a folder of it, goes to pytest-xdist workers:
@@ -165,10 +177,14 @@ npm test                      # the game's tests, with Vitest
   `content/facts/` without a source or a check date, and `uv run python scripts/check_facts.py`
   lists every problem by file and record
   ([docs/conventions/knowledge-base.md](docs/conventions/knowledge-base.md)).
-- **The game's checks** are `npm run typecheck` and `npm test`, which CI runs beside these;
-  its lint and Playwright for the page join them with #16.
-- **The `db` test.** The agent manager's one `db` test, for a project whose agents get test
-  databases of their own, is skipped without `TEST_DATABASE_URL`.
+- **The game's checks** run in CI beside these. ESLint and Prettier read `src/`, `e2e/` and
+  the config files; `tsc` checks `tsconfig.json`, the browser's code,
+  `tsconfig.node.json`, what runs on Node, and `tsconfig.core.json`, the simulation core alone,
+  with no DOM and no Node. Vitest runs `src/**/*.test.ts`. Playwright builds the game, serves
+  the build and runs the stories in `e2e/` on each of its projects: `pc` and `android` in
+  Chromium, `iphone` in WebKit. TypeScript stays on 6.0: typescript-eslint refuses 7.
+- **The database test.** The agent manager's one `db` test, for a project whose agents get
+  test databases of their own, is skipped without `TEST_DATABASE_URL`.
 
 How to write code and tests here, and the definition of done, are in
 [docs/conventions.md](docs/conventions.md). Every change goes through a pull request into
@@ -181,10 +197,11 @@ CI also scans for what mustn't be in the repository:
   what it finds redacted. Not every branch's, so a finding on one branch fails only
   that branch's PR. `.gitleaksignore` lists the findings that aren't secrets, by fingerprint.
   By hand, every branch: `gitleaks git --log-opts=--all`.
-- **Vulnerable dependencies.** `audit.yml` runs pip-audit over `uv.lock`'s packages every
-  Monday and on a PR that changes `uv.lock`. A vulnerability found on a Monday
-  isn't a PR's fault, so no PR needs this check: GitHub mails a failed scheduled run to
-  whoever last changed its schedule. Actions → Dependency audit → Run workflow runs it now.
+- **Vulnerable dependencies.** `audit.yml` runs pip-audit over `uv.lock`'s packages and
+  `npm audit` over `package-lock.json`'s every Monday and on a PR that changes either. A
+  vulnerability found on a Monday isn't a PR's fault, so no PR needs this check: GitHub mails
+  a failed scheduled run to whoever last changed its schedule. Actions → Dependency audit →
+  Run workflow runs it now.
 
 ### When CI fails
 
@@ -198,7 +215,7 @@ One failure isn't the change's:
 
 ## Deployment
 
-The game is a static site, to be published free on GitHub Pages or itch.io, with a small room server on Cloudflare for co-op ([spec.md](spec.md) → Technical architecture). The release flow is in place already: a release is a PR from a `release/<date>-NN` branch into `master`, cut by `scripts/github.py release` or the label `release` on an issue. Once its checks pass, CI runs the deploy step of `.github/workflows/release-tool.yml`, which is a stub until the game has a build to publish: it says so on the PR and passes. Merging the PR confirms the release, closing it rolls back: the same workflow's `confirm` and `rollback`. [docs/production.md](docs/production.md) is where the hosting, the pipeline and its secrets get written down.
+The game is a static site, to be published free on GitHub Pages or itch.io, with a small room server on Cloudflare for co-op ([spec.md](spec.md) → Technical architecture). Every merge into `develop` is published as a preview, at https://albalaeff.github.io/Everest-Game/, to open on a PC or a phone ([docs/production.md](docs/production.md) → The preview). The release flow is in place already: a release is a PR from a `release/<date>-NN` branch into `master`, cut by `scripts/github.py release` or the label `release` on an issue. Once its checks pass, CI runs the deploy step of `.github/workflows/release-tool.yml`, which is a stub until the game has a build to publish: it says so on the PR and passes. Merging the PR confirms the release, closing it rolls back: the same workflow's `confirm` and `rollback`. [docs/production.md](docs/production.md) is where the hosting, the pipeline and its secrets get written down.
 
 ## Repository settings
 
@@ -206,6 +223,7 @@ Set once on GitHub, by the owner:
 
 - **Default branch `develop`**, so a merged PR's `Closes #n` closes the issue and the scripts' `status` reads the right thing. Push `develop` and `master` first.
 - **Rulesets:** "develop and master": both change only through a PR with the `checks` job green, by squash or merge commit, no force pushes or deletions. "master: deployed": `master` also wants `deploy / release-tool` green, so a release is merged only once it's live (add the check once it has run on the first release PR).
+- **GitHub Pages:** Settings → Pages → Source: *GitHub Actions*, for the preview. Without it the job `preview` fails, on `develop` only.
 - **Labels:** `scripts/setup.sh` makes `model:*`, `effort:*` and `priority:*`; `claude:<login>` for each developer (hand an issue to their Claude); `postponed`; `release`. The `waiting:<login>` labels are made by the scripts.
 - **Secrets** (Settings → Secrets and variables → Actions): `RELEASE_TOKEN`, a person's fine-grained token with read and write access to Contents, Issues and Pull requests, for `release-cut.yml` (a PR opened with Actions' own token starts no CI); the deploy's own once the stub in `release-tool.yml` is filled in.
 - **Each clone:** `git config core.hooksPath .githooks` refuses pushes to `develop` and `master` before GitHub does (`scripts/setup.sh` does it).
