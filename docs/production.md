@@ -5,8 +5,15 @@ Where the game runs for real: the hosting, how a release gets there, its secrets
 ## The hosting
 
 - **The game:** <GitHub Pages of this repository, or itch.io: the URL, whose account>.
+- **The preview:** GitHub Pages of this repository: The preview, below.
 - **The room server:** <the Cloudflare account, the Worker's name, its Durable Object; the free plan's limits and who watches them>.
 - **Secrets:** <the deploy's tokens, in the repository's Actions secrets; nothing in git>.
+
+## The preview
+
+Every merge into `develop` is published to https://albalaeff.github.io/Everest-Game/, to open on a PC or a phone; the page's last line names the commit. The job `preview` in `ci.yml` does it once `checks` and `secrets` pass, with GitHub Pages' own actions and no secret. Actions → CI → Run workflow on `develop` publishes `develop` again.
+
+Pages is turned on once, by the repository's owner: Settings → Pages → Source: *GitHub Actions*. Each publish replaces the whole site, so a release published on GitHub Pages too needs a place of its own there, or itch.io.
 
 ## A release
 

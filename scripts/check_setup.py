@@ -486,17 +486,20 @@ def poppler(which: Which = shutil.which) -> Check:
     )
 
 
+def node(run: Run = subprocess.run) -> Check:
+    """Node, which builds and tests the game (package.json → engines). npm comes with it."""
+    fix = "winget install --id OpenJS.NodeJS.LTS (or https://nodejs.org), then a new terminal"
+    found = _run(run, ["node", "--version"])
+    if found is None or found.returncode != 0:
+        return Check("Node", False, "not installed", fix)
+    version = found.stdout.strip()
+    if int(version.removeprefix("v").split(".")[0]) >= 24:
+        return Check("Node", True, version)
+    return Check("Node", False, f"{version}, needs 24", fix)
+
+
 # The project's own pieces, each a function that returns a Check, run after the generic ones.
-# For instance, Node for the game's toolchain, once its TypeScript project is in:
-#
-#     def node(run: Run = subprocess.run) -> Check:
-#         found = _run(run, ["node", "--version"])
-#         if found is not None and found.returncode == 0:
-#             return Check("Node", True, found.stdout.strip())
-#         return Check("Node", False, "not installed", "winget install --id OpenJS.NodeJS.LTS")
-#
-#     PROJECT_CHECKS.append(node)
-PROJECT_CHECKS: list[Callable[[], Check]] = []
+PROJECT_CHECKS: list[Callable[[], Check]] = [node]
 
 
 # --- the report ------------------------------------------------------------------------------

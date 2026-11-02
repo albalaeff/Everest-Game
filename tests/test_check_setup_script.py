@@ -29,6 +29,7 @@ from scripts.check_setup import (
     has_database,
     has_settings,
     main_checkout,
+    node,
     poppler,
     python,
     report,
@@ -493,6 +494,31 @@ def test_poppler_is_optional() -> None:
     assert not check.ok and not check.required
     assert "winget install --id oschwartz10612.Poppler" in check.fix
     assert poppler(lambda name: f"/usr/bin/{name}").ok
+
+
+def test_node_24_or_later() -> None:
+    check = node(runner({"node --version": (0, "v24.11.0\n")}))
+
+    assert check.ok
+    assert check.detail == "v24.11.0"
+    assert node(runner({"node --version": (0, "v26.1.0\n")})).ok
+
+
+def test_an_older_node_says_which_it_needs() -> None:
+    check = node(runner({"node --version": (0, "v22.20.0\n")}))
+
+    assert not check.ok
+    assert check.detail == "v22.20.0, needs 24"
+    assert "winget install --id OpenJS.NodeJS.LTS" in check.fix
+
+
+def test_no_node_says_how_to_install_it() -> None:
+    # The Check is required: the game can't be built or tested without it.
+    check = node(runner({}))
+
+    assert not check.ok and check.required
+    assert check.detail == "not installed"
+    assert "winget install --id OpenJS.NodeJS.LTS" in check.fix
 
 
 # --- the report ------------------------------------------------------------------------------

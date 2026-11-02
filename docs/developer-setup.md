@@ -25,6 +25,7 @@ missing one, and never prints a secret. Without uv yet, Claude installs it first
 | Piece | Why | Who fixes it |
 |---|---|---|
 | uv and Python 3.14 | runs the workflow's scripts; `uv sync` fetches Python and the dependencies | Claude: `winget install --id astral-sh.uv`, `uv sync` |
+| Node | builds and tests the game, 24 or later; npm comes with it | Claude: `winget install --id OpenJS.NodeJS.LTS`, then a new terminal |
 | Git hooks | refuse pushes to `develop` and `master` from your clone | Claude: `git config core.hooksPath .githooks` |
 | GitHub | a token for the scripts (`GITHUB_TOKEN`, else `gh auth token`, else the one Git stores for github.com), and push access to the repository | **You**: sign in when asked; the owner adds new collaborators. A fine-grained token of yours can't write to a repository another person owns (403 on a push, an issue or a label, though the check says you can push): sign in through GitHub's window instead, or use a classic token with the `repo` scope |
 | Claude's prices | `docs/claude-prices.csv`, which prices Claude's work on each issue (PEB#390); in the repo, kept current by the watcher | Claude: `uv run python scripts/claude_prices.py refresh` |
@@ -59,8 +60,8 @@ developer uses their own (a sandbox account, a test key), never production's.
 
 ## Running it
 
-Nothing to run yet: the game's TypeScript project comes with its first issue, and README →
-Local development will say how to start it.
+`npm ci`, then `npm run dev`: README → Local development has the rest, opening it on a phone
+included.
 
 ## What Claude keeps running
 

@@ -18,7 +18,7 @@ concurrency:
 jobs:
   checks:
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    timeout-minutes: 20
 
     steps:
       - uses: actions/checkout@v7
@@ -43,8 +43,32 @@ jobs:
       - name: Tests
         run: uv run pytest
 
-      # The game's own checks (TypeScript: lint, types, Vitest, Playwright) join here with its
-      # project (README → Tests).
+      # The game's own checks (README → Tests), in this job because the ruleset requires it.
+      - uses: actions/setup-node@v7
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+
+      - name: Install the game's dependencies
+        run: npm ci
+
+      - name: Lint the game
+        run: npm run lint
+
+      - name: Check the game's format
+        run: npm run format:check
+
+      - name: Type check the game
+        run: npm run typecheck
+
+      - name: Test the game
+        run: npm test
+
+      - name: Install the browsers
+        run: npx playwright install --with-deps chromium webkit
+
+      - name: Test the page on a PC and on phones
+        run: npm run e2e
 
   secrets:
     # No secret in the history (PEB#59, PEB#538): gitleaks over every commit of what's checked
@@ -73,6 +97,43 @@ jobs:
 
       - name: Scan the history
         run: gitleaks git --redact --verbose --no-banner
+
+  preview:
+    # Every merge into develop goes on GitHub Pages once the rest has passed (docs/production.md
+    # → The preview). Run by hand on develop, it publishes develop again.
+    needs: [checks, secrets]
+    if: github.event_name != 'pull_request' && github.ref == 'refs/heads/develop'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: read
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+
+      - name: Install the game's dependencies
+        run: npm ci
+
+      - name: Build the game
+        run: npm run build
+        env:
+          VITE_COMMIT: ${{ github.sha }}
+
+      - uses: actions/upload-pages-artifact@v5
+        with:
+          path: dist
+
+      - id: deployment
+        uses: actions/deploy-pages@v5
 
   deploy:
     # A release PR goes live on trial once the rest has passed, so merging it confirms a

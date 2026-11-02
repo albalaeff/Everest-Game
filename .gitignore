@@ -18,6 +18,11 @@ htmlcov/
 .mypy_cache/
 .ruff_cache/
 
+# The game: what npm and Playwright make
+node_modules/
+playwright-report/
+test-results/
+
 # Editors and OS
 .vscode/*
 !.vscode/tasks.json
