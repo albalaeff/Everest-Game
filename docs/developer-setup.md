@@ -52,10 +52,12 @@ fi
 
 ## Secrets of your own
 
-The project has no secrets of its own yet. When one comes (the Cloudflare account for the
-co-op's room server), it goes into a gitignored file on your machine, which you fill in
-yourself: don't paste it into the chat, and it never goes into commits, issues or PRs. Each
-developer uses their own (a sandbox account, a test key), never production's.
+The project's only secrets so far are the room server's deploy token and account ID, which
+live in the repository's Actions secrets ([production.md](production.md) → The hosting): no
+developer needs them on a machine. When a secret does belong on your machine, it goes into a
+gitignored file there, which you fill in yourself: don't paste it into the chat, and it never
+goes into commits, issues or PRs. Each developer uses their own (a sandbox account, a test
+key), never production's.
 
 ## Running it
 
