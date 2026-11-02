@@ -40,6 +40,15 @@ describe("StepPacer", () => {
     expect(pacer.due(0)).toBe(0);
   });
 
+  it("takes a clock that ran back as no time, as a frame's timestamp can", () => {
+    const pacer = new StepPacer(CATCH_UP);
+
+    pacer.due(0.025);
+
+    expect(pacer.due(-0.2)).toBe(0);
+    expect(pacer.progress).toBeCloseTo(0.5);
+  });
+
   it("says how far the next step has come, for drawing between two steps", () => {
     const pacer = new StepPacer(CATCH_UP);
 

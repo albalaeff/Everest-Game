@@ -232,6 +232,18 @@ describe("Expedition saves", () => {
     expect(resumed.save()).toEqual(whole.save());
   });
 
+  it("keeps a save as it was while the expedition goes on", () => {
+    const scenario = TestSlope.scenario(13, ["anna", "boris"]);
+    const expedition = Expedition.start(scenario, [new TestSlope()]);
+    playTo(expedition, 500);
+    const save = expedition.save();
+    const whenSaved = JSON.stringify(save);
+
+    playTo(expedition, 1000);
+
+    expect(JSON.stringify(save)).toBe(whenSaved);
+  });
+
   it("replays from its scenario and its log, step for step", () => {
     const save = played(12);
 
