@@ -31,6 +31,7 @@ from scripts.agent_manager import (
     Keys,
     Labels,
     Launcher,
+    ModelUnavailable,
     NotMerged,
     PricesJob,
     Scheduler,
@@ -56,6 +57,12 @@ NOW = datetime(2026, 10, 12, 18, 30)
 PRAGUE = ZoneInfo("Europe/Prague")
 LIMIT_HIT = datetime(2026, 10, 14, 9, 33, tzinfo=PRAGUE)  # #476: four runs ended on it
 SESSION_LIMIT = "You've hit your session limit · resets 12pm (Europe/Prague)"
+# #4: what a run on a model the account lacks ends on, at once: the API's refusal, as Claude
+# Code reports it. Its exact wording isn't fixed; this is the shape of a not-found answer.
+NO_FABLE = (
+    'API Error: 404 {"type":"error","error":{"type":"not_found_error",'
+    '"message":"model: claude-fable-5-1"}}'
+)
 SERVER = "postgresql://myapp:myapp@localhost:5433/myapp_test"  # the tests' database server
 
 
@@ -713,7 +720,7 @@ def launcher(
 
 
 def agent(
-    tmp_path: Path, labels: Sequence[str] = ("model:haiku", "effort:low"), **settings: Any
+    tmp_path: Path, labels: Sequence[str] = ("model:haiku", "effort:high"), **settings: Any
 ) -> Agent:
     return launcher(tmp_path, **settings).agent(IssueJob(task(labels=labels)))
 
@@ -755,7 +762,7 @@ def test_a_merged_pr_s_worktree_goes_with_its_branch_and_test_database(tmp_path:
 def test_an_agent_runs_with_its_issue_s_power_in_its_own_worktree(tmp_path: Path) -> None:
     made = agent(tmp_path)
 
-    assert made.power == AgentPower("haiku", "low")
+    assert made.power == AgentPower("haiku", "high")
     assert made.worktree.path == (tmp_path / "worktrees" / "7").resolve()
     assert made.worktree.branch == "feature/7-location-rule-fine-tuning"
     assert made.worktree.warmup == Warmup()  # uv itself, when it's new
@@ -774,7 +781,7 @@ def test_the_command_is_headless_claude_code_that_never_waits_for_a_person(
 
     assert command[:2] == ["claude", "-p"]
     flags = " ".join(command[3:])
-    assert "--model haiku --effort low" in flags
+    assert "--model haiku --effort high" in flags
     assert "--permission-mode acceptEdits --permission-prompts none" in flags
     assert "--output-format stream-json --verbose" in flags
 
@@ -806,7 +813,7 @@ def test_an_agent_s_environment_says_its_power_and_its_test_database(tmp_path: P
     )
 
     assert env["PATH"] == "/bin"
-    assert AgentPower.of_agent(env) == AgentPower("haiku", "low")
+    assert AgentPower.of_agent(env) == AgentPower("haiku", "high")
     assert env["TEST_DATABASE_URL"].endswith("/myapp_7_test")
     assert not {"CLAUDECODE", "CLAUDE_EFFORT", "VIRTUAL_ENV"} & set(env)  # the session's
 
@@ -827,9 +834,24 @@ def test_an_agent_s_conversation_is_compacted_where_the_settings_say(tmp_path: P
 def test_the_dry_run_says_issue_power_worktree_and_command(tmp_path: Path) -> None:
     plan = agent(tmp_path).plan()
 
-    assert plan.startswith("#7 (it's to start): haiku/low, in ")
+    assert plan.startswith("#7 (it's to start): haiku/high, in ")
     assert "myapp_7_test" in plan
-    assert "\n  $ claude -p " in plan and "--model haiku --effort low" in plan
+    assert "\n  $ claude -p " in plan and "--model haiku --effort high" in plan
+
+
+def test_a_model_the_account_lacks_is_avoided_from_then_on(tmp_path: Path) -> None:
+    # #4: Fable is on some plans only. Once a run has ended on the account's refusal of it,
+    # the launcher runs that model's agents on the next one down, with their own effort.
+    made = launcher(tmp_path)
+    fable = IssueJob(task(labels=("model:fable", "effort:max")))
+    assert made.agent(fable).power == AgentPower("fable", "max")
+
+    assert made.avoid("fable") == "opus"
+
+    assert made.agent(fable).power == AgentPower("opus", "max")
+    assert made.agent(IssueJob(task(labels=()))).power == AgentPower("opus", "xhigh")
+    assert made.avoid("opus") == "sonnet"
+    assert made.agent(fable).power == AgentPower("sonnet", "max")
 
 
 def test_a_run_s_result_is_read_from_its_log(tmp_path: Path) -> None:
@@ -985,6 +1007,66 @@ def test_a_run_that_failed_otherwise_holds_nothing(tmp_path: Path) -> None:
     made.finish(1)
 
     assert made.limit is None
+    assert made.unavailable is None
+
+
+def test_a_run_whose_model_the_account_lacks_says_so(tmp_path: Path) -> None:
+    # #4: Fable is on some plans only; elsewhere the run ends at once on the API's refusal.
+    made = agent(tmp_path, labels=("model:fable", "effort:high"))
+    made.log.parent.mkdir()
+    result = {
+        "type": "result",
+        "subtype": "success",
+        "is_error": True,
+        "duration_ms": 900,
+        "result": NO_FABLE,
+        "total_cost_usd": 0,
+    }
+    made.log.write_text(json.dumps(result, separators=(",", ":")) + "\n", encoding="utf-8")
+
+    line = made.finish(1)
+
+    assert made.unavailable == ModelUnavailable("fable", NO_FABLE)
+    assert made.limit is None
+    assert line.startswith(
+        "#7 (it's to start): failed (exit 1), $0.00, 0 min, the account lacks the model fable; "
+        "worktree kept at "
+    )
+
+
+@pytest.mark.parametrize(
+    "said",
+    [
+        NO_FABLE,
+        'API Error: 403 {"type":"error","error":{"type":"permission_error","message":"Your '
+        'organization does not have access to the model claude-fable-5-1"}}',
+        "API Error: 400 invalid model: fable",
+        "The model fable is not available on your plan.",
+    ],
+)
+def test_a_refusal_that_names_the_model_is_the_account_lacking_it(said: str) -> None:
+    result = {"type": "result", "is_error": True, "result": said}
+
+    assert ModelUnavailable.of(result, "fable") == ModelUnavailable("fable", said)
+
+
+@pytest.mark.parametrize(
+    "result",
+    [
+        {"type": "result", "is_error": True, "result": "API Error: 500 overloaded"},
+        {"type": "result", "is_error": True, "result": "API Error: 529 the model is overloaded"},
+        {"type": "result", "is_error": False, "result": "The model fable is not available: said"},
+        {
+            "type": "result",
+            "is_error": True,
+            "api_error": "usage_limit_reached",
+            "result": "You've hit your session limit; the model fable is not available now",
+        },
+    ],
+)
+def test_other_errors_aren_t_a_missing_model(result: dict[str, Any]) -> None:
+    # Overloads, a successful run that mentions the model, and the usage limit (its own case).
+    assert ModelUnavailable.of(result, "fable") is None
 
 
 @pytest.mark.parametrize(
@@ -1355,6 +1437,7 @@ class FakeAgent:
         self.job = job
         self.code: int | None = None
         self.limit: UsageLimit | None = None
+        self.unavailable: ModelUnavailable | None = None
         self.stopped = False
 
     def __str__(self) -> str:
@@ -1363,6 +1446,10 @@ class FakeAgent:
     def end_on_the_limit(self, said: str = SESSION_LIMIT) -> None:
         self.code = 1
         self.limit = UsageLimit(said)
+
+    def end_on_a_missing_model(self, model: str = "fable") -> None:
+        self.code = 1
+        self.unavailable = ModelUnavailable(model, NO_FABLE)
 
     def poll(self) -> int | None:
         return self.code
@@ -1384,6 +1471,11 @@ class FakeLauncher:
         self.refuse = refuse or set()
         self.why = "its branch is checked out elsewhere"
         self.worktrees: set[str] = set()
+        self.avoided: list[str] = []  # #4: the models the account turned out to lack
+
+    def avoid(self, model: str) -> str:
+        self.avoided.append(model)
+        return "opus"
 
     def launch(self, job: Job) -> FakeAgent:
         self.tried.append(job.key)
@@ -1783,6 +1875,44 @@ def test_jobs_held_by_the_usage_limit_keep_no_once_run_going() -> None:
     assert not made.busy()  # --once ends: #7 would wait hours for the reset
 
 
+def test_a_run_whose_model_the_account_lacks_runs_again_on_the_next_model_down() -> None:
+    # #4: Fable is on bateks's plan only. On a machine whose account lacks it, the run ends at
+    # once; the job waits its turn again and runs on opus, as every later one does, said once.
+    made, launcher, said = scheduler(most=2)
+    look(made, IssueJob(task(7)), IssueJob(task(8, issue=8)))
+
+    launcher.started[0].end_on_a_missing_model()
+    made.tick()
+
+    assert launcher.avoided == ["fable"]
+    assert said[-3:] == [
+        "#7 (it's to start): finished 1",
+        "The account lacks the model fable: its agents run on opus for the rest of this run.",
+        "#7 (it's to start): started, opus/xhigh",
+    ]
+    assert started(launcher) == ["#7 to start", "#8 to start", "#7 to start"]
+
+    launcher.started[1].end_on_a_missing_model()  # #8 too: said no second time
+    made.tick()
+    assert launcher.avoided == ["fable"]
+    assert started(launcher)[3:] == ["#8 to start"]
+    assert [line for line in said if line.startswith("The account lacks")] == [
+        "The account lacks the model fable: its agents run on opus for the rest of this run."
+    ]
+
+
+def test_a_job_on_a_missing_model_keeps_a_once_run_going() -> None:
+    # Unlike the usage limit, nothing waits for a reset: the job runs again at once.
+    made, launcher, _ = scheduler()
+    look(made, IssueJob(task(7)))
+
+    launcher.started[0].end_on_a_missing_model()
+    made.tick()
+
+    assert made.busy()
+    assert started(launcher) == ["#7 to start", "#7 to start"]
+
+
 def test_stopping_stops_the_agents_and_forgets_the_waiting() -> None:
     made, launcher, said = scheduler(most=1)
     look(made, IssueJob(task(7)), IssueJob(task(8, issue=8)))
@@ -2136,7 +2266,9 @@ def test_the_missing_labels_are_made_once() -> None:
 
     made = Labels(github).ensure()  # type: ignore[arg-type]
 
-    assert "model:opus" not in made and len(made) == 10
+    # #4: three more models (fable among them), the three efforts, the three priorities.
+    assert "model:opus" not in made and len(made) == 9
+    assert "model:fable" in made and "effort:low" not in made
     assert github.made["effort:max"]["description"] == (
         "The agent for this issue runs with effort max (#387)"
     )

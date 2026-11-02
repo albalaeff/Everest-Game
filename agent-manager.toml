@@ -2,7 +2,8 @@
 # without a key, the same defaults hold (scripts/agents.py, ManagerConfig).
 
 # An agent's model and effort when its issue has no model:* or effort:* label, in Claude
-# Code's own words: haiku, sonnet, opus; low, medium, high, xhigh, max.
+# Code's own words: haiku, sonnet, opus, fable; high, xhigh, max. A model the account lacks
+# (fable, on some plans) falls back to the next one down for the rest of the run (#4).
 default_model = "opus"
 default_effort = "xhigh"
 

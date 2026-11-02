@@ -85,28 +85,47 @@ def test_no_label_takes_the_defaults() -> None:
 
 
 def test_the_labels_set_model_and_effort_each_on_their_own() -> None:
-    assert DEFAULT.from_labels(["model:haiku", "effort:low"]) == AgentPower("haiku", "low")
+    assert DEFAULT.from_labels(["model:haiku", "effort:high"]) == AgentPower("haiku", "high")
     assert DEFAULT.from_labels(["model:sonnet"]) == AgentPower("sonnet", "xhigh")
     assert DEFAULT.from_labels(["effort:max"]) == AgentPower("opus", "max")
+    assert DEFAULT.from_labels(["model:fable"]) == AgentPower("fable", "xhigh")
 
 
 def test_of_two_labels_in_a_family_the_stronger_wins() -> None:
-    labels = ["model:haiku", "model:opus", "model:sonnet", "effort:high", "effort:low"]
+    labels = ["model:haiku", "model:opus", "model:sonnet", "effort:max", "effort:high"]
 
-    assert DEFAULT.from_labels(labels) == AgentPower("opus", "high")
+    assert DEFAULT.from_labels(labels) == AgentPower("opus", "max")
+    assert DEFAULT.from_labels(["model:opus", "model:fable"]) == AgentPower("fable", "xhigh")
 
 
 def test_the_labels_are_claude_code_s_own_words() -> None:
+    # #4: fable is the strongest model; low and medium are no efforts an agent runs with.
     assert AgentPower.labels() == [
         "model:haiku",
         "model:sonnet",
         "model:opus",
-        "effort:low",
-        "effort:medium",
+        "model:fable",
         "effort:high",
         "effort:xhigh",
         "effort:max",
     ]
+
+
+def test_low_and_medium_are_no_efforts_any_more() -> None:
+    with pytest.raises(ValueError, match="low"):
+        AgentPower("opus", "low")
+    with pytest.raises(ValueError, match="medium"):
+        AgentPower("opus", "medium")
+
+
+def test_without_an_unavailable_model_the_next_one_down_runs() -> None:
+    # #4: Fable is on some accounts' plans only; an agent on an account that lacks it runs on
+    # the strongest model left, with the effort its issue asked for.
+    assert AgentPower("fable", "max").without({"fable"}) == AgentPower("opus", "max")
+    assert AgentPower("fable", "high").without({"fable", "opus"}) == AgentPower("sonnet", "high")
+    assert AgentPower("opus", "high").without({"fable"}) == AgentPower("opus", "high")
+    assert AgentPower("fable", "max").without(set()) == AgentPower("fable", "max")
+    assert AgentPower("haiku", "high").without({"haiku"}) == AgentPower("haiku", "high")
 
 
 def test_a_priority_label_says_how_soon_an_issue_s_agent_starts() -> None:

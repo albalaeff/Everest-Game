@@ -838,7 +838,7 @@ def test_a_pr_s_task_is_for_the_issue_it_closes_with_that_issue_s_labels(
 ) -> None:
     body = f"Closes #7\n\n{GENERATED}"
     pr = {**issue(number=9, labels=["model:haiku"]), "pull_request": {}, "body": body}
-    github = ChangingGitHub([issue(number=7, labels=["effort:low"]), pr])
+    github = ChangingGitHub([issue(number=7, labels=["effort:max"]), pr])
     github.comments[7] = [comment(sign("Plan"))]  # in progress
     github.pulls = [
         {"number": 9, "draft": False, "body": body, "head": {"sha": "abc", "ref": "fix/7-x"}}
@@ -849,13 +849,13 @@ def test_a_pr_s_task_is_for_the_issue_it_closes_with_that_issue_s_labels(
 
     assert said(capsys)[0] == {
         "type": "task",
-        "key": "PR #9 at abc: CI: success, effort:low",
+        "key": "PR #9 at abc: CI: success, effort:max",
         "kind": "pull",
         "number": 9,
         "state": "CI finished",
         "title": "Something to do",
         "issue": 7,
-        "labels": ["effort:low"],
+        "labels": ["effort:max"],
         "branch": "fix/7-x",
         "ci": "CI: success",
         "sha": "abc",
@@ -1543,7 +1543,7 @@ def thread_issue(**fields: object) -> dict[str, object]:
         "state": "open",
         "user": {"login": ME},
         "created_at": "2026-10-12T16:44:05Z",
-        "labels": [{"name": "model:haiku"}, {"name": "effort:low"}],
+        "labels": [{"name": "model:haiku"}, {"name": "effort:max"}],
         "body": "Add the `--once` line.",
     } | fields
 
@@ -1561,7 +1561,7 @@ def test_show_prints_an_issue_and_its_comments_as_text() -> None:
     assert text == "\n".join(
         [
             "issue #402 [open] README → Agents: the manager's --once",
-            f"by {ME}, 2026-10-12 16:44 UTC; labels: model:haiku, effort:low",
+            f"by {ME}, 2026-10-12 16:44 UTC; labels: model:haiku, effort:max",
             "",
             "Add the `--once` line.",
             "",
@@ -1691,7 +1691,7 @@ def test_api_says_an_issue_in_brief_with_its_labels() -> None:
     assert str(Answer.of(entry)).splitlines() == [
         "issue #402 [open] README → Agents: the manager's --once",
         "https://github.com/bateks/PersonalExchangeBot/issues/402",
-        "labels: model:haiku, effort:low",
+        "labels: model:haiku, effort:max",
     ]
 
 
