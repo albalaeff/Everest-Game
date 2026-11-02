@@ -1,10 +1,10 @@
 # CLAUDE.md
 
-myapp is <one line on what it is>: Python 3.14, uv. [README.md](README.md) covers the architecture and local setup. The repository started from [claude-workflow-template](https://github.com/bateks/claude-workflow-template): `PEB#n` names the issue of bateks/PersonalExchangeBot a rule was learned on, and [docs/lessons.md](docs/lessons.md) lists them with links.
+Everest is a 2D browser simulator-trainer for climbing Everest by the South route: a TypeScript game whose plan is [spec.md](spec.md); Python 3.14 and uv run the workflow's scripts. [README.md](README.md) covers the architecture and local setup. The repository started from [claude-workflow-template](https://github.com/bateks/claude-workflow-template): `PEB#n` names the issue of bateks/PersonalExchangeBot a rule was learned on, and [docs/lessons.md](docs/lessons.md) lists them with links.
 
 ## Read first
 
-- [docs/conventions.md](docs/conventions.md): the Git workflow, layers, objects, money, time, tests and the definition of done. Every change follows it; its table names the areas with rules of their own: read those your change touches, not all of them (PEB#424).
+- [docs/conventions.md](docs/conventions.md): the Git workflow, modules, objects, time and chance, data, tests and the definition of done. Every change follows it; its table names the areas with rules of their own: read those your change touches, not all of them (PEB#424).
 - [docs/workflow.md](docs/workflow.md): how work goes from an issue to a merge, in full: what this file says in brief, and why. Read the part your step touches.
 
 ## Words used here
@@ -50,4 +50,4 @@ When the conversation is compacted, the summary keeps: the issue, branch and PR 
 
 ## Checks
 
-`uv run ruff check`, `uv run ruff format --check`, `uv run mypy myapp scripts` and `uv run pytest`. The full `pytest` run goes to pytest-xdist workers (README → Tests): run it in the background; a run naming files or tests stays in one process. Never run two `pytest` runs at once on the same `TEST_DATABASE_URL`: they share its databases, and each run drops their tables. If `uv` or Docker isn't available on the machine, CI is the only check: say so in the PR. CI that fails while setting up, or on every branch within seconds, may not be the change's fault: README → Tests → When CI fails says how to tell.
+`uv run ruff check`, `uv run ruff format --check`, `uv run mypy scripts` and `uv run pytest` for the workflow's scripts; the game's own checks (its lint, type check, Vitest and Playwright) join once its TypeScript project is in, named in README → Tests. The full `pytest` run goes to pytest-xdist workers (README → Tests): run it in the background; a run naming files or tests stays in one process. If `uv` isn't available on the machine, CI is the only check: say so in the PR. CI that fails while setting up, or on every branch within seconds, may not be the change's fault: README → Tests → When CI fails says how to tell.

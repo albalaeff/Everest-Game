@@ -1,12 +1,12 @@
-# myapp conventions
+# Everest conventions
 
 Every change to this codebase follows the rules in this file, and those of each area it touches: read them before starting.
 
 | A change to | Also follows |
 |---|---|
-| <an area with rules of its own, such as the bot's screens, the database, the services> | [conventions/<area>.md](conventions/) |
+| the game's areas, once they have rules of their own: the simulation core, the knowledge base and content, the rendering, the room server | their file in `docs/conventions/`, named here when it comes |
 
-A change to `scripts/` or to the docs alone follows this file only. (Fill the table in as areas get rules of their own, one file each in `docs/conventions/`; a Telegram bot's are in `optional/telegram-bot/`.)
+A change to `scripts/` or to the docs alone follows this file only. (Fill the table in as areas get rules of their own, one file each in `docs/conventions/`. The game's first areas come with its TypeScript project; [../spec.md](../spec.md) is what they implement.)
 
 ## Git workflow
 
@@ -18,71 +18,60 @@ A change to `scripts/` or to the docs alone follows this file only. (Fill the ta
 - A release is a PR into `master` from a `release/<date>-NN` branch cut at `develop`'s tip (`-01`, then `-02` for the day's next), never from `develop` itself: GitHub deletes a merged PR's head branch, and on PEB#339 that took `develop` with it. `scripts/github.py release` cuts the branch and opens the PR, and so does the label `release` on an issue, from GitHub (PEB#517). Once its checks pass, CI deploys it on trial; a person tries it, then merges it (a merge commit, so `master` keeps the task commits) to confirm it, or closes it to roll back ([production.md](production.md) → A release, PEB#510). Housekeeping goes in a small `chore/…` PR first; such PRs and release PRs need no issue.
 - The repository's settings (README → Repository settings): `develop` is the default branch, so a merged PR's `Closes #<issue>` closes the issue (PEB#55); a ruleset lets `develop` and `master` change only through a PR with CI green, by squash or merge commit, with no force pushes or deletions; `git config core.hooksPath .githooks` makes `git push` refuse `develop` and `master` from your clone before GitHub does.
 
-## Layers
+## Modules
+
+The game is a static TypeScript site; the Python under `scripts/` runs the workflow, not the game ([../spec.md](../spec.md) → Technical architecture).
 
 ```
-domain  →  db  →  services  →  adapters (bot / web / worker / cli)
+simulation core  →  agents, slope physics  →  rendering, interface, sound  →  the page
+simulation core  →  agents, slope physics  →  the room server
 ```
 
-| Layer | Lives in | Rules |
-|---|---|---|
-| **domain** | `myapp/domain/` | Pure logic: values, state machines, rules. No I/O, no database, no network, no clock reads. Easy to unit-test. |
-| **db** | `myapp/db/` | Models and repositories. No business rules beyond constraints. |
-| **services** | `myapp/services/` | Use cases. Take a session and a `Clock`. Raise the app's own error classes, which carry a message key and params. Never call the outside world directly: write to an outbox a worker sends. |
-| **adapters** | `myapp/bot/`, `myapp/web/`, `myapp/worker/`, `myapp/cli.py` | Thin: parse input → call a service → render the result. No business logic. |
+| Module | Rules |
+|---|---|
+| **Simulation core** | Body, oxygen, weather, time, hazards. Pure: no DOM, no network, no wall clock, no randomness but the seeded generator it's given, and the content data handed to it, not read by it. A fixed time step; the same seed and actions give the same expedition in a browser, in a test and on the room server. |
+| **Agents and slope physics** | Sherpas, clients, other expeditions and queues; movement, ropes, falls. On the core's state only. |
+| **Rendering, interface, sound** | PixiJS, HTML and CSS, Web Audio. They read the simulation and send it the player's actions, and hold no game state of their own. |
+| **Content and knowledge base** | JSON data: the route, scenarios, events, the facts with their sources and check dates, the RU and EN texts. Written by people, never by code; the page hands it to the core and the interface. |
+| **Saves** | IndexedDB in the browser for progress, settings and the expedition history; the room server for co-op expeditions. A save is the core's state and its seed, so the core's state serialises whole. |
+| **Room server** | Cloudflare Workers and Durable Objects. Runs the same core and agents, with no rendering; the browsers send actions and receive state. |
 
-Dependencies point one way only: adapters may import services, services may import db and domain, db may import domain. Never the other way round.
+Dependencies point one way only: the page may import everything below it; the room server imports the simulation core and the agents only (a Worker has no DOM, WebGL or Web Audio); the rendering may import the simulation; the simulation core imports none of the others. The core runs headless, so tests can play thousands of expeditions.
 
 ## Objects
 
-Object-oriented, in every layer, in any JavaScript and in `scripts/` (PEB#320, PEB#393):
+Object-oriented, in every module, in TypeScript as in `scripts/` (PEB#320, PEB#393):
 
-- **State and the behaviour on it live in one class.** No module-level state shared by loose functions (JS included: a `class Wheel`, not globals), and no free function passed the same five arguments: that's a class with those as its fields.
+- **State and the behaviour on it live in one class.** No module-level state shared by loose functions (a `class Rope`, not globals), and no free function passed the same five arguments: that's a class with those as its fields.
 - **One thing, one class.** What's shown or done the same way in several places is one class that the callers use and never rebuild. Changing it is then one edit, in one place.
 - **What differs, a subclass.** One class for what's shared, one per use for what isn't.
-- **Values are frozen dataclasses** (`@dataclass(frozen=True, slots=True)`); a class's helpers are its `_methods`, not module functions beside it.
+- **Values are frozen.** Python: `@dataclass(frozen=True, slots=True)`; TypeScript: `readonly` fields, and a change makes a new value. A class's helpers are its private methods, not module functions beside it.
 - **Leave it better.** A change shapes what it touches this way, and when it finds the same thing done twice, makes it one. Code nobody's change touches isn't rewritten just for this.
 
 Text files use LF line endings on every OS (`.gitattributes`, and ruff formats with LF).
 
-## Money
+## Time and chance
 
-- `Decimal` only. Never `float`, not even in intermediate calculations or tests.
-- Database columns for amounts and rates: `NUMERIC(24,8)`.
-- Currency codes are validated against the ISO 4217 list, with each currency's minor units.
-- Rounding to a currency's minor units uses `ROUND_HALF_UP`.
-- Parse user input with one function (`parse_money("1 000,50 EUR")`) and display with its inverse (`format_money`): anything the app prints can be typed back in and parses to the same value. When both `.` and `,` appear, the last one is the decimal point and the other groups thousands. Always show the parsed amount back to the user before saving it.
+- The simulation never reads the wall clock or `Math.random()`: it advances by its fixed step when told to, and draws from the seeded generator it was given. The page and the room server pace the steps from the real clock; the core only counts them.
+- A scenario is a seed and a start state. A replay is those plus the players' actions in order, which the page and the room server record, so a playtest, a bug or a debrief replays exactly.
+- Every time the player sees (the clock, the turnaround time, the forecast) comes from the simulation's clock, never the browser's.
+- The scripts under `scripts/`, which run on a person's machine, may read the real clock.
 
-## Time
+## Data, not literals
 
-- All datetimes are timezone-aware UTC. Naive datetimes are a bug.
-- Get "now" from an injected `Clock`. Never call `datetime.now()` or `datetime.utcnow()` outside the one `SystemClock` (the scripts, which run on a person's machine, are the exception).
-- Tests use a `FakeClock` and move time explicitly with `advance()` / `set()`.
-- Database timestamp columns are `timestamptz`.
-
-## Configuration
-
-- All settings live in `myapp.config.Settings` and are read from `MYAPP_*` environment variables or `.env`. `MYAPP_ENV_FILE` picks another file (`""`: none); the test suite sets it to none, so tests never depend on a local `.env`.
-- Business numbers (limits, timeouts, thresholds, prices) are settings, never literals in code.
-- Secrets are `SecretStr`, so they never appear in `repr` or logs. Call `.get_secret_value()` only at the point of use.
-- Every new setting is added to `.env.example` with a comment, and to the configuration table in `README.md`. In `.env.example` it's a commented line at its default, `# MYAPP_X=<default>`, so a copy doesn't pin it; a setting that's unset by default is a blank line to fill in (`tests/test_config.py` holds the template to the code, PEB#564).
-
-## Logging
-
-- Use `logging.getLogger(__name__)`. Pass context as `extra={...}`; it becomes fields of the line: `key=value` text, or JSON with `MYAPP_LOG_FORMAT=json` (production).
-- Log at ERROR only what someone should be woken up for: production alerts on it.
-- Never log secrets, tokens, or the content of users' messages.
+- Every number the player meets or the model uses (altitudes, oxygen flows, prices, coefficients, probabilities) lives in the content data with its source and check date ([../spec.md](../spec.md) → Realism and accuracy principles), never as a literal in code. An expert then changes a number without a programmer.
+- Where sources disagree, the data holds the range, and the game shows the range; the model uses the middle of it, and may move within it from season to season ([../spec.md](../spec.md) → Route and world).
+- A tuning coefficient no source states (a fatigue rate, a hazard probability) names the facts it was fitted to and the date of the fit, and is kept to them by the balance check (Tests below).
+- A fact's record says whether it is expert-reviewed or source-only, and the game tells the player so until an expert has reviewed it.
+- Medicines appear as actions in the first-aid kit, never with doses, in the training as in the simulation.
 
 ## Tests
 
 - Write the tests first, watch them fail, then implement.
-- Deprecation warnings fail the test run (`filterwarnings` in `pyproject.toml`): fix them when they appear; ignore one only for third-party code, with a comment.
-- Mark pure tests with `pytest.mark.unit` and tests that use the database with `pytest.mark.db`.
-- Shared test helpers live in `tests/fakes.py` and `tests/factories.py`.
-- Tests run in parallel (pytest-xdist; README → Tests), so a test never relies on another having run before it, and writes files only under its `tmp_path`.
-- A project with a database: its tests need the docker compose database running (`docker compose up -d db`). They use `TEST_DATABASE_URL` (default `…localhost:5433/myapp_test`), whose database name **must end in `_test`**: the fixtures wipe its schema and rebuild it with the migrations once per run, and each pytest-xdist worker runs on a database of its own beside it (`myapp_gw0_test`, …, PEB#440), as each agent does (`myapp_<issue>_test`). Pick the right fixture: a session inside a transaction rolled back afterwards for almost everything (a `commit()` in the code under test only releases a savepoint); real committing sessions only for races and concurrency, with the rows deleted after the test.
-- Tests must not depend on the developer's environment: clear `MYAPP_*` variables and pass `_env_file=None` when building `Settings`.
-- End-to-end tests run the real parts together on one fake clock, as a story a user would recognise. Add one when a change crosses parts.
+- The game's tests: Vitest for the simulation, the agents and the physics, each on a seed, so a failure replays; Playwright for the page, as a story a player would recognise; and a balance check that plays many seeded expeditions headless and holds the outcomes to the knowledge base (the summit times and death rates the spec cites). They come with the TypeScript project, which adds them to CI beside the scripts' checks.
+- The scripts' tests, in `tests/`: mark pure tests `pytest.mark.unit`; the agent manager's database test is `pytest.mark.db`, skipped without `TEST_DATABASE_URL`. Deprecation warnings fail the run (`filterwarnings` in `pyproject.toml`): fix them when they appear; ignore one only for third-party code, with a comment. Shared helpers live in `tests/fakes.py`.
+- Tests run in parallel (pytest-xdist; README → Tests), so a test never relies on another having run before it, writes files only under its `tmp_path`, and never depends on the developer's environment.
+- End-to-end tests run the real parts together: the game's on one seed and a recorded sequence of actions, as a story a player would recognise; the scripts' on a fake clock and a fake GitHub, as a story a user would recognise. Add one when a change crosses modules.
 
 ## Definition of done
 
@@ -90,8 +79,9 @@ A step is done when:
 
 1. `uv run ruff check` passes.
 2. `uv run ruff format --check` passes.
-3. `uv run mypy myapp scripts` passes.
+3. `uv run mypy scripts` passes.
 4. `uv run pytest` passes.
-5. CI is green on the task's PR, and the PR is merged into `develop`.
-6. Nothing is left unwired: every new piece of code is reachable from an entry point, or is used by the very next step.
-7. The code it adds or touches follows **Objects** above.
+5. The game's own checks pass (its lint, type check, Vitest and Playwright), once its TypeScript project is in; README → Tests names them.
+6. CI is green on the task's PR, and the PR is merged into `develop`.
+7. Nothing is left unwired: every new piece of code is reachable from an entry point, or is used by the very next step.
+8. The code it adds or touches follows **Objects** above.

@@ -1,7 +1,7 @@
 """How many pytest-xdist workers run the tests (`WorkerCount`, #440).
 
 A project whose tests use a database adds its fixtures here (an engine on TEST_DATABASE_URL,
-a session rolled back after each test, one database per worker: docs/conventions.md → Tests).
+a session rolled back after each test, one database per worker, #440).
 """
 
 import os

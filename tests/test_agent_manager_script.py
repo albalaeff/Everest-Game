@@ -63,7 +63,7 @@ NO_FABLE = (
     'API Error: 404 {"type":"error","error":{"type":"not_found_error",'
     '"message":"model: claude-fable-5-1"}}'
 )
-SERVER = "postgresql://myapp:myapp@localhost:5433/myapp_test"  # the tests' database server
+SERVER = "postgresql://everest:everest@localhost:5433/everest_test"  # the tests' database server
 
 
 def task(
@@ -424,7 +424,7 @@ def test_an_earlier_agent_s_worktree_is_kept_with_its_work(tmp_path: Path) -> No
 
 
 def test_a_new_worktree_gets_the_checkout_s_caches_and_a_venv_of_its_own(tmp_path: Path) -> None:
-    # #444: without mypy's cache an agent's `mypy myapp` took 60–98 s; with one copied in, 8 s.
+    # #444: without mypy's cache an agent's `mypy` run took 60–98 s; with one copied in, 8 s.
     checkout, path = tmp_path / "repo", tmp_path / "7"
     meta = checkout / ".mypy_cache" / "3.14" / "fxbot" / "main.meta.ff"
     example = checkout / ".hypothesis" / "examples" / "1a" / "2b"
@@ -766,7 +766,7 @@ def test_an_agent_runs_with_its_issue_s_power_in_its_own_worktree(tmp_path: Path
     assert made.worktree.path == (tmp_path / "worktrees" / "7").resolve()
     assert made.worktree.branch == "feature/7-location-rule-fine-tuning"
     assert made.worktree.warmup == Warmup()  # uv itself, when it's new
-    assert made.database.name == "myapp_7_test"
+    assert made.database.name == "everest_7_test"
     assert made.log == tmp_path / ".agent-runs" / "7.log"
 
 
@@ -814,7 +814,7 @@ def test_an_agent_s_environment_says_its_power_and_its_test_database(tmp_path: P
 
     assert env["PATH"] == "/bin"
     assert AgentPower.of_agent(env) == AgentPower("haiku", "high")
-    assert env["TEST_DATABASE_URL"].endswith("/myapp_7_test")
+    assert env["TEST_DATABASE_URL"].endswith("/everest_7_test")
     assert not {"CLAUDECODE", "CLAUDE_EFFORT", "VIRTUAL_ENV"} & set(env)  # the session's
 
 
@@ -835,7 +835,7 @@ def test_the_dry_run_says_issue_power_worktree_and_command(tmp_path: Path) -> No
     plan = agent(tmp_path).plan()
 
     assert plan.startswith("#7 (it's to start): haiku/high, in ")
-    assert "myapp_7_test" in plan
+    assert "everest_7_test" in plan
     assert "\n  $ claude -p " in plan and "--model haiku --effort high" in plan
 
 
@@ -1107,7 +1107,7 @@ MERGED_AT = datetime(2026, 10, 17, 12, 6, tzinfo=PRAGUE)
 HANDED_OFF = "2026-10-17T09:50:00Z"  # while CI ran
 CI_ENDED = "2026-10-17T10:00:00Z"
 LATER = "2026-10-17T10:02:00Z"
-CLOSING = "Done: the location rule is finer.\n\n- To check by hand: nothing in Telegram."
+CLOSING = "Done: the location rule is finer.\n\n- To check by hand: nothing in the browser."
 
 
 def said(body: str, login: str = ME, at: str = LATER) -> dict[str, object]:
@@ -2283,11 +2283,11 @@ def test_the_missing_labels_are_made_once() -> None:
 
 
 def test_an_agent_s_test_database_is_its_own_on_the_tests_server() -> None:
-    database = TestDatabase("7", server="postgresql://myapp:myapp@localhost:5433/myapp_test")
+    database = TestDatabase("7", server="postgresql://everest:everest@localhost:5433/everest_test")
 
     assert database.wanted
-    assert database.url() == "postgresql://myapp:myapp@localhost:5433/myapp_7_test"
-    assert str(database) == "test database myapp_7_test"
+    assert database.url() == "postgresql://everest:everest@localhost:5433/everest_7_test"
+    assert str(database) == "test database everest_7_test"
 
 
 def test_a_project_without_a_database_gives_its_agents_none() -> None:
@@ -2301,7 +2301,7 @@ def test_a_project_without_a_database_gives_its_agents_none() -> None:
 
 
 def test_no_database_server_is_said_not_raised() -> None:
-    database = TestDatabase("7", server="postgresql://myapp:myapp@127.0.0.1:9/myapp")
+    database = TestDatabase("7", server="postgresql://everest:everest@127.0.0.1:9/everest")
 
     said = database.create()
 

@@ -1,4 +1,4 @@
-"""What this machine has and lacks for working on myapp, with the fix for each (PEB#342).
+"""What this machine has and lacks for working on everest, with the fix for each (PEB#342).
 
     uv run python scripts/check_setup.py
     uv run python scripts/check_setup.py --unless-recent   a session's start (PEB#597)
@@ -10,7 +10,7 @@ password. docs/developer-setup.md is the path from a bare machine, and Claude ru
 the start of every session (.claude/skills/carryon/SKILL.md): with `--unless-recent`, which
 says what the last check here found instead, within 8 hours of it (`LastCheck`).
 
-The project's own pieces (its schema at head, a token the app needs in .env) go in
+The project's own pieces (a token the game's tooling needs, once there is one) go in
 `PROJECT_CHECKS` below, each a function that returns a `Check`.
 """
 
@@ -33,9 +33,8 @@ from urllib.parse import urlsplit
 from dotenv import dotenv_values
 
 ROOT = Path(__file__).resolve().parent.parent
-sys.path.insert(0, str(ROOT))  # run as a script, it still finds the package and scripts
+sys.path.insert(0, str(ROOT))  # run as a script, it still finds scripts
 
-from myapp.config import ENV_PREFIX  # noqa: E402
 from scripts import claude_prices as prices  # noqa: E402
 from scripts import github  # noqa: E402
 from scripts.handoff import plural  # noqa: E402
@@ -43,13 +42,19 @@ from scripts.handoff import plural  # noqa: E402
 Run = Callable[..., subprocess.CompletedProcess[str]]
 Which = Callable[[str], str | None]
 
-DEFAULT_DATABASE_URL = "postgresql://myapp:myapp@localhost:5433/myapp"  # docker-compose.yml's
+DEFAULT_DATABASE_URL = "postgresql://everest:everest@localhost:5433/everest"  # docker-compose.yml's
 
 
 def has_database(root: Path = ROOT) -> bool:
-    """Whether the project has a database: docker-compose.yml runs it for development
-    (scripts/instantiate.py --no-db deletes the file)."""
+    """Whether the project has a database: docker-compose.yml runs it for development. This
+    project has none; the check stays for the day it has one."""
     return (root / "docker-compose.yml").is_file()
+
+
+def has_settings(root: Path = ROOT) -> bool:
+    """Whether the project has settings to fill in: an `.env.example` to copy into `.env`.
+    This project has none yet."""
+    return (root / ".env.example").is_file()
 
 
 @dataclass(frozen=True)
@@ -266,7 +271,7 @@ def env_pins(env: Path, template: Path = ROOT / ".env.example") -> Check:
         False,
         pins.describe(".env"),
         "delete the lines you don't mean to pin: an absent line follows the code, also when a"
-        " default changes (README → Configuration)",
+        " default changes (`.env.example` states the defaults)",
         note=True,
     )
 
@@ -279,8 +284,8 @@ def github_access(find_token: Callable[[], str], call: Callable[[str], Any]) -> 
             "GitHub",
             False,
             "no token found",
-            "run git fetch and sign in to GitHub in the window that opens "
-            "(Git stores the token), or set GITHUB_TOKEN",
+            "run `uv run python scripts/github.py status` and sign in to GitHub in the window "
+            "Git Credential Manager opens (the script keeps the token), or set GITHUB_TOKEN",
         )
     try:
         login = call("/user")["login"]
@@ -290,7 +295,9 @@ def github_access(find_token: Callable[[], str], call: Callable[[str], Any]) -> 
             "GitHub",
             False,
             f"the token was refused: {str(refused).splitlines()[0]}",
-            "set a fresh one",
+            "erase it (Windows Credential Manager → git:https://github.com, or printf "
+            "'protocol=https\\nhost=github.com\\n\\n' | git credential reject), then run `uv run "
+            "python scripts/github.py status` and sign in anew, or set a fresh GITHUB_TOKEN",
         )
     if can_push:
         return Check("GitHub", True, f"as {login}, who can push to the repository")
@@ -480,15 +487,15 @@ def poppler(which: Which = shutil.which) -> Check:
 
 
 # The project's own pieces, each a function that returns a Check, run after the generic ones.
-# For instance, a schema held to its migrations:
+# For instance, Node for the game's toolchain, once its TypeScript project is in:
 #
-#     def schema(run: Run = subprocess.run) -> Check:
-#         found = _run(run, [sys.executable, "-m", "alembic", "current"])
-#         if found is not None and "(head)" in found.stdout:
-#             return Check("Schema", True, "at head")
-#         return Check("Schema", False, "behind the migrations", "uv run alembic upgrade head")
+#     def node(run: Run = subprocess.run) -> Check:
+#         found = _run(run, ["node", "--version"])
+#         if found is not None and found.returncode == 0:
+#             return Check("Node", True, found.stdout.strip())
+#         return Check("Node", False, "not installed", "winget install --id OpenJS.NodeJS.LTS")
 #
-#     PROJECT_CHECKS.append(schema)
+#     PROJECT_CHECKS.append(node)
 PROJECT_CHECKS: list[Callable[[], Check]] = []
 
 
@@ -573,16 +580,17 @@ def _github() -> github.GitHub:
 
 
 def all_checks() -> list[Check]:
-    """Every check, run now: the generic ones, the database's when the project has one, then
-    the project's own."""
+    """Every check, run now: the generic ones, the database's when the project has one, the
+    `.env`'s when it has settings to fill in, then the project's own."""
     env = ROOT / ".env"
     checks = [python(), uv(), git_hooks()]
     if has_database():
-        url = EnvFile.read(env).values.get(f"{ENV_PREFIX}DATABASE_URL")
+        values = EnvFile.read(env).values
+        url = next((value for key, value in values.items() if key.endswith("DATABASE_URL")), None)
         checks += [docker(), database(url or DEFAULT_DATABASE_URL)]
+    if has_settings():
+        checks += [env_file(env), env_pins(env)]
     checks += [
-        env_file(env),
-        env_pins(env),
         github_access(github.token, lambda path: _github().call("GET", path)),
         claude_prices(),
         claude_cli(),
@@ -596,7 +604,7 @@ def all_checks() -> list[Check]:
 
 def main(argv: Sequence[str] | None = None) -> None:
     github.utf8_output()  # PEB#358
-    parser = argparse.ArgumentParser(description="What this machine has and lacks for myapp.")
+    parser = argparse.ArgumentParser(description="What this machine has and lacks for everest.")
     parser.add_argument(
         "--unless-recent",
         action="store_true",

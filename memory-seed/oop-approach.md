@@ -5,7 +5,7 @@ metadata:
   type: feedback
 ---
 
-The user keeps asking for OOP ("it feels like we need to remind you"; "Remember the OOP!", "OOP and stuff, always look for improvement", on PersonalExchangeBot, 2026-10-10 and 2026-10-12). The rule lives in the repo so that both developers' Claudes read it: `docs/conventions.md` → **Objects**, and Definition of done item 7.
+The user keeps asking for OOP ("it feels like we need to remind you"; "Remember the OOP!", "OOP and stuff, always look for improvement", on PersonalExchangeBot, 2026-10-10 and 2026-10-12). The rule lives in the repo so that both developers' Claudes read it: `docs/conventions.md` → **Objects**, and Definition of done item 8.
 
 **Why:** they want changes to be one edit in one place (a thing shown the same way everywhere is one class), and code that reads as objects with responsibilities.
 
