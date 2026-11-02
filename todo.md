@@ -151,9 +151,9 @@ Tasks marked *Iteration 1–3* are planned into the board's first two-week itera
 - [ ] Done gate
 
 ### Task 19: A Cloudflare account for the room server ([#27](https://github.com/albalaeff/Everest-Game/issues/27)) · *Iteration 1*
-- [ ] The account exists, and its API token is in the repository's Actions secrets
-- [ ] Its name and where the token lives are written in docs/production.md
-- [ ] Done gate
+- [x] The account exists, and its API token is in the repository's Actions secrets
+- [x] Its name and where the token lives are written in docs/production.md
+- [x] Done gate
 
 ### Task 20: Room server v1: a room by code, the simulation on the server ([#28](https://github.com/albalaeff/Everest-Game/issues/28)) · *Iteration 2*
 - [ ] Cloudflare Workers and Durable Objects over WebSocket: players send actions, the server runs #17 and sends the state
