@@ -1,0 +1,39 @@
+{
+  "$schema": "../facts.schema.json",
+  "facts": [
+    {
+      "id": "weather.safe-summit-wind",
+      "kind": "fact",
+      "claim": "Summit wind up to this speed is considered safe.",
+      "status": "source only",
+      "versions": [
+        {
+          "value": 48,
+          "unit": "km/h",
+          "source": {
+            "title": "Alan Arnette: Inside the mind during the last rotation",
+            "url": "https://www.alanarnette.com/2018/05/02/everest-2018-inside-the-mind-during-the-last-rotation/"
+          },
+          "checked": "2026-11-01"
+        }
+      ]
+    },
+    {
+      "id": "weather.summit-window",
+      "kind": "fact",
+      "claim": "A summit push needs this many days in a row of safe wind.",
+      "status": "source only",
+      "versions": [
+        {
+          "range": { "min": 4, "max": 7 },
+          "unit": "days",
+          "source": {
+            "title": "Alan Arnette: Inside the mind during the last rotation",
+            "url": "https://www.alanarnette.com/2018/05/02/everest-2018-inside-the-mind-during-the-last-rotation/"
+          },
+          "checked": "2026-11-01"
+        }
+      ]
+    }
+  ]
+}

@@ -41,10 +41,10 @@ Tasks marked *Iteration 1–3* are planned into the board's first two-week itera
 ## 1. Knowledge base
 
 ### Task 1: Knowledge base: the fact record format, checked in CI ([#9](https://github.com/albalaeff/Everest-Game/issues/9)) · *Iteration 1*
-- [ ] A record has the claim, a value or a range with its unit, the source link, the check date and a status (`expert-reviewed` or `source only`); where sources disagree, each version
-- [ ] Records are JSON files with a schema; CI fails on a record without a source or a check date
-- [ ] The simulation's coefficients live in the same data, so an expert can change them without a programmer
-- [ ] Done gate
+- [x] A record has the claim, a value or a range with its unit, the source link, the check date and a status (`expert-reviewed` or `source only`); where sources disagree, each version
+- [x] Records are JSON files with a schema; CI fails on a record without a source or a check date
+- [x] The simulation's coefficients live in the same data, so an expert can change them without a programmer
+- [x] Done gate
 
 ### Task 2: Knowledge base: altitude medicine (AMS, HACE, HAPE, acclimatization) ([#10](https://github.com/albalaeff/Everest-Game/issues/10)) · *Iteration 2*
 - [ ] Symptoms, progression and treatment (descent, oxygen) of AMS, HACE and HAPE, from the WMS 2024 guidelines and the CDC Yellow Book 2026

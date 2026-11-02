@@ -4,7 +4,8 @@ Every change to this codebase follows the rules in this file, and those of each 
 
 | A change to | Also follows |
 |---|---|
-| the game's areas, once they have rules of their own: the simulation core, the knowledge base and content, the rendering, the room server | their file in `docs/conventions/`, named here when it comes |
+| the knowledge base: `content/facts/` | [conventions/knowledge-base.md](conventions/knowledge-base.md) |
+| the game's other areas, once they have rules of their own: the simulation core, the rendering, the room server | their file in `docs/conventions/`, named here when it comes |
 
 A change to `scripts/` or to the docs alone follows this file only. (Fill the table in as areas get rules of their own, one file each in `docs/conventions/`. The game's first areas come with its TypeScript project; [../spec.md](../spec.md) is what they implement.)
 

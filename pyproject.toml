@@ -13,6 +13,8 @@ dev = [
     "psutil",
     "ruff",
     "mypy",
+    "jsonschema",  # the knowledge base's check (scripts/check_facts.py)
+    "types-jsonschema",
 ]
 # What the scripts need, installed with every sync (`default-groups`): release-cut.yml runs
 # scripts/github.py with --no-dev.
