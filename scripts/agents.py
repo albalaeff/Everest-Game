@@ -67,8 +67,8 @@ class AgentPower:
     model: str
     effort: str
 
-    MODELS: ClassVar[tuple[str, ...]] = ("haiku", "sonnet", "opus")  # the weakest first
-    EFFORTS: ClassVar[tuple[str, ...]] = ("low", "medium", "high", "xhigh", "max")
+    MODELS: ClassVar[tuple[str, ...]] = ("haiku", "sonnet", "opus", "fable")  # the weakest first
+    EFFORTS: ClassVar[tuple[str, ...]] = ("high", "xhigh", "max")  # no weaker ones (#4)
     MODEL: ClassVar[LabelFamily] = LabelFamily(
         "model", MODELS, "5319e7", "The agent for this issue runs with model {} (#387)"
     )
@@ -97,6 +97,17 @@ class AgentPower:
             self.MODEL.strongest(names) or self.model,
             self.EFFORT.strongest(names) or self.effort,
         )
+
+    def without(self, unavailable: Iterable[str]) -> AgentPower:
+        """This power on an account that lacks some models (#4: Fable is on some plans only):
+        the strongest model left at or below this one, with the same effort. The weakest
+        model is never given up."""
+        gone = set(unavailable)
+        mine = self.MODELS.index(self.model)
+        for model in reversed(self.MODELS[: mine + 1]):
+            if model not in gone:
+                return self if model == self.model else AgentPower(model, self.effort)
+        return self
 
     @classmethod
     def of_agent(cls, env: Mapping[str, str] = os.environ) -> AgentPower | None:

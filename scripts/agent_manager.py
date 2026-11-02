@@ -37,10 +37,12 @@ of its own (#485): the rest wait their turn, a merge first, then by the issue's 
 label, then mid-work before new, then first come first served; and one whose turn comes
 after it stopped needing anything is dropped (`Scheduler`), as is a PR's whose issue was
 postponed meanwhile (#540). One that couldn't start (its branch checked out in the checkout,
-say) is tried again at the watcher's next look. One whose
-run ended on the account's usage limit waits its turn again, and no agent starts before the
-limit resets (`UsageLimit`, #476). When an agent ends, its worktree goes if nothing in it is
-missing from GitHub; else it stays, and the log says why. The first Ctrl+C stops the watcher
+say) is tried again at the watcher's next look. One whose run ended on the account's usage
+limit waits its turn again, and no agent starts before the limit resets (`UsageLimit`, #476);
+one whose run ended because the account lacks its model (Fable is on some plans only) waits
+its turn again and runs on the next model down, as every later one on that model does
+(`ModelUnavailable`, #4). When an agent ends, its worktree goes if nothing in it is missing
+from GitHub; else it stays, and the log says why. The first Ctrl+C stops the watcher
 and starts nothing more, letting the agents running finish their work; a second stops them
 too, and keeps their worktrees as they are (#485). While it runs it holds a lock
 (`ManagerLock`), so a session's watcher ends: the agents take the issues (CLAUDE.md →
@@ -667,6 +669,35 @@ class UsageLimit:
 
 
 @dataclass(frozen=True, slots=True)
+class ModelUnavailable:
+    """A model the account lacks, which a run ended on at once (#4): Fable is on some plans
+    only. The API refuses the first call, and Claude Code's result is an error naming the
+    model; the wording isn't fixed, so any refusal that speaks of the model counts, but the
+    usage limit, which is its own case (`UsageLimit`)."""
+
+    model: str  # the one asked for
+    said: str  # the result's text
+
+    MODEL: ClassVar[re.Pattern[str]] = re.compile(r"\bmodel\b", re.IGNORECASE)
+    REFUSED: ClassVar[re.Pattern[str]] = re.compile(
+        r"not[ _-]?(?:found|available|supported|exist|permitted|enabled|allowed|have access)"
+        r"|no access|invalid|unknown|unavailable|forbidden|permission|does ?n[o']t have",
+        re.IGNORECASE,
+    )
+
+    @classmethod
+    def of(cls, result: Mapping[str, Any], model: str) -> ModelUnavailable | None:
+        """The model a result says the account lacks; None for any other end."""
+        if not result.get("is_error") or UsageLimit.of(result) is not None:
+            return None
+        said = str(result.get("result") or "")
+        named = cls.MODEL.search(said) is not None or model.lower() in said.lower()
+        if named and cls.REFUSED.search(said):
+            return cls(model, said)
+        return None
+
+
+@dataclass(frozen=True, slots=True)
 class AgentResult:
     """What an agent's run came to, from the results Claude Code writes (stream-json): one for
     each part of the run, when a background task it waited on wakes it again (#408)."""
@@ -676,6 +707,7 @@ class AgentResult:
     denials: tuple[str, ...] = ()  # what it wasn't allowed to do: the allow list lacks it
     context: int | None = None  # the tokens its first reply read: what it's offered (#443)
     limit: UsageLimit | None = None  # the usage limit its last part ended on (#476)
+    unavailable: ModelUnavailable | None = None  # the model the account lacks, if it ended so (#4)
 
     TYPES: ClassVar[tuple[str, ...]] = ('"type":"result"', '"type":"assistant"')
     READ: ClassVar[tuple[str, ...]] = (
@@ -685,9 +717,10 @@ class AgentResult:
     )
 
     @classmethod
-    def read(cls, log: Path, offset: int = 0) -> AgentResult:
+    def read(cls, log: Path, offset: int = 0, model: str | None = None) -> AgentResult:
         """The cost is a running total, so the last part's is the run's; the minutes and the
-        refusals are each part's own, so they're added up."""
+        refusals are each part's own, so they're added up. `model`, the one the run was
+        asked for, tells a refusal of it from other errors (#4)."""
         events = cls._events(log, offset)
         parts = [event for event in events if event.get("type") == "result"]
         replies = (cls._tokens(event) for event in events if event.get("type") == "assistant")
@@ -703,6 +736,7 @@ class AgentResult:
             ),
             next((tokens for tokens in replies if tokens is not None), None),
             UsageLimit.of(parts[-1]) if parts else None,
+            ModelUnavailable.of(parts[-1], model) if parts and model else None,
         )
 
     @classmethod
@@ -750,6 +784,8 @@ class AgentResult:
             parts.append(f"{plural(len(self.denials), 'refusal')}: {', '.join(self.denials)}")
         if self.limit is not None:
             parts.append("ended on the usage limit")
+        if self.unavailable is not None:
+            parts.append(f"the account lacks the model {self.unavailable.model}")
         return ", ".join(parts)
 
 
@@ -816,6 +852,7 @@ class Agent:
         self._process: subprocess.Popen[bytes] | None = None
         self._offset = 0
         self.limit: UsageLimit | None = None  # the usage limit it ended on, once it has
+        self.unavailable: ModelUnavailable | None = None  # the model the account lacked (#4)
 
     def __str__(self) -> str:
         return f"{self.power}, in {self.worktree.path} on {self.worktree.branch}"
@@ -894,8 +931,9 @@ class Agent:
     def finish(self, code: int | None) -> str:
         """After it ended (`code`), or was stopped (None): its worktree goes when nothing in
         it is missing from GitHub, else it stays; the line that says so, in the log too."""
-        found = AgentResult.read(self.log, self._offset)
+        found = AgentResult.read(self.log, self._offset, self.power.model)
         self.limit = found.limit
+        self.unavailable = found.unavailable
         result = str(found)
         outcome = "done" if code == 0 else "stopped" if code is None else f"failed (exit {code})"
         kept = self.worktree.leftover() if code == 0 else outcome
@@ -934,12 +972,19 @@ class Launcher:
         self._runs = runs
         self._now = now
         self._database = database
+        self.lacking: set[str] = set()  # the models the account turned out to lack (#4)
+
+    def avoid(self, model: str) -> str:
+        """The account lacks `model`, a run has shown (#4): from now on its agents run on the
+        next one down; which."""
+        self.lacking.add(model)
+        return AgentPower(model, AgentPower.EFFORTS[0]).without(self.lacking).model
 
     def agent(self, job: Job) -> Agent:
         worktree = Worktree(self._worktree(job), job.branch(self._git), self._git)
         return Agent(
             job,
-            self._config.power.from_labels(job.labels),
+            self._config.power.from_labels(job.labels).without(self.lacking),
             self._config.compaction,
             worktree,
             self._database(job.slot),
@@ -1228,7 +1273,10 @@ class Scheduler:
 
     A run that ended on the account's usage limit did nothing, so its job waits its turn
     again, and no agent starts before the limit resets (#476), which is said once. The
-    agents still running go on; one that ends on the limit too changes nothing.
+    agents still running go on; one that ends on the limit too changes nothing. A run that
+    ended because the account lacks its model (#4: Fable is on some plans only) did nothing
+    either: its job waits its turn again, and the launcher runs that model's agents on the
+    next one down for the rest of the run, which is said once per model.
 
     Closed, by the manager's first Ctrl+C (#485), it starts nothing more: what waits is
     dropped, and the agents running go on to their end, unless `stop` stops them, or Esc
@@ -1263,6 +1311,7 @@ class Scheduler:
         self._refused: dict[str, Refusal] = {}
         self._seen: set[str] = set()
         self._hold: float | None = None  # no agent starts before it: the usage limit's reset
+        self._lacking: set[str] = set()  # the models said to be lacking, once each (#4)
         self._closed = False
 
     def take(self, job: Job) -> None:
@@ -1292,6 +1341,8 @@ class Scheduler:
                 self._say(agent.finish(code))
                 if agent.limit is not None and not self._closed:
                     self._hold_for(agent.limit, agent.job)
+                elif agent.unavailable is not None and not self._closed:
+                    self._fall_back(agent.unavailable, agent.job)
         if not self._held():
             for job in self._line():
                 if self._room(job):
@@ -1412,6 +1463,19 @@ class Scheduler:
         self._hold = self._clock() + (resets - now).total_seconds()
         when = f"{resets:%H:%M}" if resets.date() == now.date() else f"{resets:%Y-%m-%d %H:%M}"
         self._say(f"Usage limit: agents wait until {when}.")
+
+    def _fall_back(self, unavailable: ModelUnavailable, job: Job) -> None:
+        """Its job waits its turn again, to run on the next model down (#4): the launcher
+        avoids the model from now on, said once per model."""
+        self._waiting.setdefault(job.slot, job)
+        if unavailable.model in self._lacking:
+            return
+        self._lacking.add(unavailable.model)
+        instead = self._launcher.avoid(unavailable.model)
+        self._say(
+            f"The account lacks the model {unavailable.model}: its agents run on {instead} for "
+            "the rest of this run."
+        )
 
 
 # --- the watcher, as the manager's child ----------------------------------------------------

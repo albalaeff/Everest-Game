@@ -111,9 +111,12 @@ into it (mypy's, and hypothesis's examples) and makes its `.venv` (`uv sync --lo
 the log's first line says so. Without the cache, `mypy` took an agent a minute or more.
 
 **How strong an agent is.** An issue's labels choose the agent's model and effort, in Claude
-Code's own words: `model:haiku`, `model:sonnet` or `model:opus`, and `effort:low`,
-`effort:medium`, `effort:high`, `effort:xhigh` or `effort:max`. With none, an agent runs on
-`opus` with `xhigh` effort. With two in one family, the stronger wins. The defaults, how
+Code's own words: `model:haiku`, `model:sonnet`, `model:opus` or `model:fable`, and
+`effort:high`, `effort:xhigh` or `effort:max`. With none, an agent runs on `opus` with
+`xhigh` effort. With two in one family, the stronger wins. Fable is on some accounts' plans
+only: when a run ends at once because the account lacks its model, the manager starts the job
+again on the next model down (`opus`), runs that model's agents on it for the rest of the run,
+and says so once; the issue's label stays. The defaults, how
 many agents run at once (`max_parallel`, 3), where the worktrees go (`../worktrees`), the
 tests' database server (`test_database_url`, for a project with one) and how often the
 watcher looks at GitHub (`watch_every_seconds`, 120) are in
