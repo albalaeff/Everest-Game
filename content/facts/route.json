@@ -1,0 +1,1121 @@
+{
+  "$schema": "../facts.schema.json",
+  "facts": [
+    {
+      "id": "route.lukla-altitude",
+      "kind": "fact",
+      "claim": "Lukla, where the trek to Base Camp starts, lies at this altitude.",
+      "status": "source only",
+      "versions": [
+        {
+          "value": 2850,
+          "unit": "m",
+          "note": "9,350 ft on the page.",
+          "source": {
+            "title": "Alpine Ascents: Everest itinerary",
+            "url": "https://www.alpineascents.com/climbs/mount-everest/itinerary/"
+          },
+          "checked": "2026-11-03"
+        },
+        {
+          "value": 2860,
+          "unit": "m",
+          "source": {
+            "title": "Nepal Nomad: Everest Expedition",
+            "url": "https://nepalnomad.com/everest-expedition"
+          },
+          "checked": "2026-11-03"
+        }
+      ]
+    },
+    {
+      "id": "route.base-camp-altitude",
+      "kind": "fact",
+      "claim": "Base Camp, below the Khumbu Icefall, stands at this altitude.",
+      "status": "source only",
+      "versions": [
+        {
+          "value": 5364,
+          "unit": "m",
+          "note": "17,598 ft in the route's description, 17,600 ft in the itinerary.",
+          "source": {
+            "title": "Alpine Ascents: Everest itinerary",
+            "url": "https://www.alpineascents.com/climbs/mount-everest/itinerary/"
+          },
+          "checked": "2026-11-03"
+        },
+        {
+          "value": 5364,
+          "unit": "m",
+          "source": {
+            "title": "Tidy Himalaya: Everest Expedition",
+            "url": "https://tidyhimalaya.com/trip/everest-expedition"
+          },
+          "checked": "2026-11-03"
+        },
+        {
+          "value": 5300,
+          "unit": "m",
+          "source": {
+            "title": "Imagine Nepal: Mount Everest Expedition",
+            "url": "https://imagine-nepal.com/package/mount-everest-expedition"
+          },
+          "checked": "2026-11-03"
+        },
+        {
+          "value": 5334,
+          "unit": "m",
+          "source": {
+            "title": "Hayden Rue: South Col of Mount Everest",
+            "url": "https://haydenrue.com/mountaineering/south-col-of-mount-everest/"
+          },
+          "checked": "2026-11-03"
+        },
+        {
+          "range": { "min": 5364, "max": 5380 },
+          "unit": "m",
+          "note": "5,364 m in the itinerary, 5,380 m in the route's description.",
+          "source": {
+            "title": "Nepal Nomad: Everest Expedition",
+            "url": "https://nepalnomad.com/everest-expedition"
+          },
+          "checked": "2026-11-03"
+        },
+        {
+          "value": 5350,
+          "unit": "m",
+          "source": {
+            "title": "Olaf Rieck: Everest, the route",
+            "url": "https://www.olafrieck.de/everest/route-e.htm"
+          },
+          "checked": "2026-11-03"
+        }
+      ]
+    },
+    {
+      "id": "route.camp-1-altitude",
+      "kind": "fact",
+      "claim": "Camp 1, above the Khumbu Icefall at the mouth of the Western Cwm, stands at this altitude.",
+      "status": "source only",
+      "versions": [
+        {
+          "value": 5944,
+          "unit": "m",
+          "note": "19,500 ft on the page.",
+          "source": {
+            "title": "Alpine Ascents: Everest itinerary",
+            "url": "https://www.alpineascents.com/climbs/mount-everest/itinerary/"
+          },
+          "checked": "2026-11-03"
+        },
+        {
+          "range": { "min": 5900, "max": 6065 },
+          "unit": "m",
+          "note": "5,900 m in the list of camps, 6,065 m in the overview.",
+          "source": {
+            "title": "Tidy Himalaya: Everest Expedition",
+            "url": "https://tidyhimalaya.com/trip/everest-expedition"
+          },
+          "checked": "2026-11-03"
+        },
+        {
+          "value": 5900,
+          "unit": "m",
+          "source": {
+            "title": "Imagine Nepal: Mount Everest Expedition",
+            "url": "https://imagine-nepal.com/package/mount-everest-expedition"
+          },
+          "checked": "2026-11-03"
+        },
+        {
+          "value": 5943,
+          "unit": "m",
+          "source": {
+            "title": "Hayden Rue: South Col of Mount Everest",
+            "url": "https://haydenrue.com/mountaineering/south-col-of-mount-everest/"
+          },
+          "checked": "2026-11-03"
+        },
+        {
+          "range": { "min": 5700, "max": 6065 },
+          "unit": "m",
+          "note": "6,065 m in the route's description, 5,700 m in the itinerary.",
+          "source": {
+            "title": "Nepal Nomad: Everest Expedition",
+            "url": "https://nepalnomad.com/everest-expedition"
+          },
+          "checked": "2026-11-03"
+        }
+      ]
+    },
+    {
+      "id": "route.camp-2-altitude",
+      "kind": "fact",
+      "claim": "Camp 2, the advanced base camp at the head of the Western Cwm, stands at this altitude.",
+      "status": "source only",
+      "versions": [
+        {
+          "range": { "min": 6401, "max": 6553 },
+          "unit": "m",
+          "note": "21,000 ft in the route's description, 21,500 ft in the itinerary.",
+          "source": {
+            "title": "Alpine Ascents: Everest itinerary",
+            "url": "https://www.alpineascents.com/climbs/mount-everest/itinerary/"
+          },
+          "checked": "2026-11-03"
+        },
+        {
+          "value": 6400,
+          "unit": "m",
+          "source": {
+            "title": "Tidy Himalaya: Everest Expedition",
+            "url": "https://tidyhimalaya.com/trip/everest-expedition"
+          },
+          "checked": "2026-11-03"
+        },
+        {
+          "range": { "min": 6200, "max": 6400 },
+          "unit": "m",
+          "note": "Between 6,200 m and 6,400 m, at the foot of the Lhotse Face.",
+          "source": {
+            "title": "Imagine Nepal: Mount Everest Expedition",
+            "url": "https://imagine-nepal.com/package/mount-everest-expedition"
+          },
+          "checked": "2026-11-03"
+        },
+        {
+          "value": 6400,
+          "unit": "m",
+          "source": {
+            "title": "Hayden Rue: South Col of Mount Everest",
+            "url": "https://haydenrue.com/mountaineering/south-col-of-mount-everest/"
+          },
+          "checked": "2026-11-03"
+        },
+        {
+          "range": { "min": 6400, "max": 6500 },
+          "unit": "m",
+          "note": "6,500 m in the route's description, 6,400 m in the itinerary.",
+          "source": {
+            "title": "Nepal Nomad: Everest Expedition",
+            "url": "https://nepalnomad.com/everest-expedition"
+          },
+          "checked": "2026-11-03"
+        }
+      ]
+    },
+    {
+      "id": "route.camp-3-altitude",
+      "kind": "fact",
+      "claim": "Camp 3, on a ledge of the Lhotse Face, stands at this altitude.",
+      "status": "source only",
+      "versions": [
+        {
+          "range": { "min": 7163, "max": 7193 },
+          "unit": "m",
+          "note": "23,500 ft in the route's description, 23,600 ft in the itinerary.",
+          "source": {
+            "title": "Alpine Ascents: Everest itinerary",
+            "url": "https://www.alpineascents.com/climbs/mount-everest/itinerary/"
+          },
+          "checked": "2026-11-03"
+        },
+        {
+          "range": { "min": 7100, "max": 7200 },
+          "unit": "m",
+          "note": "7,100 m in the list of camps, 7,200 m in the overview.",
+          "source": {
+            "title": "Tidy Himalaya: Everest Expedition",
+            "url": "https://tidyhimalaya.com/trip/everest-expedition"
+          },
+          "checked": "2026-11-03"
+        },
+        {
+          "value": 7300,
+          "unit": "m",
+          "source": {
+            "title": "Imagine Nepal: Mount Everest Expedition",
+            "url": "https://imagine-nepal.com/package/mount-everest-expedition"
+          },
+          "checked": "2026-11-03"
+        },
+        {
+          "value": 7162,
+          "unit": "m",
+          "source": {
+            "title": "Hayden Rue: South Col of Mount Everest",
+            "url": "https://haydenrue.com/mountaineering/south-col-of-mount-everest/"
+          },
+          "checked": "2026-11-03"
+        },
+        {
+          "value": 7470,
+          "unit": "m",
+          "source": {
+            "title": "Nepal Nomad: Everest Expedition",
+            "url": "https://nepalnomad.com/everest-expedition"
+          },
+          "checked": "2026-11-03"
+        },
+        {
+          "value": 7470,
+          "unit": "m",
+          "source": {
+            "title": "Mountain Project: Southeast Ridge (South Col) of Everest",
+            "url": "https://mountainproject.com/route/126778851/southeast-ridge-south-col-of-everest"
+          },
+          "checked": "2026-11-03"
+        }
+      ]
+    },
+    {
+      "id": "route.south-col-altitude",
+      "kind": "fact",
+      "claim": "The South Col, Camp 4, between Everest and Lhotse, lies at this altitude.",
+      "status": "source only",
+      "versions": [
+        {
+          "range": { "min": 7925, "max": 8016 },
+          "unit": "m",
+          "note": "26,300 ft in the route's description, 26,000 ft in the itinerary.",
+          "source": {
+            "title": "Alpine Ascents: Everest itinerary",
+            "url": "https://www.alpineascents.com/climbs/mount-everest/itinerary/"
+          },
+          "checked": "2026-11-03"
+        },
+        {
+          "value": 7950,
+          "unit": "m",
+          "source": {
+            "title": "Tidy Himalaya: Everest Expedition",
+            "url": "https://tidyhimalaya.com/trip/everest-expedition"
+          },
+          "checked": "2026-11-03"
+        },
+        {
+          "range": { "min": 7924, "max": 7925 },
+          "unit": "m",
+          "note": "7,925 m for the South Col, 7,924 m for Camp 4.",
+          "source": {
+            "title": "Imagine Nepal: Mount Everest Expedition",
+            "url": "https://imagine-nepal.com/package/mount-everest-expedition"
+          },
+          "checked": "2026-11-03"
+        },
+        {
+          "value": 8016,
+          "unit": "m",
+          "source": {
+            "title": "Hayden Rue: South Col of Mount Everest",
+            "url": "https://haydenrue.com/mountaineering/south-col-of-mount-everest/"
+          },
+          "checked": "2026-11-03"
+        },
+        {
+          "range": { "min": 7920, "max": 7950 },
+          "unit": "m",
+          "note": "7,920 m in the route's description, 7,950 m in the itinerary.",
+          "source": {
+            "title": "Nepal Nomad: Everest Expedition",
+            "url": "https://nepalnomad.com/everest-expedition"
+          },
+          "checked": "2026-11-03"
+        },
+        {
+          "value": 8000,
+          "unit": "m",
+          "note": "About 8,000 m.",
+          "source": {
+            "title": "Olaf Rieck: Everest, the route",
+            "url": "https://www.olafrieck.de/everest/route-e.htm"
+          },
+          "checked": "2026-11-03"
+        }
+      ]
+    },
+    {
+      "id": "route.balcony-altitude",
+      "kind": "fact",
+      "claim": "The Balcony, the first rest on the Southeast Ridge on summit day, lies at this altitude.",
+      "status": "source only",
+      "versions": [
+        {
+          "value": 8382,
+          "unit": "m",
+          "note": "27,500 ft on the page.",
+          "source": {
+            "title": "Hayden Rue: South Col of Mount Everest",
+            "url": "https://haydenrue.com/mountaineering/south-col-of-mount-everest/"
+          },
+          "checked": "2026-11-03"
+        },
+        {
+          "value": 8400,
+          "unit": "m",
+          "source": {
+            "title": "Nepal Nomad: Everest Expedition",
+            "url": "https://nepalnomad.com/everest-expedition"
+          },
+          "checked": "2026-11-03"
+        },
+        {
+          "value": 8400,
+          "unit": "m",
+          "source": {
+            "title": "Mountain Project: Southeast Ridge (South Col) of Everest",
+            "url": "https://mountainproject.com/route/126778851/southeast-ridge-south-col-of-everest"
+          },
+          "checked": "2026-11-03"
+        }
+      ]
+    },
+    {
+      "id": "route.south-summit-altitude",
+      "kind": "fact",
+      "claim": "The South Summit stands at this altitude.",
+      "status": "source only",
+      "versions": [
+        {
+          "value": 8690,
+          "unit": "m",
+          "source": {
+            "title": "Hayden Rue: South Col of Mount Everest",
+            "url": "https://haydenrue.com/mountaineering/south-col-of-mount-everest/"
+          },
+          "checked": "2026-11-03"
+        },
+        {
+          "value": 8750,
+          "unit": "m",
+          "source": {
+            "title": "Nepal Nomad: Everest Expedition",
+            "url": "https://nepalnomad.com/everest-expedition"
+          },
+          "checked": "2026-11-03"
+        },
+        {
+          "value": 8748,
+          "unit": "m",
+          "source": {
+            "title": "Olaf Rieck: Everest, the route",
+            "url": "https://www.olafrieck.de/everest/route-e.htm"
+          },
+          "checked": "2026-11-03"
+        }
+      ]
+    },
+    {
+      "id": "route.hillary-step-altitude",
+      "kind": "fact",
+      "claim": "The Hillary Step, between the South Summit and the summit, lies at this altitude.",
+      "status": "source only",
+      "versions": [
+        {
+          "value": 8790,
+          "unit": "m",
+          "source": {
+            "title": "Nepal Nomad: Everest Expedition",
+            "url": "https://nepalnomad.com/everest-expedition"
+          },
+          "checked": "2026-11-03"
+        }
+      ]
+    },
+    {
+      "id": "route.summit-altitude",
+      "kind": "fact",
+      "claim": "Everest's summit stands at this altitude.",
+      "status": "source only",
+      "versions": [
+        {
+          "value": 8848.86,
+          "unit": "m",
+          "source": {
+            "title": "Alpine Ascents: Everest itinerary",
+            "url": "https://www.alpineascents.com/climbs/mount-everest/itinerary/"
+          },
+          "checked": "2026-11-03"
+        },
+        {
+          "value": 8848.86,
+          "unit": "m",
+          "source": {
+            "title": "Tidy Himalaya: Everest Expedition",
+            "url": "https://tidyhimalaya.com/trip/everest-expedition"
+          },
+          "checked": "2026-11-03"
+        },
+        {
+          "value": 8848.86,
+          "unit": "m",
+          "source": {
+            "title": "Imagine Nepal: Mount Everest Expedition",
+            "url": "https://imagine-nepal.com/package/mount-everest-expedition"
+          },
+          "checked": "2026-11-03"
+        },
+        {
+          "value": 8850,
+          "unit": "m",
+          "source": {
+            "title": "Hayden Rue: South Col of Mount Everest",
+            "url": "https://haydenrue.com/mountaineering/south-col-of-mount-everest/"
+          },
+          "checked": "2026-11-03"
+        },
+        {
+          "range": { "min": 8848, "max": 8848.86 },
+          "unit": "m",
+          "note": "8,848 m in the introduction, 8,848.86 m in the itinerary.",
+          "source": {
+            "title": "Nepal Nomad: Everest Expedition",
+            "url": "https://nepalnomad.com/everest-expedition"
+          },
+          "checked": "2026-11-03"
+        },
+        {
+          "value": 8848.86,
+          "unit": "m",
+          "note": "8,848.86 m in the description; the page's data line says 8,797 m, against its own 29,031 ft.",
+          "source": {
+            "title": "Mountain Project: Southeast Ridge (South Col) of Everest",
+            "url": "https://mountainproject.com/route/126778851/southeast-ridge-south-col-of-everest"
+          },
+          "checked": "2026-11-03"
+        }
+      ]
+    },
+    {
+      "id": "route.trek-hazards",
+      "kind": "fact",
+      "claim": "On the trek from Lukla to Base Camp, the first hazard is altitude sickness: the trek's slow gain in altitude is meant to avoid it.",
+      "status": "source only",
+      "versions": [
+        {
+          "note": "The trek gives climbers time to acclimatize properly and avoid altitude sickness.",
+          "source": {
+            "title": "Nepal Nomad: Everest Expedition",
+            "url": "https://nepalnomad.com/everest-expedition"
+          },
+          "checked": "2026-11-03"
+        },
+        {
+          "note": "The rest day in Dingboche and the stop in Lobuche, at 4,910 m, are for acclimatization, as the air holds less oxygen.",
+          "source": {
+            "title": "Tidy Himalaya: Everest Expedition",
+            "url": "https://tidyhimalaya.com/trip/everest-expedition"
+          },
+          "checked": "2026-11-03"
+        }
+      ]
+    },
+    {
+      "id": "route.trek-lessons",
+      "kind": "fact",
+      "claim": "The trek to Base Camp is the first acclimatization: gain altitude slowly, with rest days on the way.",
+      "status": "source only",
+      "versions": [
+        {
+          "note": "The trek takes about 10 days, and gives time to acclimatize gradually.",
+          "source": {
+            "title": "Alpine Ascents: Everest itinerary",
+            "url": "https://www.alpineascents.com/climbs/mount-everest/itinerary/"
+          },
+          "checked": "2026-11-03"
+        },
+        {
+          "note": "A rest day in Dingboche, and a stop in Lobuche before the last push to Base Camp.",
+          "source": {
+            "title": "Tidy Himalaya: Everest Expedition",
+            "url": "https://tidyhimalaya.com/trip/everest-expedition"
+          },
+          "checked": "2026-11-03"
+        },
+        {
+          "source": {
+            "title": "Nepal Nomad: Everest Expedition",
+            "url": "https://nepalnomad.com/everest-expedition"
+          },
+          "checked": "2026-11-03"
+        }
+      ]
+    },
+    {
+      "id": "route.trek-falls",
+      "kind": "question",
+      "question": "Where on the trail from Lukla to Base Camp do trekkers fall or get hurt, and how often? None of the sources read names a hazard of the trail itself.",
+      "about": ["route.trek-hazards"]
+    },
+    {
+      "id": "route.base-camp-hazards",
+      "kind": "fact",
+      "claim": "Base Camp can be hit by avalanches from the slopes around it: in the 2015 earthquake, one from Pumori swept through the camp and killed at least 18 people.",
+      "status": "source only",
+      "versions": [
+        {
+          "note": "The avalanche came from Pumori, next to Everest; 18 killed, several badly hurt, the upper part of the camp hit hardest.",
+          "source": {
+            "title": "National Geographic: Everest Base Camp a 'War Zone' After Earthquake Triggers Avalanches (2015)",
+            "url": "https://www.nationalgeographic.com/science/article/150425-everest-earthquake-basecamp-nepal-himalaya-climbing-sherpa"
+          },
+          "checked": "2026-11-03"
+        },
+        {
+          "note": "A collapsed serac on Pumori destroyed 40 to 50 percent of Base Camp; at least eighteen dead and several dozen hurt.",
+          "source": {
+            "title": "Alpinist: Nepal's Earthquake Aftermath (2015)",
+            "url": "https://alpinist.com/?p=51174"
+          },
+          "checked": "2026-11-03"
+        }
+      ]
+    },
+    {
+      "id": "route.base-camp-lessons",
+      "kind": "fact",
+      "claim": "Base Camp is home for weeks: climbers rest and recover there between rotations to the higher camps, eat well, and see a doctor at the Everest ER.",
+      "status": "source only",
+      "versions": [
+        {
+          "note": "Home for several weeks, an important place to rest and recover; the cooks' meals; a visit to the Everest ER in the first few days.",
+          "source": {
+            "title": "Alpine Ascents: Everest itinerary",
+            "url": "https://www.alpineascents.com/climbs/mount-everest/itinerary/"
+          },
+          "checked": "2026-11-03"
+        },
+        {
+          "note": "A few weeks at Base Camp to acclimatize, with rest periods between the rotations to Camps 1 to 4.",
+          "source": {
+            "title": "Nepal Nomad: Everest Expedition",
+            "url": "https://nepalnomad.com/everest-expedition"
+          },
+          "checked": "2026-11-03"
+        },
+        {
+          "note": "At least 50 days at Base Camp, resting and preparing for the climb.",
+          "source": {
+            "title": "Tidy Himalaya: Everest Expedition",
+            "url": "https://tidyhimalaya.com/trip/everest-expedition"
+          },
+          "checked": "2026-11-03"
+        }
+      ]
+    },
+    {
+      "id": "route.base-camp-illness",
+      "kind": "question",
+      "question": "Which illnesses go round Base Camp (a cough, the stomach), and how do climbers avoid them? None of the sources read names one; Alpine Ascents only sends its climbers to the Everest ER.",
+      "about": ["route.base-camp-hazards", "route.base-camp-lessons"]
+    },
+    {
+      "id": "route.icefall-hazards",
+      "kind": "fact",
+      "claim": "In the Khumbu Icefall, seracs and ice from the West Shoulder fall without warning, avalanches come down, deep crevasses open under thin snow, and the moving glacier shifts the ladders.",
+      "status": "source only",
+      "versions": [
+        {
+          "note": "Ice falling off the West Shoulder is widely considered the most pressing danger in modern times; crevasses over 45 m deep and seracs over 9 m high; the Icefall can move a metre a day and shift suddenly, dropping or bending ladders.",
+          "source": {
+            "title": "Alan Arnette: Everest 2023: First Deaths of Season",
+            "url": "https://www.alanarnette.com/blog/2023/04/12/everest-2023-first-deaths-of-season/"
+          },
+          "checked": "2026-11-03"
+        },
+        {
+          "note": "A constantly shifting glacier with deep crevasses and towering seracs; avalanches and seracs threaten to fall; steeper ladders near the top.",
+          "source": {
+            "title": "Hayden Rue: South Col of Mount Everest",
+            "url": "https://haydenrue.com/mountaineering/south-col-of-mount-everest/"
+          },
+          "checked": "2026-11-03"
+        },
+        {
+          "note": "One of the riskiest parts of the route, for its seracs, crevasses and shifting slabs of ice.",
+          "source": {
+            "title": "Nepal Nomad: Everest Expedition",
+            "url": "https://nepalnomad.com/everest-expedition"
+          },
+          "checked": "2026-11-03"
+        },
+        {
+          "note": "In 2014, sixteen Sherpa, Tamang, Gurung and Nepali high-altitude staff died in a single ice avalanche in the Icefall.",
+          "source": {
+            "title": "Alpinist: Nepal's Earthquake Aftermath (2015)",
+            "url": "https://alpinist.com/?p=51174"
+          },
+          "checked": "2026-11-03"
+        },
+        {
+          "note": "On 12 April 2023, at 04:00 and 5,700 m, three Sherpas died in a serac accident in the Icefall.",
+          "source": {
+            "title": "Explorersweb: 2023 Everest Deaths Totaled 18, the Worst Ever",
+            "url": "https://explorersweb.com/everest-final-2023-death-toll-worst-ever/"
+          },
+          "checked": "2026-11-03"
+        }
+      ]
+    },
+    {
+      "id": "route.icefall-lessons",
+      "kind": "fact",
+      "claim": "Go through the Icefall early, before the sun warms the ice, don't linger in it, and stay clipped to the fixed ropes, on the ladders too.",
+      "status": "source only",
+      "versions": [
+        {
+          "note": "Climbers pass in the early morning, when the ice is stable; the danger is highest in the afternoon, when the sun hits the seracs. Always be clipped to the fixed rope, ladders included: many falls into crevasses came from not being clipped in.",
+          "source": {
+            "title": "Alan Arnette: Everest 2023: First Deaths of Season",
+            "url": "https://www.alanarnette.com/blog/2023/04/12/everest-2023-first-deaths-of-season/"
+          },
+          "checked": "2026-11-03"
+        },
+        {
+          "note": "Climbers set out before sunrise, before the glacier warms.",
+          "source": {
+            "title": "Hayden Rue: South Col of Mount Everest",
+            "url": "https://haydenrue.com/mountaineering/south-col-of-mount-everest/"
+          },
+          "checked": "2026-11-03"
+        }
+      ]
+    },
+    {
+      "id": "route.western-cwm-hazards",
+      "kind": "fact",
+      "claim": "In the Western Cwm, hidden crevasses lie under thin snow bridges, and on a clear, windless day the heat is scorching.",
+      "status": "source only",
+      "versions": [
+        {
+          "note": "Hidden crevasses under thin snow bridges; the walk from Camp 1 to Camp 2 can be scorching, up to 100 degrees Fahrenheit.",
+          "source": {
+            "title": "Hayden Rue: South Col of Mount Everest",
+            "url": "https://haydenrue.com/mountaineering/south-col-of-mount-everest/"
+          },
+          "checked": "2026-11-03"
+        },
+        {
+          "note": "Huge lateral crevasses in the middle of the valley; scorching on a clear, windless day.",
+          "source": {
+            "title": "Nepal Nomad: Everest Expedition",
+            "url": "https://nepalnomad.com/everest-expedition"
+          },
+          "checked": "2026-11-03"
+        }
+      ]
+    },
+    {
+      "id": "route.western-cwm-lessons",
+      "kind": "fact",
+      "claim": "Cross the Western Cwm early in the morning, before the heat.",
+      "status": "source only",
+      "versions": [
+        {
+          "note": "The heat encourages climbers to leave early in the morning.",
+          "source": {
+            "title": "Hayden Rue: South Col of Mount Everest",
+            "url": "https://haydenrue.com/mountaineering/south-col-of-mount-everest/"
+          },
+          "checked": "2026-11-03"
+        }
+      ]
+    },
+    {
+      "id": "route.western-cwm-water",
+      "kind": "question",
+      "question": "How do climbers keep from drying out and overheating in the Western Cwm: how much water, what pace, what clothes? The sources read name only the heat and the early start.",
+      "about": ["route.western-cwm-hazards", "route.western-cwm-lessons"]
+    },
+    {
+      "id": "route.lhotse-face-hazards",
+      "kind": "fact",
+      "claim": "The Lhotse Face is steep, hard ice where a slip ends badly, and the climb to Camp 3 exhausts and dries out the climber.",
+      "status": "source only",
+      "versions": [
+        {
+          "note": "Only about 30 degrees, but it seems to become vertical; the crampons don't bite the ice as quickly as you'd like; a slip there ends badly.",
+          "source": {
+            "title": "Alan Arnette: Everest 2018: Inside the Mind During the Last Rotation",
+            "url": "https://www.alanarnette.com/2018/05/02/everest-2018-inside-the-mind-during-the-last-rotation/"
+          },
+          "checked": "2026-11-03"
+        },
+        {
+          "note": "Considerable risks; climbers battle exhaustion, dehydration and steep terrain on the way into Camp 3, and a storm can erase the kicked steps.",
+          "source": {
+            "title": "Hayden Rue: South Col of Mount Everest",
+            "url": "https://haydenrue.com/mountaineering/south-col-of-mount-everest/"
+          },
+          "checked": "2026-11-03"
+        },
+        {
+          "note": "The route to Camp 3 is steep and icy.",
+          "source": {
+            "title": "Tidy Himalaya: Everest Expedition",
+            "url": "https://tidyhimalaya.com/trip/everest-expedition"
+          },
+          "checked": "2026-11-03"
+        },
+        {
+          "note": "A steep face, a climb of 1,000 m to the South Col.",
+          "source": {
+            "title": "Olaf Rieck: Everest, the route",
+            "url": "https://www.olafrieck.de/everest/route-e.htm"
+          },
+          "checked": "2026-11-03"
+        }
+      ]
+    },
+    {
+      "id": "route.lhotse-face-lessons",
+      "kind": "fact",
+      "claim": "Climb the Lhotse Face on the fixed ropes with a jumar, stay clipped at all times, at Camp 3 too, and keep one device on the rope when passing an anchor.",
+      "status": "source only",
+      "versions": [
+        {
+          "note": "Always have one device clipped to the fixed rope; at the end of a rope, the jumar comes off and goes on the next one.",
+          "source": {
+            "title": "Alan Arnette: Everest 2018: Inside the Mind During the Last Rotation",
+            "url": "https://www.alanarnette.com/2018/05/02/everest-2018-inside-the-mind-during-the-last-rotation/"
+          },
+          "checked": "2026-11-03"
+        },
+        {
+          "note": "Climbers stay clipped to the fixed line at all times, even at Camp 3.",
+          "source": {
+            "title": "Hayden Rue: South Col of Mount Everest",
+            "url": "https://haydenrue.com/mountaineering/south-col-of-mount-everest/"
+          },
+          "checked": "2026-11-03"
+        },
+        {
+          "note": "Camp 3 is reached by ascending fixed ropes.",
+          "source": {
+            "title": "Tidy Himalaya: Everest Expedition",
+            "url": "https://tidyhimalaya.com/trip/everest-expedition"
+          },
+          "checked": "2026-11-03"
+        }
+      ]
+    },
+    {
+      "id": "route.lhotse-face-queues",
+      "kind": "question",
+      "question": "Do climbers queue on the Lhotse Face's fixed ropes, and what does it cost them? The spec says so; none of the sources read does.",
+      "about": ["route.lhotse-face-hazards"]
+    },
+    {
+      "id": "route.south-col-hazards",
+      "kind": "fact",
+      "claim": "From Camp 3 to the South Col, past the Yellow Band and the Geneva Spur, climbers enter the death zone: extreme cold, hurricane-force winds, and an altitude where the body can't rest.",
+      "status": "source only",
+      "versions": [
+        {
+          "note": "The Geneva Spur and the Yellow Band, two large obstacles; at the South Col and Camp 4, climbers enter the death zone.",
+          "source": {
+            "title": "Mountain Project: Southeast Ridge (South Col) of Everest",
+            "url": "https://mountainproject.com/route/126778851/southeast-ridge-south-col-of-everest"
+          },
+          "checked": "2026-11-03"
+        },
+        {
+          "note": "Steep from Camp 3; the South Col is harsh weather and destructive altitude, the death zone, where altitude sickness can kill, sleep is hard and digestion slows or stops.",
+          "source": {
+            "title": "Hayden Rue: South Col of Mount Everest",
+            "url": "https://haydenrue.com/mountaineering/south-col-of-mount-everest/"
+          },
+          "checked": "2026-11-03"
+        },
+        {
+          "note": "Notorious for extreme cold and hurricane-force winds.",
+          "source": {
+            "title": "Tidy Himalaya: Everest Expedition",
+            "url": "https://tidyhimalaya.com/trip/everest-expedition"
+          },
+          "checked": "2026-11-03"
+        },
+        {
+          "note": "At the South Col, climbers enter the deadly zone.",
+          "source": {
+            "title": "Nepal Nomad: Everest Expedition",
+            "url": "https://nepalnomad.com/everest-expedition"
+          },
+          "checked": "2026-11-03"
+        }
+      ]
+    },
+    {
+      "id": "route.south-col-lessons",
+      "kind": "fact",
+      "claim": "Above Camp 3 climbers breathe supplemental oxygen, and at the South Col they decide to go or not: the window is a few days, and if the weather doesn't allow, they descend.",
+      "status": "source only",
+      "versions": [
+        {
+          "note": "Most climbers rely on supplemental oxygen from Camp 3; the window at the South Col is two or three days, and without the weather climbers descend, often to Base Camp.",
+          "source": {
+            "title": "Hayden Rue: South Col of Mount Everest",
+            "url": "https://haydenrue.com/mountaineering/south-col-of-mount-everest/"
+          },
+          "checked": "2026-11-03"
+        },
+        {
+          "note": "Supplemental oxygen from Camp 2, not Camp 3.",
+          "source": {
+            "title": "Alpine Ascents: Everest itinerary",
+            "url": "https://www.alpineascents.com/climbs/mount-everest/itinerary/"
+          },
+          "checked": "2026-11-03"
+        },
+        {
+          "note": "If the weather isn't clear, with low winds, climbers must descend in these few days.",
+          "source": {
+            "title": "Nepal Nomad: Everest Expedition",
+            "url": "https://nepalnomad.com/everest-expedition"
+          },
+          "checked": "2026-11-03"
+        },
+        {
+          "note": "A safe summit push needs four to seven days of summit winds under 48 km/h; a day's wait to see the doctors for the go or no go.",
+          "source": {
+            "title": "Alan Arnette: Everest 2018: Inside the Mind During the Last Rotation",
+            "url": "https://www.alanarnette.com/2018/05/02/everest-2018-inside-the-mind-during-the-last-rotation/"
+          },
+          "checked": "2026-11-03"
+        }
+      ]
+    },
+    {
+      "id": "route.summit-push-hazards",
+      "kind": "fact",
+      "claim": "On the summit push, from the Balcony past the South Summit and the Hillary Step, climbers face the altitude, the cold, frostbite, queues while their oxygen runs low, and corniced ridges over the Kangshung Face.",
+      "status": "source only",
+      "versions": [
+        {
+          "note": "Hundreds of climbers bottlenecked on the summit ridge; they turn their oxygen down so as not to run out, and can't move fast enough to stay warm; without supplemental oxygen, frostbite and altitude sickness are likelier.",
+          "source": {
+            "title": "National Geographic: Traffic Jams Are Just One of the Problems Facing Climbers on Everest (2019)",
+            "url": "https://education.nationalgeographic.org/resource/traffic-jams-are-just-one-problems-facing-climbers-everest"
+          },
+          "checked": "2026-11-03"
+        },
+        {
+          "note": "Steep to the South Summit, with bottlenecks up and down; the most exposure on the ridge, and vertigo on the soft edges of the boot tracks.",
+          "source": {
+            "title": "Hayden Rue: South Col of Mount Everest",
+            "url": "https://haydenrue.com/mountaineering/south-col-of-mount-everest/"
+          },
+          "checked": "2026-11-03"
+        },
+        {
+          "note": "Severe exposure on the ridge, past big snow cornices, with a risk of avalanche; a loose, rocky stretch with a tangle of fixed ropes after the Hillary Step.",
+          "source": {
+            "title": "Nepal Nomad: Everest Expedition",
+            "url": "https://nepalnomad.com/everest-expedition"
+          },
+          "checked": "2026-11-03"
+        },
+        {
+          "note": "In 1996, ropes not fixed in time at the Balcony and the Hillary Step bunched climbers up as their oxygen ran low; a whiteout with winds over 100 km/h followed, and on the north side, severe frostbite.",
+          "source": {
+            "title": "Explorersweb: The 1996 Everest Tragedy, 30 Years Later",
+            "url": "https://explorersweb.com/1996-everest-tragedy-30-years-later/"
+          },
+          "checked": "2026-11-03"
+        },
+        {
+          "note": "In May 2024, a line of about fifty climbers at the Hillary Step broke a soft cornice over the Kangshung Face; several fell and were held by the fixed rope, two have not been found.",
+          "source": {
+            "title": "Alan Arnette: Everest 2024: Weekend Update May 25: Season nears the End with Summits and Death",
+            "url": "https://www.alanarnette.com/blog/?p=45184"
+          },
+          "checked": "2026-11-03"
+        },
+        {
+          "note": "Most of 2023's eighteen dead, many between 8,400 m and 8,760 m, died as altitude, exhaustion and cold wore them down.",
+          "source": {
+            "title": "Explorersweb: 2023 Everest Deaths Totaled 18, the Worst Ever",
+            "url": "https://explorersweb.com/everest-final-2023-death-toll-worst-ever/"
+          },
+          "checked": "2026-11-03"
+        }
+      ]
+    },
+    {
+      "id": "route.summit-push-lessons",
+      "kind": "fact",
+      "claim": "Start very early, turn around at the set time whether or not the summit is reached, keep enough oxygen for the way down, and judge yourself honestly: summit fever kills.",
+      "status": "source only",
+      "versions": [
+        {
+          "note": "In 1996 everyone was to turn around by 2 pm, to be back at the high camp before dark, and many ignored it; so close to the top, summit fever set in and common sense was ignored.",
+          "source": {
+            "title": "Explorersweb: The 1996 Everest Tragedy, 30 Years Later",
+            "url": "https://explorersweb.com/1996-everest-tragedy-30-years-later/"
+          },
+          "checked": "2026-11-03"
+        },
+        {
+          "note": "Going on to the summit without enough oxygen to get back down is poor decision making.",
+          "source": {
+            "title": "National Geographic: Traffic Jams Are Just One of the Problems Facing Climbers on Everest (2019)",
+            "url": "https://education.nationalgeographic.org/resource/traffic-jams-are-just-one-problems-facing-climbers-everest"
+          },
+          "checked": "2026-11-03"
+        },
+        {
+          "note": "A very early start, to reach the summit before midday.",
+          "source": {
+            "title": "Alpine Ascents: Everest itinerary",
+            "url": "https://www.alpineascents.com/climbs/mount-everest/itinerary/"
+          },
+          "checked": "2026-11-03"
+        }
+      ]
+    },
+    {
+      "id": "route.descent-hazards",
+      "kind": "fact",
+      "claim": "The descent has the most accidents: exhaustion, cold, darkness, storms, oxygen running out, and climbers letting their guard down.",
+      "status": "source only",
+      "versions": [
+        {
+          "note": "The way back is dangerous and has the highest accident rate; fatigue, the weather and climbers letting their guard down add to the risk.",
+          "source": {
+            "title": "Hayden Rue: South Col of Mount Everest",
+            "url": "https://haydenrue.com/mountaineering/south-col-of-mount-everest/"
+          },
+          "checked": "2026-11-03"
+        },
+        {
+          "note": "In 1996, Yasuko Namba died of exhaustion and cold just outside the South Col camp; on the north side, darkness and the blizzard trapped three Indian climbers on the way down.",
+          "source": {
+            "title": "Explorersweb: The 1996 Everest Tragedy, 30 Years Later",
+            "url": "https://explorersweb.com/1996-everest-tragedy-30-years-later/"
+          },
+          "checked": "2026-11-03"
+        },
+        {
+          "note": "Climbers going down have to wait in line too, unable to move fast enough to stay warm.",
+          "source": {
+            "title": "National Geographic: Traffic Jams Are Just One of the Problems Facing Climbers on Everest (2019)",
+            "url": "https://education.nationalgeographic.org/resource/traffic-jams-are-just-one-problems-facing-climbers-everest"
+          },
+          "checked": "2026-11-03"
+        },
+        {
+          "note": "On the descent, the tube to his mask froze and shut off his oxygen.",
+          "source": {
+            "title": "Alan Arnette: Oxygen on Everest – Reviewing the Options",
+            "url": "https://www.alanarnette.com/blog/?p=16718"
+          },
+          "checked": "2026-11-03"
+        }
+      ]
+    },
+    {
+      "id": "route.descent-lessons",
+      "kind": "fact",
+      "claim": "The summit is only halfway: keep the time, the strength and the oxygen for the way back to the South Col, and stay on guard to the end.",
+      "status": "source only",
+      "versions": [
+        {
+          "note": "Back to the South Col takes a little over 3 to 4 hours, and letting the guard down is one of the risks.",
+          "source": {
+            "title": "Hayden Rue: South Col of Mount Everest",
+            "url": "https://haydenrue.com/mountaineering/south-col-of-mount-everest/"
+          },
+          "checked": "2026-11-03"
+        },
+        {
+          "note": "After the summit, the team goes back to the South Col and sleeps there, and goes down to Camp 2 the next day.",
+          "source": {
+            "title": "Alpine Ascents: Everest itinerary",
+            "url": "https://www.alpineascents.com/climbs/mount-everest/itinerary/"
+          },
+          "checked": "2026-11-03"
+        },
+        {
+          "note": "Turn back while there's oxygen enough to get down.",
+          "source": {
+            "title": "National Geographic: Traffic Jams Are Just One of the Problems Facing Climbers on Everest (2019)",
+            "url": "https://education.nationalgeographic.org/resource/traffic-jams-are-just-one-problems-facing-climbers-everest"
+          },
+          "checked": "2026-11-03"
+        }
+      ]
+    },
+    {
+      "id": "route.hillary-step-today",
+      "kind": "fact",
+      "claim": "Since the 2015 earthquake, the Hillary Step is a relatively steep snow slope, with the Kangshung Face on the right going up, under a cornice that can break.",
+      "status": "source only",
+      "versions": [
+        {
+          "note": "The traditional Hillary Step disappeared in the 2015 earthquake; today the route goes up a relatively steep snow slope with the Kangshung Face to the climber's right.",
+          "source": {
+            "title": "Alan Arnette: Everest 2024: Summits and more missing climbers",
+            "url": "https://www.alanarnette.com/2024/05/22/everest-2024-summit-and-more-missing-climbers/"
+          },
+          "checked": "2026-11-03"
+        },
+        {
+          "note": "The route passes the former location of the Hillary Step, destroyed in a 2015 earthquake.",
+          "source": {
+            "title": "Mountain Project: Southeast Ridge (South Col) of Everest",
+            "url": "https://mountainproject.com/route/126778851/southeast-ridge-south-col-of-everest"
+          },
+          "checked": "2026-11-03"
+        },
+        {
+          "note": "In 2024 a soft cornice overhanging the Kangshung Face broke at the Hillary Step under a line of climbers.",
+          "source": {
+            "title": "Alan Arnette: Everest 2024: Weekend Update May 25: Season nears the End with Summits and Death",
+            "url": "https://www.alanarnette.com/blog/?p=45184"
+          },
+          "checked": "2026-11-03"
+        }
+      ]
+    },
+    {
+      "id": "route.hillary-step-before-2015",
+      "kind": "fact",
+      "claim": "Before the 2015 earthquake, the Hillary Step was a vertical wall about this high, between the South Summit and the summit: the terrain of historical scenarios such as 1996.",
+      "status": "source only",
+      "versions": [
+        {
+          "value": 12,
+          "unit": "m",
+          "note": "A 12 m high, vertical wall; the page has no date, and doesn't say what the wall is made of.",
+          "source": {
+            "title": "Olaf Rieck: Everest, the route",
+            "url": "https://www.olafrieck.de/everest/route-e.htm"
+          },
+          "checked": "2026-11-03"
+        },
+        {
+          "note": "The traditional Hillary Step disappeared in the 2015 earthquake; the page shows a photo of it before.",
+          "source": {
+            "title": "Alan Arnette: Everest 2024: Summits and more missing climbers",
+            "url": "https://www.alanarnette.com/2024/05/22/everest-2024-summit-and-more-missing-climbers/"
+          },
+          "checked": "2026-11-03"
+        },
+        {
+          "note": "In 1996, the ropes weren't fixed in time at the Hillary Step, and climbers waited in line below it.",
+          "source": {
+            "title": "Explorersweb: The 1996 Everest Tragedy, 30 Years Later",
+            "url": "https://explorersweb.com/1996-everest-tragedy-30-years-later/"
+          },
+          "checked": "2026-11-03"
+        }
+      ]
+    },
+    {
+      "id": "route.hillary-step-rock",
+      "kind": "question",
+      "question": "What was the Hillary Step made of before 2015, rock, snow or both, and how high was it? The spec calls it a rock step; Olaf Rieck's undated page says only a 12 m vertical wall.",
+      "about": ["route.hillary-step-before-2015"]
+    }
+  ]
+}
