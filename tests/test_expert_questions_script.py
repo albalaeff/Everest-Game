@@ -90,6 +90,19 @@ class TestWhatsListed:
         assert "- **body.fatigue-rate** (a coefficient): Fatigue per hour.\n" in listed
         assert "  - 0.2 1/h, fitted to oxygen.usual-flow on 2026-11-01\n" in listed
 
+    def test_an_estimate_says_so(self, tmp_path: Path) -> None:
+        in_words = {"note": "About.", "source": SOURCE, "checked": "2026-10-31"}
+        versions = [
+            version(estimate=True),
+            in_words | {"value": 3, "unit": "L/min", "estimate": True},
+        ]
+        listed = experts(tmp_path, fact(versions=versions)).markdown("guide")
+        link = "[Arnette](https://www.alanarnette.com/blog/?p=16718)"
+        assert [line for line in listed.splitlines() if line.startswith("  - ")] == [
+            f"  - 2–4 L/min, an estimate: {link}, checked 2026-11-01",
+            f"  - 3 L/min, an estimate, About.: {link}, checked 2026-10-31",
+        ]
+
     def test_each_version_is_a_line(self, tmp_path: Path) -> None:
         versions = [
             version(),

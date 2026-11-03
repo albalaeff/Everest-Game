@@ -81,6 +81,10 @@
         "value": { "type": "number" },
         "range": { "$ref": "#/$defs/range" },
         "unit": { "$ref": "#/$defs/text" },
+        "estimate": {
+          "description": "The source estimates the number instead of giving one that's listed or measured, as with a price no operator publishes: true, or left out.",
+          "const": true
+        },
         "note": { "$ref": "#/$defs/text" },
         "source": { "$ref": "#/$defs/source" },
         "checked": { "$ref": "#/$defs/date" }
@@ -88,7 +92,10 @@
       "required": ["source", "checked"],
       "additionalProperties": false,
       "allOf": [{ "$ref": "#/$defs/measured" }],
-      "dependentSchemas": { "unit": { "$ref": "#/$defs/has-a-number" } }
+      "dependentSchemas": {
+        "unit": { "$ref": "#/$defs/has-a-number" },
+        "estimate": { "$ref": "#/$defs/has-a-number" }
+      }
     },
     "measured": {
       "not": { "required": ["value", "range"] },
