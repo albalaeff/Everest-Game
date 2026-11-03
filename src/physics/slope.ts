@@ -1,10 +1,11 @@
 import { SimulationClock } from "../simulation";
-import type { Moment } from "../simulation";
+import type { Moment, Walk } from "../simulation";
 import type { Climber } from "./climber";
+import type { Ladder } from "./ladder";
 import type { Rope, Slide } from "./rope";
 import { SteepnessCurve } from "./steepness";
 import type { SteepnessPoint } from "./steepness";
-import type { Point, Terrain } from "./terrain";
+import type { Point, Terrain, Way } from "./terrain";
 
 /**
  * The numbers the slope physics runs on, handed to it (docs/conventions.md → Data, not
@@ -26,12 +27,17 @@ export interface SlopeSettings {
   readonly walkingSpeed: readonly SteepnessPoint[];
   /** The chance a walking climber slips, per second, by the steepness ahead. */
   readonly slipChance: readonly SteepnessPoint[];
+  /** A climber's speed along a ladder by its steepness the way they go, in m/s: across a
+   * crevasse at 0°, up a wall at 90°, and down it at −90°. */
+  readonly ladderSpeed: readonly SteepnessPoint[];
+  /** The chance a climber on a ladder slips, per second, by its steepness the way they go. */
+  readonly ladderSlipChance: readonly SteepnessPoint[];
 }
 
 /**
- * The ground and its ropes, and how everything on them moves in a step: the climbers walk, the
- * falling bodies move in sub-steps of Verlet integration, held by their ropes and the ground,
- * then the ropes move in one, pulled after their climbers.
+ * The ground with its ropes and ladders, and how everything on them moves in a step: the climbers
+ * walk, the falling bodies move in sub-steps of Verlet integration, held by their ropes and the
+ * ground, then the ropes move in one, pulled after their climbers.
  */
 export class Slope {
   /** Sub-steps of a step for a falling body, and the constraints' rounds in each: the engine's
@@ -45,15 +51,20 @@ export class Slope {
 
   readonly walkingSpeed: SteepnessCurve;
   readonly slipChance: SteepnessCurve;
+  readonly ladderSpeed: SteepnessCurve;
+  readonly ladderSlipChance: SteepnessCurve;
   readonly substepSeconds = SimulationClock.STEP_SECONDS / Slope.SUBSTEPS;
 
   constructor(
     readonly settings: SlopeSettings,
     readonly terrain: Terrain,
     readonly ropes: ReadonlyMap<string, Rope>,
+    readonly ladders: ReadonlyMap<string, Ladder>,
   ) {
     this.walkingSpeed = new SteepnessCurve(settings.walkingSpeed);
     this.slipChance = new SteepnessCurve(settings.slipChance);
+    this.ladderSpeed = new SteepnessCurve(settings.ladderSpeed);
+    this.ladderSlipChance = new SteepnessCurve(settings.ladderSlipChance);
   }
 
   rope(id: string): Rope {
@@ -62,6 +73,45 @@ export class Slope {
       throw new RangeError(`There's no rope ${id} on the slope`);
     }
     return rope;
+  }
+
+  ladder(id: string): Ladder {
+    const ladder = this.ladders.get(id);
+    if (ladder === undefined) {
+      throw new RangeError(`There's no ladder ${id} on the slope`);
+    }
+    return ladder;
+  }
+
+  /** The ladder a climber standing at `along` steps onto, walking `direction`: one with an end
+   * there that the direction goes along it from. */
+  ladderFrom(along: number, direction: Walk["direction"]): Ladder | null {
+    for (const ladder of this.ladders.values()) {
+      const way = ladder.way(direction);
+      if (way !== 0 && ladder.into(along) === way) {
+        return ladder;
+      }
+    }
+    return null;
+  }
+
+  /** Whether the ground `way` from `along` is under a ladder, which walking crosses on instead. */
+  underLadder(along: number, way: Way): boolean {
+    return [...this.ladders.values()].some((ladder) => ladder.into(along) === way);
+  }
+
+  /** Where a step `way` from `along` stops: at the next corner of the ground or end of a ladder. */
+  stopAhead(along: number, way: Way): number {
+    let stop = this.terrain.cornerAhead(along, way);
+    for (const ladder of this.ladders.values()) {
+      for (const end of ladder.ends) {
+        const nearer = way > 0 ? end > along && end < stop : end < along && end > stop;
+        if (nearer) {
+          stop = end;
+        }
+      }
+    }
+    return stop;
   }
 
   /** The rope nearest a climber within a cowstail's reach, if any, and where on it. */

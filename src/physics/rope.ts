@@ -41,7 +41,8 @@ interface Tether {
  * A cowstail runs on it through a carabiner, which slides. A climber is held where the rope's
  * length lets them be: no further from its two anchors together than the rope and two cowstails,
  * an ellipse around them. That holds them as a rope does, and it can't give under a heavy climber
- * as a chain of light points would. Each climber is held as if alone on it.
+ * as a chain of light points would. Each climber is held as if alone on it. A jumar that grips
+ * the rope holds them the same way, by the rope on each side of it: a circle around each anchor.
  */
 export class Rope {
   /** The links' length, about: the engine's number, not the mountain's. */
@@ -215,6 +216,22 @@ export class Rope {
     if (out > 0) {
       body.shift((-over * outX) / out, (-over * outY) / out);
     }
+  }
+
+  /** Whether the rope lets a climber be at a point when their jumar grips it at `slide`: no
+   * further from each anchor than the rope on that side of the jumar and a cowstail of `reach`. */
+  letsAt(slide: Slide, point: Point, reach: number): boolean {
+    return (
+      Rope.distance(point, this.from) <= slide + reach &&
+      Rope.distance(point, this.to) <= this.length - slide + reach
+    );
+  }
+
+  /** Puts a falling climber whose jumar grips the rope at `slide` back where the rope lets them
+   * be, if they've gone past it. */
+  holdAt(slide: Slide, body: Particle, reach: number): void {
+    Rope.within(body, this.from, slide + reach);
+    Rope.within(body, this.to, this.length - slide + reach);
   }
 
   /** Pulls the point of the rope nearest a carabiner to within a cowstail of its climber. */

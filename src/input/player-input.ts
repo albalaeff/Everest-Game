@@ -36,7 +36,7 @@ export class PlayerInput {
     if (control.release !== undefined) {
       this.held.add(control);
     }
-    this.sink.send(control.press(this.climber));
+    this.sink.send(control.press(this.climber, this.slope.climber));
   }
 
   release(control: Control): void {

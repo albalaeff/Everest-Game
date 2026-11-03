@@ -1,6 +1,8 @@
 import type { ClimberId, Json, Moment, Rule } from "../simulation";
 import { Climber } from "./climber";
 import type { ClimberSave, ClimberView } from "./climber";
+import { Ladder } from "./ladder";
+import type { LadderLayout } from "./ladder";
 import { Rope } from "./rope";
 import type { RopeSave } from "./rope";
 import { Slope } from "./slope";
@@ -8,6 +10,7 @@ import type { SlopeSettings } from "./slope";
 import { Terrain } from "./terrain";
 import type { Pair, Point } from "./terrain";
 
+export type { LadderLayout } from "./ladder";
 export type { SlopeSettings } from "./slope";
 
 /** A rope as a level lays it: its anchors on the ground, by how far along it they are. */
@@ -25,10 +28,12 @@ export interface ClimberLayout {
   readonly along: number;
 }
 
-/** A section of the route as a scenario starts it: its ground, its ropes and who's on it. */
+/** A section of the route as a scenario starts it: its ground, its ropes and ladders, and who's
+ * on it. */
 export interface SlopeLayout {
   readonly terrain: readonly Pair[];
   readonly ropes: readonly RopeLayout[];
+  readonly ladders: readonly LadderLayout[];
   readonly climbers: readonly ClimberLayout[];
 }
 
@@ -36,14 +41,16 @@ export interface SlopeLayout {
 type SlopeSave = {
   readonly terrain: readonly Pair[];
   readonly ropes: readonly RopeSave[];
+  readonly ladders: readonly LadderLayout[];
   readonly climbers: readonly ClimberSave[];
 };
 
 /**
  * The slope physics, as a rule of the core run inside its step (docs/conventions/slope-physics.md):
- * climbers walk over the ground, a slip where friction can't hold them becomes a fall, and a
- * fixed rope holds a climber clipped to it. Its numbers are handed to it; the ground, the ropes
- * and the climbers are its state, which a scenario starts and a save keeps.
+ * climbers walk over the ground and cross on ladders, a slip where friction can't hold them
+ * becomes a fall, and a fixed rope holds a climber clipped to it, on the carabiner or the jumar.
+ * Its numbers are handed to it; the ground, the ropes, the ladders and the climbers are its
+ * state, which a scenario starts and a save keeps.
  */
 export class SlopePhysics implements Rule {
   /** Its key in scenarios and saves: never change it once saves exist. */
@@ -56,7 +63,7 @@ export class SlopePhysics implements Rule {
 
   constructor(private readonly settings: SlopeSettings) {}
 
-  /** A scenario's start state for a layout: the ropes laid, every climber standing. */
+  /** A scenario's start state for a layout: the ropes and ladders laid, every climber standing. */
   static start(layout: SlopeLayout): Json {
     const terrain = new Terrain(layout.terrain);
     const onTheGround = (along: number, what: string): number => {
@@ -69,10 +76,14 @@ export class SlopePhysics implements Rule {
       const anchor = (along: number) => terrain.point(onTheGround(along, `The rope ${id}`));
       return Rope.laid(id, anchor(from), anchor(to), length, terrain).save();
     });
+    const ladders = layout.ladders.map(({ id, from, to }) => {
+      const end = (along: number) => onTheGround(along, `The ladder ${id}`);
+      return new Ladder({ id, from: end(from), to: end(to) }, terrain).save();
+    });
     const climbers = layout.climbers.map(({ id, along }) =>
       Climber.standing(id, onTheGround(along, id)).save(),
     );
-    const save: SlopeSave = { terrain: layout.terrain, ropes, climbers };
+    const save: SlopeSave = { terrain: layout.terrain, ropes, ladders, climbers };
     return save;
   }
 
@@ -86,14 +97,21 @@ export class SlopePhysics implements Rule {
     return this.loaded.rope(id).shape;
   }
 
+  /** Where a ladder lies: its two ends. */
+  ladder(id: string): readonly Point[] {
+    return this.loaded.ladder(id).shape;
+  }
+
   get terrain(): Terrain {
     return this.loaded.terrain;
   }
 
   load(state: Json): void {
     const save = state as unknown as SlopeSave;
+    const terrain = new Terrain(save.terrain);
     const ropes = save.ropes.map((rope) => [rope.id, Rope.load(rope)] as const);
-    const slope = new Slope(this.settings, new Terrain(save.terrain), new Map(ropes));
+    const ladders = save.ladders.map((ladder) => [ladder.id, new Ladder(ladder, terrain)] as const);
+    const slope = new Slope(this.settings, terrain, new Map(ropes), new Map(ladders));
     this.slope = slope;
     this.climbers.clear();
     for (const climber of save.climbers) {
@@ -102,10 +120,11 @@ export class SlopePhysics implements Rule {
   }
 
   save(): Json {
-    const { terrain, ropes } = this.loaded;
+    const { terrain, ropes, ladders } = this.loaded;
     const save: SlopeSave = {
       terrain: terrain.points,
       ropes: [...ropes.values()].map((rope) => rope.save()),
+      ladders: [...ladders.values()].map((ladder) => ladder.save()),
       climbers: [...this.climbers.values()].map((climber) => climber.save()),
     };
     return save;

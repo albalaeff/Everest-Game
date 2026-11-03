@@ -5,7 +5,7 @@ import type { Control, ControlName } from "./controls";
 import { PlayerInput } from "./player-input";
 import { PlainSlopeView } from "./slope-view";
 import { Steering } from "./steering";
-import { HeardActions } from "./testing/fakes";
+import { FakeSlopeView, HeardActions } from "./testing/fakes";
 
 function control(name: ControlName): Control {
   const found = CONTROLS.find((row) => row.name === name);
@@ -59,6 +59,21 @@ describe("PlayerInput", () => {
     input.press(control("clip-first"));
 
     expect(heard.actions).toEqual([{ kind: "clip", climber: "anna", cowstail: "first" }]);
+  });
+
+  it("takes a cowstail off with its own key once it's on a rope: the key toggles it", () => {
+    const heard = new HeardActions();
+    const slope = new FakeSlopeView({ innerWidth: 640, innerHeight: 360 });
+    const input = new PlayerInput("anna", slope, heard);
+
+    slope.climber = { x: 0, y: 0, first: "fixed", second: null };
+    input.press(control("clip-first"));
+    input.press(control("clip-second"));
+
+    expect(heard.actions).toEqual([
+      { kind: "unclip", climber: "anna", cowstail: "first" },
+      { kind: "clip", climber: "anna", cowstail: "second" },
+    ]);
   });
 
   it("gives each tap of a press its own action", () => {

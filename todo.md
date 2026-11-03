@@ -119,10 +119,10 @@ Tasks marked *Iteration 1–3* are planned into the board's first two-week itera
 - [x] Done gate
 
 ### Task 13: Fixed ropes, cowstails, jumar and ladders ([#21](https://github.com/albalaeff/Everest-Game/issues/21)) · *Iteration 3*
-- [ ] Two cowstails: at an anchor, the second is clipped before the first comes off; unclipping is possible and dangerous
-- [ ] The jumar slides along the rope while held
-- [ ] Crossing a ladder over a crevasse
-- [ ] Done gate
+- [x] Two cowstails: at an anchor, the second is clipped before the first comes off; unclipping is possible and dangerous
+- [x] The jumar slides along the rope while held
+- [x] Crossing a ladder over a crevasse
+- [x] Done gate
 
 ### Task 14: Body model v1: fatigue, blood oxygen and pace ([#22](https://github.com/albalaeff/Everest-Game/issues/22)) · *Iteration 3*
 - [ ] SpO2 from altitude and oxygen flow; fatigue from pace, load, sleep, food and water; the rest step against a faster pace

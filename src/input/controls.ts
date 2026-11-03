@@ -1,5 +1,6 @@
 import type { ClimberId, Tool } from "../simulation";
 import type { PlayerAction } from "./player-action";
+import type { SeenClimber } from "./slope-view";
 
 export type ControlName =
   | "check-self"
@@ -16,7 +17,8 @@ export type ControlName =
  * One action of the spec's controls table on every device: an action more is a row more. `keys` are
  * `KeyboardEvent.code`s, so they stay put on a Russian layout, and `gamepadButton` an index of the
  * Gamepad API's standard mapping. `group` says where its button goes on the page. A control with
- * a `release` is held.
+ * a `release` is held. A press may depend on what the player sees of their climber: a clip key
+ * takes its cowstail off once it's on a rope.
  */
 export interface Control {
   readonly name: ControlName;
@@ -24,7 +26,7 @@ export interface Control {
   readonly keyName: string;
   readonly gamepadButton: number;
   readonly group: "menu" | "oxygen" | "thumb";
-  readonly press: (climber: ClimberId) => PlayerAction;
+  readonly press: (climber: ClimberId, seen: SeenClimber) => PlayerAction;
   readonly release?: (climber: ClimberId) => PlayerAction;
 }
 
@@ -83,7 +85,11 @@ export const CONTROLS: readonly Control[] = [
     keyName: "E",
     gamepadButton: 2,
     group: "thumb",
-    press: (climber) => ({ kind: "clip", climber, cowstail: "first" }),
+    press: (climber, seen) => ({
+      kind: seen.first === null ? "clip" : "unclip",
+      climber,
+      cowstail: "first",
+    }),
   },
   {
     name: "clip-second",
@@ -91,7 +97,11 @@ export const CONTROLS: readonly Control[] = [
     keyName: "R",
     gamepadButton: 3,
     group: "thumb",
-    press: (climber) => ({ kind: "clip", climber, cowstail: "second" }),
+    press: (climber, seen) => ({
+      kind: seen.second === null ? "clip" : "unclip",
+      climber,
+      cowstail: "second",
+    }),
   },
   {
     name: "jumar",
