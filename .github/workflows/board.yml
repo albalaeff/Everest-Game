@@ -1,0 +1,41 @@
+name: Project board
+
+# Keeps the project board current (#118, scripts/board.py): an ended iteration's open cards move
+# into the next, two iterations stay ahead, and each card's status follows its issue. Every
+# hour, and on demand. The board is albalaeff's project 2; PROJECT_TOKEN is a classic token
+# with the `project` scope, since a fine-grained token can't reach a project a user owns.
+on:
+  schedule:
+    - cron: "17 * * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: board
+  cancel-in-progress: false
+
+jobs:
+  board:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+
+      - uses: astral-sh/setup-uv@v7
+        with:
+          python-version: "3.14"
+          enable-cache: true
+
+      - name: Keep the board current
+        env:
+          GITHUB_TOKEN: ${{ secrets.PROJECT_TOKEN }}
+        run: |
+          if [ -z "$GITHUB_TOKEN" ]; then
+            echo "::error::The secret PROJECT_TOKEN is missing: a classic token with the project scope (README → The project board)."
+            exit 1
+          fi
+          uv run --locked --no-dev python scripts/board.py 2
