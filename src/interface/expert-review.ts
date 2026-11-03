@@ -1,6 +1,6 @@
 /** A record of content/facts/, as far as its review goes: a question has no status, and is open. */
 export interface ReviewedRecord {
-  readonly status?: string;
+  readonly status?: string | undefined;
 }
 
 /** One file of content/facts/. */

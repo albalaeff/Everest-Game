@@ -5,6 +5,7 @@ import { Ladder } from "./ladder";
 import type { LadderLayout } from "./ladder";
 import { Rope } from "./rope";
 import type { RopeSave } from "./rope";
+import type { SectionAltitude } from "./section-scale";
 import { Slope } from "./slope";
 import type { SlopeSettings } from "./slope";
 import { Terrain } from "./terrain";
@@ -28,10 +29,11 @@ export interface ClimberLayout {
   readonly along: number;
 }
 
-/** A section of the route as a scenario starts it: its ground, its ropes and ladders, and who's
- * on it. */
+/** A section of the route as a scenario starts it: its ground, the real altitude of its ends, its
+ * ropes and ladders, and who's on it. */
 export interface SlopeLayout {
   readonly terrain: readonly Pair[];
+  readonly altitude: SectionAltitude;
   readonly ropes: readonly RopeLayout[];
   readonly ladders: readonly LadderLayout[];
   readonly climbers: readonly ClimberLayout[];
@@ -40,6 +42,7 @@ export interface SlopeLayout {
 /** The slope physics' whole state, as saves keep it. */
 type SlopeSave = {
   readonly terrain: readonly Pair[];
+  readonly altitude: SectionAltitude;
   readonly ropes: readonly RopeSave[];
   readonly ladders: readonly LadderLayout[];
   readonly climbers: readonly ClimberSave[];
@@ -83,7 +86,8 @@ export class SlopePhysics implements Rule {
     const climbers = layout.climbers.map(({ id, along }) =>
       Climber.standing(id, onTheGround(along, id)).save(),
     );
-    const save: SlopeSave = { terrain: layout.terrain, ropes, ladders, climbers };
+    const { terrain: ground, altitude } = layout;
+    const save: SlopeSave = { terrain: ground, altitude, ropes, ladders, climbers };
     return save;
   }
 
@@ -121,7 +125,13 @@ export class SlopePhysics implements Rule {
     const terrain = new Terrain(save.terrain);
     const ropes = save.ropes.map((rope) => [rope.id, Rope.load(rope)] as const);
     const ladders = save.ladders.map((ladder) => [ladder.id, new Ladder(ladder, terrain)] as const);
-    const slope = new Slope(this.settings, terrain, new Map(ropes), new Map(ladders));
+    const slope = new Slope(
+      this.settings,
+      terrain,
+      save.altitude,
+      new Map(ropes),
+      new Map(ladders),
+    );
     this.slope = slope;
     this.climbers.clear();
     for (const climber of save.climbers) {
@@ -130,9 +140,10 @@ export class SlopePhysics implements Rule {
   }
 
   save(): Json {
-    const { terrain, ropes, ladders } = this.loaded;
+    const { terrain, scale, ropes, ladders } = this.loaded;
     const save: SlopeSave = {
       terrain: terrain.points,
+      altitude: scale.altitude,
       ropes: [...ropes.values()].map((rope) => rope.save()),
       ladders: [...ladders.values()].map((ladder) => ladder.save()),
       climbers: [...this.climbers.values()].map((climber) => climber.save()),

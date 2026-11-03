@@ -1,8 +1,10 @@
 import { describe, expect, it } from "vitest";
 
+import time from "../../content/facts/time.json";
 import standIn from "../../content/route/stand-in.json";
-import { SlopePhysics, Terrain } from "../physics";
-import { Expedition } from "../simulation";
+import { SectionScale, SlopePhysics, Terrain } from "../physics";
+import { Expedition, MountainClock } from "../simulation";
+import { KnowledgeBase } from "./knowledge-base";
 import { StandInRoute } from "./stand-in-route";
 
 describe("StandInRoute", () => {
@@ -47,6 +49,26 @@ describe("StandInRoute", () => {
         expect(corners.has(`${x} ${y}`)).toBe(true);
       }
     }
+  });
+
+  it("has its ends at its made-up altitudes, drawn at the knowledge base's ratio", () => {
+    const { layout } = new StandInRoute();
+    const terrain = new Terrain(layout.terrain);
+    const scale = new SectionScale(terrain, layout.altitude);
+
+    expect(layout.altitude.end).toBeGreaterThan(layout.altitude.start);
+    expect(scale.compression).toBeCloseTo(new KnowledgeBase([time]).number("time.compression"), 6);
+  });
+
+  it("starts the mountain's clock at its date and time", () => {
+    const route = new StandInRoute();
+    const clock = new MountainClock(1);
+    const expedition = Expedition.start(route.scenario(1), [clock]);
+
+    expedition.advance();
+
+    expect(clock.start).toEqual(route.clock);
+    expect(clock.day).toBe(0);
   });
 
   it("refuses a point of the data that isn't a pair", () => {

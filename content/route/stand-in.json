@@ -1,5 +1,5 @@
 {
-  "note": "A stand-in for the route's first section until the Khumbu Icefall (#26) brings the real ground and the knowledge base's numbers: a made-up line shaped like the Icefall, with made-up speeds and slip chances. Nothing here is a fact. Every sloping segment is a Pythagorean triple, so the distances along the ground, which the ropes, the ladders and the climbers are laid by, are whole metres: the corners are at 0, 20, 45, 58, 63, 67, 72, 84, 99, 102, 117, 130, 155, 172, 182, 190, 198, 223, 240, 265, 278, 299, 324, 344 and 364 m along it.",
+  "note": "A stand-in for the route's first section until the Khumbu Icefall (#26) brings the real ground and the knowledge base's numbers: a made-up line shaped like the Icefall, with made-up speeds and slip chances. Nothing here is a fact. Every sloping segment is a Pythagorean triple, so the distances along the ground, which the ropes, the ladders and the climbers are laid by, are whole metres: the corners are at 0, 20, 45, 58, 63, 67, 72, 84, 99, 102, 117, 130, 155, 172, 182, 190, 198, 223, 240, 265, 278, 299, 324, 344 and 364 m along it. The altitude of its ends and the clock's start are made up too; the ends are 12 times the drawn rise apart, since every section is drawn at 1/time.compression (docs/conventions/slope-physics.md → The slope).",
   "settings": {
     "gravity": 9.8,
     "friction": 0.4,
@@ -50,6 +50,7 @@
       [280, 102],
       [300, 102]
     ],
+    "altitude": { "start": 5000, "end": 6224 },
     "ropes": [
       { "id": "serac", "from": 58, "to": 63, "length": 5.5 },
       { "id": "step", "from": 172, "to": 182, "length": 11 },
@@ -63,5 +64,6 @@
       { "id": "player", "along": 10 },
       { "id": "teammate", "along": 130 }
     ]
-  }
+  },
+  "clock": { "date": "2026-04-20", "time": "04:00" }
 }

@@ -1,0 +1,21 @@
+{
+  "$schema": "../facts.schema.json",
+  "facts": [
+    {
+      "id": "time.compression",
+      "kind": "coefficient",
+      "claim": "The game's scale: how many times faster than play the mountain's time runs, and how many real metres a drawn metre of a section stands for. One ratio for the clock and the route, so that a climber walking at real speed over a section drawn at 1/12 takes the section's real hours; an hour on the mountain passes in five minutes of play. Fitted so that the slowest summit day on record, 12 hours from the South Col to the summit in the queue of 20 May 2026, plays in an hour, within the 60–90 minutes the spec gives the push, and so that the whole climb takes about six hours once camp skips the waits.",
+      "status": "source only",
+      "value": 12,
+      "unit": "1",
+      "fitted_to": ["crowds.south-col-to-summit-2026"],
+      "fitted": "2026-11-03"
+    },
+    {
+      "id": "time.section-hours",
+      "kind": "question",
+      "question": "How many hours does each section of the South route take, up and down, the first time and on later rotations: Base Camp to Camp 1 through the Icefall, Camp 1 to Camp 2, Camp 2 to Camp 3 up the Lhotse Face, Camp 3 to the South Col, and the South Col to the summit? How long is each on the ground, and how much does it climb? The game draws every section at the same share of life and walks the climber at real speed, so these hours and lengths are what it has to fit.",
+      "about": ["time.compression"]
+    }
+  ]
+}

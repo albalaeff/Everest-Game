@@ -21,6 +21,8 @@ export type Fall = {
 export interface ClimberView {
   readonly x: number;
   readonly y: number;
+  /** Metres above sea level, as the altimeter reads them on the section's scale. */
+  readonly altitude: number;
   /** Off their feet: sliding, in the air, or hanging on a rope. */
   readonly falling: boolean;
   readonly walking: Walk["direction"];
@@ -238,10 +240,11 @@ export class Climber {
   }
 
   view(slope: Slope): ClimberView {
-    const { x, y } = this.where(slope);
+    const where = this.where(slope);
     return {
-      x,
-      y,
+      x: where.x,
+      y: where.y,
+      altitude: slope.scale.altitudeAt(where),
       falling: this.falling !== null,
       walking: this.walking,
       first: this.first?.rope.id ?? null,

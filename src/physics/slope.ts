@@ -3,6 +3,8 @@ import type { Moment, Walk } from "../simulation";
 import type { Climber } from "./climber";
 import type { Ladder } from "./ladder";
 import type { Rope, Slide } from "./rope";
+import { SectionScale } from "./section-scale";
+import type { SectionAltitude } from "./section-scale";
 import { SteepnessCurve } from "./steepness";
 import type { SteepnessPoint } from "./steepness";
 import type { Point, Terrain, Way } from "./terrain";
@@ -54,13 +56,17 @@ export class Slope {
   readonly ladderSpeed: SteepnessCurve;
   readonly ladderSlipChance: SteepnessCurve;
   readonly substepSeconds = SimulationClock.STEP_SECONDS / Slope.SUBSTEPS;
+  /** The section's scale, which reads the altimeter. */
+  readonly scale: SectionScale;
 
   constructor(
     readonly settings: SlopeSettings,
     readonly terrain: Terrain,
+    altitude: SectionAltitude,
     readonly ropes: ReadonlyMap<string, Rope>,
     readonly ladders: ReadonlyMap<string, Ladder>,
   ) {
+    this.scale = new SectionScale(terrain, altitude);
     this.walkingSpeed = new SteepnessCurve(settings.walkingSpeed);
     this.slipChance = new SteepnessCurve(settings.slipChance);
     this.ladderSpeed = new SteepnessCurve(settings.ladderSpeed);
