@@ -1,5 +1,6 @@
 import { SimulationClock } from "../simulation";
 import type { ClimberId, GameAction, Moment, Walk } from "../simulation";
+import type { Ladder } from "./ladder";
 import { Particle } from "./particle";
 import type { ParticleSave } from "./particle";
 import type { Rope, Slide } from "./rope";
@@ -23,14 +24,18 @@ export interface ClimberView {
   /** Off their feet: sliding, in the air, or hanging on a rope. */
   readonly falling: boolean;
   readonly walking: Walk["direction"];
-  /** The rope each cowstail is clipped to, or none. */
+  /** The rope each cowstail is clipped to, or none: the first's is the jumar's. */
   readonly first: string | null;
   readonly second: string | null;
+  /** The ladder they're on, or none. */
+  readonly ladder: string | null;
   /** Each fall that's over, in order. */
   readonly falls: readonly Fall[];
 }
 
 type CarabinerSave = { readonly rope: string; readonly slide: Slide };
+
+type OnLadderSave = { readonly ladder: string; readonly rung: number };
 
 type FallingSave = {
   readonly step: number;
@@ -43,16 +48,19 @@ type FallingSave = {
 /** A climber as saves keep them. */
 export type ClimberSave = {
   readonly id: ClimberId;
-  /** Where they stand, along the ground, when they're on their feet. */
+  /** Where they stand, along the ground, when they're on their feet and not on a ladder. */
   readonly along: number;
+  readonly onLadder: OnLadderSave | null;
   readonly walking: Walk["direction"];
+  /** Whether their hand slides the jumar: its key is held. */
+  readonly jumarHeld: boolean;
   readonly first: CarabinerSave | null;
   readonly second: CarabinerSave | null;
   readonly falling: FallingSave | null;
   readonly falls: readonly Fall[];
 };
 
-/** A cowstail's carabiner on a rope, sliding along it. */
+/** A cowstail's carabiner, or its jumar, on a rope: it runs along it, or grips it where it is. */
 class Carabiner {
   constructor(
     readonly rope: Rope,
@@ -68,9 +76,44 @@ class Carabiner {
     this.slide = this.rope.slideToward(this.slide, climber);
   }
 
+  /** Whether the rope lets its climber be at a point: anywhere its length reaches while this
+   * runs along it, and within the rope on each side of it while it `grips`. */
+  lets(point: Point, reach: number, grips: boolean): boolean {
+    return grips ? this.rope.letsAt(this.slide, point, reach) : this.rope.lets(point, reach);
+  }
+
+  /** Puts a falling climber back where the rope lets them be, if they've gone past it. */
+  hold(body: Particle, reach: number, grips: boolean): void {
+    if (grips) {
+      this.rope.holdAt(this.slide, body, reach);
+    } else {
+      this.rope.hold(body, reach);
+    }
+  }
+
   /** Pulls the rope after the climber, to within the cowstail's reach. */
   pull(climber: Point, reach: number): void {
     this.rope.follow(this.slide, climber, reach);
+  }
+}
+
+/** Where on a ladder a climber stands: `rung` metres along it. */
+class OnLadder {
+  constructor(
+    readonly ladder: Ladder,
+    readonly rung: number,
+  ) {}
+
+  static load(save: OnLadderSave, slope: Slope): OnLadder {
+    return new OnLadder(slope.ladder(save.ladder), save.rung);
+  }
+
+  save(): OnLadderSave {
+    return { ladder: this.ladder.id, rung: this.rung };
+  }
+
+  get point(): Point {
+    return this.ladder.point(this.rung);
   }
 }
 
@@ -128,8 +171,11 @@ class Falling {
 }
 
 /**
- * One climber on the slope: on their feet somewhere along the ground, or falling, a body under
- * gravity. They're a point at their feet. Each cowstail is clipped to a rope, or not.
+ * One climber on the slope: on their feet somewhere along the ground or on a ladder, or falling,
+ * a body under gravity. They're a point at their feet. Each cowstail is clipped to a rope, or
+ * not. The first ends in the jumar, which runs along its rope only while their hand slides it and
+ * they're on their feet, and grips the rope where it is otherwise, in a fall too. The second
+ * ends in a carabiner, which always runs.
  */
 export class Climber {
   private static readonly WAYS: Readonly<Record<Walk["direction"], Way | 0>> = {
@@ -147,7 +193,9 @@ export class Climber {
   private constructor(
     readonly id: ClimberId,
     private along: number,
+    private onLadder: OnLadder | null,
     private walking: Walk["direction"],
+    private jumarHeld: boolean,
     private first: Carabiner | null,
     private second: Carabiner | null,
     private falling: Falling | null,
@@ -156,7 +204,7 @@ export class Climber {
 
   /** A climber standing at `along`, still, clipped to nothing. */
   static standing(id: ClimberId, along: number): Climber {
-    return new Climber(id, along, "stop", null, null, null, []);
+    return new Climber(id, along, null, "stop", false, null, null, null, []);
   }
 
   static load(save: ClimberSave, slope: Slope): Climber {
@@ -165,7 +213,9 @@ export class Climber {
     return new Climber(
       save.id,
       save.along,
+      save.onLadder === null ? null : OnLadder.load(save.onLadder, slope),
       save.walking,
+      save.jumarHeld,
       carabiner(save.first),
       carabiner(save.second),
       save.falling === null ? null : Falling.load(save.falling),
@@ -177,7 +227,9 @@ export class Climber {
     return {
       id: this.id,
       along: this.along,
+      onLadder: this.onLadder?.save() ?? null,
       walking: this.walking,
+      jumarHeld: this.jumarHeld,
       first: this.first?.save() ?? null,
       second: this.second?.save() ?? null,
       falling: this.falling?.save() ?? null,
@@ -194,14 +246,19 @@ export class Climber {
       walking: this.walking,
       first: this.first?.rope.id ?? null,
       second: this.second?.rope.id ?? null,
+      ladder: this.onLadder?.ladder.id ?? null,
       falls: [...this.falls],
     };
   }
 
-  /** Takes an action of theirs: the walking and the cowstails are the physics', the rest isn't. */
+  /** Takes an action of theirs: the walking, the cowstails and the jumar are the physics', the
+   * rest isn't. */
   hear(action: GameAction, slope: Slope): void {
     if (action.kind === "walk") {
       this.walking = action.direction;
+    }
+    if (action.kind === "jumar") {
+      this.jumarHeld = action.held;
     }
     if (
       action.kind === "clip" &&
@@ -219,40 +276,18 @@ export class Climber {
   }
 
   /**
-   * Takes this step's steps, on their feet: along the ground at the speed for its steepness, up
-   * to the next corner, and as far as their ropes let them. Ground too steep to walk up stops
-   * them; ground too steep to walk down is a fall. On steep ground, each step may slip.
+   * Takes this step's steps, on their feet: on a ladder if they're on one or their way steps onto
+   * one, and along the ground otherwise. Each goes as far as their ropes let them, and may slip.
    */
   walk(slope: Slope, moment: Moment): void {
-    const way = Climber.WAYS[this.walking];
-    if (this.falling !== null || way === 0) {
+    if (this.falling !== null) {
       return;
     }
-    const { terrain, walkingSpeed, slipChance } = slope;
-    const ahead = terrain.ahead(this.along, way);
-    const steepness = Steepness.ofWay(ahead.x, ahead.y);
-    const speed = walkingSpeed.at(steepness);
-    if (walkingSpeed.steeperUp(steepness)) {
-      return;
-    }
-    if (walkingSpeed.steeperDown(steepness)) {
-      this.fall(slope, ahead, speed, moment.step);
-      return;
-    }
-    const corner = terrain.cornerAhead(this.along, way);
-    const walked = this.along + way * speed * SimulationClock.STEP_SECONDS;
-    const along = way > 0 ? Math.min(walked, corner) : Math.max(walked, corner);
-    const foot = terrain.point(along);
-    if (!this.carabiners.every(({ rope }) => rope.lets(foot, slope.settings.cowstail))) {
-      return;
-    }
-    this.along = along;
-    for (const carabiner of this.carabiners) {
-      carabiner.slideToward(foot);
-    }
-    const chance = slipChance.at(steepness) * SimulationClock.STEP_SECONDS;
-    if (chance > 0 && moment.random.chance(chance)) {
-      this.fall(slope, ahead, speed, moment.step);
+    const onLadder = this.onLadder ?? this.ladderAhead(slope);
+    if (onLadder === null) {
+      this.walkGround(slope, moment);
+    } else {
+      this.climb(onLadder, slope, moment);
     }
   }
 
@@ -278,8 +313,8 @@ export class Climber {
   /** Falling, they go no further than each rope they're clipped to lets them. */
   holdOn(slope: Slope): void {
     if (this.falling !== null) {
-      for (const { rope } of this.carabiners) {
-        rope.hold(this.falling.body, slope.settings.cowstail);
+      for (const carabiner of this.carabiners) {
+        carabiner.hold(this.falling.body, slope.settings.cowstail, this.grips(carabiner));
       }
     }
   }
@@ -295,11 +330,13 @@ export class Climber {
     this.falling?.note(slope.substepSeconds);
   }
 
-  /** After the ropes move, the carabiners slide after them. */
+  /** After they or the ropes move, the carabiners that run slide after them. */
   slide(slope: Slope): void {
     const where = this.where(slope);
     for (const carabiner of this.carabiners) {
-      carabiner.slideToward(where);
+      if (!this.grips(carabiner)) {
+        carabiner.slideToward(where);
+      }
     }
   }
 
@@ -319,9 +356,90 @@ export class Climber {
     return this.carabiners.map(({ rope }) => rope);
   }
 
-  /** Their feet, or their body in a fall. */
+  /**
+   * Along the ground at the speed for its steepness, up to the next corner or ladder's end. Ground
+   * too steep to walk up stops them, and so does the ground under a ladder; ground too steep to
+   * walk down is a fall.
+   */
+  private walkGround(slope: Slope, moment: Moment): void {
+    const way = Climber.WAYS[this.walking];
+    if (way === 0 || slope.underLadder(this.along, way)) {
+      return;
+    }
+    const { terrain, walkingSpeed, slipChance } = slope;
+    const ahead = terrain.ahead(this.along, way);
+    const steepness = Steepness.ofWay(ahead.x, ahead.y);
+    const speed = walkingSpeed.at(steepness);
+    if (walkingSpeed.steeperUp(steepness)) {
+      return;
+    }
+    if (walkingSpeed.steeperDown(steepness)) {
+      this.fall(slope, ahead, speed, moment.step);
+      return;
+    }
+    const stop = slope.stopAhead(this.along, way);
+    const walked = this.along + way * speed * SimulationClock.STEP_SECONDS;
+    const along = way > 0 ? Math.min(walked, stop) : Math.max(walked, stop);
+    if (this.ropesLet(terrain.point(along), slope)) {
+      this.along = along;
+      this.stepped(slope, moment, ahead, speed, slipChance.at(steepness));
+    }
+  }
+
+  /** Along a ladder at its speed for its steepness the way they go, and off it onto the ground at
+   * its end. */
+  private climb(onLadder: OnLadder, slope: Slope, moment: Moment): void {
+    const { ladder, rung } = onLadder;
+    const way = ladder.way(this.walking);
+    if (way === 0) {
+      return;
+    }
+    const steepness = ladder.steepness(way);
+    const speed = slope.ladderSpeed.at(steepness);
+    const end = ladder.end(way);
+    const climbed = rung + way * speed * SimulationClock.STEP_SECONDS;
+    const next = way > 0 ? Math.min(climbed, end.rung) : Math.max(climbed, end.rung);
+    if (!this.ropesLet(ladder.point(next), slope)) {
+      return;
+    }
+    this.onLadder = next === end.rung ? null : new OnLadder(ladder, next);
+    this.along = next === end.rung ? end.along : this.along;
+    this.stepped(slope, moment, ladder.ahead(way), speed, slope.ladderSlipChance.at(steepness));
+  }
+
+  /** The ladder their way steps onto from where they stand, at its end there. */
+  private ladderAhead(slope: Slope): OnLadder | null {
+    const ladder = slope.ladderFrom(this.along, this.walking);
+    return ladder === null ? null : new OnLadder(ladder, ladder.rungAt(this.along));
+  }
+
+  /** Whether every rope they're clipped to lets them stand at `foot`. */
+  private ropesLet(foot: Point, slope: Slope): boolean {
+    const { cowstail } = slope.settings;
+    return this.carabiners.every((carabiner) =>
+      carabiner.lets(foot, cowstail, this.grips(carabiner)),
+    );
+  }
+
+  /** After a step `ahead` at `speed`: the carabiners follow, and the step may slip, at `chance`
+   * a second. */
+  private stepped(slope: Slope, moment: Moment, ahead: Point, speed: number, chance: number): void {
+    this.slide(slope);
+    const draw = chance * SimulationClock.STEP_SECONDS;
+    if (draw > 0 && moment.random.chance(draw)) {
+      this.fall(slope, ahead, speed, moment.step);
+    }
+  }
+
+  /** Whether a carabiner of theirs grips its rope: the jumar does, unless they're on their feet
+   * with their hand sliding it. */
+  private grips(carabiner: Carabiner): boolean {
+    return carabiner === this.first && !(this.jumarHeld && this.falling === null);
+  }
+
+  /** Their feet, on the ground or on a ladder, or their body in a fall. */
   private where(slope: Slope): Point {
-    return this.falling?.body ?? slope.terrain.point(this.along);
+    return this.falling?.body ?? this.onLadder?.point ?? slope.terrain.point(this.along);
   }
 
   /** The carabiners clipped to a rope, the first cowstail's first. */
@@ -341,9 +459,9 @@ export class Climber {
     }
   }
 
-  /** Off their feet from where they stand, going `ahead` at `speed`. */
+  /** Off their feet from where they stand, going `ahead` at `speed`: off a ladder, past it. */
   private fall(slope: Slope, ahead: Point, speed: number, step: number): void {
-    const foot = slope.terrain.point(this.along);
+    const foot = this.where(slope);
     const seconds = slope.substepSeconds;
     const body = new Particle(
       foot.x,
@@ -351,6 +469,7 @@ export class Climber {
       foot.x - ahead.x * speed * seconds,
       foot.y - ahead.y * speed * seconds,
     );
+    this.onLadder = null;
     this.falling = new Falling(body, step, foot.y, foot.y, speed);
   }
 }

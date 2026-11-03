@@ -1,7 +1,13 @@
 import { SimulationClock } from "../../simulation";
 import type { Scenario } from "../../simulation";
 import { SlopePhysics } from "../slope-physics";
-import type { ClimberLayout, RopeLayout, SlopeLayout, SlopeSettings } from "../slope-physics";
+import type {
+  ClimberLayout,
+  LadderLayout,
+  RopeLayout,
+  SlopeLayout,
+  SlopeSettings,
+} from "../slope-physics";
 import { Terrain } from "../terrain";
 import type { Pair } from "../terrain";
 
@@ -27,13 +33,39 @@ export class TestMountain {
       [25, 0],
       [45, 2],
     ],
+    ladderSpeed: [
+      [-90, 0.4],
+      [0, 0.5],
+      [90, 0.3],
+    ],
+    ladderSlipChance: [[0, 0.05]],
   };
   /** Nobody ever slips. */
-  static readonly CALM: SlopeSettings = { ...TestMountain.SETTINGS, slipChance: [[0, 0]] };
-  /** Every step taken on any ground is a slip. */
+  static readonly CALM: SlopeSettings = {
+    ...TestMountain.SETTINGS,
+    slipChance: [[0, 0]],
+    ladderSlipChance: [[0, 0]],
+  };
+  /** Every step taken on any ground, or on a ladder, is a slip. */
   static readonly HARSH: SlopeSettings = {
     ...TestMountain.SETTINGS,
     slipChance: [[0, SimulationClock.STEPS_PER_SECOND]],
+    ladderSlipChance: [[0, SimulationClock.STEPS_PER_SECOND]],
+  };
+  /** A slip now and then on steep ground, about once in 13 seconds on a 40° slope. */
+  static readonly FIRM: SlopeSettings = {
+    ...TestMountain.CALM,
+    slipChance: [
+      [-45, 0.1],
+      [-25, 0],
+      [25, 0],
+      [45, 0.1],
+    ],
+  };
+  /** Nobody slips but on a ladder, where it's about once a second. */
+  static readonly ICY_LADDERS: SlopeSettings = {
+    ...TestMountain.CALM,
+    ladderSlipChance: [[0, 1]],
   };
 
   /** A hundred metres of flat ground. */
@@ -62,6 +94,14 @@ export class TestMountain {
     [23, 0],
     [50, 0],
   ]);
+  /** Flat ground up to a wall 10 m high at x = 20, and flat above it: its foot is 20 m along the
+   * ground, and its top 30 m. */
+  static readonly WALL = new TestMountain([
+    [0, 0],
+    [20, 0],
+    [20, 10],
+    [50, 10],
+  ]);
 
   private constructor(readonly ground: readonly Pair[]) {}
 
@@ -80,8 +120,12 @@ export class TestMountain {
     return new Terrain(this.ground);
   }
 
-  /** A section on this ground, with these climbers and ropes. */
-  layout(climbers: readonly ClimberLayout[], ropes: readonly RopeLayout[] = []): SlopeLayout {
-    return { terrain: this.ground, ropes, climbers };
+  /** A section on this ground, with these climbers, ropes and ladders. */
+  layout(
+    climbers: readonly ClimberLayout[],
+    ropes: readonly RopeLayout[] = [],
+    ladders: readonly LadderLayout[] = [],
+  ): SlopeLayout {
+    return { terrain: this.ground, ropes, ladders, climbers };
   }
 }

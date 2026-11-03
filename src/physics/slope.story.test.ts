@@ -24,7 +24,7 @@ describe("Two friends on a steep fixed rope, one of them careless", () => {
     const pacer = new StepPacer(100);
     const shaken = new Set<ClimberId>();
     let pressed: GameAction[] = [
-      { kind: "clip", climber: "anna", cowstail: "first" },
+      { kind: "clip", climber: "anna", cowstail: "second" },
       { kind: "walk", climber: "anna", direction: "right" },
       { kind: "walk", climber: "boris", direction: "right" },
     ];
@@ -56,7 +56,7 @@ describe("Two friends on a steep fixed rope, one of them careless", () => {
     // Anna stayed clipped: she slid down the rope to its lower anchor, and it held her there,
     // a cowstail and half the slack below it, on her feet again.
     const fromAnchor = Math.hypot(anna.x - lowerAnchor.x, anna.y - lowerAnchor.y);
-    expect(anna.first).toBe("fixed");
+    expect(anna.second).toBe("fixed");
     expect(fromAnchor).toBeLessThanOrEqual(0.5 + TestMountain.SETTINGS.cowstail + 0.01);
 
     // Boris skipped the clip, and slid all the way to the run-out, fast and far.

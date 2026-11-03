@@ -5,8 +5,9 @@ import { PlainSlopeView } from "./slope-view";
 describe("PlainSlopeView", () => {
   const view = new PlainSlopeView({ innerWidth: 640, innerHeight: 360 });
 
-  it("puts the climber in the middle of the screen", () => {
-    expect(view.at(320, 180)).toEqual(view.climber);
+  it("puts the climber in the middle of the screen, clipped to nothing", () => {
+    expect(view.at(320, 180)).toEqual({ x: view.climber.x, y: view.climber.y });
+    expect(view.climber).toMatchObject({ first: null, second: null });
   });
 
   it("measures the screen in metres, up and to the right from the climber", () => {

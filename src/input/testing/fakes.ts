@@ -2,6 +2,13 @@ import type { Pad } from "../gamepad-source";
 import type { KeyPress } from "../keyboard-source";
 import type { ActionSink, PlayerAction } from "../player-action";
 import type { JoystickView, PointerPress } from "../pointer-source";
+import { PlainSlopeView } from "../slope-view";
+import type { SeenClimber } from "../slope-view";
+
+/** The slope's plain mapping, with the climber wherever a test puts them, clipped or not. */
+export class FakeSlopeView extends PlainSlopeView {
+  override climber: SeenClimber = { x: 0, y: 0, first: null, second: null };
+}
 
 /** Keeps what the game would receive. */
 export class HeardActions implements ActionSink {

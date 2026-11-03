@@ -5,8 +5,8 @@
 ## The slope
 
 - **The ground** (`Terrain`) is a line of points in metres, from left to right: `x` across and `y` up. `x` never goes back, so a wall is two points at the same `x`, and an overhang can't be drawn. Past its ends the ground goes on flat.
-- **A scenario lays out a section** (`SlopePhysics.start`): its ground, its ropes by where their anchors are along the ground, and the climbers standing on it. The physics works them out in the layout's order.
-- **A climber is a point at their feet.** On their feet, they're somewhere `along` the ground; falling, they're a body under gravity. `climber(id)` is how the rendering and the rules above see them, `rope(id)` where a rope lies.
+- **A scenario lays out a section** (`SlopePhysics.start`): its ground, its ropes by where their anchors are along the ground, its ladders by where their ends are, and the climbers standing on it. The physics works them out in the layout's order.
+- **A climber is a point at their feet.** On their feet, they're somewhere `along` the ground or on a ladder; falling, they're a body under gravity. `climber(id)` is how the rendering and the rules above see them, and `rope(id)` and `ladder(id)` say where a rope or a ladder lies.
 
 ## Walking and falls
 
@@ -15,17 +15,26 @@
 - **A fall is a body** under Verlet integration in `Slope.SUBSTEPS` sub-steps a step, starting at the walking speed. The ground pushes it back out, and friction takes from its slide what Coulomb's law gives, so a gentle slope stops it and a steep one doesn't. In the air it loses no speed: a climber hanging on a rope swings until the ground stops them.
 - **A fall is over when the body lies still on the ground** for a whole step (`Slope.REST_SPEED`), and the climber stands where it lies. Its record (`Fall`: the step it began on, the drop and the top speed) stays in the climber's view, for the rules above to read.
 
+## Ladders
+
+- **A ladder joins two points of the ground** (`Ladder`), across a crevasse or up a wall, its ends laid by how far along the ground they are, `from` the one further back. Walking crosses on it, not on the ground between its ends: at its end, the ground under it is no way on, so nobody walks off the edge beside it.
+- **A key moves a climber along a ladder when it points more along it than across**, toward the end it points to: left and right across a crevasse, up and down (W/S) up a wall, and a diagonal on either. A ladder's ends stop a step, as the ground's corners do, and a climber who reaches an end steps off onto the ground there.
+- **On a ladder a climber goes at `ladderSpeed` and slips at `ladderSlipChance`**, by its steepness the way they go. A slip is a fall past it, since a falling body meets only the ground: off a ladder over a crevasse, the climber falls in unless a rope holds them, as a Sherpa fell in 2012.
+
 ## The rope
 
 - **A fixed rope is a chain of points** about `Rope.LINK_METRES` apart, between two anchors. A link can only be shorter than its share of the rope, so the rope sags, lies on the ground with friction and swings, and never stretches. Each point is tethered to both anchors by the rope between, so a long chain holds in a few rounds. The ropes move once a step, after the falling bodies.
-- **A cowstail clips to the nearest rope within its reach**, on a climber on their feet, through a carabiner that slides along it. Walking takes the climber only where every rope they're clipped to lets them.
+- **A cowstail clips to the nearest rope within its reach**, on a climber on their feet, and `unclip` takes it off. Walking takes the climber only where every rope they're clipped to lets them.
+- **The first cowstail ends in the jumar, the second in a carabiner**, as climbers rig them. The carabiner always runs along its rope. The jumar runs only while the climber's hand slides it (the `jumar` action, held) and they're on their feet; otherwise it grips the rope where it is, in a fall too.
 - **The rope holds a climber by its length**: no further from its two anchors together than the rope and two cowstails, an ellipse around the anchors. That's a carabiner sliding on a rope without friction, and a heavy climber can't stretch it as they would a chain of light points. Each climber is held as if alone on the rope, and the rope follows them: the point nearest the carabiner is pulled to within a cowstail.
+- **A jumar that grips holds the climber by the rope on each side of it**: no further from each anchor than the rope between and a cowstail, a circle around each. A slip on the jumar stops a cowstail and its share of the slack below it; on the carabiner alone, it slides down to the anchor below.
+- **Ropes in a line share their anchors**: the next rope starts where one ends. A clipped climber is stopped past the anchor, where the next rope is the nearest, so `clip` takes it. The safe way on is the second cowstail onto the next rope before the first comes off the old one. Taking the last one off is allowed, and a slip after that isn't held.
 - **A rope over a bulge holds a little low**, since the ellipse goes straight from anchor to anchor: anchors go at the edges, as on the mountain.
 - **A rope that lies still waits.** Once no point of it moves faster than `Slope.REST_SPEED` in a step, it skips its steps until a climber clips to it, so the ropes of a whole section cost nothing until used.
 
 ## Numbers
 
-- **The mountain's numbers are handed in** through `SlopeSettings` (conventions.md → Data, not literals): gravity, friction, the cowstail's reach, and the walking speed and slip chance by steepness, as `[degrees, value]` points. Their facts records, and the first real ground, come with the first section of the route, the Khumbu Icefall (#26).
+- **The mountain's numbers are handed in** through `SlopeSettings` (conventions.md → Data, not literals): gravity, friction, the cowstail's reach, and the speed and slip chance by steepness on the ground and on a ladder, as `[degrees, value]` points. Their facts records, and the first real ground, come with the first section of the route, the Khumbu Icefall (#26).
 - **The engine's numbers are in the code**, as the core's step is: `Slope.SUBSTEPS`, `Slope.ITERATIONS`, `Slope.REST_SPEED` and `Rope.LINK_METRES`. No source states them; they're how finely the physics works the mountain out.
 - **Steepness is a sine** (`Steepness`): `ofWay` divides, and `ofDegrees` sums a series of its own, since `Math.sin` rounds differently in each browser. A `SteepnessCurve` interpolates over the sine and holds its end values past its ends.
 
@@ -35,6 +44,6 @@ The physics uses the core's maths alone, and imports only itself and the core. `
 
 ## Tests
 
-The tests play the physics through `Expedition`, on the made-up numbers and ground of `testing/test-mountain.ts`: no game code imports it. `slope.story.test.ts` is the story: two friends on a steep fixed rope, one of them careless.
+The tests play the physics through `Expedition` (`testing/climb.ts`), on the made-up numbers and ground of `testing/test-mountain.ts`: no game code imports either. `Climb.under` goes on from a save on other numbers, a gust that makes every step a slip, say. The stories: `slope.story.test.ts`, two friends on a steep fixed rope, one of them careless; and `fixed-ropes.story.test.ts`, two Sherpas on a ladder over a crevasse, one unclipped, and two clients going up a line of fixed ropes on the jumar, one careless at the anchor.
 
-Still to come: anchors between ropes, the jumar and ladders (#21), the pace (#22), the ice axe and crampons (#55), and the drawing (#19), which is where the physics first meets the page.
+Still to come: climbing a rope where there's no ground (up a wall, out of a crevasse), the pace (#22), the ice axe and crampons (#55), and the drawing (#19), which is where the physics first meets the page.

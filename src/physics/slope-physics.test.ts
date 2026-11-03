@@ -1,22 +1,16 @@
 import { describe, expect, it } from "vitest";
 
 import { ActionLog, Expedition, HeadlessRunner } from "../simulation";
-import type { ClimberId, ExpeditionSave, GameAction, Walk } from "../simulation";
+import type { ClimberId, ExpeditionSave, GameAction } from "../simulation";
 import { SlopePhysics } from "./slope-physics";
-import type { RopeLayout, SlopeLayout, SlopeSettings } from "./slope-physics";
+import type { RopeLayout, SlopeLayout } from "./slope-physics";
+import { Climb } from "./testing/climb";
 import { TestMountain } from "./testing/test-mountain";
 
-const walk = (climber: ClimberId, direction: Walk["direction"]): GameAction => ({
-  kind: "walk",
-  climber,
-  direction,
-});
-const clip = (climber: ClimberId): GameAction => ({ kind: "clip", climber, cowstail: "first" });
-const unclip = (climber: ClimberId): GameAction => ({
-  kind: "unclip",
-  climber,
-  cowstail: "first",
-});
+const { walk, distance } = Climb;
+// The second cowstail's carabiner, which slides: the first's jumar is fixed-ropes.test.ts's.
+const clip = (climber: ClimberId): GameAction => Climb.clip(climber, "second");
+const unclip = (climber: ClimberId): GameAction => Climb.unclip(climber, "second");
 
 /** A rope on the 40° slope of `TestMountain.SLOPE`, from 10 m up it to 30 m up, a metre slack. */
 const FIXED: RopeLayout = {
@@ -33,33 +27,6 @@ const UPPER = slopeGround.point(FIXED.to);
 
 /** Slipping on it, a clipped climber goes no further than half the slack and a cowstail. */
 const HELD_WITHIN = 0.5 + TestMountain.SETTINGS.cowstail;
-
-const distance = (from: { x: number; y: number }, to: { x: number; y: number }): number =>
-  Math.sqrt((to.x - from.x) * (to.x - from.x) + (to.y - from.y) * (to.y - from.y));
-
-class Climb {
-  readonly physics: SlopePhysics;
-  readonly expedition: Expedition;
-
-  constructor(settings: SlopeSettings, layout: SlopeLayout, seed = 1) {
-    this.physics = new SlopePhysics(settings);
-    this.expedition = Expedition.start(TestMountain.scenario(seed, layout), [this.physics]);
-  }
-
-  /** Plays `steps` steps, with `actions` in the first. */
-  play(steps: number, actions: readonly GameAction[] = []): void {
-    this.expedition.advance(actions);
-    for (let step = 1; step < steps; step += 1) {
-      this.expedition.advance();
-    }
-  }
-
-  /** One step of walking, then still: one chance to slip. */
-  step(climber: ClimberId, direction: Walk["direction"], first: readonly GameAction[] = []): void {
-    this.play(1, [...first, walk(climber, direction)]);
-    this.play(1, [walk(climber, "stop")]);
-  }
-}
 
 const alone = (mountain: TestMountain, along: number, ropes: RopeLayout[] = []): SlopeLayout =>
   mountain.layout([{ id: "anna", along }], ropes);
@@ -220,7 +187,7 @@ describe("SlopePhysics: the rope", () => {
 
     climb.play(1, [clip("anna"), clip("boris")]);
 
-    expect(climb.physics.climber("anna")).toMatchObject({ first: "fixed", second: null });
+    expect(climb.physics.climber("anna")).toMatchObject({ first: null, second: "fixed" });
     expect(climb.physics.climber("boris")).toMatchObject({ first: null, second: null });
   });
 
@@ -236,7 +203,7 @@ describe("SlopePhysics: the rope", () => {
     expect(anna.falls).toHaveLength(1);
     expect(anna.y).toBeLessThan(LOWER.y);
     expect(distance(anna, LOWER)).toBeLessThanOrEqual(HELD_WITHIN + 0.01);
-    expect(anna.first).toBe("fixed");
+    expect(anna.second).toBe("fixed");
   });
 
   it("holds nothing once the cowstail is off it", () => {
@@ -247,7 +214,7 @@ describe("SlopePhysics: the rope", () => {
     climb.play(400);
     const anna = climb.physics.climber("anna");
 
-    expect(anna.first).toBeNull();
+    expect(anna.second).toBeNull();
     expect(anna.y).toBeCloseTo(0, 6);
   });
 
