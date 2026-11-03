@@ -1,3 +1,7 @@
 # Findings of `gitleaks git` (CI's, a branch's history, #546) and `gitleaks git --log-opts=--all`
 # (every branch's, by hand) that are not secrets (#59). One fingerprint per line:
 # commit:file:rule:line, as the report prints it.
+
+# A test's made-up player token, on #28's branch only: the tests' token is plain since.
+a01b9ac6f5a5a42dfe370a6e24ab33e3be11e328:src/room/messages.test.ts:generic-api-key:6
+a01b9ac6f5a5a42dfe370a6e24ab33e3be11e328:src/page/room-client.test.ts:generic-api-key:15

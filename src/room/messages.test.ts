@@ -3,7 +3,7 @@ import { describe, expect, it } from "vitest";
 import { CloseCode, Protocol } from "./messages";
 
 const protocol = new Protocol();
-const TOKEN = "3f2b7c1e-9a4d-4e6f-8b1a-2c3d4e5f6a7b";
+const TOKEN = "anna-token";
 
 function client(message: unknown): ReturnType<Protocol["fromClient"]> {
   return protocol.fromClient(JSON.stringify(message));

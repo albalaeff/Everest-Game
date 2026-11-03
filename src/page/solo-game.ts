@@ -13,9 +13,10 @@ import type { Played } from "./game-loop";
  * controls do: a climb saved mid-stride doesn't walk on alone.
  */
 export class SoloGame implements Played {
-  /** The most steps one frame takes, five seconds' worth: a phone back from a call doesn't
-   * freeze catching up. */
-  static readonly MAX_STEPS_A_FRAME = 100;
+  /** The most steps one frame takes, a second's worth. A longer frame is a browser that drew
+   * nothing, a tab in the background or a locked screen, and that pauses the climb alone (spec.md
+   * → Phone and PC): it goes on where it was, rather than leaping ahead. */
+  static readonly MAX_STEPS_A_FRAME = SimulationClock.STEPS_PER_SECOND;
   static readonly SAVE_EVERY_SECONDS = 10;
 
   private readonly pacer = new StepPacer(SoloGame.MAX_STEPS_A_FRAME);

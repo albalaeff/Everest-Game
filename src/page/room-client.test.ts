@@ -15,7 +15,7 @@ import { RoomServer } from "./room-server";
 
 const SERVER = new RoomServer("http://localhost:8787");
 const URL = "ws://localhost:8787/rooms/K7PX3";
-const TOKEN = "3f2b7c1e-9a4d-4e6f-8b1a-2c3d4e5f6a7b";
+const TOKEN = "anna-token";
 const VERSION = "f06f24b";
 const HELLO: Hello = { type: "hello", token: TOKEN, version: VERSION };
 const mountain = new Mountain(new KnowledgeBase([time]));

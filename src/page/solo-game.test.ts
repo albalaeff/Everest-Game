@@ -68,12 +68,22 @@ describe("SoloGame", () => {
     expect(queue.take()).toEqual([]);
   });
 
-  it("takes at most a hundred steps in one frame, so a phone back from a call doesn't freeze", () => {
+  it("keeps real time on a device that draws few frames: four a second take twenty steps a second", () => {
+    const { game, expedition } = aGame();
+
+    for (let frame = 0; frame < 40; frame += 1) {
+      game.advance(0.25);
+    }
+
+    expect(expedition.step).toBe(200);
+  });
+
+  it("counts a frame for a second at most: a tab back from the background goes on where it paused", () => {
     const { game, expedition } = aGame();
 
     game.advance(60);
 
-    expect(expedition.step).toBe(SoloGame.MAX_STEPS_A_FRAME);
+    expect(expedition.step).toBe(20);
   });
 
   it("saves the expedition every ten seconds of play, as it stands then", () => {
