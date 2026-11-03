@@ -62,7 +62,7 @@ Numbers in these examples are made up, and only show the form. Every id in `fitt
 
 ## What goes in
 
-- **Never a dose.** Medicines are described by why doctors use them: no amounts, in a value, a claim or a note.
+- **Never a dose.** Medicines are described by why doctors use them: no amounts, in a value, a claim or a note. The check refuses a number in mg, µg, g, mL or IU, alone or per something (mg/kg), and such a unit.
 - **The real dead.** Facts and a source only.
 - **No invented numbers.** What no source gives and no fit supports stays out of the data, and goes to the questions for an expert.
 - **`expert-reviewed`** is set by the expert's review, never by an edit that only touches up a record.

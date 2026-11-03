@@ -5,13 +5,14 @@
 The records are the JSON files in content/facts/, and docs/conventions/knowledge-base.md says
 how to write one. Each file must pass content/facts.schema.json; once they all do, this checks
 what a schema can't see: an id used twice, a coefficient fitted to a fact that isn't there, a
-range upside down, versions in different units, a date in the future. `pytest` runs it on the
-real files (tests/test_check_facts_script.py), which is what fails CI.
+range upside down, versions in different units, a date in the future, a medicine's dose.
+`pytest` runs it on the real files (tests/test_check_facts_script.py), which is what fails CI.
 """
 
 import json
+import re
 import sys
-from collections.abc import Iterator, Mapping, Set
+from collections.abc import Iterable, Iterator, Mapping, Set
 from dataclasses import dataclass
 from datetime import date, timedelta
 from pathlib import Path
@@ -22,6 +23,10 @@ from jsonschema import Draft202012Validator
 ROOT = Path(__file__).resolve().parents[1]
 FACTS = ROOT / "content" / "facts"
 SCHEMA = ROOT / "content" / "facts.schema.json"
+
+# An amount of a medicine, alone or per something (mg/kg): 2 L/min of oxygen isn't one
+DOSE_UNIT = re.compile(r"(?:mg|mcg|µg|μg|g|ml|IU)(?:/\S+)?", re.IGNORECASE)
+DOSE = re.compile(rf"\d\s*{DOSE_UNIT.pattern}\b", re.IGNORECASE)
 
 
 @dataclass(frozen=True, slots=True)
@@ -64,6 +69,13 @@ class Record:
         if date.fromisoformat(text) > latest:
             yield self._problem(f"the date {text} is in the future")
 
+    def _doses(self, texts: Iterable[str], units: Iterable[str]) -> Iterator[Problem]:
+        """Never a dose (docs/conventions/knowledge-base.md): a doctor prescribes those."""
+        found = [match.group() for text in texts for match in DOSE.finditer(text)]
+        found += [unit for unit in units if DOSE_UNIT.fullmatch(unit)]
+        if found:
+            yield self._problem(f"a dose, which the knowledge base never gives: {', '.join(found)}")
+
 
 @dataclass(frozen=True, slots=True)
 class Fact(Record):
@@ -77,6 +89,8 @@ class Fact(Record):
         units = sorted({version["unit"] for version in versions if "unit" in version})
         if len(units) > 1:
             yield self._problem(f"versions in different units: {', '.join(units)}")
+        notes = [version["note"] for version in versions if "note" in version]
+        yield from self._doses([self.data["claim"], *notes], units)
 
 
 @dataclass(frozen=True, slots=True)
@@ -86,6 +100,7 @@ class Coefficient(Record):
     def problems(self, facts: Set[str], latest: date) -> Iterator[Problem]:
         yield from self._range(self.data)
         yield from self._date(self.data["fitted"], latest)
+        yield from self._doses([self.data["claim"]], [self.data["unit"]])
         for fact in self.data["fitted_to"]:
             if fact not in facts:
                 yield self._problem(f"fitted to {fact}, which isn't a fact here")

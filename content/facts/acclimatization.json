@@ -1,0 +1,113 @@
+{
+  "$schema": "../facts.schema.json",
+  "facts": [
+    {
+      "id": "acclimatization.threshold",
+      "kind": "fact",
+      "claim": "The rules for the rate of ascent apply above this altitude.",
+      "status": "source only",
+      "versions": [
+        {
+          "value": 3000,
+          "unit": "m",
+          "source": {
+            "title": "WMS Clinical Practice Guidelines for Acute Altitude Illness, 2024 Update → Gradual ascent",
+            "url": "https://doi.org/10.1016/j.wem.2023.05.013"
+          }
+        },
+        {
+          "value": 3000,
+          "unit": "m",
+          "source": {
+            "title": "CDC Yellow Book 2026: High-Altitude Travel and Altitude Illness → Prevention",
+            "url": "https://www.cdc.gov/yellow-book/hcp/environmental-hazards-risks/high-altitude-travel-and-altitude-illness.html"
+          }
+        }
+      ]
+    },
+    {
+      "id": "acclimatization.sleeping-altitude-gain",
+      "kind": "fact",
+      "claim": "Above the threshold, the sleeping altitude rises by no more than this much a day.",
+      "status": "source only",
+      "versions": [
+        {
+          "value": 500,
+          "unit": "m/day",
+          "source": {
+            "title": "WMS Clinical Practice Guidelines for Acute Altitude Illness, 2024 Update → Gradual ascent",
+            "url": "https://doi.org/10.1016/j.wem.2023.05.013"
+          }
+        },
+        {
+          "value": 500,
+          "unit": "m/day",
+          "source": {
+            "title": "CDC Yellow Book 2026: High-Altitude Travel and Altitude Illness → Prevention",
+            "url": "https://www.cdc.gov/yellow-book/hcp/environmental-hazards-risks/high-altitude-travel-and-altitude-illness.html"
+          }
+        }
+      ]
+    },
+    {
+      "id": "acclimatization.rest-day",
+      "kind": "fact",
+      "claim": "Above the threshold, a rest day, with no gain in sleeping altitude, comes every this many days.",
+      "status": "source only",
+      "versions": [
+        {
+          "range": { "min": 3, "max": 4 },
+          "unit": "days",
+          "source": {
+            "title": "WMS Clinical Practice Guidelines for Acute Altitude Illness, 2024 Update → Gradual ascent",
+            "url": "https://doi.org/10.1016/j.wem.2023.05.013"
+          }
+        },
+        {
+          "range": { "min": 3, "max": 4 },
+          "unit": "days",
+          "source": {
+            "title": "CDC Yellow Book 2026: High-Altitude Travel and Altitude Illness → Prevention",
+            "url": "https://www.cdc.gov/yellow-book/hcp/environmental-hazards-risks/high-altitude-travel-and-altitude-illness.html"
+          }
+        }
+      ]
+    },
+    {
+      "id": "acclimatization.climb-high-sleep-low",
+      "kind": "fact",
+      "claim": "The sleeping altitude is what counts: a climber may go higher during the day and come back down to sleep.",
+      "status": "source only",
+      "versions": [
+        {
+          "source": {
+            "title": "WMS Clinical Practice Guidelines for Acute Altitude Illness, 2024 Update → Gradual ascent",
+            "url": "https://doi.org/10.1016/j.wem.2023.05.013"
+          }
+        },
+        {
+          "source": {
+            "title": "CDC Yellow Book 2026: High-Altitude Travel and Altitude Illness → Prevention",
+            "url": "https://www.cdc.gov/yellow-book/hcp/environmental-hazards-risks/high-altitude-travel-and-altitude-illness.html"
+          }
+        }
+      ]
+    },
+    {
+      "id": "acclimatization.everest-rotations",
+      "kind": "fact",
+      "claim": "On Everest, most teams make at least this many acclimatization rotations above Base Camp, going up and coming back down, before the summit push.",
+      "status": "source only",
+      "versions": [
+        {
+          "value": 3,
+          "unit": "rotations",
+          "source": {
+            "title": "Alan Arnette: Everest rotations",
+            "url": "https://www.alanarnette.com/blog/?p=14555"
+          }
+        }
+      ]
+    }
+  ]
+}

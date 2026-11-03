@@ -12,6 +12,7 @@ from scripts.check_facts import ROOT, SCHEMA, KnowledgeBase, main
 
 TODAY = date(2026, 11, 2)
 SOURCE = {"title": "Arnette", "url": "https://www.alanarnette.com/blog/?p=16718"}
+DRUG = "medicine.a-drug"
 
 
 def version(**fields: Any) -> dict[str, Any]:
@@ -156,6 +157,31 @@ class TestAcrossRecords:
     def test_a_coefficient_isn_t_fitted_to_a_coefficient(self, tmp_path: Path) -> None:
         tuned = coefficient("body.pace-rate", fitted_to=["body.fatigue-rate"])
         assert len(problems(tmp_path, fact(), coefficient(), tuned)) == 1
+
+    @pytest.mark.parametrize(
+        "record",
+        [
+            fact(DRUG, claim="Doctors give 125 mg of it."),
+            fact(DRUG, versions=[version(note="A dose of 0.15mg/kg.")]),
+            fact(DRUG, versions=[version(note="4 µg a day.")]),
+            fact(DRUG, versions=[without(version(), "range") | {"value": 250, "unit": "mg"}]),
+            fact(DRUG, versions=[without(version(), "range") | {"value": 1, "unit": "mg/kg"}]),
+            coefficient(unit="mL"),
+        ],
+        ids=["claim", "note", "micrograms", "value", "per kilo", "coefficient"],
+    )
+    def test_a_dose_fails(self, tmp_path: Path, record: dict[str, Any]) -> None:
+        """docs/conventions/knowledge-base.md: never a dose, in a value, a claim or a note."""
+        found = problems(tmp_path, fact(), record)
+        assert len(found) == 1
+        assert "dose" in found[0]
+
+    @pytest.mark.parametrize(
+        "claim",
+        ["Sleep no more than 500 m higher.", "Breathe 2–4 L/min.", "Above 8,000 m.", "A gamow."],
+    )
+    def test_other_numbers_aren_t_doses(self, tmp_path: Path, claim: str) -> None:
+        assert problems(tmp_path, fact(claim=claim)) == []
 
     def test_a_range_runs_upwards(self, tmp_path: Path) -> None:
         for bounds in ({"min": 4, "max": 2}, {"min": 3, "max": 3}):
