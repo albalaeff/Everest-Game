@@ -24,7 +24,7 @@ The game's rules are classes behind the `Rule` interface: `load`, `save` and `ad
 - `name` is its key in saves: never change it once saves exist.
 - A rule has its numbers handed to it (conventions.md → Data, not literals), and reads neither the content files nor the rendering.
 
-`src/simulation/testing/test-slope.ts` is a small rule that stands in for the real ones in the core's tests. It's no game code, and its numbers are made up.
+`src/simulation/testing/test-slope.ts` is a small rule that stands in for the real ones in the core's tests, which import nothing above the core. It's no game code, and its numbers are made up.
 
 ## Scenarios, saves and replays
 
@@ -41,7 +41,7 @@ The same seed and actions must give the same numbers in every browser, in Node a
 - Maths is `+ - * /` and `Math.sqrt`, `abs`, `floor`, `ceil`, `round`, `trunc`, `min`, `max` and `imul`. The language lets each browser round `Math.pow`, `**`, `exp`, `log` and the trigonometric functions its own way, so a curve one of those would give (an exponential in the body model, say) is a class of the core's own built from the operations above, or a table in the content data.
 - Sorting uses a comparison of numbers, never `localeCompare`, which differs by device. Maps and arrays keep their order; don't depend on any other.
 
-`npm run typecheck` checks the core alone with `tsconfig.core.json`, which has no DOM, Node or timers in scope, so using one fails there. `core-purity.test.ts` refuses what the language itself offers, in every folder of the core but `testing/`: `Math.random`, `Date`, the rounded maths, `localeCompare` and the like, and any import from outside `src/simulation/`.
+`npm run typecheck` checks the core alone with `tsconfig.core.json`, which has no DOM, Node or timers in scope, so using one fails there. `core-purity.test.ts` refuses what the language itself offers, in every folder of the core but `testing/`: `Math.random`, `Date`, the rounded maths, `localeCompare` and the like, and any import from outside `src/simulation/`. A rule that runs in the core's step keeps these rules too, and its folder gets the same checks: `testing/module-code.ts` makes them (`src/physics/physics-purity.test.ts`).
 
 ## Tests
 

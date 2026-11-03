@@ -7,6 +7,7 @@ Every change to this codebase follows the rules in this file, and those of each 
 | the knowledge base: `content/facts/` | [conventions/knowledge-base.md](conventions/knowledge-base.md) |
 | the simulation core: `src/simulation/` | [conventions/simulation-core.md](conventions/simulation-core.md) |
 | the input layer: `src/input/` | [conventions/input.md](conventions/input.md) |
+| the slope physics: `src/physics/` | [conventions/slope-physics.md](conventions/slope-physics.md) |
 | the game's other areas, once they have rules of their own: the rendering, the room server | their file in `docs/conventions/`, named here when it comes |
 
 A change to `scripts/` or to the docs alone follows this file only. (Fill the table in as areas get rules of their own, one file each in `docs/conventions/`; [../spec.md](../spec.md) is what the game's areas implement.)

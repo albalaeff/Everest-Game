@@ -1,12 +1,18 @@
 {
-  // The simulation core alone, with no DOM, no Node and no test tool in scope, so that using
-  // one of them in it fails the type check (docs/conventions/simulation-core.md): the page's
-  // tsconfig.json has the DOM and Vite's types; the core takes neither.
+  // The simulation core and the slope physics alone, with no DOM, no Node and no test tool in
+  // scope, so that using one of them in them fails the type check
+  // (docs/conventions/simulation-core.md, docs/conventions/slope-physics.md): the page's
+  // tsconfig.json has the DOM and Vite's types; the core and the physics take neither.
   "extends": "./tsconfig.json",
   "compilerOptions": {
     "lib": ["ES2023"],
     "types": []
   },
-  "include": ["src/simulation"],
-  "exclude": ["src/simulation/**/*.test.ts", "src/simulation/testing"]
+  "include": ["src/simulation", "src/physics"],
+  "exclude": [
+    "src/simulation/**/*.test.ts",
+    "src/simulation/testing",
+    "src/physics/**/*.test.ts",
+    "src/physics/testing"
+  ]
 }
