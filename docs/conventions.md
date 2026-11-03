@@ -9,6 +9,7 @@ Every change to this codebase follows the rules in this file, and those of each 
 | the input layer: `src/input/` | [conventions/input.md](conventions/input.md) |
 | the slope physics: `src/physics/` | [conventions/slope-physics.md](conventions/slope-physics.md) |
 | the rendering and the page: `src/rendering/`, `src/page/` | [conventions/rendering.md](conventions/rendering.md) |
+| what the player sees, hears or touches: `src/rendering/`, `src/interface/`, `src/input/`, `src/page/`, `index.html`, `src/style.css`, the texts in `content/` | [guidelines.md](guidelines.md), the design guidelines, and its page for the change |
 | the game's other areas, once they have rules of their own: the room server | their file in `docs/conventions/`, named here when it comes |
 
 A change to `scripts/` or to the docs alone follows this file only. (Fill the table in as areas get rules of their own, one file each in `docs/conventions/`; [../spec.md](../spec.md) is what the game's areas implement.)
