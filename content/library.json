@@ -1,0 +1,85 @@
+{
+  "$schema": "library.schema.json",
+  "areas": [
+    "medicine"
+  ],
+  "sources": [
+    {
+      "title": "CDC Yellow Book 2026: High-Altitude Travel and Altitude Illness",
+      "url": "https://www.cdc.gov/yellow-book/hcp/environmental-hazards-risks/high-altitude-travel-and-altitude-illness.html",
+      "published": 2026,
+      "use": "Current guidance (Hackett and Shlim): acclimatization, the three altitude illnesses, their treatment, the medicines and the hyperbaric bag. With the WMS 2024 guideline, it decides what the game says about medicines.",
+      "read": "2026-11-03"
+    },
+    {
+      "title": "WMS: Acute Altitude Illness Clinical Practice Guideline, 2024 Update, summary",
+      "url": "https://wms.org/magazine/1463/2024-Altitude-Summary/default.aspx",
+      "published": 2024,
+      "use": "The Wilderness Medical Society's own summary of its 2024 guideline, whose full text is behind a paywall: prevention, diagnosis and treatment of AMS, HACE and HAPE, and the AMS classes by Lake Louise score.",
+      "read": "2026-11-03"
+    },
+    {
+      "title": "Omidi et al. 2025, What Is New in Altitude- and Cold-Related Illnesses of Travel (a review of the WMS 2024 guidelines)",
+      "url": "https://doi.org/10.3390/ijerph22020284",
+      "published": 2025,
+      "use": "An open (CC BY) review of the WMS 2024 guidelines on altitude illness, frostbite and avalanche burial: what changed in 2024, with the strength of each recommendation. The game's frostbite and avalanche medicine rests on it.",
+      "read": "2026-11-03"
+    },
+    {
+      "title": "Roach et al. 2018, The 2018 Lake Louise Acute Mountain Sickness Score",
+      "url": "https://ora.ox.ac.uk/objects/uuid:caab0da0-71d4-4f22-a5df-7785a501ce57",
+      "published": 2018,
+      "use": "The consensus score of AMS (CC BY, High Alt Med Biol 19:4–6): four symptoms of 0–3 points, the threshold and the severity classes. The game models a climber's AMS on it; the paper says it's a research tool, not a way to diagnose.",
+      "read": "2026-11-03"
+    },
+    {
+      "title": "UIAA MedCom No 2: Emergency Field Management of AMS, HAPE and HACE (2012, updated 2024)",
+      "url": "https://www.theuiaa.org/documents/mountainmedicine/English_UIAA_MedCom_Rec_No_2_AMS_HAPE_HACE_2012_V3.3.pdf",
+      "published": 2024,
+      "use": "Field management by the UIAA Medical Commission: risk factors, typical altitudes and onset times, the symptoms, what to do on the spot, and what else looks like altitude illness. For symptoms and the order of actions; on medicines, CDC 2026 and WMS 2024 decide.",
+      "read": "2026-11-03"
+    },
+    {
+      "title": "UIAA MedCom No 3: Portable Hyperbaric Chambers (2012)",
+      "url": "https://www.theuiaa.org/documents/mountainmedicine/English_UIAA_MedCom_Rec_No_3_Portable_Hyperbaric_Chambers_2012_V3-2.pdf",
+      "published": 2012,
+      "use": "The hyperbaric bag: when to use it and when not, how long a session lasts, the rebound, the pumping, the types and their weights.",
+      "read": "2026-11-03"
+    },
+    {
+      "title": "UIAA MedCom No 10: The Effect of Extremes of Temperature on Drugs (2008)",
+      "url": "https://www.theuiaa.org/documents/mountainmedicine/UIAA_MedCom_Rec_No_10_Drugs_at_Altitude_2008_V1-2.pdf",
+      "published": 2008,
+      "use": "What cold and heat do to the medicines in the kit, and the side effects that matter at altitude: for the first-aid kit's mechanics.",
+      "read": "2026-11-03"
+    },
+    {
+      "title": "UIAA MedCom No 20: Eye Problems on Expeditions (2021)",
+      "url": "https://www.theuiaa.org/documents/mountainmedicine/Engl_UIAA_MedCom_Rec_No_20_Eye_problems_2020_V2-4.pdf",
+      "published": 2021,
+      "use": "The eyes at altitude: snow blindness, high-altitude retinopathy, loss of vision, contact lenses and eye surgery.",
+      "read": "2026-11-03"
+    },
+    {
+      "title": "UIAA MedCom No 22a: Drug Use and Misuse in Mountaineering (2014)",
+      "url": "https://www.theuiaa.org/documents/mountainmedicine/English_UIAA-MedCom-Rec-No-22a-Drug-misuse-2014-V1-2.pdf",
+      "published": 2014,
+      "use": "Medicines taken to climb rather than to treat, Everest's included: what each does and risks, and what doesn't work.",
+      "read": "2026-11-03"
+    },
+    {
+      "title": "Medex: Travel at High Altitude (2008 edition)",
+      "url": "https://medex.org.uk/medex_book/Book%20update%20June%202011/English/TravelSafeHighv27A4.pdf",
+      "published": 2008,
+      "use": "A booklet for trekkers and climbers, recommended by the UIAA: symptoms in plain words, what to do, and real cases. For the game's words and its training scenarios; its score card is the one from before 2018.",
+      "read": "2026-11-03"
+    },
+    {
+      "title": "Wikipedia: Death zone",
+      "url": "https://en.wikipedia.org/wiki/Death_zone",
+      "published": 2026,
+      "use": "Background on the death zone above 8,000 m, not medical guidance: never a source for a treatment.",
+      "read": "2026-11-03"
+    }
+  ]
+}
