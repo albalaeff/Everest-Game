@@ -34,6 +34,7 @@ from scripts.github import (
     WaitingLabels,
     another_watching,
     api_path,
+    builds_on,
     by_claude,
     follow_develop,
     look,
@@ -489,6 +490,126 @@ def test_a_pr_for_no_issue_isn_t_held_by_a_postponed_one() -> None:
     }
 
 
+# --- what an issue builds on holds it until it merges (#107) ---------------------------------
+
+
+LATER = datetime(2026, 10, 13, 18, 0, tzinfo=UTC)
+
+
+def building(number: int, body: str = "", labels: Sequence[str] = ()) -> dict[str, object]:
+    return {**issue(number=number, labels=labels), "body": body}
+
+
+def closed(number: int, at: str) -> dict[str, object]:
+    """#`number`, closed at `at` UTC on 2026-10-13."""
+    return {**issue(number=number), "state": "closed", "closed_at": f"2026-10-13T{at}:00Z"}
+
+
+@pytest.mark.parametrize(
+    ("body", "labels", "expected"),
+    [
+        ("Depends on #16", (), (16,)),
+        ("The work.\n\n**Depends on** #16, #17 and #20.", (), (16, 17, 20)),
+        ("depends on: #17", ("after:16",), (16, 17)),
+        ("", ("after:16", "after:x", "bug"), (16,)),
+        ("- A `Depends on #16` line in the issue body", (), ()),  # about such a line
+        ("Depends on #18", (), ()),  # itself
+    ],
+    ids=["a line", "several", "a label too", "labels", "in a sentence", "itself"],
+)
+def test_what_an_issue_builds_on_is_a_line_of_its_body_or_a_label(
+    body: str, labels: Sequence[str], expected: tuple[int, ...]
+) -> None:
+    assert builds_on(building(18, body, labels)) == expected
+
+
+def test_an_issue_that_builds_on_an_open_one_is_blocked_with_its_pr() -> None:
+    # #107: #18 built on #16 and #17 with nothing to hold it, so its PR #103 carried both
+    # their commits. A chain holds: #18 waits on #17, which waits on #16.
+    body = f"Closes #18\n\n{GENERATED}"
+    pr = {**issue(number=103), "pull_request": {}, "body": body}
+    github = ChangingGitHub(
+        [issue(number=16), building(17, "Depends on #16"), building(18, labels=["after:17"]), pr]
+    )
+    github.comments[18] = [handing_off(GOES_ON)]
+    github.comments[103] = [comment(sign("Opened")), comment("Please rename it")]
+    github.pulls = [
+        {"number": 103, "draft": False, "body": body, "head": {"sha": "a", "ref": "feature/18-x"}}
+    ]
+    github.runs["a"] = [run("CI", "completed", "success", ended="17:50")]
+
+    seen = look(github, lambda: LATER)  # type: ignore[arg-type]
+
+    assert [(task.number, task.state) for task in seen.tasks] == [(16, "to start")]
+    assert seen.text.splitlines()[1:] == [
+        "",
+        "To start (mine, no comment from Claude yet):",
+        "  issue #16 Something to do",
+        "",
+        "Blocked (what they build on is open: no agent starts on them):",
+        "  issue #17 Something to do [waits on #16]",
+        "  issue #18 Something to do [waits on #17]",
+        "  PR #103 Something to do [CI: success] [waits on #17]",
+    ]
+    assert seen.held == (
+        "Issue #17 is blocked: it waits on #16, which it builds on.",
+        "Issue #18 is blocked: it waits on #17, which it builds on.",
+        "PR #103 is blocked: it waits on #17, which it builds on.",
+    )
+    assert github.asked == []  # nor are the labels of a reply's author taken off
+
+
+def test_the_merge_of_what_it_builds_on_wakes_it(capsys: pytest.CaptureFixture[str]) -> None:
+    # #107: the agents of #17 and #18 both wrote the trap down: nothing woke them at a merge.
+    github = ChangingGitHub([issue(number=17), building(18, "Depends on #17")])
+    waits = "**Next:** the code (Claude's). **Waiting on:** #17's merge."
+    github.comments[17] = [handing_off(waits, created_at="2026-10-13T14:00:00Z")]
+    github.comments[18] = [handing_off(waits, created_at="2026-10-13T14:30:00Z")]
+
+    def merged() -> None:
+        github.issues.pop(0)
+        github.closed[17] = closed(17, "16:00")
+
+    github.later = [merged]
+
+    watch(github, sleep=github.sleep, now=lambda: LATER, output=JsonOutput())  # type: ignore[arg-type]
+
+    lines = said(capsys)
+    assert lines[0] == {
+        "type": "note",
+        "text": "Issue #18 is blocked: it waits on #17, which it builds on.",
+    }
+    woken = lines[1]
+    assert (woken["key"], woken["state"], woken["woken"]) == (
+        "#18 unblocked, 1 comments",
+        "unblocked",
+        [17],
+    )
+    assert len(lines) == 2
+
+
+def test_what_closed_before_claude_s_last_word_wakes_nothing() -> None:
+    github = ChangingGitHub([building(18, "Depends on #17 and #99")])  # #99: a typo, not there
+    github.comments[18] = [said_at("16:30", "Merged develop in; CI runs.")]
+    github.closed[17] = closed(17, "16:00")
+
+    seen = look(github, lambda: LATER)  # type: ignore[arg-type]
+
+    assert seen.tasks == () and seen.held == ()
+    assert seen.text.splitlines()[-1] == "  issue #18 Something to do"
+
+
+def test_a_woken_issue_with_its_move_already_claude_s_says_what_merged() -> None:
+    github = ChangingGitHub([building(18, "Depends on #17")])
+    github.comments[18] = [handing_off(GOES_ON, created_at="2026-10-13T14:30:00Z")]
+    github.closed[17] = closed(17, "16:00")
+
+    seen = look(github, lambda: LATER)  # type: ignore[arg-type]
+
+    assert [(task.state, task.woken) for task in seen.tasks] == [("Claude's move", (17,))]
+    assert seen.text.splitlines()[-1] == "  issue #18 Something to do [#17 closed]"
+
+
 # --- watch: waits for something new to do (#314) ---------------------------------------------
 
 
@@ -500,6 +621,7 @@ class ChangingGitHub:
 
     def __init__(self, issues: list[dict[str, object]]) -> None:
         self.issues = issues
+        self.closed: dict[int, dict[str, object]] = {}  # asked for alone, not listed
         self.comments: dict[int, list[dict[str, object]]] = {}
         self.pulls: list[dict[str, object]] = []
         self.runs: dict[str, list[dict[str, object]]] = {}
@@ -518,8 +640,9 @@ class ChangingGitHub:
             return self.issues
         if path.startswith("issues/"):
             number = int(path.split("/")[1])
-            if path == f"issues/{number}":  # the issue itself
-                return next(entry for entry in self.issues if entry["number"] == number)
+            if path == f"issues/{number}":  # the issue itself; None for one not there
+                listed = [entry for entry in self.issues if entry["number"] == number]
+                return listed[0] if listed else self.closed.get(number)
             return self.comments.get(number, [])
         if path.startswith("pulls?"):
             return self.pulls
@@ -814,6 +937,7 @@ def test_for_a_program_it_says_what_needs_doing_when_it_begins(
             "ci": None,
             "sha": None,
             "green": False,
+            "woken": [],
         },
         {"type": "note", "text": "Nothing new to do (18:00–18:00)."},
     ]
@@ -879,6 +1003,7 @@ def test_a_pr_s_task_is_for_the_issue_it_closes_with_that_issue_s_labels(
         "ci": "CI: success",
         "sha": "abc",
         "green": True,  # #485: its merge has a lane of its own in the manager
+        "woken": [],
     }
 
 
@@ -1033,7 +1158,18 @@ def test_for_a_program_new_prices_are_a_task_and_the_rest_notes(
 
 def test_a_task_reads_back_as_it_was_said() -> None:
     task = Task(
-        "PR #9 at abc: CI: success", "pull", 9, "CI finished", "X", 7, ("a",), "b", "c", "d", True
+        "PR #9 at abc: CI: success",
+        "pull",
+        9,
+        "CI finished",
+        "X",
+        7,
+        ("a",),
+        "b",
+        "c",
+        "d",
+        True,
+        (16, 17),
     )
 
     assert Task.from_data(json.loads(json.dumps(task.data()))) == task
