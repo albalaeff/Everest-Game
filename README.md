@@ -57,6 +57,18 @@ you do, Claude Code ignores the allow list in `.claude/settings.json`, so each a
 refused nearly every command. The VS Code extension doesn't record this trust, and the
 machine check says when it's missing.
 
+**The toolchain first.** An agent runs the checks the definition of done names, so it needs
+uv, Claude Code and its trust, and the project's own tools (`PROJECT_CHECKS` in
+`scripts/check_setup.py`: Node now, Playwright's browsers with the page). The manager looks at
+them as it starts and before each agent. While one is missing, code work waits: the manager
+says what and the fix once in its log ("Agents on code work wait: Node: not installed (fix:
+winget install …)"), and once on each issue it holds, as a handoff whose next move is
+Claude's. A green PR's merge and new prices aren't held. A tool installed after the manager
+started isn't on its PATH, which its agents get, so it says when the PATH a new terminal gets
+has the tool: restart the manager from a new terminal, and the work held starts. Run
+`scripts/check_setup.py` and fix what it names before you start the manager: #16, #17 and #18
+each wrote their code blind for want of Node, then stopped, at $7 to $15 a run.
+
 **Running it.** Leave it running in a terminal of its own:
 
 ```
