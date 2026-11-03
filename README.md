@@ -15,7 +15,7 @@ A 2D browser game: a simulator-trainer for climbing Everest by the South route. 
 
 The game is a static TypeScript site that runs in the browser ([spec.md](spec.md) → Technical architecture): a simulation core (body, oxygen, weather, time, hazards; the same result for the same seed), agents and slope physics on it, PixiJS rendering with HTML and CSS for the interface and Web Audio for sound, and JSON content: the route, the scenarios, and the knowledge base of facts with their sources. For co-op, a room server on Cloudflare Workers runs the same core. [docs/conventions.md](docs/conventions.md) → Modules has the rules between them.
 
-The game's project is at the root of the repository: Vite builds `index.html` and `src/` into the static site, on Node 24 and npm. So far it's a placeholder page; the modules come with their issues. Beside it the repository holds the spec, the workflow ([CLAUDE.md](CLAUDE.md), `scripts/`, `.claude/`), the docs and the knowledge base: the fact records in `content/facts/` ([docs/conventions/knowledge-base.md](docs/conventions/knowledge-base.md)).
+The game's project is at the root of the repository: Vite builds `index.html` and `src/` into the static site, on Node 24 and npm. So far it's a placeholder page and the simulation core in `src/simulation/` ([docs/conventions/simulation-core.md](docs/conventions/simulation-core.md)); the other modules come with their issues. Beside it the repository holds the spec, the workflow ([CLAUDE.md](CLAUDE.md), `scripts/`, `.claude/`), the docs and the knowledge base: the fact records in `content/facts/` ([docs/conventions/knowledge-base.md](docs/conventions/knowledge-base.md)).
 
 ## Local development
 
@@ -178,7 +178,9 @@ npm run e2e -- --project=iphone   # on one of them
   lists every problem by file and record
   ([docs/conventions/knowledge-base.md](docs/conventions/knowledge-base.md)).
 - **The game's checks** run in CI beside these. ESLint and Prettier read `src/`, `e2e/` and
-  the config files; `tsc` checks `tsconfig.json`, the browser's code, and
+  the config files; `tsc` checks `tsconfig.json`, the browser's code, `tsconfig.core.json`,
+  the simulation core alone with no DOM, Node or test tool in scope
+  ([docs/conventions/simulation-core.md](docs/conventions/simulation-core.md)), and
   `tsconfig.node.json`, what runs on Node. Vitest runs `src/**/*.test.ts`. Playwright builds
   the game, serves the build and runs the stories in `e2e/` on each of its projects: `pc` and
   `android` in Chromium, `iphone` in WebKit. TypeScript stays on 6.0: typescript-eslint

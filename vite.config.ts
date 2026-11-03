@@ -1,9 +1,9 @@
-import { defineConfig } from 'vitest/config';
+import { defineConfig } from "vitest/config";
 
 export default defineConfig({
   // Relative paths: GitHub Pages serves the game under /Everest-Game/, and itch.io under its own.
-  base: './',
+  base: "./",
   test: {
-    include: ['src/**/*.test.ts'],
+    include: ["src/**/*.test.ts"],
   },
 });

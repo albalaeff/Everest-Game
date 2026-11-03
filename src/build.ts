@@ -9,6 +9,6 @@ export class Build {
   }
 
   label(): string {
-    return `build ${this.commit?.slice(0, Build.SHORT_COMMIT) ?? 'local'}`;
+    return `build ${this.commit?.slice(0, Build.SHORT_COMMIT) ?? "local"}`;
   }
 }

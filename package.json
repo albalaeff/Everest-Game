@@ -14,7 +14,7 @@
     "lint": "eslint src e2e \"*.config.ts\"",
     "format": "prettier --write index.html src e2e \"*.config.*\"",
     "format:check": "prettier --check index.html src e2e \"*.config.*\"",
-    "typecheck": "tsc && tsc -p tsconfig.node.json",
+    "typecheck": "tsc && tsc -p tsconfig.core.json && tsc -p tsconfig.node.json",
     "test": "vitest run",
     "e2e": "playwright test"
   },
