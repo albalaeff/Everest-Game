@@ -191,8 +191,9 @@ npm run e2e -- --project=iphone   # on one of them
   leftovers or write outside its `tmp_path`. A worker takes seconds to start, so a run
   naming files or tests stays in one process.
 - **The knowledge base** is checked with the tests: `uv run pytest` fails on a record in
-  `content/facts/` without a source or a check date, and `uv run python scripts/check_facts.py`
-  lists every problem by file and record
+  `content/facts/` without a source or a check date, and on a chronicle short of the
+  Himalayan Database's totals (#14); `uv run python scripts/check_facts.py` lists every
+  problem by file and record
   ([docs/conventions/knowledge-base.md](docs/conventions/knowledge-base.md)).
 - **The game's checks** run in CI beside these. ESLint and Prettier read `src/`, `e2e/` and
   the config files; `tsc` checks `tsconfig.json`, the browser's code, `tsconfig.core.json`,

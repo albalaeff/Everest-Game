@@ -60,6 +60,82 @@ A number the model is tuned with that no source states, such as a fatigue rate. 
 
 Numbers in these examples are made up, and only show the form. Every id in `fitted_to` has to be a fact in the knowledge base. A coefficient has a `value` or a `range`, as a fact's version does, and a unit: `1` where it has none.
 
+## A death
+
+The chronicle ([../../spec.md](../../spec.md) → Real accidents as training scenarios) is one record per recorded death, in `content/facts/deaths.json`: who they were, and what each source says of the death. Facts and a source only; nothing else about a real person goes in. The example is made up.
+
+```json
+{
+  "id": "death.1990-05-11-a-climber",
+  "kind": "death",
+  "name": "A. Climber",
+  "citizenship": "Nowhere",
+  "hired": false,
+  "status": "source only",
+  "versions": [
+    {
+      "date": "1990-05-11",
+      "place": "South Summit",
+      "altitude": 8750,
+      "cause": "exposure",
+      "phase": "descent",
+      "note": "Caught by the storm on the way down.",
+      "source": { "title": "The Himalayan Database", "url": "https://example.com/deaths" },
+      "checked": "2026-11-01"
+    }
+  ]
+}
+```
+
+- **`id`:** `death.`, the date, and the name, as `death.1990-05-11-a-climber`.
+- **`name`, `citizenship`:** as the source gives them; **`hired`:** `true` for a Sherpa, a porter or a high-altitude worker on the expedition's payroll.
+- **A version** says what one source says, and only that: `date`, `place`, `altitude` in metres, `cause`, `phase`, and a `note` for what the words add, with the `source` and `checked` of a fact's version. Between them, the versions have to give the date, the place and the cause. One version when the sources agree; where they disagree, on the date or the cause, one for each: the game shows both.
+- **`cause`** is one of the Himalayan Database's classes: `altitude-sickness`, `exhaustion`, `exposure` (with frostbite), `fall`, `crevasse`, `icefall-collapse`, `avalanche`, `falling-rock-or-ice`, `disappearance`, `illness` (not of altitude), `other`, `unknown`. What a source says beyond the class (HAPE, a heart attack) goes in the `note`.
+- **`phase`** is where on the climb: `approach` (the walk to or from base camp), `base-camp`, `ascent`, `camp` (above base camp, between climbs), `descent` (on the way down from a summit attempt). Leave it out when no source says.
+
+The real files' test holds the chronicle to the Himalayan Database's totals: as many deaths dated through 2025 as the fact `chronicle.recorded-deaths-through-2025` says, and in spring 2026 as `chronicle.recorded-deaths-spring-2026`. A record missed, or one too many, fails CI.
+
+## An accident
+
+The accidents the game tells in full, one record each in `content/facts/accidents.json`: the dates, the weather, the crowd, the chain of decisions and conditions that led to the deaths, and who died. The game plays the situation, not the people: the names appear only through the `deaths` ids, in the History card.
+
+```json
+{
+  "id": "accident.1990-storm",
+  "kind": "accident",
+  "title": "The storm of 10–11 May 1990",
+  "status": "source only",
+  "date": "1990-05-10",
+  "until": "1990-05-11",
+  "weather": {
+    "what": "A storm came in during the afternoon.",
+    "versions": [{ "note": "From 15:00.", "source": { "title": "…", "url": "https://example.com/a" }, "checked": "2026-11-01" }]
+  },
+  "crowd": {
+    "what": "Three teams on the summit ridge at once.",
+    "versions": [{ "value": 30, "unit": "climbers", "source": { "title": "…", "url": "https://example.com/a" }, "checked": "2026-11-01" }]
+  },
+  "chain": [
+    {
+      "when": "10 May, 14:00",
+      "what": "The turnaround time passes with climbers still below the summit.",
+      "versions": [
+        { "note": "14:00, agreed the night before.", "source": { "title": "…", "url": "https://example.com/a" }, "checked": "2026-11-01" },
+        { "note": "13:00.", "source": { "title": "…", "url": "https://example.com/b" }, "checked": "2026-11-01" }
+      ]
+    }
+  ],
+  "deaths": ["death.1990-05-11-a-climber"],
+  "lesson": "The turnaround time is not up for discussion.",
+  "scenario": "A storm on the ridge"
+}
+```
+
+- **`id`:** `accident.`, the year and what it was, as `accident.1990-storm`.
+- **`date`** is the day it began, **`until`** the day it ended, when not the same.
+- **`weather`, `crowd` and each step of the `chain`** are a statement: `what` happened or held, in a sentence, and `versions`, one per source, as a fact's: a `value` or `range` with its `unit` where there's a number, a `note` for the words. Where sources disagree, one version each, and the game shows both. A step has `when` where a source gives the time, in words; the chain is in order.
+- **`deaths`:** the ids of its dead, each a death record. **`lesson`** and **`scenario`** are the spec's table's columns for it.
+
 ## What goes in
 
 - **Never a dose.** Medicines are described by why doctors use them: no amounts, in a value, a claim or a note.

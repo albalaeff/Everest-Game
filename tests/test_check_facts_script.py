@@ -8,10 +8,11 @@ from typing import Any
 import pytest
 from jsonschema import Draft202012Validator
 
-from scripts.check_facts import ROOT, SCHEMA, KnowledgeBase, main
+from scripts.check_facts import ROOT, SCHEMA, Death, Fact, KnowledgeBase, main
 
 TODAY = date(2026, 11, 2)
 SOURCE = {"title": "Arnette", "url": "https://www.alanarnette.com/blog/?p=16718"}
+DEATH = "death.1990-05-11-a-climber"  # made up, as is everything about it below
 
 
 def version(**fields: Any) -> dict[str, Any]:
@@ -34,6 +35,39 @@ def coefficient(id: str = "body.fatigue-rate", **fields: Any) -> dict[str, Any]:
     }
     fit = {"value": 0.2, "unit": "1/h", "fitted_to": ["oxygen.usual-flow"], "fitted": "2026-11-01"}
     return record | fit | fields
+
+
+def words(note: str = "Descend.", **fields: Any) -> dict[str, Any]:
+    """What one source says in words only."""
+    return {"note": note, "source": SOURCE, "checked": "2026-11-01"} | fields
+
+
+def death_version(**fields: Any) -> dict[str, Any]:
+    """What one source says of a death: on the South Summit, of exposure, on the way down."""
+    found = {"date": "1990-05-11", "place": "South Summit", "altitude": 8750}
+    found |= {"cause": "exposure", "phase": "descent"}
+    return found | {"source": SOURCE, "checked": "2026-11-01"} | fields
+
+
+def death(id: str = DEATH, **fields: Any) -> dict[str, Any]:
+    record = {"id": id, "kind": "death", "name": "A. Climber", "citizenship": "Nowhere"}
+    record |= {"hired": False, "status": "source only"}
+    return record | {"versions": [death_version()]} | fields
+
+
+def statement(what: str = "It snowed.", **fields: Any) -> dict[str, Any]:
+    """What happened or held, and what one source says of it."""
+    return {"what": what, "versions": [words()]} | fields
+
+
+def accident(id: str = "accident.1990-storm", **fields: Any) -> dict[str, Any]:
+    record = {"id": id, "kind": "accident", "title": "A storm, made up", "status": "source only"}
+    record |= {"date": "1990-05-10", "until": "1990-05-11"}
+    record |= {"weather": statement("A storm came in during the afternoon.")}
+    record |= {"crowd": statement("Three teams on the ridge.")}
+    record |= {"chain": [statement("The turnaround time passed.", when="10 May, 14:00")]}
+    record |= {"deaths": [DEATH], "lesson": "The turnaround time is not up for discussion."}
+    return record | {"scenario": "A storm on the ridge"} | fields
 
 
 def without(record: dict[str, Any], name: str) -> dict[str, Any]:
@@ -198,6 +232,178 @@ class TestAcrossRecords:
         assert len(found) == 1
         assert "'status' is a required property" in found[0]
 
+    def test_a_fact_s_bounds_span_its_sources(self, tmp_path: Path) -> None:
+        one = without(version(), "range") | {"value": 1}
+        versions = [version(), version(range={"min": 3, "max": 5}), words(), one]
+        [record] = base(tmp_path, fact(versions=versions)).records
+        assert isinstance(record, Fact)
+        assert record.bounds == (1, 5)
+
+
+# --- the chronicle: the dead, and the accidents (#14) ------------------------------------------
+
+
+@pytest.mark.unit
+class TestGoodChronicleRecords:
+    @pytest.mark.parametrize(
+        "record",
+        [
+            death(),
+            death(hired=True, status="expert-reviewed"),
+            death(versions=[death_version(), death_version(date="1990-05-10")]),
+            death(versions=[death_version(), words("Found in 1999.")]),
+            death(versions=[without(without(death_version(), "altitude"), "phase")]),
+        ],
+        ids=["one source", "hired, reviewed", "dates differ", "a second in words", "the least"],
+    )
+    def test_a_death_passes(self, tmp_path: Path, record: dict[str, Any]) -> None:
+        assert problems(tmp_path, record) == []
+
+    def test_an_accident_passes(self, tmp_path: Path) -> None:
+        assert problems(tmp_path, death(), accident()) == []
+
+    def test_an_accident_may_last_a_day(self, tmp_path: Path) -> None:
+        assert problems(tmp_path, death(), without(accident(), "until")) == []
+
+    def test_a_step_may_carry_a_number(self, tmp_path: Path) -> None:
+        counted = without(version(), "range") | {"value": 200, "unit": "climbers"}
+        crowd = statement("About this many on the ridge.", versions=[counted])
+        assert problems(tmp_path, death(), accident(crowd=crowd)) == []
+
+    def test_a_step_may_carry_both_versions(self, tmp_path: Path) -> None:
+        disputed = statement("When the turnaround was.", versions=[words("14:00"), words("13:00")])
+        assert problems(tmp_path, death(), accident(chain=[disputed])) == []
+
+
+@pytest.mark.unit
+class TestBadChronicleRecords:
+    @pytest.mark.parametrize("name", ["name", "citizenship", "hired", "status", "versions"])
+    def test_a_death_without_a_field_fails(self, tmp_path: Path, name: str) -> None:
+        assert problems(tmp_path, without(death(), name)) != []
+
+    @pytest.mark.parametrize("name", ["source", "checked"])
+    def test_a_death_s_version_without_its_source_or_check_date_fails(
+        self, tmp_path: Path, name: str
+    ) -> None:
+        found = problems(tmp_path, death(versions=[without(death_version(), name)]))
+        assert len(found) == 1
+        assert f"'{name}' is a required property" in found[0]
+
+    @pytest.mark.parametrize("cause", ["storm", "Exposure", "HAPE", ""])
+    def test_a_death_s_cause_is_one_the_database_names(self, tmp_path: Path, cause: str) -> None:
+        assert problems(tmp_path, death(versions=[death_version(cause=cause)])) != []
+
+    @pytest.mark.parametrize("phase", ["summit", "Descent", ""])
+    def test_a_death_s_phase_is_one_of_the_route_s(self, tmp_path: Path, phase: str) -> None:
+        assert problems(tmp_path, death(versions=[death_version(phase=phase)])) != []
+
+    @pytest.mark.parametrize("date_", ["11.05.1990", "1990-05", "May 1990"])
+    def test_a_death_s_date_is_a_real_date(self, tmp_path: Path, date_: str) -> None:
+        assert problems(tmp_path, death(versions=[death_version(date=date_)])) != []
+
+    @pytest.mark.parametrize("hired", ["no", 0, None])
+    def test_hired_is_yes_or_no(self, tmp_path: Path, hired: Any) -> None:
+        assert problems(tmp_path, death(hired=hired)) != []
+
+    def test_a_misspelt_field_fails(self, tmp_path: Path) -> None:
+        assert problems(tmp_path, death(nam="A. Climber")) != []
+        assert problems(tmp_path, death(versions=[death_version(plase="South Summit")])) != []
+        assert problems(tmp_path, death(), accident(leson="Turn around.")) != []
+        assert problems(tmp_path, death(), accident(chain=[statement(wen="14:00")])) != []
+
+    @pytest.mark.parametrize(
+        "name", ["title", "date", "weather", "crowd", "chain", "deaths", "lesson", "scenario"]
+    )
+    def test_an_accident_without_a_field_fails(self, tmp_path: Path, name: str) -> None:
+        assert problems(tmp_path, death(), without(accident(), name)) != []
+
+    def test_an_accident_s_chain_and_deaths_aren_t_empty(self, tmp_path: Path) -> None:
+        assert problems(tmp_path, death(), accident(chain=[])) != []
+        assert problems(tmp_path, death(), accident(deaths=[])) != []
+
+    def test_a_step_needs_its_sources(self, tmp_path: Path) -> None:
+        for step in ({"what": "It snowed."}, statement(versions=[])):
+            assert problems(tmp_path, death(), accident(chain=[step])) != []
+        unsourced = statement(versions=[without(words(), "source")])
+        assert problems(tmp_path, death(), accident(weather=unsourced)) != []
+
+    @pytest.mark.parametrize("date_", ["10.05.1990", "1990-05", "soon"])
+    def test_an_accident_s_dates_are_real_dates(self, tmp_path: Path, date_: str) -> None:
+        assert problems(tmp_path, death(), accident(date=date_)) != []
+        assert problems(tmp_path, death(), accident(until=date_)) != []
+
+
+@pytest.mark.unit
+class TestAcrossTheChronicle:
+    @pytest.mark.parametrize("name", ["date", "place", "cause"])
+    def test_some_source_says_a_death_s_date_place_and_cause(
+        self, tmp_path: Path, name: str
+    ) -> None:
+        versions = [without(death_version(), name), words("Also died.")]
+        found = problems(tmp_path, death(versions=versions))
+        assert len(found) == 1
+        assert name in found[0]
+
+    def test_a_death_s_date_in_the_future_fails(self, tmp_path: Path) -> None:
+        found = problems(tmp_path, death(versions=[death_version(date="2026-11-04")]))
+        assert len(found) == 1
+        assert "2026-11-04" in found[0]
+
+    def test_a_death_s_check_date_in_the_future_fails(self, tmp_path: Path) -> None:
+        assert len(problems(tmp_path, death(versions=[death_version(checked="2027-01-01")]))) == 1
+
+    def test_a_death_s_date_is_the_earliest_its_sources_give(self, tmp_path: Path) -> None:
+        versions = [death_version(), death_version(date="1990-05-10"), words("Also died.")]
+        [record] = base(tmp_path, death(versions=versions)).records
+        assert isinstance(record, Death)
+        assert record.day == date(1990, 5, 10)
+
+    def test_an_accident_names_deaths_that_are_here(self, tmp_path: Path) -> None:
+        found = problems(tmp_path, accident())
+        assert len(found) == 1
+        assert DEATH in found[0]
+
+    def test_an_accident_s_deaths_are_deaths(self, tmp_path: Path) -> None:
+        found = problems(tmp_path, fact(), accident(deaths=["oxygen.usual-flow"]))
+        assert len(found) == 1
+        assert "oxygen.usual-flow" in found[0]
+
+    def test_an_accident_ends_after_it_begins(self, tmp_path: Path) -> None:
+        found = problems(tmp_path, death(), accident(until="1990-05-09"))
+        assert len(found) == 1
+        assert "1990-05-09" in found[0]
+
+    def test_an_accident_s_dates_in_the_future_fail(self, tmp_path: Path) -> None:
+        dated = accident(date="2026-11-04", until="2026-11-05")
+        assert len(problems(tmp_path, death(), dated)) == 2
+
+    def test_a_step_s_versions_share_a_unit(self, tmp_path: Path) -> None:
+        mixed = statement("How much oxygen.", versions=[version(), version(unit="L/h")])
+        found = problems(tmp_path, death(), accident(chain=[statement(), mixed]))
+        assert len(found) == 1
+        assert "step 2" in found[0]
+        assert "units" in found[0]
+
+    def test_a_step_s_range_runs_upwards(self, tmp_path: Path) -> None:
+        upside_down = statement(versions=[version(range={"min": 4, "max": 2})])
+        found = problems(tmp_path, death(), accident(crowd=upside_down))
+        assert len(found) == 1
+        assert "the crowd" in found[0]
+
+    def test_a_step_s_check_date_in_the_future_fails(self, tmp_path: Path) -> None:
+        late = statement(versions=[words(checked="2027-01-01")])
+        assert len(problems(tmp_path, death(), accident(weather=late))) == 1
+
+    def test_a_coefficient_isn_t_fitted_to_a_death(self, tmp_path: Path) -> None:
+        found = problems(tmp_path, death(), coefficient(fitted_to=[DEATH]))
+        assert len(found) == 1
+        assert DEATH in found[0]
+
+    def test_an_id_is_used_once_across_kinds(self, tmp_path: Path) -> None:
+        found = problems(tmp_path, fact(DEATH), death())
+        assert len(found) == 1
+        assert "used twice" in found[0]
+
 
 # --- the files ---------------------------------------------------------------------------------
 
@@ -227,10 +433,31 @@ class TestFiles:
 
 
 class TestTheRealFiles:
+    FOLDER = ROOT / "content" / "facts"
+
     def test_every_record_passes(self) -> None:
         """This is CI's check: `pytest` fails on a record without a source or a check date."""
-        folder = ROOT / "content" / "facts"
-        assert [str(problem) for problem in KnowledgeBase(folder, SCHEMA).problems()] == []
+        assert [str(problem) for problem in KnowledgeBase(self.FOLDER, SCHEMA).problems()] == []
+
+    @pytest.mark.parametrize(
+        "total, first, last",
+        [
+            ("chronicle.recorded-deaths-through-2025", date.min, date(2025, 12, 31)),
+            ("chronicle.recorded-deaths-spring-2026", date(2026, 1, 1), date(2026, 6, 30)),
+        ],
+        ids=["through 2025", "spring 2026"],
+    )
+    def test_every_recorded_death_is_here(self, total: str, first: date, last: date) -> None:
+        """The chronicle holds every death the Himalayan Database records: as many dated
+        between these days as the knowledge base's own total says (#14)."""
+        base = KnowledgeBase(self.FOLDER, SCHEMA)
+        assert base.problems() == []
+        totals = {record.id: record for record in base.records if isinstance(record, Fact)}
+        assert total in totals, f"no fact {total} in the knowledge base"
+        deaths = [record for record in base.records if isinstance(record, Death)]
+        found = sum(first <= record.day <= last for record in deaths)
+        low, high = totals[total].bounds
+        assert low <= found <= high, f"{found} deaths here, {total} says {low}–{high}"
 
 
 @pytest.mark.unit

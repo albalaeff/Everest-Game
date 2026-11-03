@@ -5,13 +5,15 @@
 The records are the JSON files in content/facts/, and docs/conventions/knowledge-base.md says
 how to write one. Each file must pass content/facts.schema.json; once they all do, this checks
 what a schema can't see: an id used twice, a coefficient fitted to a fact that isn't there, a
-range upside down, versions in different units, a date in the future. `pytest` runs it on the
-real files (tests/test_check_facts_script.py), which is what fails CI.
+range upside down, versions in different units, a date in the future, a death no source dates
+or places, an accident naming a death that isn't there (#14). `pytest` runs it on the real
+files (tests/test_check_facts_script.py), which is what fails CI, and holds the chronicle to
+the Himalayan Database's totals there.
 """
 
 import json
 import sys
-from collections.abc import Iterator, Mapping, Set
+from collections.abc import Iterator, Mapping
 from dataclasses import dataclass
 from datetime import date, timedelta
 from pathlib import Path
@@ -47,54 +49,127 @@ class Record:
     def id(self) -> str:
         return str(self.data["id"])
 
-    def problems(self, facts: Set[str], latest: date) -> Iterator[Problem]:
-        """What the schema can't see, given the ids of all the facts and the latest date that
-        isn't in the future."""
+    def problems(self, kinds: Mapping[str, str], latest: date) -> Iterator[Problem]:
+        """What the schema can't see, given every record's kind by its id and the latest date
+        that isn't in the future."""
         raise NotImplementedError
 
-    def _problem(self, what: str) -> Problem:
-        return Problem(self.file, self.id, what)
+    def _problem(self, what: str, about: str = "") -> Problem:
+        return Problem(self.file, self.id, f"{about}: {what}" if about else what)
 
-    def _range(self, measure: Mapping[str, Any]) -> Iterator[Problem]:
+    def _versions(
+        self, versions: list[Mapping[str, Any]], latest: date, about: str = ""
+    ) -> Iterator[Problem]:
+        """What the sources say, as versions: each range upwards, each check date past, all in
+        one unit."""
+        for version in versions:
+            yield from self._range(version, about)
+            yield from self._date(version["checked"], latest, about)
+        units = sorted({version["unit"] for version in versions if "unit" in version})
+        if len(units) > 1:
+            yield self._problem(f"versions in different units: {', '.join(units)}", about)
+
+    def _range(self, measure: Mapping[str, Any], about: str = "") -> Iterator[Problem]:
         bounds = measure.get("range")
         if bounds and bounds["min"] >= bounds["max"]:
-            yield self._problem(f"the range {bounds['min']}–{bounds['max']} doesn't run upwards")
+            what = f"the range {bounds['min']}–{bounds['max']} doesn't run upwards"
+            yield self._problem(what, about)
 
-    def _date(self, text: str, latest: date) -> Iterator[Problem]:
+    def _date(self, text: str, latest: date, about: str = "") -> Iterator[Problem]:
         if date.fromisoformat(text) > latest:
-            yield self._problem(f"the date {text} is in the future")
+            yield self._problem(f"the date {text} is in the future", about)
 
 
 @dataclass(frozen=True, slots=True)
 class Fact(Record):
     """What the sources say, a version for each that disagrees."""
 
-    def problems(self, facts: Set[str], latest: date) -> Iterator[Problem]:
-        versions = self.data["versions"]
-        for version in versions:
-            yield from self._range(version)
-            yield from self._date(version["checked"], latest)
-        units = sorted({version["unit"] for version in versions if "unit" in version})
-        if len(units) > 1:
-            yield self._problem(f"versions in different units: {', '.join(units)}")
+    def problems(self, kinds: Mapping[str, str], latest: date) -> Iterator[Problem]:
+        yield from self._versions(self.data["versions"], latest)
+
+    @property
+    def bounds(self) -> tuple[float, float]:
+        """The lowest and the highest number its sources give."""
+        lows: list[float] = []
+        highs: list[float] = []
+        for version in self.data["versions"]:
+            if "value" in version:
+                lows.append(version["value"])
+                highs.append(version["value"])
+            elif "range" in version:
+                lows.append(version["range"]["min"])
+                highs.append(version["range"]["max"])
+        return min(lows), max(highs)
 
 
 @dataclass(frozen=True, slots=True)
 class Coefficient(Record):
     """A number the model is tuned with that no source states, fitted to facts."""
 
-    def problems(self, facts: Set[str], latest: date) -> Iterator[Problem]:
+    def problems(self, kinds: Mapping[str, str], latest: date) -> Iterator[Problem]:
         yield from self._range(self.data)
         yield from self._date(self.data["fitted"], latest)
         for fact in self.data["fitted_to"]:
-            if fact not in facts:
+            if kinds.get(fact) != "fact":
                 yield self._problem(f"fitted to {fact}, which isn't a fact here")
+
+
+@dataclass(frozen=True, slots=True)
+class Death(Record):
+    """One of the recorded dead: what each source says of the death (#14)."""
+
+    TOLD: ClassVar[tuple[str, ...]] = ("date", "place", "cause")
+
+    def problems(self, kinds: Mapping[str, str], latest: date) -> Iterator[Problem]:
+        versions = self.data["versions"]
+        yield from self._versions(versions, latest)
+        for version in versions:
+            if "date" in version:
+                yield from self._date(version["date"], latest)
+        for field in self.TOLD:
+            if not any(field in version for version in versions):
+                yield self._problem(f"no source says the {field}")
+
+    @property
+    def day(self) -> date:
+        """The earliest day its sources give."""
+        return min(
+            date.fromisoformat(version["date"])
+            for version in self.data["versions"]
+            if "date" in version
+        )
+
+
+@dataclass(frozen=True, slots=True)
+class Accident(Record):
+    """An accident told in full: its dates, weather, crowd, chain of decisions and its dead
+    (#14)."""
+
+    def problems(self, kinds: Mapping[str, str], latest: date) -> Iterator[Problem]:
+        began, until = self.data["date"], self.data.get("until")
+        yield from self._date(began, latest)
+        if until:
+            yield from self._date(until, latest)
+            if until < began:
+                yield self._problem(f"it ends on {until}, before it begins on {began}")
+        yield from self._versions(self.data["weather"]["versions"], latest, "the weather")
+        yield from self._versions(self.data["crowd"]["versions"], latest, "the crowd")
+        for number, step in enumerate(self.data["chain"], 1):
+            yield from self._versions(step["versions"], latest, f"step {number}")
+        for death in self.data["deaths"]:
+            if kinds.get(death) != "death":
+                yield self._problem(f"names {death}, which isn't a death here")
 
 
 class FactFile:
     """One JSON file of records."""
 
-    KINDS: ClassVar[dict[str, type[Record]]] = {"fact": Fact, "coefficient": Coefficient}
+    KINDS: ClassVar[dict[str, type[Record]]] = {
+        "fact": Fact,
+        "coefficient": Coefficient,
+        "death": Death,
+        "accident": Accident,
+    }
 
     def __init__(self, path: Path, validator: Draft202012Validator) -> None:
         self._name = path.name
@@ -143,22 +218,24 @@ class KnowledgeBase:
         return found or list(self._between_records())
 
     def summary(self) -> str:
-        records = len(self._records())
+        records = len(self.records)
         files = len(self._files)
         return f"{records} records in {files} file{'' if files == 1 else 's'}: fine."
 
-    def _records(self) -> list[Record]:
+    @property
+    def records(self) -> list[Record]:
+        """Every record of every file, for files with no problems."""
         return [record for file in self._files for record in file.records]
 
     def _between_records(self) -> Iterator[Problem]:
-        records = self._records()
-        facts = {record.id for record in records if isinstance(record, Fact)}
+        records = self.records
+        kinds = {record.id: str(record.data["kind"]) for record in records}
         seen: set[str] = set()
         for record in records:
             if record.id in seen:
                 yield Problem(record.file, record.id, "this id is used twice")
             seen.add(record.id)
-            yield from record.problems(facts, self._latest)
+            yield from record.problems(kinds, self._latest)
 
 
 def main(base: KnowledgeBase | None = None) -> int:
