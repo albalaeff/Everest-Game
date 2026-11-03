@@ -202,8 +202,10 @@ npm run e2e -- --project=iphone   # on one of them
   ([docs/conventions/simulation-core.md](docs/conventions/simulation-core.md)), and
   `tsconfig.node.json`, what runs on Node. Vitest runs `src/**/*.test.ts`. Playwright builds
   the game, serves the build and runs the stories in `e2e/` on each of its projects: `pc` and
-  `android` in Chromium, `iphone` in WebKit. TypeScript stays on 6.0: typescript-eslint
-  refuses 7.
+  `android` in Chromium, `iphone` in WebKit. A headless browser draws WebGL in software, so
+  the stories run two browsers at once at most (`workers` in `playwright.config.ts`), Chromium
+  with `--enable-unsafe-swiftshader`, and the frame rate they see says nothing about the
+  game's targets. TypeScript stays on 6.0: typescript-eslint refuses 7.
 - **The database test.** The agent manager's one `db` test, for a project whose agents get
   test databases of their own, is skipped without `TEST_DATABASE_URL`.
 
