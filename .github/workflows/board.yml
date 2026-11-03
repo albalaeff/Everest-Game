@@ -1,12 +1,16 @@
 name: Project board
 
 # Keeps the project board current (#118, scripts/board.py): an ended iteration's open cards move
-# into the next, two iterations stay ahead, and each card's status follows its issue. Every
-# hour, and on demand. The board is albalaeff's project 2; PROJECT_TOKEN is a classic token
-# with the `project` scope, since a fine-grained token can't reach a project a user owns.
+# into the next, one whose cards are all closed ends early (#120), two iterations stay ahead,
+# and each card's status follows its issue. Every hour, on demand, and whenever an issue is
+# closed or reopened, so an iteration done early switches within minutes. The board is
+# albalaeff's project 2; PROJECT_TOKEN is a classic token with the `project` scope, since a
+# fine-grained token can't reach a project a user owns.
 on:
   schedule:
     - cron: "17 * * * *"
+  issues:
+    types: [closed, reopened]
   workflow_dispatch:
 
 permissions:
