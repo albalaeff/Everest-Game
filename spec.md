@@ -75,7 +75,7 @@ Sources: [Alan Arnette, 2026 prices](https://www.alanarnette.com/blog/?p=48861),
 Real rules the game takes into account:
 
 - A spring permit on the Nepal side costs USD 15,000 since September 2025 (previously 11,000).
-- Above 8,000 m, at least one Sherpa or guide is required for every two foreign climbers.
+- On peaks of 8,000 m and higher, Everest among them, at least one Sherpa or guide is required for every two foreign climbers ([Alan Arnette](https://www.alanarnette.com/blog/2026/02/23/everest-2026-rumor-fire-season/)).
 - The requirement to first climb a 7,000-metre peak in Nepal is not yet law. The game can recommend such experience ([Alan Arnette](https://www.alanarnette.com/blog/2026/02/23/everest-2026-rumor-fire-season/)).
 
 The choice of tour is linked to safety statistically, not strictly. According to Arnette, 23 of the 26 clients who died in 2023–2024 were with companies cheaper than the median price. But some budget operators are good, and expensive ones have bad seasons too. So in the game every fictional operator has a hidden quality, and the player learns to check it with questions before buying.
@@ -390,6 +390,8 @@ Prices and rules
 
 - [Alan Arnette: How Much Does It Cost to Climb Everest? 2026 Edition](https://www.alanarnette.com/blog/?p=48861)
 - [Alan Arnette: Everest 2026 rumor fire season (new rules)](https://www.alanarnette.com/blog/2026/02/23/everest-2026-rumor-fire-season/)
+- [Alan Arnette: Everest just became more expensive and unattractive to some (the 2025 permit fees)](https://www.alanarnette.com/2025/09/03/everest-just-became-more-expensive-and-unattractive-to-some/)
+- [Explorersweb: Changes to Nepal laws threaten stricter Everest rules, higher costs (July 2026)](https://explorersweb.com/changes-to-nepal-laws-threaten-stricter-everest-rules-higher-costs/)
 - [Global Summit Guide: $90K vs $35K Everest](https://globalsummitguide.com/90k-vs-35k-everest-expedition-comparison/)
 
 Co-op

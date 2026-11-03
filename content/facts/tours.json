@@ -1,0 +1,294 @@
+{
+  "$schema": "../facts.schema.json",
+  "facts": [
+    {
+      "id": "tours.budget-price",
+      "kind": "fact",
+      "claim": "A budget expedition by the South route costs a climber this much in 2026: a Nepalese operator's logistics and Sherpa support, with no international guide.",
+      "status": "source only",
+      "versions": [
+        {
+          "range": { "min": 30000, "max": 55000 },
+          "unit": "USD",
+          "estimate": true,
+          "note": "a Sherpa-supported expedition; the same section also says 30,000–50,000",
+          "source": {
+            "title": "Alan Arnette: How Much Does It Cost to Climb Everest? 2026 Edition",
+            "url": "https://www.alanarnette.com/blog/?p=48861"
+          },
+          "checked": "2026-11-04"
+        },
+        {
+          "value": 35000,
+          "unit": "USD",
+          "estimate": true,
+          "note": "a representative budget Nepali expedition; the reputable Nepali operators charge 40,000–50,000",
+          "source": {
+            "title": "Global Summit Guide: $90K vs $35K Everest",
+            "url": "https://globalsummitguide.com/90k-vs-35k-everest-expedition-comparison/"
+          },
+          "checked": "2026-11-04"
+        }
+      ]
+    },
+    {
+      "id": "tours.budget-sherpas",
+      "kind": "fact",
+      "claim": "On a budget expedition, this many Sherpas climb with each client on summit day; before it, a client often climbs alone.",
+      "status": "source only",
+      "versions": [
+        {
+          "value": 1,
+          "unit": "Sherpas per client",
+          "note": "a Sherpa usually goes with the client on summit night, and it's common to climb alone or with one Sherpa",
+          "source": {
+            "title": "Alan Arnette: How Much Does It Cost to Climb Everest? 2026 Edition",
+            "url": "https://www.alanarnette.com/blog/?p=48861"
+          },
+          "checked": "2026-11-04"
+        },
+        {
+          "range": { "min": 0.5, "max": 1 },
+          "unit": "Sherpas per client",
+          "note": "one to one on summit day with most operators, one to two with some; the page's summary box says one to three",
+          "source": {
+            "title": "Global Summit Guide: $90K vs $35K Everest",
+            "url": "https://globalsummitguide.com/90k-vs-35k-everest-expedition-comparison/"
+          },
+          "checked": "2026-11-04"
+        }
+      ]
+    },
+    {
+      "id": "tours.budget-oxygen",
+      "kind": "fact",
+      "claim": "A budget expedition gives each client this many bottles of oxygen.",
+      "status": "source only",
+      "versions": [
+        {
+          "value": 5,
+          "unit": "bottles",
+          "note": "the fewest a climber buys, at about 650 USD a bottle",
+          "source": {
+            "title": "Alan Arnette: How Much Does It Cost to Climb Everest? 2026 Edition",
+            "url": "https://www.alanarnette.com/blog/?p=48861"
+          },
+          "checked": "2026-11-04"
+        },
+        {
+          "range": { "min": 4, "max": 6 },
+          "unit": "bottles",
+          "note": "at 2 L/min; the Sherpas' oxygen is often pooled, not allotted",
+          "source": {
+            "title": "Global Summit Guide: $90K vs $35K Everest",
+            "url": "https://globalsummitguide.com/90k-vs-35k-everest-expedition-comparison/"
+          },
+          "checked": "2026-11-04"
+        }
+      ]
+    },
+    {
+      "id": "tours.budget-service",
+      "kind": "fact",
+      "claim": "A budget expedition has no international guide: the operator arranges the permits, food, gear and Sherpa support, with a simpler Base Camp, shared weather forecasts and shared communications.",
+      "status": "source only",
+      "versions": [
+        {
+          "note": "permits, food, group gear, transport and Sherpa support, but no international guides",
+          "source": {
+            "title": "Alan Arnette: How Much Does It Cost to Climb Everest? 2026 Edition",
+            "url": "https://www.alanarnette.com/blog/?p=48861"
+          },
+          "checked": "2026-11-04"
+        },
+        {
+          "note": "no Western guide, and a lead Sherpa with 5–10 Everest summits or fewer; shared tents and a basic kitchen at Base Camp, shared public forecasts, shared communications devices",
+          "source": {
+            "title": "Global Summit Guide: $90K vs $35K Everest",
+            "url": "https://globalsummitguide.com/90k-vs-35k-everest-expedition-comparison/"
+          },
+          "checked": "2026-11-04"
+        }
+      ]
+    },
+    {
+      "id": "tours.fully-guided-price",
+      "kind": "fact",
+      "claim": "A fully guided expedition by the South route, with international guides, costs a climber this much in 2026.",
+      "status": "source only",
+      "versions": [
+        {
+          "range": { "min": 65000, "max": 125000 },
+          "unit": "USD",
+          "note": "typically; the dearest cost more",
+          "source": {
+            "title": "Alan Arnette: How Much Does It Cost to Climb Everest? 2026 Edition",
+            "url": "https://www.alanarnette.com/blog/?p=48861"
+          },
+          "checked": "2026-11-04"
+        },
+        {
+          "value": 90000,
+          "unit": "USD",
+          "estimate": true,
+          "note": "a representative premium Western expedition",
+          "source": {
+            "title": "Global Summit Guide: $90K vs $35K Everest",
+            "url": "https://globalsummitguide.com/90k-vs-35k-everest-expedition-comparison/"
+          },
+          "checked": "2026-11-04"
+        }
+      ]
+    },
+    {
+      "id": "tours.fully-guided-sherpas",
+      "kind": "fact",
+      "claim": "On a fully guided expedition, at least this many Sherpas climb with each client, besides the guides.",
+      "status": "source only",
+      "versions": [
+        {
+          "value": 1,
+          "unit": "Sherpas per client",
+          "note": "one or more highly experienced Sherpas",
+          "source": {
+            "title": "Alan Arnette: How Much Does It Cost to Climb Everest? 2026 Edition",
+            "url": "https://www.alanarnette.com/blog/?p=48861"
+          },
+          "checked": "2026-11-04"
+        },
+        {
+          "value": 1,
+          "unit": "Sherpas per client",
+          "note": "throughout the climb, not only on summit day, and often one Western guide per four clients",
+          "source": {
+            "title": "Global Summit Guide: $90K vs $35K Everest",
+            "url": "https://globalsummitguide.com/90k-vs-35k-everest-expedition-comparison/"
+          },
+          "checked": "2026-11-04"
+        }
+      ]
+    },
+    {
+      "id": "tours.fully-guided-oxygen",
+      "kind": "fact",
+      "claim": "A fully guided expedition gives each client this many bottles of oxygen.",
+      "status": "source only",
+      "versions": [
+        {
+          "range": { "min": 8, "max": 11 },
+          "unit": "bottles",
+          "note": "at 3 L/min or more, sleeping at 1 L/min, and typically 3 more for the client's Sherpa",
+          "source": {
+            "title": "Global Summit Guide: $90K vs $35K Everest",
+            "url": "https://globalsummitguide.com/90k-vs-35k-everest-expedition-comparison/"
+          },
+          "checked": "2026-11-04"
+        }
+      ]
+    },
+    {
+      "id": "tours.fully-guided-service",
+      "kind": "fact",
+      "claim": "A fully guided expedition climbs with international guides, typically IFMGA-certified, who decide on the turnaround, the weather and emergencies; it has a paid weather forecast and satellite communications.",
+      "status": "source only",
+      "versions": [
+        {
+          "note": "the guides typically hold IFMGA certification and decide turnaround times, weather and emergencies; the dearest companies send several, so a client never climbs alone",
+          "source": {
+            "title": "Alan Arnette: How Much Does It Cost to Climb Everest? 2026 Edition",
+            "url": "https://www.alanarnette.com/blog/?p=48861"
+          },
+          "checked": "2026-11-04"
+        },
+        {
+          "note": "Western IFMGA lead guides with 5 or more Everest summits, a private meteorologist's daily briefings, satellite communications, individual tents and spare tents at every camp",
+          "source": {
+            "title": "Global Summit Guide: $90K vs $35K Everest",
+            "url": "https://globalsummitguide.com/90k-vs-35k-everest-expedition-comparison/"
+          },
+          "checked": "2026-11-04"
+        }
+      ]
+    },
+    {
+      "id": "tours.premium-price",
+      "kind": "fact",
+      "claim": "A premium expedition, with a personal guide and unlimited oxygen, costs a climber this much and more in 2026.",
+      "status": "source only",
+      "versions": [
+        {
+          "value": 130000,
+          "unit": "USD",
+          "note": "Seven Summit Treks' VVIP expedition, the last time it listed a price; likely 300,000 or more now",
+          "source": {
+            "title": "Alan Arnette: How Much Does It Cost to Climb Everest? 2026 Edition",
+            "url": "https://www.alanarnette.com/blog/?p=48861"
+          },
+          "checked": "2026-11-04"
+        },
+        {
+          "value": 230000,
+          "unit": "USD",
+          "note": "Furtenbach Adventures' Signature, the top of the 2026 market, and more",
+          "source": {
+            "title": "Global Summit Guide: $90K vs $35K Everest",
+            "url": "https://globalsummitguide.com/90k-vs-35k-everest-expedition-comparison/"
+          },
+          "checked": "2026-11-04"
+        }
+      ]
+    },
+    {
+      "id": "tours.premium-sherpas",
+      "kind": "fact",
+      "claim": "A premium expedition gives each client up to this many Sherpas, for the whole climb.",
+      "status": "source only",
+      "versions": [
+        {
+          "range": { "min": 2, "max": 5 },
+          "unit": "Sherpas per client",
+          "note": "two personal Sherpas on Furtenbach Adventures' Signature; five on Seven Summit Treks' VVIP, one of them a UIAGM guide",
+          "source": {
+            "title": "Alan Arnette: How Much Does It Cost to Climb Everest? 2026 Edition",
+            "url": "https://www.alanarnette.com/blog/?p=48861"
+          },
+          "checked": "2026-11-04"
+        }
+      ]
+    },
+    {
+      "id": "tours.premium-oxygen",
+      "kind": "fact",
+      "claim": "A premium expedition gives each client unlimited oxygen, and at least this many bottles.",
+      "status": "source only",
+      "versions": [
+        {
+          "value": 25,
+          "unit": "bottles",
+          "note": "unlimited and no fewer than this on Seven Summit Treks' VVIP, in 4-litre bottles, with 7 for each high-altitude Sherpa; unlimited on Furtenbach Adventures' Signature",
+          "source": {
+            "title": "Alan Arnette: How Much Does It Cost to Climb Everest? 2026 Edition",
+            "url": "https://www.alanarnette.com/blog/?p=48861"
+          },
+          "checked": "2026-11-04"
+        }
+      ]
+    },
+    {
+      "id": "tours.premium-service",
+      "kind": "fact",
+      "claim": "A premium expedition gives each client a personal guide for the whole expedition, a doctor at Base Camp and a personal cook.",
+      "status": "source only",
+      "versions": [
+        {
+          "note": "on Seven Summit Treks' VVIP, a UIAGM guide from Kathmandu and back, a doctor at Base Camp, a private cook, a satellite phone and internet; on Furtenbach Adventures' Signature, a private IFMGA guide and the team doctor",
+          "source": {
+            "title": "Alan Arnette: How Much Does It Cost to Climb Everest? 2026 Edition",
+            "url": "https://www.alanarnette.com/blog/?p=48861"
+          },
+          "checked": "2026-11-04"
+        }
+      ]
+    }
+  ]
+}

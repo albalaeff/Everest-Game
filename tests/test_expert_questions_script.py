@@ -106,6 +106,19 @@ class TestWhatsListed:
             f"  - {link}, checked 2026-11-01",
         ]
 
+    def test_an_estimate_says_so(self, tmp_path: Path) -> None:
+        in_words = {"note": "About.", "source": SOURCE, "checked": "2026-10-31"}
+        versions = [
+            version(estimate=True),
+            in_words | {"value": 3, "unit": "L/min", "estimate": True},
+        ]
+        listed = experts(tmp_path, fact(versions=versions)).markdown("guide")
+        link = "[Arnette](https://www.alanarnette.com/blog/?p=16718)"
+        assert [line for line in listed.splitlines() if line.startswith("  - ")] == [
+            f"  - 2–4 L/min, an estimate: {link}, checked 2026-11-01",
+            f"  - 3 L/min, an estimate, About.: {link}, checked 2026-10-31",
+        ]
+
     def test_an_expert_with_nothing_to_check_says_so(self, tmp_path: Path) -> None:
         listed = experts(tmp_path, fact("medicine.hace-descent", status="expert-reviewed"))
         assert "Nothing to check." in listed.markdown("doctor")

@@ -1,0 +1,95 @@
+{
+  "$schema": "../facts.schema.json",
+  "facts": [
+    {
+      "id": "rules.spring-permit",
+      "kind": "fact",
+      "claim": "A foreign climber's permit for Everest by the South route in spring, March to May, costs this much since 1 September 2025, whatever the size of the team.",
+      "status": "source only",
+      "versions": [
+        {
+          "value": 15000,
+          "unit": "USD",
+          "source": {
+            "title": "Alan Arnette: Everest just became more expensive and unattractive to some",
+            "url": "https://www.alanarnette.com/2025/09/03/everest-just-became-more-expensive-and-unattractive-to-some/"
+          },
+          "checked": "2026-11-04"
+        },
+        {
+          "value": 15000,
+          "unit": "USD",
+          "note": "effective November 2025",
+          "source": {
+            "title": "Alan Arnette: Everest 2026 rumor fire season (new rules)",
+            "url": "https://www.alanarnette.com/blog/2026/02/23/everest-2026-rumor-fire-season/"
+          },
+          "checked": "2026-11-04"
+        }
+      ]
+    },
+    {
+      "id": "rules.spring-permit-until-2025",
+      "kind": "fact",
+      "claim": "From 2015 until September 2025, the same permit cost this much.",
+      "status": "source only",
+      "versions": [
+        {
+          "value": 11000,
+          "unit": "USD",
+          "source": {
+            "title": "Alan Arnette: Everest just became more expensive and unattractive to some",
+            "url": "https://www.alanarnette.com/2025/09/03/everest-just-became-more-expensive-and-unattractive-to-some/"
+          },
+          "checked": "2026-11-04"
+        }
+      ]
+    },
+    {
+      "id": "rules.guide-ratio",
+      "kind": "fact",
+      "claim": "Nepal requires at least one Sherpa or guide per this many foreign climbers on its peaks of 8,000 m and higher, Everest among them.",
+      "status": "source only",
+      "versions": [
+        {
+          "value": 2,
+          "unit": "foreign climbers per Sherpa or guide",
+          "note": "for the 8,000 m peaks; below them, one guide per team. Tried before with little effect: no training is set for the guide, and Mingma Sherpa calls it more of a guideline than a rule",
+          "source": {
+            "title": "Alan Arnette: Everest 2026 rumor fire season (new rules)",
+            "url": "https://www.alanarnette.com/blog/2026/02/23/everest-2026-rumor-fire-season/"
+          },
+          "checked": "2026-11-04"
+        }
+      ]
+    },
+    {
+      "id": "rules.7000-m-peak",
+      "kind": "fact",
+      "claim": "Nepal's tourism bill would give an Everest permit only to a climber who has summited a peak of at least this height in Nepal. It isn't law yet: a recommendation, not a requirement.",
+      "status": "source only",
+      "versions": [
+        {
+          "value": 7000,
+          "unit": "m",
+          "note": "not approved: the bill was in committee in late February 2026",
+          "source": {
+            "title": "Alan Arnette: Everest 2026 rumor fire season (new rules)",
+            "url": "https://www.alanarnette.com/blog/2026/02/23/everest-2026-rumor-fire-season/"
+          },
+          "checked": "2026-11-04"
+        },
+        {
+          "value": 7000,
+          "unit": "m",
+          "note": "the bill was still before a committee of the House of Representatives in July 2026, and its rules unlikely to be enforced by spring 2027",
+          "source": {
+            "title": "Explorersweb: Changes to Nepal laws threaten stricter Everest rules, higher costs",
+            "url": "https://explorersweb.com/changes-to-nepal-laws-threaten-stricter-everest-rules-higher-costs/"
+          },
+          "checked": "2026-11-04"
+        }
+      ]
+    }
+  ]
+}

@@ -36,6 +36,7 @@ What the sources say. One version when they agree, one for each when they disagr
 - **`status`:** `source only`, or `expert-reviewed` once an expert has reviewed the record. The game tells the player which.
 - **`value` or `range`, with `unit`:** a version has one or the other. All of a record's numbers share one unit: convert them to it.
 - **`note`:** what the source says in words, where its version differs without a number.
+- **`estimate`:** `true` where the source estimates the number instead of giving one that's listed or measured, as with the prices of Nepalese operators, who mostly publish none; left out otherwise. Only a version with a number has one. The experts' lists mark it, and the game should too wherever it shows the number.
 - **`source`:** its title and link. Rank sources as the spec's source priority does.
 - **`checked`:** the day someone read the source and found this in it, `YYYY-MM-DD`. Change it each time you read it again.
 
