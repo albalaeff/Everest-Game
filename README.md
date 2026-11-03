@@ -158,8 +158,9 @@ agent-manager.toml). For the same reason `scripts/github.py` prints it little:
 and `close` say what they did in a line or a few, and `show <n> --new` prints only the
 comments since Claude's last. And an agent is offered only what it can use: Claude
 Code's tools for files and commands (`Agent.TOOLS` in `scripts/agent_manager.py`), the
-project's settings and hooks, none of yours (`--setting-sources project,local`), and no MCP
-server or web (`WebSearch`, `WebFetch`). No Skill tool, PowerShell or auto-memory either:
+project's settings and hooks, none of yours (`--setting-sources project,local`), no MCP
+server, and the web (`WebSearch`, `WebFetch`) only for the sites `.claude/settings.json`
+names: the knowledge base's sources. No Skill tool, PowerShell or auto-memory either:
 a skill it needs it reads as a file, such as the handoff's format in
 `.claude/skills/handoff/SKILL.md`. CLAUDE.md keeps only what agents and sessions both obey;
 a session's start and close are in the carryon and handoff skills, and the long form of the
