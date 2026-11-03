@@ -9,13 +9,14 @@ A 2D browser game: a simulator-trainer for climbing Everest by the South route. 
 - [Agents](#agents)
 - [Tests](#tests)
 - [Deployment](#deployment)
+- [The project board](#the-project-board)
 - [Repository settings](#repository-settings)
 
 ## Architecture
 
 The game is a static TypeScript site that runs in the browser ([spec.md](spec.md) → Technical architecture): a simulation core (body, oxygen, weather, time, hazards; the same result for the same seed), agents and slope physics on it, PixiJS rendering with HTML and CSS for the interface and Web Audio for sound, and JSON content: the route, the scenarios, and the knowledge base of facts with their sources. For co-op, a room server on Cloudflare Workers runs the same core. [docs/conventions.md](docs/conventions.md) → Modules has the rules between them.
 
-The game's project is at the root of the repository: Vite builds `index.html` and `src/` into the static site, on Node 24 and npm. So far it's the simulation core in `src/simulation/` ([docs/conventions/simulation-core.md](docs/conventions/simulation-core.md)), the slope physics on it in `src/physics/` ([docs/conventions/slope-physics.md](docs/conventions/slope-physics.md)), the input layer in `src/input/` ([docs/conventions/input.md](docs/conventions/input.md)), the PixiJS rendering in `src/rendering/` and the page that runs the game in `src/page/` ([docs/conventions/rendering.md](docs/conventions/rendering.md)): a climber walking a stand-in section of the Icefall, with the camera following; the other modules come with their issues. Beside it the repository holds the spec, the workflow ([CLAUDE.md](CLAUDE.md), `scripts/`, `.claude/`), the docs and the knowledge base: the fact records in `content/facts/` ([docs/conventions/knowledge-base.md](docs/conventions/knowledge-base.md)).
+The game's project is at the root of the repository: Vite builds `index.html` and `src/` into the static site, on Node 24 and npm. So far it's the simulation core in `src/simulation/` ([docs/conventions/simulation-core.md](docs/conventions/simulation-core.md)), the slope physics on it in `src/physics/` ([docs/conventions/slope-physics.md](docs/conventions/slope-physics.md)), the input layer in `src/input/` ([docs/conventions/input.md](docs/conventions/input.md)), the interface in `src/interface/` (the disclaimer the game opens on, with its beta mark while any record of the knowledge base isn't `expert-reviewed`), the PixiJS rendering in `src/rendering/` and the page that runs the game in `src/page/` ([docs/conventions/rendering.md](docs/conventions/rendering.md)): a climber walking a stand-in section of the Icefall, with the camera following; the other modules come with their issues. Beside it the repository holds the spec, the workflow ([CLAUDE.md](CLAUDE.md), `scripts/`, `.claude/`), the docs and the knowledge base: the fact records in `content/facts/` ([docs/conventions/knowledge-base.md](docs/conventions/knowledge-base.md)).
 
 ## Local development
 
@@ -192,7 +193,8 @@ npm run e2e -- --project=iphone   # on one of them
   naming files or tests stays in one process.
 - **The knowledge base** is checked with the tests: `uv run pytest` fails on a record in
   `content/facts/` without a source or a check date, and `uv run python scripts/check_facts.py`
-  lists every problem by file and record
+  lists every problem by file and record. `uv run python scripts/expert_questions.py` prints
+  the questions and `source only` records for the guide and for the doctor
   ([docs/conventions/knowledge-base.md](docs/conventions/knowledge-base.md)).
 - **The game's checks** run in CI beside these. ESLint and Prettier read `src/`, `e2e/` and
   the config files; `tsc` checks `tsconfig.json`, the browser's code, `tsconfig.core.json`,
@@ -240,6 +242,27 @@ One failure isn't the change's:
 
 The game is a static site, to be published free on GitHub Pages or itch.io, with a small room server on Cloudflare for co-op ([spec.md](spec.md) → Technical architecture). Every merge into `develop` is published as a preview, at https://albalaeff.github.io/Everest-Game/, to open on a PC or a phone ([docs/production.md](docs/production.md) → The preview). The release flow is in place already: a release is a PR from a `release/<date>-NN` branch into `master`, cut by `scripts/github.py release` or the label `release` on an issue. Once its checks pass, CI runs the deploy step of `.github/workflows/release-tool.yml`, which is a stub until the game has a build to publish: it says so on the PR and passes. Merging the PR confirms the release, closing it rolls back: the same workflow's `confirm` and `rollback`. [docs/production.md](docs/production.md) is where the hosting, the pipeline and its secrets get written down.
 
+## The project board
+
+Every issue is a card on the [project board](https://github.com/users/albalaeff/projects/2), in a two-week iteration. Its *Current iteration* and *Next iteration* views switch by date by themselves; the rest is done by [scripts/board.py](scripts/board.py), which `.github/workflows/board.yml` runs every hour and whenever an issue is closed or reopened (#118):
+
+- **An iteration done early:** once every card of the current iteration is closed, it ends the day before, the next starts that day, and the ones after move up with it, so *Current* and *Next* switch within minutes (#120). An iteration lasts at least a day, and one with no cards ends by its date.
+- **An iteration ends:** its open cards move into the next one. Closed cards stay where they were done.
+- **Iterations ahead:** two always lie ahead, two weeks each, named `Iteration <n>` after the last.
+- **Status follows the issue:**
+
+  | Issue | Status |
+  | --- | --- |
+  | Closed | Done |
+  | An open PR closes it | In review |
+  | Handed to a Claude (`claude:<login>`) and commented on | In progress |
+  | Handed, or in the current iteration and not `postponed` (a `question` for the author counts as not) | Ready |
+  | Anything else | Backlog |
+
+  A status only moves forward, so a card a person moved ahead stays. It moves back only when an issue is reopened, or when its PR closed unmerged.
+
+`uv run python scripts/board.py 2 --dry-run` says what it would change now; Actions → Project board → Run workflow runs it at once. It needs the secret `PROJECT_TOKEN` (Repository settings below).
+
 ## Repository settings
 
 Set once on GitHub, by the owner:
@@ -248,5 +271,5 @@ Set once on GitHub, by the owner:
 - **Rulesets:** "develop and master": both change only through a PR with the `checks` job green, by squash or merge commit, no force pushes or deletions. "master: deployed": `master` also wants `deploy / release-tool` green, so a release is merged only once it's live (add the check once it has run on the first release PR).
 - **GitHub Pages:** Settings → Pages → Source: *GitHub Actions*, for the preview. Without it the job `preview` fails, on `develop` only.
 - **Labels:** `scripts/setup.sh` makes `model:*`, `effort:*` and `priority:*`; `claude:<login>` for each developer (hand an issue to their Claude); `postponed`; `release`. The `waiting:<login>` labels are made by the scripts.
-- **Secrets** (Settings → Secrets and variables → Actions): `RELEASE_TOKEN`, a person's fine-grained token with read and write access to Contents, Issues and Pull requests, for `release-cut.yml` (a PR opened with Actions' own token starts no CI); the deploy's own once the stub in `release-tool.yml` is filled in.
+- **Secrets** (Settings → Secrets and variables → Actions): `RELEASE_TOKEN`, a person's fine-grained token with read and write access to Contents, Issues and Pull requests, for `release-cut.yml` (a PR opened with Actions' own token starts no CI); `PROJECT_TOKEN`, the board's owner's classic token with only the `project` scope, for `board.yml` (a fine-grained token can't reach a project a user owns: [github.com/settings/tokens/new?scopes=project](https://github.com/settings/tokens/new?scopes=project&description=Everest%20board) fills it in); `CLOUDFLARE_API_TOKEN` and `CLOUDFLARE_ACCOUNT_ID` for the room server ([docs/production.md](docs/production.md)); the deploy's own once the stub in `release-tool.yml` is filled in.
 - **Each clone:** `git config core.hooksPath .githooks` refuses pushes to `develop` and `master` before GitHub does (`scripts/setup.sh` does it).

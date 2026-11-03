@@ -1,6 +1,8 @@
 import { expect, test } from "@playwright/test";
 import type { Locator, Page } from "@playwright/test";
 
+import { openTheGame } from "./climb";
+
 /**
  * One climb, as the page names what the game receives: the same by keys and by touch. The climber
  * starts 10 m along the flat, under the camera's anchor, a third of the screen from the left and
@@ -67,7 +69,7 @@ test.describe("on a screen of 640 by 360", () => {
 
   test("a player climbs by keys and the mouse", async ({ page, hasTouch }) => {
     test.skip(hasTouch, "a PC's story");
-    await page.goto("/");
+    await openTheGame(page);
 
     await page.mouse.click(400, 130);
     await page.mouse.click(400, 230);
@@ -95,7 +97,7 @@ test.describe("on a screen of 640 by 360", () => {
 
   test("a player climbs the same way by touch", async ({ page, hasTouch }) => {
     test.skip(!hasTouch, "a phone's story");
-    await page.goto("/");
+    await openTheGame(page);
 
     await tap(page, 400, 130);
     await tap(page, 400, 230);
@@ -117,7 +119,7 @@ test.describe("on a screen of 640 by 360", () => {
 
   test("a player walks and holds the jumar at once", async ({ page, hasTouch }) => {
     test.skip(!hasTouch, "a phone's story");
-    await page.goto("/");
+    await openTheGame(page);
     await tap(page, 400, 130);
     const thumb = { pointerId: 7, pointerType: "touch", isPrimary: true };
     const other = { pointerId: 8, pointerType: "touch", isPrimary: false };
@@ -143,7 +145,7 @@ test.describe("on a screen of 640 by 360", () => {
 
   test("a phone's joystick shows where the thumb lands, and goes", async ({ page, hasTouch }) => {
     test.skip(!hasTouch, "a phone's story");
-    await page.goto("/");
+    await openTheGame(page);
     const slope = page.locator("#slope");
     const thumb = { pointerId: 7, pointerType: "touch", clientX: 100, clientY: 250 };
 
@@ -160,7 +162,7 @@ test.describe("on a screen of 640 by 360", () => {
     hasTouch,
   }) => {
     test.skip(!hasTouch, "a phone's story");
-    await page.goto("/");
+    await openTheGame(page);
     await tap(page, 400, 130);
 
     const buttons = await page.locator(".action-button").all();
@@ -176,7 +178,7 @@ test.describe("on a screen of 640 by 360", () => {
 
   test("the right thumb's buttons are about a centimetre wide", async ({ page, hasTouch }) => {
     test.skip(!hasTouch, "a phone's story");
-    await page.goto("/");
+    await openTheGame(page);
     await tap(page, 400, 130);
 
     for (const name of ["clip-first", "clip-second", "jumar", "oxygen-up", "oxygen-down"]) {
@@ -187,7 +189,7 @@ test.describe("on a screen of 640 by 360", () => {
   });
 
   test("nothing scrolls or zooms under the fingers", async ({ page }) => {
-    await page.goto("/");
+    await openTheGame(page);
 
     await expect(page.locator("#slope")).toHaveCSS("touch-action", "none");
     await expect(button(page, "radio")).toHaveCSS("touch-action", "none");
@@ -196,7 +198,7 @@ test.describe("on a screen of 640 by 360", () => {
 
 test("a PC shows each button with its key, and no thumb buttons", async ({ page, hasTouch }) => {
   test.skip(hasTouch, "a PC's story");
-  await page.goto("/");
+  await openTheGame(page);
 
   await expect(button(page, "radio")).toHaveText("Radio Q");
   await expect(button(page, "check-self")).toHaveText("Check yourself Tab");
@@ -206,7 +208,7 @@ test("a PC shows each button with its key, and no thumb buttons", async ({ page,
 
 test("a click on a PC's button does what its key does", async ({ page, hasTouch }) => {
   test.skip(hasTouch, "a PC's story");
-  await page.goto("/");
+  await openTheGame(page);
 
   await button(page, "radio").click();
   await page.keyboard.press("Space");
@@ -219,7 +221,7 @@ test("a laptop with a touch screen shows the thumb buttons after its first touch
   hasTouch,
 }) => {
   test.skip(hasTouch, "a PC's story");
-  await page.goto("/");
+  await openTheGame(page);
 
   await page.locator("#slope").dispatchEvent("pointerdown", {
     pointerId: 7,
@@ -236,7 +238,7 @@ test.describe("held upright", () => {
 
   test("a phone asks to be turned sideways", async ({ page, hasTouch }) => {
     test.skip(!hasTouch, "a phone's story");
-    await page.goto("/");
+    await openTheGame(page);
     await page.touchscreen.tap(180, 100);
 
     await expect(page.getByText("Turn your phone sideways to climb")).toBeVisible();
@@ -244,7 +246,7 @@ test.describe("held upright", () => {
 
   test("a narrow window on a PC doesn't", async ({ page, hasTouch }) => {
     test.skip(hasTouch, "a PC's story");
-    await page.goto("/");
+    await openTheGame(page);
 
     await expect(page.getByText("Turn your phone sideways to climb")).toBeHidden();
   });
@@ -253,7 +255,7 @@ test.describe("held upright", () => {
 test("a phone in landscape says nothing about turning it", async ({ page, hasTouch }) => {
   test.skip(!hasTouch, "a phone's story");
   await page.setViewportSize({ width: 640, height: 360 });
-  await page.goto("/");
+  await openTheGame(page);
   await tap(page, 400, 130);
 
   await expect(page.getByText("Turn your phone sideways to climb")).toBeHidden();

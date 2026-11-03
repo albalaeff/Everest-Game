@@ -34,6 +34,12 @@
           "checked": "2026-11-01"
         }
       ]
+    },
+    {
+      "id": "oxygen.bottle-swap",
+      "kind": "question",
+      "question": "How is a bottle swapped on the move above 8,000 m: who does it, how long is the climber without oxygen, and what goes wrong?",
+      "about": ["oxygen.usual-flow"]
     }
   ]
 }
