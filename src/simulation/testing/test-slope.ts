@@ -25,8 +25,9 @@ type TestSlopeState = TestConditions & { readonly climbers: Readonly<Record<stri
 
 /**
  * The small test expedition: climbers on one straight slope, standing in for the game's rules
- * until they come (the slope physics in #20, the ropes in #21), so the core's tests play
- * something in real time. A walking climber goes on walking until told otherwise, and may slip;
+ * (the slope physics in `src/physics/`, and those to come), which sit above the core, where its
+ * tests can't import them, so the core's tests play something in real time. A walking climber
+ * goes on walking until told otherwise, and may slip;
  * a slip is nothing on the rope, and a fall off it. Its numbers are made up, and it isn't game
  * code: only tests import it.
  */

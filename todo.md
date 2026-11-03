@@ -113,10 +113,10 @@ Tasks marked *Iteration 1–3* are planned into the board's first two-week itera
 - [ ] Done gate
 
 ### Task 12: Slope physics: movement, falls and the rope ([#20](https://github.com/albalaeff/Everest-Game/issues/20)) · *Iteration 2*
-- [ ] The climber moves over the terrain; a slip on steep ground becomes a fall
-- [ ] A rope with Verlet integration holds a clipped climber
-- [ ] Part of #17: deterministic and tested headless
-- [ ] Done gate
+- [x] The climber moves over the terrain; a slip on steep ground becomes a fall
+- [x] A rope with Verlet integration holds a clipped climber
+- [x] Part of #17: deterministic and tested headless
+- [x] Done gate
 
 ### Task 13: Fixed ropes, cowstails, jumar and ladders ([#21](https://github.com/albalaeff/Everest-Game/issues/21)) · *Iteration 3*
 - [ ] Two cowstails: at an anchor, the second is clipped before the first comes off; unclipping is possible and dangerous
