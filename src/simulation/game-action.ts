@@ -66,13 +66,4 @@ export interface Radio extends ClimberAction {
  * the input layer (#18) turns keys, the mouse, touch and a gamepad into these, and an NPC's
  * agent sends the same. Plain data, because replays and the room server keep and send them.
  */
-export type GameAction =
-  | Walk
-  | Pace
-  | Clip
-  | Unclip
-  | Jumar
-  | Tool
-  | Oxygen
-  | CheckSelf
-  | Radio;
+export type GameAction = Walk | Pace | Clip | Unclip | Jumar | Tool | Oxygen | CheckSelf | Radio;

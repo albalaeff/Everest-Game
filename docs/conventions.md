@@ -8,7 +8,7 @@ Every change to this codebase follows the rules in this file, and those of each 
 | the simulation core: `src/simulation/` | [conventions/simulation-core.md](conventions/simulation-core.md) |
 | the game's other areas, once they have rules of their own: the rendering, the room server | their file in `docs/conventions/`, named here when it comes |
 
-A change to `scripts/` or to the docs alone follows this file only. (Fill the table in as areas get rules of their own, one file each in `docs/conventions/`; [../spec.md](../spec.md) is what they implement.)
+A change to `scripts/` or to the docs alone follows this file only. (Fill the table in as areas get rules of their own, one file each in `docs/conventions/`; [../spec.md](../spec.md) is what the game's areas implement.)
 
 ## Git workflow
 
@@ -16,13 +16,13 @@ A change to `scripts/` or to the docs alone follows this file only. (Fill the ta
 - `develop` is the integration branch; `master` holds the releases confirmed live. Both change only through pull requests.
 - For a task: branch from the latest `develop` as `feature/<issue>-<short-description>` (`fix/…` or `chore/…` where that fits), commit often, push the branch, and open a PR into `develop` whose description says `Closes #<issue>` (the template asks for it).
 - CI runs on every PR and on every push to `develop` and `master`. Merge only when it's green, by **squash**: one commit per task on `develop`, titled after the PR, with its description as the body. Then delete the task branch.
-- A task that builds on one not merged yet: branch from that one, and after the first merges, rebase onto `develop` (`git rebase --onto origin/develop <old base>`) before opening the PR. An automatic permission mode may refuse a force push after a rebase: merge `origin/develop` into the branch instead and push normally; the squash folds the merge away.
+- A task that builds on one not merged yet says so, `Depends on #<n>` in its issue or an `after:<n>` label, and waits for it ([workflow.md](workflow.md) → What an issue builds on). Begun before that one merged: branch from that one, and after the first merges, rebase onto `develop` (`git rebase --onto origin/develop <old base>`) before opening the PR. An automatic permission mode may refuse a force push after a rebase: merge `origin/develop` into the branch instead and push normally; the squash folds the merge away.
 - A release is a PR into `master` from a `release/<date>-NN` branch cut at `develop`'s tip (`-01`, then `-02` for the day's next), never from `develop` itself: GitHub deletes a merged PR's head branch, and on PEB#339 that took `develop` with it. `scripts/github.py release` cuts the branch and opens the PR, and so does the label `release` on an issue, from GitHub (PEB#517). Once its checks pass, CI deploys it on trial; a person tries it, then merges it (a merge commit, so `master` keeps the task commits) to confirm it, or closes it to roll back ([production.md](production.md) → A release, PEB#510). Housekeeping goes in a small `chore/…` PR first; such PRs and release PRs need no issue.
 - The repository's settings (README → Repository settings): `develop` is the default branch, so a merged PR's `Closes #<issue>` closes the issue (PEB#55); a ruleset lets `develop` and `master` change only through a PR with CI green, by squash or merge commit, with no force pushes or deletions; `git config core.hooksPath .githooks` makes `git push` refuse `develop` and `master` from your clone before GitHub does.
 
 ## Modules
 
-The game is a static TypeScript site; the Python under `scripts/` runs the workflow, not the game ([../spec.md](../spec.md) → Technical architecture).
+The game is a static TypeScript site; the Python under `scripts/` runs the workflow, not the game ([../spec.md](../spec.md) → Technical architecture). Its code is in `src/`, which Vite bundles from `index.html`; a module below gets its folder there with its first issue.
 
 ```
 simulation core  →  agents, slope physics  →  rendering, interface, sound  →  the page
@@ -70,7 +70,7 @@ Text files use LF line endings on every OS (`.gitattributes`, and ruff formats w
 ## Tests
 
 - Write the tests first, watch them fail, then implement.
-- The game's tests: Vitest for the simulation, the agents and the physics, each on a seed, so a failure replays; Playwright for the page, as a story a player would recognise; and a balance check that plays many seeded expeditions headless and holds the outcomes to the knowledge base (the summit times and death rates the spec cites). Vitest runs in CI beside the scripts' checks (README → Tests); Playwright joins it with the page, and the balance check with #47.
+- The game's tests: Vitest for the simulation, the agents and the physics, each on a seed, so a failure replays; Playwright for the page, as a story a player would recognise; and a balance check that plays many seeded expeditions headless and holds the outcomes to the knowledge base (the summit times and death rates the spec cites). A Vitest test sits beside its code as `<name>.test.ts`; a Playwright story goes in `e2e/`, and runs on a PC and on each phone of `playwright.config.ts`. CI runs them beside the scripts' checks (README → Tests has the commands); the balance check comes with #47.
 - The scripts' tests, in `tests/`: mark pure tests `pytest.mark.unit`; the agent manager's database test is `pytest.mark.db`, skipped without `TEST_DATABASE_URL`. Deprecation warnings fail the run (`filterwarnings` in `pyproject.toml`): fix them when they appear; ignore one only for third-party code, with a comment. Shared helpers live in `tests/fakes.py`.
 - Tests run in parallel (pytest-xdist; README → Tests), so a test never relies on another having run before it, writes files only under its `tmp_path`, and never depends on the developer's environment.
 - End-to-end tests run the real parts together: the game's on one seed and a recorded sequence of actions, as a story a player would recognise; the scripts' on a fake clock and a fake GitHub, as a story a user would recognise. Add one when a change crosses modules.
@@ -83,7 +83,7 @@ A step is done when:
 2. `uv run ruff format --check` passes.
 3. `uv run mypy scripts` passes.
 4. `uv run pytest` passes.
-5. The game's own checks pass: `npm run typecheck` and `npm test`, and its lint and Playwright once they're in; README → Tests names them.
+5. The game's own checks pass (its lint, format, type check, Vitest and Playwright); README → Tests names them.
 6. CI is green on the task's PR, and the PR is merged into `develop`.
 7. Nothing is left unwired: every new piece of code is reachable from an entry point, or is used by the very next step.
 8. The code it adds or touches follows **Objects** above.

@@ -9,12 +9,14 @@
 - **to start**: yours, no comment from Claude yet;
 - **a reply waiting**: someone wrote after Claude's last comment;
 - **Claude's move**: Claude's last comment is a closing handoff that says Claude goes on (**Next** is Claude's, **Waiting on** is nothing, and the session that wrote it closed, PEB#449);
+- **unblocked**: in progress, and what it builds on has closed since Claude's last word (#107, below);
 - **in progress**: Claude's comment is the last: it waits for a person, a review or CI;
+- **blocked**: what it builds on is open; its PRs are held with it, CI's result included (#107, below);
 - **stale**: in progress, Claude's last word over 3 days old and waiting on nothing (PEB#449): close it if its work is done, else carry it on or hand it off saying what it waits on;
 - **others'**: a teammate's: leave alone;
 - **releases**: a release PR into `master`: a person's to merge or close, never Claude's (PEB#510).
 
-The first three need doing. Issues labelled `postponed` are left out (PEB#309), and so are those labelled `release`, which cut a release (PEB#517); their PRs go with them, CI's result included, until the label goes (PEB#540). Yours are the issues you opened and those labelled `claude:<your login>` (PEB#222): either developer can put that label on an issue of theirs or the other's, and the other's session lists it "to start", its plan comment saying it was handed over.
+The first four need doing. Issues labelled `postponed` are left out (PEB#309), and so are those labelled `release`, which cut a release (PEB#517); their PRs go with them, CI's result included, until the label goes (PEB#540). Yours are the issues you opened and those labelled `claude:<your login>` (PEB#222): either developer can put that label on an issue of theirs or the other's, and the other's session lists it "to start", its plan comment saying it was handed over.
 
 Every look the watcher takes asks GitHub only whether each answer changed (an ETag), which costs nothing against the rate limit, so it looks every two minutes (PEB#445). It ends only when something new needs doing, printing it as `status` does, so Claude is woken only then (PEB#314); after 110 minutes it ends anyway. Every ten minutes it also pulls `develop` while the machine is idle (`develop` checked out, nothing uncommitted), so a merge from either machine reaches what runs here (PEB#347). Once a day it reads Claude's API prices into `docs/claude-prices.csv` (PEB#390); when they've changed it ends with that, and the new rows go in a small `chore/…` PR.
 
@@ -56,6 +58,14 @@ Two people work on a repository, each with their own Claude, and each Claude pos
    3. The squash merge: `scripts/github.py merge <pr>`, one commit titled after the PR, with its description as the body. Never merge into `master`: a release happens only when the user asks for one. `scripts/github.py release` then cuts its branch and opens its PR into `master` (the label `release` on an issue does the same from GitHub, PEB#517); CI puts it live on trial, and merging or closing it is the user's call ([production.md](production.md) → A release). `merge` refuses any base but `develop`.
    4. GitHub deletes the PR's branch by itself (deleting it again answers 422): delete only the local one: `git switch develop`, `git pull --ff-only`, `git branch -D <branch>`.
    5. A PR that closes no issue leaves the issue open: after the closing comment, close it with `scripts/github.py close <n>`.
+
+### What an issue builds on
+
+An issue whose work builds on another's says so, and nobody starts it before that one merges (#107: #18 built on #16 and #17 with nothing to hold it, so its PR carried their commits and couldn't merge, and nothing woke its agent when they merged):
+
+- **Declare it** with a line of the issue's body that starts `Depends on #16` (several: `Depends on #16, #17`), or a label `after:16`. A line that only mentions the words, in a sentence, doesn't count. Either developer, or Claude writing the issue up, adds it; a label works on an issue already started.
+- **While #16 is open** the issue is **blocked**: `status` lists it so (`[waits on #16]`), the agent manager starts no agent on it or its PRs, and its log says `Issue #18 is blocked: it waits on #16, …` once, and again when it's newly so. A chain holds by itself: #18 waits on #17, which waits on #16.
+- **When #16 closes** (its PR merged), the next look wakes the issue, with no person's word: one never started is to start, and its branch comes from `develop`; one in progress since before the merge is **unblocked**, Claude's move. Its agent's prompt names what merged, and the agent begins by merging `origin/develop` into the branch ([conventions.md](conventions.md) → Git workflow); the squash folds the merge away. What closed before Claude's last word wakes nothing.
 
 ### The scripts' answers
 

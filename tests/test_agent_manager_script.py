@@ -239,7 +239,9 @@ class StateGitHub:
         self.on = on
         self.labels = [{"name": label} for label in labels]
 
-    def call(self, method: str, path: str, body: object | None = None) -> object:
+    def call(
+        self, method: str, path: str, body: object | None = None, missing_ok: bool = False
+    ) -> object:
         if path.startswith("pulls/"):
             return {"state": "open", "head": {"sha": self.sha}}
         if path.startswith("actions/runs?head_sha="):
@@ -280,6 +282,32 @@ def test_a_pr_s_job_whose_issue_is_postponed_meanwhile_is_no_longer_due(found: T
     assert job.still_due(StateGitHub([asked, answer], on=9), ME)  # type: ignore[arg-type]
     held = StateGitHub([asked, answer], on=9, labels=["postponed"])
     assert not job.still_due(held, ME)  # type: ignore[arg-type]
+
+
+@pytest.mark.parametrize(
+    "found",
+    [task(), task(9, "CI finished", kind="pull", ci="CI: success", sha="abc")],
+    ids=["the issue", "its PR"],
+)
+def test_a_job_whose_issue_is_blocked_meanwhile_is_no_longer_due(found: Task) -> None:
+    # #107: an `after:16` label put on #7 while the job waited its turn, and #16 is open.
+    job = IssueJob(found)
+
+    assert job.still_due(StateGitHub([]), ME)  # type: ignore[arg-type]
+    assert not job.still_due(StateGitHub([], labels=["after:16"]), ME)  # type: ignore[arg-type]
+
+
+def test_an_agent_woken_by_a_merge_merges_develop_in_first() -> None:
+    # #107: #18's branch carried #16's and #17's commits; their squashes fold into develop.
+    job = IssueJob(replace(task(18, "unblocked", issue=18), woken=(16, 17)))
+
+    assert str(job) == "#18 (what it builds on has merged)"
+    assert (
+        "of bateks/PersonalExchangeBot: what it builds on has merged. #16, #17 merged since "
+        "Claude's last word: begin by merging `origin/develop` into the branch "
+        "(docs/conventions.md → Git workflow).\n\n"
+    ) in job.prompt(SLUG, "feature/18-x")
+    assert "origin/develop" not in IssueJob(task()).prompt(SLUG, "feature/7-x")
 
 
 def test_a_waiting_job_answered_meanwhile_is_no_longer_due() -> None:

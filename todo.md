@@ -88,10 +88,10 @@ Tasks marked *Iteration 1–3* are planned into the board's first two-week itera
 ## 2. Prototype: Icefall
 
 ### Task 8: Game project: TypeScript build, tests and CI ([#16](https://github.com/albalaeff/Everest-Game/issues/16)) · *Iteration 1*
-- [ ] TypeScript with a bundler, Vitest, Playwright with phone emulation, lint and format; their checks run in CI next to the template's
-- [ ] Every merge into `develop` publishes a preview build that opens on a PC and a phone
-- [ ] README and docs/conventions.md say how to run and test the game
-- [ ] Done gate
+- [x] TypeScript with a bundler, Vitest, Playwright with phone emulation, lint and format; their checks run in CI next to the template's
+- [x] Every merge into `develop` publishes a preview build that opens on a PC and a phone
+- [x] README and docs/conventions.md say how to run and test the game
+- [x] Done gate
 
 ### Task 9: Simulation core: fixed time step, seeded and deterministic ([#17](https://github.com/albalaeff/Everest-Game/issues/17)) · *Iteration 1*
 - [x] TypeScript with no DOM and no dependencies

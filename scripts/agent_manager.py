@@ -36,19 +36,20 @@ One agent per issue, at most `max_parallel` at once, and a green PR's merge besi
 of its own (#485): the rest wait their turn, a merge first, then by the issue's `priority:*`
 label, then mid-work before new, then first come first served; and one whose turn comes
 after it stopped needing anything is dropped (`Scheduler`), as is a PR's whose issue was
-postponed meanwhile (#540). One that couldn't start (its branch checked out in the checkout,
-say) is tried again at the watcher's next look. One whose run ended on the account's usage
-limit waits its turn again, and no agent starts before the limit resets (`UsageLimit`, #476);
-one whose run ended because the account lacks its model (Fable is on some plans only) waits
-its turn again and runs on the next model down, as every later one on that model does
-(`ModelUnavailable`, #4). While the machine lacks a tool an agent needs, code work waits, and
-the manager says what and the fix, and when a restart would give its agents a tool installed
-since it started (`ToolchainHold`, #108). When an agent ends, its worktree goes if nothing
-in it is missing from GitHub; else it stays, and the log says why. The first Ctrl+C stops
-the watcher and starts nothing more, letting the agents running finish their work; a second
-stops them too, and keeps their worktrees as they are (#485). While it runs it holds a lock
-(`ManagerLock`), so a session's watcher ends: the agents take the issues (CLAUDE.md →
-Sessions).
+postponed meanwhile (#540), or blocked by what it builds on (#107: the watcher holds such an
+issue, its log says on what, and its merge wakes it). One that couldn't start (its branch
+checked out in the checkout, say) is tried again at the watcher's next look. One whose run
+ended on the account's usage limit waits its turn again, and no agent starts before the
+limit resets (`UsageLimit`, #476); one whose run ended because the account lacks its model
+(Fable is on some plans only) waits its turn again and runs on the next model down, as every
+later one on that model does (`ModelUnavailable`, #4). While the machine lacks a tool an
+agent needs, code work waits, and the manager says what and the fix, and when a restart would
+give its agents a tool installed since it started (`ToolchainHold`, #108). When an agent
+ends, its worktree goes if nothing in it is missing from GitHub; else it stays, and the log
+says why. The first Ctrl+C stops the watcher and starts nothing more, letting the agents
+running finish their work; a second stops them too, and keeps their worktrees as they are
+(#485). While it runs it holds a lock (`ManagerLock`), so a session's watcher ends: the
+agents take the issues (CLAUDE.md → Sessions).
 """
 
 import argparse
@@ -102,6 +103,7 @@ from scripts.github import (  # noqa: E402
     RELEASE_LABEL,
     CiRuns,
     Conversation,
+    Dependencies,
     GitHub,
     IssueWork,
     PullRequests,
@@ -219,7 +221,12 @@ class IssueJob(Job):
         "to start": "it's to start",
         "reply waiting": "a reply waits",
         "Claude's move": "the next move is Claude's",
+        "unblocked": "what it builds on has merged",
     }
+    MERGE_DEVELOP: ClassVar[str] = (
+        " {what} merged since Claude's last word: begin by merging `origin/develop` into the "
+        "branch (docs/conventions.md → Git workflow)."
+    )
 
     task: Task
 
@@ -263,8 +270,10 @@ class IssueJob(Job):
         what = f"#{self.slot}" if task.issue is not None else f"PR #{task.number}"
         subject = f"issue {what}" if task.issue is not None else what
         unmerged = f" The manager left the merge to you: {self.unmerged}." if self.unmerged else ""
+        woken = ", ".join(f"#{number}" for number in task.woken)
+        merge = self.MERGE_DEVELOP.format(what=woken) if woken else ""
         return (
-            f"{self.INTRO}, for {subject} of {slug}: {self.why()}.{unmerged}\n\n"
+            f"{self.INTRO}, for {subject} of {slug}: {self.why()}.{unmerged}{merge}\n\n"
             f"{self.RULES.format(what=what)} Read it with `uv run python scripts/github.py "
             f"show {self.slot}` (its description and every comment), carry on from `uv run "
             f"python scripts/github.py handoffs {self.slot}`, then take the next step of "
@@ -311,13 +320,16 @@ class IssueJob(Job):
         if entry["state"] != "open" or left_out(entry):
             return False
         comments = github.call("GET", f"issues/{task.number}/comments?per_page=100")
-        return Conversation(entry, comments, me).item().to_do
+        item = Conversation(entry, comments, me).item()
+        return Dependencies(github).hold(entry, item, comments).to_do  # blocked meanwhile? #107
 
     def _set_aside(self, github: GitHub) -> bool:
         """A PR's issue postponed meanwhile, or labelled `release`: the PR waits with it
-        (`SetAside`, #540)."""
+        (`SetAside`, #540); and so it does when the issue is blocked (`Dependencies`, #107)."""
         entry = github.call("GET", f"issues/{self.task.issue}")
-        return entry["state"] == "open" and left_out(entry)
+        return entry["state"] == "open" and (
+            left_out(entry) or bool(Dependencies(github).blockers(entry))
+        )
 
 
 class PricesJob(Job):
