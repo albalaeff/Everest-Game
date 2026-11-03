@@ -355,6 +355,8 @@ Medicine
 
 - [CDC Yellow Book 2026: High-Altitude Travel and Altitude Illness](https://www.cdc.gov/yellow-book/hcp/environmental-hazards-risks/high-altitude-travel-and-altitude-illness.html)
 - [Wilderness Medical Society Clinical Practice Guidelines for the Prevention, Diagnosis, and Treatment of Acute Altitude Illness: 2024 Update](https://doi.org/10.1016/j.wem.2023.05.013)
+- [WMS: the summary of its 2024 altitude guideline, on wms.org](https://wms.org/magazine/1463/2024-Altitude-Summary/default.aspx)
+- [Omidi et al. 2025, What Is New in Altitude- and Cold-Related Illnesses of Travel: a review of the WMS 2024 guidelines (IJERPH)](https://doi.org/10.3390/ijerph22020284)
 - [AAFP: Acute Altitude Illness — Updated Guidelines from the Wilderness Medical Society](https://www.aafp.org/afp/2020/0415/p505.html)
 - [Firth et al., Mortality on Mount Everest, 1921–2006 (BMJ 2008)](https://pmc.ncbi.nlm.nih.gov/articles/PMC2602730)
 

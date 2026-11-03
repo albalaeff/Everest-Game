@@ -11,17 +11,19 @@
           "value": 3000,
           "unit": "m",
           "source": {
-            "title": "WMS Clinical Practice Guidelines for Acute Altitude Illness, 2024 Update → Gradual ascent",
-            "url": "https://doi.org/10.1016/j.wem.2023.05.013"
-          }
+            "title": "WMS: Acute Altitude Illness Clinical Practice Guideline, 2024 Update, summary → AMS/HACE Prevention",
+            "url": "https://wms.org/magazine/1463/2024-Altitude-Summary/default.aspx"
+          },
+          "checked": "2026-11-03"
         },
         {
           "value": 3000,
           "unit": "m",
           "source": {
-            "title": "CDC Yellow Book 2026: High-Altitude Travel and Altitude Illness → Prevention",
+            "title": "CDC Yellow Book 2026: High-Altitude Travel and Altitude Illness → Acclimatization",
             "url": "https://www.cdc.gov/yellow-book/hcp/environmental-hazards-risks/high-altitude-travel-and-altitude-illness.html"
-          }
+          },
+          "checked": "2026-11-03"
         }
       ]
     },
@@ -35,17 +37,19 @@
           "value": 500,
           "unit": "m/day",
           "source": {
-            "title": "WMS Clinical Practice Guidelines for Acute Altitude Illness, 2024 Update → Gradual ascent",
-            "url": "https://doi.org/10.1016/j.wem.2023.05.013"
-          }
+            "title": "WMS: Acute Altitude Illness Clinical Practice Guideline, 2024 Update, summary → AMS/HACE Prevention",
+            "url": "https://wms.org/magazine/1463/2024-Altitude-Summary/default.aspx"
+          },
+          "checked": "2026-11-03"
         },
         {
           "value": 500,
           "unit": "m/day",
           "source": {
-            "title": "CDC Yellow Book 2026: High-Altitude Travel and Altitude Illness → Prevention",
+            "title": "CDC Yellow Book 2026: High-Altitude Travel and Altitude Illness → Acclimatization",
             "url": "https://www.cdc.gov/yellow-book/hcp/environmental-hazards-risks/high-altitude-travel-and-altitude-illness.html"
-          }
+          },
+          "checked": "2026-11-03"
         }
       ]
     },
@@ -56,40 +60,69 @@
       "status": "source only",
       "versions": [
         {
-          "range": { "min": 3, "max": 4 },
+          "range": {
+            "min": 3,
+            "max": 4
+          },
           "unit": "days",
           "source": {
-            "title": "WMS Clinical Practice Guidelines for Acute Altitude Illness, 2024 Update → Gradual ascent",
-            "url": "https://doi.org/10.1016/j.wem.2023.05.013"
-          }
+            "title": "WMS: Acute Altitude Illness Clinical Practice Guideline, 2024 Update, summary → AMS/HACE Prevention",
+            "url": "https://wms.org/magazine/1463/2024-Altitude-Summary/default.aspx"
+          },
+          "checked": "2026-11-03"
         },
         {
-          "range": { "min": 3, "max": 4 },
-          "unit": "days",
+          "note": "An extra night for every 1,000 m of sleeping-altitude gain, rather than a rest day at a fixed interval.",
           "source": {
-            "title": "CDC Yellow Book 2026: High-Altitude Travel and Altitude Illness → Prevention",
+            "title": "CDC Yellow Book 2026: High-Altitude Travel and Altitude Illness → Acclimatization",
             "url": "https://www.cdc.gov/yellow-book/hcp/environmental-hazards-risks/high-altitude-travel-and-altitude-illness.html"
-          }
+          },
+          "checked": "2026-11-03"
         }
       ]
     },
     {
       "id": "acclimatization.climb-high-sleep-low",
       "kind": "fact",
-      "claim": "The sleeping altitude is what counts: a climber may go higher during the day and come back down to sleep.",
+      "claim": "The ascent rules are in sleeping altitude: how high a climber sleeps, day by day.",
       "status": "source only",
       "versions": [
         {
           "source": {
-            "title": "WMS Clinical Practice Guidelines for Acute Altitude Illness, 2024 Update → Gradual ascent",
-            "url": "https://doi.org/10.1016/j.wem.2023.05.013"
-          }
+            "title": "WMS: Acute Altitude Illness Clinical Practice Guideline, 2024 Update, summary → AMS/HACE Prevention",
+            "url": "https://wms.org/magazine/1463/2024-Altitude-Summary/default.aspx"
+          },
+          "checked": "2026-11-03"
         },
         {
           "source": {
-            "title": "CDC Yellow Book 2026: High-Altitude Travel and Altitude Illness → Prevention",
+            "title": "CDC Yellow Book 2026: High-Altitude Travel and Altitude Illness → Acclimatization",
             "url": "https://www.cdc.gov/yellow-book/hcp/environmental-hazards-risks/high-altitude-travel-and-altitude-illness.html"
-          }
+          },
+          "checked": "2026-11-03"
+        }
+      ]
+    },
+    {
+      "id": "acclimatization.intermediate-night",
+      "kind": "fact",
+      "claim": "Sleeping a night at an intermediate altitude on the way up lowers the risk.",
+      "status": "source only",
+      "versions": [
+        {
+          "source": {
+            "title": "WMS: Acute Altitude Illness Clinical Practice Guideline, 2024 Update, summary → AMS/HACE Prevention",
+            "url": "https://wms.org/magazine/1463/2024-Altitude-Summary/default.aspx"
+          },
+          "checked": "2026-11-03"
+        },
+        {
+          "note": "Two or three nights at 2,450–2,750 m before going higher; never straight from low altitude to a sleeping altitude of 2,750 m in a day.",
+          "source": {
+            "title": "CDC Yellow Book 2026: High-Altitude Travel and Altitude Illness → Acclimatization",
+            "url": "https://www.cdc.gov/yellow-book/hcp/environmental-hazards-risks/high-altitude-travel-and-altitude-illness.html"
+          },
+          "checked": "2026-11-03"
         }
       ]
     },
@@ -103,9 +136,10 @@
           "value": 3,
           "unit": "rotations",
           "source": {
-            "title": "Alan Arnette: Everest rotations",
+            "title": "Alan Arnette: Everest 2013: Weekend Update April 14",
             "url": "https://www.alanarnette.com/blog/?p=14555"
-          }
+          },
+          "checked": "2026-11-03"
         }
       ]
     }

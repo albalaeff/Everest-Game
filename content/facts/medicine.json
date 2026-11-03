@@ -9,190 +9,237 @@
       "versions": [
         {
           "source": {
-            "title": "WMS Clinical Practice Guidelines for Acute Altitude Illness, 2024 Update → Acute mountain sickness",
-            "url": "https://doi.org/10.1016/j.wem.2023.05.013"
-          }
+            "title": "WMS: Acute Altitude Illness Clinical Practice Guideline, 2024 Update, summary → AMS/HACE Diagnosis",
+            "url": "https://wms.org/magazine/1463/2024-Altitude-Summary/default.aspx"
+          },
+          "checked": "2026-11-03"
         },
         {
           "source": {
             "title": "CDC Yellow Book 2026: High-Altitude Travel and Altitude Illness → Acute mountain sickness",
             "url": "https://www.cdc.gov/yellow-book/hcp/environmental-hazards-risks/high-altitude-travel-and-altitude-illness.html"
-          }
+          },
+          "checked": "2026-11-03"
         }
       ]
     },
     {
       "id": "medicine.ams-altitude",
       "kind": "fact",
-      "claim": "Altitude illness is a risk from about this altitude upwards.",
+      "claim": "Altitude illness is a risk from about this altitude upwards, and sometimes lower.",
       "status": "source only",
       "versions": [
         {
           "value": 2500,
           "unit": "m",
           "source": {
-            "title": "WMS Clinical Practice Guidelines for Acute Altitude Illness, 2024 Update → Introduction",
-            "url": "https://doi.org/10.1016/j.wem.2023.05.013"
-          }
+            "title": "WMS: Acute Altitude Illness Clinical Practice Guideline, 2024 Update, summary → Introduction",
+            "url": "https://wms.org/magazine/1463/2024-Altitude-Summary/default.aspx"
+          },
+          "checked": "2026-11-03"
         },
         {
-          "value": 2500,
+          "value": 2450,
           "unit": "m",
+          "note": "As a sleeping altitude.",
           "source": {
-            "title": "CDC Yellow Book 2026: High-Altitude Travel and Altitude Illness",
+            "title": "CDC Yellow Book 2026: High-Altitude Travel and Altitude Illness → Risk to travelers",
             "url": "https://www.cdc.gov/yellow-book/hcp/environmental-hazards-risks/high-altitude-travel-and-altitude-illness.html"
-          }
+          },
+          "checked": "2026-11-03"
         }
       ]
     },
     {
       "id": "medicine.ams-onset",
       "kind": "fact",
-      "claim": "The symptoms of acute mountain sickness begin this many hours after arriving at a new altitude, occasionally within the first hour.",
+      "claim": "The symptoms of acute mountain sickness begin this many hours after arriving at a new altitude, often during or after the first night.",
       "status": "source only",
       "versions": [
         {
-          "range": { "min": 6, "max": 12 },
+          "range": {
+            "min": 2,
+            "max": 12
+          },
           "unit": "h",
           "source": {
-            "title": "WMS Clinical Practice Guidelines for Acute Altitude Illness, 2024 Update → Acute mountain sickness",
-            "url": "https://doi.org/10.1016/j.wem.2023.05.013"
-          }
+            "title": "CDC Yellow Book 2026: High-Altitude Travel and Altitude Illness → Acute mountain sickness → Diagnosis",
+            "url": "https://www.cdc.gov/yellow-book/hcp/environmental-hazards-risks/high-altitude-travel-and-altitude-illness.html"
+          },
+          "checked": "2026-11-03"
+        },
+        {
+          "note": "Within several hours to 3 days of the ascent.",
+          "source": {
+            "title": "WMS: Acute Altitude Illness Clinical Practice Guideline, 2024 Update, summary → AMS/HACE Diagnosis",
+            "url": "https://wms.org/magazine/1463/2024-Altitude-Summary/default.aspx"
+          },
+          "checked": "2026-11-03"
         }
       ]
     },
     {
       "id": "medicine.ams-mild-treatment",
       "kind": "fact",
-      "claim": "With mild acute mountain sickness, a climber stops going up and rests at the same altitude until the symptoms go; if they get worse, the climber descends.",
+      "claim": "With acute mountain sickness of any severity, a climber stops going up and rests at the same altitude, and goes on only once the symptoms have gone; if they get worse in spite of treatment, the climber descends.",
       "status": "source only",
       "versions": [
         {
           "source": {
-            "title": "WMS Clinical Practice Guidelines for Acute Altitude Illness, 2024 Update → Treatment of AMS",
-            "url": "https://doi.org/10.1016/j.wem.2023.05.013"
-          }
+            "title": "WMS: Acute Altitude Illness Clinical Practice Guideline, 2024 Update, summary → AMS/HACE Treatment",
+            "url": "https://wms.org/magazine/1463/2024-Altitude-Summary/default.aspx"
+          },
+          "checked": "2026-11-03"
         },
         {
           "source": {
-            "title": "CDC Yellow Book 2026: High-Altitude Travel and Altitude Illness → Treatment",
+            "title": "CDC Yellow Book 2026: High-Altitude Travel and Altitude Illness → Acute mountain sickness → Treatment",
             "url": "https://www.cdc.gov/yellow-book/hcp/environmental-hazards-risks/high-altitude-travel-and-altitude-illness.html"
-          }
+          },
+          "checked": "2026-11-03"
         }
       ]
     },
     {
       "id": "medicine.no-ascent-with-symptoms",
       "kind": "fact",
-      "claim": "A climber with symptoms of altitude illness never goes higher.",
+      "claim": "A climber with symptoms of altitude illness never goes higher, nor back up to an altitude reached before.",
       "status": "source only",
       "versions": [
         {
           "source": {
-            "title": "CDC Yellow Book 2026: High-Altitude Travel and Altitude Illness → Treatment",
+            "title": "WMS: Acute Altitude Illness Clinical Practice Guideline, 2024 Update, summary → AMS/HACE Treatment",
+            "url": "https://wms.org/magazine/1463/2024-Altitude-Summary/default.aspx"
+          },
+          "checked": "2026-11-03"
+        },
+        {
+          "note": "Never up to sleep at a higher altitude.",
+          "source": {
+            "title": "CDC Yellow Book 2026: High-Altitude Travel and Altitude Illness → Preventing severe altitude illness or death",
             "url": "https://www.cdc.gov/yellow-book/hcp/environmental-hazards-risks/high-altitude-travel-and-altitude-illness.html"
-          }
+          },
+          "checked": "2026-11-03"
         }
       ]
     },
     {
       "id": "medicine.descent-distance",
       "kind": "fact",
-      "claim": "Descending this far usually relieves acute mountain sickness; the climber goes on down until the symptoms go.",
+      "claim": "Descending at least this far relieves acute mountain sickness quickly, the more so with little exertion.",
       "status": "source only",
       "versions": [
         {
-          "range": { "min": 300, "max": 1000 },
+          "value": 300,
           "unit": "m",
           "source": {
-            "title": "WMS Clinical Practice Guidelines for Acute Altitude Illness, 2024 Update → Treatment of AMS",
-            "url": "https://doi.org/10.1016/j.wem.2023.05.013"
-          }
+            "title": "CDC Yellow Book 2026: High-Altitude Travel and Altitude Illness → Acute mountain sickness → Treatment",
+            "url": "https://www.cdc.gov/yellow-book/hcp/environmental-hazards-risks/high-altitude-travel-and-altitude-illness.html"
+          },
+          "checked": "2026-11-03"
         }
       ]
     },
     {
       "id": "medicine.hace-symptoms",
       "kind": "fact",
-      "claim": "High-altitude cerebral edema is the severe end of acute mountain sickness: confusion, drowsiness and ataxia (lost coordination, an unsteady walk), going on to coma.",
+      "claim": "High-altitude cerebral edema is the severe end of acute mountain sickness: ataxia (lost coordination, an unsteady walk), often the first sign, and an altered mind (confusion, drowsiness), going on to coma.",
       "status": "source only",
       "versions": [
         {
           "source": {
-            "title": "WMS Clinical Practice Guidelines for Acute Altitude Illness, 2024 Update → High-altitude cerebral edema",
-            "url": "https://doi.org/10.1016/j.wem.2023.05.013"
-          }
+            "title": "WMS: Acute Altitude Illness Clinical Practice Guideline, 2024 Update, summary → AMS/HACE Diagnosis",
+            "url": "https://wms.org/magazine/1463/2024-Altitude-Summary/default.aspx"
+          },
+          "checked": "2026-11-03"
         },
         {
           "source": {
             "title": "CDC Yellow Book 2026: High-Altitude Travel and Altitude Illness → High-altitude cerebral edema",
             "url": "https://www.cdc.gov/yellow-book/hcp/environmental-hazards-risks/high-altitude-travel-and-altitude-illness.html"
-          }
+          },
+          "checked": "2026-11-03"
         }
       ]
     },
     {
       "id": "medicine.hace-ataxia-test",
       "kind": "fact",
-      "claim": "Ataxia shows when the climber tries to walk heel to toe along a straight line.",
+      "claim": "Ataxia is gauged by having the climber walk heel to toe.",
       "status": "source only",
       "versions": [
         {
           "source": {
-            "title": "CDC Yellow Book 2026: High-Altitude Travel and Altitude Illness → High-altitude cerebral edema",
-            "url": "https://www.cdc.gov/yellow-book/hcp/environmental-hazards-risks/high-altitude-travel-and-altitude-illness.html"
-          }
+            "title": "WMS: Acute Altitude Illness Clinical Practice Guideline, 2024 Update, summary → AMS/HACE Diagnosis",
+            "url": "https://wms.org/magazine/1463/2024-Altitude-Summary/default.aspx"
+          },
+          "checked": "2026-11-03"
         }
       ]
     },
     {
       "id": "medicine.hace-descent",
       "kind": "fact",
-      "claim": "High-altitude cerebral edema requires immediate descent: without it, death can occur within 24 hours of the onset of ataxia.",
+      "claim": "High-altitude cerebral edema requires immediate descent: without treatment or descent, coma is likely within 12–24 hours of the onset of ataxia.",
       "status": "source only",
       "versions": [
         {
           "source": {
-            "title": "CDC Yellow Book 2026: High-Altitude Travel and Altitude Illness",
+            "title": "CDC Yellow Book 2026: High-Altitude Travel and Altitude Illness → High-altitude cerebral edema → Treatment",
             "url": "https://www.cdc.gov/yellow-book/hcp/environmental-hazards-risks/high-altitude-travel-and-altitude-illness.html"
           },
-          "checked": "2026-11-01"
+          "checked": "2026-11-03"
+        },
+        {
+          "note": "Descent at any suspicion of cerebral edema; no time to coma given.",
+          "source": {
+            "title": "WMS: Acute Altitude Illness Clinical Practice Guideline, 2024 Update, summary → AMS/HACE Treatment",
+            "url": "https://wms.org/magazine/1463/2024-Altitude-Summary/default.aspx"
+          },
+          "checked": "2026-11-03"
         }
       ]
     },
     {
       "id": "medicine.hape-symptoms",
       "kind": "fact",
-      "claim": "High-altitude pulmonary edema begins as breathlessness on exertion and a fall in performance beyond what altitude explains, then breathlessness at rest and a cough; late on, the lips and nails turn blue and the climber coughs up pink, frothy sputum.",
+      "claim": "High-altitude pulmonary edema begins as breathlessness on exertion beyond what the climber has known at altitude, with a dry cough, weakness and a gurgling in the chest; as it goes on, the climber is breathless at rest, may turn blue and may cough up pink, frothy sputum.",
       "status": "source only",
       "versions": [
         {
           "source": {
-            "title": "WMS Clinical Practice Guidelines for Acute Altitude Illness, 2024 Update → High-altitude pulmonary edema",
-            "url": "https://doi.org/10.1016/j.wem.2023.05.013"
-          }
+            "title": "WMS: Acute Altitude Illness Clinical Practice Guideline, 2024 Update, summary → HAPE Diagnosis",
+            "url": "https://wms.org/magazine/1463/2024-Altitude-Summary/default.aspx"
+          },
+          "checked": "2026-11-03"
         },
         {
+          "note": "Names chest congestion, a cough, breathlessness on exertion and a fall in performance, going on to breathlessness at rest and respiratory distress; no blue lips or pink sputum.",
           "source": {
-            "title": "CDC Yellow Book 2026: High-Altitude Travel and Altitude Illness → High-altitude pulmonary edema",
+            "title": "CDC Yellow Book 2026: High-Altitude Travel and Altitude Illness → High-altitude pulmonary edema → Diagnosis",
             "url": "https://www.cdc.gov/yellow-book/hcp/environmental-hazards-risks/high-altitude-travel-and-altitude-illness.html"
-          }
+          },
+          "checked": "2026-11-03"
         }
       ]
     },
     {
       "id": "medicine.hape-onset",
       "kind": "fact",
-      "claim": "High-altitude pulmonary edema usually appears this many days after arriving at a new altitude.",
+      "claim": "High-altitude pulmonary edema usually appears this many days after arriving at a new altitude, and hardly ever after a week of acclimatization there.",
       "status": "source only",
       "versions": [
         {
-          "range": { "min": 2, "max": 4 },
+          "range": {
+            "min": 1,
+            "max": 5
+          },
           "unit": "days",
           "source": {
-            "title": "WMS Clinical Practice Guidelines for Acute Altitude Illness, 2024 Update → High-altitude pulmonary edema",
-            "url": "https://doi.org/10.1016/j.wem.2023.05.013"
-          }
+            "title": "Omidi et al. 2025, What Is New in Altitude- and Cold-Related Illnesses of Travel (a review of the WMS 2024 guideline) → Definitions and epidemiology",
+            "url": "https://doi.org/10.3390/ijerph22020284"
+          },
+          "checked": "2026-11-03"
         }
       ]
     },
@@ -204,141 +251,204 @@
       "versions": [
         {
           "source": {
-            "title": "WMS Clinical Practice Guidelines for Acute Altitude Illness, 2024 Update → High-altitude pulmonary edema",
-            "url": "https://doi.org/10.1016/j.wem.2023.05.013"
-          }
-        },
-        {
-          "source": {
-            "title": "CDC Yellow Book 2026: High-Altitude Travel and Altitude Illness → High-altitude pulmonary edema",
+            "title": "CDC Yellow Book 2026: High-Altitude Travel and Altitude Illness → High-altitude pulmonary edema → Diagnosis",
             "url": "https://www.cdc.gov/yellow-book/hcp/environmental-hazards-risks/high-altitude-travel-and-altitude-illness.html"
-          }
+          },
+          "checked": "2026-11-03"
         }
       ]
     },
     {
       "id": "medicine.hape-treatment",
       "kind": "fact",
-      "claim": "High-altitude pulmonary edema is treated by descent, with as little exertion as the climber can manage, since exertion makes it worse; supplemental oxygen enough to bring the blood's oxygen saturation to this level treats it too.",
+      "claim": "High-altitude pulmonary edema is treated by descent, with as little exertion as possible, since exertion raises the pressure in the arteries of the lungs; supplemental oxygen enough to bring the blood's oxygen saturation above this level, or to relieve the symptoms, treats it too.",
       "status": "source only",
       "versions": [
         {
           "value": 90,
           "unit": "%",
           "source": {
-            "title": "WMS Clinical Practice Guidelines for Acute Altitude Illness, 2024 Update → Treatment of HAPE",
-            "url": "https://doi.org/10.1016/j.wem.2023.05.013"
-          }
+            "title": "WMS: Acute Altitude Illness Clinical Practice Guideline, 2024 Update, summary → HAPE Treatment",
+            "url": "https://wms.org/magazine/1463/2024-Altitude-Summary/default.aspx"
+          },
+          "checked": "2026-11-03"
+        },
+        {
+          "note": "Descent urgent and mandatory; oxygen or a portable hyperbaric chamber when immediate descent isn't possible; no saturation target.",
+          "source": {
+            "title": "CDC Yellow Book 2026: High-Altitude Travel and Altitude Illness → High-altitude pulmonary edema → Treatment",
+            "url": "https://www.cdc.gov/yellow-book/hcp/environmental-hazards-risks/high-altitude-travel-and-altitude-illness.html"
+          },
+          "checked": "2026-11-03"
+        }
+      ]
+    },
+    {
+      "id": "medicine.hape-descent-distance",
+      "kind": "fact",
+      "claim": "With pulmonary edema, the climber descends at least this far, or until the symptoms go.",
+      "status": "source only",
+      "versions": [
+        {
+          "value": 1000,
+          "unit": "m",
+          "source": {
+            "title": "WMS: Acute Altitude Illness Clinical Practice Guideline, 2024 Update, summary → HAPE Treatment",
+            "url": "https://wms.org/magazine/1463/2024-Altitude-Summary/default.aspx"
+          },
+          "checked": "2026-11-03"
         }
       ]
     },
     {
       "id": "medicine.descend-now",
       "kind": "fact",
-      "claim": "Descend at once: at any sign of cerebral edema (confusion, drowsiness, ataxia) or of pulmonary edema (breathless at rest), or when acute mountain sickness gets worse in spite of rest at the same altitude.",
+      "claim": "Descend at once: at any suspicion of cerebral edema (ataxia, confusion, drowsiness), at any sign of pulmonary edema, or when acute mountain sickness gets worse in spite of treatment.",
       "status": "source only",
       "versions": [
         {
           "source": {
-            "title": "WMS Clinical Practice Guidelines for Acute Altitude Illness, 2024 Update → Treatment",
-            "url": "https://doi.org/10.1016/j.wem.2023.05.013"
-          }
+            "title": "WMS: Acute Altitude Illness Clinical Practice Guideline, 2024 Update, summary → AMS/HACE Treatment, HAPE Treatment",
+            "url": "https://wms.org/magazine/1463/2024-Altitude-Summary/default.aspx"
+          },
+          "checked": "2026-11-03"
         },
         {
           "source": {
-            "title": "CDC Yellow Book 2026: High-Altitude Travel and Altitude Illness → Treatment",
+            "title": "CDC Yellow Book 2026: High-Altitude Travel and Altitude Illness → Altitude illness syndromes → Treatment",
             "url": "https://www.cdc.gov/yellow-book/hcp/environmental-hazards-risks/high-altitude-travel-and-altitude-illness.html"
-          }
+          },
+          "checked": "2026-11-03"
         }
       ]
     },
     {
       "id": "medicine.oxygen-treatment",
       "kind": "fact",
-      "claim": "Supplemental oxygen treats acute mountain sickness, cerebral edema and pulmonary edema; where descent isn't possible, it buys time for it.",
+      "claim": "Supplemental oxygen, at a flow that relieves the symptoms, treats acute mountain sickness, cerebral edema and pulmonary edema; where descent isn't possible it stands in for it, and a severely ill climber breathes it on the way down.",
       "status": "source only",
       "versions": [
         {
           "source": {
-            "title": "WMS Clinical Practice Guidelines for Acute Altitude Illness, 2024 Update → Treatment",
-            "url": "https://doi.org/10.1016/j.wem.2023.05.013"
-          }
+            "title": "WMS: Acute Altitude Illness Clinical Practice Guideline, 2024 Update, summary → AMS/HACE Treatment, HAPE Treatment",
+            "url": "https://wms.org/magazine/1463/2024-Altitude-Summary/default.aspx"
+          },
+          "checked": "2026-11-03"
+        },
+        {
+          "note": "Relieves the headache of acute mountain sickness within about half an hour; critical for cerebral or pulmonary edema when immediate descent isn't possible.",
+          "source": {
+            "title": "CDC Yellow Book 2026: High-Altitude Travel and Altitude Illness → Altitude illness syndromes → Treatment",
+            "url": "https://www.cdc.gov/yellow-book/hcp/environmental-hazards-risks/high-altitude-travel-and-altitude-illness.html"
+          },
+          "checked": "2026-11-03"
         }
       ]
     },
     {
       "id": "medicine.hyperbaric-bag",
       "kind": "fact",
-      "claim": "A portable hyperbaric chamber, a bag the sick climber lies in while it is pumped up, simulates a descent: it treats severe illness when descent isn't possible, and the climber still descends afterwards.",
+      "claim": "A portable hyperbaric chamber, a bag the sick climber is zipped into and pumped up, treats severe altitude illness when descent isn't possible or oxygen isn't to be had; it never delays a descent that is needed, and the climber descends once better.",
       "status": "source only",
       "versions": [
         {
           "source": {
-            "title": "WMS Clinical Practice Guidelines for Acute Altitude Illness, 2024 Update → Treatment",
-            "url": "https://doi.org/10.1016/j.wem.2023.05.013"
-          }
+            "title": "WMS: Acute Altitude Illness Clinical Practice Guideline, 2024 Update, summary → AMS/HACE Treatment, HAPE Treatment",
+            "url": "https://wms.org/magazine/1463/2024-Altitude-Summary/default.aspx"
+          },
+          "checked": "2026-11-03"
+        },
+        {
+          "note": "Oxygen or a portable hyperbaric chamber is critical for cerebral or pulmonary edema when immediate descent isn't possible.",
+          "source": {
+            "title": "CDC Yellow Book 2026: High-Altitude Travel and Altitude Illness → Altitude illness syndromes → Treatment",
+            "url": "https://www.cdc.gov/yellow-book/hcp/environmental-hazards-risks/high-altitude-travel-and-altitude-illness.html"
+          },
+          "checked": "2026-11-03"
         }
       ]
     },
     {
       "id": "medicine.no-substitute",
       "kind": "fact",
-      "claim": "No medicine replaces a gradual ascent, nor descent once the illness is severe.",
+      "claim": "A gradual ascent is the first line of prevention: medicines come in beside it when the risk is moderate or high, or when a climber can't ascend gradually, and replace neither the ascent profile nor descent, the single best treatment.",
       "status": "source only",
       "versions": [
         {
           "source": {
-            "title": "WMS Clinical Practice Guidelines for Acute Altitude Illness, 2024 Update → Prevention",
-            "url": "https://doi.org/10.1016/j.wem.2023.05.013"
-          }
+            "title": "WMS: Acute Altitude Illness Clinical Practice Guideline, 2024 Update, summary → AMS/HACE Prevention, HAPE Prevention, HAPE Treatment",
+            "url": "https://wms.org/magazine/1463/2024-Altitude-Summary/default.aspx"
+          },
+          "checked": "2026-11-03"
         }
       ]
     },
     {
       "id": "medicine.acetazolamide",
       "kind": "fact",
-      "claim": "Acetazolamide speeds up acclimatization: doctors prescribe it to prevent acute mountain sickness and cerebral edema in climbers at moderate or high risk, and to treat acute mountain sickness.",
+      "claim": "Acetazolamide speeds up acclimatization: doctors prescribe it to prevent acute mountain sickness, beside a gradual ascent, when the risk is moderate or high, and to treat acute mountain sickness.",
       "status": "source only",
       "versions": [
         {
           "source": {
-            "title": "WMS Clinical Practice Guidelines for Acute Altitude Illness, 2024 Update → Prevention of AMS and HACE",
-            "url": "https://doi.org/10.1016/j.wem.2023.05.013"
-          }
+            "title": "WMS: Acute Altitude Illness Clinical Practice Guideline, 2024 Update, summary → AMS/HACE Prevention, AMS/HACE Treatment",
+            "url": "https://wms.org/magazine/1463/2024-Altitude-Summary/default.aspx"
+          },
+          "checked": "2026-11-03"
         },
         {
+          "note": "Hastens acclimatization and so prevents acute mountain sickness, and helps recovery once symptoms have begun; better validated for prevention than for treatment.",
           "source": {
-            "title": "CDC Yellow Book 2026: High-Altitude Travel and Altitude Illness → Medications",
+            "title": "CDC Yellow Book 2026: High-Altitude Travel and Altitude Illness → Medications → Acetazolamide",
             "url": "https://www.cdc.gov/yellow-book/hcp/environmental-hazards-risks/high-altitude-travel-and-altitude-illness.html"
-          }
+          },
+          "checked": "2026-11-03"
         }
       ]
     },
     {
       "id": "medicine.dexamethasone",
       "kind": "fact",
-      "claim": "Dexamethasone treats acute mountain sickness and cerebral edema, and can prevent acute mountain sickness, but it doesn't help acclimatization: the symptoms can come back when it stops, so a climber treated with it descends all the same.",
+      "claim": "Dexamethasone treats acute mountain sickness and cerebral edema, and prevents acute mountain sickness (not in children), but it doesn't help acclimatization: a climber treated with it goes no higher until the symptoms stay away without it.",
       "status": "source only",
       "versions": [
         {
           "source": {
-            "title": "WMS Clinical Practice Guidelines for Acute Altitude Illness, 2024 Update → Treatment of HACE",
-            "url": "https://doi.org/10.1016/j.wem.2023.05.013"
-          }
+            "title": "WMS: Acute Altitude Illness Clinical Practice Guideline, 2024 Update, summary → AMS/HACE Prevention, AMS/HACE Treatment",
+            "url": "https://wms.org/magazine/1463/2024-Altitude-Summary/default.aspx"
+          },
+          "checked": "2026-11-03"
+        },
+        {
+          "note": "Prevents and treats acute mountain sickness and cerebral edema, and might prevent pulmonary edema; kept for treatment, as an adjunct to descent; stopped at altitude before acclimatization, it can rebound.",
+          "source": {
+            "title": "CDC Yellow Book 2026: High-Altitude Travel and Altitude Illness → Medications → Dexamethasone",
+            "url": "https://www.cdc.gov/yellow-book/hcp/environmental-hazards-risks/high-altitude-travel-and-altitude-illness.html"
+          },
+          "checked": "2026-11-03"
         }
       ]
     },
     {
       "id": "medicine.nifedipine",
       "kind": "fact",
-      "claim": "Nifedipine lowers the pressure in the arteries of the lungs: doctors prescribe it to prevent pulmonary edema in climbers who have had it before, and to treat it when descent or oxygen isn't possible.",
+      "claim": "Nifedipine widens the blood vessels and lowers the pressure in the arteries of the lungs: doctors prescribe it to prevent pulmonary edema in climbers who have had it before, and to treat it when descent is impossible or delayed and neither oxygen nor a hyperbaric chamber is to be had.",
       "status": "source only",
       "versions": [
         {
           "source": {
-            "title": "WMS Clinical Practice Guidelines for Acute Altitude Illness, 2024 Update → Prevention and treatment of HAPE",
-            "url": "https://doi.org/10.1016/j.wem.2023.05.013"
-          }
+            "title": "WMS: Acute Altitude Illness Clinical Practice Guideline, 2024 Update, summary → HAPE Prevention, HAPE Treatment",
+            "url": "https://wms.org/magazine/1463/2024-Altitude-Summary/default.aspx"
+          },
+          "checked": "2026-11-03"
+        },
+        {
+          "note": "Prevents and relieves pulmonary edema; for prevention, kept for those particularly susceptible; in treatment an adjunct to descent or oxygen, which are far more effective.",
+          "source": {
+            "title": "CDC Yellow Book 2026: High-Altitude Travel and Altitude Illness → Medications → Nifedipine",
+            "url": "https://www.cdc.gov/yellow-book/hcp/environmental-hazards-risks/high-altitude-travel-and-altitude-illness.html"
+          },
+          "checked": "2026-11-03"
         }
       ]
     }
