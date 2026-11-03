@@ -20,6 +20,8 @@ At the start of every session, before anything else and unasked, run `/carryon` 
 
 Before a session is compacted or closed, `/handoff` ([.claude/skills/handoff/SKILL.md](.claude/skills/handoff/SKILL.md), PEB#349) puts its work where the next session finds it, on any machine; the Stop hook asks for it in time.
 
+**In chat, the action first.** A reply opens with what its user should do, or what Claude offers to do, in its first sentence, then what it entails in a line or two; status and background come after, marked FYI, for reading later. Every issue and PR number in chat is a link to its page, `[#17](https://github.com/albalaeff/Everest-Game/issues/17)`: GitHub links a bare `#17` on its own pages, the chat in VS Code doesn't.
+
 ## Working from GitHub issues
 
 Each piece of work is a GitHub issue; only a small change that needs no discussion (a line in the docs, the price rows) goes in a `chore/<what>` PR without one (docs/conventions.md → Git workflow). **An issue belongs to whoever opened it**, unless a `claude:<login>` label hands it to that login (PEB#222). Each developer has their own Claude; a session works only on the issues that belong to the account its GitHub token belongs to (`status` sorts them). A teammate's issue is theirs even before anyone has commented on it: leave it alone unless your user asks you to take it over, and then say so on the issue first. An issue that waits for a person's answer or review carries `waiting:<login>`, put on and taken off by the scripts, never by hand (PEB#449).
