@@ -6,8 +6,14 @@ import { GamepadSource } from "./gamepad-source";
 import { KeyboardSource } from "./keyboard-source";
 import { PlayerInput } from "./player-input";
 import { PointerSource } from "./pointer-source";
-import { PlainSlopeView } from "./slope-view";
-import { FakeJoystick, FakeKeyboard, FakePad, FakeSurface, HeardActions } from "./testing/fakes";
+import {
+  FakeJoystick,
+  FakeKeyboard,
+  FakePad,
+  FakeSlopeView,
+  FakeSurface,
+  HeardActions,
+} from "./testing/fakes";
 
 const SCREEN = { innerWidth: 640, innerHeight: 360 };
 
@@ -39,7 +45,7 @@ function playedOnAPc(): HeardActions {
   const heard = new HeardActions();
   const keyboard = new FakeKeyboard();
   const surface = new FakeSurface();
-  const player = new PlayerInput("anna", new PlainSlopeView(SCREEN), heard);
+  const player = new PlayerInput("anna", new FakeSlopeView(SCREEN), heard);
   new KeyboardSource(keyboard, player);
   new PointerSource(surface, player, new FakeJoystick(), SCREEN);
 
@@ -68,7 +74,7 @@ function playedOnAPc(): HeardActions {
 function playedOnAPhone(): HeardActions {
   const heard = new HeardActions();
   const surface = new FakeSurface();
-  const player = new PlayerInput("anna", new PlainSlopeView(SCREEN), heard);
+  const player = new PlayerInput("anna", new FakeSlopeView(SCREEN), heard);
   new PointerSource(surface, player, new FakeJoystick(), SCREEN);
   const tapTheButton = (name: ControlName): void => {
     const control = CONTROLS.find((row) => row.name === name);
@@ -104,7 +110,7 @@ function playedOnAPhone(): HeardActions {
 function playedOnAGamepad(): HeardActions {
   const heard = new HeardActions();
   const pad = new FakePad();
-  const player = new PlayerInput("anna", new PlainSlopeView(SCREEN), heard);
+  const player = new PlayerInput("anna", new FakeSlopeView(SCREEN), heard);
   const source = new GamepadSource({ getGamepads: () => [pad] }, player);
   const push = (x: number, y: number): void => {
     pad.push(x, y);

@@ -3,7 +3,6 @@ import { describe, expect, it } from "vitest";
 import { CONTROLS } from "./controls";
 import type { Control, ControlName } from "./controls";
 import { PlayerInput } from "./player-input";
-import { PlainSlopeView } from "./slope-view";
 import { Steering } from "./steering";
 import { FakeSlopeView, HeardActions } from "./testing/fakes";
 
@@ -17,7 +16,7 @@ function control(name: ControlName): Control {
 
 function player() {
   const heard = new HeardActions();
-  const slope = new PlainSlopeView({ innerWidth: 640, innerHeight: 360 });
+  const slope = new FakeSlopeView({ innerWidth: 640, innerHeight: 360 });
   return { heard, input: new PlayerInput("anna", slope, heard) };
 }
 

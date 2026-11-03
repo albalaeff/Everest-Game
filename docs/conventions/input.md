@@ -11,4 +11,4 @@
 - **Everything held can be let go.** A call, a locked screen or another window takes the releases away, so what holds on to input has a `letGo`, and `InputLayer` calls it.
 - **What reads the DOM stays thin.** Vitest runs in Node, with no DOM: a source takes its events through a small interface, which `testing/fakes.ts` fills in, and `ActionButton`, `FloatingJoystick`, `ReceivedActions`, `TouchMode` and `ControlsPage` are covered by `e2e/controls.spec.ts`.
 
-`PlainSlopeView`, `ReceivedActions` and the readouts in `index.html` stand in until the camera, the game and their own issues come (#19).
+The `SlopeView` the input reads is the rendering's `Camera`, which the page hands it ([rendering.md](rendering.md)); the tests use `FakeSlopeView`. `ReceivedActions` and the readouts in `index.html` stand in until their own issues come.

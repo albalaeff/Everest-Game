@@ -62,7 +62,7 @@ test("a player's taps do nothing until they've read it", async ({ page, hasTouch
   await page.locator("#slope").tap({ position: { x: 400, y: 130 } });
 
   await expect(disclaimer(page)).toBeHidden();
-  await expect(received(page)).toHaveText(["tool ice-axe 0.8 0.5"]);
+  await expect(received(page)).toHaveText(["tool ice-axe 20.37 4.78"]);
 });
 
 test("the climb shows no beta mark and no build", async ({ page }) => {

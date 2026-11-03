@@ -2,13 +2,12 @@ import { describe, expect, it } from "vitest";
 
 import { KeyboardSource } from "./keyboard-source";
 import { PlayerInput } from "./player-input";
-import { PlainSlopeView } from "./slope-view";
-import { FakeKeyboard, HeardActions } from "./testing/fakes";
+import { FakeKeyboard, FakeSlopeView, HeardActions } from "./testing/fakes";
 
 function pc() {
   const heard = new HeardActions();
   const keyboard = new FakeKeyboard();
-  const slope = new PlainSlopeView({ innerWidth: 640, innerHeight: 360 });
+  const slope = new FakeSlopeView({ innerWidth: 640, innerHeight: 360 });
   const source = new KeyboardSource(keyboard, new PlayerInput("anna", slope, heard));
   return { heard, keyboard, source };
 }
