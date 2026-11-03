@@ -4,8 +4,8 @@ import crowds from "../../content/facts/crowds.json";
 import time from "../../content/facts/time.json";
 import { SectionScale, SlopePhysics } from "../physics";
 import { Expedition, MountainClock, SimulationClock } from "../simulation";
-import { KnowledgeBase } from "./knowledge-base";
-import { StandInRoute } from "./stand-in-route";
+import { KnowledgeBase } from "../content/knowledge-base";
+import { StandInRoute } from "../content/stand-in-route";
 
 const HOUR = 3600;
 const base = new KnowledgeBase([time, crowds]);

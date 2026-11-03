@@ -144,7 +144,8 @@ header {
 }
 
 .action-button,
-#disclaimer button {
+#disclaimer button,
+#start button {
   min-width: 48px;
   min-height: 48px;
   padding: 0 0.5rem;
@@ -258,8 +259,38 @@ kbd {
   }
 }
 
+/* Where a room's connection stands, above the slope: it lets the fingers through, but for its
+ * buttons. */
+#room {
+  position: fixed;
+  top: var(--edge-top);
+  left: 50%;
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+  max-width: calc(100% - 2rem);
+  margin: 0;
+  padding: 0.5rem 0.75rem;
+  border-radius: 0.5rem;
+  background: rgb(11 29 58 / 85%);
+  translate: -50% 0;
+  pointer-events: none;
+}
+
+#room[hidden],
+#room [hidden] {
+  display: none;
+}
+
+#room .setting-button {
+  margin: 0;
+  padding: 0.25rem 0.5rem;
+  font-size: 0.875rem;
+}
+
 /* Above the game, upright or sideways; on a small screen it scrolls inside itself, not the page. */
-#disclaimer {
+#disclaimer,
+#start {
   position: fixed;
   inset: 0;
   display: flex;
@@ -271,21 +302,60 @@ kbd {
   touch-action: pan-y;
 }
 
-#disclaimer[hidden] {
+#disclaimer[hidden],
+#start[hidden],
+#start [hidden] {
   display: none;
 }
 
-#disclaimer > div {
+#disclaimer > div,
+#start > div {
   max-width: 36rem;
   margin: auto;
   padding: 1rem 0;
   line-height: 1.4;
 }
 
-#disclaimer h2 {
+#disclaimer h2,
+#start h2 {
   margin: 0 0 1rem;
   font-size: 1.25rem;
   text-align: center;
+}
+
+/* The start's choices, one under the other: the code and its [Join] share a line. */
+#start > div > button {
+  display: block;
+  width: 100%;
+  max-width: 20rem;
+  margin: 0.75rem auto 0;
+}
+
+#start form {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  align-items: center;
+  justify-content: center;
+  max-width: 20rem;
+  margin: 1.5rem auto 0;
+}
+
+#start input {
+  box-sizing: border-box;
+  width: 6rem;
+  min-height: 48px;
+  padding: 0 0.5rem;
+  border: 1px solid #9db4d0;
+  border-radius: 0.5rem;
+  background: #0b1d3a;
+  color: inherit;
+  font: inherit;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  user-select: text;
+  -webkit-user-select: text;
 }
 
 #disclaimer h3 {

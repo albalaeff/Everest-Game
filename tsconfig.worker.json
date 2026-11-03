@@ -1,0 +1,12 @@
+{
+  // The room server's Worker, with the Workers' types and no DOM, Node or Vite in scope: a page's
+  // API in the Worker, or in the core and the rules it runs, fails the type check
+  // (docs/conventions/room-server.md). The page's tsconfig.json leaves this folder out.
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "lib": ["ES2023"],
+    "types": ["@cloudflare/workers-types"]
+  },
+  "include": ["src/room/worker"],
+  "exclude": []
+}

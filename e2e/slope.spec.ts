@@ -52,12 +52,6 @@ async function waitForFrames(page: Page, atLeast: number): Promise<void> {
   await expect.poll(() => number(page, "frames"), { timeout: 15_000 }).toBeGreaterThan(atLeast);
 }
 
-declare global {
-  interface Window {
-    everest: { pixelAt(x: number, y: number): readonly number[] };
-  }
-}
-
 test.describe("on a screen of 630 by 360", () => {
   // 630 wide puts the camera's anchor at a whole pixel, 210: a third from the left.
   test.use({ viewport: { width: 630, height: 360 } });

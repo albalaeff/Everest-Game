@@ -3,6 +3,7 @@ export { ActionLog } from "./action-log";
 export type { LoggedStep } from "./action-log";
 export { Expedition } from "./expedition";
 export type { ExpeditionSave } from "./expedition";
+export { LetGo } from "./game-action";
 export type {
   CheckSelf,
   ClimberId,

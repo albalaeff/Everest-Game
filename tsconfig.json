@@ -18,5 +18,7 @@
     "skipLibCheck": true,
     "noEmit": true
   },
-  "include": ["src"]
+  "include": ["src"],
+  // The room server's Worker has the Workers' types, not the DOM's: tsconfig.worker.json.
+  "exclude": ["src/room/worker"]
 }
