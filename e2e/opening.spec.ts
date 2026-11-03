@@ -1,6 +1,6 @@
 import { expect, test } from "@playwright/test";
 
-test("a player opens the game and sees which build it is", async ({ page }) => {
+test("a player opens the game and sees which build it is, on its disclaimer", async ({ page }) => {
   await page.goto("/");
 
   await expect(page).toHaveTitle("Everest");
