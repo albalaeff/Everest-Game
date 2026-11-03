@@ -102,6 +102,11 @@ waits behind code work. The rest start in turn: by the issue's `priority:high`,
 or an agent left its worktree) before new, then first come first served. A label changed while
 a task waits counts at the next look; a running agent is never stopped for a higher one.
 
+**What an issue builds on.** An issue with a `Depends on #16` line or an `after:16` label is
+blocked while #16 is open: no agent starts on it or its PR, and the console says what it waits
+on. When #16 closes, the next look wakes it, and its agent merges `develop` in first
+(docs/workflow.md → What an issue builds on).
+
 **A green PR's merge.** The agent that opens a PR leaves the closing comment in its
 handoff, so once CI is green the manager merges with no agent. First it checks that the PR is
 open and mergeable, every CI run passed, and its description closes the issue; that neither

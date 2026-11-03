@@ -10,8 +10,11 @@ the one `origin` points to.
                                                             handoff says Claude goes on, #449),
                                                             CI finished; stale issues flagged,
                                                             those labelled postponed or release
-                                                            left out, with their PRs (#540)
-    uv run python scripts/github.py watch                   waits until something new does,
+                                                            left out, with their PRs (#540);
+                                                            blocked while what they build on
+                                                            is open, unblocked once it merges
+                                                            (#107)
+    uv run python scripts/github.py watch                  waits until something new does,
                                                             pulling develop when idle (#347);
                                                             one per machine (#597); --json for
                                                             the agent manager (#387)
@@ -65,7 +68,8 @@ person's Claude's by the account.
 Claude's last comment, and show it: read it, act on it, then run it again with --read.
 
 An issue is its author's, unless a `claude:<login>` label hands it to that login's Claude.
-One that waits for a person's answer or review carries `waiting:<login>` (#449).
+One that waits for a person's answer or review carries `waiting:<login>` (#449). One that
+builds on another says so with a `Depends on #16` line or an `after:16` label (#107).
 """
 
 import argparse
@@ -314,13 +318,16 @@ class Item:
     # Claude's last word; "Claude's move": Claude's last word is a closing handoff that says
     # Claude goes on, waiting on nothing (#449); "in progress": Claude's word is the last;
     # "theirs": someone else's (see `owner`), so not this session's to work on; "release": a
-    # release PR (`releasing`), a person's to merge or close. Claude's words: its comments,
-    # and a PR it opened.
+    # release PR (`releasing`), a person's to merge or close; "blocked": what it builds on is
+    # open, "unblocked": it has closed since Claude's last word, which was the last
+    # (`Dependencies`, #107). Claude's words: its comments, and a PR it opened.
     state: str
     owner: str
     stale: bool = False  # in progress, and nobody moves on it (`Conversation`, #449)
+    waits_on: tuple[int, ...] = ()  # blocked: the open issues and PRs it builds on
+    woken: tuple[int, ...] = ()  # those it builds on that closed since Claude's last word
 
-    TO_DO: ClassVar[tuple[str, ...]] = ("to start", "reply waiting", "Claude's move")
+    TO_DO: ClassVar[tuple[str, ...]] = ("to start", "reply waiting", "Claude's move", "unblocked")
 
     @property
     def to_do(self) -> bool:
@@ -470,6 +477,80 @@ def label_names(entry: Mapping[str, Any]) -> tuple[str, ...]:
     return tuple(str(label["name"]) for label in entry.get("labels") or [])
 
 
+AFTER = "after:"  # an `after:<n>` label: the issue builds on #n (#107)
+DEPENDS_ON = re.compile(r"^[ \t]*(?:\*\*)?depends on\b(.*)$", re.I | re.M)  # a line of a body
+
+
+def builds_on(entry: Mapping[str, Any]) -> tuple[int, ...]:
+    """The issues and PRs `entry` builds on (#107): those a `Depends on #16, #17` line of its
+    body names, and its `after:16` labels'."""
+    body = str(entry.get("body") or "")
+    found = {int(n) for line in DEPENDS_ON.findall(body) for n in re.findall(r"#(\d+)", line)}
+    found |= {
+        int(name.removeprefix(AFTER))
+        for name in label_names(entry)
+        if name.startswith(AFTER) and name.removeprefix(AFTER).isdigit()
+    }
+    found.discard(int(entry["number"]))
+    return tuple(sorted(found))
+
+
+@dataclass(frozen=True, slots=True)
+class Dependencies:
+    """What an issue builds on holds it (#107: #18 built on #16 and #17 with nothing to hold
+    it, so its branch carried both of theirs and its PR couldn't merge, and nothing woke an
+    agent when they merged). While any of it is open the issue is blocked: no task, its PRs
+    with it (`look`). Once all of it is closed, what closed since Claude's last word wakes it:
+    the agent merges `develop` in first. A chain holds by itself: #18 waits on #17, which
+    waits on #16. `open_now`: the open issues and PRs, when a look has listed them; else each
+    is asked for."""
+
+    github: GitHub
+    open_now: frozenset[int] | None = None
+
+    def hold(
+        self, entry: Mapping[str, Any], item: Item, comments: Sequence[Mapping[str, Any]]
+    ) -> Item:
+        """`item`, the issue `entry`'s as its `comments` say, blocked or woken. Woken, one in
+        progress is "unblocked": Claude's move. One to start needs nothing more: its branch
+        comes from `develop`."""
+        if "pull_request" in entry or item.state == "theirs":
+            return item
+        if blockers := self.blockers(entry):
+            return replace(item, state="blocked", waits_on=blockers, stale=False)
+        woken = self._woken(entry, item.owner, comments) if item.state != "to start" else ()
+        if not woken:
+            return item
+        state = "unblocked" if item.state == "in progress" else item.state
+        return replace(item, state=state, woken=woken, stale=False)
+
+    def blockers(self, entry: Mapping[str, Any]) -> tuple[int, ...]:
+        """What `entry` builds on that's still open."""
+        return tuple(number for number in builds_on(entry) if self._open(number))
+
+    def _open(self, number: int) -> bool:
+        if self.open_now is not None:
+            return number in self.open_now
+        found = self.github.call("GET", f"issues/{number}", missing_ok=True)
+        return found is not None and found.get("state") == "open"
+
+    def _woken(
+        self, entry: Mapping[str, Any], me: str, comments: Sequence[Mapping[str, Any]]
+    ) -> tuple[int, ...]:
+        """What `entry` builds on that closed after Claude's last word on it. One that isn't
+        there (a typo) is passed by."""
+        last = next((c.get("created_at") for c in reversed(comments) if claude_s(c, me)), None)
+        woken = []
+        for number in builds_on(entry):
+            found = self.github.call("GET", f"issues/{number}", missing_ok=True)
+            closed = (found or {}).get("closed_at")
+            if closed and (
+                not last or datetime.fromisoformat(str(closed)) > datetime.fromisoformat(str(last))
+            ):
+                woken.append(number)
+        return tuple(woken)
+
+
 KEYWORDS = r"\b(?:close[sd]?|fix(?:e[sd])?|resolve[sd]?)\s+#"  # GitHub's, before an issue
 CLOSES = KEYWORDS + r"{number}\b"  # a given issue's
 CLOSING = re.compile(KEYWORDS + r"(\d+)\b", re.I)  # any issue's
@@ -485,7 +566,9 @@ class Task:
     manager's next look takes a task whose priority or power changed as a new one (#485).
     `watch --json` says each as JSON for the session manager (#387): `issue` is the issue the
     work is for, a PR's the one it closes (None when it closes none), and `labels` are that
-    issue's, which say how strong an agent it takes, and how soon."""
+    issue's, which say how strong an agent it takes, and how soon. `woken` names what the
+    issue builds on that merged since Claude's last word: its agent merges `develop` in first
+    (#107)."""
 
     key: str
     kind: str  # "issue" or "pull"
@@ -498,6 +581,7 @@ class Task:
     ci: str | None = None  # "CI: success", once CI has finished
     sha: str | None = None  # the commit it ran on
     green: bool = False  # CI finished, every run a success (#485)
+    woken: tuple[int, ...] = ()  # what it builds on that closed since Claude's last word (#107)
 
     @classmethod
     def waiting(
@@ -519,6 +603,7 @@ class Task:
             issue,
             found,
             branch=None if pull is None else (pull.get("head") or {}).get("ref"),
+            woken=item.woken,
         )
 
     @classmethod
@@ -593,6 +678,7 @@ class Task:
             data.get("ci"),
             data.get("sha"),
             bool(data.get("green")),
+            tuple(int(number) for number in data.get("woken") or ()),
         )
 
 
@@ -693,10 +779,12 @@ class WaitingLabels:
 
 @dataclass(frozen=True, slots=True)
 class Look:
-    """What `status` shows, and what in it needs doing now (`tasks`)."""
+    """What `status` shows, what in it needs doing now (`tasks`), and what's blocked, a line
+    each (`held`, #107)."""
 
     text: str
     tasks: tuple[Task, ...] = ()
+    held: tuple[str, ...] = ()
 
     @property
     def to_do(self) -> frozenset[str]:
@@ -714,13 +802,15 @@ def look(github: GitHub, now: Callable[[], datetime] = datetime.now) -> Look:
     an issue waits on takes their label off it (`WaitingLabels.replied`, #449). CI's result
     is left out once Claude has spoken after it (#456): a restart of the agent manager, whose
     watcher says every task as it begins, would start an agent for each PR. A release PR is
-    listed apart, and is never a task (`releasing`, #510)."""
+    listed apart, and is never a task (`releasing`, #510). An issue that builds on an open one
+    is blocked, with its PRs, and woken once that closes (`Dependencies`, #107)."""
     me = github.call("GET", "/user")["login"]
     at = now()
     lines = [f"Acting as {me} on {github.slug}, {at:%Y-%m-%d %H:%M}."]
     everything = github.call("GET", "issues?state=open&per_page=100")
     pulls = {pull["number"]: pull for pull in github.call("GET", "pulls?state=open&per_page=100")}
     aside = SetAside.of(everything)
+    dependencies = Dependencies(github, frozenset(int(entry["number"]) for entry in everything))
     open_items = [
         entry
         for entry in everything
@@ -739,8 +829,16 @@ def look(github: GitHub, now: Callable[[], datetime] = datetime.now) -> Look:
             continue
         mine = owner(entry) == me
         comments = github.call("GET", f"issues/{number}/comments?per_page=100") if mine else []
-        item = Conversation(entry, comments, me).item(at)
+        item = dependencies.hold(entry, Conversation(entry, comments, me).item(at), comments)
         items.append((item, "pull_request" in entry, entry, comments))
+    blocked = {item.number: item.waits_on for item, _, _, _ in items if item.state == "blocked"}
+    for n, (item, is_pull, entry, comments) in enumerate(items):
+        if not is_pull or item.state in ("theirs", "release"):
+            continue
+        for_issue = Task.issue_of(pulls.get(item.number, entry))
+        if for_issue is not None and for_issue in blocked:
+            with_it = replace(item, state="blocked", waits_on=blocked[for_issue], stale=False)
+            items[n] = (with_it, is_pull, entry, comments)
     entries = {int(entry["number"]): entry for entry in open_items}
     known = {item.number: comments for item, _, _, comments in items if item.owner == me}
     waiting = WaitingLabels(github)
@@ -757,7 +855,9 @@ def look(github: GitHub, now: Callable[[], datetime] = datetime.now) -> Look:
         ("to start", "To start (mine, no comment from Claude yet)"),
         ("reply waiting", "A reply waiting (written after Claude's last word)"),
         ("Claude's move", "Claude's move (a closing handoff says Claude goes on)"),
+        ("unblocked", "Unblocked (what they build on has closed since Claude's last word)"),
         ("in progress", "In progress (Claude's word is the last)"),
+        ("blocked", "Blocked (what they build on is open: no agent starts on them)"),
         ("release", "Releases (on prod on trial once CI passes: a person merges or closes them)"),
     ):
         found = [(item, is_pull) for item, is_pull, _, _ in items if item.state == state]
@@ -772,7 +872,7 @@ def look(github: GitHub, now: Callable[[], datetime] = datetime.now) -> Look:
                 draft = " (draft)" if pull["draft"] else ""
                 runs = CiRuns.at(github, pull["head"]["sha"])
                 line += f"{draft} [{runs}]"
-                if runs.finished and item.state != "release":
+                if runs.finished and item.state not in ("release", "blocked"):
                     task = Task.ci_finished(item, pull, runs, labels)
                     threads = [
                         known[n]
@@ -784,12 +884,27 @@ def look(github: GitHub, now: Callable[[], datetime] = datetime.now) -> Look:
                         tasks.append(task)
             if item.stale:
                 line += f" [{STALE}]"
+            if item.waits_on:
+                line += f" [waits on {numbered(item.waits_on)}]"
+            if item.woken:
+                line += f" [{numbered(item.woken)} closed]"
             lines.append(line)
     theirs = [item for item, _, _, _ in items if item.state == "theirs"]
     if theirs:
         others = ", ".join(f"#{item.number} ({item.owner})" for item in theirs)
         lines.append(f"\nOthers' (leave alone): {others}")
-    return Look("\n".join(lines), tuple(tasks))
+    held = tuple(
+        f"{'PR' if is_pull else 'Issue'} #{item.number} is blocked: it waits on "
+        f"{numbered(item.waits_on)}, which it builds on."
+        for item, is_pull, _, _ in items
+        if item.state == "blocked"
+    )
+    return Look("\n".join(lines), tuple(tasks), held)
+
+
+def numbered(numbers: Iterable[int]) -> str:
+    """ "#16, #17"."""
+    return ", ".join(f"#{number}" for number in numbers)
 
 
 FOLLOWED = "develop"  # the branch every machine follows while idle (#347)
@@ -851,6 +966,10 @@ class WatchOutput:
     def prices(self, news: PriceNews) -> None:
         self.say(news.text)
 
+    def held(self, lines: Iterable[str]) -> None:
+        """What's newly blocked (#107): only the agent manager's log says it, since a session
+        reads `status`."""
+
 
 class TextOutput(WatchOutput):
     """For Claude, which acted on `status` before it watched: only what's new, as `status`
@@ -867,7 +986,7 @@ class JsonOutput(WatchOutput):
     """One JSON object a line, for the session manager (#387): each task as `Task.data` has
     it, every one as it begins (a program has no `status` to act on first) and then the new
     ones; {"type": "prices", …} for new prices of Claude's, which want a PR too; and
-    {"type": "note", "text": …} for the rest."""
+    {"type": "note", "text": …} for the rest, what's blocked among it (#107)."""
 
     def begin(self, seen: Look) -> None:
         for task in seen.tasks:
@@ -886,6 +1005,10 @@ class JsonOutput(WatchOutput):
             self._line({"type": "prices", "key": f"prices: {news.text}", "text": news.text})
         else:
             self.say(news.text)
+
+    def held(self, lines: Iterable[str]) -> None:
+        for line in lines:
+            self.say(line)
 
     @staticmethod
     def _line(data: Mapping[str, Any]) -> None:
@@ -948,16 +1071,18 @@ def watch(
     And `prices` reads Claude's prices once a day (#390, `DailyCheck`): a change is
     something to do, so it ends with it.
 
-    `output` says it all, as text by default; and before each look `stop` may end it,
-    saying why: in a session, that the agent manager runs (#387, `manager_running`)."""
+    `output` says it all, as text by default, what's blocked as it begins and once more each
+    time it's newly so (#107); and before each look `stop` may end it, saying why: in a
+    session, that the agent manager runs (#387, `manager_running`)."""
     output = output or TextOutput()
     if (reason := stop()) is not None:
         output.say(reason)
         return
     began = now()
     first = look(github, now)
+    output.held(first.held)
     output.begin(first)
-    before = first.to_do
+    before, held = first.to_do, set(first.held)
     waited, followed, last_said = 0.0, 0.0, None
     while waited < longest:
         sleep(every)
@@ -980,6 +1105,8 @@ def watch(
             seen = look(github, now)
         except httpx.TransportError:  # the network: look again next time
             continue
+        output.held(line for line in seen.held if line not in held)
+        held = set(seen.held)
         if fresh := seen.to_do - before:
             output.new(seen, fresh)
             return
@@ -1482,6 +1609,7 @@ class CarryOn:
         branches = IssueBranch.find(number, self.git)
         its = self._pulls(number, {branch.name for branch in branches}, pulls)
         item = Conversation(entry, comments, me).item(self.now())
+        item = Dependencies(self.github).hold(entry, item, comments)
         goes_on = handoff is not None and (move := handoff.move) is not None and move.goes_on
         return IssueCarry(
             number,
