@@ -77,9 +77,9 @@ Tasks marked *Iteration 1–3* are planned into the board's first two-week itera
 - [ ] Done gate
 
 ### Task 7: Questions for an expert, by area ([#15](https://github.com/albalaeff/Everest-Game/issues/15)) · *Iteration 3*
-- [ ] Every “to check with an expert” point of the spec and of the knowledge base, as a list for the guide (technique) and for the doctor (physiology)
-- [ ] Exported from the records with status `source only`, so the list stays current
-- [ ] Done gate
+- [x] Every “to check with an expert” point of the spec and of the knowledge base, as a list for the guide (technique) and for the doctor (physiology)
+- [x] Exported from the records with status `source only`, so the list stays current
+- [x] Done gate
 
 **Milestone 1:** Facts with sources and check dates, questions for an expert.
 

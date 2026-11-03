@@ -5,13 +5,15 @@
 The records are the JSON files in content/facts/, and docs/conventions/knowledge-base.md says
 how to write one. Each file must pass content/facts.schema.json; once they all do, this checks
 what a schema can't see: an id used twice, a coefficient fitted to a fact that isn't there, a
-range upside down, versions in different units, a date in the future. `pytest` runs it on the
-real files (tests/test_check_facts_script.py), which is what fails CI.
+question about a record that isn't, a range upside down, versions in different units, a date
+in the future. `pytest` runs it on the real files (tests/test_check_facts_script.py), which is
+what fails CI. Each record also says how it reads on an expert's list
+(scripts/expert_questions.py, #15).
 """
 
 import json
 import sys
-from collections.abc import Iterator, Mapping, Set
+from collections.abc import Iterator, Mapping
 from dataclasses import dataclass
 from datetime import date, timedelta
 from pathlib import Path
@@ -43,14 +45,47 @@ class Record:
     file: str
     data: Mapping[str, Any]
 
+    # How an expert's list names the kind: a fact goes unnamed.
+    KIND: ClassVar[str] = ""
+
     @property
     def id(self) -> str:
         return str(self.data["id"])
 
-    def problems(self, facts: Set[str], latest: date) -> Iterator[Problem]:
-        """What the schema can't see, given the ids of all the facts and the latest date that
+    @property
+    def area(self) -> str:
+        return self.id.split(".")[0]
+
+    @property
+    def open(self) -> bool:
+        """Whether an expert is still to check it."""
+        return bool(self.data["status"] == "source only")
+
+    def problems(self, records: Mapping[str, Record], latest: date) -> Iterator[Problem]:
+        """What the schema can't see, given all the records by id and the latest date that
         isn't in the future."""
         raise NotImplementedError
+
+    def listing(self) -> str:
+        """The record on an expert's list, as Markdown."""
+        kind = f" ({self.KIND})" if self.KIND else ""
+        lines = [f"- **{self.id}**{kind}: {self._text()}"]
+        lines += [f"  - {detail}" for detail in self._details()]
+        return "\n".join(lines) + "\n"
+
+    def _text(self) -> str:
+        return str(self.data["claim"])
+
+    def _details(self) -> Iterator[str]:
+        raise NotImplementedError
+
+    def _number(self, measure: Mapping[str, Any]) -> str:
+        """A value or a range with its unit, or nothing."""
+        if "value" in measure:
+            return f"{measure['value']} {measure['unit']}"
+        if "range" in measure:
+            return f"{measure['range']['min']}–{measure['range']['max']} {measure['unit']}"
+        return ""
 
     def _problem(self, what: str) -> Problem:
         return Problem(self.file, self.id, what)
@@ -69,7 +104,7 @@ class Record:
 class Fact(Record):
     """What the sources say, a version for each that disagrees."""
 
-    def problems(self, facts: Set[str], latest: date) -> Iterator[Problem]:
+    def problems(self, records: Mapping[str, Record], latest: date) -> Iterator[Problem]:
         versions = self.data["versions"]
         for version in versions:
             yield from self._range(version)
@@ -78,23 +113,62 @@ class Fact(Record):
         if len(units) > 1:
             yield self._problem(f"versions in different units: {', '.join(units)}")
 
+    def _details(self) -> Iterator[str]:
+        for version in self.data["versions"]:
+            said = ", ".join(part for part in (self._number(version), version.get("note")) if part)
+            source = f"[{version['source']['title']}]({version['source']['url']})"
+            yield f"{said + ': ' if said else ''}{source}, checked {version['checked']}"
+
 
 @dataclass(frozen=True, slots=True)
 class Coefficient(Record):
     """A number the model is tuned with that no source states, fitted to facts."""
 
-    def problems(self, facts: Set[str], latest: date) -> Iterator[Problem]:
+    KIND: ClassVar[str] = "a coefficient"
+
+    def problems(self, records: Mapping[str, Record], latest: date) -> Iterator[Problem]:
         yield from self._range(self.data)
         yield from self._date(self.data["fitted"], latest)
         for fact in self.data["fitted_to"]:
-            if fact not in facts:
+            if not isinstance(records.get(fact), Fact):
                 yield self._problem(f"fitted to {fact}, which isn't a fact here")
+
+    def _details(self) -> Iterator[str]:
+        facts = ", ".join(self.data["fitted_to"])
+        yield f"{self._number(self.data)}, fitted to {facts} on {self.data['fitted']}"
+
+
+@dataclass(frozen=True, slots=True)
+class Question(Record):
+    """What no source answers, open until an expert answers it."""
+
+    KIND: ClassVar[str] = "a question"
+
+    @property
+    def open(self) -> bool:
+        return True
+
+    def problems(self, records: Mapping[str, Record], latest: date) -> Iterator[Problem]:
+        for about in self.data.get("about", []):
+            if about not in records:
+                yield self._problem(f"about {about}, which isn't a record here")
+
+    def _text(self) -> str:
+        return str(self.data["question"])
+
+    def _details(self) -> Iterator[str]:
+        if "about" in self.data:
+            yield f"About: {', '.join(self.data['about'])}"
 
 
 class FactFile:
     """One JSON file of records."""
 
-    KINDS: ClassVar[dict[str, type[Record]]] = {"fact": Fact, "coefficient": Coefficient}
+    KINDS: ClassVar[dict[str, type[Record]]] = {
+        "fact": Fact,
+        "coefficient": Coefficient,
+        "question": Question,
+    }
 
     def __init__(self, path: Path, validator: Draft202012Validator) -> None:
         self._name = path.name
@@ -143,22 +217,23 @@ class KnowledgeBase:
         return found or list(self._between_records())
 
     def summary(self) -> str:
-        records = len(self._records())
+        records = len(self.records())
         files = len(self._files)
         return f"{records} records in {files} file{'' if files == 1 else 's'}: fine."
 
-    def _records(self) -> list[Record]:
+    def records(self) -> list[Record]:
+        """All the files' records, in the files' order, once there are no problems."""
         return [record for file in self._files for record in file.records]
 
     def _between_records(self) -> Iterator[Problem]:
-        records = self._records()
-        facts = {record.id for record in records if isinstance(record, Fact)}
+        records = self.records()
+        by_id = {record.id: record for record in records}
         seen: set[str] = set()
         for record in records:
             if record.id in seen:
                 yield Problem(record.file, record.id, "this id is used twice")
             seen.add(record.id)
-            yield from record.problems(facts, self._latest)
+            yield from record.problems(by_id, self._latest)
 
 
 def main(base: KnowledgeBase | None = None) -> int:
