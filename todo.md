@@ -104,7 +104,7 @@ Tasks marked *Iteration 1–3* are planned into the board's first two-week itera
 - [x] Every action of the spec's controls table, on a PC and on a phone (left thumb: walk and pace; right: cowstails, jumar, oxygen flow; taps on the slope for the ice axe and crampons)
 - [x] Buttons at least the size of a fingertip; climbing in landscape
 - [x] Pointer Events; a test checks that keys and touches give the same actions
-- [ ] Done gate
+- [x] Done gate
 
 ### Task 11: Rendering: the slope in layers with PixiJS ([#19](https://github.com/albalaeff/Everest-Game/issues/19)) · *Iteration 2*
 - [ ] PixiJS draws the slope, a few parallax layers, a placeholder climber silhouette and a camera that follows the climber
