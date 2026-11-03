@@ -3,7 +3,8 @@
 import json
 import os
 import subprocess
-from collections.abc import Sequence
+from collections.abc import Callable, Sequence
+from dataclasses import replace
 from datetime import datetime, timedelta
 from pathlib import Path
 from typing import Any
@@ -16,6 +17,8 @@ from scripts.check_setup import (
     EnvFile,
     LastCheck,
     Pins,
+    Toolchain,
+    Which,
     claude_cli,
     claude_prices,
     claude_scratchpad,
@@ -28,6 +31,7 @@ from scripts.check_setup import (
     github_access,
     has_database,
     has_settings,
+    login_path,
     main_checkout,
     node,
     poppler,
@@ -496,16 +500,33 @@ def test_poppler_is_optional() -> None:
     assert poppler(lambda name: f"/usr/bin/{name}").ok
 
 
+def on_path(name: str) -> str | None:
+    """A fake `shutil.which` on a machine that has everything."""
+    return f"/usr/bin/{name}"
+
+
 def test_node_24_or_later_runs_the_game_s_checks() -> None:
-    check = node(runner({"node --version": (0, "v24.11.0\n")}))
+    check = node(on_path, runner({"node --version": (0, "v24.11.0\n")}))
 
     assert check.ok
     assert check.detail == "v24.11.0"
-    assert node(runner({"node --version": (0, "v25.1.0\n")})).ok
+    assert node(on_path, runner({"node --version": (0, "v25.1.0\n")})).ok
+
+
+def test_node_runs_the_one_found_on_the_path_it_is_given() -> None:
+    # #108: the manager's PATH and a new terminal's are told apart by what each finds.
+    ran: list[str] = []
+
+    def run(command: Sequence[str], **_: Any) -> subprocess.CompletedProcess[str]:
+        ran.append(command[0])
+        return subprocess.CompletedProcess(command, 0, "v24.11.0\n", "")
+
+    assert node(lambda name: f"C:/Program Files/nodejs/{name}.exe", run).ok
+    assert ran == ["C:/Program Files/nodejs/node.exe"]
 
 
 def test_no_node_says_how_to_install_it() -> None:
-    check = node(runner({}))
+    check = node(lambda name: None, runner({}))
 
     assert not check.ok and check.required
     assert check.detail == "not installed"
@@ -513,11 +534,103 @@ def test_no_node_says_how_to_install_it() -> None:
 
 
 def test_an_older_node_says_which_it_found() -> None:
-    check = node(runner({"node --version": (0, "v22.20.0\n")}))
+    check = node(on_path, runner({"node --version": (0, "v22.20.0\n")}))
 
     assert not check.ok
     assert "v22.20.0" in check.detail
     assert "winget" in check.fix
+
+
+# --- what an agent needs (#108) --------------------------------------------------------------
+
+
+class Paths:
+    """A fake `shutil.which` on a PATH of one's own: the programs each PATH has."""
+
+    def __init__(self, found: dict[str, set[str]]) -> None:
+        self.found = found
+
+    def __call__(self, program: str, path: str) -> str | None:
+        return f"{path}/{program}" if program in self.found.get(path, set()) else None
+
+
+def tool(name: str) -> Callable[[Which], Check]:
+    """A check of a tool by its name, as `uv` is."""
+
+    def check(which: Which) -> Check:
+        found = which(name)
+        if found:
+            return Check(name, True, f"at {found}")
+        return Check(name, False, "not installed", f"install {name}")
+
+    return check
+
+
+def toolchain(found: dict[str, set[str]], fresh: str | None = "terminal") -> Toolchain:
+    """The manager's PATH is "manager"; a new terminal's, `fresh`."""
+
+    def login() -> str | None:
+        return fresh
+
+    return Toolchain(
+        "manager",
+        tools=(tool("uv"), tool("node")),
+        also=(lambda: Check("Claude Code trust", True, "this checkout is trusted"),),
+        fresh=login,
+        which_on=Paths(found),
+    )
+
+
+def test_an_agent_s_tools_are_looked_for_on_the_manager_s_path() -> None:
+    def unread() -> str | None:
+        raise AssertionError("a new terminal's PATH is read only when a tool is missing")
+
+    found = replace(toolchain({"manager": {"uv", "node"}}), fresh=unread).checks()
+
+    assert [check.name for check in found] == ["uv", "node", "Claude Code trust"]
+    assert all(check.ok for check in found)
+    assert found[1].detail == "at manager/node"
+
+
+def test_a_tool_missing_everywhere_says_how_to_install_it() -> None:
+    found = toolchain({"manager": {"uv"}, "terminal": {"uv"}}).checks()
+
+    assert not found[1].ok and found[1].needed
+    assert found[1].detail == "not installed"
+    assert found[1].fix == "install node"
+
+
+def test_a_tool_installed_since_the_manager_started_says_to_restart_it() -> None:
+    # #108: #16, #17 and #18 each stopped on a tool installed after the manager started.
+    found = toolchain({"manager": {"uv"}, "terminal": {"uv", "node"}}).checks()
+
+    assert found[0].ok
+    assert not found[1].ok and found[1].needed
+    assert found[1].detail == (
+        "at terminal/node on the PATH a new terminal gets, not on the manager's, which its "
+        "agents get: installed since it started"
+    )
+    assert "restart the agent manager" in found[1].fix
+
+
+def test_a_new_terminal_s_path_that_can_t_be_read_leaves_the_tool_missing() -> None:
+    found = toolchain({"manager": {"uv"}}, fresh=None).checks()
+
+    assert found[1].detail == "not installed"
+
+
+def test_an_agent_needs_claude_code_and_the_project_s_own_tools() -> None:
+    names = {check.__name__ for check in Toolchain("x").tools}
+
+    assert {"uv", "claude_cli", "node"} <= names
+
+
+def test_a_new_terminal_s_path_is_a_login_shell_s_outside_windows() -> None:
+    shell = runner({"-lc": (0, "/home/me/.local/bin:/usr/bin")})
+
+    assert login_path(shell, windows=False) == "/home/me/.local/bin:/usr/bin"
+    assert login_path(runner({"-lc": (1, "")}), windows=False) is None
+    assert login_path(runner({}), windows=False) is None  # no such shell
 
 
 # --- the report ------------------------------------------------------------------------------

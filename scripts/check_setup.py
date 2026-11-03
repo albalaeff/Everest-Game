@@ -11,7 +11,9 @@ the start of every session (.claude/skills/carryon/SKILL.md): with `--unless-rec
 says what the last check here found instead, within 8 hours of it (`LastCheck`).
 
 The project's own pieces (a token the game's tooling needs, once there is one) go in
-`PROJECT_CHECKS` below, each a function that returns a `Check`.
+`PROJECT_CHECKS` below, each a function that returns a `Check`. Those, with uv and Claude
+Code, are what an agent needs (`Toolchain`): the agent manager looks at them before it starts
+one on code work (#108).
 """
 
 import argparse
@@ -486,10 +488,12 @@ def poppler(which: Which = shutil.which) -> Check:
     )
 
 
-def node(run: Run = subprocess.run) -> Check:
-    """Node 24 or later, with its npm, which runs the game's type check and tests."""
+def node(which: Which = shutil.which, run: Run = subprocess.run) -> Check:
+    """Node 24 or later, with its npm, which runs the game's type check and tests: the one
+    `which` finds, so that the agent manager's PATH and a new terminal's tell apart (#108)."""
     fix = "winget install --id OpenJS.NodeJS.LTS (or brew install node), then a new terminal"
-    found = _run(run, ["node", "--version"])
+    program = which("node")
+    found = _run(run, [program, "--version"]) if program else None
     if found is None or found.returncode != 0:
         return Check("Node", False, "not installed", fix)
     version = found.stdout.strip()
@@ -499,8 +503,106 @@ def node(run: Run = subprocess.run) -> Check:
     return Check("Node", False, f"{version}, and the game needs 24 or later", fix)
 
 
-# The project's own pieces, each a function that returns a Check, run after the generic ones.
-PROJECT_CHECKS: list[Callable[[], Check]] = [node]
+# The project's own pieces, each a function of the `which` to find its tools with that returns
+# a Check, run after the generic ones; an agent needs each of them (`Toolchain`, #108).
+PROJECT_CHECKS: list[Callable[[Which], Check]] = [node]
+
+
+# --- what an agent needs (#108) --------------------------------------------------------------
+
+
+def login_path(run: Run = subprocess.run, windows: bool = sys.platform == "win32") -> str | None:
+    """The PATH a new terminal gets, which an installer changes and a running program doesn't
+    see: on Windows the system's and the user's, as the registry holds them; elsewhere a login
+    shell's. None when it can't be read."""
+    if windows:
+        return _registry_path()
+    shell = os.environ.get("SHELL") or "/bin/sh"
+    try:
+        found = run(
+            [shell, "-lc", 'printf %s "$PATH"'],
+            capture_output=True,
+            text=True,
+            check=False,
+            timeout=10,
+        )
+    except OSError, subprocess.SubprocessError:
+        return None
+    if found.returncode != 0:
+        return None
+    return found.stdout.strip() or None
+
+
+def _registry_path() -> str | None:
+    if sys.platform != "win32":
+        return None
+    import winreg
+
+    keys = (
+        (
+            winreg.HKEY_LOCAL_MACHINE,
+            r"SYSTEM\CurrentControlSet\Control\Session Manager\Environment",
+        ),
+        (winreg.HKEY_CURRENT_USER, "Environment"),
+    )
+    parts = []
+    for root, name in keys:
+        try:
+            with winreg.OpenKey(root, name) as key:
+                value, _ = winreg.QueryValueEx(key, "Path")
+        except OSError:
+            continue
+        parts.append(os.path.expandvars(str(value)))
+    return os.pathsep.join(part for part in parts if part) or None
+
+
+@dataclass(frozen=True, slots=True)
+class Toolchain:
+    """What an agent of the agent manager's needs of the machine (#108): the tools it runs
+    (`tools`), found on `path`, the PATH the manager gives its agents, its own; and the rest
+    (`also`), Claude Code's trust in the checkout. #16, #17 and #18 each wrote their code
+    blind for want of Node, then stopped.
+
+    A tool `path` lacks that the PATH a new terminal gets has (`fresh`) was installed after
+    the manager started: it says so, and that a restart of the manager gives it to the
+    agents. That PATH is read only when a tool is missing."""
+
+    path: str
+    tools: tuple[Callable[[Which], Check], ...] = (uv, claude_cli, *PROJECT_CHECKS)
+    also: tuple[Callable[[], Check], ...] = (lambda: claude_trust(root=main_checkout()),)
+    fresh: Callable[[], str | None] = login_path
+    which_on: WhichOn = lambda program, path: shutil.which(program, path=path)
+
+    RESTART: ClassVar[str] = (
+        "restart the agent manager: Ctrl+C, then start it again in a new terminal, whose PATH "
+        "has it"
+    )
+
+    def checks(self) -> list[Check]:
+        found = [tool(self._which(self.path)) for tool in self.tools]
+        fresh = self.fresh() if not all(check.ok for check in found) else None
+        if fresh and fresh != self.path:
+            found = [
+                self._again(tool, check, fresh)
+                for tool, check in zip(self.tools, found, strict=True)
+            ]
+        return found + [check() for check in self.also]
+
+    def _again(self, tool: Callable[[Which], Check], check: Check, fresh: str) -> Check:
+        """A check that failed, tried on the PATH a new terminal gets."""
+        if check.ok:
+            return check
+        again = tool(self._which(fresh))
+        if not again.ok:
+            return check
+        detail = (
+            f"{again.detail} on the PATH a new terminal gets, not on the manager's, which its "
+            "agents get: installed since it started"
+        )
+        return Check(check.name, False, detail, self.RESTART, check.required)
+
+    def _which(self, path: str) -> Which:
+        return lambda program: self.which_on(program, path)
 
 
 # --- the report ------------------------------------------------------------------------------
@@ -603,7 +705,7 @@ def all_checks() -> list[Check]:
         vscode_python(),
         poppler(),
     ]
-    return checks + [check() for check in PROJECT_CHECKS]
+    return checks + [check(shutil.which) for check in PROJECT_CHECKS]
 
 
 def main(argv: Sequence[str] | None = None) -> None:
