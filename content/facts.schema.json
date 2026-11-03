@@ -108,7 +108,7 @@
       "description": "What one source says of the death: when, where, of what, and where on the climb. A source that says only some of it gives only that.",
       "type": "object",
       "properties": {
-        "date": { "$ref": "#/$defs/date" },
+        "date": { "$ref": "#/$defs/partial-date" },
         "place": { "$ref": "#/$defs/text" },
         "altitude": { "description": "Metres above sea level.", "type": "number" },
         "cause": { "$ref": "#/$defs/cause" },
@@ -138,8 +138,8 @@
       ]
     },
     "phase": {
-      "description": "Where on the climb: the walk to or from base camp, base camp itself, on the way up, in a camp above base camp, or on the way down from a summit attempt.",
-      "enum": ["approach", "base-camp", "ascent", "camp", "descent"]
+      "description": "Where on the climb, in the Himalayan Database's own classes: on the way to base camp, at base camp, fixing the route, on the way up or down on a summit bid, in the expedition's evacuation, or other.",
+      "enum": ["approach", "base-camp", "route-preparation", "ascent", "descent", "evacuation", "other"]
     },
     "accident": {
       "description": "An accident the chronicle tells in full: its dates, weather and crowd, the chain of decisions and conditions, and its dead.",
@@ -240,6 +240,13 @@
     },
     "id": { "type": "string", "pattern": "^[a-z0-9-]+(\\.[a-z0-9-]+)+$" },
     "date": { "type": "string", "pattern": "^\\d{4}-\\d{2}-\\d{2}$", "format": "date" },
+    "partial-date": {
+      "description": "A date as precise as its source gives it: the day, or the month (1990-05), or the year (1990).",
+      "anyOf": [
+        { "$ref": "#/$defs/date" },
+        { "type": "string", "pattern": "^\\d{4}(-(0[1-9]|1[0-2]))?$" }
+      ]
+    },
     "status": { "enum": ["expert-reviewed", "source only"] },
     "text": { "type": "string", "minLength": 1 }
   }

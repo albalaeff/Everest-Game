@@ -6,10 +6,11 @@ The records are the JSON files in content/facts/, and docs/conventions/knowledge
 how to write one. Each file must pass content/facts.schema.json; once they all do, this checks
 what a schema can't see: an id used twice, a coefficient fitted to a fact that isn't there, a
 question about a record that isn't, a range upside down, versions in different units, a date
-in the future, a medicine's dose, a death no source dates or places, an accident naming a death
-that isn't there (#14). `pytest` runs it on the real files (tests/test_check_facts_script.py),
-which is what fails CI, and holds the chronicle to the Himalayan Database's totals there. Each
-record also says how it reads on an expert's list (scripts/expert_questions.py, #15).
+in the future, a medicine's dose, a death no source dates or gives the cause of, an accident
+naming a death that isn't there (#14). `pytest` runs it on the real files
+(tests/test_check_facts_script.py), which is what fails CI, and holds the chronicle to the
+Himalayan Database's totals there. Each record also says how it reads on an expert's list
+(scripts/expert_questions.py, #15).
 """
 
 import json
@@ -30,6 +31,13 @@ SCHEMA = ROOT / "content" / "facts.schema.json"
 # An amount of a medicine, alone or per something (mg/kg): 2 L/min of oxygen isn't one
 DOSE_UNIT = re.compile(r"(?:mg|mcg|µg|μg|g|ml|IU)(?:/\S+)?", re.IGNORECASE)
 DOSE = re.compile(rf"\d\s*{DOSE_UNIT.pattern}\b", re.IGNORECASE)
+
+
+def first_day(text: str) -> date:
+    """The first day a date can be, as precise as its source gives it: the day (1990-05-11), the
+    month (1990-05) or the year (1990)."""
+    year, month, day = [*text.split("-"), "1", "1"][:3]
+    return date(int(year), int(month), int(day))
 
 
 @dataclass(frozen=True, slots=True)
@@ -125,7 +133,7 @@ class Record:
             yield self._problem(what, about)
 
     def _date(self, text: str, latest: date, about: str = "") -> Iterator[Problem]:
-        if date.fromisoformat(text) > latest:
+        if first_day(text) > latest:
             yield self._problem(f"the date {text} is in the future", about)
 
     def _doses(self, texts: Iterable[str], units: Iterable[str]) -> Iterator[Problem]:
@@ -213,7 +221,9 @@ class Death(Record):
     """One of the recorded dead: what each source says of the death (#14)."""
 
     KIND: ClassVar[str] = "a death"
-    TOLD: ClassVar[tuple[str, ...]] = ("date", "place", "cause")
+    # What some source has to say. The place too, where one names it: the Himalayan Database
+    # gives the altitude, and names the place only in its note.
+    TOLD: ClassVar[tuple[str, ...]] = ("date", "cause")
 
     def problems(self, records: Mapping[str, Record], latest: date) -> Iterator[Problem]:
         versions = self.data["versions"]
@@ -227,11 +237,9 @@ class Death(Record):
 
     @property
     def day(self) -> date:
-        """The earliest day its sources give."""
+        """The earliest day its sources give: a month's or a year's first, where that's all."""
         return min(
-            date.fromisoformat(version["date"])
-            for version in self.data["versions"]
-            if "date" in version
+            first_day(version["date"]) for version in self.data["versions"] if "date" in version
         )
 
     def _text(self) -> str:

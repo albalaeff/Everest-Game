@@ -93,20 +93,25 @@ The chronicle ([../../spec.md](../../spec.md) → Real accidents as training sce
       "cause": "exposure",
       "phase": "descent",
       "note": "Caught by the storm on the way down.",
-      "source": { "title": "The Himalayan Database", "url": "https://example.com/deaths" },
+      "source": {
+        "title": "The Himalayan Database, Autumn-Winter 2025: 1990 expedition EVER90101, member 3",
+        "url": "https://www.himalayandatabase.com/"
+      },
       "checked": "2026-11-01"
     }
   ]
 }
 ```
 
-- **`id`:** `deaths.`, the date, and the name, as `deaths.1990-05-11-a-climber`.
+- **`id`:** `deaths.`, the date, and the name, as `deaths.1990-05-11-a-climber`: the earliest date its sources give, as precise as they give it (`deaths.1990-a-climber` for a year alone). Two of one name on one day are `-2`, `-3`. Once written, an id stays, even when a later source gives another date: the accidents name their dead by it.
 - **`name`, `citizenship`:** as the source gives them; **`hired`:** `true` for a Sherpa, a porter or a high-altitude worker on the expedition's payroll.
-- **A version** says what one source says, and only that: `date`, `place`, `altitude` in metres, `cause`, `phase`, and a `note` for what the words add, with the `source` and `checked` of a fact's version. Between them, the versions have to give the date, the place and the cause. One version when the sources agree; where they disagree, on the date or the cause, one for each: the game shows both.
+- **A version** says what one source says, and only that: `date`, `place`, `altitude` in metres, `cause`, `phase`, and a `note` for what the words add, with the `source` and `checked` of a fact's version. The `date` is as precise as the source gives it: the day, the month (`1990-05`) or the year (`1990`). Between them, the versions have to give the date and the cause, and the place wherever a source names one. One version when the sources agree; where they disagree, on the date or the cause, one for each: the game shows both.
 - **`cause`** is one of the Himalayan Database's classes: `altitude-sickness`, `exhaustion`, `exposure` (with frostbite), `fall`, `crevasse`, `icefall-collapse`, `avalanche`, `falling-rock-or-ice`, `disappearance`, `illness` (not of altitude), `other`, `unknown`. What a source says beyond the class (HAPE, a heart attack) goes in the `note`.
-- **`phase`** is where on the climb: `approach` (the walk to or from base camp), `base-camp`, `ascent`, `camp` (above base camp, between climbs), `descent` (on the way down from a summit attempt). Leave it out when no source says.
+- **`phase`** is where on the climb, in the database's classes too: `approach` (on the way to base camp), `base-camp`, `route-preparation` (fixing the route and carrying loads up it, the Sherpas' work), `ascent` and `descent` (on a summit bid, up or down), `evacuation` (as the expedition leaves the mountain), `other`. Leave it out when no source says.
 
-The real files' test holds the chronicle to the Himalayan Database's totals: as many deaths dated through 2025 as the fact `deaths.recorded-through-2025` says, and in spring 2026 as `deaths.recorded-spring-2026`, two facts in the same file. A record missed, or one too many, fails CI.
+The Himalayan Database's version of each death comes from its own tables, by `scripts/himalayan_deaths.py`: download the database (its site → Downloads, free), then `uv run python scripts/himalayan_deaths.py <the zip> --edition "Autumn-Winter 2025"`, the update as the downloads page names it, and `--checked` for the day it was read when not today. Each of Everest's dead in its members table becomes a record, its source naming the member (`1990 expedition EVER90101, member 3`): that is how a later run finds the record again. Run on a later update, it writes the database's versions afresh and keeps every other source's version and every other record; a reviewed death the database now tells otherwise goes back to `source only`. `--columns` lists what its tables hold.
+
+The real files' test holds the chronicle to the totals: as many deaths dated through 2025 as the fact `deaths.recorded-through-2025` says, and in spring 2026 as `deaths.recorded-spring-2026`, two facts in the same file, between the lowest and the highest of their versions. A death is dated by the earliest date its sources give. A record missed, or one too many, fails CI.
 
 ## An accident
 

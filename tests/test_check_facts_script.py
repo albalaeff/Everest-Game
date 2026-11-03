@@ -75,8 +75,8 @@ def accident(id: str = "accidents.1990-storm", **fields: Any) -> dict[str, Any]:
     return record | {"scenario": "A storm on the ridge"} | fields
 
 
-def without(record: dict[str, Any], name: str) -> dict[str, Any]:
-    return {key: value for key, value in record.items() if key != name}
+def without(record: dict[str, Any], *names: str) -> dict[str, Any]:
+    return {key: value for key, value in record.items() if key not in names}
 
 
 def base(folder: Path, *records: dict[str, Any], name: str = "facts.json") -> KnowledgeBase:
@@ -311,12 +311,29 @@ class TestGoodChronicleRecords:
             death(hired=True, status="expert-reviewed"),
             death(versions=[death_version(), death_version(date="1990-05-10")]),
             death(versions=[death_version(), words("Found in 1999.")]),
-            death(versions=[without(without(death_version(), "altitude"), "phase")]),
+            death(versions=[death_version(date="1990")]),
+            death(versions=[death_version(date="1990-05")]),
+            death(versions=[without(death_version(), "place", "altitude", "phase")]),
         ],
-        ids=["one source", "hired, reviewed", "dates differ", "a second in words", "the least"],
+        ids=[
+            "one source",
+            "hired, reviewed",
+            "dates differ",
+            "a second in words",
+            "the year only",
+            "the month only",
+            "the least",
+        ],
     )
     def test_a_death_passes(self, tmp_path: Path, record: dict[str, Any]) -> None:
         assert problems(tmp_path, record) == []
+
+    @pytest.mark.parametrize(
+        "phase",
+        ["approach", "base-camp", "route-preparation", "ascent", "descent", "evacuation", "other"],
+    )
+    def test_a_death_s_phase_is_one_the_database_names(self, tmp_path: Path, phase: str) -> None:
+        assert problems(tmp_path, death(versions=[death_version(phase=phase)])) == []
 
     def test_an_accident_passes(self, tmp_path: Path) -> None:
         assert problems(tmp_path, death(), accident()) == []
@@ -352,11 +369,13 @@ class TestBadChronicleRecords:
     def test_a_death_s_cause_is_one_the_database_names(self, tmp_path: Path, cause: str) -> None:
         assert problems(tmp_path, death(versions=[death_version(cause=cause)])) != []
 
-    @pytest.mark.parametrize("phase", ["summit", "Descent", ""])
-    def test_a_death_s_phase_is_one_of_the_route_s(self, tmp_path: Path, phase: str) -> None:
+    @pytest.mark.parametrize("phase", ["summit", "Descent", "camp", ""])
+    def test_a_death_s_phase_is_no_other(self, tmp_path: Path, phase: str) -> None:
         assert problems(tmp_path, death(versions=[death_version(phase=phase)])) != []
 
-    @pytest.mark.parametrize("date_", ["11.05.1990", "1990-05", "May 1990"])
+    @pytest.mark.parametrize(
+        "date_", ["11.05.1990", "1990-13", "1990-05-32", "1990-5", "May 1990", "199"]
+    )
     def test_a_death_s_date_is_a_real_date(self, tmp_path: Path, date_: str) -> None:
         assert problems(tmp_path, death(versions=[death_version(date=date_)])) != []
 
@@ -394,19 +413,26 @@ class TestBadChronicleRecords:
 
 @pytest.mark.unit
 class TestAcrossTheChronicle:
-    @pytest.mark.parametrize("name", ["date", "place", "cause"])
-    def test_some_source_says_a_death_s_date_place_and_cause(
-        self, tmp_path: Path, name: str
-    ) -> None:
+    @pytest.mark.parametrize("name", ["date", "cause"])
+    def test_some_source_says_a_death_s_date_and_cause(self, tmp_path: Path, name: str) -> None:
         versions = [without(death_version(), name), words("Also died.")]
         found = problems(tmp_path, death(versions=versions))
         assert len(found) == 1
         assert name in found[0]
 
-    def test_a_death_s_date_in_the_future_fails(self, tmp_path: Path) -> None:
-        found = problems(tmp_path, death(versions=[death_version(date="2026-11-04")]))
+    def test_a_death_no_source_places_passes(self, tmp_path: Path) -> None:
+        """The Himalayan Database gives the altitude, and names the place only in its note."""
+        assert problems(tmp_path, death(versions=[without(death_version(), "place")])) == []
+
+    @pytest.mark.parametrize("date_", ["2026-11-04", "2026-12", "2027"])
+    def test_a_death_s_date_in_the_future_fails(self, tmp_path: Path, date_: str) -> None:
+        found = problems(tmp_path, death(versions=[death_version(date=date_)]))
         assert len(found) == 1
-        assert "2026-11-04" in found[0]
+        assert date_ in found[0]
+
+    def test_a_death_this_month_or_year_isn_t_in_the_future(self, tmp_path: Path) -> None:
+        for date_ in ("2026-11", "2026"):
+            assert problems(tmp_path, death(versions=[death_version(date=date_)])) == []
 
     def test_a_death_s_check_date_in_the_future_fails(self, tmp_path: Path) -> None:
         assert len(problems(tmp_path, death(versions=[death_version(checked="2027-01-01")]))) == 1
@@ -416,6 +442,16 @@ class TestAcrossTheChronicle:
         [record] = base(tmp_path, death(versions=versions)).records()
         assert isinstance(record, Death)
         assert record.day == date(1990, 5, 10)
+
+    @pytest.mark.parametrize(
+        "date_, day", [("1990", date(1990, 1, 1)), ("1990-05", date(1990, 5, 1))]
+    )
+    def test_a_death_dated_by_its_year_or_month_counts_from_its_first_day(
+        self, tmp_path: Path, date_: str, day: date
+    ) -> None:
+        [record] = base(tmp_path, death(versions=[death_version(date=date_)])).records()
+        assert isinstance(record, Death)
+        assert record.day == day
 
     def test_an_accident_names_deaths_that_are_here(self, tmp_path: Path) -> None:
         found = problems(tmp_path, accident())
