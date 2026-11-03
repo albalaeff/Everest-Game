@@ -117,18 +117,21 @@ You can also turn around earlier: symptoms, strong wind or a queue at any stage 
 
 **Survival decisions.** The game regularly poses choices without an obvious answer: go in a short window or wait for the next one, stand in the queue or turn around, help a stranger or rescue your own people. Consequences often appear not immediately but hours later — as in reality.
 
-| Action | Controls (draft) |
-| --- | --- |
-| Walk up or down the slope | A / D |
-| Pace: rest step or faster | Shift / Ctrl |
-| Clip a cowstail onto the next rope | E (first cowstail), R (second) |
-| Slide the jumar along the fixed rope | Hold Space |
-| Ice axe and crampons on steep ice | Mouse |
-| Oxygen flow | + / − |
-| Check yourself: symptoms, pulse oximeter, fingers | Tab |
-| Radio: guide, Base Camp, your group | Q |
+| Action | On a PC | On a phone |
+| --- | --- | --- |
+| Walk along the slope | A / D | Joystick left, right |
+| Up and down ladders and ropes | W / S | Joystick up, down |
+| Pace: rest step or faster | Hold C / hold Shift | Joystick: a small push is the rest step, the outer ring is faster |
+| Clip a cowstail onto the next rope | E (first cowstail), R (second) | [Clip 1], [Clip 2] |
+| Slide the jumar along the fixed rope | Hold Space | Hold [Jumar] |
+| Ice axe and crampons on steep ice | Click the slope: above the climber the ice axe, below it the crampons | Tap the slope, the same way |
+| Oxygen flow | + / − | [O2 +], [O2 -] |
+| Check yourself: symptoms, pulse oximeter, fingers | Tab or its button | [Check yourself] |
+| Radio: guide, Base Camp, your group | Q or its button | [Radio] |
+| Inventory | I or its button | [Inventory] |
+| Set up a tent, in camp | T or its button | [Set up tent] |
 
-On a phone, every action in the table has a touch control instead of its key (see Phone and PC). No action depends on reaction speed, so a player on a phone is not at a disadvantage in co-op.
+Ctrl has no action: Ctrl+W closes the browser's tab and a web page can't stop it, so with WASD one slip would close the game. A gamepad plays the same actions (see Phone and PC). No action depends on reaction speed, so a player on a phone is not at a disadvantage in co-op.
 
 | Stage of one expedition | Play time, h |
 | --- | --- |
@@ -263,7 +266,7 @@ Sources: [Capacitor](https://capacitorjs.com/), [Apple Developer Program](https:
 
 **What changes on a phone**
 
-- **Controls.** An input layer turns keys, the mouse, touch and a gamepad into the same game actions, and the simulation sees only the actions. On a phone the left thumb walks and sets the pace; the right one has the cowstails, the jumar (hold) and the oxygen flow; the ice axe and crampons are taps on the slope. “Check yourself” and the radio are buttons, and the radio has ready phrases, because typing on a phone in the middle of a climb is slow.
+- **Controls.** An input layer turns keys, the mouse, touch and a gamepad into the same game actions, and the simulation sees only the actions. On a phone the left thumb walks and sets the pace on a round joystick, which appears where the thumb lands; the right one has the cowstails, the jumar (hold) and the oxygen flow; the ice axe and crampons are taps on the slope. Both thumbs work at once. Buttons are at least 48 px, the right thumb's 64 px, and they stay clear of the notch. Climbing is in landscape: held upright, the phone asks to be turned, because iPhones don't let a web page turn itself. A call or a locked screen lets go of everything, so the climber doesn't walk on alone. “Check yourself”, the radio, the inventory and the tent are buttons, and the radio has ready phrases, because typing on a phone in the middle of a climb is slow. On a gamepad the left stick is the joystick, and the triggers use the ice axe and crampons just ahead of the climber, since a gamepad can't point.
 - **Screen.** Climbing is in landscape; camp, menus, training cards and the debrief work in portrait too. The HTML interface adapts to the screen, and every button is at least the size of a fingertip.
 - **Performance.** Target: 30 frames per second on a mid-range phone, 60 where it can. A quality setting reduces the parallax layers and the particles. In camp, when nothing moves, the frame rate drops to save the battery.
 - **Interruptions.** A call, another app or a locked screen pauses the single-player game and keeps a resume point. The resume point only continues the expedition: it is overwritten as the player goes, so it cannot replay a decision, and saves stay in camps only. In co-op, leaving the game is a disconnection: the AI takes the climber to the nearest camp, and the player rejoins with the same code.

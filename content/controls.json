@@ -1,0 +1,30 @@
+{
+  "en": {
+    "check-self": "Check yourself",
+    "radio": "Radio",
+    "inventory": "Inventory",
+    "set-up-tent": "Set up tent",
+    "oxygen-up": "O2 +",
+    "oxygen-down": "O2 -",
+    "clip-first": "Clip 1",
+    "clip-second": "Clip 2",
+    "jumar": "Jumar",
+    "hint-click": "Click the slope: ice axe, crampons",
+    "hint-tap": "Tap the slope: ice axe, crampons",
+    "turn-phone": "Turn your phone sideways to climb"
+  },
+  "ru": {
+    "check-self": "Проверить себя",
+    "radio": "Рация",
+    "inventory": "Снаряжение",
+    "set-up-tent": "Поставить палатку",
+    "oxygen-up": "O2 +",
+    "oxygen-down": "O2 -",
+    "clip-first": "Ус 1",
+    "clip-second": "Ус 2",
+    "jumar": "Жумар",
+    "hint-click": "Кликни по склону: ледоруб, кошки",
+    "hint-tap": "Коснись склона: ледоруб, кошки",
+    "turn-phone": "Поверни телефон боком, чтобы идти вверх"
+  }
+}

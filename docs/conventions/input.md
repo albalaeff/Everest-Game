@@ -1,0 +1,13 @@
+# The input layer
+
+`src/input/` turns keys, the mouse, touch and a gamepad into one set of actions ([../../spec.md](../../spec.md) → Phone and PC). It follows [../conventions.md](../conventions.md) → Modules and Objects; these are its own rules.
+
+- **An action more is a row more.** `CONTROLS` in `controls.ts` is the spec's controls table in code: a control's keys, gamepad button, place on the screen and action, with its name in `content/controls.json`, Russian and English. Every device reads the same rows, and a button comes with its row. A new `GameAction` is a line in `game-action.ts` too.
+- **`PlayerInput` is the one way out.** A device tells it what the player does, and only a change goes on, because replays and the room server keep every action: a held key is two actions, and a stick held still is none. `pace` goes before `walk`, on every device, so the same climb gives the same list.
+- **The core hears no device.** The joystick is cut into the same eight directions and three paces as the keys (`Steering`): a stick has no speed of its own, since the pace comes from the body model. A panel (`PanelRequest`) stays on the page: the core hears what comes of it.
+- **Keys go by `KeyboardEvent.code`,** not `key`: WASD then stays on a Russian layout, and `+` needs no Shift. Ctrl has no action: Ctrl+W closes the browser's tab, and a page can't stop it. Browser shortcuts and text fields keep their keys.
+- **Fingers go by `pointerId`,** so both thumbs work at once. There's no `setPointerCapture`: a touch has it already, a mouse only needs the press, and it throws on Playwright's synthetic events.
+- **Everything held can be let go.** A call, a locked screen or another window takes the releases away, so what holds on to input has a `letGo`, and `InputLayer` calls it.
+- **What reads the DOM stays thin.** Vitest runs in Node, with no DOM: a source takes its events through a small interface, which `testing/fakes.ts` fills in, and `ActionButton`, `FloatingJoystick`, `ReceivedActions`, `TouchMode` and `ControlsPage` are covered by `e2e/controls.spec.ts`.
+
+`PlainSlopeView`, `ReceivedActions` and the readouts in `index.html` stand in until the camera, the game and their own issues come (#19).

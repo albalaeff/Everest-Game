@@ -203,6 +203,19 @@ def test_only_a_get_asks_again() -> None:
     assert server.asked == [("POST", None), ("POST", None), ("GET", None)]
 
 
+def test_a_log_is_read_where_github_keeps_it_without_the_token() -> None:
+    # A job's log answers with a redirect, to storage outside the API (#18).
+    def server(request: httpx.Request) -> httpx.Response:
+        if request.url.host == "api.github.com":
+            return httpx.Response(302, headers={"Location": "https://logs.example/job.txt"})
+        assert "Authorization" not in request.headers
+        return httpx.Response(200, text="[warn] src/main.ts\n")
+
+    github = GitHub("bateks/PersonalExchangeBot", "a-token", httpx.MockTransport(server))
+
+    assert github.text("actions/jobs/7/logs") == "[warn] src/main.ts\n"
+
+
 # --- signing ---------------------------------------------------------------------------------
 
 

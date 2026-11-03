@@ -34,6 +34,8 @@ the one `origin` points to.
                                                             as text (#387); --new: only those
                                                             since Claude's last (#442)
     uv run python scripts/github.py ci feature/180-fx       CI on a branch's latest commit
+    uv run python scripts/github.py logs 1253               a CI job's whole log, by the job's
+                                                            id: filter it with grep
     uv run python scripts/github.py pr 457                  a PR in brief, with its CI (#442)
     uv run python scripts/github.py pr open pr.json         opens one, its description signed
     uv run python scripts/github.py merge 457               squashes it into develop
@@ -255,6 +257,15 @@ class GitHub:
         if method == "GET" and (etag := response.headers.get("ETag")):
             self._kept[url] = KeptAnswer(etag, response.content)
         return response.json() if response.content else None
+
+    def text(self, path: str) -> str:
+        """`path`'s plain text in the repository: a job's log, from the storage GitHub sends
+        the asker on to. httpx leaves the token behind on the way there."""
+        url = f"/repos/{self.slug}/{path}"
+        response = self._http.get(url, follow_redirects=True)
+        if response.is_error:
+            raise SystemExit(f"GET {url}: HTTP {response.status_code}: {response.text[:500]}")
+        return response.text
 
 
 # --- what needs doing ----------------------------------------------------------------------
@@ -1720,6 +1731,8 @@ def main(argv: Sequence[str] | None = None) -> None:
     )
     checking = commands.add_parser("ci", help="CI on a branch's (or commit's) latest commit")
     checking.add_argument("ref")
+    reading = commands.add_parser("logs", help="a CI job's whole log: filter it with grep")
+    reading.add_argument("job", type=int)
     pulling = commands.add_parser("pr", help="a PR in brief, with its CI; or open one (#442)")
     pulling.add_argument("what", help='the PR\'s number, or "open" to open one')
     pulling.add_argument("file", nargs="?", help="after open: a JSON file with the PR's fields")
@@ -1810,6 +1823,8 @@ def main(argv: Sequence[str] | None = None) -> None:
     elif args.command == "ci":
         sha = github.call("GET", f"commits/{args.ref}")["sha"]
         print(f"{args.ref} ({sha[:7]}): {CiRuns.at(github, sha)}")
+    elif args.command == "logs":
+        print(github.text(f"actions/jobs/{args.job}/logs"))
     elif args.command == "pr" and args.what == "open":
         asked = json.loads(Path(args.file).read_text(encoding="utf-8"))
         print(PullRequests(github).open(asked))
