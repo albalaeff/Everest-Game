@@ -43,8 +43,20 @@ jobs:
       - name: Tests
         run: uv run pytest
 
-      # The game's own checks (TypeScript: lint, types, Vitest, Playwright) join here with its
-      # project (README → Tests).
+      # The game's own checks (README → Tests); its lint and Playwright join them with #16.
+      - uses: actions/setup-node@v6
+        with:
+          node-version: "24"
+          cache: npm
+
+      - name: Install the game's dependencies
+        run: npm ci
+
+      - name: The game's type check
+        run: npm run typecheck
+
+      - name: The game's tests
+        run: npm test
 
   secrets:
     # No secret in the history (PEB#59, PEB#538): gitleaks over every commit of what's checked

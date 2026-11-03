@@ -15,19 +15,20 @@ A 2D browser game: a simulator-trainer for climbing Everest by the South route. 
 
 The game is a static TypeScript site that runs in the browser ([spec.md](spec.md) → Technical architecture): a simulation core (body, oxygen, weather, time, hazards; the same result for the same seed), agents and slope physics on it, PixiJS rendering with HTML and CSS for the interface and Web Audio for sound, and JSON content: the route, the scenarios, and the knowledge base of facts with their sources. For co-op, a room server on Cloudflare Workers runs the same core. [docs/conventions.md](docs/conventions.md) → Modules has the rules between them.
 
-The TypeScript project isn't in the repository yet: its first issue sets it up. Until then the repository holds the spec, the workflow ([CLAUDE.md](CLAUDE.md), `scripts/`, `.claude/`), the docs and the knowledge base: the fact records in `content/facts/` ([docs/conventions/knowledge-base.md](docs/conventions/knowledge-base.md)).
+So far the game is its simulation core, in `src/simulation/` ([docs/conventions/simulation-core.md](docs/conventions/simulation-core.md)), with no page yet. Beside it the repository holds the spec, the workflow ([CLAUDE.md](CLAUDE.md), `scripts/`, `.claude/`), the docs and the knowledge base: the fact records in `content/facts/` ([docs/conventions/knowledge-base.md](docs/conventions/knowledge-base.md)).
 
 ## Local development
 
 New here, or on a new workstation? [docs/developer-setup.md](docs/developer-setup.md) goes from a bare machine to a working checkout, with Claude Code doing most of it, and `uv run python scripts/check_setup.py` shows what's still missing.
 
-You need Python 3.14 and [uv](https://docs.astral.sh/uv/) for the workflow's scripts; the game's own toolchain (Node) comes with its TypeScript project.
+You need Python 3.14 and [uv](https://docs.astral.sh/uv/) for the workflow's scripts, and Node 24 with its npm for the game.
 
 ```
 uv sync                              # the scripts' dependencies, including the dev tools
+npm install                          # the game's
 ```
 
-The game: nothing to run yet. This section says how once the TypeScript project is in.
+The game has no page to open yet: `npm test` plays its simulation core (Tests below). This section says how to run the page once it's in.
 
 ## Agents
 
@@ -151,6 +152,8 @@ uv run pytest                 # everything, in parallel
 uv run pytest -m unit         # only the pure tests
 uv run pytest tests/x.py      # files or tests named: in one process, as with -n 0
 uv run ruff check && uv run ruff format --check && uv run mypy scripts
+npm run typecheck             # the game's types, and the simulation core alone: no DOM, no Node
+npm test                      # the game's tests, with Vitest
 ```
 
 - **In parallel.** A run of the suite, or of a folder of it, goes to pytest-xdist workers:
@@ -162,10 +165,10 @@ uv run ruff check && uv run ruff format --check && uv run mypy scripts
   `content/facts/` without a source or a check date, and `uv run python scripts/check_facts.py`
   lists every problem by file and record
   ([docs/conventions/knowledge-base.md](docs/conventions/knowledge-base.md)).
-- **The game's checks** (its lint and type check, Vitest for the simulation, Playwright for
-  the page) come with the TypeScript project, and CI runs them beside these. The agent
-  manager's one `db` test, for a project whose agents get test databases of their own, is
-  skipped without `TEST_DATABASE_URL`.
+- **The game's checks** are `npm run typecheck` and `npm test`, which CI runs beside these;
+  its lint and Playwright for the page join them with #16.
+- **The `db` test.** The agent manager's one `db` test, for a project whose agents get test
+  databases of their own, is skipped without `TEST_DATABASE_URL`.
 
 How to write code and tests here, and the definition of done, are in
 [docs/conventions.md](docs/conventions.md). Every change goes through a pull request into

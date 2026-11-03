@@ -94,11 +94,11 @@ Tasks marked *Iteration 1–3* are planned into the board's first two-week itera
 - [ ] Done gate
 
 ### Task 9: Simulation core: fixed time step, seeded and deterministic ([#17](https://github.com/albalaeff/Everest-Game/issues/17)) · *Iteration 1*
-- [ ] TypeScript with no DOM and no dependencies
-- [ ] A fixed time step; the same seed and the same actions give the same result, and a test checks it
-- [ ] It sees game actions only, never keys or touches
-- [ ] A headless runner plays faster than real time
-- [ ] Done gate
+- [x] TypeScript with no DOM and no dependencies
+- [x] A fixed time step; the same seed and the same actions give the same result, and a test checks it
+- [x] It sees game actions only, never keys or touches
+- [x] A headless runner plays faster than real time
+- [x] Done gate
 
 ### Task 10: Input layer: keys, mouse, touch and gamepad as one set of actions ([#18](https://github.com/albalaeff/Everest-Game/issues/18)) · *Iteration 1*
 - [ ] Every action of the spec's controls table, on a PC and on a phone (left thumb: walk and pace; right: cowstails, jumar, oxygen flow; taps on the slope for the ice axe and crampons)
@@ -127,6 +127,7 @@ Tasks marked *Iteration 1–3* are planned into the board's first two-week itera
 ### Task 14: Body model v1: fatigue, blood oxygen and pace ([#22](https://github.com/albalaeff/Everest-Game/issues/22)) · *Iteration 3*
 - [ ] SpO2 from altitude and oxygen flow; fatigue from pace, load, sleep, food and water; the rest step against a faster pace
 - [ ] Its coefficients come from the knowledge base (#9)
+- [ ] The mountain's time on top of the core's seconds of play: six to eight weeks in 5–7 hours, waiting days skipped, summit day the most detailed (spec.md → Gameplay)
 - [ ] The player sees no numbers for their condition
 - [ ] Done gate
 
@@ -374,6 +375,7 @@ Tasks marked *Iteration 1–3* are planned into the board's first two-week itera
 
 ### Task 60: Scenario engine: a real date, weather and crowd, a fictional climber ([#73](https://github.com/albalaeff/Everest-Game/issues/73))
 - [ ] A scenario sets the date, the weather, the crowd and the terrain (today's or historical) from #14
+- [ ] A random expedition: its conditions rolled from the seed, with those set in advance (harsh weather, say) kept, so every expedition is unique
 - [ ] Where sources disagree, both versions are shown
 - [ ] Done gate
 

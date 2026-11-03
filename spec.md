@@ -105,6 +105,8 @@ The models are plausible simplifications, not a medical simulator. Their goal is
 
 The game combines three layers, as on a real expedition: planning in camp, moving on the slope and decisions under pressure. The real six to eight weeks are compressed into 5–7 hours: waiting days are skipped, and summit day is the most detailed part.
 
+The game runs in real time and isn't turn-based: the mountain, the weather and the crowd go on whether or not the player acts, and all players move at once. Every expedition is unique, like a match in an online game: each has its own seed, so its weather, hazards and crowds fall differently; a scenario can generate its conditions at random or set them in advance, harsh weather for instance; and different mistakes lead to different consequences.
+
 &#91;embedded content: loop of one expedition · 10 stages, 1 key decision\]
 
 You can also turn around earlier: symptoms, strong wind or a queue at any stage are a reason to descend. In the debrief such a turnaround counts as a correct decision, not a loss.

@@ -1,0 +1,10 @@
+{
+  // The simulation core alone, with no DOM, no Node and no test tool in scope, so that using
+  // one of them in it fails the type check (docs/conventions/simulation-core.md).
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "types": []
+  },
+  "include": ["src/simulation"],
+  "exclude": ["src/simulation/**/*.test.ts", "src/simulation/testing"]
+}
