@@ -2,8 +2,10 @@ import acclimatization from "../../content/facts/acclimatization.json";
 import crowds from "../../content/facts/crowds.json";
 import medicine from "../../content/facts/medicine.json";
 import oxygen from "../../content/facts/oxygen.json";
+import rules from "../../content/facts/rules.json";
 import technique from "../../content/facts/technique.json";
 import time from "../../content/facts/time.json";
+import tours from "../../content/facts/tours.json";
 import weather from "../../content/facts/weather.json";
 import type { KnowledgeFile } from "./knowledge-base";
 
@@ -17,7 +19,9 @@ export const KNOWLEDGE_FILES: readonly KnowledgeFile[] = [
   crowds,
   medicine,
   oxygen,
+  rules,
   technique,
   time,
+  tours,
   weather,
 ];
