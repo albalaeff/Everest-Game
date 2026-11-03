@@ -153,6 +153,19 @@ The accidents the game tells in full, one record each in `content/facts/accident
 
 `uv run python scripts/expert_questions.py` prints, as Markdown, what the mountain guide (technique) and the doctor (physiology) are to check, by area. That's every question, and every other record still `source only`, with its sources and check dates: a fact's or a coefficient's numbers, a death's date, place and cause by source, an accident's weather, crowd, chain and lesson. Add `guide` or `doctor` for one list only. The lists are built from the records each time, so they aren't checked in. `ExpertList.EXPERTS` in the script says which experts review each area, and the tests fail on a record in an area nobody reviews: a new area names its experts there. The chronicle, `deaths` and `accidents`, is the guide's.
 
+## The medical library
+
+The game's medicine rests on a fixed library of open sources, each read in full: altitude illness, the body at altitude, cold injuries, the eyes and the first-aid kit. `content/library.json` lists them, each with its link, its edition's year, what it's for and the day it was read; `content/library.schema.json` is its format. Every record in the library's `areas` (now `medicine`) cites only the library, and every source there is cited by a record. `uv run pytest` fails CI on both (`tests/test_check_library_script.py`), and `uv run python scripts/check_library.py` lists what's wrong. A version's title names the section it read, after an arrow: `CDC Yellow Book 2026: High-Altitude Travel and Altitude Illness → Acclimatization`. Its link is the library's, which is what ties it to the library.
+
+How the sources rank, where they differ:
+
+1. **Current guidance:** the CDC Yellow Book 2026 and the WMS 2024 guideline, through the WMS's summary and Omidi et al.'s review. Treatment and medicines follow these.
+2. **The 2018 Lake Louise score:** the model of a climber's acute mountain sickness. Its authors call it a research tool, so the game never presents it as a way to diagnose.
+3. **The UIAA Medical Commission's recommendations (2008–2024) and the Medex booklet (2008):** symptoms, what to do on the spot, the kit in the cold, and the cases training is built from. Where they differ from the current guidance, the record keeps their version and the game follows the guidance.
+4. **Wikipedia, Death zone:** background only, never a source for a treatment.
+
+A source joins the library once someone has read all of it: they add it to `content/library.json` with the day they read it, and add records from it in the same change.
+
 ## What goes in
 
 - **Never a dose.** Medicines are described by why doctors use them: no amounts, in a value, a claim or a note. The check refuses a number in mg, µg, g, mL or IU, alone or per something (mg/kg), and such a unit.

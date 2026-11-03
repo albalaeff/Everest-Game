@@ -20,6 +20,38 @@
             "url": "https://www.cdc.gov/yellow-book/hcp/environmental-hazards-risks/high-altitude-travel-and-altitude-illness.html"
           },
           "checked": "2026-11-03"
+        },
+        {
+          "note": "The headache, gastrointestinal symptoms, fatigue or weakness, and dizziness or light-headedness, scored as the Lake Louise score.",
+          "source": {
+            "title": "Roach et al. 2018, The 2018 Lake Louise Acute Mountain Sickness Score → Diagnostic Criteria and Assessment of AMS",
+            "url": "https://ora.ox.ac.uk/objects/uuid:caab0da0-71d4-4f22-a5df-7785a501ce57"
+          },
+          "checked": "2026-11-03"
+        },
+        {
+          "note": "Several of: a headache, loss of appetite, dizziness, listlessness, swelling, a pounding heart, nausea or vomiting; not all of them come, and in a few cases not even the headache.",
+          "source": {
+            "title": "UIAA MedCom No 2: Emergency Field Management of AMS, HAPE and HACE (2012, updated 2024) → 4.1 Typical symptoms of AMS",
+            "url": "https://www.theuiaa.org/documents/mountainmedicine/English_UIAA_MedCom_Rec_No_2_AMS_HAPE_HACE_2012_V3.3.pdf"
+          },
+          "checked": "2026-11-03"
+        },
+        {
+          "note": "A headache with gastrointestinal symptoms, fatigue or weakness, or dizziness, per the Lake Louise criteria.",
+          "source": {
+            "title": "Omidi et al. 2025, What Is New in Altitude- and Cold-Related Illnesses of Travel (a review of the WMS 2024 guidelines) → 1.3 Definitions and Epidemiology of Acute Altitude Illness",
+            "url": "https://doi.org/10.3390/ijerph22020284"
+          },
+          "checked": "2026-11-03"
+        },
+        {
+          "note": "Headache, nausea, vomiting, tiredness, poor appetite, dizziness, and disturbed sleep, as the score before 2018 had it.",
+          "source": {
+            "title": "Medex: Travel at High Altitude (2008 edition) → Acute Mountain Sickness (AMS)",
+            "url": "https://medex.org.uk/medex_book/Book%20update%20June%202011/English/TravelSafeHighv27A4.pdf"
+          },
+          "checked": "2026-11-03"
         }
       ]
     },
@@ -45,6 +77,46 @@
           "source": {
             "title": "CDC Yellow Book 2026: High-Altitude Travel and Altitude Illness → Risk to travelers",
             "url": "https://www.cdc.gov/yellow-book/hcp/environmental-hazards-risks/high-altitude-travel-and-altitude-illness.html"
+          },
+          "checked": "2026-11-03"
+        },
+        {
+          "value": 2500,
+          "unit": "m",
+          "note": "Typically above it; lower in highly susceptible people.",
+          "source": {
+            "title": "Roach et al. 2018, The 2018 Lake Louise Acute Mountain Sickness Score → Introduction",
+            "url": "https://ora.ox.ac.uk/objects/uuid:caab0da0-71d4-4f22-a5df-7785a501ce57"
+          },
+          "checked": "2026-11-03"
+        },
+        {
+          "value": 2500,
+          "unit": "m",
+          "note": "About; lower is rare, but possible.",
+          "source": {
+            "title": "UIAA MedCom No 2: Emergency Field Management of AMS, HAPE and HACE (2012, updated 2024) → 2.2 Altitudes and time frames",
+            "url": "https://www.theuiaa.org/documents/mountainmedicine/English_UIAA_MedCom_Rec_No_2_AMS_HAPE_HACE_2012_V3.3.pdf"
+          },
+          "checked": "2026-11-03"
+        },
+        {
+          "value": 2500,
+          "unit": "m",
+          "note": "Some otherwise healthy people have symptoms around 2,000 m.",
+          "source": {
+            "title": "Omidi et al. 2025, What Is New in Altitude- and Cold-Related Illnesses of Travel (a review of the WMS 2024 guidelines) → 1.3 Definitions and Epidemiology of Acute Altitude Illness",
+            "url": "https://doi.org/10.3390/ijerph22020284"
+          },
+          "checked": "2026-11-03"
+        },
+        {
+          "value": 2500,
+          "unit": "m",
+          "note": "Going up too fast to about this altitude makes altitude illness common; altitude starts to have an effect around 1,500–2,000 m.",
+          "source": {
+            "title": "Medex: Travel at High Altitude (2008 edition) → What is High Altitude?",
+            "url": "https://medex.org.uk/medex_book/Book%20update%20June%202011/English/TravelSafeHighv27A4.pdf"
           },
           "checked": "2026-11-03"
         }
@@ -75,6 +147,40 @@
             "url": "https://wms.org/magazine/1463/2024-Altitude-Summary/default.aspx"
           },
           "checked": "2026-11-03"
+        },
+        {
+          "range": {
+            "min": 4,
+            "max": 24
+          },
+          "unit": "h",
+          "note": "Earlier or later is rare, but possible.",
+          "source": {
+            "title": "UIAA MedCom No 2: Emergency Field Management of AMS, HAPE and HACE (2012, updated 2024) → 2.2 Altitudes and time frames",
+            "url": "https://www.theuiaa.org/documents/mountainmedicine/English_UIAA_MedCom_Rec_No_2_AMS_HAPE_HACE_2012_V3.3.pdf"
+          },
+          "checked": "2026-11-03"
+        },
+        {
+          "range": {
+            "min": 4,
+            "max": 12
+          },
+          "unit": "h",
+          "note": "Usually; up to 72 hours.",
+          "source": {
+            "title": "Omidi et al. 2025, What Is New in Altitude- and Cold-Related Illnesses of Travel (a review of the WMS 2024 guidelines) → 1.3 Definitions and Epidemiology of Acute Altitude Illness",
+            "url": "https://doi.org/10.3390/ijerph22020284"
+          },
+          "checked": "2026-11-03"
+        },
+        {
+          "note": "Symptoms can begin within 6 hours; for research, the score is taken only after 6 hours.",
+          "source": {
+            "title": "Roach et al. 2018, The 2018 Lake Louise Acute Mountain Sickness Score → Diagnostic Criteria and Assessment of AMS",
+            "url": "https://ora.ox.ac.uk/objects/uuid:caab0da0-71d4-4f22-a5df-7785a501ce57"
+          },
+          "checked": "2026-11-03"
         }
       ]
     },
@@ -95,6 +201,30 @@
           "source": {
             "title": "CDC Yellow Book 2026: High-Altitude Travel and Altitude Illness → Acute mountain sickness → Treatment",
             "url": "https://www.cdc.gov/yellow-book/hcp/environmental-hazards-risks/high-altitude-travel-and-altitude-illness.html"
+          },
+          "checked": "2026-11-03"
+        },
+        {
+          "note": "A rest day at the same altitude until the symptoms have completely gone, no exertion, drinking enough in spite of the nausea, and sleeping with the upper body raised; descent if they don't improve within 24 hours, or get worse.",
+          "source": {
+            "title": "UIAA MedCom No 2: Emergency Field Management of AMS, HAPE and HACE (2012, updated 2024) → 5.1.1 Light to moderate symptoms",
+            "url": "https://www.theuiaa.org/documents/mountainmedicine/English_UIAA_MedCom_Rec_No_2_AMS_HAPE_HACE_2012_V3.3.pdf"
+          },
+          "checked": "2026-11-03"
+        },
+        {
+          "note": "Mild to moderate: no further ascent, a close watch and treatment of the symptoms; persistent or moderate to severe: descent first.",
+          "source": {
+            "title": "Omidi et al. 2025, What Is New in Altitude- and Cold-Related Illnesses of Travel (a review of the WMS 2024 guidelines) → 1.5 Interventions for Treatment of Altitude Illness",
+            "url": "https://doi.org/10.3390/ijerph22020284"
+          },
+          "checked": "2026-11-03"
+        },
+        {
+          "note": "What matters most is whether the symptoms get better or worse: worse, walk down.",
+          "source": {
+            "title": "Medex: Travel at High Altitude (2008 edition) → Acute Mountain Sickness (AMS)",
+            "url": "https://medex.org.uk/medex_book/Book%20update%20June%202011/English/TravelSafeHighv27A4.pdf"
           },
           "checked": "2026-11-03"
         }
@@ -118,6 +248,30 @@
           "source": {
             "title": "CDC Yellow Book 2026: High-Altitude Travel and Altitude Illness → Preventing severe altitude illness or death",
             "url": "https://www.cdc.gov/yellow-book/hcp/environmental-hazards-risks/high-altitude-travel-and-altitude-illness.html"
+          },
+          "checked": "2026-11-03"
+        },
+        {
+          "note": "No further ascent with symptoms; no re-ascent before the climber feels completely well.",
+          "source": {
+            "title": "UIAA MedCom No 2: Emergency Field Management of AMS, HAPE and HACE (2012, updated 2024) → 5.1.1 Light to moderate symptoms",
+            "url": "https://www.theuiaa.org/documents/mountainmedicine/English_UIAA_MedCom_Rec_No_2_AMS_HAPE_HACE_2012_V3.3.pdf"
+          },
+          "checked": "2026-11-03"
+        },
+        {
+          "note": "A headache and 3 or more points from the other symptoms: go no higher.",
+          "source": {
+            "title": "Medex: Travel at High Altitude (2008 edition) → Acute Mountain Sickness (AMS)",
+            "url": "https://medex.org.uk/medex_book/Book%20update%20June%202011/English/TravelSafeHighv27A4.pdf"
+          },
+          "checked": "2026-11-03"
+        },
+        {
+          "note": "Never back up while taking a medicine that may mask the symptoms, dexamethasone above all.",
+          "source": {
+            "title": "UIAA MedCom No 3: Portable Hyperbaric Chambers (2012) → 5 Results of treatment / further proceeding",
+            "url": "https://www.theuiaa.org/documents/mountainmedicine/English_UIAA_MedCom_Rec_No_3_Portable_Hyperbaric_Chambers_2012_V3-2.pdf"
           },
           "checked": "2026-11-03"
         }
@@ -159,6 +313,38 @@
             "url": "https://www.cdc.gov/yellow-book/hcp/environmental-hazards-risks/high-altitude-travel-and-altitude-illness.html"
           },
           "checked": "2026-11-03"
+        },
+        {
+          "note": "A change in mental state and/or ataxia, usually in a climber with AMS or HAPE: a medical emergency.",
+          "source": {
+            "title": "Roach et al. 2018, The 2018 Lake Louise Acute Mountain Sickness Score → Diagnostic Criteria and Assessment of AMS",
+            "url": "https://ora.ox.ac.uk/objects/uuid:caab0da0-71d4-4f22-a5df-7785a501ce57"
+          },
+          "checked": "2026-11-03"
+        },
+        {
+          "note": "A severe headache that usual painkillers don't help, nausea, vomiting, dizziness, ataxia, confusion or hallucinations; irrational behaviour may be the first sign; at the end, coma and death as breathing stops.",
+          "source": {
+            "title": "UIAA MedCom No 2: Emergency Field Management of AMS, HAPE and HACE (2012, updated 2024) → 4.3 Typical symptoms of HACE",
+            "url": "https://www.theuiaa.org/documents/mountainmedicine/English_UIAA_MedCom_Rec_No_2_AMS_HAPE_HACE_2012_V3.3.pdf"
+          },
+          "checked": "2026-11-03"
+        },
+        {
+          "note": "Truncal ataxia and clouded consciousness lead.",
+          "source": {
+            "title": "Omidi et al. 2025, What Is New in Altitude- and Cold-Related Illnesses of Travel (a review of the WMS 2024 guidelines) → 1.3 Definitions and Epidemiology of Acute Altitude Illness",
+            "url": "https://doi.org/10.3390/ijerph22020284"
+          },
+          "checked": "2026-11-03"
+        },
+        {
+          "note": "A severe headache; clumsiness; behaving differently (unhelpful, violent, lazy); non-stop vomiting; blurred vision; seeing, hearing, feeling or smelling odd things; confusion; reduced consciousness.",
+          "source": {
+            "title": "Medex: Travel at High Altitude (2008 edition) → HACE",
+            "url": "https://medex.org.uk/medex_book/Book%20update%20June%202011/English/TravelSafeHighv27A4.pdf"
+          },
+          "checked": "2026-11-03"
         }
       ]
     },
@@ -172,6 +358,22 @@
           "source": {
             "title": "WMS: Acute Altitude Illness Clinical Practice Guideline, 2024 Update, summary → AMS/HACE Diagnosis",
             "url": "https://wms.org/magazine/1463/2024-Altitude-Summary/default.aspx"
+          },
+          "checked": "2026-11-03"
+        },
+        {
+          "note": "A very sensitive and simple field test, which also shows through a climber who hides the symptoms.",
+          "source": {
+            "title": "UIAA MedCom No 2: Emergency Field Management of AMS, HAPE and HACE (2012, updated 2024) → 4.3 Typical symptoms of HACE",
+            "url": "https://www.theuiaa.org/documents/mountainmedicine/English_UIAA_MedCom_Rec_No_2_AMS_HAPE_HACE_2012_V3.3.pdf"
+          },
+          "checked": "2026-11-03"
+        },
+        {
+          "note": "With finger to nose with the eyes closed, standing with the eyes shut and the arms folded, and simple mental arithmetic: difficulty with any of them suggests HACE.",
+          "source": {
+            "title": "Medex: Travel at High Altitude (2008 edition) → HACE",
+            "url": "https://medex.org.uk/medex_book/Book%20update%20June%202011/English/TravelSafeHighv27A4.pdf"
           },
           "checked": "2026-11-03"
         }
@@ -197,6 +399,30 @@
             "url": "https://wms.org/magazine/1463/2024-Altitude-Summary/default.aspx"
           },
           "checked": "2026-11-03"
+        },
+        {
+          "note": "Descend now, not later or in the morning; in serious cases death can come within an hour of the symptoms being noticed.",
+          "source": {
+            "title": "Medex: Travel at High Altitude (2008 edition) → HACE",
+            "url": "https://medex.org.uk/medex_book/Book%20update%20June%202011/English/TravelSafeHighv27A4.pdf"
+          },
+          "checked": "2026-11-03"
+        },
+        {
+          "note": "Without treatment, death in as little as 24 hours.",
+          "source": {
+            "title": "Omidi et al. 2025, What Is New in Altitude- and Cold-Related Illnesses of Travel (a review of the WMS 2024 guidelines) → 1.3 Definitions and Epidemiology of Acute Altitude Illness",
+            "url": "https://doi.org/10.3390/ijerph22020284"
+          },
+          "checked": "2026-11-03"
+        },
+        {
+          "note": "Descent, oxygen, dexamethasone and a hyperbaric bag; any climber found or becoming unconscious at altitude is given dexamethasone by injection.",
+          "source": {
+            "title": "UIAA MedCom No 2: Emergency Field Management of AMS, HAPE and HACE (2012, updated 2024) → 7 Appendix 2",
+            "url": "https://www.theuiaa.org/documents/mountainmedicine/English_UIAA_MedCom_Rec_No_2_AMS_HAPE_HACE_2012_V3.3.pdf"
+          },
+          "checked": "2026-11-03"
         }
       ]
     },
@@ -220,6 +446,30 @@
             "url": "https://www.cdc.gov/yellow-book/hcp/environmental-hazards-risks/high-altitude-travel-and-altitude-illness.html"
           },
           "checked": "2026-11-03"
+        },
+        {
+          "note": "A rapid fall in performance is the cardinal symptom; breathlessness even at light work, then at rest, fast breathing (over 30 a minute in 69% of cases), a fast pulse, a cough, chest tightness, a mild fever; bubbling breath, blue lips and bloody, foamy sputum when severe.",
+          "source": {
+            "title": "UIAA MedCom No 2: Emergency Field Management of AMS, HAPE and HACE (2012, updated 2024) → 4.2 Typical symptoms of HAPE",
+            "url": "https://www.theuiaa.org/documents/mountainmedicine/English_UIAA_MedCom_Rec_No_2_AMS_HAPE_HACE_2012_V3.3.pdf"
+          },
+          "checked": "2026-11-03"
+        },
+        {
+          "note": "Two of: chest tightness or pain, breathlessness at rest, a cough, less exercise tolerance; and two of: crackles or wheezes, blue lips, fast breathing, a fast pulse.",
+          "source": {
+            "title": "Omidi et al. 2025, What Is New in Altitude- and Cold-Related Illnesses of Travel (a review of the WMS 2024 guidelines) → 1.3 Definitions and Epidemiology of Acute Altitude Illness",
+            "url": "https://doi.org/10.3390/ijerph22020284"
+          },
+          "checked": "2026-11-03"
+        },
+        {
+          "note": "Trouble breathing, tiredness, a cough, froth and later blood in the spit, blue lips, tongue and nails; a long time to get the breath back after exercise, breathing ever faster, a wet crackling in the chest.",
+          "source": {
+            "title": "Medex: Travel at High Altitude (2008 edition) → HAPE",
+            "url": "https://medex.org.uk/medex_book/Book%20update%20June%202011/English/TravelSafeHighv27A4.pdf"
+          },
+          "checked": "2026-11-03"
         }
       ]
     },
@@ -240,6 +490,30 @@
             "url": "https://doi.org/10.3390/ijerph22020284"
           },
           "checked": "2026-11-03"
+        },
+        {
+          "note": "After more than 24 hours; earlier is rare, but possible.",
+          "source": {
+            "title": "UIAA MedCom No 2: Emergency Field Management of AMS, HAPE and HACE (2012, updated 2024) → 2.2 Altitudes and time frames",
+            "url": "https://www.theuiaa.org/documents/mountainmedicine/English_UIAA_MedCom_Rec_No_2_AMS_HAPE_HACE_2012_V3.3.pdf"
+          },
+          "checked": "2026-11-03"
+        },
+        {
+          "note": "Typically progresses over 1–2 days.",
+          "source": {
+            "title": "CDC Yellow Book 2026: High-Altitude Travel and Altitude Illness → High-altitude pulmonary edema → Diagnosis",
+            "url": "https://www.cdc.gov/yellow-book/hcp/environmental-hazards-risks/high-altitude-travel-and-altitude-illness.html"
+          },
+          "checked": "2026-11-03"
+        },
+        {
+          "note": "Can come in 1–2 hours or over several days, and even on the way down.",
+          "source": {
+            "title": "Medex: Travel at High Altitude (2008 edition) → HAPE",
+            "url": "https://medex.org.uk/medex_book/Book%20update%20June%202011/English/TravelSafeHighv27A4.pdf"
+          },
+          "checked": "2026-11-03"
         }
       ]
     },
@@ -253,6 +527,14 @@
           "source": {
             "title": "CDC Yellow Book 2026: High-Altitude Travel and Altitude Illness → High-altitude pulmonary edema → Diagnosis",
             "url": "https://www.cdc.gov/yellow-book/hcp/environmental-hazards-risks/high-altitude-travel-and-altitude-illness.html"
+          },
+          "checked": "2026-11-03"
+        },
+        {
+          "note": "It's often preceded by AMS.",
+          "source": {
+            "title": "Omidi et al. 2025, What Is New in Altitude- and Cold-Related Illnesses of Travel (a review of the WMS 2024 guidelines) → 1.3 Definitions and Epidemiology of Acute Altitude Illness",
+            "url": "https://doi.org/10.3390/ijerph22020284"
           },
           "checked": "2026-11-03"
         }
@@ -278,6 +560,30 @@
           "source": {
             "title": "CDC Yellow Book 2026: High-Altitude Travel and Altitude Illness → High-altitude pulmonary edema → Treatment",
             "url": "https://www.cdc.gov/yellow-book/hcp/environmental-hazards-risks/high-altitude-travel-and-altitude-illness.html"
+          },
+          "checked": "2026-11-03"
+        },
+        {
+          "note": "Rest, the upper body upright, protection from the cold, oxygen and a hyperbaric bag; leaving altitude carried where possible, otherwise walking down once treatment eases the symptoms, never carrying a load.",
+          "source": {
+            "title": "UIAA MedCom No 2: Emergency Field Management of AMS, HAPE and HACE (2012, updated 2024) → 5.2 Emergency treatment of HAPE",
+            "url": "https://www.theuiaa.org/documents/mountainmedicine/English_UIAA_MedCom_Rec_No_2_AMS_HAPE_HACE_2012_V3.3.pdf"
+          },
+          "checked": "2026-11-03"
+        },
+        {
+          "note": "2024: oxygen first in the sequence, then descent, then medicines if the symptoms stall or worsen.",
+          "source": {
+            "title": "Omidi et al. 2025, What Is New in Altitude- and Cold-Related Illnesses of Travel (a review of the WMS 2024 guidelines) → 1.5 Interventions for Treatment of Altitude Illness",
+            "url": "https://doi.org/10.3390/ijerph22020284"
+          },
+          "checked": "2026-11-03"
+        },
+        {
+          "note": "Stay with the climber at all times, descend now, sit up, keep warm, oxygen or a pressure bag.",
+          "source": {
+            "title": "Medex: Travel at High Altitude (2008 edition) → HAPE",
+            "url": "https://medex.org.uk/medex_book/Book%20update%20June%202011/English/TravelSafeHighv27A4.pdf"
           },
           "checked": "2026-11-03"
         }
@@ -319,6 +625,22 @@
             "url": "https://www.cdc.gov/yellow-book/hcp/environmental-hazards-risks/high-altitude-travel-and-altitude-illness.html"
           },
           "checked": "2026-11-03"
+        },
+        {
+          "note": "AMS that gets worse, any HACE, any HAPE: descent, to below the altitude where the symptoms began.",
+          "source": {
+            "title": "UIAA MedCom No 2: Emergency Field Management of AMS, HAPE and HACE (2012, updated 2024) → 7 Appendix 2",
+            "url": "https://www.theuiaa.org/documents/mountainmedicine/English_UIAA_MedCom_Rec_No_2_AMS_HAPE_HACE_2012_V3.3.pdf"
+          },
+          "checked": "2026-11-03"
+        },
+        {
+          "note": "Descend now, not later or in the morning.",
+          "source": {
+            "title": "Medex: Travel at High Altitude (2008 edition) → HACE",
+            "url": "https://medex.org.uk/medex_book/Book%20update%20June%202011/English/TravelSafeHighv27A4.pdf"
+          },
+          "checked": "2026-11-03"
         }
       ]
     },
@@ -340,6 +662,30 @@
           "source": {
             "title": "CDC Yellow Book 2026: High-Altitude Travel and Altitude Illness → Altitude illness syndromes → Treatment",
             "url": "https://www.cdc.gov/yellow-book/hcp/environmental-hazards-risks/high-altitude-travel-and-altitude-illness.html"
+          },
+          "checked": "2026-11-03"
+        },
+        {
+          "note": "Oxygen, if there's any, for HAPE and HACE.",
+          "source": {
+            "title": "UIAA MedCom No 2: Emergency Field Management of AMS, HAPE and HACE (2012, updated 2024) → 5.2 Emergency treatment of HAPE",
+            "url": "https://www.theuiaa.org/documents/mountainmedicine/English_UIAA_MedCom_Rec_No_2_AMS_HAPE_HACE_2012_V3.3.pdf"
+          },
+          "checked": "2026-11-03"
+        },
+        {
+          "note": "Aiming at a saturation above 90%, for AMS, HACE and HAPE.",
+          "source": {
+            "title": "Omidi et al. 2025, What Is New in Altitude- and Cold-Related Illnesses of Travel (a review of the WMS 2024 guidelines) → 1.5 Interventions for Treatment of Altitude Illness",
+            "url": "https://doi.org/10.3390/ijerph22020284"
+          },
+          "checked": "2026-11-03"
+        },
+        {
+          "note": "The only real fix is more oxygen: descending, or else a bottle or a pressure bag.",
+          "source": {
+            "title": "Medex: Travel at High Altitude (2008 edition) → Oxygen",
+            "url": "https://medex.org.uk/medex_book/Book%20update%20June%202011/English/TravelSafeHighv27A4.pdf"
           },
           "checked": "2026-11-03"
         }
@@ -365,6 +711,30 @@
             "url": "https://www.cdc.gov/yellow-book/hcp/environmental-hazards-risks/high-altitude-travel-and-altitude-illness.html"
           },
           "checked": "2026-11-03"
+        },
+        {
+          "note": "Only for severe AMS, HAPE or HACE; it gives relief, buying time to descend, and is no substitute for descent.",
+          "source": {
+            "title": "UIAA MedCom No 3: Portable Hyperbaric Chambers (2012) → 2 Principles and Safety Management",
+            "url": "https://www.theuiaa.org/documents/mountainmedicine/English_UIAA_MedCom_Rec_No_3_Portable_Hyperbaric_Chambers_2012_V3-2.pdf"
+          },
+          "checked": "2026-11-03"
+        },
+        {
+          "note": "For groups in remote areas, where descent could be a problem.",
+          "source": {
+            "title": "CDC Yellow Book 2026: High-Altitude Travel and Altitude Illness → Preventing severe altitude illness or death",
+            "url": "https://www.cdc.gov/yellow-book/hcp/environmental-hazards-risks/high-altitude-travel-and-altitude-illness.html"
+          },
+          "checked": "2026-11-03"
+        },
+        {
+          "note": "Life-saving, but it's hard to talk to the climber inside, it can damage the eardrums, its air must be changed, and recovery is often short-lived.",
+          "source": {
+            "title": "Medex: Travel at High Altitude (2008 edition) → Oxygen",
+            "url": "https://medex.org.uk/medex_book/Book%20update%20June%202011/English/TravelSafeHighv27A4.pdf"
+          },
+          "checked": "2026-11-03"
         }
       ]
     },
@@ -378,6 +748,22 @@
           "source": {
             "title": "WMS: Acute Altitude Illness Clinical Practice Guideline, 2024 Update, summary → AMS/HACE Prevention, HAPE Prevention, HAPE Treatment",
             "url": "https://wms.org/magazine/1463/2024-Altitude-Summary/default.aspx"
+          },
+          "checked": "2026-11-03"
+        },
+        {
+          "note": "Every prevention section of the WMS guideline begins with slow ascent and every treatment section with descent; many readers skip to the medicines.",
+          "source": {
+            "title": "UIAA MedCom No 22a: Drug Use and Misuse in Mountaineering (2014) → 2 Drugs",
+            "url": "https://www.theuiaa.org/documents/mountainmedicine/English_UIAA-MedCom-Rec-No-22a-Drug-misuse-2014-V1-2.pdf"
+          },
+          "checked": "2026-11-03"
+        },
+        {
+          "note": "Prevention is the gold standard: a sensible altitude profile.",
+          "source": {
+            "title": "UIAA MedCom No 3: Portable Hyperbaric Chambers (2012) → 2 Principles and Safety Management",
+            "url": "https://www.theuiaa.org/documents/mountainmedicine/English_UIAA_MedCom_Rec_No_3_Portable_Hyperbaric_Chambers_2012_V3-2.pdf"
           },
           "checked": "2026-11-03"
         }
@@ -403,6 +789,30 @@
             "url": "https://www.cdc.gov/yellow-book/hcp/environmental-hazards-risks/high-altitude-travel-and-altitude-illness.html"
           },
           "checked": "2026-11-03"
+        },
+        {
+          "note": "For prevention only when a fast ascent can't be avoided, or for a climber who acclimatizes slowly; no longer the first treatment of AMS.",
+          "source": {
+            "title": "UIAA MedCom No 2: Emergency Field Management of AMS, HAPE and HACE (2012, updated 2024) → 3 Prevention of altitude diseases, 5.1.1 Light to moderate symptoms",
+            "url": "https://www.theuiaa.org/documents/mountainmedicine/English_UIAA_MedCom_Rec_No_2_AMS_HAPE_HACE_2012_V3.3.pdf"
+          },
+          "checked": "2026-11-03"
+        },
+        {
+          "note": "It \"kick starts\" acclimatization rather than masking AMS; it's been studied only up to 5,895 m.",
+          "source": {
+            "title": "UIAA MedCom No 22a: Drug Use and Misuse in Mountaineering (2014) → 2.1 Acetazolamide (Diamox)",
+            "url": "https://www.theuiaa.org/documents/mountainmedicine/English_UIAA-MedCom-Rec-No-22a-Drug-misuse-2014-V1-2.pdf"
+          },
+          "checked": "2026-11-03"
+        },
+        {
+          "note": "It speeds acclimatization without masking AMS: AMS, HAPE and HACE can still come while taking it.",
+          "source": {
+            "title": "Medex: Travel at High Altitude (2008 edition) → Acute Mountain Sickness (AMS)",
+            "url": "https://medex.org.uk/medex_book/Book%20update%20June%202011/English/TravelSafeHighv27A4.pdf"
+          },
+          "checked": "2026-11-03"
         }
       ]
     },
@@ -424,6 +834,22 @@
           "source": {
             "title": "CDC Yellow Book 2026: High-Altitude Travel and Altitude Illness → Medications → Dexamethasone",
             "url": "https://www.cdc.gov/yellow-book/hcp/environmental-hazards-risks/high-altitude-travel-and-altitude-illness.html"
+          },
+          "checked": "2026-11-03"
+        },
+        {
+          "note": "It masks the symptoms rather than acclimatizing; taken to prevent AMS, it uses up the one medicine that could save the climber from a later HACE.",
+          "source": {
+            "title": "UIAA MedCom No 22a: Drug Use and Misuse in Mountaineering (2014) → 2.10 Dexamethasone",
+            "url": "https://www.theuiaa.org/documents/mountainmedicine/English_UIAA-MedCom-Rec-No-22a-Drug-misuse-2014-V1-2.pdf"
+          },
+          "checked": "2026-11-03"
+        },
+        {
+          "note": "Never back up while taking it.",
+          "source": {
+            "title": "UIAA MedCom No 3: Portable Hyperbaric Chambers (2012) → 5 Results of treatment / further proceeding",
+            "url": "https://www.theuiaa.org/documents/mountainmedicine/English_UIAA_MedCom_Rec_No_3_Portable_Hyperbaric_Chambers_2012_V3-2.pdf"
           },
           "checked": "2026-11-03"
         }
@@ -449,7 +875,2678 @@
             "url": "https://www.cdc.gov/yellow-book/hcp/environmental-hazards-risks/high-altitude-travel-and-altitude-illness.html"
           },
           "checked": "2026-11-03"
+        },
+        {
+          "note": "The medicine of choice to buy time for the descent with HAPE; it does nothing for AMS; slow-release forms only at altitude.",
+          "source": {
+            "title": "UIAA MedCom No 22a: Drug Use and Misuse in Mountaineering (2014) → 2.16 Nifedipine",
+            "url": "https://www.theuiaa.org/documents/mountainmedicine/English_UIAA-MedCom-Rec-No-22a-Drug-misuse-2014-V1-2.pdf"
+          },
+          "checked": "2026-11-03"
+        },
+        {
+          "note": "2024: only when there's no oxygen; beside descent and oxygen it added nothing.",
+          "source": {
+            "title": "Omidi et al. 2025, What Is New in Altitude- and Cold-Related Illnesses of Travel (a review of the WMS 2024 guidelines) → 1.5 Interventions for Treatment of Altitude Illness",
+            "url": "https://doi.org/10.3390/ijerph22020284"
+          },
+          "checked": "2026-11-03"
+        },
+        {
+          "note": "The quick-acting kind can drop the blood pressure sharply: slow-release only.",
+          "source": {
+            "title": "UIAA MedCom No 2: Emergency Field Management of AMS, HAPE and HACE (2012, updated 2024) → 5.2 Emergency treatment of HAPE",
+            "url": "https://www.theuiaa.org/documents/mountainmedicine/English_UIAA_MedCom_Rec_No_2_AMS_HAPE_HACE_2012_V3.3.pdf"
+          },
+          "checked": "2026-11-03"
         }
+      ]
+    },
+    {
+      "id": "medicine.ams-resolution",
+      "kind": "fact",
+      "claim": "Without further ascent, acute mountain sickness passes within this many hours: it comes and goes over 1–3 days.",
+      "status": "source only",
+      "versions": [
+        {
+          "range": {
+            "min": 12,
+            "max": 48
+          },
+          "unit": "h",
+          "source": {
+            "title": "CDC Yellow Book 2026: High-Altitude Travel and Altitude Illness → Acute mountain sickness → Diagnosis",
+            "url": "https://www.cdc.gov/yellow-book/hcp/environmental-hazards-risks/high-altitude-travel-and-altitude-illness.html"
+          },
+          "checked": "2026-11-03"
+        },
+        {
+          "note": "AMS alone is self-limited.",
+          "source": {
+            "title": "Roach et al. 2018, The 2018 Lake Louise Acute Mountain Sickness Score → Diagnostic Criteria and Assessment of AMS",
+            "url": "https://ora.ox.ac.uk/objects/uuid:caab0da0-71d4-4f22-a5df-7785a501ce57"
+          },
+          "checked": "2026-11-03"
+        }
+      ]
+    },
+    {
+      "id": "medicine.ams-late-onset",
+      "kind": "fact",
+      "claim": "Symptoms that begin more than this many days after arriving, without going higher, aren't acute mountain sickness.",
+      "status": "source only",
+      "versions": [
+        {
+          "value": 3,
+          "unit": "days",
+          "source": {
+            "title": "CDC Yellow Book 2026: High-Altitude Travel and Altitude Illness → Acute mountain sickness → Diagnosis",
+            "url": "https://www.cdc.gov/yellow-book/hcp/environmental-hazards-risks/high-altitude-travel-and-altitude-illness.html"
+          },
+          "checked": "2026-11-03"
+        },
+        {
+          "value": 3,
+          "unit": "days",
+          "note": "AMS comes within several hours to 3 days of the ascent.",
+          "source": {
+            "title": "WMS: Acute Altitude Illness Clinical Practice Guideline, 2024 Update, summary → AMS/HACE Diagnosis",
+            "url": "https://wms.org/magazine/1463/2024-Altitude-Summary/default.aspx"
+          },
+          "checked": "2026-11-03"
+        }
+      ]
+    },
+    {
+      "id": "medicine.ams-wait-at-altitude",
+      "kind": "fact",
+      "claim": "A climber with mild acute mountain sickness waits at the same altitude, and descends if the symptoms aren't better within this many hours, or get worse.",
+      "status": "source only",
+      "versions": [
+        {
+          "value": 24,
+          "unit": "h",
+          "source": {
+            "title": "UIAA MedCom No 2: Emergency Field Management of AMS, HAPE and HACE (2012, updated 2024) → 5.1.1 Light to moderate symptoms",
+            "url": "https://www.theuiaa.org/documents/mountainmedicine/English_UIAA_MedCom_Rec_No_2_AMS_HAPE_HACE_2012_V3.3.pdf"
+          },
+          "checked": "2026-11-03"
+        },
+        {
+          "note": "If the symptoms get worse at the same altitude in spite of treatment, descent is mandatory.",
+          "source": {
+            "title": "CDC Yellow Book 2026: High-Altitude Travel and Altitude Illness → Acute mountain sickness → Treatment",
+            "url": "https://www.cdc.gov/yellow-book/hcp/environmental-hazards-risks/high-altitude-travel-and-altitude-illness.html"
+          },
+          "checked": "2026-11-03"
+        }
+      ]
+    },
+    {
+      "id": "medicine.ams-without-headache",
+      "kind": "fact",
+      "claim": "Acute mountain sickness now and then comes without a headache: a score without one isn't AMS for research, but doesn't rule it out for a doctor.",
+      "status": "source only",
+      "versions": [
+        {
+          "source": {
+            "title": "Roach et al. 2018, The 2018 Lake Louise Acute Mountain Sickness Score → Directions for Using the Lake Louise AMS Score",
+            "url": "https://ora.ox.ac.uk/objects/uuid:caab0da0-71d4-4f22-a5df-7785a501ce57"
+          },
+          "checked": "2026-11-03"
+        },
+        {
+          "note": "Uncommonly, AMS presents without headache.",
+          "source": {
+            "title": "CDC Yellow Book 2026: High-Altitude Travel and Altitude Illness → Acute mountain sickness → Diagnosis",
+            "url": "https://www.cdc.gov/yellow-book/hcp/environmental-hazards-risks/high-altitude-travel-and-altitude-illness.html"
+          },
+          "checked": "2026-11-03"
+        },
+        {
+          "note": "In a few cases even the headache is missing.",
+          "source": {
+            "title": "UIAA MedCom No 2: Emergency Field Management of AMS, HAPE and HACE (2012, updated 2024) → 4.1 Typical symptoms of AMS",
+            "url": "https://www.theuiaa.org/documents/mountainmedicine/English_UIAA_MedCom_Rec_No_2_AMS_HAPE_HACE_2012_V3.3.pdf"
+          },
+          "checked": "2026-11-03"
+        }
+      ]
+    },
+    {
+      "id": "medicine.ams-share-everest-trek",
+      "kind": "fact",
+      "claim": "Even on standard acclimatization schedules, up to this share of trekkers to Everest Base Camp get altitude illness higher up.",
+      "status": "source only",
+      "versions": [
+        {
+          "value": 30,
+          "unit": "%",
+          "source": {
+            "title": "CDC Yellow Book 2026: High-Altitude Travel and Altitude Illness → Altitude illness → Destinations with risk",
+            "url": "https://www.cdc.gov/yellow-book/hcp/environmental-hazards-risks/high-altitude-travel-and-altitude-illness.html"
+          },
+          "checked": "2026-11-03"
+        }
+      ]
+    },
+    {
+      "id": "medicine.ams-share-by-profile",
+      "kind": "fact",
+      "claim": "Depending on the ascent profile, more than this share of mountaineers may have symptoms of acute mountain sickness.",
+      "status": "source only",
+      "versions": [
+        {
+          "value": 70,
+          "unit": "%",
+          "source": {
+            "title": "UIAA MedCom No 2: Emergency Field Management of AMS, HAPE and HACE (2012, updated 2024) → 1 Introduction",
+            "url": "https://www.theuiaa.org/documents/mountainmedicine/English_UIAA_MedCom_Rec_No_2_AMS_HAPE_HACE_2012_V3.3.pdf"
+          },
+          "checked": "2026-11-03"
+        }
+      ]
+    },
+    {
+      "id": "medicine.ams-share-flying-in",
+      "kind": "fact",
+      "claim": "Flying straight to altitude, this share of visitors get acute mountain sickness.",
+      "status": "source only",
+      "versions": [
+        {
+          "value": 84,
+          "unit": "%",
+          "note": "Of those flying in to the Hotel Everest View, at 3,860 m.",
+          "source": {
+            "title": "Medex: Travel at High Altitude (2008 edition) → Asia",
+            "url": "https://medex.org.uk/medex_book/Book%20update%20June%202011/English/TravelSafeHighv27A4.pdf"
+          },
+          "checked": "2026-11-03"
+        },
+        {
+          "value": 50,
+          "unit": "%",
+          "note": "Approaching it, flying in above 3,400 m.",
+          "source": {
+            "title": "CDC Yellow Book 2026: High-Altitude Travel and Altitude Illness → Altitude illness → Destinations with risk",
+            "url": "https://www.cdc.gov/yellow-book/hcp/environmental-hazards-risks/high-altitude-travel-and-altitude-illness.html"
+          },
+          "checked": "2026-11-03"
+        }
+      ]
+    },
+    {
+      "id": "medicine.acute-acclimatization",
+      "kind": "fact",
+      "claim": "The acute phase of acclimatization takes this many days after an ascent: altitude illness comes only before it's complete, never after.",
+      "status": "source only",
+      "versions": [
+        {
+          "range": {
+            "min": 3,
+            "max": 5
+          },
+          "unit": "days",
+          "source": {
+            "title": "CDC Yellow Book 2026: High-Altitude Travel and Altitude Illness → Acclimatization",
+            "url": "https://www.cdc.gov/yellow-book/hcp/environmental-hazards-risks/high-altitude-travel-and-altitude-illness.html"
+          },
+          "checked": "2026-11-03"
+        }
+      ]
+    },
+    {
+      "id": "medicine.acclimatization-limit",
+      "kind": "fact",
+      "claim": "Given time, most people adjust to altitudes up to about this high; above it, health and ability decline.",
+      "status": "source only",
+      "versions": [
+        {
+          "value": 5200,
+          "unit": "m",
+          "note": "Moderate hypoxia, up to about this altitude.",
+          "source": {
+            "title": "CDC Yellow Book 2026: High-Altitude Travel and Altitude Illness → Acclimatization",
+            "url": "https://www.cdc.gov/yellow-book/hcp/environmental-hazards-risks/high-altitude-travel-and-altitude-illness.html"
+          },
+          "checked": "2026-11-03"
+        },
+        {
+          "range": {
+            "min": 5000,
+            "max": 5500
+          },
+          "unit": "m",
+          "note": "Most adjust to 5,000–5,500 m; above 5,500 m few people can adjust any more.",
+          "source": {
+            "title": "Medex: Travel at High Altitude (2008 edition) → What is High Altitude?",
+            "url": "https://medex.org.uk/medex_book/Book%20update%20June%202011/English/TravelSafeHighv27A4.pdf"
+          },
+          "checked": "2026-11-03"
+        },
+        {
+          "range": {
+            "min": 5000,
+            "max": 6000
+          },
+          "unit": "m",
+          "note": "Up to about 5,000–6,000 m, symptoms come straight from too little acclimatization.",
+          "source": {
+            "title": "UIAA MedCom No 2: Emergency Field Management of AMS, HAPE and HACE (2012, updated 2024) → 1 Introduction",
+            "url": "https://www.theuiaa.org/documents/mountainmedicine/English_UIAA_MedCom_Rec_No_2_AMS_HAPE_HACE_2012_V3.3.pdf"
+          },
+          "checked": "2026-11-03"
+        }
+      ]
+    },
+    {
+      "id": "medicine.risk-factors",
+      "kind": "fact",
+      "claim": "The risk of altitude illness rises with the rate of ascent, the altitude reached and the climber's own predisposition; being fit doesn't lower it, and how a climber did before at a similar altitude and pace is the best guide.",
+      "status": "source only",
+      "versions": [
+        {
+          "source": {
+            "title": "Roach et al. 2018, The 2018 Lake Louise Acute Mountain Sickness Score → Introduction",
+            "url": "https://ora.ox.ac.uk/objects/uuid:caab0da0-71d4-4f22-a5df-7785a501ce57"
+          },
+          "checked": "2026-11-03"
+        },
+        {
+          "note": "Training and fitness don't affect the risk; sex makes little difference, if any; children are as susceptible as adults.",
+          "source": {
+            "title": "CDC Yellow Book 2026: High-Altitude Travel and Altitude Illness → Altitude illness → Risk to travelers",
+            "url": "https://www.cdc.gov/yellow-book/hcp/environmental-hazards-risks/high-altitude-travel-and-altitude-illness.html"
+          },
+          "checked": "2026-11-03"
+        },
+        {
+          "note": "Too fast an ascent, a history of altitude illness, ignoring the first symptoms, dehydration.",
+          "source": {
+            "title": "UIAA MedCom No 2: Emergency Field Management of AMS, HAPE and HACE (2012, updated 2024) → 2.1 Risk factors",
+            "url": "https://www.theuiaa.org/documents/mountainmedicine/English_UIAA_MedCom_Rec_No_2_AMS_HAPE_HACE_2012_V3.3.pdf"
+          },
+          "checked": "2026-11-03"
+        },
+        {
+          "note": "Being unfit doesn't make it more likely, but overdoing it is risky; some people just acclimatize slowly.",
+          "source": {
+            "title": "Medex: Travel at High Altitude (2008 edition) → Acute Mountain Sickness (AMS)",
+            "url": "https://medex.org.uk/medex_book/Book%20update%20June%202011/English/TravelSafeHighv27A4.pdf"
+          },
+          "checked": "2026-11-03"
+        }
+      ]
+    },
+    {
+      "id": "medicine.age-and-risk",
+      "kind": "fact",
+      "claim": "Age changes the risk: older climbers get a little less acute mountain sickness, but more pulmonary edema.",
+      "status": "source only",
+      "versions": [
+        {
+          "note": "Over 50: slightly less risk of altitude illness.",
+          "source": {
+            "title": "CDC Yellow Book 2026: High-Altitude Travel and Altitude Illness → Altitude illness → Risk to travelers",
+            "url": "https://www.cdc.gov/yellow-book/hcp/environmental-hazards-risks/high-altitude-travel-and-altitude-illness.html"
+          },
+          "checked": "2026-11-03"
+        },
+        {
+          "note": "Over 65: three times the risk of HAPE; no such risk for AMS or HACE.",
+          "source": {
+            "title": "UIAA MedCom No 2: Emergency Field Management of AMS, HAPE and HACE (2012, updated 2024) → 2.1 Risk factors",
+            "url": "https://www.theuiaa.org/documents/mountainmedicine/English_UIAA_MedCom_Rec_No_2_AMS_HAPE_HACE_2012_V3.3.pdf"
+          },
+          "checked": "2026-11-03"
+        }
+      ]
+    },
+    {
+      "id": "medicine.higher-sleep-risk",
+      "kind": "fact",
+      "claim": "A climber acclimatized to one altitude is at risk again when sleeping higher, the more so for a gain of this much.",
+      "status": "source only",
+      "versions": [
+        {
+          "range": {
+            "min": 600,
+            "max": 900
+          },
+          "unit": "m",
+          "source": {
+            "title": "CDC Yellow Book 2026: High-Altitude Travel and Altitude Illness → Altitude illness → Risk to travelers",
+            "url": "https://www.cdc.gov/yellow-book/hcp/environmental-hazards-risks/high-altitude-travel-and-altitude-illness.html"
+          },
+          "checked": "2026-11-03"
+        }
+      ]
+    },
+    {
+      "id": "medicine.speak-up",
+      "kind": "fact",
+      "claim": "Hiding symptoms, or pushing a sick climber on, can be fatal: each climber says honestly how they feel each day, and the group decides together whether to go up, rest or go down.",
+      "status": "source only",
+      "versions": [
+        {
+          "source": {
+            "title": "Medex: Travel at High Altitude (2008 edition) → Acute Mountain Sickness (AMS)",
+            "url": "https://medex.org.uk/medex_book/Book%20update%20June%202011/English/TravelSafeHighv27A4.pdf"
+          },
+          "checked": "2026-11-03"
+        },
+        {
+          "note": "Know the early symptoms and be willing to admit them.",
+          "source": {
+            "title": "CDC Yellow Book 2026: High-Altitude Travel and Altitude Illness → Preventing severe altitude illness or death",
+            "url": "https://www.cdc.gov/yellow-book/hcp/environmental-hazards-risks/high-altitude-travel-and-altitude-illness.html"
+          },
+          "checked": "2026-11-03"
+        },
+        {
+          "note": "Any sign or symptom is reported to the expedition leader.",
+          "source": {
+            "title": "UIAA MedCom No 2: Emergency Field Management of AMS, HAPE and HACE (2012, updated 2024) → 7 Appendix 2",
+            "url": "https://www.theuiaa.org/documents/mountainmedicine/English_UIAA_MedCom_Rec_No_2_AMS_HAPE_HACE_2012_V3.3.pdf"
+          },
+          "checked": "2026-11-03"
+        }
+      ]
+    },
+    {
+      "id": "medicine.whole-team",
+      "kind": "fact",
+      "claim": "A team that climbed at the same pace may have more than one sick climber; porters and guides get altitude illness as much as their clients, and an ill porter sent down alone may die.",
+      "status": "source only",
+      "versions": [
+        {
+          "source": {
+            "title": "UIAA MedCom No 2: Emergency Field Management of AMS, HAPE and HACE (2012, updated 2024) → 4 Clinical features",
+            "url": "https://www.theuiaa.org/documents/mountainmedicine/English_UIAA_MedCom_Rec_No_2_AMS_HAPE_HACE_2012_V3.3.pdf"
+          },
+          "checked": "2026-11-03"
+        },
+        {
+          "note": "In the past ill porters were paid off and sent home; many died going down alone.",
+          "source": {
+            "title": "Medex: Travel at High Altitude (2008 edition) → Porters",
+            "url": "https://medex.org.uk/medex_book/Book%20update%20June%202011/English/TravelSafeHighv27A4.pdf"
+          },
+          "checked": "2026-11-03"
+        }
+      ]
+    },
+    {
+      "id": "medicine.altitude-first",
+      "kind": "fact",
+      "claim": "At altitude, every symptom is taken for altitude illness until proven otherwise; when it's unclear whether a climber has pulmonary or cerebral edema, both are treated.",
+      "status": "source only",
+      "versions": [
+        {
+          "source": {
+            "title": "UIAA MedCom No 2: Emergency Field Management of AMS, HAPE and HACE (2012, updated 2024) → 4.3 Typical symptoms of HACE",
+            "url": "https://www.theuiaa.org/documents/mountainmedicine/English_UIAA_MedCom_Rec_No_2_AMS_HAPE_HACE_2012_V3.3.pdf"
+          },
+          "checked": "2026-11-03"
+        },
+        {
+          "source": {
+            "title": "UIAA MedCom No 2: Emergency Field Management of AMS, HAPE and HACE (2012, updated 2024) → 7 Appendix 2",
+            "url": "https://www.theuiaa.org/documents/mountainmedicine/English_UIAA_MedCom_Rec_No_2_AMS_HAPE_HACE_2012_V3.3.pdf"
+          },
+          "checked": "2026-11-03"
+        }
+      ]
+    },
+    {
+      "id": "medicine.lake-louise-symptoms",
+      "kind": "fact",
+      "claim": "The 2018 Lake Louise score rates four symptoms, each from none to severe and incapacitating: the headache; the stomach (appetite, nausea, vomiting); fatigue or weakness; dizziness or light-headedness.",
+      "status": "source only",
+      "versions": [
+        {
+          "source": {
+            "title": "Roach et al. 2018, The 2018 Lake Louise Acute Mountain Sickness Score → Table 1. 2018 Lake Louise Acute Mountain Sickness Score",
+            "url": "https://ora.ox.ac.uk/objects/uuid:caab0da0-71d4-4f22-a5df-7785a501ce57"
+          },
+          "checked": "2026-11-03"
+        },
+        {
+          "source": {
+            "title": "UIAA MedCom No 2: Emergency Field Management of AMS, HAPE and HACE (2012, updated 2024) → 6 Appendix 1",
+            "url": "https://www.theuiaa.org/documents/mountainmedicine/English_UIAA_MedCom_Rec_No_2_AMS_HAPE_HACE_2012_V3.3.pdf"
+          },
+          "checked": "2026-11-03"
+        },
+        {
+          "note": "Its score card adds a fifth, difficulty sleeping, as the score did before 2018.",
+          "source": {
+            "title": "Medex: Travel at High Altitude (2008 edition) → Acute Mountain Sickness (AMS)",
+            "url": "https://medex.org.uk/medex_book/Book%20update%20June%202011/English/TravelSafeHighv27A4.pdf"
+          },
+          "checked": "2026-11-03"
+        },
+        {
+          "note": "The guideline follows the updated score: the headache counts most, disturbed sleep less.",
+          "source": {
+            "title": "WMS: Acute Altitude Illness Clinical Practice Guideline, 2024 Update, summary → AMS/HACE Diagnosis",
+            "url": "https://wms.org/magazine/1463/2024-Altitude-Summary/default.aspx"
+          },
+          "checked": "2026-11-03"
+        }
+      ]
+    },
+    {
+      "id": "medicine.lake-louise-points",
+      "kind": "fact",
+      "claim": "Each of the four symptoms scores from 0 to this many points, so the total runs from 0 to 12.",
+      "status": "source only",
+      "versions": [
+        {
+          "value": 3,
+          "unit": "points",
+          "source": {
+            "title": "Roach et al. 2018, The 2018 Lake Louise Acute Mountain Sickness Score → Table 1. 2018 Lake Louise Acute Mountain Sickness Score",
+            "url": "https://ora.ox.ac.uk/objects/uuid:caab0da0-71d4-4f22-a5df-7785a501ce57"
+          },
+          "checked": "2026-11-03"
+        },
+        {
+          "value": 3,
+          "unit": "points",
+          "source": {
+            "title": "UIAA MedCom No 2: Emergency Field Management of AMS, HAPE and HACE (2012, updated 2024) → 6 Appendix 1",
+            "url": "https://www.theuiaa.org/documents/mountainmedicine/English_UIAA_MedCom_Rec_No_2_AMS_HAPE_HACE_2012_V3.3.pdf"
+          },
+          "checked": "2026-11-03"
+        },
+        {
+          "value": 3,
+          "unit": "points",
+          "source": {
+            "title": "Medex: Travel at High Altitude (2008 edition) → Acute Mountain Sickness (AMS)",
+            "url": "https://medex.org.uk/medex_book/Book%20update%20June%202011/English/TravelSafeHighv27A4.pdf"
+          },
+          "checked": "2026-11-03"
+        }
+      ]
+    },
+    {
+      "id": "medicine.lake-louise-threshold",
+      "kind": "fact",
+      "claim": "A climber has acute mountain sickness with a headache of at least 1 point and at least this many points in all, after a recent gain in altitude.",
+      "status": "source only",
+      "versions": [
+        {
+          "value": 3,
+          "unit": "points",
+          "source": {
+            "title": "Roach et al. 2018, The 2018 Lake Louise Acute Mountain Sickness Score → Diagnostic Criteria and Assessment of AMS",
+            "url": "https://ora.ox.ac.uk/objects/uuid:caab0da0-71d4-4f22-a5df-7785a501ce57"
+          },
+          "checked": "2026-11-03"
+        },
+        {
+          "value": 3,
+          "unit": "points",
+          "note": "Mild AMS begins at it.",
+          "source": {
+            "title": "WMS: Acute Altitude Illness Clinical Practice Guideline, 2024 Update, summary → Table 2. Acute Mountain Sickness Classification",
+            "url": "https://wms.org/magazine/1463/2024-Altitude-Summary/default.aspx"
+          },
+          "checked": "2026-11-03"
+        },
+        {
+          "value": 3,
+          "unit": "points",
+          "note": "Its appendix says more than 3 points, when no other cause explains the symptoms.",
+          "source": {
+            "title": "UIAA MedCom No 2: Emergency Field Management of AMS, HAPE and HACE (2012, updated 2024) → 6 Appendix 1",
+            "url": "https://www.theuiaa.org/documents/mountainmedicine/English_UIAA_MedCom_Rec_No_2_AMS_HAPE_HACE_2012_V3.3.pdf"
+          },
+          "checked": "2026-11-03"
+        },
+        {
+          "value": 3,
+          "unit": "points",
+          "note": "A headache and 3 or more for the other symptoms.",
+          "source": {
+            "title": "Medex: Travel at High Altitude (2008 edition) → Acute Mountain Sickness (AMS)",
+            "url": "https://medex.org.uk/medex_book/Book%20update%20June%202011/English/TravelSafeHighv27A4.pdf"
+          },
+          "checked": "2026-11-03"
+        }
+      ]
+    },
+    {
+      "id": "medicine.ams-mild-points",
+      "kind": "fact",
+      "claim": "Mild acute mountain sickness scores this many points on the Lake Louise score.",
+      "status": "source only",
+      "versions": [
+        {
+          "range": {
+            "min": 3,
+            "max": 5
+          },
+          "unit": "points",
+          "note": "Suggested; research is lacking to grade it.",
+          "source": {
+            "title": "Roach et al. 2018, The 2018 Lake Louise Acute Mountain Sickness Score → Diagnostic Criteria and Assessment of AMS",
+            "url": "https://ora.ox.ac.uk/objects/uuid:caab0da0-71d4-4f22-a5df-7785a501ce57"
+          },
+          "checked": "2026-11-03"
+        },
+        {
+          "range": {
+            "min": 3,
+            "max": 5
+          },
+          "unit": "points",
+          "source": {
+            "title": "WMS: Acute Altitude Illness Clinical Practice Guideline, 2024 Update, summary → Table 2. Acute Mountain Sickness Classification",
+            "url": "https://wms.org/magazine/1463/2024-Altitude-Summary/default.aspx"
+          },
+          "checked": "2026-11-03"
+        }
+      ]
+    },
+    {
+      "id": "medicine.ams-moderate-points",
+      "kind": "fact",
+      "claim": "Moderate acute mountain sickness scores this many points on the Lake Louise score.",
+      "status": "source only",
+      "versions": [
+        {
+          "range": {
+            "min": 6,
+            "max": 9
+          },
+          "unit": "points",
+          "note": "Suggested.",
+          "source": {
+            "title": "Roach et al. 2018, The 2018 Lake Louise Acute Mountain Sickness Score → Diagnostic Criteria and Assessment of AMS",
+            "url": "https://ora.ox.ac.uk/objects/uuid:caab0da0-71d4-4f22-a5df-7785a501ce57"
+          },
+          "checked": "2026-11-03"
+        },
+        {
+          "range": {
+            "min": 6,
+            "max": 12
+          },
+          "unit": "points",
+          "note": "Moderate to severe, as one class.",
+          "source": {
+            "title": "WMS: Acute Altitude Illness Clinical Practice Guideline, 2024 Update, summary → Table 2. Acute Mountain Sickness Classification",
+            "url": "https://wms.org/magazine/1463/2024-Altitude-Summary/default.aspx"
+          },
+          "checked": "2026-11-03"
+        }
+      ]
+    },
+    {
+      "id": "medicine.ams-severe-points",
+      "kind": "fact",
+      "claim": "Severe acute mountain sickness scores this many points on the Lake Louise score.",
+      "status": "source only",
+      "versions": [
+        {
+          "range": {
+            "min": 10,
+            "max": 12
+          },
+          "unit": "points",
+          "note": "Suggested.",
+          "source": {
+            "title": "Roach et al. 2018, The 2018 Lake Louise Acute Mountain Sickness Score → Diagnostic Criteria and Assessment of AMS",
+            "url": "https://ora.ox.ac.uk/objects/uuid:caab0da0-71d4-4f22-a5df-7785a501ce57"
+          },
+          "checked": "2026-11-03"
+        },
+        {
+          "range": {
+            "min": 6,
+            "max": 12
+          },
+          "unit": "points",
+          "note": "Moderate to severe, as one class.",
+          "source": {
+            "title": "WMS: Acute Altitude Illness Clinical Practice Guideline, 2024 Update, summary → Table 2. Acute Mountain Sickness Classification",
+            "url": "https://wms.org/magazine/1463/2024-Altitude-Summary/default.aspx"
+          },
+          "checked": "2026-11-03"
+        }
+      ]
+    },
+    {
+      "id": "medicine.lake-louise-wait",
+      "kind": "fact",
+      "claim": "The score is taken only once at least this many hours have passed since the gain in altitude, so that the journey and the first response to thin air aren't taken for AMS.",
+      "status": "source only",
+      "versions": [
+        {
+          "value": 6,
+          "unit": "h",
+          "source": {
+            "title": "Roach et al. 2018, The 2018 Lake Louise Acute Mountain Sickness Score → Diagnostic Criteria and Assessment of AMS",
+            "url": "https://ora.ox.ac.uk/objects/uuid:caab0da0-71d4-4f22-a5df-7785a501ce57"
+          },
+          "checked": "2026-11-03"
+        }
+      ]
+    },
+    {
+      "id": "medicine.lake-louise-functional",
+      "kind": "fact",
+      "claim": "The AMS clinical functional score says what the symptoms did to the climber's day: 0, nothing; 1, present but no change in activity or itinerary; 2, they forced the climber to stop the ascent or go down on their own; 3, the climber had to be evacuated.",
+      "status": "source only",
+      "versions": [
+        {
+          "source": {
+            "title": "Roach et al. 2018, The 2018 Lake Louise Acute Mountain Sickness Score → Table 1. 2018 Lake Louise Acute Mountain Sickness Score",
+            "url": "https://ora.ox.ac.uk/objects/uuid:caab0da0-71d4-4f22-a5df-7785a501ce57"
+          },
+          "checked": "2026-11-03"
+        },
+        {
+          "source": {
+            "title": "UIAA MedCom No 2: Emergency Field Management of AMS, HAPE and HACE (2012, updated 2024) → 6 Appendix 1",
+            "url": "https://www.theuiaa.org/documents/mountainmedicine/English_UIAA_MedCom_Rec_No_2_AMS_HAPE_HACE_2012_V3.3.pdf"
+          },
+          "checked": "2026-11-03"
+        },
+        {
+          "note": "The best approach is the climber's well-being and ability: feeling ill or having to do less, several hours to 3 days after an ascent, likely means AMS.",
+          "source": {
+            "title": "WMS: Acute Altitude Illness Clinical Practice Guideline, 2024 Update, summary → AMS/HACE Diagnosis",
+            "url": "https://wms.org/magazine/1463/2024-Altitude-Summary/default.aspx"
+          },
+          "checked": "2026-11-03"
+        }
+      ]
+    },
+    {
+      "id": "medicine.lake-louise-research-tool",
+      "kind": "fact",
+      "claim": "The Lake Louise score is a research tool, not a way for doctors, guides or climbers to diagnose or manage AMS: in the mountains, AMS is a clinical diagnosis from the symptoms.",
+      "status": "source only",
+      "versions": [
+        {
+          "source": {
+            "title": "Roach et al. 2018, The 2018 Lake Louise Acute Mountain Sickness Score → Directions for Using the Lake Louise AMS Score",
+            "url": "https://ora.ox.ac.uk/objects/uuid:caab0da0-71d4-4f22-a5df-7785a501ce57"
+          },
+          "checked": "2026-11-03"
+        },
+        {
+          "note": "A score may measure how severe AMS is; for managing it in the field, the symptoms are enough.",
+          "source": {
+            "title": "UIAA MedCom No 2: Emergency Field Management of AMS, HAPE and HACE (2012, updated 2024) → 4.1.1 Scoring systems",
+            "url": "https://www.theuiaa.org/documents/mountainmedicine/English_UIAA_MedCom_Rec_No_2_AMS_HAPE_HACE_2012_V3.3.pdf"
+          },
+          "checked": "2026-11-03"
+        }
+      ]
+    },
+    {
+      "id": "medicine.sleep-not-ams",
+      "kind": "fact",
+      "claim": "Disturbed sleep at altitude comes from the thin air itself rather than from acute mountain sickness, and since 2018 the score no longer counts it.",
+      "status": "source only",
+      "versions": [
+        {
+          "note": "It was absent in 40% of cases with a severe headache.",
+          "source": {
+            "title": "Roach et al. 2018, The 2018 Lake Louise Acute Mountain Sickness Score → Rationale for Revising the Lake Louise AMS Score",
+            "url": "https://ora.ox.ac.uk/objects/uuid:caab0da0-71d4-4f22-a5df-7785a501ce57"
+          },
+          "checked": "2026-11-03"
+        },
+        {
+          "note": "The commonest complaint at altitude, not necessarily tied to altitude illness; it usually improves with acclimatization.",
+          "source": {
+            "title": "CDC Yellow Book 2026: High-Altitude Travel and Altitude Illness → Sleep disturbance at high altitude",
+            "url": "https://www.cdc.gov/yellow-book/hcp/environmental-hazards-risks/high-altitude-travel-and-altitude-illness.html"
+          },
+          "checked": "2026-11-03"
+        },
+        {
+          "note": "Poor sleep may be related to how well the body is adjusting; climbers with AMS may also sleep badly.",
+          "source": {
+            "title": "Medex: Travel at High Altitude (2008 edition) → Sleep",
+            "url": "https://medex.org.uk/medex_book/Book%20update%20June%202011/English/TravelSafeHighv27A4.pdf"
+          },
+          "checked": "2026-11-03"
+        }
+      ]
+    },
+    {
+      "id": "medicine.periodic-breathing",
+      "kind": "fact",
+      "claim": "Periodic breathing at night, fast breaths and then brief pauses that sometimes wake the climber, becomes common from about this altitude; it does no harm and eases with acclimatization.",
+      "status": "source only",
+      "versions": [
+        {
+          "value": 2700,
+          "unit": "m",
+          "note": "Some degree of it becomes nearly universal above it.",
+          "source": {
+            "title": "CDC Yellow Book 2026: High-Altitude Travel and Altitude Illness → Sleep disturbance at high altitude",
+            "url": "https://www.cdc.gov/yellow-book/hcp/environmental-hazards-risks/high-altitude-travel-and-altitude-illness.html"
+          },
+          "checked": "2026-11-03"
+        },
+        {
+          "value": 2800,
+          "unit": "m",
+          "note": "Almost everyone gets it above 5,000 m.",
+          "source": {
+            "title": "Medex: Travel at High Altitude (2008 edition) → Sleep",
+            "url": "https://medex.org.uk/medex_book/Book%20update%20June%202011/English/TravelSafeHighv27A4.pdf"
+          },
+          "checked": "2026-11-03"
+        }
+      ]
+    },
+    {
+      "id": "medicine.hace-altitude",
+      "kind": "fact",
+      "claim": "High-altitude cerebral edema is rare below about this altitude.",
+      "status": "source only",
+      "versions": [
+        {
+          "value": 4300,
+          "unit": "m",
+          "source": {
+            "title": "CDC Yellow Book 2026: High-Altitude Travel and Altitude Illness → High-altitude cerebral edema",
+            "url": "https://www.cdc.gov/yellow-book/hcp/environmental-hazards-risks/high-altitude-travel-and-altitude-illness.html"
+          },
+          "checked": "2026-11-03"
+        },
+        {
+          "range": {
+            "min": 4000,
+            "max": 5000
+          },
+          "unit": "m",
+          "note": "Typical above it; lower is rare, but possible.",
+          "source": {
+            "title": "UIAA MedCom No 2: Emergency Field Management of AMS, HAPE and HACE (2012, updated 2024) → 2.2 Altitudes and time frames",
+            "url": "https://www.theuiaa.org/documents/mountainmedicine/English_UIAA_MedCom_Rec_No_2_AMS_HAPE_HACE_2012_V3.3.pdf"
+          },
+          "checked": "2026-11-03"
+        }
+      ]
+    },
+    {
+      "id": "medicine.hace-onset",
+      "kind": "fact",
+      "claim": "High-altitude cerebral edema usually comes this many hours after a gain in altitude.",
+      "status": "source only",
+      "versions": [
+        {
+          "range": {
+            "min": 24,
+            "max": 72
+          },
+          "unit": "h",
+          "source": {
+            "title": "Roach et al. 2018, The 2018 Lake Louise Acute Mountain Sickness Score → Diagnostic Criteria and Assessment of AMS",
+            "url": "https://ora.ox.ac.uk/objects/uuid:caab0da0-71d4-4f22-a5df-7785a501ce57"
+          },
+          "checked": "2026-11-03"
+        },
+        {
+          "note": "After more than 24 hours; earlier is rare, but possible.",
+          "source": {
+            "title": "UIAA MedCom No 2: Emergency Field Management of AMS, HAPE and HACE (2012, updated 2024) → 2.2 Altitudes and time frames",
+            "url": "https://www.theuiaa.org/documents/mountainmedicine/English_UIAA_MedCom_Rec_No_2_AMS_HAPE_HACE_2012_V3.3.pdf"
+          },
+          "checked": "2026-11-03"
+        }
+      ]
+    },
+    {
+      "id": "medicine.hace-with-others",
+      "kind": "fact",
+      "claim": "Cerebral edema can come alone and fast, but usually follows acute mountain sickness or the low oxygen of pulmonary edema: a climber can have all three at once.",
+      "status": "source only",
+      "versions": [
+        {
+          "note": "Often a consequence of the severe hypoxemia of HAPE.",
+          "source": {
+            "title": "CDC Yellow Book 2026: High-Altitude Travel and Altitude Illness → High-altitude cerebral edema",
+            "url": "https://www.cdc.gov/yellow-book/hcp/environmental-hazards-risks/high-altitude-travel-and-altitude-illness.html"
+          },
+          "checked": "2026-11-03"
+        },
+        {
+          "source": {
+            "title": "Roach et al. 2018, The 2018 Lake Louise Acute Mountain Sickness Score → Diagnostic Criteria and Assessment of AMS",
+            "url": "https://ora.ox.ac.uk/objects/uuid:caab0da0-71d4-4f22-a5df-7785a501ce57"
+          },
+          "checked": "2026-11-03"
+        },
+        {
+          "source": {
+            "title": "Medex: Travel at High Altitude (2008 edition) → HACE",
+            "url": "https://medex.org.uk/medex_book/Book%20update%20June%202011/English/TravelSafeHighv27A4.pdf"
+          },
+          "checked": "2026-11-03"
+        }
+      ]
+    },
+    {
+      "id": "medicine.hace-loss-of-insight",
+      "kind": "fact",
+      "claim": "A climber with cerebral edema often loses insight: insists they're all right and asks to be left alone. Whoever is with them stays with them all the time.",
+      "status": "source only",
+      "versions": [
+        {
+          "source": {
+            "title": "UIAA MedCom No 2: Emergency Field Management of AMS, HAPE and HACE (2012, updated 2024) → 4.3 Typical symptoms of HACE",
+            "url": "https://www.theuiaa.org/documents/mountainmedicine/English_UIAA_MedCom_Rec_No_2_AMS_HAPE_HACE_2012_V3.3.pdf"
+          },
+          "checked": "2026-11-03"
+        },
+        {
+          "note": "Stay with the person at all times; do not leave them on their own.",
+          "source": {
+            "title": "Medex: Travel at High Altitude (2008 edition) → HACE",
+            "url": "https://medex.org.uk/medex_book/Book%20update%20June%202011/English/TravelSafeHighv27A4.pdf"
+          },
+          "checked": "2026-11-03"
+        }
+      ]
+    },
+    {
+      "id": "medicine.hace-like-drunkenness",
+      "kind": "fact",
+      "claim": "Cerebral edema looks like drunkenness: the climber staggers, is confused and drowsy.",
+      "status": "source only",
+      "versions": [
+        {
+          "source": {
+            "title": "CDC Yellow Book 2026: High-Altitude Travel and Altitude Illness → High-altitude cerebral edema → Diagnosis",
+            "url": "https://www.cdc.gov/yellow-book/hcp/environmental-hazards-risks/high-altitude-travel-and-altitude-illness.html"
+          },
+          "checked": "2026-11-03"
+        }
+      ]
+    },
+    {
+      "id": "medicine.hape-altitude",
+      "kind": "fact",
+      "claim": "High-altitude pulmonary edema is rare below about this altitude.",
+      "status": "source only",
+      "versions": [
+        {
+          "value": 3000,
+          "unit": "m",
+          "note": "Typical above it; lower is rare, but possible.",
+          "source": {
+            "title": "UIAA MedCom No 2: Emergency Field Management of AMS, HAPE and HACE (2012, updated 2024) → 2.2 Altitudes and time frames",
+            "url": "https://www.theuiaa.org/documents/mountainmedicine/English_UIAA_MedCom_Rec_No_2_AMS_HAPE_HACE_2012_V3.3.pdf"
+          },
+          "checked": "2026-11-03"
+        },
+        {
+          "range": {
+            "min": 2500,
+            "max": 3000
+          },
+          "unit": "m",
+          "note": "Usually above 2,500–3,000 m, and extremely rare below.",
+          "source": {
+            "title": "Omidi et al. 2025, What Is New in Altitude- and Cold-Related Illnesses of Travel (a review of the WMS 2024 guidelines) → 1.3 Definitions and Epidemiology of Acute Altitude Illness",
+            "url": "https://doi.org/10.3390/ijerph22020284"
+          },
+          "checked": "2026-11-03"
+        },
+        {
+          "value": 2500,
+          "unit": "m",
+          "note": "Ascending to it or higher.",
+          "source": {
+            "title": "WMS: Acute Altitude Illness Clinical Practice Guideline, 2024 Update, summary → HAPE Diagnosis",
+            "url": "https://wms.org/magazine/1463/2024-Altitude-Summary/default.aspx"
+          },
+          "checked": "2026-11-03"
+        }
+      ]
+    },
+    {
+      "id": "medicine.hape-share",
+      "kind": "fact",
+      "claim": "At most this share of travellers above 4,300 m get high-altitude pulmonary edema.",
+      "status": "source only",
+      "versions": [
+        {
+          "value": 1,
+          "unit": "%",
+          "source": {
+            "title": "CDC Yellow Book 2026: High-Altitude Travel and Altitude Illness → High-altitude pulmonary edema",
+            "url": "https://www.cdc.gov/yellow-book/hcp/environmental-hazards-risks/high-altitude-travel-and-altitude-illness.html"
+          },
+          "checked": "2026-11-03"
+        }
+      ]
+    },
+    {
+      "id": "medicine.hape-faster",
+      "kind": "fact",
+      "claim": "Pulmonary edema can kill faster than cerebral edema: in serious cases within an hour of the symptoms being noticed.",
+      "status": "source only",
+      "versions": [
+        {
+          "note": "It can be more rapidly fatal than HACE.",
+          "source": {
+            "title": "CDC Yellow Book 2026: High-Altitude Travel and Altitude Illness → High-altitude pulmonary edema → Diagnosis",
+            "url": "https://www.cdc.gov/yellow-book/hcp/environmental-hazards-risks/high-altitude-travel-and-altitude-illness.html"
+          },
+          "checked": "2026-11-03"
+        },
+        {
+          "source": {
+            "title": "Medex: Travel at High Altitude (2008 edition) → HAPE",
+            "url": "https://medex.org.uk/medex_book/Book%20update%20June%202011/English/TravelSafeHighv27A4.pdf"
+          },
+          "checked": "2026-11-03"
+        }
+      ]
+    },
+    {
+      "id": "medicine.hape-quiet",
+      "kind": "fact",
+      "claim": "A climber who breathes too little in thin air may show pulmonary edema only as confusion and drowsiness, with a very low saturation.",
+      "status": "source only",
+      "versions": [
+        {
+          "source": {
+            "title": "CDC Yellow Book 2026: High-Altitude Travel and Altitude Illness → High-altitude pulmonary edema → Diagnosis",
+            "url": "https://www.cdc.gov/yellow-book/hcp/environmental-hazards-risks/high-altitude-travel-and-altitude-illness.html"
+          },
+          "checked": "2026-11-03"
+        },
+        {
+          "note": "HAPE with neurological dysfunction is often mistaken for HACE.",
+          "source": {
+            "title": "Omidi et al. 2025, What Is New in Altitude- and Cold-Related Illnesses of Travel (a review of the WMS 2024 guidelines) → 1.5 Interventions for Treatment of Altitude Illness",
+            "url": "https://doi.org/10.3390/ijerph22020284"
+          },
+          "checked": "2026-11-03"
+        }
+      ]
+    },
+    {
+      "id": "medicine.hape-saturation",
+      "kind": "fact",
+      "claim": "With pulmonary edema, the oxygen saturation is often this low, at least 10 points below that of healthy climbers at the same altitude.",
+      "status": "source only",
+      "versions": [
+        {
+          "range": {
+            "min": 50,
+            "max": 70
+          },
+          "unit": "%",
+          "source": {
+            "title": "CDC Yellow Book 2026: High-Altitude Travel and Altitude Illness → High-altitude pulmonary edema → Diagnosis",
+            "url": "https://www.cdc.gov/yellow-book/hcp/environmental-hazards-risks/high-altitude-travel-and-altitude-illness.html"
+          },
+          "checked": "2026-11-03"
+        }
+      ]
+    },
+    {
+      "id": "medicine.hape-recurrence",
+      "kind": "fact",
+      "claim": "A climber who has had pulmonary edema is likely to get it again, often at the same altitude: a history of HAPE or HACE puts them at high risk.",
+      "status": "source only",
+      "versions": [
+        {
+          "source": {
+            "title": "Medex: Travel at High Altitude (2008 edition) → The Lungs",
+            "url": "https://medex.org.uk/medex_book/Book%20update%20June%202011/English/TravelSafeHighv27A4.pdf"
+          },
+          "checked": "2026-11-03"
+        },
+        {
+          "note": "A history of HAPE or HACE is the high-risk category.",
+          "source": {
+            "title": "CDC Yellow Book 2026: High-Altitude Travel and Altitude Illness → Altitude illness → Risk to travelers",
+            "url": "https://www.cdc.gov/yellow-book/hcp/environmental-hazards-risks/high-altitude-travel-and-altitude-illness.html"
+          },
+          "checked": "2026-11-03"
+        },
+        {
+          "note": "Preventive medicines only for climbers who've had HAPE, above all more than once.",
+          "source": {
+            "title": "WMS: Acute Altitude Illness Clinical Practice Guideline, 2024 Update, summary → HAPE Prevention",
+            "url": "https://wms.org/magazine/1463/2024-Altitude-Summary/default.aspx"
+          },
+          "checked": "2026-11-03"
+        }
+      ]
+    },
+    {
+      "id": "medicine.hape-acetazolamide",
+      "kind": "fact",
+      "claim": "Acetazolamide isn't used to treat pulmonary edema: there's no evidence for it, and its diuretic effect may harm.",
+      "status": "source only",
+      "versions": [
+        {
+          "source": {
+            "title": "Omidi et al. 2025, What Is New in Altitude- and Cold-Related Illnesses of Travel (a review of the WMS 2024 guidelines) → 1.5 Interventions for Treatment of Altitude Illness",
+            "url": "https://doi.org/10.3390/ijerph22020284"
+          },
+          "checked": "2026-11-03"
+        },
+        {
+          "note": "The 2008 booklet still gives it for HAPE and HACE.",
+          "source": {
+            "title": "Medex: Travel at High Altitude (2008 edition) → HAPE",
+            "url": "https://medex.org.uk/medex_book/Book%20update%20June%202011/English/TravelSafeHighv27A4.pdf"
+          },
+          "checked": "2026-11-03"
+        }
+      ]
+    },
+    {
+      "id": "medicine.ams-mimics",
+      "kind": "fact",
+      "claim": "Other things look like acute mountain sickness: a hangover, exhaustion, dehydration, carbon monoxide, too much plain water (low blood sodium), drugs, a migraine; unlike a virus, AMS brings no fever, runny nose or aching muscles.",
+      "status": "source only",
+      "versions": [
+        {
+          "source": {
+            "title": "CDC Yellow Book 2026: High-Altitude Travel and Altitude Illness → Acute mountain sickness → Diagnosis",
+            "url": "https://www.cdc.gov/yellow-book/hcp/environmental-hazards-risks/high-altitude-travel-and-altitude-illness.html"
+          },
+          "checked": "2026-11-03"
+        },
+        {
+          "note": "Also a stroke, low blood sugar, an infection or a head injury.",
+          "source": {
+            "title": "WMS: Acute Altitude Illness Clinical Practice Guideline, 2024 Update, summary → AMS/HACE Treatment",
+            "url": "https://wms.org/magazine/1463/2024-Altitude-Summary/default.aspx"
+          },
+          "checked": "2026-11-03"
+        },
+        {
+          "note": "Exhaustion, dehydration, sunstroke, heat stroke, a hangover.",
+          "source": {
+            "title": "UIAA MedCom No 2: Emergency Field Management of AMS, HAPE and HACE (2012, updated 2024) → Most important differential diagnoses in AMS and HACE",
+            "url": "https://www.theuiaa.org/documents/mountainmedicine/English_UIAA_MedCom_Rec_No_2_AMS_HAPE_HACE_2012_V3.3.pdf"
+          },
+          "checked": "2026-11-03"
+        }
+      ]
+    },
+    {
+      "id": "medicine.carbon-monoxide",
+      "kind": "fact",
+      "claim": "Cooking, or a fuel-burning lamp, in a closed tent or snow cave poisons with carbon monoxide: a headache and confusion, without blue lips; fresh air or oxygen treats it.",
+      "status": "source only",
+      "versions": [
+        {
+          "source": {
+            "title": "UIAA MedCom No 2: Emergency Field Management of AMS, HAPE and HACE (2012, updated 2024) → Other (rarer) differential diagnoses",
+            "url": "https://www.theuiaa.org/documents/mountainmedicine/English_UIAA_MedCom_Rec_No_2_AMS_HAPE_HACE_2012_V3.3.pdf"
+          },
+          "checked": "2026-11-03"
+        },
+        {
+          "note": "A hyperbaric bag is never used inside a closed tent, above all with stoves or fuel lamps burning.",
+          "source": {
+            "title": "UIAA MedCom No 3: Portable Hyperbaric Chambers (2012) → 4 How to use hyperbaric chambers",
+            "url": "https://www.theuiaa.org/documents/mountainmedicine/English_UIAA_MedCom_Rec_No_3_Portable_Hyperbaric_Chambers_2012_V3-2.pdf"
+          },
+          "checked": "2026-11-03"
+        }
+      ]
+    },
+    {
+      "id": "medicine.khumbu-cough",
+      "kind": "fact",
+      "claim": "Hard work at altitude in very cold air brings a severe dry cough, the Khumbu cough, painful in the chest and throat, without fever; only descent relieves it.",
+      "status": "source only",
+      "versions": [
+        {
+          "source": {
+            "title": "UIAA MedCom No 2: Emergency Field Management of AMS, HAPE and HACE (2012, updated 2024) → Most important differential diagnoses in HAPE",
+            "url": "https://www.theuiaa.org/documents/mountainmedicine/English_UIAA_MedCom_Rec_No_2_AMS_HAPE_HACE_2012_V3.3.pdf"
+          },
+          "checked": "2026-11-03"
+        },
+        {
+          "note": "A dry cough at altitude is common and irritating, but not usually serious.",
+          "source": {
+            "title": "Medex: Travel at High Altitude (2008 edition) → The Lungs",
+            "url": "https://medex.org.uk/medex_book/Book%20update%20June%202011/English/TravelSafeHighv27A4.pdf"
+          },
+          "checked": "2026-11-03"
+        }
+      ]
+    },
+    {
+      "id": "medicine.hape-mimics",
+      "kind": "fact",
+      "claim": "Other things look like pulmonary edema: a clot in the lungs, from dehydration and lying still, is the most important non-traumatic danger at altitude; pneumonia, asthma, a collapsed lung, heart failure; a fever doesn't rule HAPE out.",
+      "status": "source only",
+      "versions": [
+        {
+          "source": {
+            "title": "UIAA MedCom No 2: Emergency Field Management of AMS, HAPE and HACE (2012, updated 2024) → Most important differential diagnoses in HAPE",
+            "url": "https://www.theuiaa.org/documents/mountainmedicine/English_UIAA_MedCom_Rec_No_2_AMS_HAPE_HACE_2012_V3.3.pdf"
+          },
+          "checked": "2026-11-03"
+        },
+        {
+          "note": "Also a viral cold and a heart attack.",
+          "source": {
+            "title": "WMS: Acute Altitude Illness Clinical Practice Guideline, 2024 Update, summary → HAPE Diagnosis",
+            "url": "https://wms.org/magazine/1463/2024-Altitude-Summary/default.aspx"
+          },
+          "checked": "2026-11-03"
+        },
+        {
+          "source": {
+            "title": "CDC Yellow Book 2026: High-Altitude Travel and Altitude Illness → High-altitude pulmonary edema → Diagnosis",
+            "url": "https://www.cdc.gov/yellow-book/hcp/environmental-hazards-risks/high-altitude-travel-and-altitude-illness.html"
+          },
+          "checked": "2026-11-03"
+        }
+      ]
+    },
+    {
+      "id": "medicine.dehydration",
+      "kind": "fact",
+      "claim": "Dry air and effort dehydrate: thirst, a headache and tiredness are its signs, and a climber drinks before feeling thirsty, since thirst at altitude doesn't show the need; peeing a good volume of clear urine several times a day shows enough is going in.",
+      "status": "source only",
+      "versions": [
+        {
+          "note": "Several litres a day; peeing at least four times.",
+          "source": {
+            "title": "Medex: Travel at High Altitude (2008 edition) → The Kidney / Bladder",
+            "url": "https://medex.org.uk/medex_book/Book%20update%20June%202011/English/TravelSafeHighv27A4.pdf"
+          },
+          "checked": "2026-11-03"
+        },
+        {
+          "note": "The urine's colour doesn't show it, its volume of at least a litre a day does.",
+          "source": {
+            "title": "UIAA MedCom No 2: Emergency Field Management of AMS, HAPE and HACE (2012, updated 2024) → Most important differential diagnoses in AMS and HACE",
+            "url": "https://www.theuiaa.org/documents/mountainmedicine/English_UIAA_MedCom_Rec_No_2_AMS_HAPE_HACE_2012_V3.3.pdf"
+          },
+          "checked": "2026-11-03"
+        }
+      ]
+    },
+    {
+      "id": "medicine.severe-descent-distance",
+      "kind": "fact",
+      "claim": "With severe altitude illness, the climber descends at least this far, and at least to where they last felt well.",
+      "status": "source only",
+      "versions": [
+        {
+          "range": {
+            "min": 500,
+            "max": 1000
+          },
+          "unit": "m",
+          "note": "To the last camp or hut where the climber was well; if possible not all the way down, so that acclimatization goes on.",
+          "source": {
+            "title": "UIAA MedCom No 2: Emergency Field Management of AMS, HAPE and HACE (2012, updated 2024) → 5.1.2 Severe symptoms",
+            "url": "https://www.theuiaa.org/documents/mountainmedicine/English_UIAA_MedCom_Rec_No_2_AMS_HAPE_HACE_2012_V3.3.pdf"
+          },
+          "checked": "2026-11-03"
+        },
+        {
+          "range": {
+            "min": 300,
+            "max": 500
+          },
+          "unit": "m",
+          "source": {
+            "title": "UIAA MedCom No 3: Portable Hyperbaric Chambers (2012) → 2 Principles and Safety Management",
+            "url": "https://www.theuiaa.org/documents/mountainmedicine/English_UIAA_MedCom_Rec_No_3_Portable_Hyperbaric_Chambers_2012_V3-2.pdf"
+          },
+          "checked": "2026-11-03"
+        },
+        {
+          "range": {
+            "min": 500,
+            "max": 1000
+          },
+          "unit": "m",
+          "note": "For AMS that gets worse: this much lower to sleep.",
+          "source": {
+            "title": "Medex: Travel at High Altitude (2008 edition) → Acute Mountain Sickness (AMS)",
+            "url": "https://medex.org.uk/medex_book/Book%20update%20June%202011/English/TravelSafeHighv27A4.pdf"
+          },
+          "checked": "2026-11-03"
+        }
+      ]
+    },
+    {
+      "id": "medicine.descent-carried",
+      "kind": "fact",
+      "claim": "A climber with severe altitude illness carries nothing, walks as little as possible (carried, or flown, where that can be done) and never goes down alone.",
+      "status": "source only",
+      "versions": [
+        {
+          "note": "Passive transport where possible: a stretcher, a helicopter.",
+          "source": {
+            "title": "UIAA MedCom No 2: Emergency Field Management of AMS, HAPE and HACE (2012, updated 2024) → 5.2 Emergency treatment of HAPE",
+            "url": "https://www.theuiaa.org/documents/mountainmedicine/English_UIAA_MedCom_Rec_No_2_AMS_HAPE_HACE_2012_V3.3.pdf"
+          },
+          "checked": "2026-11-03"
+        },
+        {
+          "note": "The patient never retreats unaccompanied, and in severe cases doesn't walk even a short distance unless it can't be avoided.",
+          "source": {
+            "title": "UIAA MedCom No 3: Portable Hyperbaric Chambers (2012) → 2 Principles and Safety Management",
+            "url": "https://www.theuiaa.org/documents/mountainmedicine/English_UIAA_MedCom_Rec_No_3_Portable_Hyperbaric_Chambers_2012_V3-2.pdf"
+          },
+          "checked": "2026-11-03"
+        },
+        {
+          "note": "Without a pack, or by vehicle, helicopter or animal: exertion raises the pressure in the lungs.",
+          "source": {
+            "title": "WMS: Acute Altitude Illness Clinical Practice Guideline, 2024 Update, summary → HAPE Treatment",
+            "url": "https://wms.org/magazine/1463/2024-Altitude-Summary/default.aspx"
+          },
+          "checked": "2026-11-03"
+        }
+      ]
+    },
+    {
+      "id": "medicine.descent-without-climbs",
+      "kind": "fact",
+      "claim": "A severely ill climber may not manage even a short climb: they don't leave camp to descend by a way that goes up on the way down.",
+      "status": "source only",
+      "versions": [
+        {
+          "source": {
+            "title": "UIAA MedCom No 2: Emergency Field Management of AMS, HAPE and HACE (2012, updated 2024) → 5.1.2 Severe symptoms",
+            "url": "https://www.theuiaa.org/documents/mountainmedicine/English_UIAA_MedCom_Rec_No_2_AMS_HAPE_HACE_2012_V3.3.pdf"
+          },
+          "checked": "2026-11-03"
+        },
+        {
+          "note": "A cyclist with altitude illness turned blue and frothed at the mouth crossing a 5,150 m pass on the way down.",
+          "source": {
+            "title": "Medex: Travel at High Altitude (2008 edition) → Asia",
+            "url": "https://medex.org.uk/medex_book/Book%20update%20June%202011/English/TravelSafeHighv27A4.pdf"
+          },
+          "checked": "2026-11-03"
+        }
+      ]
+    },
+    {
+      "id": "medicine.descent-watch",
+      "kind": "fact",
+      "claim": "On the way down with cerebral edema, the climber's own safety needs extra care: dizziness and ataxia make falls likely.",
+      "status": "source only",
+      "versions": [
+        {
+          "source": {
+            "title": "UIAA MedCom No 2: Emergency Field Management of AMS, HAPE and HACE (2012, updated 2024) → 5.3 Emergency treatment of HACE",
+            "url": "https://www.theuiaa.org/documents/mountainmedicine/English_UIAA_MedCom_Rec_No_2_AMS_HAPE_HACE_2012_V3.3.pdf"
+          },
+          "checked": "2026-11-03"
+        }
+      ]
+    },
+    {
+      "id": "medicine.no-death-needed",
+      "kind": "fact",
+      "claim": "Altitude illness comes on slowly and predictably enough that nobody need die of it, unless weather or terrain traps them where descent is impossible and treatment out of reach.",
+      "status": "source only",
+      "versions": [
+        {
+          "source": {
+            "title": "CDC Yellow Book 2026: High-Altitude Travel and Altitude Illness → Preventing severe altitude illness or death",
+            "url": "https://www.cdc.gov/yellow-book/hcp/environmental-hazards-risks/high-altitude-travel-and-altitude-illness.html"
+          },
+          "checked": "2026-11-03"
+        },
+        {
+          "note": "Two deaths on the Mera La could have been avoided had simple rules been followed.",
+          "source": {
+            "title": "Medex: Travel at High Altitude (2008 edition) → Preface",
+            "url": "https://medex.org.uk/medex_book/Book%20update%20June%202011/English/TravelSafeHighv27A4.pdf"
+          },
+          "checked": "2026-11-03"
+        }
+      ]
+    },
+    {
+      "id": "medicine.oxygen-target",
+      "kind": "fact",
+      "claim": "Supplemental oxygen treating altitude illness aims at an oxygen saturation above this level.",
+      "status": "source only",
+      "versions": [
+        {
+          "value": 90,
+          "unit": "%",
+          "note": "Usually adequate.",
+          "source": {
+            "title": "WMS: Acute Altitude Illness Clinical Practice Guideline, 2024 Update, summary → AMS/HACE Treatment",
+            "url": "https://wms.org/magazine/1463/2024-Altitude-Summary/default.aspx"
+          },
+          "checked": "2026-11-03"
+        },
+        {
+          "value": 90,
+          "unit": "%",
+          "source": {
+            "title": "Omidi et al. 2025, What Is New in Altitude- and Cold-Related Illnesses of Travel (a review of the WMS 2024 guidelines) → 1.5 Interventions for Treatment of Altitude Illness",
+            "url": "https://doi.org/10.3390/ijerph22020284"
+          },
+          "checked": "2026-11-03"
+        }
+      ]
+    },
+    {
+      "id": "medicine.oxygen-headache",
+      "kind": "fact",
+      "claim": "Oxygen eases the headache of acute mountain sickness within about this many minutes, and its other symptoms over hours; small cans of oxygen hold too little to help for long.",
+      "status": "source only",
+      "versions": [
+        {
+          "value": 30,
+          "unit": "min",
+          "source": {
+            "title": "CDC Yellow Book 2026: High-Altitude Travel and Altitude Illness → Acute mountain sickness → Treatment",
+            "url": "https://www.cdc.gov/yellow-book/hcp/environmental-hazards-risks/high-altitude-travel-and-altitude-illness.html"
+          },
+          "checked": "2026-11-03"
+        },
+        {
+          "note": "Over-the-counter oxygen canisters aren't to be relied on.",
+          "source": {
+            "title": "WMS: Acute Altitude Illness Clinical Practice Guideline, 2024 Update, summary → AMS/HACE Treatment",
+            "url": "https://wms.org/magazine/1463/2024-Altitude-Summary/default.aspx"
+          },
+          "checked": "2026-11-03"
+        }
+      ]
+    },
+    {
+      "id": "medicine.oximeter-limits",
+      "kind": "fact",
+      "claim": "A finger oximeter misleads at altitude: the reading jumps with small changes, loses accuracy below 80%, and errs with cold fingers or bright light, so no decision rests on a small difference.",
+      "status": "source only",
+      "versions": [
+        {
+          "source": {
+            "title": "WMS: Acute Altitude Illness Clinical Practice Guideline, 2024 Update, summary → HAPE Diagnosis",
+            "url": "https://wms.org/magazine/1463/2024-Altitude-Summary/default.aspx"
+          },
+          "checked": "2026-11-03"
+        }
+      ]
+    },
+    {
+      "id": "medicine.ams-saturation",
+      "kind": "fact",
+      "claim": "With acute mountain sickness the oxygen saturation is usually normal for the altitude or a little low; a high saturation for the altitude seems to protect.",
+      "status": "source only",
+      "versions": [
+        {
+          "source": {
+            "title": "CDC Yellow Book 2026: High-Altitude Travel and Altitude Illness → Acute mountain sickness → Diagnosis",
+            "url": "https://www.cdc.gov/yellow-book/hcp/environmental-hazards-risks/high-altitude-travel-and-altitude-illness.html"
+          },
+          "checked": "2026-11-03"
+        }
+      ]
+    },
+    {
+      "id": "medicine.saturation-3000",
+      "kind": "fact",
+      "claim": "Arriving at about 3,050 m, the blood's oxygen saturation falls to this range.",
+      "status": "source only",
+      "versions": [
+        {
+          "range": {
+            "min": 88,
+            "max": 91
+          },
+          "unit": "%",
+          "source": {
+            "title": "CDC Yellow Book 2026: High-Altitude Travel and Altitude Illness → Introduction",
+            "url": "https://www.cdc.gov/yellow-book/hcp/environmental-hazards-risks/high-altitude-travel-and-altitude-illness.html"
+          },
+          "checked": "2026-11-03"
+        }
+      ]
+    },
+    {
+      "id": "medicine.sleep-hypoxemia",
+      "kind": "fact",
+      "claim": "The blood's oxygen is lowest during sleep: climbing high and sleeping lower spares the body.",
+      "status": "source only",
+      "versions": [
+        {
+          "source": {
+            "title": "CDC Yellow Book 2026: High-Altitude Travel and Altitude Illness → Introduction",
+            "url": "https://www.cdc.gov/yellow-book/hcp/environmental-hazards-risks/high-altitude-travel-and-altitude-illness.html"
+          },
+          "checked": "2026-11-03"
+        }
+      ]
+    },
+    {
+      "id": "medicine.oxygen-saves-lives",
+      "kind": "fact",
+      "claim": "At extreme altitude, supplemental oxygen lowers the risk of death: climbers without it have died at much higher rates on Everest and K2.",
+      "status": "source only",
+      "versions": [
+        {
+          "source": {
+            "title": "UIAA MedCom No 22a: Drug Use and Misuse in Mountaineering (2014) → 2.19 Oxygen",
+            "url": "https://www.theuiaa.org/documents/mountainmedicine/English_UIAA-MedCom-Rec-No-22a-Drug-misuse-2014-V1-2.pdf"
+          },
+          "checked": "2026-11-03"
+        }
+      ]
+    },
+    {
+      "id": "medicine.hyperbaric-descent",
+      "kind": "fact",
+      "claim": "Pumped up, a portable hyperbaric chamber is like descending this far.",
+      "status": "source only",
+      "versions": [
+        {
+          "range": {
+            "min": 1500,
+            "max": 1800
+          },
+          "unit": "m",
+          "note": "Depending on the starting altitude.",
+          "source": {
+            "title": "CDC Yellow Book 2026: High-Altitude Travel and Altitude Illness → Preventing severe altitude illness or death",
+            "url": "https://www.cdc.gov/yellow-book/hcp/environmental-hazards-risks/high-altitude-travel-and-altitude-illness.html"
+          },
+          "checked": "2026-11-03"
+        },
+        {
+          "range": {
+            "min": 1500,
+            "max": 2500
+          },
+          "unit": "m",
+          "source": {
+            "title": "UIAA MedCom No 3: Portable Hyperbaric Chambers (2012) → 1 Introduction",
+            "url": "https://www.theuiaa.org/documents/mountainmedicine/English_UIAA_MedCom_Rec_No_3_Portable_Hyperbaric_Chambers_2012_V3-2.pdf"
+          },
+          "checked": "2026-11-03"
+        },
+        {
+          "value": 2000,
+          "unit": "m",
+          "source": {
+            "title": "Medex: Travel at High Altitude (2008 edition) → Oxygen",
+            "url": "https://medex.org.uk/medex_book/Book%20update%20June%202011/English/TravelSafeHighv27A4.pdf"
+          },
+          "checked": "2026-11-03"
+        }
+      ]
+    },
+    {
+      "id": "medicine.hyperbaric-session",
+      "kind": "fact",
+      "claim": "A session in a portable hyperbaric chamber lasts this many minutes: after two hours nothing more is gained, though a climber may stay in until evacuation.",
+      "status": "source only",
+      "versions": [
+        {
+          "range": {
+            "min": 60,
+            "max": 120
+          },
+          "unit": "min",
+          "source": {
+            "title": "UIAA MedCom No 3: Portable Hyperbaric Chambers (2012) → 4 How to use hyperbaric chambers",
+            "url": "https://www.theuiaa.org/documents/mountainmedicine/English_UIAA_MedCom_Rec_No_3_Portable_Hyperbaric_Chambers_2012_V3-2.pdf"
+          },
+          "checked": "2026-11-03"
+        },
+        {
+          "value": 60,
+          "unit": "min",
+          "note": "An hour, but several hours may be needed.",
+          "source": {
+            "title": "Medex: Travel at High Altitude (2008 edition) → Oxygen",
+            "url": "https://medex.org.uk/medex_book/Book%20update%20June%202011/English/TravelSafeHighv27A4.pdf"
+          },
+          "checked": "2026-11-03"
+        }
+      ]
+    },
+    {
+      "id": "medicine.hyperbaric-rebound",
+      "kind": "fact",
+      "claim": "The relief from a hyperbaric chamber lasts some hours: staying at altitude, most climbers relapse within this many hours, so the time is used to descend, with the bag.",
+      "status": "source only",
+      "versions": [
+        {
+          "value": 12,
+          "unit": "h",
+          "source": {
+            "title": "UIAA MedCom No 3: Portable Hyperbaric Chambers (2012) → 5 Results of treatment / further proceeding",
+            "url": "https://www.theuiaa.org/documents/mountainmedicine/English_UIAA_MedCom_Rec_No_3_Portable_Hyperbaric_Chambers_2012_V3-2.pdf"
+          },
+          "checked": "2026-11-03"
+        },
+        {
+          "note": "A climber may improve enough to help with their own evacuation.",
+          "source": {
+            "title": "WMS: Acute Altitude Illness Clinical Practice Guideline, 2024 Update, summary → AMS/HACE Treatment",
+            "url": "https://wms.org/magazine/1463/2024-Altitude-Summary/default.aspx"
+          },
+          "checked": "2026-11-03"
+        }
+      ]
+    },
+    {
+      "id": "medicine.hyperbaric-pumping",
+      "kind": "fact",
+      "claim": "A pumped-up chamber has to be pumped this many strokes a minute all the time, to keep its pressure and flush out carbon dioxide: hard work at altitude.",
+      "status": "source only",
+      "versions": [
+        {
+          "range": {
+            "min": 8,
+            "max": 12
+          },
+          "unit": "strokes/min",
+          "source": {
+            "title": "UIAA MedCom No 3: Portable Hyperbaric Chambers (2012) → 4 How to use hyperbaric chambers",
+            "url": "https://www.theuiaa.org/documents/mountainmedicine/English_UIAA_MedCom_Rec_No_3_Portable_Hyperbaric_Chambers_2012_V3-2.pdf"
+          },
+          "checked": "2026-11-03"
+        }
+      ]
+    },
+    {
+      "id": "medicine.hyperbaric-ceiling",
+      "kind": "fact",
+      "claim": "Above about this altitude a hyperbaric chamber is too strenuous to work: oxygen and medicines on the way down are preferred.",
+      "status": "source only",
+      "versions": [
+        {
+          "value": 7000,
+          "unit": "m",
+          "source": {
+            "title": "UIAA MedCom No 3: Portable Hyperbaric Chambers (2012) → 2 Principles and Safety Management",
+            "url": "https://www.theuiaa.org/documents/mountainmedicine/English_UIAA_MedCom_Rec_No_3_Portable_Hyperbaric_Chambers_2012_V3-2.pdf"
+          },
+          "checked": "2026-11-03"
+        }
+      ]
+    },
+    {
+      "id": "medicine.hyperbaric-not-for-mild",
+      "kind": "fact",
+      "claim": "A hyperbaric chamber is never used for mild acute mountain sickness, nor to climb on the next day: a climber treated in one stays another day at that altitude, and re-ascends only after days of full recovery, more cautiously than before.",
+      "status": "source only",
+      "versions": [
+        {
+          "source": {
+            "title": "UIAA MedCom No 3: Portable Hyperbaric Chambers (2012) → 2 Principles and Safety Management",
+            "url": "https://www.theuiaa.org/documents/mountainmedicine/English_UIAA_MedCom_Rec_No_3_Portable_Hyperbaric_Chambers_2012_V3-2.pdf"
+          },
+          "checked": "2026-11-03"
+        },
+        {
+          "source": {
+            "title": "UIAA MedCom No 3: Portable Hyperbaric Chambers (2012) → 5 Results of treatment / further proceeding",
+            "url": "https://www.theuiaa.org/documents/mountainmedicine/English_UIAA_MedCom_Rec_No_3_Portable_Hyperbaric_Chambers_2012_V3-2.pdf"
+          },
+          "checked": "2026-11-03"
+        }
+      ]
+    },
+    {
+      "id": "medicine.hyperbaric-weight",
+      "kind": "fact",
+      "claim": "A Gamow bag with its pump weighs about this much.",
+      "status": "source only",
+      "versions": [
+        {
+          "value": 6.5,
+          "unit": "kg",
+          "source": {
+            "title": "CDC Yellow Book 2026: High-Altitude Travel and Altitude Illness → Preventing severe altitude illness or death",
+            "url": "https://www.cdc.gov/yellow-book/hcp/environmental-hazards-risks/high-altitude-travel-and-altitude-illness.html"
+          },
+          "checked": "2026-11-03"
+        },
+        {
+          "value": 6.5,
+          "unit": "kg",
+          "note": "The Certec bag weighs 4.8 kg, the Portable Altitude Chamber 8 kg.",
+          "source": {
+            "title": "UIAA MedCom No 3: Portable Hyperbaric Chambers (2012) → 7 Types of chambers",
+            "url": "https://www.theuiaa.org/documents/mountainmedicine/English_UIAA_MedCom_Rec_No_3_Portable_Hyperbaric_Chambers_2012_V3-2.pdf"
+          },
+          "checked": "2026-11-03"
+        }
+      ]
+    },
+    {
+      "id": "medicine.hyperbaric-where",
+      "kind": "fact",
+      "claim": "An expedition that takes a hyperbaric chamber keeps it at the highest camp: illness is likeliest there, and carrying it down is easier than carrying it up.",
+      "status": "source only",
+      "versions": [
+        {
+          "source": {
+            "title": "UIAA MedCom No 3: Portable Hyperbaric Chambers (2012) → 3 Where to take a hyperbaric chamber?",
+            "url": "https://www.theuiaa.org/documents/mountainmedicine/English_UIAA_MedCom_Rec_No_3_Portable_Hyperbaric_Chambers_2012_V3-2.pdf"
+          },
+          "checked": "2026-11-03"
+        }
+      ]
+    },
+    {
+      "id": "medicine.hyperbaric-trained",
+      "kind": "fact",
+      "claim": "Only people trained on it use a hyperbaric chamber: untrained use has caused severe harm, such as a burst eardrum; a climber who can't clear their ears is pressurised slowly.",
+      "status": "source only",
+      "versions": [
+        {
+          "source": {
+            "title": "UIAA MedCom No 3: Portable Hyperbaric Chambers (2012) → 2 Principles and Safety Management",
+            "url": "https://www.theuiaa.org/documents/mountainmedicine/English_UIAA_MedCom_Rec_No_3_Portable_Hyperbaric_Chambers_2012_V3-2.pdf"
+          },
+          "checked": "2026-11-03"
+        },
+        {
+          "source": {
+            "title": "UIAA MedCom No 3: Portable Hyperbaric Chambers (2012) → 4 How to use hyperbaric chambers",
+            "url": "https://www.theuiaa.org/documents/mountainmedicine/English_UIAA_MedCom_Rec_No_3_Portable_Hyperbaric_Chambers_2012_V3-2.pdf"
+          },
+          "checked": "2026-11-03"
+        }
+      ]
+    },
+    {
+      "id": "medicine.acetazolamide-effects",
+      "kind": "fact",
+      "claim": "Acetazolamide makes the climber pass more urine, which can dehydrate and wakes them at night, tingles the fingers, toes and face, and makes fizzy drinks taste flat.",
+      "status": "source only",
+      "versions": [
+        {
+          "source": {
+            "title": "CDC Yellow Book 2026: High-Altitude Travel and Altitude Illness → Medications → Acetazolamide",
+            "url": "https://www.cdc.gov/yellow-book/hcp/environmental-hazards-risks/high-altitude-travel-and-altitude-illness.html"
+          },
+          "checked": "2026-11-03"
+        },
+        {
+          "source": {
+            "title": "UIAA MedCom No 22a: Drug Use and Misuse in Mountaineering (2014) → 2.1 Acetazolamide (Diamox)",
+            "url": "https://www.theuiaa.org/documents/mountainmedicine/English_UIAA-MedCom-Rec-No-22a-Drug-misuse-2014-V1-2.pdf"
+          },
+          "checked": "2026-11-03"
+        },
+        {
+          "source": {
+            "title": "Medex: Travel at High Altitude (2008 edition) → Acute Mountain Sickness (AMS)",
+            "url": "https://medex.org.uk/medex_book/Book%20update%20June%202011/English/TravelSafeHighv27A4.pdf"
+          },
+          "checked": "2026-11-03"
+        }
+      ]
+    },
+    {
+      "id": "medicine.acetazolamide-speed",
+      "kind": "fact",
+      "claim": "With acetazolamide, the ventilatory acclimatization that usually takes 3–5 days takes about this many.",
+      "status": "source only",
+      "versions": [
+        {
+          "value": 1,
+          "unit": "days",
+          "source": {
+            "title": "CDC Yellow Book 2026: High-Altitude Travel and Altitude Illness → Medications → Acetazolamide",
+            "url": "https://www.cdc.gov/yellow-book/hcp/environmental-hazards-risks/high-altitude-travel-and-altitude-illness.html"
+          },
+          "checked": "2026-11-03"
+        }
+      ]
+    },
+    {
+      "id": "medicine.dexamethasone-risks",
+      "kind": "fact",
+      "claim": "Dexamethasone can bring a euphoria that dulls the climber's sense of risk, mood changes, stomach bleeding and high blood sugar; stopped suddenly at altitude before acclimatization, the symptoms can rebound.",
+      "status": "source only",
+      "versions": [
+        {
+          "source": {
+            "title": "UIAA MedCom No 22a: Drug Use and Misuse in Mountaineering (2014) → 2.10 Dexamethasone",
+            "url": "https://www.theuiaa.org/documents/mountainmedicine/English_UIAA-MedCom-Rec-No-22a-Drug-misuse-2014-V1-2.pdf"
+          },
+          "checked": "2026-11-03"
+        },
+        {
+          "note": "Corticosteroids: euphoria, poorer self-assessment and risk awareness, less tolerance of stress.",
+          "source": {
+            "title": "UIAA MedCom No 10: The Effect of Extremes of Temperature on Drugs (2008) → Side effects of special importance at altitude",
+            "url": "https://www.theuiaa.org/documents/mountainmedicine/UIAA_MedCom_Rec_No_10_Drugs_at_Altitude_2008_V1-2.pdf"
+          },
+          "checked": "2026-11-03"
+        },
+        {
+          "note": "Mild rebound.",
+          "source": {
+            "title": "CDC Yellow Book 2026: High-Altitude Travel and Altitude Illness → Medications → Dexamethasone",
+            "url": "https://www.cdc.gov/yellow-book/hcp/environmental-hazards-risks/high-altitude-travel-and-altitude-illness.html"
+          },
+          "checked": "2026-11-03"
+        },
+        {
+          "note": "Taken for longer than 5–7 days, it's tapered over a week rather than stopped.",
+          "source": {
+            "title": "WMS: Acute Altitude Illness Clinical Practice Guideline, 2024 Update, summary → AMS/HACE Prevention",
+            "url": "https://wms.org/magazine/1463/2024-Altitude-Summary/default.aspx"
+          },
+          "checked": "2026-11-03"
+        }
+      ]
+    },
+    {
+      "id": "medicine.summit-day-drugs",
+      "kind": "fact",
+      "claim": "Climbers increasingly take medicines for the summit day itself: at Everest in spring 2012, at least this share of climbers asked had been prescribed several drugs to raise their chances of the summit, not for rescue, often without knowing when or how to take them.",
+      "status": "source only",
+      "versions": [
+        {
+          "value": 67,
+          "unit": "%",
+          "note": "Luanne Freer's informal survey at Base Camp; some climbers took everything they had and lost the summit to the side effects.",
+          "source": {
+            "title": "UIAA MedCom No 22a: Drug Use and Misuse in Mountaineering (2014) → 1 Introduction",
+            "url": "https://www.theuiaa.org/documents/mountainmedicine/English_UIAA-MedCom-Rec-No-22a-Drug-misuse-2014-V1-2.pdf"
+          },
+          "checked": "2026-11-03"
+        },
+        {
+          "note": "An increasing trend is to take dexamethasone for summit day on high peaks.",
+          "source": {
+            "title": "CDC Yellow Book 2026: High-Altitude Travel and Altitude Illness → Medications → Dexamethasone",
+            "url": "https://www.cdc.gov/yellow-book/hcp/environmental-hazards-risks/high-altitude-travel-and-altitude-illness.html"
+          },
+          "checked": "2026-11-03"
+        }
+      ]
+    },
+    {
+      "id": "medicine.pde5-inhibitors",
+      "kind": "fact",
+      "claim": "Sildenafil and tadalafil lower the pressure in the lungs' arteries: tadalafil can prevent pulmonary edema in climbers known to get it, and either treats it only when descent, oxygen, a chamber and nifedipine are all out of reach; never together with nifedipine.",
+      "status": "source only",
+      "versions": [
+        {
+          "source": {
+            "title": "WMS: Acute Altitude Illness Clinical Practice Guideline, 2024 Update, summary → HAPE Prevention, HAPE Treatment",
+            "url": "https://wms.org/magazine/1463/2024-Altitude-Summary/default.aspx"
+          },
+          "checked": "2026-11-03"
+        },
+        {
+          "source": {
+            "title": "CDC Yellow Book 2026: High-Altitude Travel and Altitude Illness → Medications → Phosphodiesterase-5 inhibitors",
+            "url": "https://www.cdc.gov/yellow-book/hcp/environmental-hazards-risks/high-altitude-travel-and-altitude-illness.html"
+          },
+          "checked": "2026-11-03"
+        },
+        {
+          "note": "A weak recommendation, on poor evidence.",
+          "source": {
+            "title": "Omidi et al. 2025, What Is New in Altitude- and Cold-Related Illnesses of Travel (a review of the WMS 2024 guidelines) → 1.5 Interventions for Treatment of Altitude Illness",
+            "url": "https://doi.org/10.3390/ijerph22020284"
+          },
+          "checked": "2026-11-03"
+        },
+        {
+          "note": "Not a first-line medicine: little field data, and a severe headache in 15% of users that can pass for AMS.",
+          "source": {
+            "title": "UIAA MedCom No 2: Emergency Field Management of AMS, HAPE and HACE (2012, updated 2024) → 5.2 Emergency treatment of HAPE",
+            "url": "https://www.theuiaa.org/documents/mountainmedicine/English_UIAA_MedCom_Rec_No_2_AMS_HAPE_HACE_2012_V3.3.pdf"
+          },
+          "checked": "2026-11-03"
+        },
+        {
+          "note": "Taken with nifedipine, the blood pressure can fall sharply.",
+          "source": {
+            "title": "UIAA MedCom No 22a: Drug Use and Misuse in Mountaineering (2014) → 2.16 Nifedipine",
+            "url": "https://www.theuiaa.org/documents/mountainmedicine/English_UIAA-MedCom-Rec-No-22a-Drug-misuse-2014-V1-2.pdf"
+          },
+          "checked": "2026-11-03"
+        }
+      ]
+    },
+    {
+      "id": "medicine.headache-pills",
+      "kind": "fact",
+      "claim": "Ibuprofen and paracetamol ease the headache of altitude but don't treat acute mountain sickness or cerebral edema; ibuprofen can help prevent AMS, less well than acetazolamide, for those who can't take the others.",
+      "status": "source only",
+      "versions": [
+        {
+          "source": {
+            "title": "Omidi et al. 2025, What Is New in Altitude- and Cold-Related Illnesses of Travel (a review of the WMS 2024 guidelines) → 1.4 Strategies for Prevention of Altitude Illness, 1.5 Interventions for Treatment of Altitude Illness",
+            "url": "https://doi.org/10.3390/ijerph22020284"
+          },
+          "checked": "2026-11-03"
+        },
+        {
+          "source": {
+            "title": "CDC Yellow Book 2026: High-Altitude Travel and Altitude Illness → Medications → Ibuprofen",
+            "url": "https://www.cdc.gov/yellow-book/hcp/environmental-hazards-risks/high-altitude-travel-and-altitude-illness.html"
+          },
+          "checked": "2026-11-03"
+        },
+        {
+          "source": {
+            "title": "WMS: Acute Altitude Illness Clinical Practice Guideline, 2024 Update, summary → AMS/HACE Prevention",
+            "url": "https://wms.org/magazine/1463/2024-Altitude-Summary/default.aspx"
+          },
+          "checked": "2026-11-03"
+        },
+        {
+          "note": "It risks stomach bleeding and, in a dehydrated climber, kidney failure.",
+          "source": {
+            "title": "UIAA MedCom No 22a: Drug Use and Misuse in Mountaineering (2014) → 2.13 Ibuprofen",
+            "url": "https://www.theuiaa.org/documents/mountainmedicine/English_UIAA-MedCom-Rec-No-22a-Drug-misuse-2014-V1-2.pdf"
+          },
+          "checked": "2026-11-03"
+        }
+      ]
+    },
+    {
+      "id": "medicine.no-aspirin",
+      "kind": "fact",
+      "claim": "Aspirin isn't used in the mountains: it raises the risk of bleeding in the stomach, the brain and the retina, the more so with dexamethasone.",
+      "status": "source only",
+      "versions": [
+        {
+          "source": {
+            "title": "UIAA MedCom No 10: The Effect of Extremes of Temperature on Drugs (2008) → Side effects of special importance at altitude",
+            "url": "https://www.theuiaa.org/documents/mountainmedicine/UIAA_MedCom_Rec_No_10_Drugs_at_Altitude_2008_V1-2.pdf"
+          },
+          "checked": "2026-11-03"
+        },
+        {
+          "source": {
+            "title": "UIAA MedCom No 22a: Drug Use and Misuse in Mountaineering (2014) → 2.7 Aspirin",
+            "url": "https://www.theuiaa.org/documents/mountainmedicine/English_UIAA-MedCom-Rec-No-22a-Drug-misuse-2014-V1-2.pdf"
+          },
+          "checked": "2026-11-03"
+        },
+        {
+          "source": {
+            "title": "UIAA MedCom No 2: Emergency Field Management of AMS, HAPE and HACE (2012, updated 2024) → 5.1.1 Light to moderate symptoms",
+            "url": "https://www.theuiaa.org/documents/mountainmedicine/English_UIAA_MedCom_Rec_No_2_AMS_HAPE_HACE_2012_V3.3.pdf"
+          },
+          "checked": "2026-11-03"
+        }
+      ]
+    },
+    {
+      "id": "medicine.no-benefit",
+      "kind": "fact",
+      "claim": "These don't help against acute mountain sickness: coca leaves or tea, drinking far more than needed, oxygen canisters and oxygen bars, ginkgo, inhaled steroids, a hypoxic tent at home, progesterone, rhodiola.",
+      "status": "source only",
+      "versions": [
+        {
+          "source": {
+            "title": "WMS: Acute Altitude Illness Clinical Practice Guideline, 2024 Update, summary → AMS/HACE Prevention",
+            "url": "https://wms.org/magazine/1463/2024-Altitude-Summary/default.aspx"
+          },
+          "checked": "2026-11-03"
+        },
+        {
+          "note": "2024: not inhaled budesonide, paracetamol or a hypoxic tent either.",
+          "source": {
+            "title": "Omidi et al. 2025, What Is New in Altitude- and Cold-Related Illnesses of Travel (a review of the WMS 2024 guidelines) → 1.4 Strategies for Prevention of Altitude Illness",
+            "url": "https://doi.org/10.3390/ijerph22020284"
+          },
+          "checked": "2026-11-03"
+        },
+        {
+          "source": {
+            "title": "UIAA MedCom No 22a: Drug Use and Misuse in Mountaineering (2014) → 2.9 Coca, 2.12 Ginkgo Biloba, 2.14 Inhaled Steroids, 2.20 Progesterone, 2.23 Rhodiola crenulata",
+            "url": "https://www.theuiaa.org/documents/mountainmedicine/English_UIAA-MedCom-Rec-No-22a-Drug-misuse-2014-V1-2.pdf"
+          },
+          "checked": "2026-11-03"
+        }
+      ]
+    },
+    {
+      "id": "medicine.breathing-depressants",
+      "kind": "fact",
+      "claim": "Alcohol, sleeping pills and strong painkillers slow the breathing at altitude and can make acute mountain sickness worse; even a little too much alcohol looks like AMS or HACE.",
+      "status": "source only",
+      "versions": [
+        {
+          "note": "No alcohol for the first 48 hours at altitude.",
+          "source": {
+            "title": "CDC Yellow Book 2026: High-Altitude Travel and Altitude Illness → Introduction, Acclimatization, Sleep disturbance at high altitude",
+            "url": "https://www.cdc.gov/yellow-book/hcp/environmental-hazards-risks/high-altitude-travel-and-altitude-illness.html"
+          },
+          "checked": "2026-11-03"
+        },
+        {
+          "source": {
+            "title": "UIAA MedCom No 22a: Drug Use and Misuse in Mountaineering (2014) → 2.2 Alcohol, 2.18 Opiates, 2.25 Sleep Medication",
+            "url": "https://www.theuiaa.org/documents/mountainmedicine/English_UIAA-MedCom-Rec-No-22a-Drug-misuse-2014-V1-2.pdf"
+          },
+          "checked": "2026-11-03"
+        },
+        {
+          "source": {
+            "title": "UIAA MedCom No 10: The Effect of Extremes of Temperature on Drugs (2008) → Side effects of special importance at altitude",
+            "url": "https://www.theuiaa.org/documents/mountainmedicine/UIAA_MedCom_Rec_No_10_Drugs_at_Altitude_2008_V1-2.pdf"
+          },
+          "checked": "2026-11-03"
+        }
+      ]
+    },
+    {
+      "id": "medicine.caffeine",
+      "kind": "fact",
+      "claim": "A climber used to caffeine keeps taking it: withdrawal brings a headache easily taken for acute mountain sickness.",
+      "status": "source only",
+      "versions": [
+        {
+          "source": {
+            "title": "CDC Yellow Book 2026: High-Altitude Travel and Altitude Illness → Acclimatization",
+            "url": "https://www.cdc.gov/yellow-book/hcp/environmental-hazards-risks/high-altitude-travel-and-altitude-illness.html"
+          },
+          "checked": "2026-11-03"
+        },
+        {
+          "source": {
+            "title": "UIAA MedCom No 22a: Drug Use and Misuse in Mountaineering (2014) → 2.4 Amphetamines and other stimulants",
+            "url": "https://www.theuiaa.org/documents/mountainmedicine/English_UIAA-MedCom-Rec-No-22a-Drug-misuse-2014-V1-2.pdf"
+          },
+          "checked": "2026-11-03"
+        }
+      ]
+    },
+    {
+      "id": "medicine.drugs-and-judgement",
+      "kind": "fact",
+      "claim": "Several medicines dull judgement at altitude, on top of the thin air: corticosteroids, tranquillizers, antidepressants and strong painkillers raise the risk of accidents; stimulants risk overexertion, exhaustion and hypothermia.",
+      "status": "source only",
+      "versions": [
+        {
+          "source": {
+            "title": "UIAA MedCom No 10: The Effect of Extremes of Temperature on Drugs (2008) → Side effects of special importance at altitude",
+            "url": "https://www.theuiaa.org/documents/mountainmedicine/UIAA_MedCom_Rec_No_10_Drugs_at_Altitude_2008_V1-2.pdf"
+          },
+          "checked": "2026-11-03"
+        },
+        {
+          "source": {
+            "title": "UIAA MedCom No 22a: Drug Use and Misuse in Mountaineering (2014) → 2.4 Amphetamines and other stimulants, 2.22 Psychotropic Drugs",
+            "url": "https://www.theuiaa.org/documents/mountainmedicine/English_UIAA-MedCom-Rec-No-22a-Drug-misuse-2014-V1-2.pdf"
+          },
+          "checked": "2026-11-03"
+        }
+      ]
+    },
+    {
+      "id": "medicine.drugs-and-frostbite",
+      "kind": "fact",
+      "claim": "Some medicines raise the risk of frostbite: beta blockers and ergot alkaloids cut the blood flow to the hands and feet, and swollen feet from nifedipine press in tight boots.",
+      "status": "source only",
+      "versions": [
+        {
+          "source": {
+            "title": "UIAA MedCom No 10: The Effect of Extremes of Temperature on Drugs (2008) → Side effects of special importance at altitude",
+            "url": "https://www.theuiaa.org/documents/mountainmedicine/UIAA_MedCom_Rec_No_10_Drugs_at_Altitude_2008_V1-2.pdf"
+          },
+          "checked": "2026-11-03"
+        },
+        {
+          "source": {
+            "title": "UIAA MedCom No 22a: Drug Use and Misuse in Mountaineering (2014) → 2.8 Beta blockers, 2.16 Nifedipine",
+            "url": "https://www.theuiaa.org/documents/mountainmedicine/English_UIAA-MedCom-Rec-No-22a-Drug-misuse-2014-V1-2.pdf"
+          },
+          "checked": "2026-11-03"
+        }
+      ]
+    },
+    {
+      "id": "medicine.kit-temperatures",
+      "kind": "fact",
+      "claim": "Inside medical bags in the mountains, temperatures from this cold to this hot have been measured.",
+      "status": "source only",
+      "versions": [
+        {
+          "range": {
+            "min": -40,
+            "max": 80
+          },
+          "unit": "°C",
+          "source": {
+            "title": "UIAA MedCom No 10: The Effect of Extremes of Temperature on Drugs (2008) → Basic problems of drug use in the mountains",
+            "url": "https://www.theuiaa.org/documents/mountainmedicine/UIAA_MedCom_Rec_No_10_Drugs_at_Altitude_2008_V1-2.pdf"
+          },
+          "checked": "2026-11-03"
+        }
+      ]
+    },
+    {
+      "id": "medicine.kit-freezing",
+      "kind": "fact",
+      "claim": "Frozen medicines are suspect: a frozen ampoule may crack invisibly and is replaced, frozen capsules break, and insulin or an emulsion that has frozen is never used; a frozen ampoule is thawed gently, never in the mouth.",
+      "status": "source only",
+      "versions": [
+        {
+          "source": {
+            "title": "UIAA MedCom No 10: The Effect of Extremes of Temperature on Drugs (2008) → Basic problems of drug use in the mountains",
+            "url": "https://www.theuiaa.org/documents/mountainmedicine/UIAA_MedCom_Rec_No_10_Drugs_at_Altitude_2008_V1-2.pdf"
+          },
+          "checked": "2026-11-03"
+        },
+        {
+          "note": "Insulin is kept from freezing in a pocket close to the skin.",
+          "source": {
+            "title": "Medex: Travel at High Altitude (2008 edition) → Pre-existing conditions → Diabetes",
+            "url": "https://medex.org.uk/medex_book/Book%20update%20June%202011/English/TravelSafeHighv27A4.pdf"
+          },
+          "checked": "2026-11-03"
+        }
+      ]
+    },
+    {
+      "id": "medicine.dexamethasone-in-the-cold",
+      "kind": "fact",
+      "claim": "Dexamethasone still works after freezing or heat, and its ampoule can be drunk.",
+      "status": "source only",
+      "versions": [
+        {
+          "note": "Not completely stable in heat: replaced once a season if carried above about 30 °C.",
+          "source": {
+            "title": "UIAA MedCom No 10: The Effect of Extremes of Temperature on Drugs (2008) → Use of emergency drugs in the mountains",
+            "url": "https://www.theuiaa.org/documents/mountainmedicine/UIAA_MedCom_Rec_No_10_Drugs_at_Altitude_2008_V1-2.pdf"
+          },
+          "checked": "2026-11-03"
+        },
+        {
+          "note": "It's possible to drink the ampoule's content.",
+          "source": {
+            "title": "UIAA MedCom No 2: Emergency Field Management of AMS, HAPE and HACE (2012, updated 2024) → 5.3 Emergency treatment of HACE",
+            "url": "https://www.theuiaa.org/documents/mountainmedicine/English_UIAA_MedCom_Rec_No_2_AMS_HAPE_HACE_2012_V3.3.pdf"
+          },
+          "checked": "2026-11-03"
+        }
+      ]
+    },
+    {
+      "id": "medicine.nifedipine-in-heat",
+      "kind": "fact",
+      "claim": "Nifedipine capsules break down above this temperature: after heat, and at least each season, they're replaced; they also spoil in light.",
+      "status": "source only",
+      "versions": [
+        {
+          "value": 30,
+          "unit": "°C",
+          "source": {
+            "title": "UIAA MedCom No 10: The Effect of Extremes of Temperature on Drugs (2008) → Use of emergency drugs in the mountains",
+            "url": "https://www.theuiaa.org/documents/mountainmedicine/UIAA_MedCom_Rec_No_10_Drugs_at_Altitude_2008_V1-2.pdf"
+          },
+          "checked": "2026-11-03"
+        }
+      ]
+    },
+    {
+      "id": "medicine.snow-blindness",
+      "kind": "fact",
+      "claim": "Snow blindness is sunburn of the eyes by ultraviolet light: red, gritty, very painful eyes that can't bear light. It shows only hours after the exposure, sometimes at night, and usually heals within a day; a few unprotected minutes on a glacier at altitude can cause it.",
+      "status": "source only",
+      "versions": [
+        {
+          "source": {
+            "title": "UIAA MedCom No 20: Eye Problems on Expeditions (2021) → 3. Snow blindness",
+            "url": "https://www.theuiaa.org/documents/mountainmedicine/Engl_UIAA_MedCom_Rec_No_20_Eye_problems_2020_V2-4.pdf"
+          },
+          "checked": "2026-11-03"
+        },
+        {
+          "note": "Like a welder's arc eye: it feels like sand in the eyes.",
+          "source": {
+            "title": "Medex: Travel at High Altitude (2008 edition) → The Eyes",
+            "url": "https://medex.org.uk/medex_book/Book%20update%20June%202011/English/TravelSafeHighv27A4.pdf"
+          },
+          "checked": "2026-11-03"
+        }
+      ]
+    },
+    {
+      "id": "medicine.uv-with-altitude",
+      "kind": "fact",
+      "claim": "Ultraviolet exposure rises by this much for every 300 m climbed.",
+      "status": "source only",
+      "versions": [
+        {
+          "value": 4,
+          "unit": "%",
+          "source": {
+            "title": "UIAA MedCom No 20: Eye Problems on Expeditions (2021) → 3. Snow blindness",
+            "url": "https://www.theuiaa.org/documents/mountainmedicine/Engl_UIAA_MedCom_Rec_No_20_Eye_problems_2020_V2-4.pdf"
+          },
+          "checked": "2026-11-03"
+        }
+      ]
+    },
+    {
+      "id": "medicine.snow-uv",
+      "kind": "fact",
+      "claim": "Snow reflects this share of ultraviolet light.",
+      "status": "source only",
+      "versions": [
+        {
+          "value": 80,
+          "unit": "%",
+          "source": {
+            "title": "UIAA MedCom No 20: Eye Problems on Expeditions (2021) → 3. Snow blindness",
+            "url": "https://www.theuiaa.org/documents/mountainmedicine/Engl_UIAA_MedCom_Rec_No_20_Eye_problems_2020_V2-4.pdf"
+          },
+          "checked": "2026-11-03"
+        }
+      ]
+    },
+    {
+      "id": "medicine.goggles",
+      "kind": "fact",
+      "claim": "Goggles, or glasses with side pieces that block all ultraviolet, are worn in snow at all times, under cloud too; lost ones are improvised from card with thin slits, and porters need them as much as their clients.",
+      "status": "source only",
+      "versions": [
+        {
+          "source": {
+            "title": "UIAA MedCom No 20: Eye Problems on Expeditions (2021) → 3. Snow blindness",
+            "url": "https://www.theuiaa.org/documents/mountainmedicine/Engl_UIAA_MedCom_Rec_No_20_Eye_problems_2020_V2-4.pdf"
+          },
+          "checked": "2026-11-03"
+        },
+        {
+          "note": "A climber on Everest who wore sunglasses rather than goggles on summit day, with contact lenses left in for four days, saw blurred at 8,600 m and couldn't see to navigate on the summit; two Sherpas helped him down, and his sight stayed reduced for good.",
+          "source": {
+            "title": "Medex: Travel at High Altitude (2008 edition) → The Eyes",
+            "url": "https://medex.org.uk/medex_book/Book%20update%20June%202011/English/TravelSafeHighv27A4.pdf"
+          },
+          "checked": "2026-11-03"
+        }
+      ]
+    },
+    {
+      "id": "medicine.retinal-bleeds",
+      "kind": "fact",
+      "claim": "Small bleeds at the back of the eye (high-altitude retinopathy) are common and usually harmless, but one over the centre of vision blurs it; a climber who loses vision in either eye descends.",
+      "status": "source only",
+      "versions": [
+        {
+          "note": "Vision lost or a badly swollen optic disc: descend at least 300 m with oxygen; vision blurred, many bleeds or a mildly swollen disc: no higher. A swollen disc may be early HACE.",
+          "source": {
+            "title": "UIAA MedCom No 20: Eye Problems on Expeditions (2021) → 4. High altitude retinopathy",
+            "url": "https://www.theuiaa.org/documents/mountainmedicine/Engl_UIAA_MedCom_Rec_No_20_Eye_problems_2020_V2-4.pdf"
+          },
+          "checked": "2026-11-03"
+        },
+        {
+          "note": "They usually go after a few weeks.",
+          "source": {
+            "title": "Medex: Travel at High Altitude (2008 edition) → The Eyes",
+            "url": "https://medex.org.uk/medex_book/Book%20update%20June%202011/English/TravelSafeHighv27A4.pdf"
+          },
+          "checked": "2026-11-03"
+        }
+      ]
+    },
+    {
+      "id": "medicine.retinopathy-share",
+      "kind": "fact",
+      "claim": "About this share of people climbing to moderate altitude in the Himalaya have high-altitude retinopathy without noticing it.",
+      "status": "source only",
+      "versions": [
+        {
+          "value": 25,
+          "unit": "%",
+          "source": {
+            "title": "UIAA MedCom No 20: Eye Problems on Expeditions (2021) → 4. High altitude retinopathy",
+            "url": "https://www.theuiaa.org/documents/mountainmedicine/Engl_UIAA_MedCom_Rec_No_20_Eye_problems_2020_V2-4.pdf"
+          },
+          "checked": "2026-11-03"
+        }
+      ]
+    },
+    {
+      "id": "medicine.eye-surgery",
+      "kind": "fact",
+      "claim": "Eye surgery for short sight can blur vision at altitude until the descent: radial keratotomy famously troubled Beck Weathers' sight on Everest in 1996, and in a study on Everest 3 of 6 climbers who'd had LASIK saw blurred.",
+      "status": "source only",
+      "versions": [
+        {
+          "source": {
+            "title": "UIAA MedCom No 20: Eye Problems on Expeditions (2021) → 7. Refractive surgery and altitude",
+            "url": "https://www.theuiaa.org/documents/mountainmedicine/Engl_UIAA_MedCom_Rec_No_20_Eye_problems_2020_V2-4.pdf"
+          },
+          "checked": "2026-11-03"
+        },
+        {
+          "note": "Some may become acutely long-sighted and unable to look after themselves.",
+          "source": {
+            "title": "CDC Yellow Book 2026: High-Altitude Travel and Altitude Illness → Preexisting medical conditions → Radial keratotomy",
+            "url": "https://www.cdc.gov/yellow-book/hcp/environmental-hazards-risks/high-altitude-travel-and-altitude-illness.html"
+          },
+          "checked": "2026-11-03"
+        },
+        {
+          "note": "It clears on descent.",
+          "source": {
+            "title": "Medex: Travel at High Altitude (2008 edition) → The Eyes",
+            "url": "https://medex.org.uk/medex_book/Book%20update%20June%202011/English/TravelSafeHighv27A4.pdf"
+          },
+          "checked": "2026-11-03"
+        }
+      ]
+    },
+    {
+      "id": "medicine.contact-lenses",
+      "kind": "fact",
+      "claim": "Contact lenses at altitude risk dry eyes and serious infection: daily disposables, strict hygiene, and never worn overnight.",
+      "status": "source only",
+      "versions": [
+        {
+          "note": "No more than 8 hours a day.",
+          "source": {
+            "title": "UIAA MedCom No 20: Eye Problems on Expeditions (2021) → 6. Contact lenses",
+            "url": "https://www.theuiaa.org/documents/mountainmedicine/Engl_UIAA_MedCom_Rec_No_20_Eye_problems_2020_V2-4.pdf"
+          },
+          "checked": "2026-11-03"
+        },
+        {
+          "source": {
+            "title": "Medex: Travel at High Altitude (2008 edition) → The Eyes",
+            "url": "https://medex.org.uk/medex_book/Book%20update%20June%202011/English/TravelSafeHighv27A4.pdf"
+          },
+          "checked": "2026-11-03"
+        }
+      ]
+    },
+    {
+      "id": "medicine.frostbite-signs",
+      "kind": "fact",
+      "claim": "Frostbite begins as white, numb, hard skin; rewarming is very painful, and the skin turns red, itchy, blotchy and swollen; then come blisters, and at last black, dead skin that may cost fingers and toes.",
+      "status": "source only",
+      "versions": [
+        {
+          "source": {
+            "title": "Medex: Travel at High Altitude (2008 edition) → The Extremities",
+            "url": "https://medex.org.uk/medex_book/Book%20update%20June%202011/English/TravelSafeHighv27A4.pdf"
+          },
+          "checked": "2026-11-03"
+        },
+        {
+          "source": {
+            "title": "Omidi et al. 2025, What Is New in Altitude- and Cold-Related Illnesses of Travel (a review of the WMS 2024 guidelines) → 1.6 Definitions and Epidemiology of Frostbite",
+            "url": "https://doi.org/10.3390/ijerph22020284"
+          },
+          "checked": "2026-11-03"
+        }
+      ]
+    },
+    {
+      "id": "medicine.frostbite-depth",
+      "kind": "fact",
+      "claim": "Frostbite is superficial, with little or no tissue lost (first degree: redness and numbness; second: blisters of clear or milky fluid), or deep, with tissue lost (third: blue-grey skin; fourth: freezing to muscle or bone, colourless hard skin that rewarms without pain, then turns black and falls away over months).",
+      "status": "source only",
+      "versions": [
+        {
+          "source": {
+            "title": "Omidi et al. 2025, What Is New in Altitude- and Cold-Related Illnesses of Travel (a review of the WMS 2024 guidelines) → 1.6 Definitions and Epidemiology of Frostbite",
+            "url": "https://doi.org/10.3390/ijerph22020284"
+          },
+          "checked": "2026-11-03"
+        }
+      ]
+    },
+    {
+      "id": "medicine.frostnip",
+      "kind": "fact",
+      "claim": "Frostnip is a superficial injury without freezing that often comes before frostbite.",
+      "status": "source only",
+      "versions": [
+        {
+          "source": {
+            "title": "Omidi et al. 2025, What Is New in Altitude- and Cold-Related Illnesses of Travel (a review of the WMS 2024 guidelines) → 1.6 Definitions and Epidemiology of Frostbite",
+            "url": "https://doi.org/10.3390/ijerph22020284"
+          },
+          "checked": "2026-11-03"
+        }
+      ]
+    },
+    {
+      "id": "medicine.frostbite-temperature",
+      "kind": "fact",
+      "claim": "Frostbite is a risk below this air temperature, and more so below −15 °C.",
+      "status": "source only",
+      "versions": [
+        {
+          "value": 0,
+          "unit": "°C",
+          "note": "Some risk from 0 to −15 °C; in 2019 the guideline said below −15 °C.",
+          "source": {
+            "title": "Omidi et al. 2025, What Is New in Altitude- and Cold-Related Illnesses of Travel (a review of the WMS 2024 guidelines) → 1.7 Strategies for the Prevention of Frostbite",
+            "url": "https://doi.org/10.3390/ijerph22020284"
+          },
+          "checked": "2026-11-03"
+        },
+        {
+          "value": 0,
+          "unit": "°C",
+          "note": "In freezing temperatures and/or high winds.",
+          "source": {
+            "title": "Medex: Travel at High Altitude (2008 edition) → The Extremities",
+            "url": "https://medex.org.uk/medex_book/Book%20update%20June%202011/English/TravelSafeHighv27A4.pdf"
+          },
+          "checked": "2026-11-03"
+        }
+      ]
+    },
+    {
+      "id": "medicine.frostbite-risk",
+      "kind": "fact",
+      "claim": "Thin air as well as cold makes frostbite easier; so do tight boots or clothing, alcohol and some medicines, poor food and poor circulation, while exercise keeps the hands and feet warmer. Parts that stick out freeze first: fingers, toes, nose, ears, chin, lips.",
+      "status": "source only",
+      "versions": [
+        {
+          "source": {
+            "title": "Medex: Travel at High Altitude (2008 edition) → The Extremities",
+            "url": "https://medex.org.uk/medex_book/Book%20update%20June%202011/English/TravelSafeHighv27A4.pdf"
+          },
+          "checked": "2026-11-03"
+        },
+        {
+          "source": {
+            "title": "Omidi et al. 2025, What Is New in Altitude- and Cold-Related Illnesses of Travel (a review of the WMS 2024 guidelines) → 1.7 Strategies for the Prevention of Frostbite",
+            "url": "https://doi.org/10.3390/ijerph22020284"
+          },
+          "checked": "2026-11-03"
+        }
+      ]
+    },
+    {
+      "id": "medicine.frostbite-prevention",
+      "kind": "fact",
+      "claim": "Frostbite is prevented rather than cured: kit that fits, hands and feet kept dry (wet gloves and socks changed at once), layers against cold and wind, warmers, and as little time exposed as possible.",
+      "status": "source only",
+      "versions": [
+        {
+          "source": {
+            "title": "Medex: Travel at High Altitude (2008 edition) → The Extremities",
+            "url": "https://medex.org.uk/medex_book/Book%20update%20June%202011/English/TravelSafeHighv27A4.pdf"
+          },
+          "checked": "2026-11-03"
+        },
+        {
+          "note": "Treatment rarely restores everything.",
+          "source": {
+            "title": "Omidi et al. 2025, What Is New in Altitude- and Cold-Related Illnesses of Travel (a review of the WMS 2024 guidelines) → 1.7 Strategies for the Prevention of Frostbite",
+            "url": "https://doi.org/10.3390/ijerph22020284"
+          },
+          "checked": "2026-11-03"
+        }
+      ]
+    },
+    {
+      "id": "medicine.frostbite-refreezing",
+      "kind": "fact",
+      "claim": "A frozen part is thawed only where it won't freeze again, since refreezing does more harm; until then it's padded, kept still and never rubbed, and the climber is got out of the cold.",
+      "status": "source only",
+      "versions": [
+        {
+          "source": {
+            "title": "Omidi et al. 2025, What Is New in Altitude- and Cold-Related Illnesses of Travel (a review of the WMS 2024 guidelines) → 1.8 Interventions for Treatment of Frostbite",
+            "url": "https://doi.org/10.3390/ijerph22020284"
+          },
+          "checked": "2026-11-03"
+        }
+      ]
+    },
+    {
+      "id": "medicine.frostbite-rewarming",
+      "kind": "fact",
+      "claim": "A frozen part is rewarmed in water at this temperature, for about half an hour, until it's soft and red.",
+      "status": "source only",
+      "versions": [
+        {
+          "range": {
+            "min": 37,
+            "max": 39
+          },
+          "unit": "°C",
+          "source": {
+            "title": "Omidi et al. 2025, What Is New in Altitude- and Cold-Related Illnesses of Travel (a review of the WMS 2024 guidelines) → 1.8 Interventions for Treatment of Frostbite",
+            "url": "https://doi.org/10.3390/ijerph22020284"
+          },
+          "checked": "2026-11-03"
+        }
+      ]
+    },
+    {
+      "id": "medicine.frostbite-hypothermia-first",
+      "kind": "fact",
+      "claim": "Moderate or severe hypothermia is treated before frostbite.",
+      "status": "source only",
+      "versions": [
+        {
+          "source": {
+            "title": "Omidi et al. 2025, What Is New in Altitude- and Cold-Related Illnesses of Travel (a review of the WMS 2024 guidelines) → 1.8 Interventions for Treatment of Frostbite",
+            "url": "https://doi.org/10.3390/ijerph22020284"
+          },
+          "checked": "2026-11-03"
+        }
+      ]
+    },
+    {
+      "id": "medicine.frostbite-oxygen",
+      "kind": "fact",
+      "claim": "A climber with frostbite above this altitude, or whose saturation is below 88%, gets supplemental oxygen.",
+      "status": "source only",
+      "versions": [
+        {
+          "value": 4000,
+          "unit": "m",
+          "source": {
+            "title": "Omidi et al. 2025, What Is New in Altitude- and Cold-Related Illnesses of Travel (a review of the WMS 2024 guidelines) → 1.8 Interventions for Treatment of Frostbite",
+            "url": "https://doi.org/10.3390/ijerph22020284"
+          },
+          "checked": "2026-11-03"
+        }
+      ]
+    },
+    {
+      "id": "medicine.frostbite-hospital",
+      "kind": "fact",
+      "claim": "Deep frostbite is a race to hospital: clot-dissolving treatment helps if started within the first 24 hours, iloprost within 72, and both cut amputations sharply.",
+      "status": "source only",
+      "versions": [
+        {
+          "range": {
+            "min": 24,
+            "max": 72
+          },
+          "unit": "h",
+          "note": "In one trial, amputations fell from 60% to 0–19%.",
+          "source": {
+            "title": "Omidi et al. 2025, What Is New in Altitude- and Cold-Related Illnesses of Travel (a review of the WMS 2024 guidelines) → 1.8 Interventions for Treatment of Frostbite",
+            "url": "https://doi.org/10.3390/ijerph22020284"
+          },
+          "checked": "2026-11-03"
+        }
+      ]
+    },
+    {
+      "id": "medicine.avalanche-asphyxia",
+      "kind": "fact",
+      "claim": "About this share of avalanche deaths are from asphyxia; about a quarter from injuries to the head, spine and limbs.",
+      "status": "source only",
+      "versions": [
+        {
+          "value": 75,
+          "unit": "%",
+          "source": {
+            "title": "Omidi et al. 2025, What Is New in Altitude- and Cold-Related Illnesses of Travel (a review of the WMS 2024 guidelines) → 1.9 Definitions and Epidemiology of Avalanche and Non-Avalanche Snow Burial",
+            "url": "https://doi.org/10.3390/ijerph22020284"
+          },
+          "checked": "2026-11-03"
+        }
+      ]
+    },
+    {
+      "id": "medicine.avalanche-air-pocket",
+      "kind": "fact",
+      "claim": "A climber caught in an avalanche keeps moving against its flow to stay out of burial, and covers their mouth to keep an air pocket: asphyxia is the main killer.",
+      "status": "source only",
+      "versions": [
+        {
+          "source": {
+            "title": "Omidi et al. 2025, What Is New in Altitude- and Cold-Related Illnesses of Travel (a review of the WMS 2024 guidelines) → 1.10 Strategies for Prevention of Avalanche and Snow Burial",
+            "url": "https://doi.org/10.3390/ijerph22020284"
+          },
+          "checked": "2026-11-03"
+        }
+      ]
+    },
+    {
+      "id": "medicine.death-zone",
+      "kind": "fact",
+      "claim": "Above about this altitude, the death zone, nobody can acclimatize: the body uses up oxygen faster than it's replenished, and a long stay without supplemental oxygen ends in loss of consciousness and death.",
+      "status": "source only",
+      "versions": [
+        {
+          "value": 8000,
+          "unit": "m",
+          "note": "Some scientists dispute the concept.",
+          "source": {
+            "title": "Wikipedia: Death zone → Physiological background",
+            "url": "https://en.wikipedia.org/wiki/Death_zone"
+          },
+          "checked": "2026-11-03"
+        },
+        {
+          "value": 8000,
+          "unit": "m",
+          "note": "Its chart marks the death zone above it.",
+          "source": {
+            "title": "Medex: Travel at High Altitude (2008 edition) → What is High Altitude?",
+            "url": "https://medex.org.uk/medex_book/Book%20update%20June%202011/English/TravelSafeHighv27A4.pdf"
+          },
+          "checked": "2026-11-03"
+        }
+      ]
+    },
+    {
+      "id": "medicine.death-zone-decisions",
+      "kind": "fact",
+      "claim": "In the death zone many deaths are indirect: poor decisions under stress (not turning back, losing the route) and weakness that leads to falls.",
+      "status": "source only",
+      "versions": [
+        {
+          "source": {
+            "title": "Wikipedia: Death zone → Introduction",
+            "url": "https://en.wikipedia.org/wiki/Death_zone"
+          },
+          "checked": "2026-11-03"
+        },
+        {
+          "note": "Clumsiness and bad judgements raise the risk of accidents.",
+          "source": {
+            "title": "Medex: Travel at High Altitude (2008 edition) → The Brain",
+            "url": "https://medex.org.uk/medex_book/Book%20update%20June%202011/English/TravelSafeHighv27A4.pdf"
+          },
+          "checked": "2026-11-03"
+        }
+      ]
+    },
+    {
+      "id": "medicine.extreme-altitude",
+      "kind": "fact",
+      "claim": "Above about this altitude, sleep is very hard, food is hardly digested, and the risk of pulmonary and cerebral edema rises sharply.",
+      "status": "source only",
+      "versions": [
+        {
+          "value": 7500,
+          "unit": "m",
+          "source": {
+            "title": "Wikipedia: Death zone → Physiological background",
+            "url": "https://en.wikipedia.org/wiki/Death_zone"
+          },
+          "checked": "2026-11-03"
+        }
+      ]
+    },
+    {
+      "id": "medicine.oxygen-pressure-summit",
+      "kind": "fact",
+      "claim": "At the summit of Everest, the oxygen pressure is less than this share of sea level's; at Base Camp it's about half.",
+      "status": "source only",
+      "versions": [
+        {
+          "value": 33,
+          "unit": "%",
+          "note": "Less than a third.",
+          "source": {
+            "title": "Wikipedia: Death zone → Physiological background",
+            "url": "https://en.wikipedia.org/wiki/Death_zone"
+          },
+          "checked": "2026-11-03"
+        }
+      ]
+    },
+    {
+      "id": "medicine.lake-louise-rate",
+      "kind": "question",
+      "question": "How fast does a climber's Lake Louise score climb, hour by hour, above the altitude they're acclimatized to, and how fast does it fall on descent? No source gives a rate.",
+      "about": [
+        "medicine.lake-louise-threshold",
+        "medicine.ams-resolution"
+      ]
+    },
+    {
+      "id": "medicine.hace-walk-down",
+      "kind": "question",
+      "question": "For how long can a climber with cerebral edema at 8,000 m still walk down with help, with and without dexamethasone and oxygen?",
+      "about": [
+        "medicine.hace-descent",
+        "medicine.dexamethasone"
+      ]
+    },
+    {
+      "id": "medicine.hyperbaric-south-col",
+      "kind": "question",
+      "question": "Is a hyperbaric chamber used at all at the South Col (about 7,900 m), above the practical limit the UIAA gives?",
+      "about": [
+        "medicine.hyperbaric-ceiling"
+      ]
+    },
+    {
+      "id": "medicine.frostbite-time",
+      "kind": "question",
+      "question": "How long do bare or gloved fingers take to freeze at −30 °C in a 50 km/h wind, at 8,000 m?",
+      "about": [
+        "medicine.frostbite-temperature",
+        "medicine.frostbite-risk"
       ]
     }
   ]
