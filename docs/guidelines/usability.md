@@ -11,7 +11,7 @@ How the game is learnt, and played for six hours by everyone, on every device ([
   - *In Everest:* the training framework (#63).
   - *Check:* a story plays each module by its actions alone.
 - **A hint names the player's own control:** Tab on a PC, [Check yourself] on a phone, the button on a gamepad. It changes when the player picks up another device.
-  - *In Everest:* `#hint-click` and `#hint-tap`, by `TouchMode`, which turns touch on and never off; the gamepad's hints, and the way back from touch, come with #64.
+  - *In Everest:* `#hint-click` and `#hint-tap`, by `TouchMode`; the gamepad's hints come with #64. `TouchMode` turns touch on and never off again, which has no issue yet.
   - *Check:* each project's story reads the hint for its device.
 - **Help is one press away:** the controls and the current goal can be looked up at any time, not only in the training ([Pinelle et al.](https://course.ccs.neu.edu/is4300f15/ssl/pinelle-chi08.pdf), heuristic 9: training and help).
   - *In Everest:* #64.
@@ -26,7 +26,7 @@ How the game is learnt, and played for six hours by everyone, on every device ([
 ## Mistakes
 
 - **The mountain's mistakes are possible, the fingers' aren't.** A player can unclip on the ridge, as a real climber can, but no fatal mistake is one stray key away, as Ctrl has no action because Ctrl+W would close the game ([../../spec.md](../../spec.md) → Gameplay).
-  - *In Everest:* E and R, beside the walking keys, toggle the cowstails (`CONTROLS`): taking the last one off a rope takes a deliberate press, decided with #64.
+  - *In Everest:* E and R, beside the walking keys, toggle the cowstails (`CONTROLS`): taking the last one off a rope takes a deliberate press. No issue yet.
   - *Check:* a story presses R while walking, on a rope with only the second cowstail on it, and the climber stays clipped.
 - **A setting never changes the mountain.** The game has one difficulty ([../../spec.md](../../spec.md) → Concept and requirements). A setting changes how the game is shown or played (the text, the toggles, the motion, the sound), never what the mountain does, so the same seed and actions give the same expedition with any settings, and replays and co-op stay whole ([../conventions.md](../conventions.md) → Time and chance).
   - *Check:* the core is given no setting.
@@ -42,7 +42,7 @@ How the game is learnt, and played for six hours by everyone, on every device ([
 ## Settings
 
 - **The settings a player expects are there before the first climb, and kept:** the text size, each kind of sound's volume and the captions, motion, vibration, the graphics, the controls (remapping and toggles), the language and the units ([Pinelle et al.](https://course.ccs.neu.edu/is4300f15/ssl/pinelle-chi08.pdf), heuristics 2 and 6; the [Game Accessibility Guidelines](https://gameaccessibilityguidelines.com/), basic: separate volumes, settings saved). They're reached from the first screen and from the pause.
-  - *In Everest:* the graphics are the first (`QualityChoice`, in `localStorage` until #60 keeps the settings).
+  - *In Everest:* the graphics are the first (`QualityChoice`, in `localStorage` until #60 keeps the settings); the others have no issue yet.
   - *Check:* a story changes each setting, reloads the page, and reads it kept.
 - **The device's own preference is the default:** `prefers-reduced-motion` turns on reduced motion ([MDN](https://developer.mozilla.org/en-US/docs/Web/CSS/@media/prefers-reduced-motion)), `prefers-contrast: more` the backings at full opacity, the browser's language the language, until the player chooses.
   - *Check:* a story with `page.emulateMedia({ reducedMotion: "reduce" })`, and one in a `ru-RU` locale.
@@ -50,7 +50,7 @@ How the game is learnt, and played for six hours by everyone, on every device ([
 ## Accessibility
 
 - **Every hold has a toggle.** Holding a button for minutes hurts, and some players can't ([Game Accessibility Guidelines](https://gameaccessibilityguidelines.com/), intermediate: avoid buttons held down, or offer another way; [XAG 107](https://learn.microsoft.com/en-us/gaming/accessibility/xbox-accessibility-guidelines/107)).
-  - *In Everest:* the jumar (Space, [Jumar]) and the pace (C, Shift) are held (`CONTROLS`); a setting makes each a press on and a press off (#64).
+  - *In Everest:* the jumar (Space, [Jumar]) and the pace (C, Shift) are held (`CONTROLS`); a setting makes each a press on and a press off. No issue yet.
   - *Check:* with the toggle on, a story presses Space once and reads the jumar held until the next press.
 - **The controls can be remapped in the game, by action** ([XAG 107](https://learn.microsoft.com/en-us/gaming/accessibility/xbox-accessibility-guidelines/107): actions, not just buttons; [Pinelle et al.](https://course.ccs.neu.edu/is4300f15/ssl/pinelle-chi08.pdf), heuristic 6).
   - *In Everest:* `CONTROLS` is the default map, and a remap is the player's own keys and buttons for its rows, kept with the settings (#60). No issue yet.
@@ -61,7 +61,7 @@ How the game is learnt, and played for six hours by everyone, on every device ([
 - **Captions carry what matters of the sound:** who speaks on the radio, what was said, and the sounds that warn. They're large, Ian Hamilton suggests at least 46 px at 1080p and adjustable ([80 Level](https://80.lv/articles/10-golden-rules-on-subtitles-for-games)), on a backing, and offered when the game first starts. Each kind of sound has its own volume: the mountain, the body, the gear and the radio.
   - *In Everest:* #88, #79.
 - **Motion can be reduced, and nothing flashes.** Avoid shaking, bobbing and blur, or let players turn them off ([XAG 117](https://learn.microsoft.com/en-us/gaming/accessibility/xbox-accessibility-guidelines/117)), and never flash more than three times a second ([WCAG 2.2, 2.3.1](https://www.w3.org/TR/WCAG22/#three-flashes-or-below-threshold)). With motion reduced, the camera never shakes or sways, the parallax is shallower, the snow falls slower and thinner, and hypoxia's edges don't pulse; lightning, at any setting, flashes at most three times a second.
-  - *In Everest:* the camera, the layers and the snow (`src/rendering/`), hypoxia (#43), the weather (#39, #86).
+  - *In Everest:* the camera, the layers and the snow (`src/rendering/`), hypoxia (#43), the weather (#39, #86); the setting has no issue yet.
   - *Check:* with reduced motion, a story reads the camera's, the layers' and the snow's settings from `#slope`'s data attributes.
 - **The body's effects can be turned down, and the words stay.** Hypoxia narrows the view and mutes the colours, and with HACE the controls become imprecise ([../../spec.md](../../spec.md) → Graphics); that's the lesson, so a setting lowers how strong they are, and the self-check says them in words at any strength (#43, #37).
 - **Vibration is extra.** It helps where there is any, it's never the only cue (iPhones have none), and a setting turns it off.

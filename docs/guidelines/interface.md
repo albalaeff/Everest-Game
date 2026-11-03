@@ -48,7 +48,7 @@ The screen around the slope: where things go, the HUD, the buttons, the text, co
   - *In Everest:* the readouts are a 16 px font and `main`'s text 14; they grow with #25. `#fps` and `#received`, at 12, are for checks by hand, not for the player.
   - *Check:* a story reads the computed `font-size` of every text the player needs, on each project.
 - **The player can make the text larger, to twice its size** ([XAG 101](https://learn.microsoft.com/en-us/gaming/accessibility/xbox-accessibility-guidelines/101)), and the layout grows with it: nothing is cut off or overlaps.
-  - *In Everest:* a setting, kept with the saves (#60).
+  - *In Everest:* no issue brings the setting yet; #60 keeps it with the saves.
   - *Check:* each screen's story runs again at twice the size.
 - **Text stands out from whatever passes behind it:** 4.5:1, or 3:1 for large text (24 px, or 19 px bold) ([WCAG 2.2, 1.4.3](https://www.w3.org/TR/WCAG22/#contrast-minimum)), against the worst part of the picture that can be behind it ([XAG 102](https://learn.microsoft.com/en-us/gaming/accessibility/xbox-accessibility-guidelines/102)). Text over the slope gets a backing whose opacity the player can raise, or a dark outline (XAG 102).
   - *In Everest:* the readouts and the hints sit over the sky, but a ridge, the snow or a whiteout can come behind them; they get a backing with #25.
