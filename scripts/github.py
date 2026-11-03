@@ -17,7 +17,8 @@ the one `origin` points to.
     uv run python scripts/github.py watch                  waits until something new does,
                                                             pulling develop when idle (#347);
                                                             one per machine (#597); --json for
-                                                            the agent manager (#387)
+                                                            the agent manager (#387), --wiki 6
+                                                            with it: is the wiki behind (#126)
     uv run python scripts/github.py comment 180 note.md     comment on an issue or PR (signed);
                                                             --read: the replies since are read;
                                                             --handoff makes it a handoff, with
@@ -122,6 +123,7 @@ from scripts.handoff import (  # noqa: E402
     Machine,
     Move,
 )
+from scripts.wiki import WikiCheck, WikiNews  # noqa: E402
 
 API = "https://api.github.com"
 SIGNATURE = "_Claude Code_"  # how Claude signed before #298; still recognised
@@ -977,6 +979,9 @@ class WatchOutput:
     def prices(self, news: PriceNews) -> None:
         self.say(news.text)
 
+    def wiki(self, news: WikiNews) -> None:
+        self.say(news.text)
+
     def held(self, lines: Iterable[str]) -> None:
         """What's newly blocked (#107): only the agent manager's log says it, since a session
         reads `status`."""
@@ -996,7 +1001,8 @@ class TextOutput(WatchOutput):
 class JsonOutput(WatchOutput):
     """One JSON object a line, for the session manager (#387): each task as `Task.data` has
     it, every one as it begins (a program has no `status` to act on first) and then the new
-    ones; {"type": "prices", …} for new prices of Claude's, which want a PR too; and
+    ones; {"type": "prices", …} for new prices of Claude's, which want a PR too;
+    {"type": "wiki", …} for the PRs the wiki lacks (#126, `WikiNews.data`); and
     {"type": "note", "text": …} for the rest, what's blocked among it (#107)."""
 
     def begin(self, seen: Look) -> None:
@@ -1014,6 +1020,12 @@ class JsonOutput(WatchOutput):
     def prices(self, news: PriceNews) -> None:
         if news.added:
             self._line({"type": "prices", "key": f"prices: {news.text}", "text": news.text})
+        else:
+            self.say(news.text)
+
+    def wiki(self, news: WikiNews) -> None:
+        if news.pulls:
+            self._line(news.data())
         else:
             self.say(news.text)
 
@@ -1065,6 +1077,7 @@ def watch(
     sleep: Callable[[float], None] = time.sleep,
     follow: Callable[[], str | None] = lambda: None,
     prices: Callable[[], PriceNews | None] = lambda: None,
+    wiki: Callable[[], WikiNews | None] = lambda: None,
     output: WatchOutput | None = None,
     stop: Callable[[], str | None] = lambda: None,
 ) -> None:
@@ -1080,7 +1093,8 @@ def watch(
     keeps `develop` up to date while the machine is idle (#347, `follow_develop`, as the
     command does): what it did is said in a line, the same word once, and watching goes on.
     And `prices` reads Claude's prices once a day (#390, `DailyCheck`): a change is
-    something to do, so it ends with it.
+    something to do, so it ends with it. So is a PR the wiki lacks, which `wiki` looks for
+    every few hours, for the agent manager only (#126, `WikiCheck`).
 
     `output` says it all, as text by default, what's blocked as it begins and once more each
     time it's newly so (#107); and before each look `stop` may end it, saying why: in a
@@ -1111,6 +1125,11 @@ def watch(
         if news is not None:
             output.prices(news)
             if news.added:
+                return
+        behind = wiki()
+        if behind is not None:
+            output.wiki(behind)
+            if behind.pulls:
                 return
         try:
             seen = look(github, now)
@@ -1705,6 +1724,13 @@ def main(argv: Sequence[str] | None = None) -> None:
         action="store_true",
         help="one JSON object a line, every task from the start: for the agent manager (#387)",
     )
+    watching.add_argument(
+        "--wiki",
+        type=float,
+        default=0,
+        metavar="HOURS",
+        help="with --json: every HOURS, whether PRs merged since the wiki's last update (#126)",
+    )
     commenting = commands.add_parser("comment", help="comment on an issue or PR, signed")
     commenting.add_argument("number", type=int)
     commenting.add_argument("file", help="the comment in Markdown; - reads it from stdin")
@@ -1782,6 +1808,7 @@ def main(argv: Sequence[str] | None = None) -> None:
             longest=args.longest * 60,
             follow=follow_develop,
             prices=DailyCheck(),
+            wiki=WikiCheck(github, remote, args.wiki) if args.wiki else lambda: None,
             output=JsonOutput(),
         )
     elif args.command == "watch":

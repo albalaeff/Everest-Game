@@ -138,6 +138,18 @@ and the worktree's removal. When a check fails, an agent merges as before, and i
 the console line say which check failed. `--dry-run` says which merges the manager would do
 itself.
 
+**The wiki.** Every 6 hours (`wiki_every_hours` in agent-manager.toml) the watcher looks for PRs
+merged into `develop` since the wiki was last brought up to date (#126), chores and releases
+aside. When there are some, the manager clones the
+[wiki](https://github.com/albalaeff/Everest-Game/wiki) into a worktree on `develop`
+(`.agent-runs/wiki`), and an agent reads those PRs and their issues' closing comments and
+updates the pages they touch, the "where it stands" dates and the Changelog. Then the manager
+commits the pages and pushes them straight to the wiki, with no review: the wiki's history
+undoes any edit. The commit's `Develop: <sha>` trailer names the last `develop` commit covered,
+and the next run starts from there. A person's own edit to the wiki is kept, and moves nothing.
+When two machines' managers update it at once, the first to push wins, and the other drops its
+pages, as its log says.
+
 **How much it reads.** Every reply of an agent's reads its whole conversation again, so Claude
 Code compacts an agent's early, and a long run costs less: at a quarter of the window, about
 240K tokens, where a session's waits for about 967K (`compact_at_percent` in
