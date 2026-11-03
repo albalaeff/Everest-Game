@@ -206,8 +206,11 @@ npm run e2e -- --project=iphone   # on one of them
   naming files or tests stays in one process.
 - **The knowledge base** is checked with the tests: `uv run pytest` fails on a record in
   `content/facts/` without a source or a check date, and `uv run python scripts/check_facts.py`
-  lists every problem by file and record. `uv run python scripts/expert_questions.py` prints
-  the questions and `source only` records for the guide and for the doctor
+  lists every problem by file and record. It fails too on a `medicine` record whose source
+  isn't in the medical library, `content/library.json`, and on a source there that no record
+  cites: `uv run python scripts/check_library.py` lists those.
+  `uv run python scripts/expert_questions.py` prints the questions and `source only` records
+  for the guide and for the doctor
   ([docs/conventions/knowledge-base.md](docs/conventions/knowledge-base.md)).
 - **The game's checks** run in CI beside these. ESLint and Prettier read `src/`, `e2e/` and
   the config files; `tsc` checks `tsconfig.json`, the browser's code, `tsconfig.core.json`,

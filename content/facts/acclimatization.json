@@ -24,6 +24,27 @@
             "url": "https://www.cdc.gov/yellow-book/hcp/environmental-hazards-risks/high-altitude-travel-and-altitude-illness.html"
           },
           "checked": "2026-11-03"
+        },
+        {
+          "range": {
+            "min": 2500,
+            "max": 3000
+          },
+          "unit": "m",
+          "source": {
+            "title": "UIAA MedCom No 2: Emergency Field Management of AMS, HAPE and HACE (2012, updated 2024) → 3 Prevention of altitude diseases",
+            "url": "https://www.theuiaa.org/documents/mountainmedicine/English_UIAA_MedCom_Rec_No_2_AMS_HAPE_HACE_2012_V3.3.pdf"
+          },
+          "checked": "2026-11-03"
+        },
+        {
+          "value": 3000,
+          "unit": "m",
+          "source": {
+            "title": "Medex: Travel at High Altitude (2008 edition) → Acclimatisation",
+            "url": "https://medex.org.uk/medex_book/Book%20update%20June%202011/English/TravelSafeHighv27A4.pdf"
+          },
+          "checked": "2026-11-03"
         }
       ]
     },
@@ -48,6 +69,28 @@
           "source": {
             "title": "CDC Yellow Book 2026: High-Altitude Travel and Altitude Illness → Acclimatization",
             "url": "https://www.cdc.gov/yellow-book/hcp/environmental-hazards-risks/high-altitude-travel-and-altitude-illness.html"
+          },
+          "checked": "2026-11-03"
+        },
+        {
+          "range": {
+            "min": 300,
+            "max": 500
+          },
+          "unit": "m/day",
+          "source": {
+            "title": "UIAA MedCom No 2: Emergency Field Management of AMS, HAPE and HACE (2012, updated 2024) → 3 Prevention of altitude diseases",
+            "url": "https://www.theuiaa.org/documents/mountainmedicine/English_UIAA_MedCom_Rec_No_2_AMS_HAPE_HACE_2012_V3.3.pdf"
+          },
+          "checked": "2026-11-03"
+        },
+        {
+          "value": 300,
+          "unit": "m/day",
+          "note": "The timetable is set for the group's slowest acclimatizer.",
+          "source": {
+            "title": "Medex: Travel at High Altitude (2008 edition) → Acclimatisation",
+            "url": "https://medex.org.uk/medex_book/Book%20update%20June%202011/English/TravelSafeHighv27A4.pdf"
           },
           "checked": "2026-11-03"
         }
@@ -78,6 +121,31 @@
             "url": "https://www.cdc.gov/yellow-book/hcp/environmental-hazards-risks/high-altitude-travel-and-altitude-illness.html"
           },
           "checked": "2026-11-03"
+        },
+        {
+          "range": {
+            "min": 2,
+            "max": 4
+          },
+          "unit": "days",
+          "note": "Two nights at the same altitude after every 2–4 days of ascent; that day, climbing higher and coming back to sleep.",
+          "source": {
+            "title": "UIAA MedCom No 2: Emergency Field Management of AMS, HAPE and HACE (2012, updated 2024) → 3 Prevention of altitude diseases",
+            "url": "https://www.theuiaa.org/documents/mountainmedicine/English_UIAA_MedCom_Rec_No_2_AMS_HAPE_HACE_2012_V3.3.pdf"
+          },
+          "checked": "2026-11-03"
+        },
+        {
+          "range": {
+            "min": 2,
+            "max": 3
+          },
+          "unit": "days",
+          "source": {
+            "title": "Medex: Travel at High Altitude (2008 edition) → Acclimatisation",
+            "url": "https://medex.org.uk/medex_book/Book%20update%20June%202011/English/TravelSafeHighv27A4.pdf"
+          },
+          "checked": "2026-11-03"
         }
       ]
     },
@@ -98,6 +166,22 @@
           "source": {
             "title": "CDC Yellow Book 2026: High-Altitude Travel and Altitude Illness → Acclimatization",
             "url": "https://www.cdc.gov/yellow-book/hcp/environmental-hazards-risks/high-altitude-travel-and-altitude-illness.html"
+          },
+          "checked": "2026-11-03"
+        },
+        {
+          "note": "\"Walk high, sleep low.\"",
+          "source": {
+            "title": "Medex: Travel at High Altitude (2008 edition) → Acclimatisation",
+            "url": "https://medex.org.uk/medex_book/Book%20update%20June%202011/English/TravelSafeHighv27A4.pdf"
+          },
+          "checked": "2026-11-03"
+        },
+        {
+          "note": "Where an expedition route's high camps lie within about 1,000 m of each other, the first trips up to them come back down without a night there.",
+          "source": {
+            "title": "UIAA MedCom No 2: Emergency Field Management of AMS, HAPE and HACE (2012, updated 2024) → 2.1 Risk factors",
+            "url": "https://www.theuiaa.org/documents/mountainmedicine/English_UIAA_MedCom_Rec_No_2_AMS_HAPE_HACE_2012_V3.3.pdf"
           },
           "checked": "2026-11-03"
         }

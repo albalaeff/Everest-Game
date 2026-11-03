@@ -4,7 +4,7 @@ Every change to this codebase follows the rules in this file, and those of each 
 
 | A change to | Also follows |
 |---|---|
-| the knowledge base: `content/facts/` | [conventions/knowledge-base.md](conventions/knowledge-base.md) |
+| the knowledge base: `content/facts/`, `content/library.json` | [conventions/knowledge-base.md](conventions/knowledge-base.md) |
 | the simulation core: `src/simulation/` | [conventions/simulation-core.md](conventions/simulation-core.md) |
 | the input layer: `src/input/` | [conventions/input.md](conventions/input.md) |
 | the slope physics: `src/physics/` | [conventions/slope-physics.md](conventions/slope-physics.md) |
