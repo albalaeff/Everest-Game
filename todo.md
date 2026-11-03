@@ -127,7 +127,7 @@ Tasks marked *Iteration 1–3* are planned into the board's first two-week itera
 ### Task 14: Body model v1: fatigue, blood oxygen and pace ([#22](https://github.com/albalaeff/Everest-Game/issues/22)) · *Iteration 3*
 - [ ] SpO2 from altitude and oxygen flow; fatigue from pace, load, sleep, food and water; the rest step against a faster pace
 - [ ] Its coefficients come from the knowledge base (#9)
-- [ ] The mountain's time on top of the core's seconds of play: six to eight weeks in 5–7 hours, waiting days skipped, summit day the most detailed (spec.md → Gameplay)
+- [x] The mountain's time on top of the core's seconds of play: six to eight weeks in 5–7 hours, waiting days skipped, summit day the most detailed (spec.md → Gameplay) (#116: `MountainClock` at `time.compression`; what camp skips comes with #53)
 - [ ] The player sees no numbers for their condition
 - [ ] Done gate
 

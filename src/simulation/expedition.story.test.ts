@@ -1,17 +1,34 @@
 import { describe, expect, it } from "vitest";
 
-import { ActionLog, Expedition, HeadlessRunner, SimulationClock, StepPacer } from "./index";
+import {
+  ActionLog,
+  Expedition,
+  HeadlessRunner,
+  MountainClock,
+  SimulationClock,
+  StepPacer,
+} from "./index";
 import type { GameAction } from "./index";
 import { TestSlope } from "./testing/test-slope";
 
 const FRAME_SECONDS = 1 / 60;
+/** The test's own ratio of mountain time to play, not the game's (`time.compression`). */
+const COMPRESSION = 10;
 
 describe("Two friends on the slope, one of them careless", () => {
   it("moves in real time, punishes the missed clip and replays the same in the debrief", () => {
     // The page's loop: each frame turns real time into steps, and sends what was pressed.
-    const scenario = TestSlope.scenario(2026, ["anna", "boris"]);
+    const onTheSlope = TestSlope.scenario(2026, ["anna", "boris"]);
+    const scenario = {
+      ...onTheSlope,
+      start: {
+        ...onTheSlope.start,
+        [MountainClock.NAME]: MountainClock.start({ date: "2026-04-20", time: "04:00" }),
+      },
+    };
     const slope = new TestSlope();
-    const expedition = Expedition.start(scenario, [slope]);
+    const clock = new MountainClock(COMPRESSION);
+    const expedition = Expedition.start(scenario, [clock, slope]);
     const pacer = new StepPacer(100);
     let pressed: GameAction[] = [
       { kind: "clip", climber: "anna", cowstail: "first" },
@@ -40,10 +57,14 @@ describe("Two friends on the slope, one of them careless", () => {
     expect(expedition.seconds).toBeGreaterThanOrEqual(100);
     expect(expedition.step).toBeGreaterThanOrEqual(100 * SimulationClock.STEPS_PER_SECOND);
 
+    // On the mountain, ten times as long went by, from the scenario's four in the morning.
+    expect(clock.elapsed).toBe(expedition.seconds * COMPRESSION);
+    expect(clock.timeOfDay).toBe(4 * 3600 + clock.elapsed);
+
     // The debrief plays it again from the save, with no screen, and sees the same climb.
     const save = expedition.save();
     const again = new TestSlope();
-    const debrief = Expedition.start(save.scenario, [again]);
+    const debrief = Expedition.start(save.scenario, [new MountainClock(COMPRESSION), again]);
     new HeadlessRunner(debrief, new ActionLog(save.actions)).play(save.step);
     expect(again.climber("boris")).toEqual(slope.climber("boris"));
     expect(debrief.save()).toEqual(save);

@@ -1,0 +1,22 @@
+{
+  "$schema": "../facts.schema.json",
+  "facts": [
+    {
+      "id": "crowds.south-col-to-summit-2026",
+      "kind": "fact",
+      "claim": "On 20 May 2026, the day of 274 summits, some climbers took this long from the South Col to the summit in the queue.",
+      "status": "source only",
+      "versions": [
+        {
+          "value": 12,
+          "unit": "h",
+          "source": {
+            "title": "Alan Arnette: Everest 2026 Season Summary",
+            "url": "https://www.alanarnette.com/blog/2026/06/02/everest-2026-season-summary-records-crowds-trash-winds/"
+          },
+          "checked": "2026-11-01"
+        }
+      ]
+    }
+  ]
+}

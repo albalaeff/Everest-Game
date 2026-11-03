@@ -5,9 +5,11 @@ import { ReceivedActions } from "../input/received-actions";
 import { SlopePhysics } from "../physics";
 import { Camera, FpsReadout, QualityButton, QualityChoice, SlopeScene } from "../rendering";
 import type { RenderingTexts } from "../rendering";
-import { Expedition } from "../simulation";
+import { Expedition, MountainClock } from "../simulation";
 import { ActionQueue, EverySink } from "./action-queue";
 import { GameLoop } from "./game-loop";
+import { KnowledgeBase } from "./knowledge-base";
+import type { KnowledgeFile } from "./knowledge-base";
 import { StandInRoute } from "./stand-in-route";
 
 export interface PageTexts {
@@ -22,25 +24,33 @@ export interface PageHooks {
 
 /**
  * The page: a new expedition on the stand-in section, run in real time by the game loop, drawn by
- * the scene through the camera, and played through the controls. Without WebGL it says so and
- * runs the expedition with no picture, so the controls still work.
+ * the scene through the camera, and played through the controls, with the rules' numbers from
+ * the knowledge base. Without WebGL it says so and runs the expedition with no picture, so the
+ * controls still work.
  */
 export class GamePage {
+  /** The record the mountain's clock runs at: how many times faster than play. */
+  private static readonly COMPRESSION = "time.compression";
+
   private readonly elements: PageElements;
+  private readonly knowledge: KnowledgeBase;
 
   constructor(
     private readonly window: Window,
     private readonly texts: PageTexts,
+    facts: readonly KnowledgeFile[],
   ) {
     this.elements = new PageElements(window.document);
+    this.knowledge = new KnowledgeBase(facts);
   }
 
   async open(): Promise<void> {
     const { window, texts } = this;
     const route = new StandInRoute();
+    const clock = new MountainClock(this.knowledge.number(GamePage.COMPRESSION));
     const physics = new SlopePhysics(route.settings);
     const scenario = route.scenario(this.newSeed());
-    const expedition = Expedition.start(scenario, [physics]);
+    const expedition = Expedition.start(scenario, [clock, physics]);
     const player = StandInRoute.PLAYER;
     const camera = new Camera(
       {

@@ -4,10 +4,12 @@ import type {
   ClimberLayout,
   LadderLayout,
   RopeLayout,
+  SectionAltitude,
   SlopeLayout,
   SlopeSettings,
 } from "../physics";
-import type { ClimberId, Scenario } from "../simulation";
+import { MountainClock } from "../simulation";
+import type { ClimberId, ClockStart, Scenario } from "../simulation";
 
 /** A point or a curve's point as the data file keeps it: two numbers. */
 type DataPair = readonly number[];
@@ -25,16 +27,18 @@ export interface StandInData {
   };
   readonly layout: {
     readonly terrain: readonly DataPair[];
+    readonly altitude: SectionAltitude;
     readonly ropes: readonly RopeLayout[];
     readonly ladders: readonly LadderLayout[];
     readonly climbers: readonly ClimberLayout[];
   };
+  readonly clock: ClockStart;
 }
 
 /**
  * The stand-in section the page plays on until the Khumbu Icefall (#26) brings the real ground and
- * the knowledge base's numbers: its ground and numbers as the physics takes them, and the
- * scenario that starts on it.
+ * the knowledge base's numbers: its ground and numbers as the physics takes them, when its
+ * expedition starts, and the scenario that starts on it.
  */
 export class StandInRoute {
   /** The player's climber in the stand-in layout. */
@@ -42,9 +46,10 @@ export class StandInRoute {
 
   readonly settings: SlopeSettings;
   readonly layout: SlopeLayout;
+  readonly clock: ClockStart;
 
   constructor(data: StandInData = standIn) {
-    const { settings, layout } = data;
+    const { settings, layout, clock } = data;
     this.settings = {
       gravity: settings.gravity,
       friction: settings.friction,
@@ -56,18 +61,24 @@ export class StandInRoute {
     };
     this.layout = {
       terrain: StandInRoute.pairs(layout.terrain),
+      altitude: layout.altitude,
       ropes: layout.ropes,
       ladders: layout.ladders,
       climbers: layout.climbers,
     };
+    this.clock = clock;
   }
 
-  /** A scenario on the section: the seed, and the climbers in the layout's order. */
+  /** A scenario on the section: the seed, the climbers in the layout's order, the clock at its
+   * start. */
   scenario(seed: number): Scenario {
     return {
       seed,
       climbers: this.layout.climbers.map((climber) => climber.id),
-      start: { [SlopePhysics.NAME]: SlopePhysics.start(this.layout) },
+      start: {
+        [MountainClock.NAME]: MountainClock.start(this.clock),
+        [SlopePhysics.NAME]: SlopePhysics.start(this.layout),
+      },
     };
   }
 

@@ -1,5 +1,6 @@
 import { SimulationClock } from "../../simulation";
 import type { Scenario } from "../../simulation";
+import type { SectionAltitude } from "../section-scale";
 import { SlopePhysics } from "../slope-physics";
 import type {
   ClimberLayout,
@@ -17,6 +18,9 @@ import type { Pair } from "../terrain";
  * knowledge base (docs/conventions/slope-physics.md). Only tests import it.
  */
 export class TestMountain {
+  /** The altitude of every test mountain's foot. A layout is drawn at life size unless it says
+   * otherwise: a climber's altitude is this and their height on the picture. */
+  static readonly FOOT = 5000;
   /** Friction 0.4 holds a slide on ground up to about 22°, and slips start past 25°. */
   static readonly SETTINGS: SlopeSettings = {
     gravity: 9.8,
@@ -120,12 +124,21 @@ export class TestMountain {
     return new Terrain(this.ground);
   }
 
-  /** A section on this ground, with these climbers, ropes and ladders. */
+  /** A section on this ground, with these climbers, ropes and ladders, drawn at life size unless
+   * `altitude` says otherwise. */
   layout(
     climbers: readonly ClimberLayout[],
     ropes: readonly RopeLayout[] = [],
     ladders: readonly LadderLayout[] = [],
+    altitude: SectionAltitude = this.lifeSize,
   ): SlopeLayout {
-    return { terrain: this.ground, ropes, ladders, climbers };
+    return { terrain: this.ground, altitude, ropes, ladders, climbers };
+  }
+
+  /** The ends' altitudes with the ground drawn at life size: `FOOT`, and the rise above it. */
+  private get lifeSize(): SectionAltitude {
+    const terrain = this.terrain;
+    const rise = terrain.point(terrain.length).y - terrain.point(0).y;
+    return { start: TestMountain.FOOT, end: TestMountain.FOOT + rise };
   }
 }
