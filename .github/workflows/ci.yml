@@ -47,10 +47,10 @@ jobs:
       - uses: actions/setup-node@v6
         with:
           node-version: "24"
+          cache: npm
 
-      # `npm ci` and setup-node's cache, once package-lock.json is in.
       - name: Install the game's dependencies
-        run: npm install
+        run: npm ci
 
       - name: The game's type check
         run: npm run typecheck
