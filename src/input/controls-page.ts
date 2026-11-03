@@ -5,10 +5,11 @@ import { FloatingJoystick } from "./floating-joystick";
 import { GamepadSource } from "./gamepad-source";
 import { InputLayer } from "./input-layer";
 import { KeyboardSource } from "./keyboard-source";
+import { PageElements } from "./page-elements";
+import type { ActionSink } from "./player-action";
 import { PlayerInput } from "./player-input";
 import { PointerSource } from "./pointer-source";
-import { ReceivedActions } from "./received-actions";
-import { PlainSlopeView } from "./slope-view";
+import type { SlopeView } from "./slope-view";
 import { TouchMode } from "./touch-mode";
 
 /** The page's words, in one language of content/controls.json. */
@@ -16,16 +17,21 @@ export type ControlTexts = Readonly<
   Record<ControlName | "hint-click" | "hint-tap" | "turn-phone", string>
 >;
 
-/** Puts the page's controls together, around index.html's elements. */
+/** Puts the page's controls together, around index.html's elements: the player's actions go to
+ * `sink`, and the slope is seen through `slope`, the camera. */
 export class ControlsPage {
   private static readonly CLIMBER = "player";
+
+  private readonly elements: PageElements;
 
   constructor(
     private readonly window: Window,
     texts: ControlTexts,
+    slope: SlopeView,
+    sink: ActionSink,
   ) {
-    const received = new ReceivedActions(this.element("#received"));
-    const player = new PlayerInput(ControlsPage.CLIMBER, new PlainSlopeView(window), received);
+    this.elements = new PageElements(window.document);
+    const player = new PlayerInput(ControlsPage.CLIMBER, slope, sink);
     const joystick = new FloatingJoystick(this.element("#joystick"), this.element("#knob"));
     const keyboard = new KeyboardSource(window, player);
     const pointer = new PointerSource(this.element("#slope"), player, joystick, window);
@@ -57,10 +63,6 @@ export class ControlsPage {
   }
 
   private element(selector: string): HTMLElement {
-    const found = this.window.document.querySelector<HTMLElement>(selector);
-    if (found === null) {
-      throw new RangeError(`No ${selector} on the page`);
-    }
-    return found;
+    return this.elements.find(selector);
   }
 }

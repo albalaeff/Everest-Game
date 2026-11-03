@@ -1,0 +1,18 @@
+{
+  "en": {
+    "graphics": "Graphics",
+    "low": "Low",
+    "medium": "Medium",
+    "high": "High",
+    "fps": "fps",
+    "no-webgl": "The slope can't be drawn: this browser has no WebGL. The controls still work."
+  },
+  "ru": {
+    "graphics": "Графика",
+    "low": "Низкая",
+    "medium": "Средняя",
+    "high": "Высокая",
+    "fps": "к/с",
+    "no-webgl": "Склон не нарисовать: в этом браузере нет WebGL. Управление работает."
+  }
+}

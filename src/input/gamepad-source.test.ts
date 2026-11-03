@@ -3,8 +3,7 @@ import { describe, expect, it } from "vitest";
 import { GamepadSource } from "./gamepad-source";
 import type { Pad } from "./gamepad-source";
 import { PlayerInput } from "./player-input";
-import { PlainSlopeView } from "./slope-view";
-import { FakePad, HeardActions } from "./testing/fakes";
+import { FakePad, FakeSlopeView, HeardActions } from "./testing/fakes";
 
 // The Gamepad API's standard mapping.
 const A = 0;
@@ -23,7 +22,7 @@ function setUp() {
   const heard = new HeardActions();
   const pad = new FakePad();
   const pads = { connected: [null, pad] as (Pad | null)[] };
-  const slope = new PlainSlopeView({ innerWidth: 640, innerHeight: 360 });
+  const slope = new FakeSlopeView({ innerWidth: 640, innerHeight: 360 });
   const player = new PlayerInput("anna", slope, heard);
   const source = new GamepadSource({ getGamepads: () => pads.connected }, player);
   return { heard, pad, pads, source };

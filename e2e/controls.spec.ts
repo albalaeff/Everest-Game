@@ -1,11 +1,15 @@
 import { expect, test } from "@playwright/test";
 import type { Locator, Page } from "@playwright/test";
 
-/** One climb, as the page names what the game receives: the same by keys and by touch. */
+/**
+ * One climb, as the page names what the game receives: the same by keys and by touch. The climber
+ * starts 10 m along the flat, under the camera's anchor, a third of the screen from the left and
+ * 60% down: 18 px a metre on a screen 360 high (e2e/slope.spec.ts).
+ */
 const THE_CLIMB = [
-  "tool ice-axe 0.8 0.5",
-  "tool crampons 0.8 -0.5",
-  "tool ice-axe -1.2 0.5",
+  "tool ice-axe 20.37 4.78",
+  "tool crampons 20.37 -0.78",
+  "tool ice-axe 9.26 4.78",
   "pace faster",
   "walk right",
   "pace steady",
@@ -129,7 +133,7 @@ test.describe("on a screen of 640 by 360", () => {
 
     await expect(jumar).not.toHaveClass(/action-button--pressed/);
     await expectReceived(page, [
-      "tool ice-axe 0.8 0.5",
+      "tool ice-axe 20.37 4.78",
       "walk right",
       "jumar true",
       "walk stop",

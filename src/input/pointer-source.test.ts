@@ -2,8 +2,7 @@ import { describe, expect, it } from "vitest";
 
 import { PlayerInput } from "./player-input";
 import { PointerSource } from "./pointer-source";
-import { PlainSlopeView } from "./slope-view";
-import { FakeJoystick, FakeSurface, HeardActions } from "./testing/fakes";
+import { FakeJoystick, FakeSlopeView, FakeSurface, HeardActions } from "./testing/fakes";
 
 const SCREEN = { innerWidth: 640, innerHeight: 360 };
 
@@ -11,7 +10,7 @@ function phone() {
   const heard = new HeardActions();
   const surface = new FakeSurface();
   const joystick = new FakeJoystick();
-  const player = new PlayerInput("anna", new PlainSlopeView(SCREEN), heard);
+  const player = new PlayerInput("anna", new FakeSlopeView(SCREEN), heard);
   const source = new PointerSource(surface, player, joystick, SCREEN);
   return { heard, surface, joystick, source };
 }

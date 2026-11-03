@@ -102,6 +102,16 @@ export class SlopePhysics implements Rule {
     return this.loaded.ladder(id).shape;
   }
 
+  /** The ropes on the slope, in the layout's order, for the rendering to draw. */
+  get ropes(): readonly string[] {
+    return [...this.loaded.ropes.keys()];
+  }
+
+  /** The ladders on the slope, in the layout's order. */
+  get ladders(): readonly string[] {
+    return [...this.loaded.ladders.keys()];
+  }
+
   get terrain(): Terrain {
     return this.loaded.terrain;
   }
