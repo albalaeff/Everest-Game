@@ -62,7 +62,7 @@
     ],
     "climbers": [
       { "id": "player", "along": 10 },
-      { "id": "teammate", "along": 130 }
+      { "id": "teammate", "along": 12 }
     ]
   },
   "clock": { "date": "2026-04-20", "time": "04:00" }

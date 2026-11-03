@@ -104,8 +104,9 @@ class TestGoodRecords:
             fact(versions=[version(), version(range={"min": 3, "max": 5})]),
             fact(versions=[{"source": SOURCE, "checked": "2026-11-01"}]),
             fact(versions=[{"note": "Descend.", "source": SOURCE, "checked": "2026-11-01"}]),
+            fact(versions=[version(estimate=True)]),
         ],
-        ids=["range", "reviewed", "value", "two versions", "no number", "in words"],
+        ids=["range", "reviewed", "value", "two versions", "no number", "in words", "estimate"],
     )
     def test_a_fact_passes(self, tmp_path: Path, record: dict[str, Any]) -> None:
         assert problems(tmp_path, record) == []
@@ -164,6 +165,22 @@ class TestBadRecords:
 
     def test_a_number_needs_its_unit(self, tmp_path: Path) -> None:
         assert problems(tmp_path, fact(versions=[without(version(), "unit")])) != []
+
+    def test_an_estimate_is_of_a_number(self, tmp_path: Path) -> None:
+        in_words = {"note": "About 3.", "estimate": True, "source": SOURCE, "checked": "2026-11-01"}
+        found = problems(tmp_path, fact(versions=[in_words]))
+        assert len(found) == 1
+        assert "is not valid under any of the given schemas" in found[0]
+
+    @pytest.mark.parametrize("estimate", [False, "yes"])
+    def test_an_estimate_is_true_or_left_out(self, tmp_path: Path, estimate: object) -> None:
+        found = problems(tmp_path, fact(versions=[version(estimate=estimate)]))
+        assert len(found) == 1
+        assert "True was expected" in found[0]
+
+    def test_a_coefficient_is_no_estimate(self, tmp_path: Path) -> None:
+        """No source states it: it's the model's own number, fitted to facts."""
+        assert problems(tmp_path, fact(), coefficient(estimate=True)) != []
 
     def test_a_misspelt_field_fails(self, tmp_path: Path) -> None:
         assert problems(tmp_path, fact(sorce="Arnette")) != []

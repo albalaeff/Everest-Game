@@ -1,0 +1,40 @@
+{
+  "en": {
+    "title": "Climb",
+    "alone": "Alone",
+    "start-over": "Start over",
+    "together": "Together: a new room",
+    "code": "Room code",
+    "join": "Join",
+    "connecting": "Connecting…",
+    "joined": "You have joined room {code}",
+    "copy-link": "Copy link",
+    "copied": "Link copied",
+    "unknown": "Room {code} doesn't exist",
+    "full": "Room {code} is full",
+    "stale": "Room {code} is from an older version of the game and can't go on",
+    "reloading": "Your game is out of date: reloading…",
+    "updating": "The game is being updated: try again in a minute",
+    "lost": "Connection lost: reconnecting…",
+    "back": "Back"
+  },
+  "ru": {
+    "title": "Восхождение",
+    "alone": "Один",
+    "start-over": "Начать заново",
+    "together": "Вместе: новая комната",
+    "code": "Код комнаты",
+    "join": "Войти",
+    "connecting": "Подключение…",
+    "joined": "Вы вошли в комнату {code}",
+    "copy-link": "Скопировать ссылку",
+    "copied": "Ссылка скопирована",
+    "unknown": "Комнаты {code} нет",
+    "full": "Комната {code} заполнена",
+    "stale": "Комната {code} из старой версии игры: продолжить в ней нельзя",
+    "reloading": "Игра устарела: перезагрузка…",
+    "updating": "Игра обновляется: попробуйте через минуту",
+    "lost": "Связь потеряна: переподключение…",
+    "back": "Назад"
+  }
+}

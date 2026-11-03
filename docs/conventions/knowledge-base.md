@@ -2,7 +2,7 @@
 
 Every number, mechanic and piece of advice in the game comes from a record here, kept apart from the code, so a guide or a doctor can review and change it without a programmer ([../../spec.md](../../spec.md) → Realism and accuracy principles, [../conventions.md](../conventions.md) → Data, not literals).
 
-The records are the JSON files in `content/facts/`, one file per area, and `content/facts.schema.json` is their format. `uv run pytest tests/test_check_facts_script.py` checks them all, and CI runs it with the rest, so a record without a source or a check date can't be merged. `uv run python scripts/check_facts.py` runs the same check and lists what's wrong, by file and record. The page hands the rules their numbers from the records through `KnowledgeBase` (`src/page/knowledge-base.ts`): `number(id)` is a coefficient's value, or the middle of its range, and a fact's middle across its sources.
+The records are the JSON files in `content/facts/`, one file per area, and `content/facts.schema.json` is their format. `uv run pytest tests/test_check_facts_script.py` checks them all, and CI runs it with the rest, so a record without a source or a check date can't be merged. `uv run python scripts/check_facts.py` runs the same check and lists what's wrong, by file and record. The page hands the rules their numbers from the records through `KnowledgeBase` (`src/content/knowledge-base.ts`): `number(id)` is a coefficient's value, or the middle of its range, and a fact's middle across its sources. A new file is also named in `KNOWLEDGE_FILES` (`src/content/knowledge-files.ts`), since the room server can't find files by a pattern; `npm test` fails until it is.
 
 ## A fact
 
@@ -36,6 +36,7 @@ What the sources say. One version when they agree, one for each when they disagr
 - **`status`:** `source only`, or `expert-reviewed` once an expert has reviewed the record. The game tells the player which.
 - **`value` or `range`, with `unit`:** a version has one or the other. All of a record's numbers share one unit: convert them to it.
 - **`note`:** what the source says in words, where its version differs without a number.
+- **`estimate`:** `true` where the source estimates the number instead of giving one that's listed or measured, as with the prices of Nepalese operators, who mostly publish none; left out otherwise. Only a version with a number has one. The experts' lists mark it, and the game should too wherever it shows the number.
 - **`source`:** its title and link. Rank sources as the spec's source priority does.
 - **`checked`:** the day someone read the source and found this in it, `YYYY-MM-DD`. Change it each time you read it again.
 

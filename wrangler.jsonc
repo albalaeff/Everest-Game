@@ -1,0 +1,19 @@
+// The room server: a Worker and its Durable Objects, one for each room
+// (docs/conventions/room-server.md, docs/production.md → The room server).
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "everest-room",
+  "main": "src/room/worker/worker.ts",
+  "compatibility_date": "2026-11-01",
+  "durable_objects": {
+    "bindings": [{ "name": "ROOMS", "class_name": "RoomObject" }]
+  },
+  // The free plan runs only objects whose storage is SQLite.
+  "migrations": [{ "tag": "v1", "new_sqlite_classes": ["RoomObject"] }],
+  // The build of the game the rooms run: `local` under `wrangler dev`, as a page built without a
+  // commit is; CI deploys it with `--var GAME_VERSION:<commit>`, the commit the preview is built
+  // from.
+  "vars": { "GAME_VERSION": "local" },
+  "dev": { "port": 8787 },
+  "observability": { "enabled": true }
+}

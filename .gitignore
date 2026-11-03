@@ -18,10 +18,11 @@ htmlcov/
 .mypy_cache/
 .ruff_cache/
 
-# The game: what npm and Playwright make
+# The game: what npm, Playwright and wrangler make (`wrangler dev` keeps its rooms in .wrangler/)
 node_modules/
 playwright-report/
 test-results/
+.wrangler/
 
 # Editors and OS
 .vscode/*

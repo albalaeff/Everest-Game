@@ -94,12 +94,14 @@ class Record:
         raise NotImplementedError
 
     def _number(self, measure: Mapping[str, Any]) -> str:
-        """A value or a range with its unit, or nothing."""
+        """A value or a range with its unit, and whether its source estimates it; or nothing."""
         if "value" in measure:
-            return f"{measure['value']} {measure['unit']}"
-        if "range" in measure:
-            return f"{measure['range']['min']}–{measure['range']['max']} {measure['unit']}"
-        return ""
+            number = f"{measure['value']} {measure['unit']}"
+        elif "range" in measure:
+            number = f"{measure['range']['min']}–{measure['range']['max']} {measure['unit']}"
+        else:
+            return ""
+        return f"{number}, an estimate" if measure.get("estimate") else number
 
     def _said(self, version: Mapping[str, Any]) -> str:
         """What one source says, in a number or in words, where it has them."""

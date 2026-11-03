@@ -6,12 +6,14 @@ Where the game runs for real: the hosting, how a release gets there, its secrets
 
 - **The game:** <GitHub Pages of this repository, or itch.io: the URL, whose account>.
 - **The preview:** GitHub Pages of this repository: The preview, below.
-- **The room server:** the Cloudflare account **Everest Cloudflare (albalaeff)**, albalaeff's, on the free plan with no card; its Workers live at `<worker>.alexalbalaeff.workers.dev`. <The Worker's name, its Durable Object; the free plan's limits and who watches them: with the room server, #28.>
+- **The room server:** the Worker `everest-room`, at https://everest-room.alexalbalaeff.workers.dev, on the Cloudflare account **Everest Cloudflare (albalaeff)**, albalaeff's, on the free plan with no card ([conventions/room-server.md](conventions/room-server.md)). Each room is a Durable Object of the class `RoomObject`, stored in SQLite, the only kind the free plan runs. The preview's job deploys it (The preview, below); its address is the build's `VITE_ROOM_SERVER`.
+  - **Rooms are never deleted:** a paused room waits with its climbers where they were. A room saved by a build the current one can't go on with is kept as well, and its players are told so.
+  - **The free plan's daily limits** are 100,000 requests and 13,000 GB·s of Durable Objects. A room in play counts 128 MB for every second anyone's in it, so the day holds about 28 hours of rooms in play. Writes are limited too, to 100,000 rows: a room writes a few every ten seconds of play. albalaeff watches them, on the dashboard: Workers & Pages → `everest-room` → Metrics.
 - **Secrets:** in the repository's Actions secrets, nothing in git. `CLOUDFLARE_API_TOKEN` is the token `everest-room-server-deploy` (Workers Scripts · Edit, no expiry), and `CLOUDFLARE_ACCOUNT_ID` the account's ID. Nobody can read them back: to change the token, albalaeff edits its rights on Cloudflare, or makes a new one and pastes it over the secret.
 
 ## The preview
 
-Every merge into `develop` is published to https://albalaeff.github.io/Everest-Game/, to open on a PC or a phone; the page's last line names the commit. The job `preview` in `ci.yml` does it once `checks` and `secrets` pass, with GitHub Pages' own actions and no secret. Actions → CI → Run workflow on `develop` publishes `develop` again.
+Every merge into `develop` is published to https://albalaeff.github.io/Everest-Game/, to open on a PC or a phone; the page's last line names the commit. The job `preview` in `ci.yml` does it once `checks` and `secrets` pass. It deploys the room server first, `wrangler deploy` with the Cloudflare secrets and the commit as `GAME_VERSION`, then publishes the page, built with the same commit, with GitHub Pages' own actions. Between the two, a page still open on the old build is asked to reload, and says the game is being updated until the new page is published. Actions → CI → Run workflow on `develop` publishes `develop` again.
 
 Pages is turned on once, by the repository's owner: Settings → Pages → Source: *GitHub Actions*. Each publish replaces the whole site, so a release published on GitHub Pages too needs a place of its own there, or itch.io.
 
@@ -29,7 +31,7 @@ A release is a PR from a `release/…` branch into `master` (PEB#510). Once its 
 
 Once, before the first real release PR:
 
-1. **The workflow:** replace the stub step in `.github/workflows/release-tool.yml` with the build and the publish: the static site to GitHub Pages (or itch.io's butler) from the release branch's build, and `wrangler deploy` for the room server once there is one; `confirm` and `rollback` publish the stable build again. The report goes on the PR as a comment.
+1. **The workflow:** replace the stub step in `.github/workflows/release-tool.yml` with the build and the publish: the static site to GitHub Pages (or itch.io's butler) from the release branch's build, and the room server with `wrangler deploy`, a Worker of the release's own beside the preview's; `confirm` and `rollback` publish the stable build again. The report goes on the PR as a comment.
 2. **The secrets**, in the repository's Settings → Secrets and variables → Actions: the deploy's tokens (Cloudflare's API token, itch.io's), with the least rights that publish.
 3. **The ruleset**, in Settings → Rules → Rulesets: "master: deployed", on `master`, requiring the status check `deploy / release-tool`. GitHub suggests the check once it has run on the first release PR: add it then, before that PR is merged.
 4. **The release label** (PEB#517): a label `release` in the repository's labels, and a token of the owner's in the secret `RELEASE_TOKEN` (read and write access to Contents, Issues and Pull requests, for this repository only). A PR opened with Actions' own token starts no CI, so the release would never deploy. A token given an expiry needs a new one in the secret before it runs out.
