@@ -10,7 +10,11 @@
       "items": {
         "if": { "properties": { "kind": { "const": "coefficient" } }, "required": ["kind"] },
         "then": { "$ref": "#/$defs/coefficient" },
-        "else": { "$ref": "#/$defs/fact" }
+        "else": {
+          "if": { "properties": { "kind": { "const": "question" } }, "required": ["kind"] },
+          "then": { "$ref": "#/$defs/question" },
+          "else": { "$ref": "#/$defs/fact" }
+        }
       }
     }
   },
@@ -52,6 +56,23 @@
       "required": ["id", "kind", "claim", "status", "unit", "fitted_to", "fitted"],
       "additionalProperties": false,
       "allOf": [{ "$ref": "#/$defs/measured" }, { "$ref": "#/$defs/has-a-number" }]
+    },
+    "question": {
+      "description": "What no source answers, for an expert: it's open until they answer it, and the answer is a fact.",
+      "type": "object",
+      "properties": {
+        "id": { "$ref": "#/$defs/id" },
+        "kind": { "const": "question" },
+        "question": { "$ref": "#/$defs/text" },
+        "about": {
+          "type": "array",
+          "minItems": 1,
+          "uniqueItems": true,
+          "items": { "$ref": "#/$defs/id" }
+        }
+      },
+      "required": ["id", "kind", "question"],
+      "additionalProperties": false
     },
     "version": {
       "description": "What one source says: a value or a range with its unit, words in `note`, or just the claim as it stands.",
