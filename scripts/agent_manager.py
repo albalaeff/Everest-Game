@@ -912,7 +912,8 @@ class Agent:
     )
     # What it's offered it pays for on every reply (#443), so it's offered what it uses:
     # Claude Code's tools for files and commands, and for background tasks (Monitor and
-    # TaskStop, which ToolSearch loads). No web: nobody could approve it in a -p run. No
+    # TaskStop, which ToolSearch loads), and the web for the knowledge base's sources: nobody
+    # approves a page in a -p run, so it reads only the sites .claude/settings.json names. No
     # Skill or PowerShell (#551): no agent invoked a skill, and every PowerShell call it made
     # had a Bash form.
     TOOLS: ClassVar[tuple[str, ...]] = (
@@ -925,6 +926,8 @@ class Agent:
         "Monitor",
         "TaskStop",
         "ToolSearch",
+        "WebFetch",
+        "WebSearch",
     )
 
     def __init__(

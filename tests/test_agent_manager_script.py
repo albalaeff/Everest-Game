@@ -934,16 +934,29 @@ def test_the_command_is_headless_claude_code_that_never_waits_for_a_person(
 
 def test_an_agent_is_offered_only_what_it_can_use(tmp_path: Path) -> None:
     # #443: what it's offered it pays for on every reply. Its user's MCP servers, skills and
-    # settings are of no use to it, and the web tools are refused in a run nobody watches.
+    # settings are of no use to it. The web it gets for the knowledge base's sources (#11),
+    # as far as .claude/settings.json's rules allow.
     command = agent(tmp_path).command()
 
     assert "--strict-mcp-config" in command
     assert command[command.index("--setting-sources") + 1] == "project,local"
     tools = command[command.index("--tools") + 1].split(",")
-    assert {"Bash", "Read", "Edit", "Write", "Glob", "Grep"} <= set(tools)
-    assert not {"WebSearch", "WebFetch", "Agent"} & set(tools)
+    assert {"Bash", "Read", "Edit", "Write", "Glob", "Grep", "WebFetch", "WebSearch"} <= set(tools)
+    assert "Agent" not in tools
     # #551: no agent invoked a skill, and every PowerShell call had a Bash form.
     assert not {"Skill", "PowerShell"} & set(tools)
+
+
+def test_an_agent_reads_only_the_sites_settings_name() -> None:
+    # Nobody approves a page in a run nobody watches: a WebFetch rule names its site, so an
+    # agent reads the knowledge base's sources and nothing else (#11, #12, #13).
+    settings = Path(__file__).resolve().parents[1] / ".claude" / "settings.json"
+    allow = json.loads(settings.read_text(encoding="utf-8"))["permissions"]["allow"]
+    fetches = [rule for rule in allow if rule.startswith("WebFetch")]
+
+    assert fetches
+    assert all(re.fullmatch(r"WebFetch\(domain:[a-z0-9.-]+\.[a-z]+\)", rule) for rule in fetches)
+    assert len(set(fetches)) == len(fetches)
 
 
 def test_an_agent_has_no_auto_memory(tmp_path: Path) -> None:
