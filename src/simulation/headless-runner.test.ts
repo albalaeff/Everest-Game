@@ -63,7 +63,7 @@ describe("HeadlessRunner", () => {
     expect(expedition.seconds).toBeGreaterThan(90);
   });
 
-  it("plays six hours of the mountain over a hundred times faster than real time", () => {
+  it("plays six hours of an expedition over a hundred times faster than real time", () => {
     const sixHours = 6 * 3600;
     const conditions = { ...TestSlope.CALM, top: sixHours * 2 };
     const expedition = Expedition.start(TestSlope.scenario(1, ["anna"], conditions), [

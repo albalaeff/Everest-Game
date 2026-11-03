@@ -1,7 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { SeededRandom } from "./seeded-random";
-import type { RandomState } from "./seeded-random";
+import { type RandomState, SeededRandom } from "./seeded-random";
 
 const draws = (random: SeededRandom, count: number): number[] =>
   Array.from({ length: count }, () => random.word());

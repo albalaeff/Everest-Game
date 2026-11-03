@@ -43,47 +43,32 @@ jobs:
       - name: Tests
         run: uv run pytest
 
-      # The game's own checks (README → Tests), in this job because the ruleset requires it. Each
-      # runs even when one before it failed, so one run reports them all.
+      # The game's own checks (README → Tests), in this job because the ruleset requires it.
       - uses: actions/setup-node@v7
         with:
           node-version-file: .nvmrc
+          cache: npm
 
-      # `npm ci` and setup-node's cache, once package-lock.json is in.
       - name: Install the game's dependencies
-        run: npm install
+        run: npm ci
 
       - name: Lint the game
-        if: ${{ !cancelled() }}
         run: npm run lint
 
       - name: Check the game's format
-        id: format
-        if: ${{ !cancelled() }}
         run: npm run format:check
 
       - name: Type check the game
-        if: ${{ !cancelled() }}
         run: npm run typecheck
 
       - name: Test the game
-        if: ${{ !cancelled() }}
         run: npm test
 
       - name: Install the browsers
-        if: ${{ !cancelled() }}
         run: npx playwright install --with-deps chromium webkit
 
       - name: Test the page on a PC and on phones
-        if: ${{ !cancelled() }}
         run: npm run e2e
-
-      # For an agent, whose machine may have no Node: last, because it rewrites the checkout.
-      - name: Show what the format check wants
-        if: ${{ !cancelled() && steps.format.outcome == 'failure' }}
-        run: |
-          npm run format
-          git diff
 
   secrets:
     # No secret in the history (PEB#59, PEB#538): gitleaks over every commit of what's checked

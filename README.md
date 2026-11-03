@@ -15,7 +15,7 @@ A 2D browser game: a simulator-trainer for climbing Everest by the South route. 
 
 The game is a static TypeScript site that runs in the browser ([spec.md](spec.md) → Technical architecture): a simulation core (body, oxygen, weather, time, hazards; the same result for the same seed), agents and slope physics on it, PixiJS rendering with HTML and CSS for the interface and Web Audio for sound, and JSON content: the route, the scenarios, and the knowledge base of facts with their sources. For co-op, a room server on Cloudflare Workers runs the same core. [docs/conventions.md](docs/conventions.md) → Modules has the rules between them.
 
-The game's project is at the root of the repository: Vite builds `index.html` and `src/` into the static site, on Node 24 and npm. So far it's the simulation core, in `src/simulation/` ([docs/conventions/simulation-core.md](docs/conventions/simulation-core.md)), and the input layer, in `src/input/` ([docs/conventions/input.md](docs/conventions/input.md)), on a page that shows the controls and names each action the game receives; the other modules come with their issues. Beside it the repository holds the spec, the workflow ([CLAUDE.md](CLAUDE.md), `scripts/`, `.claude/`), the docs and the knowledge base: the fact records in `content/facts/` ([docs/conventions/knowledge-base.md](docs/conventions/knowledge-base.md)).
+The game's project is at the root of the repository: Vite builds `index.html` and `src/` into the static site, on Node 24 and npm. So far it's the simulation core in `src/simulation/` ([docs/conventions/simulation-core.md](docs/conventions/simulation-core.md)) and the input layer in `src/input/` ([docs/conventions/input.md](docs/conventions/input.md)), on a page that shows the controls and names each action the game receives; the other modules come with their issues. Beside it the repository holds the spec, the workflow ([CLAUDE.md](CLAUDE.md), `scripts/`, `.claude/`), the docs and the knowledge base: the fact records in `content/facts/` ([docs/conventions/knowledge-base.md](docs/conventions/knowledge-base.md)).
 
 ## Local development
 
@@ -65,6 +65,18 @@ you do, Claude Code ignores the allow list in `.claude/settings.json`, so each a
 refused nearly every command. The VS Code extension doesn't record this trust, and the
 machine check says when it's missing.
 
+**The toolchain first.** An agent runs the checks the definition of done names, so it needs
+uv, Claude Code and its trust, and the project's own tools (`PROJECT_CHECKS` in
+`scripts/check_setup.py`: Node now, Playwright's browsers with the page). The manager looks at
+them as it starts and before each agent. While one is missing, code work waits: the manager
+says what and the fix once in its log ("Agents on code work wait: Node: not installed (fix:
+winget install …)"), and once on each issue it holds, as a handoff whose next move is
+Claude's. A green PR's merge and new prices aren't held. A tool installed after the manager
+started isn't on its PATH, which its agents get, so it says when the PATH a new terminal gets
+has the tool: restart the manager from a new terminal, and the work held starts. Run
+`scripts/check_setup.py` and fix what it names before you start the manager: #16, #17 and #18
+each wrote their code blind for want of Node, then stopped, at $7 to $15 a run.
+
 **Running it.** Leave it running in a terminal of its own:
 
 ```
@@ -109,6 +121,11 @@ waits behind code work. The rest start in turn: by the issue's `priority:high`,
 `priority:medium` or `priority:low` (none is medium), then mid-work (Claude has spoken on it,
 or an agent left its worktree) before new, then first come first served. A label changed while
 a task waits counts at the next look; a running agent is never stopped for a higher one.
+
+**What an issue builds on.** An issue with a `Depends on #16` line or an `after:16` label is
+blocked while #16 is open: no agent starts on it or its PR, and the console says what it waits
+on. When #16 closes, the next look wakes it, and its agent merges `develop` in first
+(docs/workflow.md → What an issue builds on).
 
 **A green PR's merge.** The agent that opens a PR leaves the closing comment in its
 handoff, so once CI is green the manager merges with no agent. First it checks that the PR is
@@ -178,11 +195,13 @@ npm run e2e -- --project=iphone   # on one of them
   lists every problem by file and record
   ([docs/conventions/knowledge-base.md](docs/conventions/knowledge-base.md)).
 - **The game's checks** run in CI beside these. ESLint and Prettier read `src/`, `e2e/` and
-  the config files; `tsc` checks `tsconfig.json`, the browser's code,
-  `tsconfig.node.json`, what runs on Node, and `tsconfig.core.json`, the simulation core alone,
-  with no DOM and no Node. Vitest runs `src/**/*.test.ts`. Playwright builds the game, serves
-  the build and runs the stories in `e2e/` on each of its projects: `pc` and `android` in
-  Chromium, `iphone` in WebKit. TypeScript stays on 6.0: typescript-eslint refuses 7.
+  the config files; `tsc` checks `tsconfig.json`, the browser's code, `tsconfig.core.json`,
+  the simulation core alone with no DOM, Node or test tool in scope
+  ([docs/conventions/simulation-core.md](docs/conventions/simulation-core.md)), and
+  `tsconfig.node.json`, what runs on Node. Vitest runs `src/**/*.test.ts`. Playwright builds
+  the game, serves the build and runs the stories in `e2e/` on each of its projects: `pc` and
+  `android` in Chromium, `iphone` in WebKit. TypeScript stays on 6.0: typescript-eslint
+  refuses 7.
 - **The database test.** The agent manager's one `db` test, for a project whose agents get
   test databases of their own, is skipped without `TEST_DATABASE_URL`.
 
@@ -201,13 +220,13 @@ CI also scans for what mustn't be in the repository:
   `npm audit` over `package-lock.json`'s every Monday and on a PR that changes either. A
   vulnerability found on a Monday isn't a PR's fault, so no PR needs this check: GitHub mails
   a failed scheduled run to whoever last changed its schedule. Actions → Dependency audit →
-  Run workflow runs it now. `overrides` in `package.json` holds `minimatch` at the fix of
-  GHSA-g3hv-75wg-m249, which eslint and typescript-eslint don't ask for yet: drop it once they
-  do.
+  Run workflow runs it now. The game's audit fails on any advisory in what ships to players
+  (`npm audit --omit=dev`), but only on a high or critical one in the build and test tools
+  (`--audit-level=high`): a moderate one there waits for the fix to reach them.
 
 ### When CI fails
 
-`scripts/github.py logs <job>` prints a job's whole log, to filter with `grep`: the job's id is in `scripts/github.py api GET actions/runs/<run>/jobs`. When the game's format check fails, the job's last step prints what Prettier wants as a diff, for a machine with no Node.
+`scripts/github.py logs <job>` prints a job's whole log, to filter with `grep`: the job's id is in `scripts/github.py api GET actions/runs/<run>/jobs`.
 
 One failure isn't the change's:
 

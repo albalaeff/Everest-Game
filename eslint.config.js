@@ -11,4 +11,10 @@ export default defineConfig({
       tsconfigRootDir: import.meta.dirname,
     },
   },
+  rules: {
+    // A number reads as itself in a message: `${moment.step}` needs no String().
+    "@typescript-eslint/restrict-template-expressions": ["error", { allowNumber: true }],
+    // `expect(() => expedition.advance(...))`: the shorthand's void is nobody's confusion.
+    "@typescript-eslint/no-confusing-void-expression": ["error", { ignoreArrowShorthand: true }],
+  },
 });

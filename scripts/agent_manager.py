@@ -36,17 +36,20 @@ One agent per issue, at most `max_parallel` at once, and a green PR's merge besi
 of its own (#485): the rest wait their turn, a merge first, then by the issue's `priority:*`
 label, then mid-work before new, then first come first served; and one whose turn comes
 after it stopped needing anything is dropped (`Scheduler`), as is a PR's whose issue was
-postponed meanwhile (#540). One that couldn't start (its branch checked out in the checkout,
-say) is tried again at the watcher's next look. One whose run ended on the account's usage
-limit waits its turn again, and no agent starts before the limit resets (`UsageLimit`, #476);
-one whose run ended because the account lacks its model (Fable is on some plans only) waits
-its turn again and runs on the next model down, as every later one on that model does
-(`ModelUnavailable`, #4). When an agent ends, its worktree goes if nothing in it is missing
-from GitHub; else it stays, and the log says why. The first Ctrl+C stops the watcher
-and starts nothing more, letting the agents running finish their work; a second stops them
-too, and keeps their worktrees as they are (#485). While it runs it holds a lock
-(`ManagerLock`), so a session's watcher ends: the agents take the issues (CLAUDE.md →
-Sessions).
+postponed meanwhile (#540), or blocked by what it builds on (#107: the watcher holds such an
+issue, its log says on what, and its merge wakes it). One that couldn't start (its branch
+checked out in the checkout, say) is tried again at the watcher's next look. One whose run
+ended on the account's usage limit waits its turn again, and no agent starts before the
+limit resets (`UsageLimit`, #476); one whose run ended because the account lacks its model
+(Fable is on some plans only) waits its turn again and runs on the next model down, as every
+later one on that model does (`ModelUnavailable`, #4). While the machine lacks a tool an
+agent needs, code work waits, and the manager says what and the fix, and when a restart would
+give its agents a tool installed since it started (`ToolchainHold`, #108). When an agent
+ends, its worktree goes if nothing in it is missing from GitHub; else it stays, and the log
+says why. The first Ctrl+C stops the watcher and starts nothing more, letting the agents
+running finish their work; a second stops them too, and keeps their worktrees as they are
+(#485). While it runs it holds a lock (`ManagerLock`), so a session's watcher ends: the
+agents take the issues (CLAUDE.md → Sessions).
 """
 
 import argparse
@@ -92,6 +95,7 @@ from scripts.agents import (  # noqa: E402
     ManagerLock,
     Priority,
 )
+from scripts.check_setup import Check, Toolchain  # noqa: E402
 from scripts.claude_cost import IssueCost, Title, issue_cost  # noqa: E402
 from scripts.github import (  # noqa: E402
     CLOSES,
@@ -99,6 +103,7 @@ from scripts.github import (  # noqa: E402
     RELEASE_LABEL,
     CiRuns,
     Conversation,
+    Dependencies,
     GitHub,
     IssueWork,
     PullRequests,
@@ -193,6 +198,12 @@ class Job:
         return False
 
     @property
+    def needs_tools(self) -> bool:
+        """Whether it's code work, which waits while the machine lacks a tool an agent runs
+        (`ToolchainHold`, #108)."""
+        return False
+
+    @property
     def begun(self) -> bool:
         """Whether Claude has begun it: mid-work goes before new (#485)."""
         return False
@@ -210,7 +221,12 @@ class IssueJob(Job):
         "to start": "it's to start",
         "reply waiting": "a reply waits",
         "Claude's move": "the next move is Claude's",
+        "unblocked": "what it builds on has merged",
     }
+    MERGE_DEVELOP: ClassVar[str] = (
+        " {what} merged since Claude's last word: begin by merging `origin/develop` into the "
+        "branch (docs/conventions.md → Git workflow)."
+    )
 
     task: Task
 
@@ -254,8 +270,10 @@ class IssueJob(Job):
         what = f"#{self.slot}" if task.issue is not None else f"PR #{task.number}"
         subject = f"issue {what}" if task.issue is not None else what
         unmerged = f" The manager left the merge to you: {self.unmerged}." if self.unmerged else ""
+        woken = ", ".join(f"#{number}" for number in task.woken)
+        merge = self.MERGE_DEVELOP.format(what=woken) if woken else ""
         return (
-            f"{self.INTRO}, for {subject} of {slug}: {self.why()}.{unmerged}\n\n"
+            f"{self.INTRO}, for {subject} of {slug}: {self.why()}.{unmerged}{merge}\n\n"
             f"{self.RULES.format(what=what)} Read it with `uv run python scripts/github.py "
             f"show {self.slot}` (its description and every comment), carry on from `uv run "
             f"python scripts/github.py handoffs {self.slot}`, then take the next step of "
@@ -273,6 +291,11 @@ class IssueJob(Job):
     def merges(self) -> bool:
         """CI finished green on its PR. A red one's fix is code work."""
         return self.task.state == "CI finished" and self.task.green
+
+    @property
+    def needs_tools(self) -> bool:
+        """All but a green PR's merge."""
+        return not self.merges
 
     @property
     def begun(self) -> bool:
@@ -297,13 +320,16 @@ class IssueJob(Job):
         if entry["state"] != "open" or left_out(entry):
             return False
         comments = github.call("GET", f"issues/{task.number}/comments?per_page=100")
-        return Conversation(entry, comments, me).item().to_do
+        item = Conversation(entry, comments, me).item()
+        return Dependencies(github).hold(entry, item, comments).to_do  # blocked meanwhile? #107
 
     def _set_aside(self, github: GitHub) -> bool:
         """A PR's issue postponed meanwhile, or labelled `release`: the PR waits with it
-        (`SetAside`, #540)."""
+        (`SetAside`, #540); and so it does when the issue is blocked (`Dependencies`, #107)."""
         entry = github.call("GET", f"issues/{self.task.issue}")
-        return entry["state"] == "open" and left_out(entry)
+        return entry["state"] == "open" and (
+            left_out(entry) or bool(Dependencies(github).blockers(entry))
+        )
 
 
 class PricesJob(Job):
@@ -1103,12 +1129,14 @@ class SelfMerge:
             text = work.handoff(self._closing(ready, cost), closing=True, now=self.now)
             post_comment(self.github, ready.thread, text)
         except self.FAILED as error:  # a reply came meanwhile: `comment` refuses to hide it
-            raise NotMerged(f"couldn't post the closing comment: {self._why(error)}") from None
+            raise NotMerged(
+                f"couldn't post the closing comment: {self.first_line(error)}"
+            ) from None
         try:
             merged = PullRequests(self.github).merge(task.number, at=task.sha)
         except self.FAILED as error:
             self._refused(ready, work, error)
-            why = f"GitHub refused the merge after the closing comment: {self._why(error)}"
+            why = f"GitHub refused the merge after the closing comment: {self.first_line(error)}"
             raise NotMerged(why) from None
         cleared = self.launcher.clear(job)
         return f"merged it itself, no agent: {merged}" + (f"; {cleared}" if cleared else "")
@@ -1119,7 +1147,7 @@ class SelfMerge:
         try:
             return self._check(job)
         except self.FAILED as error:
-            raise NotMerged(f"GitHub didn't answer: {self._why(error)}") from None
+            raise NotMerged(f"GitHub didn't answer: {self.first_line(error)}") from None
 
     def _check(self, job: Job) -> MergeReady:
         task = job.task
@@ -1225,7 +1253,7 @@ class SelfMerge:
             [
                 self.SIGNATURE.format(login=self.me),
                 f"GitHub refused to merge PR #{number}, so the comment above waits for its "
-                f"merge: {self._why(error)}",
+                f"merge: {self.first_line(error)}",
                 f"**Next:** the merge of PR #{number} (Claude's). **Waiting on:** nothing.",
             ]
         )
@@ -1235,9 +1263,116 @@ class SelfMerge:
             pass
 
     @staticmethod
-    def _why(error: BaseException) -> str:
+    def first_line(error: BaseException) -> str:
         """An error's first line: `comment`'s refusal goes on to show the replies."""
         return (str(error).splitlines() or [type(error).__name__])[0]
+
+
+# --- the machine first (#108) ------------------------------------------------------------------
+
+
+class ToolchainHold:
+    """While the machine lacks a piece an agent needs (`check_setup.Toolchain`, #108), no
+    agent starts on code work (`Job.needs_tools`): #16, #17 and #18 each wrote their code
+    blind for want of Node, then stopped, at $7 to $15 a run. It looks as the manager starts
+    (`look`) and before each agent, again only `FRESH` seconds after its last look, so that a
+    look's jobs share one. What's missing, each with its fix, is said once in the log, and
+    again when that changes or once it's all there; and once on each issue it holds (`tell`,
+    a `HoldNotice`), which says why when it can't."""
+
+    FRESH: ClassVar[float] = 10  # seconds
+
+    def __init__(
+        self,
+        checks: Callable[[], Sequence[Check]],
+        tell: Callable[[Job, str], str | None],
+        say: Say,
+        clock: Callable[[], float] = time.monotonic,
+    ) -> None:
+        self._checks = checks
+        self._tell = tell
+        self._say = say
+        self._clock = clock
+        self._found: tuple[Check, ...] = ()
+        self._at: float | None = None  # when it looked last
+        self._said: str | None = None  # what was missing, as said last
+        self._told: dict[str, str] = {}  # what each issue held was told
+
+    def look(self) -> str | None:
+        """Looks now, and says what it found: the manager's start. What's missing; None when
+        nothing is."""
+        why = self._missing(now=True)
+        if why is None:
+            names = ", ".join(check.name for check in self._found)
+            self._say(f"The machine has what agents need: {names}.")
+        return why
+
+    def holds(self, job: Job) -> str | None:
+        """Why the job can't start now, said; None when it can, or needs no tools."""
+        if not job.needs_tools:
+            return None
+        why = self._missing()
+        if why is not None and self._told.get(job.slot) != why:
+            self._told[job.slot] = why
+            if (untold := self._tell(job, why)) is not None:
+                self._say(f"{job}: not said on the issue: {untold}")
+        return why
+
+    def _missing(self, now: bool = False) -> str | None:
+        if now or self._at is None or self._clock() - self._at >= self.FRESH:
+            self._found = tuple(self._checks())
+            self._at = self._clock()
+        missing = [check for check in self._found if check.needed and not check.ok]
+        why = "; ".join(self._line(check) for check in missing) or None
+        if why is not None and why != self._said:
+            self._say(f"Agents on code work wait: {why}")
+        elif why is None and self._said is not None:
+            self._say("The machine has what agents need again: the work held starts.")
+            self._told.clear()
+        self._said = why
+        return why
+
+    @staticmethod
+    def _line(check: Check) -> str:
+        return f"{check.name}: {check.detail}" + (f" (fix: {check.fix})" if check.fix else "")
+
+
+@dataclass(frozen=True, slots=True)
+class HoldNotice:
+    """What the manager says on an issue it holds for want of a tool (`ToolchainHold`, #108):
+    a handoff whose move is Claude's, waiting on nothing on GitHub, so that the issue is still
+    to do when the manager starts again after the fix. A PR's goes on its issue. Not where a
+    reply waits: the comment would hide it (#208); what refused it, then."""
+
+    github: GitHub
+    me: str
+    cost_of: Callable[[int, Iterable[int]], IssueCost] = issue_cost
+    here: Callable[[], Machine] = Machine.here
+    now: Callable[[], datetime] = local_now
+
+    TEXT: ClassVar[str] = (
+        "{signature}\n\n"
+        "No agent starts on this on {host} while the machine lacks what one needs: {why}.\n\n"
+        "**Next:** the work, once {host} has it (Claude's). **Waiting on:** nothing on GitHub: "
+        "the agent manager starts an agent once the fix is in.\n\n"
+        "<details><summary>For the next session</summary>\n\n"
+        "- Held by the agent manager on {host} (#108): no agent ran for it.\n\n"
+        "</details>"
+    )
+
+    def __call__(self, job: Job, why: str) -> str | None:
+        """Says it on the job's issue; why it couldn't, when it couldn't."""
+        if job.task is None:
+            return "it has no issue"
+        thread = job.task.issue if job.task.issue is not None else job.task.number
+        signature = SelfMerge.SIGNATURE.format(login=self.me)
+        text = self.TEXT.format(signature=signature, host=self.here().host, why=why)
+        work = IssueWork(self.github, thread, self.cost_of, self.here)
+        try:
+            post_comment(self.github, thread, work.handoff(text, closing=True, now=self.now))
+        except SelfMerge.FAILED as error:
+            return SelfMerge.first_line(error)
+        return None
 
 
 # --- one agent per issue, a few at once ------------------------------------------------------
@@ -1278,6 +1413,9 @@ class Scheduler:
     either: its job waits its turn again, and the launcher runs that model's agents on the
     next one down for the rest of the run, which is said once per model.
 
+    Code work waits too while the machine lacks a tool an agent needs (`hold`, #108), and is
+    tried again at the watcher's next look, as one that couldn't start is.
+
     Closed, by the manager's first Ctrl+C (#485), it starts nothing more: what waits is
     dropped, and the agents running go on to their end, unless `stop` stops them, or Esc
     reopens it (#574)."""
@@ -1295,10 +1433,12 @@ class Scheduler:
         clock: Callable[[], float] = time.monotonic,
         now: Callable[[], datetime] = local_now,
         merger: SelfMerge | None = None,
+        hold: ToolchainHold | None = None,
     ) -> None:
         self._most = most
         self._launcher = launcher
         self._merger = merger
+        self._hold_tools = hold
         self._due = due
         self._say = say or Console().say
         self._dry_run = dry_run
@@ -1435,6 +1575,10 @@ class Scheduler:
             else:
                 self._refused.pop(job.slot, None)
                 return
+        if self._hold_tools is not None and (lacks := self._hold_tools.holds(job)) is not None:
+            self._refused[job.slot] = Refusal(lacks, self._clock() + self._retry)  # said by it
+            self._waiting[job.slot] = job
+            return
         try:
             agent = self._launcher.launch(job)
         except AgentError as error:
@@ -1810,6 +1954,11 @@ def main(argv: Sequence[str] | None = None) -> None:
         database=lambda slot: TestDatabase(slot, server),
     )
     console = Console()
+    hold = ToolchainHold(
+        Toolchain(os.environ.get("PATH", "")).checks,  # the PATH its agents get
+        HoldNotice(github, me),
+        console.say,
+    )
     scheduler = Scheduler(
         config.max_parallel,
         launcher,
@@ -1818,6 +1967,7 @@ def main(argv: Sequence[str] | None = None) -> None:
         dry_run=args.dry_run,
         retry=config.watch_every_seconds,  # at the watcher's next look
         merger=SelfMerge(github, me, launcher),
+        hold=hold,
     )
     console.say(
         f"Agent manager for {me} on {github.slug}: at most "
@@ -1828,6 +1978,7 @@ def main(argv: Sequence[str] | None = None) -> None:
         "stops (Esc then carries on); twice stops them too."
     )
     try:
+        hold.look()
         AgentManager(
             Watcher.of(config, ROOT, once=args.once or args.dry_run),
             scheduler,

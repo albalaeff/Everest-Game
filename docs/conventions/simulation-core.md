@@ -7,7 +7,8 @@
 The game is real-time, not turn-based: "step" here means a twentieth of a second, never a turn.
 
 - **The step** is `SimulationClock.STEPS_PER_SECOND`, 20 a second. It's the one number in the core's code and not in the content data: it's the engine's, not the mountain's, so no source states it and no expert tunes it. A rule states its rates per second and scales them by `SimulationClock.STEP_SECONDS`.
-- **The mountain never waits.** The page and the room server call `Expedition.advance` as the real clock says, through a `StepPacer` of their own, whether or not anyone acted. A slow phone and a fast PC take the same steps a second.
+- **Seconds are seconds of play.** `SimulationClock.seconds` counts them. The mountain's own time isn't the core's yet: the spec compresses six to eight weeks into 5–7 hours (spec.md → Gameplay), and the first rule that needs that time brings it (`todo.md`, #22).
+- **The mountain never waits.** The page and the room server call `Expedition.advance` as the real clock says, through a `StepPacer` of their own, whether or not anyone acted. A slow phone and a fast PC take the same steps a second. Only a pause stops it, which the spec gives a single player on a call or a locked screen (spec.md → Phone and PC): the page stops calling.
 - **Everyone moves at once.** One step takes every climber's actions together, and the scenario's order of climbers settles who goes first, never who reached the server first. A rule works out all the climbers in each step.
 - **A held key is two actions.** `walk up` when it's pressed and `walk stop` when it's released: between them the climber goes on walking, and nothing is sent.
 
@@ -40,7 +41,7 @@ The same seed and actions must give the same numbers in every browser, in Node a
 - Maths is `+ - * /` and `Math.sqrt`, `abs`, `floor`, `ceil`, `round`, `trunc`, `min`, `max` and `imul`. The language lets each browser round `Math.pow`, `**`, `exp`, `log` and the trigonometric functions its own way, so a curve one of those would give (an exponential in the body model, say) is a class of the core's own built from the operations above, or a table in the content data.
 - Sorting uses a comparison of numbers, never `localeCompare`, which differs by device. Maps and arrays keep their order; don't depend on any other.
 
-`npm run typecheck` checks the core alone with `tsconfig.core.json`, which has no DOM, Node or timers in scope, so using one fails there. `core-purity.test.ts` refuses what the language itself offers: `Math.random`, `Date`, the rounded maths, and any import from outside `src/simulation/`.
+`npm run typecheck` checks the core alone with `tsconfig.core.json`, which has no DOM, Node or timers in scope, so using one fails there. `core-purity.test.ts` refuses what the language itself offers, in every folder of the core but `testing/`: `Math.random`, `Date`, the rounded maths, `localeCompare` and the like, and any import from outside `src/simulation/`.
 
 ## Tests
 

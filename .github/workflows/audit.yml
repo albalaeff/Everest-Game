@@ -45,11 +45,11 @@ jobs:
         with:
           node-version-file: .nvmrc
 
-      # Until package-lock.json is in, the versions a fresh install picks, which CI's checks run
-      # on. This lock stays in the job: `npm audit` needs one, and the one to commit is a person's.
-      - name: The versions to audit
-        if: ${{ hashFiles('package-lock.json') == '' }}
-        run: npm install --package-lock-only
+      # What ships to players fails on any advisory; the tools only on a serious one. A linter's
+      # glob matcher never sees an attacker's pattern, and its moderate advisories wait weeks
+      # for the fix to reach it (#16: minimatch, GHSA-g3hv-75wg-m249).
+      - name: Known vulnerabilities in what ships
+        run: npm audit --omit=dev
 
-      - name: Known vulnerabilities
-        run: npm audit
+      - name: Serious vulnerabilities in the tools
+        run: npm audit --audit-level=high

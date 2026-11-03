@@ -88,10 +88,10 @@ Tasks marked *Iteration 1–3* are planned into the board's first two-week itera
 ## 2. Prototype: Icefall
 
 ### Task 8: Game project: TypeScript build, tests and CI ([#16](https://github.com/albalaeff/Everest-Game/issues/16)) · *Iteration 1*
-- [ ] TypeScript with a bundler, Vitest, Playwright with phone emulation, lint and format; their checks run in CI next to the template's
-- [ ] Every merge into `develop` publishes a preview build that opens on a PC and a phone
-- [ ] README and docs/conventions.md say how to run and test the game
-- [ ] Done gate
+- [x] TypeScript with a bundler, Vitest, Playwright with phone emulation, lint and format; their checks run in CI next to the template's
+- [x] Every merge into `develop` publishes a preview build that opens on a PC and a phone
+- [x] README and docs/conventions.md say how to run and test the game
+- [x] Done gate
 
 ### Task 9: Simulation core: fixed time step, seeded and deterministic ([#17](https://github.com/albalaeff/Everest-Game/issues/17)) · *Iteration 1*
 - [x] TypeScript with no DOM and no dependencies
@@ -127,6 +127,7 @@ Tasks marked *Iteration 1–3* are planned into the board's first two-week itera
 ### Task 14: Body model v1: fatigue, blood oxygen and pace ([#22](https://github.com/albalaeff/Everest-Game/issues/22)) · *Iteration 3*
 - [ ] SpO2 from altitude and oxygen flow; fatigue from pace, load, sleep, food and water; the rest step against a faster pace
 - [ ] Its coefficients come from the knowledge base (#9)
+- [ ] The mountain's time on top of the core's seconds of play: six to eight weeks in 5–7 hours, waiting days skipped, summit day the most detailed (spec.md → Gameplay)
 - [ ] The player sees no numbers for their condition
 - [ ] Done gate
 

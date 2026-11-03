@@ -12,9 +12,10 @@ export class StepPacer {
   /** `maxSteps`: the most one call gives, so a phone back from a locked screen doesn't freeze. */
   constructor(private readonly maxSteps: number) {}
 
-  /** How many steps to take now that `realSeconds` more have gone by. */
+  /** How many steps to take now that `realSeconds` more have gone by. A clock that ran back, as
+   * a frame's timestamp can, counts as no time. */
   due(realSeconds: number): number {
-    this.behind += realSeconds * SimulationClock.STEPS_PER_SECOND;
+    this.behind += Math.max(realSeconds, 0) * SimulationClock.STEPS_PER_SECOND;
     const steps = Math.floor(this.behind);
     this.behind -= steps;
     return Math.min(steps, this.maxSteps);

@@ -26,6 +26,7 @@ from scripts.agent_manager import (
     Backoff,
     Child,
     Console,
+    HoldNotice,
     IssueJob,
     Job,
     Keys,
@@ -37,12 +38,14 @@ from scripts.agent_manager import (
     Scheduler,
     SelfMerge,
     TestDatabase,
+    ToolchainHold,
     UsageLimit,
     Warmup,
     Watcher,
     Worktree,
 )
 from scripts.agents import WATCH_EVERY, AgentPower, CompactShare, ManagerConfig, Priority
+from scripts.check_setup import Check
 from scripts.claude_cost import IssueCost
 from scripts.github import Conversation, Task, sign
 from scripts.handoff import Git, HandoffMark, Machine
@@ -236,7 +239,9 @@ class StateGitHub:
         self.on = on
         self.labels = [{"name": label} for label in labels]
 
-    def call(self, method: str, path: str, body: object | None = None) -> object:
+    def call(
+        self, method: str, path: str, body: object | None = None, missing_ok: bool = False
+    ) -> object:
         if path.startswith("pulls/"):
             return {"state": "open", "head": {"sha": self.sha}}
         if path.startswith("actions/runs?head_sha="):
@@ -277,6 +282,32 @@ def test_a_pr_s_job_whose_issue_is_postponed_meanwhile_is_no_longer_due(found: T
     assert job.still_due(StateGitHub([asked, answer], on=9), ME)  # type: ignore[arg-type]
     held = StateGitHub([asked, answer], on=9, labels=["postponed"])
     assert not job.still_due(held, ME)  # type: ignore[arg-type]
+
+
+@pytest.mark.parametrize(
+    "found",
+    [task(), task(9, "CI finished", kind="pull", ci="CI: success", sha="abc")],
+    ids=["the issue", "its PR"],
+)
+def test_a_job_whose_issue_is_blocked_meanwhile_is_no_longer_due(found: Task) -> None:
+    # #107: an `after:16` label put on #7 while the job waited its turn, and #16 is open.
+    job = IssueJob(found)
+
+    assert job.still_due(StateGitHub([]), ME)  # type: ignore[arg-type]
+    assert not job.still_due(StateGitHub([], labels=["after:16"]), ME)  # type: ignore[arg-type]
+
+
+def test_an_agent_woken_by_a_merge_merges_develop_in_first() -> None:
+    # #107: #18's branch carried #16's and #17's commits; their squashes fold into develop.
+    job = IssueJob(replace(task(18, "unblocked", issue=18), woken=(16, 17)))
+
+    assert str(job) == "#18 (what it builds on has merged)"
+    assert (
+        "of bateks/PersonalExchangeBot: what it builds on has merged. #16, #17 merged since "
+        "Claude's last word: begin by merging `origin/develop` into the branch "
+        "(docs/conventions.md → Git workflow).\n\n"
+    ) in job.prompt(SLUG, "feature/18-x")
+    assert "origin/develop" not in IssueJob(task()).prompt(SLUG, "feature/7-x")
 
 
 def test_a_waiting_job_answered_meanwhile_is_no_longer_due() -> None:
@@ -1508,6 +1539,29 @@ class FakeMerge:
         return "merged it itself, no agent"
 
 
+NO_NODE = Check("Node", False, "not installed", "winget install --id OpenJS.NodeJS.LTS")
+HELD = "Node: not installed (fix: winget install --id OpenJS.NodeJS.LTS)"
+
+
+class Toolbox:
+    """What check_setup's Toolchain finds (#108), as a test sets it, and how often it's
+    asked; what the manager tells each issue it holds, in `told`."""
+
+    def __init__(self, *missing: Check, refuses: str | None = None) -> None:
+        self.missing = list(missing)
+        self.looks = 0
+        self.told: list[tuple[str, str]] = []
+        self.refuses = refuses
+
+    def __call__(self) -> list[Check]:
+        self.looks += 1
+        return [Check("uv", True, "installed"), *self.missing]
+
+    def tell(self, job: Job, why: str) -> str | None:
+        self.told.append((job.slot, why))
+        return self.refuses
+
+
 def scheduler(
     most: int = 2,
     due: bool | Callable[[Job], bool] = True,
@@ -1515,18 +1569,22 @@ def scheduler(
     refuse: set[str] | None = None,
     clock: Clock | None = None,
     merger: FakeMerge | None = None,
+    tools: Toolbox | None = None,
 ) -> tuple[Scheduler, FakeLauncher, list[str]]:
     said: list[str] = []
     fake = FakeLauncher(refuse)
+    clock = clock or Clock()
+    hold = None if tools is None else ToolchainHold(tools, tools.tell, said.append, clock)
     made = Scheduler(
         most,
         fake,  # type: ignore[arg-type]
         due if callable(due) else lambda job: due,
         said.append,
         dry_run,
-        clock=clock or Clock(),
+        clock=clock,
         now=lambda: LIMIT_HIT,
         merger=merger,  # type: ignore[arg-type]
+        hold=hold,
     )
     return made, fake, said
 
@@ -1911,6 +1969,124 @@ def test_a_job_on_a_missing_model_keeps_a_once_run_going() -> None:
 
     assert made.busy()
     assert started(launcher) == ["#7 to start", "#7 to start"]
+
+
+def test_a_missing_tool_holds_code_work_said_once_in_the_log_and_on_each_issue() -> None:
+    # #108: #16, #17 and #18 each wrote their code blind for want of Node, then stopped.
+    clock, tools = Clock(), Toolbox(NO_NODE)
+    made, launcher, said = scheduler(clock=clock, tools=tools)
+
+    look(made, IssueJob(task(7)), IssueJob(task(8, issue=8)))
+    assert launcher.started == []
+    assert said == [f"Agents on code work wait: {HELD}"]
+    assert tools.told == [("7", HELD), ("8", HELD)]
+    assert not made.busy()  # a --once run ends
+
+    look(made, IssueJob(task(7, "Claude's move")))  # what the manager said on #7
+    assert launcher.started == []
+    assert said == [f"Agents on code work wait: {HELD}"]
+    assert tools.told == [("7", HELD), ("8", HELD)]
+
+    tools.missing = []  # installed; tried again at the watcher's next look
+    clock.now += WATCH_EVERY
+    made.tick()
+    assert started(launcher) == ["#7 Claude's move", "#8 to start"]
+    assert said[1] == "The machine has what agents need again: the work held starts."
+
+
+def test_another_missing_tool_is_said_again() -> None:
+    clock, tools = Clock(), Toolbox(NO_NODE)
+    made, _, said = scheduler(clock=clock, tools=tools)
+    look(made, IssueJob(task(7)))
+
+    tools.missing.append(Check("Playwright", False, "no browsers", "npx playwright install"))
+    clock.now += WATCH_EVERY
+    made.tick()
+
+    both = f"{HELD}; Playwright: no browsers (fix: npx playwright install)"
+    assert said == [f"Agents on code work wait: {HELD}", f"Agents on code work wait: {both}"]
+    assert tools.told == [("7", HELD), ("7", both)]
+
+
+def test_an_issue_the_manager_couldn_t_tell_is_said_in_the_log() -> None:
+    tools = Toolbox(NO_NODE, refuses="a reply waits on it")
+    made, _, said = scheduler(tools=tools)
+
+    look(made, IssueJob(task(7, "reply waiting")))
+
+    assert said == [
+        f"Agents on code work wait: {HELD}",
+        "#7 (a reply waits): not said on the issue: a reply waits on it",
+    ]
+
+
+def test_a_merge_and_new_prices_aren_t_held() -> None:
+    tools = Toolbox(NO_NODE)
+    made, launcher, _ = scheduler(tools=tools)
+
+    look(made, merge(), PricesJob("prices", "opus 5.5", TODAY))
+
+    assert started(launcher) == ["PR #9 at a: CI: success", "prices"]
+    assert tools.looks == 0
+
+
+def test_the_machine_is_looked_at_again_only_after_a_few_seconds() -> None:
+    clock, tools = Clock(), Toolbox()
+    hold = ToolchainHold(tools, tools.tell, lambda line: None, clock)
+
+    hold.holds(IssueJob(task(7)))
+    hold.holds(IssueJob(task(8, issue=8)))
+    assert tools.looks == 1
+
+    clock.now += ToolchainHold.FRESH
+    hold.holds(IssueJob(task(7)))
+    assert tools.looks == 2
+
+
+def test_the_manager_says_at_its_start_what_agents_lack_or_that_they_have_it() -> None:
+    said: list[str] = []
+    tools = Toolbox()
+    ToolchainHold(tools, tools.tell, said.append, Clock()).look()
+    tools.missing = [NO_NODE]
+    ToolchainHold(tools, tools.tell, said.append, Clock()).look()
+
+    assert said == ["The machine has what agents need: uv.", f"Agents on code work wait: {HELD}"]
+    assert tools.told == []  # no issue yet
+
+
+def notice(github: MergeGitHub) -> HoldNotice:
+    return HoldNotice(
+        github,  # type: ignore[arg-type]
+        ME,
+        cost_of=lambda number, pulls: IssueCost(number, dollars=Decimal("0")),
+        here=lambda: HERE,
+        now=lambda: MERGED_AT,
+    )
+
+
+def test_an_issue_held_is_told_why_and_stays_claude_s_move() -> None:
+    # #108: a handoff whose move is Claude's, so the issue is still to do after a restart.
+    github = MergeGitHub()
+    red = task(9, "CI finished", kind="pull", issue=7, ci="CI: failure", sha="b")
+
+    assert notice(github)(IssueJob(red), HELD) is None
+
+    body = str(github.comments[7][-1]["body"])
+    assert body.startswith("_Claude Code agent manager (bateks)_\n\n")
+    assert HELD in body and "LAPTOP-1" in body
+    state = Conversation(github.entries[7], github.comments[7], ME).item().state
+    assert state == "Claude's move"
+
+
+def test_an_issue_with_a_reply_waiting_isn_t_told() -> None:
+    # #208: a comment over the reply would hide it.
+    github = MergeGitHub()
+    github.comments[7].append(said("Why not Node 22?", login="albalaeff"))
+
+    why = notice(github)(IssueJob(task(7, "reply waiting")), HELD)
+
+    assert why is not None and why.startswith("#7 has replies since Claude's last comment.")
+    assert github.writes() == []
 
 
 def test_stopping_stops_the_agents_and_forgets_the_waiting() -> None:

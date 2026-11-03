@@ -58,7 +58,7 @@ class Listening implements Rule {
   }
 
   advance(moment: Moment): void {
-    this.diary.push(`${this.name} ${String(moment.step)}`);
+    this.diary.push(`${this.name} ${moment.step}`);
     this.heard.push(...moment.actions.map((action) => action.climber));
   }
 }
@@ -131,9 +131,7 @@ describe("Expedition in real time", () => {
   it("refuses an action for a climber who isn't on the expedition", () => {
     const expedition = Expedition.start(TestSlope.scenario(1, ["anna"]), [new TestSlope()]);
 
-    expect(() => {
-      expedition.advance([walk("nobody", "up")]);
-    }).toThrow("nobody");
+    expect(() => expedition.advance([walk("nobody", "up")])).toThrow("nobody");
   });
 
   it("runs the rules in the order it was given, each once a step", () => {
@@ -232,6 +230,18 @@ describe("Expedition saves", () => {
     playTo(resumed, 1500);
 
     expect(resumed.save()).toEqual(whole.save());
+  });
+
+  it("keeps a save as it was while the expedition goes on", () => {
+    const scenario = TestSlope.scenario(13, ["anna", "boris"]);
+    const expedition = Expedition.start(scenario, [new TestSlope()]);
+    playTo(expedition, 500);
+    const save = expedition.save();
+    const whenSaved = JSON.stringify(save);
+
+    playTo(expedition, 1000);
+
+    expect(JSON.stringify(save)).toBe(whenSaved);
   });
 
   it("replays from its scenario and its log, step for step", () => {
