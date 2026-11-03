@@ -158,8 +158,9 @@ agent-manager.toml). For the same reason `scripts/github.py` prints it little:
 and `close` say what they did in a line or a few, and `show <n> --new` prints only the
 comments since Claude's last. And an agent is offered only what it can use: Claude
 Code's tools for files and commands (`Agent.TOOLS` in `scripts/agent_manager.py`), the
-project's settings and hooks, none of yours (`--setting-sources project,local`), and no MCP
-server or web (`WebSearch`, `WebFetch`). No Skill tool, PowerShell or auto-memory either:
+project's settings and hooks, none of yours (`--setting-sources project,local`), no MCP
+server, and the web (`WebSearch`, `WebFetch`) only for the sites `.claude/settings.json`
+names: the knowledge base's sources. No Skill tool, PowerShell or auto-memory either:
 a skill it needs it reads as a file, such as the handoff's format in
 `.claude/skills/handoff/SKILL.md`. CLAUDE.md keeps only what agents and sessions both obey;
 a session's start and close are in the carryon and handoff skills, and the long form of the
@@ -205,8 +206,11 @@ npm run e2e -- --project=iphone   # on one of them
   naming files or tests stays in one process.
 - **The knowledge base** is checked with the tests: `uv run pytest` fails on a record in
   `content/facts/` without a source or a check date, and `uv run python scripts/check_facts.py`
-  lists every problem by file and record. `uv run python scripts/expert_questions.py` prints
-  the questions and `source only` records for the guide and for the doctor
+  lists every problem by file and record. It fails too on a `medicine` record whose source
+  isn't in the medical library, `content/library.json`, and on a source there that no record
+  cites: `uv run python scripts/check_library.py` lists those.
+  `uv run python scripts/expert_questions.py` prints the questions and `source only` records
+  for the guide and for the doctor
   ([docs/conventions/knowledge-base.md](docs/conventions/knowledge-base.md)).
 - **The game's checks** run in CI beside these. ESLint and Prettier read `src/`, `e2e/` and
   the config files; `tsc` checks `tsconfig.json`, the browser's code, `tsconfig.core.json`,
