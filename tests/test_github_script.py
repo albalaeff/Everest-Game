@@ -48,6 +48,7 @@ from scripts.github import (
     watch,
 )
 from scripts.handoff import STALE, Git, HandoffMark, IssueBranch, LocalWork, Machine
+from scripts.wiki import WikiNews
 from tests.fakes import FakeGit
 
 pytestmark = pytest.mark.unit
@@ -1166,6 +1167,24 @@ def test_for_a_program_new_prices_are_a_task_and_the_rest_notes(
             "key": "prices: Claude's prices changed (claude-opus-5-5): …",
             "text": "Claude's prices changed (claude-opus-5-5): …",
         },
+    ]
+
+
+def test_for_the_manager_prs_the_wiki_lacks_are_a_task_and_the_rest_notes(
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    # #126: the wiki's check ends watching with what it found, as new prices do.
+    github = ChangingGitHub([])
+    behind = WikiNews(
+        "The wiki is behind develop: 1 PR merged since aaaaaaa (#127).", "b", "a", (127,)
+    )
+    news = iter([None, WikiNews("The wiki: nothing merged into develop since aaaaaaa."), behind])
+
+    watch(github, every=600, sleep=github.sleep, wiki=lambda: next(news), output=JsonOutput())  # type: ignore[arg-type]
+
+    assert said(capsys) == [
+        {"type": "note", "text": "The wiki: nothing merged into develop since aaaaaaa."},
+        behind.data(),
     ]
 
 

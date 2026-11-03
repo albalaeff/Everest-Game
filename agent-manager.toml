@@ -33,3 +33,8 @@ watcher_backoff_max_seconds = 600
 # tokens): each reply reads all of it again, so compacted early, a long run costs less
 # (PEB#441). 100 compacts where a session does.
 compact_at_percent = 25
+
+# How often the watcher looks whether PRs merged into develop since the wiki was last brought
+# up to date, in hours (#126): when some have, an agent updates the wiki, one run for all of
+# them. 0: never.
+wiki_every_hours = 6
