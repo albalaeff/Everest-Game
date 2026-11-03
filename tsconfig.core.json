@@ -1,8 +1,10 @@
 {
   // The simulation core alone, with no DOM, no Node and no test tool in scope, so that using
-  // one of them in it fails the type check (docs/conventions/simulation-core.md).
+  // one of them in it fails the type check (docs/conventions/simulation-core.md): the page's
+  // tsconfig.json has the DOM and Vite's types; the core takes neither.
   "extends": "./tsconfig.json",
   "compilerOptions": {
+    "lib": ["ES2023"],
     "types": []
   },
   "include": ["src/simulation"],

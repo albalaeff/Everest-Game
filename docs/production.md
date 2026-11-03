@@ -5,8 +5,15 @@ Where the game runs for real: the hosting, how a release gets there, its secrets
 ## The hosting
 
 - **The game:** <GitHub Pages of this repository, or itch.io: the URL, whose account>.
+- **The preview:** GitHub Pages of this repository: The preview, below.
 - **The room server:** the Cloudflare account **Everest Cloudflare (albalaeff)**, albalaeff's, on the free plan with no card; its Workers live at `<worker>.alexalbalaeff.workers.dev`. <The Worker's name, its Durable Object; the free plan's limits and who watches them: with the room server, #28.>
 - **Secrets:** in the repository's Actions secrets, nothing in git. `CLOUDFLARE_API_TOKEN` is the token `everest-room-server-deploy` (Workers Scripts · Edit, no expiry), and `CLOUDFLARE_ACCOUNT_ID` the account's ID. Nobody can read them back: to change the token, albalaeff edits its rights on Cloudflare, or makes a new one and pastes it over the secret.
+
+## The preview
+
+Every merge into `develop` is published to https://albalaeff.github.io/Everest-Game/, to open on a PC or a phone; the page's last line names the commit. The job `preview` in `ci.yml` does it once `checks` and `secrets` pass, with GitHub Pages' own actions and no secret. Actions → CI → Run workflow on `develop` publishes `develop` again.
+
+Pages is turned on once, by the repository's owner: Settings → Pages → Source: *GitHub Actions*. Each publish replaces the whole site, so a release published on GitHub Pages too needs a place of its own there, or itch.io.
 
 ## A release
 
