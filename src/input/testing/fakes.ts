@@ -1,13 +1,32 @@
+import type { Tool } from "../../simulation";
 import type { Pad } from "../gamepad-source";
 import type { KeyPress } from "../keyboard-source";
 import type { ActionSink, PlayerAction } from "../player-action";
 import type { JoystickView, PointerPress } from "../pointer-source";
-import { PlainSlopeView } from "../slope-view";
-import type { SeenClimber } from "../slope-view";
+import type { ScreenSize, SeenClimber, SlopePoint, SlopeView } from "../slope-view";
 
-/** The slope's plain mapping, with the climber wherever a test puts them, clipped or not. */
-export class FakeSlopeView extends PlainSlopeView {
-  override climber: SeenClimber = { x: 0, y: 0, first: null, second: null };
+/** A plain mapping of the screen onto the slope, a hundred pixels a metre from the screen's
+ * middle, with the climber wherever a test puts them, clipped or not. */
+export class FakeSlopeView implements SlopeView {
+  private static readonly PIXELS_PER_METRE = 100;
+  private static readonly TOOL_REACH_METRES = 1;
+
+  climber: SeenClimber = { x: 0, y: 0, first: null, second: null };
+
+  constructor(private readonly screen: ScreenSize) {}
+
+  at(screenX: number, screenY: number): SlopePoint {
+    const { innerWidth, innerHeight } = this.screen;
+    return {
+      x: (screenX - innerWidth / 2) / FakeSlopeView.PIXELS_PER_METRE,
+      y: (innerHeight / 2 - screenY) / FakeSlopeView.PIXELS_PER_METRE,
+    };
+  }
+
+  ahead(tool: Tool["tool"]): SlopePoint {
+    const reach = FakeSlopeView.TOOL_REACH_METRES;
+    return { x: this.climber.x + reach, y: this.climber.y + (tool === "ice-axe" ? reach : -reach) };
+  }
 }
 
 /** Keeps what the game would receive. */

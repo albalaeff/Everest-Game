@@ -37,6 +37,10 @@ def coefficient(id: str = "body.fatigue-rate", **fields: Any) -> dict[str, Any]:
     return record | fit | fields
 
 
+def question(id: str = "technique.re-clipping", **fields: Any) -> dict[str, Any]:
+    return {"id": id, "kind": "question", "question": "Which cowstail first?"} | fields
+
+
 def without(record: dict[str, Any], name: str) -> dict[str, Any]:
     return {key: value for key, value in record.items() if key != name}
 
@@ -78,6 +82,13 @@ class TestGoodRecords:
     def test_a_coefficient_may_be_a_range(self, tmp_path: Path) -> None:
         tuned = without(coefficient(), "value") | {"range": {"min": 0.1, "max": 0.3}}
         assert problems(tmp_path, fact(), tuned) == []
+
+    def test_a_question_passes(self, tmp_path: Path) -> None:
+        assert problems(tmp_path, question()) == []
+
+    def test_a_question_may_be_about_records(self, tmp_path: Path) -> None:
+        about = question(about=["oxygen.usual-flow", "body.fatigue-rate"])
+        assert problems(tmp_path, fact(), coefficient(), about) == []
 
 
 @pytest.mark.unit
@@ -134,6 +145,19 @@ class TestBadRecords:
     def test_a_coefficient_names_at_least_one_fact(self, tmp_path: Path) -> None:
         assert problems(tmp_path, fact(), coefficient(fitted_to=[])) != []
 
+    def test_a_question_asks_something(self, tmp_path: Path) -> None:
+        assert problems(tmp_path, without(question(), "question")) != []
+        assert problems(tmp_path, question(question="")) != []
+
+    def test_a_question_has_no_status(self, tmp_path: Path) -> None:
+        """It's open until an expert answers it, and the answer is a fact."""
+        assert problems(tmp_path, question(status="source only")) != []
+
+    def test_a_question_is_about_something_or_nothing(self, tmp_path: Path) -> None:
+        assert problems(tmp_path, fact(), question(about=[])) != []
+        about = question(about=["oxygen.usual-flow", "oxygen.usual-flow"])
+        assert problems(tmp_path, fact(), about) != []
+
 
 # --- what the schema can't see -----------------------------------------------------------------
 
@@ -157,6 +181,15 @@ class TestAcrossRecords:
     def test_a_coefficient_isn_t_fitted_to_a_coefficient(self, tmp_path: Path) -> None:
         tuned = coefficient("body.pace-rate", fitted_to=["body.fatigue-rate"])
         assert len(problems(tmp_path, fact(), coefficient(), tuned)) == 1
+
+    def test_a_question_is_about_records_that_exist(self, tmp_path: Path) -> None:
+        found = problems(tmp_path, fact(), question(about=["oxygen.usual-flow", "route.camp-2"]))
+        assert len(found) == 1
+        assert "route.camp-2" in found[0]
+
+    def test_a_coefficient_isn_t_fitted_to_a_question(self, tmp_path: Path) -> None:
+        tuned = coefficient(fitted_to=["technique.re-clipping"])
+        assert len(problems(tmp_path, question(), tuned)) == 1
 
     @pytest.mark.parametrize(
         "record",

@@ -60,9 +60,26 @@ A number the model is tuned with that no source states, such as a fatigue rate. 
 
 Numbers in these examples are made up, and only show the form. Every id in `fitted_to` has to be a fact in the knowledge base. A coefficient has a `value` or a `range`, as a fact's version does, and a unit: `1` where it has none.
 
+## A question
+
+What no source answers, for an expert, in the file of its area. It has no status: it stays open until an expert answers it, and the answer becomes a fact or a coefficient in its place. `about`, if it's there, names the records it asks about, and each one has to exist.
+
+```json
+{
+  "id": "oxygen.bottle-swap",
+  "kind": "question",
+  "question": "How is a bottle swapped on the move above 8,000 m?",
+  "about": ["oxygen.usual-flow"]
+}
+```
+
+## The experts' lists
+
+`uv run python scripts/expert_questions.py` prints, as Markdown, what the mountain guide (technique) and the doctor (physiology) are to check, by area. That's every question, and every fact and coefficient still `source only`, with its values, sources and check dates. Add `guide` or `doctor` for one list only. The lists are built from the records each time, so they aren't checked in. `ExpertList.EXPERTS` in the script says which experts review each area, and the tests fail on a record in an area nobody reviews: a new area names its experts there.
+
 ## What goes in
 
 - **Never a dose.** Medicines are described by why doctors use them: no amounts, in a value, a claim or a note. The check refuses a number in mg, µg, g, mL or IU, alone or per something (mg/kg), and such a unit.
 - **The real dead.** Facts and a source only.
-- **No invented numbers.** What no source gives and no fit supports stays out of the data, and goes to the questions for an expert.
+- **No invented numbers.** What no source gives and no fit supports stays out of the data, and goes in a question for an expert.
 - **`expert-reviewed`** is set by the expert's review, never by an edit that only touches up a record.

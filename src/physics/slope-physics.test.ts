@@ -174,6 +174,27 @@ describe("SlopePhysics: slips and falls", () => {
   });
 });
 
+describe("SlopePhysics: the layout", () => {
+  it("lists its ropes and ladders in the layout's order, for the rendering to draw", () => {
+    const layout = TestMountain.CREVASSE.layout(
+      [{ id: "anna", along: 1 }],
+      [
+        { id: "far", from: 90, to: 105, length: 16 },
+        { id: "near", from: 2, to: 18, length: 17 },
+      ],
+      [{ id: "bridge", from: 20, to: 83 }],
+    );
+    const climb = new Climb(TestMountain.CALM, layout);
+
+    expect(climb.physics.ropes).toEqual(["far", "near"]);
+    expect(climb.physics.ladders).toEqual(["bridge"]);
+    expect(climb.physics.ladder("bridge")).toEqual([
+      { x: 20, y: 0 },
+      { x: 23, y: 0 },
+    ]);
+  });
+});
+
 describe("SlopePhysics: the rope", () => {
   it("clips a cowstail onto the nearest rope within its reach, and onto nothing beyond it", () => {
     const layout = TestMountain.SLOPE.layout(

@@ -6,7 +6,7 @@
 
 - **The ground** (`Terrain`) is a line of points in metres, from left to right: `x` across and `y` up. `x` never goes back, so a wall is two points at the same `x`, and an overhang can't be drawn. Past its ends the ground goes on flat.
 - **A scenario lays out a section** (`SlopePhysics.start`): its ground, its ropes by where their anchors are along the ground, its ladders by where their ends are, and the climbers standing on it. The physics works them out in the layout's order.
-- **A climber is a point at their feet.** On their feet, they're somewhere `along` the ground or on a ladder; falling, they're a body under gravity. `climber(id)` is how the rendering and the rules above see them, and `rope(id)` and `ladder(id)` say where a rope or a ladder lies.
+- **A climber is a point at their feet.** On their feet, they're somewhere `along` the ground or on a ladder; falling, they're a body under gravity. `climber(id)` is how the rendering and the rules above see them, `ropes` and `ladders` name what's laid, and `rope(id)` and `ladder(id)` say where a rope or a ladder lies.
 
 ## Walking and falls
 
@@ -34,7 +34,7 @@
 
 ## Numbers
 
-- **The mountain's numbers are handed in** through `SlopeSettings` (conventions.md → Data, not literals): gravity, friction, the cowstail's reach, and the speed and slip chance by steepness on the ground and on a ladder, as `[degrees, value]` points. Their facts records, and the first real ground, come with the first section of the route, the Khumbu Icefall (#26).
+- **The mountain's numbers are handed in** through `SlopeSettings` (conventions.md → Data, not literals): gravity, friction, the cowstail's reach, and the speed and slip chance by steepness on the ground and on a ladder, as `[degrees, value]` points. Their facts records, and the first real ground, come with the first section of the route, the Khumbu Icefall (#26); until then the speeds and slips are questions for the guide (`technique.speed-by-steepness`, `technique.slips-by-steepness`).
 - **The engine's numbers are in the code**, as the core's step is: `Slope.SUBSTEPS`, `Slope.ITERATIONS`, `Slope.REST_SPEED` and `Rope.LINK_METRES`. No source states them; they're how finely the physics works the mountain out.
 - **Steepness is a sine** (`Steepness`): `ofWay` divides, and `ofDegrees` sums a series of its own, since `Math.sin` rounds differently in each browser. A `SteepnessCurve` interpolates over the sine and holds its end values past its ends.
 
@@ -46,4 +46,4 @@ The physics uses the core's maths alone, and imports only itself and the core. `
 
 The tests play the physics through `Expedition` (`testing/climb.ts`), on the made-up numbers and ground of `testing/test-mountain.ts`: no game code imports either. `Climb.under` goes on from a save on other numbers, a gust that makes every step a slip, say. The stories: `slope.story.test.ts`, two friends on a steep fixed rope, one of them careless; and `fixed-ropes.story.test.ts`, two Sherpas on a ladder over a crevasse, one unclipped, and two clients going up a line of fixed ropes on the jumar, one careless at the anchor.
 
-Still to come: climbing a rope where there's no ground (up a wall, out of a crevasse), the pace (#22), the ice axe and crampons (#55), and the drawing (#19), which is where the physics first meets the page.
+Still to come: climbing a rope where there's no ground (up a wall, out of a crevasse), the pace (#22) and the ice axe and crampons (#55). The rendering draws what the physics shows ([rendering.md](rendering.md)).

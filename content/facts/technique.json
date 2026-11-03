@@ -1,0 +1,55 @@
+{
+  "$schema": "../facts.schema.json",
+  "facts": [
+    {
+      "id": "technique.re-clipping",
+      "kind": "question",
+      "question": "At an anchor where one fixed rope ends and the next begins, in what order does a climber move their cowstails across, and are they ever clipped to neither rope?"
+    },
+    {
+      "id": "technique.cowstails",
+      "kind": "question",
+      "question": "How do climbers on the South route rig their cowstails: the jumar on one and a carabiner on the other, and how long is each, so how far can a climber reach to clip?"
+    },
+    {
+      "id": "technique.ladder-across",
+      "kind": "question",
+      "question": "How does a climber cross a ladder laid over a crevasse in the Icefall: clipped to what, stepping how in crampons, and how fast?"
+    },
+    {
+      "id": "technique.ladder-up",
+      "kind": "question",
+      "question": "How does a climber go up a ladder stood against an ice wall: clipped to what, and what holds a slip?"
+    },
+    {
+      "id": "technique.jumar",
+      "kind": "question",
+      "question": "How does a climber go up a fixed rope on a jumar, on the Lhotse Face for instance: the rhythm of hand, feet and breath, and when does the second cowstail move?"
+    },
+    {
+      "id": "technique.down-a-fixed-rope",
+      "kind": "question",
+      "question": "How does a climber go down a fixed rope: abseiling on a belay device, with the rope wrapped round an arm, or on the carabiner alone, and where on the South route is each used?"
+    },
+    {
+      "id": "technique.rest-step",
+      "kind": "question",
+      "question": "What is the rest step, with its rhythm of steps and breaths, and how does the rhythm change with altitude and with bottled oxygen?"
+    },
+    {
+      "id": "technique.ice-axe-and-crampons",
+      "kind": "question",
+      "question": "On hard, steep ice such as the Lhotse Face, where a fixed rope is in place: how are the crampons placed, on the front points or flat-footed, and when does the ice axe go in?"
+    },
+    {
+      "id": "technique.speed-by-steepness",
+      "kind": "question",
+      "question": "How fast does a climber walk on ground of each steepness, up and down, and how much slower on a ladder?"
+    },
+    {
+      "id": "technique.slips-by-steepness",
+      "kind": "question",
+      "question": "How often does a climber slip on snow and ice of each steepness, and on a ladder?"
+    }
+  ]
+}
