@@ -29,6 +29,19 @@ body {
   touch-action: none;
 }
 
+#slope canvas {
+  display: block;
+  touch-action: none;
+}
+
+/* Without WebGL, the slope says so instead of drawing. */
+#slope:not(:has(canvas)) {
+  display: grid;
+  place-items: center;
+  padding: 2rem;
+  text-align: center;
+}
+
 /* Everything above the slope lets the fingers through, but for the buttons. */
 main {
   position: fixed;
@@ -55,17 +68,25 @@ header {
   font-variant-numeric: tabular-nums;
 }
 
-h1 {
+/* The frame rate, for a check by hand against the targets; small and dim, beside the readouts. */
+#fps {
   display: inline;
-  margin: 0;
   font-size: 0.75rem;
+  font-variant-numeric: tabular-nums;
+  opacity: 0.7;
 }
 
-#build {
-  display: inline;
+.setting-button {
   margin-left: 0.5rem;
+  padding: 0 0.4rem;
+  border: 1px solid #9db4d0;
+  border-radius: 0.25rem;
+  background: #16335c;
+  color: inherit;
+  font: inherit;
   font-size: 0.75rem;
-  opacity: 0.7;
+  pointer-events: auto;
+  touch-action: none;
 }
 
 #hint-click,
@@ -84,17 +105,20 @@ h1 {
   display: block;
 }
 
+/* The actions the game received, for the stories and a check by hand: a short list out of the
+ * slope's way. */
 #received {
   position: absolute;
   top: 5rem;
   bottom: 4rem;
   left: var(--edge-left);
+  max-width: 12rem;
   margin: 0;
   padding: 0;
   overflow: hidden;
   list-style: none;
   font-size: 0.75rem;
-  opacity: 0.8;
+  opacity: 0.6;
 }
 
 #controls {
@@ -119,7 +143,8 @@ h1 {
   display: none;
 }
 
-.action-button {
+.action-button,
+#disclaimer button {
   min-width: 48px;
   min-height: 48px;
   padding: 0 0.5rem;
@@ -231,4 +256,63 @@ kbd {
     pointer-events: auto;
     touch-action: none;
   }
+}
+
+/* Above the game, upright or sideways; on a small screen it scrolls inside itself, not the page. */
+#disclaimer {
+  position: fixed;
+  inset: 0;
+  display: flex;
+  box-sizing: border-box;
+  padding: var(--edge-top) var(--edge-right) var(--edge-bottom) var(--edge-left);
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  background: #0b1d3a;
+  touch-action: pan-y;
+}
+
+#disclaimer[hidden] {
+  display: none;
+}
+
+#disclaimer > div {
+  max-width: 36rem;
+  margin: auto;
+  padding: 1rem 0;
+  line-height: 1.4;
+}
+
+#disclaimer h2 {
+  margin: 0 0 1rem;
+  font-size: 1.25rem;
+  text-align: center;
+}
+
+#disclaimer h3 {
+  margin: 1.5rem 0 0.25rem;
+  font-size: 1rem;
+}
+
+#disclaimer p {
+  margin: 0 0 0.75rem;
+}
+
+#disclaimer button {
+  display: block;
+  width: 100%;
+  max-width: 20rem;
+  margin: 1.5rem auto 0;
+}
+
+#disclaimer footer {
+  margin-top: 1rem;
+  font-size: 0.75rem;
+  text-align: center;
+  opacity: 0.7;
+}
+
+#disclaimer footer > * {
+  display: inline;
+  margin: 0 0.25rem;
+  font-size: inherit;
 }

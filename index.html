@@ -12,8 +12,7 @@
     <main>
       <header>
         <p id="readouts"><span>06:42</span> <span>8,412 m</span> <span>180 bar</span></p>
-        <h1>Everest</h1>
-        <p id="build"></p>
+        <p id="fps"></p>
       </header>
       <p id="hint-click"></p>
       <p id="hint-tap"></p>
@@ -28,5 +27,21 @@
       </div>
       <p id="turn-phone"></p>
     </main>
+    <section id="disclaimer" role="dialog" aria-modal="true" aria-labelledby="disclaimer-title">
+      <div>
+        <h2 id="disclaimer-title" data-text="title"></h2>
+        <p data-text="course"></p>
+        <p data-text="skills"></p>
+        <div class="beta">
+          <h3 data-text="mark"></h3>
+          <p data-text="sources"></p>
+        </div>
+        <button type="button" data-text="understand"></button>
+        <footer>
+          <h1>Everest</h1>
+          <p id="build"></p>
+        </footer>
+      </div>
+    </section>
   </body>
 </html>

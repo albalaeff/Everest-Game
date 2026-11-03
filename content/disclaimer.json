@@ -1,0 +1,18 @@
+{
+  "en": {
+    "title": "Before you climb",
+    "course": "Everest trains knowledge and decisions. It does not replace a mountaineering course, training with an instructor or a consultation with a doctor.",
+    "skills": "Crampons, the ice axe and the jumar are physical skills: learn them with an instructor, on real snow and ice.",
+    "mark": "Beta: not reviewed by an expert",
+    "sources": "Every fact in the game comes from an open source, but no mountain guide or doctor has checked them yet.",
+    "understand": "I understand"
+  },
+  "ru": {
+    "title": "Перед восхождением",
+    "course": "«Эверест» тренирует знания и решения. Он не заменяет альпинистские курсы, занятия с инструктором и консультацию врача.",
+    "skills": "Кошки, ледоруб и жумар — физические навыки: им учатся с инструктором, на настоящем снегу и льду.",
+    "mark": "Бета-версия: не проверена экспертом",
+    "sources": "Каждый факт в игре взят из открытого источника, но горный гид и врач их ещё не проверяли.",
+    "understand": "Понятно"
+  }
+}

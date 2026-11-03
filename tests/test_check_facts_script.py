@@ -12,7 +12,8 @@ from scripts.check_facts import ROOT, SCHEMA, Death, Fact, KnowledgeBase, main
 
 TODAY = date(2026, 11, 2)
 SOURCE = {"title": "Arnette", "url": "https://www.alanarnette.com/blog/?p=16718"}
-DEATH = "death.1990-05-11-a-climber"  # made up, as is everything about it below
+DRUG = "medicine.a-drug"
+DEATH = "deaths.1990-05-11-a-climber"  # made up, as is everything about it below
 
 
 def version(**fields: Any) -> dict[str, Any]:
@@ -35,6 +36,10 @@ def coefficient(id: str = "body.fatigue-rate", **fields: Any) -> dict[str, Any]:
     }
     fit = {"value": 0.2, "unit": "1/h", "fitted_to": ["oxygen.usual-flow"], "fitted": "2026-11-01"}
     return record | fit | fields
+
+
+def question(id: str = "technique.re-clipping", **fields: Any) -> dict[str, Any]:
+    return {"id": id, "kind": "question", "question": "Which cowstail first?"} | fields
 
 
 def words(note: str = "Descend.", **fields: Any) -> dict[str, Any]:
@@ -60,7 +65,7 @@ def statement(what: str = "It snowed.", **fields: Any) -> dict[str, Any]:
     return {"what": what, "versions": [words()]} | fields
 
 
-def accident(id: str = "accident.1990-storm", **fields: Any) -> dict[str, Any]:
+def accident(id: str = "accidents.1990-storm", **fields: Any) -> dict[str, Any]:
     record = {"id": id, "kind": "accident", "title": "A storm, made up", "status": "source only"}
     record |= {"date": "1990-05-10", "until": "1990-05-11"}
     record |= {"weather": statement("A storm came in during the afternoon.")}
@@ -111,6 +116,13 @@ class TestGoodRecords:
     def test_a_coefficient_may_be_a_range(self, tmp_path: Path) -> None:
         tuned = without(coefficient(), "value") | {"range": {"min": 0.1, "max": 0.3}}
         assert problems(tmp_path, fact(), tuned) == []
+
+    def test_a_question_passes(self, tmp_path: Path) -> None:
+        assert problems(tmp_path, question()) == []
+
+    def test_a_question_may_be_about_records(self, tmp_path: Path) -> None:
+        about = question(about=["oxygen.usual-flow", "body.fatigue-rate"])
+        assert problems(tmp_path, fact(), coefficient(), about) == []
 
 
 @pytest.mark.unit
@@ -167,6 +179,19 @@ class TestBadRecords:
     def test_a_coefficient_names_at_least_one_fact(self, tmp_path: Path) -> None:
         assert problems(tmp_path, fact(), coefficient(fitted_to=[])) != []
 
+    def test_a_question_asks_something(self, tmp_path: Path) -> None:
+        assert problems(tmp_path, without(question(), "question")) != []
+        assert problems(tmp_path, question(question="")) != []
+
+    def test_a_question_has_no_status(self, tmp_path: Path) -> None:
+        """It's open until an expert answers it, and the answer is a fact."""
+        assert problems(tmp_path, question(status="source only")) != []
+
+    def test_a_question_is_about_something_or_nothing(self, tmp_path: Path) -> None:
+        assert problems(tmp_path, fact(), question(about=[])) != []
+        about = question(about=["oxygen.usual-flow", "oxygen.usual-flow"])
+        assert problems(tmp_path, fact(), about) != []
+
 
 # --- what the schema can't see -----------------------------------------------------------------
 
@@ -190,6 +215,40 @@ class TestAcrossRecords:
     def test_a_coefficient_isn_t_fitted_to_a_coefficient(self, tmp_path: Path) -> None:
         tuned = coefficient("body.pace-rate", fitted_to=["body.fatigue-rate"])
         assert len(problems(tmp_path, fact(), coefficient(), tuned)) == 1
+
+    def test_a_question_is_about_records_that_exist(self, tmp_path: Path) -> None:
+        found = problems(tmp_path, fact(), question(about=["oxygen.usual-flow", "route.camp-2"]))
+        assert len(found) == 1
+        assert "route.camp-2" in found[0]
+
+    def test_a_coefficient_isn_t_fitted_to_a_question(self, tmp_path: Path) -> None:
+        tuned = coefficient(fitted_to=["technique.re-clipping"])
+        assert len(problems(tmp_path, question(), tuned)) == 1
+
+    @pytest.mark.parametrize(
+        "record",
+        [
+            fact(DRUG, claim="Doctors give 125 mg of it."),
+            fact(DRUG, versions=[version(note="A dose of 0.15mg/kg.")]),
+            fact(DRUG, versions=[version(note="4 µg a day.")]),
+            fact(DRUG, versions=[without(version(), "range") | {"value": 250, "unit": "mg"}]),
+            fact(DRUG, versions=[without(version(), "range") | {"value": 1, "unit": "mg/kg"}]),
+            coefficient(unit="mL"),
+        ],
+        ids=["claim", "note", "micrograms", "value", "per kilo", "coefficient"],
+    )
+    def test_a_dose_fails(self, tmp_path: Path, record: dict[str, Any]) -> None:
+        """docs/conventions/knowledge-base.md: never a dose, in a value, a claim or a note."""
+        found = problems(tmp_path, fact(), record)
+        assert len(found) == 1
+        assert "dose" in found[0]
+
+    @pytest.mark.parametrize(
+        "claim",
+        ["Sleep no more than 500 m higher.", "Breathe 2–4 L/min.", "Above 8,000 m.", "A gamow."],
+    )
+    def test_other_numbers_aren_t_doses(self, tmp_path: Path, claim: str) -> None:
+        assert problems(tmp_path, fact(claim=claim)) == []
 
     def test_a_range_runs_upwards(self, tmp_path: Path) -> None:
         for bounds in ({"min": 4, "max": 2}, {"min": 3, "max": 3}):
@@ -235,7 +294,7 @@ class TestAcrossRecords:
     def test_a_fact_s_bounds_span_its_sources(self, tmp_path: Path) -> None:
         one = without(version(), "range") | {"value": 1}
         versions = [version(), version(range={"min": 3, "max": 5}), words(), one]
-        [record] = base(tmp_path, fact(versions=versions)).records
+        [record] = base(tmp_path, fact(versions=versions)).records()
         assert isinstance(record, Fact)
         assert record.bounds == (1, 5)
 
@@ -354,7 +413,7 @@ class TestAcrossTheChronicle:
 
     def test_a_death_s_date_is_the_earliest_its_sources_give(self, tmp_path: Path) -> None:
         versions = [death_version(), death_version(date="1990-05-10"), words("Also died.")]
-        [record] = base(tmp_path, death(versions=versions)).records
+        [record] = base(tmp_path, death(versions=versions)).records()
         assert isinstance(record, Death)
         assert record.day == date(1990, 5, 10)
 
@@ -442,8 +501,8 @@ class TestTheRealFiles:
     @pytest.mark.parametrize(
         "total, first, last",
         [
-            ("chronicle.recorded-deaths-through-2025", date.min, date(2025, 12, 31)),
-            ("chronicle.recorded-deaths-spring-2026", date(2026, 1, 1), date(2026, 6, 30)),
+            ("deaths.recorded-through-2025", date.min, date(2025, 12, 31)),
+            ("deaths.recorded-spring-2026", date(2026, 1, 1), date(2026, 6, 30)),
         ],
         ids=["through 2025", "spring 2026"],
     )
@@ -452,9 +511,9 @@ class TestTheRealFiles:
         between these days as the knowledge base's own total says (#14)."""
         base = KnowledgeBase(self.FOLDER, SCHEMA)
         assert base.problems() == []
-        totals = {record.id: record for record in base.records if isinstance(record, Fact)}
+        totals = {record.id: record for record in base.records() if isinstance(record, Fact)}
         assert total in totals, f"no fact {total} in the knowledge base"
-        deaths = [record for record in base.records if isinstance(record, Death)]
+        deaths = [record for record in base.records() if isinstance(record, Death)]
         found = sum(first <= record.day <= last for record in deaths)
         low, high = totals[total].bounds
         assert low <= found <= high, f"{found} deaths here, {total} says {low}–{high}"

@@ -31,7 +31,7 @@ Every number, mechanic and piece of advice in the game is based on an open sourc
 - **Source priority.** Medicine — the Wilderness Medical Society 2024 guidelines and the CDC Yellow Book 2026. Statistics — the Himalayan Database and Alan Arnette's analyses of it. Science — the BMJ study of mortality on Everest (2008). Accident chronicle — expedition reports, Explorersweb, Outside, The Himalayan Times.
 - **Knowledge base kept separate from code.** Every fact is a record with a link, a check date and a status: “expert-reviewed” or “source only”. This makes it easy to hand everything to a guide or a doctor for review later.
 - **Disclaimer.** At the start and in training: the game trains knowledge and decisions, but it does not replace mountaineering courses, sessions with an instructor or a doctor's consultation.
-- **Medicines without doses.** The game explains why doctors use medicines but gives no dosages: a doctor prescribes those. In the simulation, medicines exist in the first-aid kit as an action, not as instructions.
+- **Medicines without doses.** The game explains why doctors use medicines but gives no dosages: a doctor prescribes those. In the simulation, medicines exist in the first-aid kit as an action, not as instructions: each expedition carries a counted supply, in game units (days or courses, never milligrams), that the player manages, and what a medicine does, how fast and what it doesn't do come from the knowledge base.
 - **Honest uncertainty.** Where sources disagree (camp altitudes, death counts, tour prices), the game shows a range rather than a single “exact” number.
 - **Expert review is a separate step before the public release.** Until then the game is published only as a beta marked “not reviewed by an expert”.
 
@@ -354,6 +354,9 @@ Eight questions need to be settled before the prototype starts or during it.
 Medicine
 
 - [CDC Yellow Book 2026: High-Altitude Travel and Altitude Illness](https://www.cdc.gov/yellow-book/hcp/environmental-hazards-risks/high-altitude-travel-and-altitude-illness.html)
+- [Wilderness Medical Society Clinical Practice Guidelines for the Prevention, Diagnosis, and Treatment of Acute Altitude Illness: 2024 Update](https://doi.org/10.1016/j.wem.2023.05.013)
+- [WMS: the summary of its 2024 altitude guideline, on wms.org](https://wms.org/magazine/1463/2024-Altitude-Summary/default.aspx)
+- [Omidi et al. 2025, What Is New in Altitude- and Cold-Related Illnesses of Travel: a review of the WMS 2024 guidelines (IJERPH)](https://doi.org/10.3390/ijerph22020284)
 - [AAFP: Acute Altitude Illness — Updated Guidelines from the Wilderness Medical Society](https://www.aafp.org/afp/2020/0415/p505.html)
 - [Firth et al., Mortality on Mount Everest, 1921–2006 (BMJ 2008)](https://pmc.ncbi.nlm.nih.gov/articles/PMC2602730)
 

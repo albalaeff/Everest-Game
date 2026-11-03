@@ -77,9 +77,9 @@ Tasks marked *Iteration 1–3* are planned into the board's first two-week itera
 - [ ] Done gate
 
 ### Task 7: Questions for an expert, by area ([#15](https://github.com/albalaeff/Everest-Game/issues/15)) · *Iteration 3*
-- [ ] Every “to check with an expert” point of the spec and of the knowledge base, as a list for the guide (technique) and for the doctor (physiology)
-- [ ] Exported from the records with status `source only`, so the list stays current
-- [ ] Done gate
+- [x] Every “to check with an expert” point of the spec and of the knowledge base, as a list for the guide (technique) and for the doctor (physiology)
+- [x] Exported from the records with status `source only`, so the list stays current
+- [x] Done gate
 
 **Milestone 1:** Facts with sources and check dates, questions for an expert.
 
@@ -127,7 +127,7 @@ Tasks marked *Iteration 1–3* are planned into the board's first two-week itera
 ### Task 14: Body model v1: fatigue, blood oxygen and pace ([#22](https://github.com/albalaeff/Everest-Game/issues/22)) · *Iteration 3*
 - [ ] SpO2 from altitude and oxygen flow; fatigue from pace, load, sleep, food and water; the rest step against a faster pace
 - [ ] Its coefficients come from the knowledge base (#9)
-- [ ] The mountain's time on top of the core's seconds of play: six to eight weeks in 5–7 hours, waiting days skipped, summit day the most detailed (spec.md → Gameplay)
+- [x] The mountain's time on top of the core's seconds of play: six to eight weeks in 5–7 hours, waiting days skipped, summit day the most detailed (spec.md → Gameplay) (#116: `MountainClock` at `time.compression`; what camp skips comes with #53)
 - [ ] The player sees no numbers for their condition
 - [ ] Done gate
 
@@ -168,9 +168,9 @@ Tasks marked *Iteration 1–3* are planned into the board's first two-week itera
 - [ ] Done gate
 
 ### Task 22: The disclaimer and the beta mark ([#30](https://github.com/albalaeff/Everest-Game/issues/30))
-- [ ] The disclaimer at the start and in training
-- [ ] “Not reviewed by an expert” shown until the review of milestone 8
-- [ ] Done gate
+- [x] The disclaimer at the start and in training
+- [x] “Not reviewed by an expert” shown until the review of milestone 8
+- [x] Done gate
 
 ### Task 23: Playtest the Icefall prototype ([#31](https://github.com/albalaeff/Everest-Game/issues/31))
 - [ ] Played by a few people, on PCs and phones, solo and in one room
@@ -332,6 +332,7 @@ Tasks marked *Iteration 1–3* are planned into the board's first two-week itera
 
 ### Task 50: Training framework: explain, show, do, test under stress ([#63](https://github.com/albalaeff/Everest-Game/issues/63))
 - [ ] A module: a short explanation with a source, a live example, the player doing it without hurry, a test under stress (night, wind, a queue, a tired body)
+- [ ] Every module opens with the disclaimer of [#30](https://github.com/albalaeff/Everest-Game/issues/30) (`Disclaimer` in `src/interface/`)
 - [ ] Skipping by a short situational test, where the module allows it
 - [ ] Done gate
 

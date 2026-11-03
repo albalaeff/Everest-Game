@@ -208,6 +208,7 @@ class ManagerConfig:
     watcher_backoff_seconds: float = 10  # the wait before the watcher starts again after a failure
     watcher_backoff_max_seconds: float = 600  # it doubles after each failure, up to this
     compact_at_percent: float = 25  # of the window: where an agent's conversation is compacted
+    wiki_every_hours: float = 6  # between the watcher's looks at the wiki (#126); 0: never
 
     FILE: ClassVar[str] = "agent-manager.toml"
 
@@ -223,6 +224,8 @@ class ManagerConfig:
             )
         if not 1 <= self.compact_at_percent <= 100:
             raise ValueError("compact_at_percent must be from 1 to 100")
+        if self.wiki_every_hours < 0:
+            raise ValueError("wiki_every_hours must be 0 (never) or more")
 
     @classmethod
     def load(cls, checkout: Path = ROOT) -> ManagerConfig:

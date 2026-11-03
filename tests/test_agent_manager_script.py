@@ -42,6 +42,7 @@ from scripts.agent_manager import (
     UsageLimit,
     Warmup,
     Watcher,
+    WikiJob,
     Worktree,
 )
 from scripts.agents import WATCH_EVERY, AgentPower, CompactShare, ManagerConfig, Priority
@@ -49,6 +50,7 @@ from scripts.check_setup import Check
 from scripts.claude_cost import IssueCost
 from scripts.github import Conversation, Task, sign
 from scripts.handoff import Git, HandoffMark, Machine
+from scripts.wiki import WikiNews
 from tests.fakes import FakeGit
 
 pytestmark = pytest.mark.unit
@@ -67,6 +69,12 @@ NO_FABLE = (
     '"message":"model: claude-fable-5-1"}}'
 )
 SERVER = "postgresql://everest:everest@localhost:5433/everest_test"  # the tests' database server
+BEHIND = WikiNews(  # #126: what the watcher found the wiki lacks
+    "The wiki is behind develop: 2 PRs merged since 3333333 (#124, #127).",
+    "1" * 40,
+    "3" * 40,
+    (124, 127),
+)
 
 
 def task(
@@ -111,6 +119,8 @@ def test_a_line_of_the_watcher_s_is_a_job() -> None:
 
     assert isinstance(issue_job, IssueJob) and issue_job.slot == "7"
     assert isinstance(prices_job, PricesJob) and prices_job.slot == "prices"
+    wiki_job = Job.of(BEHIND.data(), TODAY)
+    assert isinstance(wiki_job, WikiJob) and wiki_job.news == BEHIND and wiki_job.slot == "wiki"
     assert Job.of({"type": "note", "text": "Pulled develop"}, TODAY) is None
 
 
@@ -193,6 +203,7 @@ def test_the_rules_an_agent_is_sent_to_are_there() -> None:
     prompts = (
         IssueJob(task(state="reply waiting")).prompt(SLUG, "feature/7-x"),
         PricesJob("prices: x", "x", TODAY).prompt(SLUG, "chore/claude-prices-2026-10-12"),
+        WikiJob(BEHIND, TODAY).prompt(SLUG, "wiki/2026-10-12"),
     )
     named = {name for prompt in prompts for name in re.findall(r'"([^"]+)"', prompt)}
 
@@ -371,6 +382,110 @@ def test_new_prices_move_from_the_checkout_into_the_agent_s_worktree(tmp_path: P
     assert "small chore PR" in job.prompt(SLUG, "chore/claude-prices-2026-10-12")
     # #550: a handoff with its closing comment, so the manager merges it with no agent.
     assert "the closing comment" in job.prompt(SLUG, "chore/claude-prices-2026-10-12")
+
+
+def test_the_wiki_agent_changes_the_pages_and_the_manager_publishes_them() -> None:
+    # #126: the agent edits the wiki's clone only; its commit and push need no rule of its own.
+    job = WikiJob(BEHIND, date(2026, 11, 3))
+    prompt = job.prompt("albalaeff/Everest-Game", "wiki/2026-11-03")
+
+    assert job.branch(Git(Path("/repo"), FakeGit({}))) == "wiki/2026-11-03"
+    assert f"of albalaeff/Everest-Game: {BEHIND.text}\n\n" in prompt
+    assert "work on the wiki only" in prompt and "(#124, #127)" in prompt
+    assert "its clone is in .agent-runs/wiki here" in prompt
+    assert "post nothing on GitHub" in prompt and "Don't commit or push" in prompt
+    assert "to 3 November 2026" in prompt and "Changelog.md" in prompt
+    assert not job.needs_tools and not job.merges and job.issue is None
+
+
+def test_the_wiki_is_cloned_into_the_worktree_beside_the_project_s_remote(tmp_path: Path) -> None:
+    clone = tmp_path / "wiki" / ".agent-runs" / "wiki"
+    url = "https://github.com/albalaeff/Everest-Game.wiki.git"
+    fake = FakeGit(
+        {"remote get-url origin": "https://github.com/albalaeff/Everest-Game.git"},
+        refusals={f"clone -q {url} {clone}": "fatal: repository not found"},
+    )
+
+    with pytest.raises(AgentError, match="git clone of the wiki: fatal: repository not found"):
+        WikiJob(BEHIND, TODAY).prepare(tmp_path / "wiki", Git(tmp_path, fake))  # tried again later
+
+    assert fake.commands[-1] == f"clone -q {url} {clone}"
+
+
+class Publishing(WikiJob):
+    """A wiki job whose pages are published as `published` says: what it did, or why not."""
+
+    def __init__(self, published: str | AgentError) -> None:
+        super().__init__(BEHIND, TODAY)
+        self.published = published
+        self.concluded: list[Path] = []
+
+    def conclude(self, worktree: Path, git: Git) -> str | None:
+        self.concluded.append(worktree)
+        if isinstance(self.published, AgentError):
+            raise self.published
+        return self.published
+
+
+def wiki_agent(tmp_path: Path, job: Publishing) -> Agent:
+    path = (tmp_path / "worktrees" / "wiki").resolve()
+    answers = {
+        "status --porcelain": "",
+        "fetch -q --prune origin": "",
+        "rev-list --count HEAD --not --remotes=origin": "0",
+        "rev-parse --abbrev-ref HEAD": "wiki/2026-10-12",
+        f"worktree remove --force {path}": "",
+        "branch -D wiki/2026-10-12": "",
+    }
+    made = launcher(tmp_path, answers).agent(job)
+    made.log.parent.mkdir()
+    return made
+
+
+def test_a_wiki_run_that_ended_well_is_published_and_its_worktree_goes(tmp_path: Path) -> None:
+    job = Publishing("the wiki pushed (3 files changed, develop at 1111111)")
+    made = wiki_agent(tmp_path, job)
+
+    line = made.finish(0)
+
+    assert job.concluded == [made.worktree.path]
+    assert line == (
+        "the wiki behind develop: done, the wiki pushed (3 files changed, develop at 1111111); "
+        "worktree removed"
+    )
+
+
+def test_a_wiki_that_couldn_t_be_pushed_keeps_the_worktree_with_its_pages(tmp_path: Path) -> None:
+    made = wiki_agent(tmp_path, Publishing(AgentError("git push in the wiki's clone: rejected")))
+
+    line = made.finish(0)
+
+    assert line.endswith(": git push in the wiki's clone: rejected")
+    assert "worktree kept at " in line
+
+
+@pytest.mark.parametrize("code", [None, 1], ids=["stopped", "failed"])
+def test_a_wiki_run_that_didn_t_end_well_publishes_nothing(
+    tmp_path: Path, code: int | None
+) -> None:
+    job = Publishing("the wiki pushed")
+
+    wiki_agent(tmp_path, job).finish(code)
+
+    assert job.concluded == []
+
+
+def test_a_wiki_run_that_ended_on_the_usage_limit_publishes_nothing(tmp_path: Path) -> None:
+    # It did nothing: the commit would mark develop covered with no page changed.
+    job = Publishing("the wiki pushed")
+    made = wiki_agent(tmp_path, job)
+    result = {"type": "result", "is_error": True, "result": SESSION_LIMIT, "total_cost_usd": 0}
+    result["api_error"] = "usage_limit_reached"
+    made.log.write_text(json.dumps(result, separators=(",", ":")) + "\n", encoding="utf-8")
+
+    made.finish(0)
+
+    assert made.limit is not None and job.concluded == []
 
 
 # --- the worktree ------------------------------------------------------------------------------
@@ -2172,7 +2287,7 @@ def test_the_watcher_starts_again_at_once_or_after_a_growing_wait() -> None:
 
 def test_the_watcher_looks_as_often_as_the_settings_say(tmp_path: Path) -> None:
     # #445: every two minutes, unless agent-manager.toml says otherwise.
-    watcher = Watcher.of(ManagerConfig(watch_every_seconds=90), tmp_path)
+    watcher = Watcher.of(ManagerConfig(watch_every_seconds=90, wiki_every_hours=0), tmp_path)
     once = Watcher.of(ManagerConfig(), tmp_path, once=True)  # --once, --dry-run: one look
 
     assert watcher.command[1:] == [
@@ -2182,7 +2297,7 @@ def test_the_watcher_looks_as_often_as_the_settings_say(tmp_path: Path) -> None:
         "--every",
         "1.5",
     ]
-    assert once.command[-4:] == ["--every", "2", "--for", "0"]
+    assert once.command[-6:] == ["--every", "2", "--wiki", "6", "--for", "0"]  # #126
 
 
 def test_the_watcher_s_lines_are_read_as_it_says_them(tmp_path: Path) -> None:

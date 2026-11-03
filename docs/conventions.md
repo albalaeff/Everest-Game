@@ -8,7 +8,8 @@ Every change to this codebase follows the rules in this file, and those of each 
 | the simulation core: `src/simulation/` | [conventions/simulation-core.md](conventions/simulation-core.md) |
 | the input layer: `src/input/` | [conventions/input.md](conventions/input.md) |
 | the slope physics: `src/physics/` | [conventions/slope-physics.md](conventions/slope-physics.md) |
-| the game's other areas, once they have rules of their own: the rendering, the room server | their file in `docs/conventions/`, named here when it comes |
+| the rendering and the page: `src/rendering/`, `src/page/` | [conventions/rendering.md](conventions/rendering.md) |
+| the game's other areas, once they have rules of their own: the room server | their file in `docs/conventions/`, named here when it comes |
 
 A change to `scripts/` or to the docs alone follows this file only. (Fill the table in as areas get rules of their own, one file each in `docs/conventions/`; [../spec.md](../spec.md) is what the game's areas implement.)
 
@@ -40,7 +41,7 @@ simulation core  →  agents, slope physics  →  the room server
 | **Saves** | IndexedDB in the browser for progress, settings and the expedition history; the room server for co-op expeditions. A save is the core's state and its seed, so the core's state serialises whole. |
 | **Room server** | Cloudflare Workers and Durable Objects. Runs the same core and agents, with no rendering; the browsers send actions and receive state. |
 
-Dependencies point one way only: the page may import everything below it; the room server imports the simulation core and the agents only (a Worker has no DOM, WebGL or Web Audio); the rendering may import the simulation; the simulation core imports none of the others. The core runs headless, so tests can play thousands of expeditions.
+Dependencies point one way only: the page may import everything below it; the room server imports the simulation core and the agents only (a Worker has no DOM, WebGL or Web Audio); the rendering may import the simulation and the slope physics; the simulation core imports none of the others. The core runs headless, so tests can play thousands of expeditions.
 
 ## Objects
 

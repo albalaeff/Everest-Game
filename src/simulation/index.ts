@@ -20,6 +20,8 @@ export type {
 export { HeadlessRunner } from "./headless-runner";
 export type { ActionSource } from "./headless-runner";
 export type { Json } from "./json";
+export { MountainClock } from "./mountain-clock";
+export type { ClockStart } from "./mountain-clock";
 export type { Moment, Rule, RuleStates } from "./rule";
 export type { Scenario } from "./scenario";
 export { SeededRandom } from "./seeded-random";

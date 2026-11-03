@@ -2,7 +2,7 @@
 
 Every number, mechanic and piece of advice in the game comes from a record here, kept apart from the code, so a guide or a doctor can review and change it without a programmer ([../../spec.md](../../spec.md) → Realism and accuracy principles, [../conventions.md](../conventions.md) → Data, not literals).
 
-The records are the JSON files in `content/facts/`, one file per area, and `content/facts.schema.json` is their format. `uv run pytest tests/test_check_facts_script.py` checks them all, and CI runs it with the rest, so a record without a source or a check date can't be merged. `uv run python scripts/check_facts.py` runs the same check and lists what's wrong, by file and record.
+The records are the JSON files in `content/facts/`, one file per area, and `content/facts.schema.json` is their format. `uv run pytest tests/test_check_facts_script.py` checks them all, and CI runs it with the rest, so a record without a source or a check date can't be merged. `uv run python scripts/check_facts.py` runs the same check and lists what's wrong, by file and record. The page hands the rules their numbers from the records through `KnowledgeBase` (`src/page/knowledge-base.ts`): `number(id)` is a coefficient's value, or the middle of its range, and a fact's middle across its sources.
 
 ## A fact
 
@@ -60,13 +60,26 @@ A number the model is tuned with that no source states, such as a fatigue rate. 
 
 Numbers in these examples are made up, and only show the form. Every id in `fitted_to` has to be a fact in the knowledge base. A coefficient has a `value` or a `range`, as a fact's version does, and a unit: `1` where it has none.
 
+## A question
+
+What no source answers, for an expert, in the file of its area. It has no status: it stays open until an expert answers it, and the answer becomes a fact or a coefficient in its place. `about`, if it's there, names the records it asks about, and each one has to exist.
+
+```json
+{
+  "id": "oxygen.bottle-swap",
+  "kind": "question",
+  "question": "How is a bottle swapped on the move above 8,000 m?",
+  "about": ["oxygen.usual-flow"]
+}
+```
+
 ## A death
 
 The chronicle ([../../spec.md](../../spec.md) → Real accidents as training scenarios) is one record per recorded death, in `content/facts/deaths.json`: who they were, and what each source says of the death. Facts and a source only; nothing else about a real person goes in. The example is made up.
 
 ```json
 {
-  "id": "death.1990-05-11-a-climber",
+  "id": "deaths.1990-05-11-a-climber",
   "kind": "death",
   "name": "A. Climber",
   "citizenship": "Nowhere",
@@ -87,13 +100,13 @@ The chronicle ([../../spec.md](../../spec.md) → Real accidents as training sce
 }
 ```
 
-- **`id`:** `death.`, the date, and the name, as `death.1990-05-11-a-climber`.
+- **`id`:** `deaths.`, the date, and the name, as `deaths.1990-05-11-a-climber`.
 - **`name`, `citizenship`:** as the source gives them; **`hired`:** `true` for a Sherpa, a porter or a high-altitude worker on the expedition's payroll.
 - **A version** says what one source says, and only that: `date`, `place`, `altitude` in metres, `cause`, `phase`, and a `note` for what the words add, with the `source` and `checked` of a fact's version. Between them, the versions have to give the date, the place and the cause. One version when the sources agree; where they disagree, on the date or the cause, one for each: the game shows both.
 - **`cause`** is one of the Himalayan Database's classes: `altitude-sickness`, `exhaustion`, `exposure` (with frostbite), `fall`, `crevasse`, `icefall-collapse`, `avalanche`, `falling-rock-or-ice`, `disappearance`, `illness` (not of altitude), `other`, `unknown`. What a source says beyond the class (HAPE, a heart attack) goes in the `note`.
 - **`phase`** is where on the climb: `approach` (the walk to or from base camp), `base-camp`, `ascent`, `camp` (above base camp, between climbs), `descent` (on the way down from a summit attempt). Leave it out when no source says.
 
-The real files' test holds the chronicle to the Himalayan Database's totals: as many deaths dated through 2025 as the fact `chronicle.recorded-deaths-through-2025` says, and in spring 2026 as `chronicle.recorded-deaths-spring-2026`. A record missed, or one too many, fails CI.
+The real files' test holds the chronicle to the Himalayan Database's totals: as many deaths dated through 2025 as the fact `deaths.recorded-through-2025` says, and in spring 2026 as `deaths.recorded-spring-2026`, two facts in the same file. A record missed, or one too many, fails CI.
 
 ## An accident
 
@@ -101,7 +114,7 @@ The accidents the game tells in full, one record each in `content/facts/accident
 
 ```json
 {
-  "id": "accident.1990-storm",
+  "id": "accidents.1990-storm",
   "kind": "accident",
   "title": "The storm of 10–11 May 1990",
   "status": "source only",
@@ -125,20 +138,24 @@ The accidents the game tells in full, one record each in `content/facts/accident
       ]
     }
   ],
-  "deaths": ["death.1990-05-11-a-climber"],
+  "deaths": ["deaths.1990-05-11-a-climber"],
   "lesson": "The turnaround time is not up for discussion.",
   "scenario": "A storm on the ridge"
 }
 ```
 
-- **`id`:** `accident.`, the year and what it was, as `accident.1990-storm`.
+- **`id`:** `accidents.`, the year and what it was, as `accidents.1990-storm`.
 - **`date`** is the day it began, **`until`** the day it ended, when not the same.
 - **`weather`, `crowd` and each step of the `chain`** are a statement: `what` happened or held, in a sentence, and `versions`, one per source, as a fact's: a `value` or `range` with its `unit` where there's a number, a `note` for the words. Where sources disagree, one version each, and the game shows both. A step has `when` where a source gives the time, in words; the chain is in order.
 - **`deaths`:** the ids of its dead, each a death record. **`lesson`** and **`scenario`** are the spec's table's columns for it.
 
+## The experts' lists
+
+`uv run python scripts/expert_questions.py` prints, as Markdown, what the mountain guide (technique) and the doctor (physiology) are to check, by area. That's every question, and every other record still `source only`, with its sources and check dates: a fact's or a coefficient's numbers, a death's date, place and cause by source, an accident's weather, crowd, chain and lesson. Add `guide` or `doctor` for one list only. The lists are built from the records each time, so they aren't checked in. `ExpertList.EXPERTS` in the script says which experts review each area, and the tests fail on a record in an area nobody reviews: a new area names its experts there. The chronicle, `deaths` and `accidents`, is the guide's.
+
 ## What goes in
 
-- **Never a dose.** Medicines are described by why doctors use them: no amounts, in a value, a claim or a note.
+- **Never a dose.** Medicines are described by why doctors use them: no amounts, in a value, a claim or a note. The check refuses a number in mg, µg, g, mL or IU, alone or per something (mg/kg), and such a unit.
 - **The real dead.** Facts and a source only.
-- **No invented numbers.** What no source gives and no fit supports stays out of the data, and goes to the questions for an expert.
+- **No invented numbers.** What no source gives and no fit supports stays out of the data, and goes in a question for an expert.
 - **`expert-reviewed`** is set by the expert's review, never by an edit that only touches up a record.

@@ -32,6 +32,10 @@ A green PR's merge needs no agent when the one that opened the PR left the closi
 its handoff: the manager checks the PR and merges it itself (`SelfMerge`, #550), and starts an
 agent, told why, only when a check fails.
 
+When PRs merged into develop since the wiki last caught up, which the watcher looks at every
+few hours, an agent updates the wiki's pages in a clone the manager made, and the manager
+pushes them (`WikiJob`, #126).
+
 One agent per issue, at most `max_parallel` at once, and a green PR's merge besides, in a lane
 of its own (#485): the rest wait their turn, a merge first, then by the issue's `priority:*`
 label, then mid-work before new, then first come first served; and one whose turn comes
@@ -118,6 +122,7 @@ from scripts.github import (  # noqa: E402
     utf8_output,
 )
 from scripts.handoff import Git, Handoff, IssueBranch, Machine, Run, plural  # noqa: E402
+from scripts.wiki import WikiClone, WikiNews, WikiUnpublished  # noqa: E402
 
 Say = Callable[[str], None]
 
@@ -171,6 +176,8 @@ class Job:
             return IssueJob(Task.from_data(data))
         if data.get("type") == "prices":
             return PricesJob(str(data["key"]), str(data["text"]), today)
+        if data.get("type") == "wiki":
+            return WikiJob(WikiNews.of(data), today)
         return None
 
     def branch(self, git: Git) -> str:
@@ -181,6 +188,11 @@ class Job:
 
     def prepare(self, worktree: Path, git: Git) -> None:
         """What the manager does in the worktree before the agent starts."""
+
+    def conclude(self, worktree: Path, git: Git) -> str | None:
+        """What the manager does in the worktree once the agent ended well; what it did, for
+        the run's line. AgentError: what it couldn't do, which keeps the worktree."""
+        return None
 
     def still_due(self, github: GitHub, me: str) -> bool:
         """Whether it still needs doing, when its turn comes after a wait."""
@@ -364,6 +376,67 @@ class PricesJob(Job):
             "post on the PR the handoff that carries the closing comment "
             '("Working from GitHub issues", step 4; `--handoff --closing`) and stop: once '
             "CI is green, the manager merges it (#550)."
+        )
+
+
+class WikiJob(Job):
+    """The wiki behind develop (#126): PRs merged since the commit it covers, which the
+    watcher found (`WikiCheck`). The manager clones the wiki into the worktree, the agent
+    changes its pages, and the manager commits and pushes them, naming the develop commit
+    the worktree is on, so the next check starts from there (`WikiClone`). One run covers
+    every merge since the last."""
+
+    FOLDER: ClassVar[str] = ".agent-runs/wiki"  # in the worktree: gitignored
+
+    def __init__(self, news: WikiNews, today: date) -> None:
+        self.news = news
+        self.key = news.key
+        self.today = today
+        self.slot = "wiki"
+
+    def __str__(self) -> str:
+        return "the wiki behind develop"
+
+    def branch(self, git: Git) -> str:
+        """Develop as the PRs left it; never pushed: the work is in the wiki's clone."""
+        return f"wiki/{self.today:%Y-%m-%d}"
+
+    def prepare(self, worktree: Path, git: Git) -> None:
+        try:
+            self._clone(worktree, git).make(git.out("remote", "get-url", "origin"))
+        except WikiUnpublished as error:
+            raise AgentError(str(error)) from None
+
+    def conclude(self, worktree: Path, git: Git) -> str | None:
+        develop = git.out("rev-parse", "HEAD", at=str(worktree))
+        try:
+            return self._clone(worktree, git).publish(develop, self.news.pulls)
+        except WikiUnpublished as error:
+            raise AgentError(str(error)) from None
+
+    def _clone(self, worktree: Path, git: Git) -> WikiClone:
+        return WikiClone(worktree / self.FOLDER, git)
+
+    def prompt(self, slug: str, branch: str) -> str:
+        pulls = ", ".join(f"#{number}" for number in self.news.pulls)
+        return (
+            f"{self.INTRO}, on {branch} of {slug}: {self.news.text}\n\n"
+            f"{self.RULES.format(what='the wiki')} Bring the project's wiki up to date with "
+            f"those PRs ({pulls}): its clone is in {self.FOLDER} here, and this worktree is "
+            "develop as they left it. Change nothing else here and post nothing on GitHub. "
+            "For each PR, read what it changed and why: `uv run python scripts/github.py pr "
+            "<n>`, the closing comment on the issue it closes (`uv run python "
+            "scripts/github.py show <issue>`), and its commit (`git log`, `git show`). Then "
+            "change the pages that describe it, so each says what the game and the project "
+            "are now (spec.md is the plan; the wiki says what's built). Keep the wiki's "
+            "pages, structure, language and style; add a page only for what none covers, "
+            "linked from Home.md and _Sidebar.md. Move the dates and lists of where things "
+            "stand (Home.md, Roadmap.md, Technical-Architecture.md, _Footer.md) to "
+            f"{self.today.day} {self.today:%B %Y}. Add a line for each PR to Changelog.md, "
+            "newest first, its number linked to its page; make the page, linked from Home.md and "
+            "_Sidebar.md, if the wiki has none. Don't commit or push: once you end, the "
+            "manager commits the pages, naming the develop commit they cover, and pushes "
+            "them. End with a line or two on what you changed."
         )
 
 
@@ -962,7 +1035,17 @@ class Agent:
         self.unavailable = found.unavailable
         result = str(found)
         outcome = "done" if code == 0 else "stopped" if code is None else f"failed (exit {code})"
-        kept = self.worktree.leftover() if code == 0 else outcome
+        kept: str | None = outcome
+        concluded = None
+        if code == 0:
+            try:
+                if self.limit is None and self.unavailable is None:  # it did its work
+                    concluded = self.job.conclude(self.worktree.path, self.worktree.git)
+                kept = self.worktree.leftover()
+            except AgentError as error:
+                kept = str(error)
+        if concluded:
+            result = f"{result}, {concluded}" if result else concluded
         if kept is None:
             try:
                 self.worktree.remove()
@@ -1663,6 +1746,8 @@ class Watcher:
         script = checkout / "scripts" / "github.py"
         every = f"{config.watch_every_seconds / 60:g}"  # minutes, as `watch` takes them
         command = [sys.executable, str(script), "watch", "--json", "--every", every]
+        if config.wiki_every_hours:  # #126
+            command += ["--wiki", f"{config.wiki_every_hours:g}"]
         return cls(command + (["--for", "0"] if once else []), checkout)
 
     def start(self) -> None:
