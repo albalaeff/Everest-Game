@@ -244,8 +244,9 @@ The game is a static site, to be published free on GitHub Pages or itch.io, with
 
 ## The project board
 
-Every issue is a card on the [project board](https://github.com/users/albalaeff/projects/2), in a two-week iteration. Its *Current iteration* and *Next iteration* views switch by date by themselves; the rest is done by [scripts/board.py](scripts/board.py), which `.github/workflows/board.yml` runs every hour (#118):
+Every issue is a card on the [project board](https://github.com/users/albalaeff/projects/2), in a two-week iteration. Its *Current iteration* and *Next iteration* views switch by date by themselves; the rest is done by [scripts/board.py](scripts/board.py), which `.github/workflows/board.yml` runs every hour and whenever an issue is closed or reopened (#118):
 
+- **An iteration done early:** once every card of the current iteration is closed, it ends the day before, the next starts that day, and the ones after move up with it, so *Current* and *Next* switch within minutes (#120). An iteration lasts at least a day, and one with no cards ends by its date.
 - **An iteration ends:** its open cards move into the next one. Closed cards stay where they were done.
 - **Iterations ahead:** two always lie ahead, two weeks each, named `Iteration <n>` after the last.
 - **Status follows the issue:**

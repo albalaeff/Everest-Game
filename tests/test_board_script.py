@@ -206,6 +206,27 @@ def test_past_the_last_iteration_the_gap_is_filled_up_to_two_ahead() -> None:
     assert [it.title for it in kept.ahead(date(2026, 12, 15))] == ["Iteration 5", "Iteration 6"]
 
 
+def test_an_iteration_done_early_ends_yesterday_and_the_rest_move_up_with_it() -> None:
+    plan = plan_of(iterations(4))
+
+    early = plan.closed_early(date(2026, 11, 10))  # iteration 1, ten days in
+
+    assert [(it.id, it.start, it.days) for it in early.iterations] == [
+        ("it-1", date(2026, 10, 31), 10),  # its last day: 9 November
+        ("it-2", date(2026, 11, 10), DAYS),
+        ("it-3", date(2026, 11, 24), DAYS),
+        ("it-4", date(2026, 12, 8), DAYS),
+    ]
+    current = early.current(date(2026, 11, 10))
+    assert current is not None and current.id == "it-2"
+
+
+def test_an_iteration_done_on_its_first_day_ends_the_next() -> None:
+    plan = plan_of(iterations(4))
+
+    assert plan.closed_early(date(2026, 11, 14)) == plan  # iteration 2's first day
+
+
 def test_the_iterations_go_back_whole_with_their_ids() -> None:
     # GitHub replaces the iterations it's sent: an ended one left out would take its cards'
     # history with it.
@@ -370,6 +391,70 @@ def test_near_the_last_iteration_the_board_gets_more_and_the_open_cards_move_int
         "Iterations added: Iteration 9, Iteration 10, Iteration 11",
         "#96: into Iteration 9",
     ]
+
+
+def iteration_1_done_early(*, one_open: bool = False) -> FakeBoard:
+    """10 November 2026, four days before iteration 1's end: every card of it is closed, or
+    all but one."""
+    return FakeBoard(
+        date(2026, 11, 10),
+        iterations(8),
+        [
+            card(9, state="CLOSED", status="Done"),
+            card(
+                26,
+                state="OPEN" if one_open else "CLOSED",
+                labels=("claude:bateks",),
+                comments=2,
+                status="In progress" if one_open else "Done",
+            ),
+            card(35, iteration="it-2", status="Backlog"),  # the summit push
+            card(36, iteration="it-2", labels=("postponed",), status="Backlog"),
+        ],
+    )
+
+
+def test_when_every_card_of_the_iteration_is_closed_the_next_one_starts_that_day() -> None:
+    fake = iteration_1_done_early()
+
+    said = board_on(fake).keep(date(2026, 11, 10))
+
+    dates = {it["id"]: (it["startDate"], it["duration"]) for it in fake.iterations}
+    assert dates["it-1"] == ("2026-10-31", 10)  # its last day: 9 November
+    assert dates["it-2"] == ("2026-11-10", DAYS)
+    assert dates["it-8"] == ("2027-02-02", DAYS)  # the rest moved up four days
+    assert fake.status(35) == "Ready" and fake.status(36) == "Backlog"
+    assert said == [
+        "Iteration 1 · Goal 1 done early: Iteration 2 · Goal 2 starts 2026-11-10",
+        "#35: Backlog → Ready",
+    ]
+
+
+def test_one_open_card_keeps_the_iteration_to_its_dates() -> None:
+    fake = iteration_1_done_early(one_open=True)
+
+    assert board_on(fake).keep(date(2026, 11, 10)) == []
+    assert fake.sent == []
+
+
+def test_an_iteration_with_no_cards_ends_by_its_date() -> None:
+    # The iterations added ahead are empty: they don't run through one after another.
+    fake = FakeBoard(date(2026, 11, 10), iterations(8), [card(35, iteration="it-2")])
+
+    assert board_on(fake).keep(date(2026, 11, 10)) == []
+    assert fake.sent == []
+
+
+def test_a_dry_run_says_the_iteration_would_end_early_and_changes_nothing() -> None:
+    fake = iteration_1_done_early()
+
+    said = board_on(fake).keep(date(2026, 11, 10), dry_run=True)
+
+    assert said == [
+        "Iteration 1 · Goal 1 done early: Iteration 2 · Goal 2 starts 2026-11-10",
+        "#35: Backlog → Ready",
+    ]
+    assert fake.sent == []
 
 
 def test_a_status_missing_from_the_board_is_named() -> None:

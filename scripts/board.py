@@ -1,5 +1,6 @@
 """Keeps the project board current (#118): an iteration's open cards move into the next once
-it ends, two iterations always lie ahead, and each card's status follows its issue.
+it ends, an iteration whose cards are all closed ends early (#120), two iterations always lie
+ahead, and each card's status follows its issue.
 
     uv run python scripts/board.py 2             once, saying what it changed
     uv run python scripts/board.py 2 --dry-run   what it would change, changing nothing
@@ -111,6 +112,20 @@ class IterationPlan:
         while len(plan.ahead(day)) < self.AHEAD:
             plan = replace(plan, iterations=(*plan.iterations, plan._following(day)))
         return plan
+
+    def closed_early(self, day: date) -> IterationPlan:
+        """This plan with the current iteration's last day made yesterday, and each one after
+        it starting where the one before ends, as long as it was. An iteration lasts at least
+        a day, so on its first day the plan stays as it is."""
+        current = self.current(day)
+        if current is None or current.start >= day:
+            return self
+        its = list(self.iterations)
+        at = its.index(current)
+        its[at] = replace(current, days=(day - current.start).days)
+        for k in range(at + 1, len(its)):
+            its[k] = replace(its[k], start=its[k - 1].end)
+        return replace(self, iterations=tuple(its))
 
     def sent(self) -> dict[str, Any]:
         """The configuration GitHub takes. It replaces the iterations it's sent, so the ended
@@ -274,16 +289,20 @@ class Board:
         """Keeps the board current on `day`, and says what it changed, a line each; a dry
         run says the same and changes nothing."""
         fields = self._fields()
+        cards = list(self._cards())
         said: list[str] = []
-        plan = fields.plan.kept_ahead(day)
-        if plan != fields.plan:
-            added = plan.iterations[len(fields.plan.iterations) :]
+        plan = self._done_early(fields.plan, cards, day, said)
+        kept = plan.kept_ahead(day)
+        if kept != plan:
+            added = kept.iterations[len(plan.iterations) :]
             said.append(f"Iterations added: {', '.join(it.title for it in added)}")
+        plan = kept
+        if plan != fields.plan:
             plan = plan.placeholders() if dry_run else self._send(plan)
         current = plan.current(day)
         ended = {it.id for it in plan.iterations if it.ended(day)}
         rule = StatusRule(current.id if current else None)
-        for card in self._cards():
+        for card in cards:
             iteration = card.iteration
             if card.open and iteration in ended and current is not None and current.id:
                 iteration = current.id
@@ -300,6 +319,24 @@ class Board:
                         {"singleSelectOptionId": fields.options[status]},
                     )
         return said
+
+    @staticmethod
+    def _done_early(
+        plan: IterationPlan, cards: Sequence[Card], day: date, said: list[str]
+    ) -> IterationPlan:
+        """The plan ended early when every card of the current iteration is closed. An
+        iteration with no cards ends by its date, so the empty ones ahead don't run through."""
+        current = plan.current(day)
+        if current is None:
+            return plan
+        its = [card for card in cards if card.iteration == current.id]
+        if not its or any(card.open for card in its):
+            return plan
+        early = plan.closed_early(day)
+        following = early.current(day)
+        if early != plan and following is not None:
+            said.append(f"{current.title} done early: {following.title} starts {day}")
+        return early
 
     def _project(self, query: str, **variables: Any) -> Mapping[str, Any]:
         owner = self._graph.ask(query, owner=self._owner, number=self._number, **variables)
