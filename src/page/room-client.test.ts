@@ -5,15 +5,19 @@ import { KnowledgeBase } from "../content/knowledge-base";
 import { Mountain } from "../content/mountain";
 import type { ExpeditionRules } from "../content/mountain";
 import { CloseCode } from "../room/messages";
-import type { ClientMessage, Refusal, Welcome } from "../room/messages";
+import type { ClientMessage, Hello, Refusal, Welcome } from "../room/messages";
+import { RoomCode } from "../room/room-code";
 import { Expedition } from "../simulation";
 import type { ExpeditionSave } from "../simulation";
 import { RoomClient } from "./room-client";
 import type { Browser, ClientSocket, RoomListener, SocketEvents } from "./room-client";
+import { RoomServer } from "./room-server";
 
+const SERVER = new RoomServer("http://localhost:8787");
 const URL = "ws://localhost:8787/rooms/K7PX3";
 const TOKEN = "3f2b7c1e-9a4d-4e6f-8b1a-2c3d4e5f6a7b";
 const VERSION = "f06f24b";
+const HELLO: Hello = { type: "hello", token: TOKEN, version: VERSION };
 const mountain = new Mountain(new KnowledgeBase([time]));
 
 /** A socket as a test drives it: what the client sent, and what the room would. */
@@ -82,7 +86,7 @@ class FakeBrowser implements Browser {
 class Heard implements RoomListener {
   readonly welcomes: { welcome: Welcome; again: boolean }[] = [];
   readonly refusals: Refusal[] = [];
-  lost = 0;
+  losses = 0;
 
   welcomed(welcome: Welcome, again: boolean): void {
     this.welcomes.push({ welcome, again });
@@ -90,6 +94,10 @@ class Heard implements RoomListener {
 
   refused(refusal: Refusal): void {
     this.refusals.push(refusal);
+  }
+
+  lost(): void {
+    this.losses += 1;
   }
 }
 
@@ -102,8 +110,8 @@ function saveAt(step: number): ExpeditionSave {
   return { ...expedition.save(), actions: [] };
 }
 
-function welcome(step: number): Welcome {
-  return { type: "welcome", code: "K7PX3", climber: "player", save: saveAt(step) };
+function welcome(step: number, code = "K7PX3"): Welcome {
+  return { type: "welcome", code, climber: "player", save: saveAt(step) };
 }
 
 interface Made {
@@ -113,11 +121,12 @@ interface Made {
   rules: ExpeditionRules;
 }
 
-function aClient(): Made {
+/** A client for the room K7PX3, or for a new room when `code` is null. */
+function aClient(code: RoomCode | null = RoomCode.parse("K7PX3")): Made {
   const browser = new FakeBrowser();
   const heard = new Heard();
   const rules = mountain.rules();
-  const client = new RoomClient(URL, TOKEN, VERSION, rules.all, browser, heard);
+  const client = new RoomClient(SERVER, code, HELLO, rules.all, browser, heard);
   return { client, browser, heard, rules };
 }
 
@@ -139,9 +148,24 @@ describe("RoomClient", () => {
     browser.socket.receive(welcome(30));
 
     expect(browser.socket.url).toBe(URL);
-    expect(browser.socket.sent).toEqual([{ type: "hello", token: TOKEN, version: VERSION }]);
+    expect(browser.socket.sent).toEqual([HELLO]);
     expect(heard.welcomes).toEqual([{ welcome: welcome(30), again: false }]);
     expect(client.expedition?.step).toBe(30);
+  });
+
+  it("opens a new room, and comes back to that room, not another new one, after a connection lost", () => {
+    const { client, browser } = aClient(null);
+
+    client.join();
+    browser.socket.open();
+    browser.socket.receive(welcome(0, "M4QR8"));
+    browser.socket.drop(1006);
+    browser.elapse();
+
+    expect(browser.sockets.map((socket) => socket.url)).toEqual([
+      "ws://localhost:8787/rooms/new",
+      "ws://localhost:8787/rooms/M4QR8",
+    ]);
   });
 
   it("takes the room's steps in order, each with its actions, so the climber walks here as there", () => {
@@ -169,7 +193,7 @@ describe("RoomClient", () => {
     client.advance();
 
     expect(browser.socket.sent).toEqual([
-      { type: "hello", token: TOKEN, version: VERSION },
+      HELLO,
       { type: "actions", actions: [{ kind: "walk", climber: "player", direction: "right" }] },
     ]);
     expect(rules.physics.climber("player").walking).toBe("stop");
@@ -179,16 +203,36 @@ describe("RoomClient", () => {
     const { client, browser, heard } = joined(10);
 
     browser.socket.drop(1006);
-    expect(heard.lost).toBe(1);
+    expect(heard.losses).toBe(1);
     expect(browser.waits.map((wait) => wait.seconds)).toEqual([RoomClient.RETRY_SECONDS]);
     browser.elapse();
     browser.socket.open();
     browser.socket.receive(welcome(50));
 
     expect(browser.sockets).toHaveLength(2);
-    expect(browser.socket.sent).toEqual([{ type: "hello", token: TOKEN, version: VERSION }]);
+    expect(browser.socket.sent).toEqual([HELLO]);
     expect(heard.welcomes.at(-1)).toEqual({ welcome: welcome(50), again: true });
     expect(client.expedition?.step).toBe(50);
+  });
+
+  it("keeps what the player did while the connection is down for the room that welcomes it back", () => {
+    const { client, browser } = joined(10);
+    browser.socket.drop(1006);
+    browser.elapse();
+
+    client.send({ kind: "check-self", climber: "player" });
+    client.advance();
+    browser.socket.open();
+    client.advance();
+    const beforeTheWelcome = [...browser.socket.sent];
+    browser.socket.receive(welcome(50));
+    client.advance();
+
+    expect(beforeTheWelcome).toEqual([HELLO]);
+    expect(browser.socket.sent).toEqual([
+      HELLO,
+      { type: "actions", actions: [{ kind: "check-self", climber: "player" }] },
+    ]);
   });
 
   it("stops at a refusal, and says which", () => {
@@ -198,7 +242,17 @@ describe("RoomClient", () => {
     browser.socket.drop(CloseCode.FULL.code);
 
     expect(heard.refusals).toEqual(["full"]);
-    expect(heard.lost).toBe(0);
+    expect(heard.losses).toBe(0);
+    expect(browser.waits).toEqual([]);
+  });
+
+  it("stops at a room its server can't go on with, as one from an older version of the game", () => {
+    const { client, browser, heard } = aClient();
+    client.join();
+
+    browser.socket.drop(CloseCode.STALE.code);
+
+    expect(heard.refusals).toEqual(["stale"]);
     expect(browser.waits).toEqual([]);
   });
 
@@ -209,7 +263,7 @@ describe("RoomClient", () => {
     client.advance();
 
     expect(browser.socket.closed).toBe(true);
-    expect(heard.lost).toBe(1);
+    expect(heard.losses).toBe(1);
     expect(browser.waits).toHaveLength(1);
     expect(client.expedition?.step).toBe(0);
   });
@@ -220,7 +274,7 @@ describe("RoomClient", () => {
     browser.socket.receive({ type: "surprise" });
 
     expect(browser.socket.closed).toBe(true);
-    expect(heard.lost).toBe(1);
+    expect(heard.losses).toBe(1);
   });
 
   it("leaves: closes the socket, and tries no more", () => {
@@ -232,6 +286,6 @@ describe("RoomClient", () => {
 
     expect(browser.socket.closed).toBe(true);
     expect(browser.sockets).toHaveLength(1);
-    expect(heard.lost).toBe(0);
+    expect(heard.losses).toBe(0);
   });
 });

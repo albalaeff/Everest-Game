@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 
+import { LetGo } from "./game-action";
 import type { GameAction } from "./game-action";
 
 // One of each: a new action fails the type check here until it has its line. The spec's
@@ -26,5 +27,15 @@ describe("GameAction", () => {
     const walk: GameAction = { kind: "walk", climber: "anna", direction: "up-right" };
 
     expect(JSON.parse(JSON.stringify(walk))).toEqual(walk);
+  });
+});
+
+describe("LetGo", () => {
+  it("leaves a climber holding nothing: stopped, at a steady pace, the jumar let go", () => {
+    expect(new LetGo("anna").actions()).toEqual([
+      { kind: "walk", climber: "anna", direction: "stop" },
+      { kind: "pace", climber: "anna", pace: "steady" },
+      { kind: "jumar", climber: "anna", held: false },
+    ]);
   });
 });

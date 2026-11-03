@@ -35,7 +35,7 @@ describe("RoomCode", () => {
       counts.set(first, (counts.get(first) ?? 0) + 1);
     }
 
-    expect([...counts.keys()].sort().join("")).toBe([...RoomCode.ALPHABET].sort().join(""));
+    expect(new Set(counts.keys())).toEqual(new Set(RoomCode.ALPHABET));
     expect([...counts.values()]).toEqual(Array.from({ length: 32 }, () => 8));
   });
 });

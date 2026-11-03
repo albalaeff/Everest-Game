@@ -40,11 +40,11 @@ export interface Step {
 export type ServerMessage = Welcome | Step;
 
 /** Why a room turned a player away. */
-export type Refusal = "unknown" | "full" | "reload";
+export type Refusal = "unknown" | "full" | "reload" | "stale";
 
 /**
  * How a room closes a socket: the WebSocket's close code, which the browser reads from its close
- * event. Three of them are refusals; any other code is a connection lost, to be tried again.
+ * event. Four of them are refusals; any other code is a connection lost, to be tried again.
  */
 export class CloseCode {
   /** No room has this code. */
@@ -53,10 +53,18 @@ export class CloseCode {
   static readonly FULL = new CloseCode(4409, "full");
   /** The browser runs another build of the game than the room: it reloads, once. */
   static readonly RELOAD = new CloseCode(4426, "reload");
+  /** The room was saved by a build whose expedition this one can't go on with, as when a rule
+   * was added: it's kept as it is, and no one plays it (docs/conventions/room-server.md). */
+  static readonly STALE = new CloseCode(4410, "stale");
   /** A message that isn't the protocol's, or came before `hello`. */
   static readonly BAD_MESSAGE = new CloseCode(4400, null);
 
-  private static readonly REFUSALS = [CloseCode.UNKNOWN, CloseCode.FULL, CloseCode.RELOAD];
+  private static readonly REFUSALS = [
+    CloseCode.UNKNOWN,
+    CloseCode.FULL,
+    CloseCode.RELOAD,
+    CloseCode.STALE,
+  ];
 
   private constructor(
     readonly code: number,

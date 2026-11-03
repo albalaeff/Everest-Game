@@ -1,4 +1,4 @@
-import { Expedition, SimulationClock, StepPacer } from "../simulation";
+import { Expedition, LetGo, SimulationClock, StepPacer } from "../simulation";
 import type { ClimberId, ExpeditionSave, GameAction, Rule, Scenario } from "../simulation";
 import { CloseCode, Protocol } from "./messages";
 import type { Hello, Step, Welcome } from "./messages";
@@ -10,12 +10,15 @@ export interface Socket {
   close(code: number, reason: string): void;
 }
 
-/** A room's whole state, as the server keeps it: the expedition, and whose climber each is. */
+/** A room's whole state, as the server keeps it: the expedition, whose climber each is, and what
+ * the next step takes. */
 export interface RoomSave {
   readonly code: string;
   readonly expedition: ExpeditionSave;
   /** Each seat taken: the player's token, and their climber. */
   readonly seats: readonly (readonly [token: string, climber: ClimberId])[];
+  /** The actions sent or let go since the last step, for the next: a pause keeps them. */
+  readonly queued: readonly GameAction[];
 }
 
 /**
@@ -24,8 +27,9 @@ export interface RoomSave {
  * scenario, in the order of joining, and the seat stays theirs by their token: a reload or a lost
  * connection gets the same climber back. A tick takes the steps the real time owes, each with the
  * actions sent since the last, and sends every step to every player, so every browser runs the
- * same simulation. With nobody in it the room pauses, and keeps its state for whoever comes back.
- * It knows no network and no clock: the Durable Object hands it sockets and seconds.
+ * same simulation. A player who leaves leaves their climber stopped: nobody steers them now.
+ * With nobody in it the room pauses, and keeps its state for whoever comes back. It knows no
+ * network and no clock: the Durable Object hands it sockets and seconds.
  */
 export class Room {
   /** How much real time one tick counts at most: a server stalled longer loses the rest, rather
@@ -37,24 +41,27 @@ export class Room {
   /** Each socket, and the token it said hello with, or null before it has. */
   private readonly sockets = new Map<Socket, string | null>();
   private readonly pacer = new StepPacer(Room.MAX_TICK_SECONDS * SimulationClock.STEPS_PER_SECOND);
-  private queued: GameAction[] = [];
+  private queued: GameAction[];
 
   private constructor(
     readonly code: string,
     private readonly expedition: Expedition,
     seats: Iterable<readonly [string, ClimberId]>,
+    queued: readonly GameAction[],
     private readonly version: string,
   ) {
     this.seats = new Map(seats);
+    this.queued = [...queued];
   }
 
   /** A new room on a new expedition; `version` is the build of the game its players must run. */
   static create(code: string, scenario: Scenario, rules: readonly Rule[], version: string): Room {
-    return new Room(code, Expedition.start(scenario, rules), [], version);
+    return new Room(code, Expedition.start(scenario, rules), [], [], version);
   }
 
   static resume(save: RoomSave, rules: readonly Rule[], version: string): Room {
-    return new Room(save.code, Expedition.resume(save.expedition, rules), save.seats, version);
+    const expedition = Expedition.resume(save.expedition, rules);
+    return new Room(save.code, expedition, save.seats, save.queued, version);
   }
 
   /** How many steps the expedition has taken. */
@@ -65,6 +72,11 @@ export class Room {
   /** How many players are in: seated, on an open socket. The room is paused at none. */
   get players(): number {
     return [...this.sockets.values()].filter((token) => token !== null).length;
+  }
+
+  /** How many seats are taken, whether or not their players are in. */
+  get seated(): number {
+    return this.seats.size;
   }
 
   /** A socket that just connected: its player is in once it says hello. */
@@ -96,9 +108,19 @@ export class Room {
     }
   }
 
-  /** A socket that closed: its player's seat stays theirs. */
+  /** A socket that closed: its player's seat stays theirs, and their climber is let go at the
+   * next step, unless they're still in on another connection. A page that closes as its player
+   * walks never sends the stop. */
   leave(socket: Socket): void {
+    const token = this.sockets.get(socket) ?? null;
     this.sockets.delete(socket);
+    if (token === null || [...this.sockets.values()].includes(token)) {
+      return;
+    }
+    const climber = this.seats.get(token);
+    if (climber !== undefined) {
+      this.queued.push(...new LetGo(climber).actions());
+    }
   }
 
   /** `realSeconds` more have gone by: takes the steps due, and sends each to every player, with
@@ -121,7 +143,8 @@ export class Room {
   }
 
   save(): RoomSave {
-    return { code: this.code, expedition: this.expedition.save(), seats: [...this.seats] };
+    const { code, expedition, seats, queued } = this;
+    return { code, expedition: expedition.save(), seats: [...seats], queued: [...queued] };
   }
 
   private welcome(socket: Socket, hello: Hello): void {

@@ -3,7 +3,7 @@ import { describe, expect, it } from "vitest";
 import { SlopePhysics } from "../physics";
 import { TestMountain } from "../physics/testing/test-mountain";
 import type { ExpeditionStore } from "../saves";
-import { Expedition } from "../simulation";
+import { Expedition, LetGo } from "../simulation";
 import type { ExpeditionSave } from "../simulation";
 import { ActionQueue } from "./action-queue";
 import { SoloGame } from "./solo-game";
@@ -22,11 +22,6 @@ class MemoryStore implements ExpeditionStore {
     this.stored.push(save);
     return Promise.resolve();
   }
-
-  clear(): Promise<void> {
-    this.stored.length = 0;
-    return Promise.resolve();
-  }
 }
 
 function aGame(): {
@@ -41,7 +36,13 @@ function aGame(): {
   const expedition = Expedition.start(TestMountain.scenario(1, layout), [physics]);
   const queue = new ActionQueue();
   const store = new MemoryStore();
-  return { game: new SoloGame(expedition, queue, store), expedition, physics, queue, store };
+  return {
+    game: new SoloGame(expedition, queue, store, "anna"),
+    expedition,
+    physics,
+    queue,
+    store,
+  };
 }
 
 describe("SoloGame", () => {
@@ -85,8 +86,67 @@ describe("SoloGame", () => {
 
     expect(store.stored.map((save) => save.step)).toEqual([200, 400]);
     expect(store.stored[0]?.actions).toEqual([
-      { step: 0, actions: [{ kind: "walk", climber: "anna", direction: "right" }] },
+      {
+        step: 0,
+        actions: [
+          ...new LetGo("anna").actions(),
+          { kind: "walk", climber: "anna", direction: "right" },
+        ],
+      },
     ]);
+  });
+
+  it("goes on with the climber holding nothing: a climb saved mid-stride doesn't walk on alone", () => {
+    const { game, expedition, queue } = aGame();
+    queue.send({ kind: "walk", climber: "anna", direction: "right" });
+    game.advance(1);
+    const physics = new SlopePhysics(TestMountain.CALM);
+    const resumed = SoloGame.resumeOrStart(expedition.save(), [physics], () => {
+      throw new Error("No new climb was asked for");
+    });
+
+    new SoloGame(resumed, new ActionQueue(), new MemoryStore(), "anna").advance(1);
+
+    expect(physics.climber("anna").walking).toBe("stop");
+    expect(physics.climber("anna").x).toBeCloseTo(11, 6);
+  });
+
+  it("goes on with the climb saved on the device: the climber is where they were", () => {
+    const { game, expedition, queue } = aGame();
+    queue.send({ kind: "walk", climber: "anna", direction: "right" });
+    game.advance(1);
+    const physics = new SlopePhysics(TestMountain.CALM);
+
+    const resumed = SoloGame.resumeOrStart(expedition.save(), [physics], () => {
+      throw new Error("No new climb was asked for");
+    });
+
+    expect(resumed.step).toBe(20);
+    expect(physics.climber("anna").x).toBeCloseTo(11, 6);
+  });
+
+  it("starts a new climb when the device has none", () => {
+    const physics = new SlopePhysics(TestMountain.CALM);
+    const layout = TestMountain.FLAT.layout([{ id: "anna", along: 10 }]);
+
+    const started = SoloGame.resumeOrStart(null, [physics], () => TestMountain.scenario(7, layout));
+
+    expect(started.step).toBe(0);
+    expect(started.scenario.seed).toBe(7);
+    expect(physics.climber("anna").x).toBe(10);
+  });
+
+  it("starts a new climb over a save this build can't go on with, as one from before a rule changed", () => {
+    const { expedition } = aGame();
+    const physics = new SlopePhysics(TestMountain.CALM);
+    const layout = TestMountain.FLAT.layout([{ id: "anna", along: 10 }]);
+
+    const started = SoloGame.resumeOrStart({ ...expedition.save(), rules: {} }, [physics], () =>
+      TestMountain.scenario(7, layout),
+    );
+
+    expect(started.step).toBe(0);
+    expect(started.scenario.seed).toBe(7);
   });
 
   it("saves at once when asked, and counts the ten seconds from there", () => {

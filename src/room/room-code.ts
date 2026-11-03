@@ -20,7 +20,9 @@ export class RoomCode {
   /** A new code from random bytes, as `crypto.getRandomValues` fills them: one a character. */
   static drawn(bytes: Uint8Array): RoomCode {
     if (bytes.length < RoomCode.LENGTH) {
-      throw new RangeError(`A room code needs ${RoomCode.LENGTH} random bytes, not ${bytes.length}`);
+      throw new RangeError(
+        `A room code needs ${RoomCode.LENGTH} random bytes, not ${bytes.length}`,
+      );
     }
     const text = [...bytes.subarray(0, RoomCode.LENGTH)]
       .map((byte) => RoomCode.ALPHABET[byte % RoomCode.ALPHABET.length] ?? "")

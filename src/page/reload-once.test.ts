@@ -58,6 +58,20 @@ describe("ReloadOnce", () => {
     expect(guard.attempt()).toBe(true);
   });
 
+  it("never reloads in a tab that refuses to keep the mark, which would reload it in a loop", () => {
+    const refusing = new MemoryTab();
+    refusing.setItem = () => {
+      throw new Error("QuotaExceededError");
+    };
+    let reloads = 0;
+    const guard = new ReloadOnce(refusing, () => {
+      reloads += 1;
+    });
+
+    expect(guard.attempt()).toBe(false);
+    expect(reloads).toBe(0);
+  });
+
   it("never reloads by itself in a tab that keeps nothing", () => {
     let reloads = 0;
     const guard = new ReloadOnce(null, () => {

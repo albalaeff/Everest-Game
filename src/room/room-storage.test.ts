@@ -3,30 +3,7 @@ import { describe, expect, it } from "vitest";
 import type { LoggedStep } from "../simulation";
 import type { RoomSave } from "./room";
 import { RoomStorage } from "./room-storage";
-import type { KeyValueStorage } from "./room-storage";
-
-/** The object's storage as a map: what a test can read back. */
-class MemoryStorage implements KeyValueStorage {
-  readonly entries = new Map<string, unknown>();
-
-  get<T>(key: string): Promise<T | undefined> {
-    return Promise.resolve(this.entries.get(key) as T | undefined);
-  }
-
-  list<T>({ prefix }: { readonly prefix: string }): Promise<Map<string, T>> {
-    const found = [...this.entries]
-      .filter(([key]) => key.startsWith(prefix))
-      .sort(([first], [second]) => (first < second ? -1 : 1));
-    return Promise.resolve(new Map(found as [string, T][]));
-  }
-
-  put<T>(entries: Record<string, T>): Promise<void> {
-    for (const [key, value] of Object.entries(entries)) {
-      this.entries.set(key, value);
-    }
-    return Promise.resolve();
-  }
-}
+import { MemoryStorage } from "./testing/fakes";
 
 const logged = (step: number): LoggedStep => ({
   step,
@@ -37,10 +14,11 @@ function aSave(step: number, actions: readonly LoggedStep[]): RoomSave {
   return {
     code: "K7PX3",
     seats: [["anna-token", "anna"]],
+    queued: [],
     expedition: {
       scenario: { seed: 1, climbers: ["anna"], start: {} },
       step,
-      random: { a: 1, b: 2, c: 3, d: 4 },
+      random: [1, 2, 3, 4],
       rules: {},
       actions,
     },
@@ -88,6 +66,21 @@ describe("RoomStorage", () => {
     expect(await new RoomStorage(memory).load()).toEqual(
       aSave(40, [logged(0), logged(3), logged(15), logged(33)]),
     );
+  });
+
+  it("gives each of two stores in flight a chunk of its own, so neither loses the other's steps", async () => {
+    const memory = new MemoryStorage();
+    const storage = new RoomStorage(memory);
+    memory.hold();
+
+    const first = storage.store(aSave(10, [logged(3)]));
+    const second = storage.store(aSave(20, [logged(3), logged(15)]));
+    memory.release();
+    await Promise.all([first, second]);
+
+    expect(memory.entries.get("log:00000000")).toEqual([logged(3)]);
+    expect(memory.entries.get("log:00000001")).toEqual([logged(15)]);
+    expect(await new RoomStorage(memory).load()).toEqual(aSave(20, [logged(3), logged(15)]));
   });
 
   it("loads nothing from a storage no room was ever stored in", async () => {

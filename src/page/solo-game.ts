@@ -1,6 +1,6 @@
 import type { ExpeditionStore } from "../saves";
-import { SimulationClock, StepPacer } from "../simulation";
-import type { Expedition } from "../simulation";
+import { Expedition, LetGo, SimulationClock, StepPacer } from "../simulation";
+import type { ClimberId, ExpeditionSave, Rule, Scenario } from "../simulation";
 import type { ActionQueue } from "./action-queue";
 import type { Played } from "./game-loop";
 
@@ -9,7 +9,8 @@ import type { Played } from "./game-loop";
  * by into whole steps, through a `StepPacer`, and sends the player's queued actions with the first
  * of them. A phone at 30 frames a second and a PC at 60 take the same steps. Every ten seconds of
  * play, and whenever the page asks, the expedition is saved on the device, so a reload or a visit
- * tomorrow goes on from where it was (#28).
+ * tomorrow goes on from where it was (#28). The player's climber starts holding nothing, as the
+ * controls do: a climb saved mid-stride doesn't walk on alone.
  */
 export class SoloGame implements Played {
   /** The most steps one frame takes, five seconds' worth: a phone back from a call doesn't
@@ -24,7 +25,29 @@ export class SoloGame implements Played {
     private readonly expedition: Expedition,
     private readonly actions: ActionQueue,
     private readonly store: ExpeditionStore,
-  ) {}
+    player: ClimberId,
+  ) {
+    for (const action of new LetGo(player).actions()) {
+      actions.send(action);
+    }
+  }
+
+  /** The climb saved on the device, resumed on `rules`, or a new one on `scenario` when there's
+   * none, or none this build can go on with: a save from before a rule changed starts anew. */
+  static resumeOrStart(
+    saved: ExpeditionSave | null,
+    rules: readonly Rule[],
+    scenario: () => Scenario,
+  ): Expedition {
+    if (saved !== null) {
+      try {
+        return Expedition.resume(saved, rules);
+      } catch {
+        // An older build's save: the climb starts anew, and the next save replaces it.
+      }
+    }
+    return Expedition.start(scenario(), rules);
+  }
 
   advance(seconds: number): void {
     const steps = this.pacer.due(seconds);

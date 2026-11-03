@@ -1,9 +1,11 @@
 import type { ActionSink, PlayerAction } from "../input/player-action";
 import { CloseCode, Protocol } from "../room/messages";
 import type { Actions, Hello, Refusal, Step, Welcome } from "../room/messages";
+import { RoomCode } from "../room/room-code";
 import { Expedition, SimulationClock } from "../simulation";
 import type { GameAction, Rule } from "../simulation";
 import type { Played } from "./game-loop";
+import type { RoomServer } from "./room-server";
 
 /** What a socket reports to the client. */
 export interface SocketEvents {
@@ -40,8 +42,8 @@ export interface RoomListener {
  * the expedition the room's welcome hands over, and the steps the room sends, taken each frame in
  * the room's order, so this browser shows what every other one does. The player's actions go to
  * the room, never into the expedition here: they come back in a step. A connection lost is tried
- * again every two seconds with the same token, and the welcome that follows is a fresh save, so
- * nothing missed is missed for long; a refusal ends it.
+ * again every two seconds with the same token, to the room the welcome named, and the welcome
+ * that follows is a fresh save, so nothing missed is missed for long; a refusal ends it.
  */
 export class RoomClient implements Played, ActionSink {
   static readonly RETRY_SECONDS = 2;
@@ -51,15 +53,19 @@ export class RoomClient implements Played, ActionSink {
 
   private readonly protocol = new Protocol();
   private socket: ClientSocket | null = null;
+  /** The socket the room has welcomed: the player's actions wait for it. */
+  private welcomedOn: ClientSocket | null = null;
   private played: Expedition | null = null;
   private buffered: Step[] = [];
   private queued: GameAction[] = [];
   private over = false;
 
+  /** `code`: the room to join, or null to open a new one, whose code the welcome then names.
+   * `hello`: the player's token and the game's version, said on every connection. */
   constructor(
-    private readonly url: string,
-    private readonly token: string,
-    private readonly version: string,
+    private readonly server: RoomServer,
+    private code: RoomCode | null,
+    private readonly hello: Hello,
     private readonly rules: readonly Rule[],
     private readonly browser: Browser,
     private readonly listener: RoomListener,
@@ -91,7 +97,7 @@ export class RoomClient implements Played, ActionSink {
   /** Takes the room's steps that have come since the last frame, and sends the player's actions. */
   advance(): void {
     const { played, socket } = this;
-    if (played === null || socket === null) {
+    if (played === null || socket === null || socket !== this.welcomedOn) {
       return;
     }
     for (const step of this.buffered) {
@@ -110,16 +116,16 @@ export class RoomClient implements Played, ActionSink {
   }
 
   private connect(): void {
-    const socket = this.browser.connect(this.url);
+    const { code, server } = this;
+    const socket = this.browser.connect(code === null ? server.newRoom() : server.room(code));
     this.socket = socket;
     socket.listen({
       opened: () => {
-        const hello: Hello = { type: "hello", token: this.token, version: this.version };
-        socket.send(JSON.stringify(hello));
+        socket.send(JSON.stringify(this.hello));
       },
       heard: (text) => {
         if (this.socket === socket) {
-          this.hear(text);
+          this.hear(socket, text);
         }
       },
       closed: (code) => {
@@ -131,13 +137,15 @@ export class RoomClient implements Played, ActionSink {
     });
   }
 
-  private hear(text: string): void {
+  private hear(socket: ClientSocket, text: string): void {
     const message = this.protocol.fromServer(text);
     if (message === null) {
       this.resync();
     } else if (message.type === "welcome") {
       const again = this.played !== null;
       this.played = Expedition.resume(message.save, this.rules);
+      this.code = RoomCode.parse(message.code) ?? this.code;
+      this.welcomedOn = socket;
       this.buffered = [];
       this.listener.welcomed(message, again);
     } else {

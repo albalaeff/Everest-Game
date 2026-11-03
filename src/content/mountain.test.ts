@@ -39,8 +39,9 @@ describe("Mountain", () => {
 
     expedition.advance();
 
-    expect(rules.clock.elapsed).toBe(
+    expect(rules.clock.elapsed).toBeCloseTo(
       knowledge.number(Mountain.COMPRESSION) * SimulationClock.STEP_SECONDS,
+      9,
     );
   });
 

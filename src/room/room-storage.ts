@@ -42,7 +42,9 @@ export class RoomStorage {
     return { ...room, expedition: { ...room.expedition, actions } };
   }
 
-  /** Stores the room: its state, and what the log has gained since the last time. */
+  /** Stores the room: its state, and what the log has gained since the last time. The chunk and
+   * the steps it holds are this store's before the write goes out, so a store that starts while
+   * another is in flight takes the next chunk and only the steps after. */
   async store(save: RoomSave): Promise<void> {
     const { expedition } = save;
     const fresh = expedition.actions.filter((logged) => logged.step > this.loggedThrough);
@@ -51,11 +53,9 @@ export class RoomStorage {
     };
     if (fresh.length > 0) {
       entries[RoomStorage.LOG + String(this.chunks).padStart(RoomStorage.DIGITS, "0")] = fresh;
-    }
-    await this.storage.put(entries);
-    if (fresh.length > 0) {
       this.chunks += 1;
     }
     this.loggedThrough = expedition.step - 1;
+    await this.storage.put(entries);
   }
 }

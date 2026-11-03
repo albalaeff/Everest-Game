@@ -15,12 +15,20 @@ export default defineConfig({
   use: {
     baseURL: "http://localhost:4173",
   },
-  // The stories run against the build, as the preview publishes it.
-  webServer: {
-    command: "npm run build && npm run preview -- --strictPort",
-    url: "http://localhost:4173",
-    reuseExistingServer: !process.env.CI,
-  },
+  // The stories run against the build, as the preview publishes it, and the rooms' against the
+  // room server as `wrangler dev` serves it on this machine (e2e/room.spec.ts).
+  webServer: [
+    {
+      command: "npm run build && npm run preview -- --strictPort",
+      url: "http://localhost:4173",
+      reuseExistingServer: !process.env.CI,
+    },
+    {
+      command: "npm run room",
+      url: "http://localhost:8787",
+      reuseExistingServer: !process.env.CI,
+    },
+  ],
   projects: [
     { name: "pc", use: { ...devices["Desktop Chrome"], launchOptions: chromium } },
     { name: "android", use: { ...devices["Pixel 7"], launchOptions: chromium } },

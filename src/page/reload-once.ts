@@ -25,7 +25,12 @@ export class ReloadOnce {
       this.forget();
       return false;
     }
-    this.storage.setItem(ReloadOnce.KEY, "1");
+    try {
+      this.storage.setItem(ReloadOnce.KEY, "1");
+    } catch {
+      // Unmarked, the page after the reload would reload again.
+      return false;
+    }
     this.reload();
     return true;
   }

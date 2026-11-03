@@ -69,6 +69,8 @@ jobs:
 
       - name: Test the page on a PC and on phones
         run: npm run e2e
+        env:
+          WRANGLER_SEND_METRICS: "false"
 
   secrets:
     # No secret in the history (PEB#59, PEB#538): gitleaks over every commit of what's checked
@@ -99,8 +101,9 @@ jobs:
         run: gitleaks git --redact --verbose --no-banner
 
   preview:
-    # Every merge into develop goes on GitHub Pages once the rest has passed (docs/production.md
-    # → The preview). Run by hand on develop, it publishes develop again.
+    # Every merge into develop goes on GitHub Pages once the rest has passed, with its room
+    # server on Cloudflare first (docs/production.md → The preview). Run by hand on develop, it
+    # publishes develop again.
     needs: [checks, secrets]
     if: github.event_name != 'pull_request' && github.ref == 'refs/heads/develop'
     runs-on: ubuntu-latest
@@ -123,10 +126,19 @@ jobs:
       - name: Install the game's dependencies
         run: npm ci
 
+      # Before the page: a page of this build finds a room server of its own build.
+      - name: Deploy the room server
+        run: npx wrangler deploy --var GAME_VERSION:${{ github.sha }}
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          WRANGLER_SEND_METRICS: "false"
+
       - name: Build the game
         run: npm run build
         env:
           VITE_COMMIT: ${{ github.sha }}
+          VITE_ROOM_SERVER: https://everest-room.alexalbalaeff.workers.dev
 
       - uses: actions/upload-pages-artifact@v5
         with:

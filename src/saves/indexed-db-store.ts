@@ -22,7 +22,7 @@ export class IndexedDbStore implements ExpeditionStore {
       const expeditions = database
         .transaction(IndexedDbStore.STORE, "readonly")
         .objectStore(IndexedDbStore.STORE);
-      const found = await IndexedDbStore.done(expeditions.get(IndexedDbStore.SLOT));
+      const found: unknown = await IndexedDbStore.done(expeditions.get(IndexedDbStore.SLOT));
       database.close();
       return (found as ExpeditionSave | undefined) ?? null;
     } catch {
@@ -31,18 +31,10 @@ export class IndexedDbStore implements ExpeditionStore {
   }
 
   async store(save: ExpeditionSave): Promise<void> {
-    await this.write((expeditions) => expeditions.put(save, IndexedDbStore.SLOT));
-  }
-
-  async clear(): Promise<void> {
-    await this.write((expeditions) => expeditions.delete(IndexedDbStore.SLOT));
-  }
-
-  private async write(change: (expeditions: IDBObjectStore) => IDBRequest): Promise<void> {
     try {
       const database = await this.open();
       const transaction = database.transaction(IndexedDbStore.STORE, "readwrite");
-      change(transaction.objectStore(IndexedDbStore.STORE));
+      transaction.objectStore(IndexedDbStore.STORE).put(save, IndexedDbStore.SLOT);
       await new Promise<void>((resolve, reject) => {
         transaction.oncomplete = () => {
           resolve();

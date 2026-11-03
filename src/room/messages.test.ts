@@ -120,13 +120,21 @@ describe("CloseCode", () => {
     expect(CloseCode.refusalOf(CloseCode.UNKNOWN.code)).toBe("unknown");
     expect(CloseCode.refusalOf(CloseCode.FULL.code)).toBe("full");
     expect(CloseCode.refusalOf(CloseCode.RELOAD.code)).toBe("reload");
+    expect(CloseCode.refusalOf(CloseCode.STALE.code)).toBe("stale");
     expect(CloseCode.refusalOf(CloseCode.BAD_MESSAGE.code)).toBeNull();
     expect(CloseCode.refusalOf(1006)).toBeNull();
     expect(CloseCode.refusalOf(1000)).toBeNull();
   });
 
   it("keeps its codes in the range the WebSocket standard leaves to applications", () => {
-    for (const close of [CloseCode.UNKNOWN, CloseCode.FULL, CloseCode.RELOAD, CloseCode.BAD_MESSAGE]) {
+    const closes = [
+      CloseCode.UNKNOWN,
+      CloseCode.FULL,
+      CloseCode.RELOAD,
+      CloseCode.STALE,
+      CloseCode.BAD_MESSAGE,
+    ];
+    for (const close of closes) {
       expect(close.code).toBeGreaterThanOrEqual(4000);
       expect(close.code).toBeLessThanOrEqual(4999);
     }

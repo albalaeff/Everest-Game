@@ -55,4 +55,13 @@ describe("PlayerToken", () => {
   it("refuses a draw the room wouldn't take", () => {
     expect(() => PlayerToken.kept(null, () => "short")).toThrow(RangeError);
   });
+
+  it("draws a token from random bytes, as a page on the network without crypto.randomUUID can", () => {
+    const bytes = new Uint8Array(PlayerToken.BYTES).map((_, index) => index * 17);
+
+    const drawn = PlayerToken.fromBytes(bytes);
+
+    expect(drawn).toBe("00112233445566778899aabbccddeeff");
+    expect(PlayerToken.kept(null, () => drawn).text).toBe(drawn);
+  });
 });

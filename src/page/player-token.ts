@@ -14,8 +14,18 @@ export interface TokenStorage {
  */
 export class PlayerToken {
   static readonly KEY = "everest.player";
+  /** The random bytes a token is drawn from: as many as a UUID's, and as hard to guess. */
+  static readonly BYTES = 16;
 
   private constructor(readonly text: string) {}
+
+  /**
+   * A token drawn from random bytes, in hex. `crypto.getRandomValues` gives them on any page;
+   * `crypto.randomUUID` only on a secure one, which a phone on the local network isn't.
+   */
+  static fromBytes(bytes: Uint8Array): string {
+    return Array.from(bytes, (byte) => byte.toString(16).padStart(2, "0")).join("");
+  }
 
   /** The token kept on the device, or a fresh one from `draw`, kept from now on. */
   static kept(storage: TokenStorage | null, draw: () => string): PlayerToken {

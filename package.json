@@ -11,10 +11,11 @@
     "dev": "vite",
     "build": "vite build",
     "preview": "vite preview",
+    "room": "wrangler dev",
     "lint": "eslint src e2e \"*.config.ts\"",
     "format": "prettier --write index.html src e2e \"*.config.*\"",
     "format:check": "prettier --check index.html src e2e \"*.config.*\"",
-    "typecheck": "tsc && tsc -p tsconfig.core.json && tsc -p tsconfig.node.json",
+    "typecheck": "tsc && tsc -p tsconfig.core.json && tsc -p tsconfig.node.json && tsc -p tsconfig.worker.json",
     "test": "vitest run",
     "e2e": "playwright test"
   },
