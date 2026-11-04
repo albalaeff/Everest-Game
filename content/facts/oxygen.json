@@ -8,13 +8,50 @@
       "status": "source only",
       "versions": [
         {
-          "range": { "min": 2, "max": 4 },
+          "range": {
+            "min": 2,
+            "max": 4
+          },
           "unit": "L/min",
+          "note": "From 8,700 m to the summit they turn it up from two to four litres a minute, and back down to two for the descent.",
           "source": {
             "title": "Explorersweb: Everest technology, safety or something else",
             "url": "https://explorersweb.com/2021/04/07/everest-technology-safety-or-something-else/"
           },
-          "checked": "2026-11-01"
+          "checked": "2026-11-03"
+        },
+        {
+          "value": 3,
+          "unit": "L/min",
+          "note": "Normally, by the Balcony.",
+          "source": {
+            "title": "SummitPost: South Col / Southeast Ridge → Camp 4 to Balcony",
+            "url": "https://summitpost.org/south-col-or-southeast-ridge/165530"
+          },
+          "checked": "2026-11-03"
+        },
+        {
+          "value": 4,
+          "unit": "L/min",
+          "note": "Himalayan Experience's flow on summit days (Russell Brice).",
+          "source": {
+            "title": "Alan Arnette: Oxygen on Everest – Reviewing the Options → 2013 Experiences",
+            "url": "https://www.alanarnette.com/blog/?p=16718"
+          },
+          "checked": "2026-11-03"
+        },
+        {
+          "range": {
+            "min": 4,
+            "max": 8
+          },
+          "unit": "L/min",
+          "note": "The standard since 2015, from as low as Camp 2; it was 2–4 L/min from 1992 to 2010, and about 2 L/min before.",
+          "source": {
+            "title": "Alan Arnette: How Much Does It Cost to Climb Everest? 2026 Edition → Overview",
+            "url": "https://www.alanarnette.com/blog/2026/02/03/how-much-does-it-cost-to-climb-everest-2026-edition/"
+          },
+          "checked": "2026-11-03"
         }
       ]
     },
@@ -31,7 +68,27 @@
             "title": "Explorersweb: Everest technology, safety or something else",
             "url": "https://explorersweb.com/2021/04/07/everest-technology-safety-or-something-else/"
           },
-          "checked": "2026-11-01"
+          "checked": "2026-11-03"
+        },
+        {
+          "value": 8,
+          "unit": "L/min",
+          "note": "High-flow oxygen of up to 8 L/min is one reason teams now hire two Sherpas per member.",
+          "source": {
+            "title": "Alan Arnette: Everest by the Numbers, 2026 Edition → Sherpa Support and Summits",
+            "url": "https://www.alanarnette.com/2026/01/26/everest-by-the-numbers-2026-edition/"
+          },
+          "checked": "2026-11-03"
+        },
+        {
+          "value": 8,
+          "unit": "L/min",
+          "note": "Some premium packages give virtually unlimited oxygen, up to 8 L/min.",
+          "source": {
+            "title": "Alan Arnette: How Much Does It Cost to Climb Everest? 2026 Edition → Speed Climbs",
+            "url": "https://www.alanarnette.com/blog/2026/02/03/how-much-does-it-cost-to-climb-everest-2026-edition/"
+          },
+          "checked": "2026-11-03"
         }
       ]
     },
@@ -39,7 +96,605 @@
       "id": "oxygen.bottle-swap",
       "kind": "question",
       "question": "How is a bottle swapped on the move above 8,000 m: who does it, how long is the climber without oxygen, and what goes wrong?",
-      "about": ["oxygen.usual-flow"]
+      "about": [
+        "oxygen.usual-flow",
+        "oxygen.bottle-swaps",
+        "oxygen.regulator-seals"
+      ]
+    },
+    {
+      "id": "oxygen.descent-flow",
+      "kind": "fact",
+      "claim": "On the way down from the summit, climbers are supposed to turn the flow back down to this.",
+      "status": "source only",
+      "versions": [
+        {
+          "value": 2,
+          "unit": "L/min",
+          "source": {
+            "title": "Explorersweb: Everest technology, safety or something else",
+            "url": "https://explorersweb.com/2021/04/07/everest-technology-safety-or-something-else/"
+          },
+          "checked": "2026-11-03"
+        }
+      ]
+    },
+    {
+      "id": "oxygen.queue-flow",
+      "kind": "fact",
+      "claim": "Waiting in a queue, climbers turn the flow down so as not to run out: a flow selector on the shoulder makes that easy, where a regulator on the bottle in the pack doesn't.",
+      "status": "source only",
+      "versions": [
+        {
+          "note": "Guide Eric Murphy, in 2019.",
+          "source": {
+            "title": "National Geographic: Traffic jams are just one of the problems facing climbers on Everest (2019) → What It's like To Wait in Line at 8,500 Meters",
+            "url": "https://education.nationalgeographic.org/resource/traffic-jams-are-just-one-problems-facing-climbers-everest"
+          },
+          "checked": "2026-11-03"
+        },
+        {
+          "note": "Bottlenecks on the way to the summit, where a lot of oxygen can be burnt up while waiting for the route to clear.",
+          "source": {
+            "title": "Summit Oxygen: Summit Elite System",
+            "url": "https://summitoxygen.com/summit-elite-system/"
+          },
+          "checked": "2026-11-03"
+        }
+      ]
+    },
+    {
+      "id": "oxygen.flow-control",
+      "kind": "fact",
+      "claim": "On a standard system the flow is set at the regulator screwed onto the bottle, in the pack; on some, a flow selector on the shoulder or chest lets the climber turn it up for a hard section and down after it.",
+      "status": "source only",
+      "versions": [
+        {
+          "source": {
+            "title": "Summit Oxygen: Summit Standard System",
+            "url": "https://summitoxygen.com/summit-standard-system/"
+          },
+          "checked": "2026-11-03"
+        },
+        {
+          "source": {
+            "title": "Summit Oxygen: Summit Elite System",
+            "url": "https://summitoxygen.com/summit-elite-system/"
+          },
+          "checked": "2026-11-03"
+        },
+        {
+          "note": "In 2013 TopOut moved the flow control from the regulator into the tube, for the climber to adjust and watch.",
+          "source": {
+            "title": "Alan Arnette: Oxygen on Everest – Reviewing the Options → TopOut",
+            "url": "https://www.alanarnette.com/blog/?p=16718"
+          },
+          "checked": "2026-11-03"
+        }
+      ]
+    },
+    {
+      "id": "oxygen.regulator-maximum",
+      "kind": "fact",
+      "claim": "A climber's regulator turns up to this flow, in steps.",
+      "status": "source only",
+      "versions": [
+        {
+          "value": 4,
+          "unit": "L/min",
+          "note": "Poisk's, in steps of a quarter litre a minute.",
+          "source": {
+            "title": "Alan Arnette: Oxygen on Everest – Reviewing the Options → Poisk",
+            "url": "https://www.alanarnette.com/blog/?p=16718"
+          },
+          "checked": "2026-11-03"
+        },
+        {
+          "value": 4,
+          "unit": "L/min",
+          "note": "Its version A: 0, 0.5, 1, 1.5, 2, 2.5, 3 and 4 L/min.",
+          "source": {
+            "title": "Summit Oxygen: Summit Standard System → Regulator, Flow Settings",
+            "url": "https://summitoxygen.com/summit-standard-system/"
+          },
+          "checked": "2026-11-03"
+        },
+        {
+          "value": 6,
+          "unit": "L/min",
+          "note": "Its version B: 0, 0.5, 1, 2, 3, 4, 5 and 6 L/min.",
+          "source": {
+            "title": "Summit Oxygen: Summit Standard System → Regulator, Flow Settings",
+            "url": "https://summitoxygen.com/summit-standard-system/"
+          },
+          "checked": "2026-11-03"
+        }
+      ]
+    },
+    {
+      "id": "oxygen.regulator-seals",
+      "kind": "fact",
+      "claim": "A regulator is turned to at least this flow while it's screwed onto or off a bottle, or its seals can blow.",
+      "status": "source only",
+      "versions": [
+        {
+          "value": 2,
+          "unit": "L/min",
+          "note": "Russell Brice, of Summit Oxygen's regulator; with the blown seal taken out, it still works.",
+          "source": {
+            "title": "Alan Arnette: Oxygen on Everest – Reviewing the Options → 2013 Experiences",
+            "url": "https://www.alanarnette.com/blog/?p=16718"
+          },
+          "checked": "2026-11-03"
+        }
+      ]
+    },
+    {
+      "id": "oxygen.bottle-litres",
+      "kind": "fact",
+      "claim": "A full Everest oxygen bottle holds this many litres of oxygen.",
+      "status": "source only",
+      "versions": [
+        {
+          "value": 1200,
+          "unit": "L",
+          "note": "The Himalayan Summit cylinder: 4 litres at 300 bar.",
+          "source": {
+            "title": "Summit Oxygen: Summit Standard System → Himalayan Oxygen Cylinder - Specifications",
+            "url": "https://summitoxygen.com/summit-standard-system/"
+          },
+          "checked": "2026-11-03"
+        }
+      ]
+    },
+    {
+      "id": "oxygen.bottle-pressure",
+      "kind": "fact",
+      "claim": "A full bottle is filled to this pressure.",
+      "status": "source only",
+      "versions": [
+        {
+          "value": 300,
+          "unit": "bar",
+          "source": {
+            "title": "Summit Oxygen: Summit Standard System → Himalayan Oxygen Cylinder - Specifications",
+            "url": "https://summitoxygen.com/summit-standard-system/"
+          },
+          "checked": "2026-11-03"
+        }
+      ]
+    },
+    {
+      "id": "oxygen.bottle-weight",
+      "kind": "fact",
+      "claim": "An oxygen bottle weighs about this much.",
+      "status": "source only",
+      "versions": [
+        {
+          "value": 3.89,
+          "unit": "kg",
+          "note": "Full, with its valve: the cylinder 2.2 kg and the oxygen 1.6 kg.",
+          "source": {
+            "title": "Summit Oxygen: Summit Standard System → Himalayan Oxygen Cylinder - Specifications",
+            "url": "https://summitoxygen.com/summit-standard-system/"
+          },
+          "checked": "2026-11-03"
+        },
+        {
+          "value": 3.5,
+          "unit": "kg",
+          "note": "Poisk's titanium and kevlar cylinder; whether full isn't said.",
+          "source": {
+            "title": "Alan Arnette: Oxygen on Everest – Reviewing the Options → Poisk",
+            "url": "https://www.alanarnette.com/blog/?p=16718"
+          },
+          "checked": "2026-11-03"
+        }
+      ]
+    },
+    {
+      "id": "oxygen.bottle-hours",
+      "kind": "fact",
+      "claim": "A bottle lasts this many hours, depending on its size and the flow.",
+      "status": "source only",
+      "versions": [
+        {
+          "value": 6,
+          "unit": "h",
+          "note": "A Poisk bottle at 2 L/min.",
+          "source": {
+            "title": "Alan Arnette: Oxygen on Everest – Reviewing the Options → Poisk",
+            "url": "https://www.alanarnette.com/blog/?p=16718"
+          },
+          "checked": "2026-11-03"
+        },
+        {
+          "value": 10,
+          "unit": "h",
+          "note": "The larger bottles IMG has had made since 1991, at 3 L/min.",
+          "source": {
+            "title": "Alan Arnette: Oxygen on Everest – Reviewing the Options → Poisk",
+            "url": "https://www.alanarnette.com/blog/?p=16718"
+          },
+          "checked": "2026-11-03"
+        }
+      ]
+    },
+    {
+      "id": "oxygen.bottle-checks",
+      "kind": "fact",
+      "claim": "A bottle can leak, a new one can arrive empty, and how much oxygen a bottle holds varies: expeditions weigh their bottles before they go above Base Camp.",
+      "status": "source only",
+      "versions": [
+        {
+          "note": "Russell Brice and Guy Cotter.",
+          "source": {
+            "title": "Alan Arnette: Oxygen on Everest – Reviewing the Options → 2013 Experiences",
+            "url": "https://www.alanarnette.com/blog/?p=16718"
+          },
+          "checked": "2026-11-03"
+        }
+      ]
+    },
+    {
+      "id": "oxygen.bottles-per-climb",
+      "kind": "fact",
+      "claim": "A client's climb takes this many bottles of oxygen, from the least a climber budgets for to a premium package's allowance.",
+      "status": "source only",
+      "versions": [
+        {
+          "value": 5,
+          "unit": "bottles",
+          "note": "At least five.",
+          "source": {
+            "title": "Alan Arnette: How Much Does It Cost to Climb Everest? 2026 Edition → Supplies/Gear",
+            "url": "https://www.alanarnette.com/blog/2026/02/03/how-much-does-it-cost-to-climb-everest-2026-edition/"
+          },
+          "checked": "2026-11-03"
+        },
+        {
+          "value": 25,
+          "unit": "bottles",
+          "note": "Seven Summit Treks' VVIP package: unlimited, and not less than 25 bottles of 4 litres for each member; 7 for each high-altitude Sherpa.",
+          "source": {
+            "title": "Alan Arnette: How Much Does It Cost to Climb Everest? 2026 Edition → Top, Top End",
+            "url": "https://www.alanarnette.com/blog/2026/02/03/how-much-does-it-cost-to-climb-everest-2026-edition/"
+          },
+          "checked": "2026-11-03"
+        }
+      ]
+    },
+    {
+      "id": "oxygen.start-altitude",
+      "kind": "fact",
+      "claim": "Climbers start breathing bottled oxygen at about this altitude: today often from Camp 2, for others on the climb from Camp 3 to the South Col.",
+      "status": "source only",
+      "versions": [
+        {
+          "value": 6400,
+          "unit": "m",
+          "note": "From Camp II, at 21,000 ft.",
+          "source": {
+            "title": "Alpine Ascents: Everest itinerary",
+            "url": "https://www.alpineascents.com/climbs/mount-everest/itinerary/"
+          },
+          "checked": "2026-11-03"
+        },
+        {
+          "value": 6400,
+          "unit": "m",
+          "note": "Many teams now use it from Camp 2.",
+          "source": {
+            "title": "Alan Arnette: Comparing the Routes of Everest, 2026 Edition → C3",
+            "url": "https://www.alanarnette.com/2026/01/28/comparing-the-routes-of-everest-2026-edition/"
+          },
+          "checked": "2026-11-04"
+        },
+        {
+          "note": "Today's 4–8 L/min flows start as low as Camp 2.",
+          "source": {
+            "title": "Alan Arnette: How Much Does It Cost to Climb Everest? 2026 Edition → Overview",
+            "url": "https://www.alanarnette.com/blog/2026/02/03/how-much-does-it-cost-to-climb-everest-2026-edition/"
+          },
+          "checked": "2026-11-03"
+        },
+        {
+          "value": 7162,
+          "unit": "m",
+          "note": "For many, the first time is the climb from Camp 3, at 23,500 ft, to the South Col.",
+          "source": {
+            "title": "SummitPost: South Col / Southeast Ridge → Camp 3 to Camp 4",
+            "url": "https://summitpost.org/south-col-or-southeast-ridge/165530"
+          },
+          "checked": "2026-11-03"
+        },
+        {
+          "value": 7162,
+          "unit": "m",
+          "note": "From Camp 3, most climbers rely on it.",
+          "source": {
+            "title": "Hayden Rue: South Col of Mount Everest → Camp 3 to South Col",
+            "url": "https://haydenrue.com/mountaineering/south-col-of-mount-everest/"
+          },
+          "checked": "2026-11-03"
+        }
+      ]
+    },
+    {
+      "id": "oxygen.bottle-swaps",
+      "kind": "fact",
+      "claim": "On the summit push, bottles are swapped at the Balcony and at the South Summit, and again at the South Summit on the way down; Sherpas swap them for their clients.",
+      "status": "source only",
+      "versions": [
+        {
+          "source": {
+            "title": "SummitPost: South Col / Southeast Ridge → Camp 4 to Balcony, Balcony to South Summit, Summit to Camp 4",
+            "url": "https://summitpost.org/south-col-or-southeast-ridge/165530"
+          },
+          "checked": "2026-11-03"
+        },
+        {
+          "note": "Sherpas swap bottles for members at the Balcony, during a short break for food and water.",
+          "source": {
+            "title": "Alan Arnette: Comparing the Routes of Everest, 2026 Edition → Balcony",
+            "url": "https://www.alanarnette.com/2026/01/28/comparing-the-routes-of-everest-2026-edition/"
+          },
+          "checked": "2026-11-04"
+        },
+        {
+          "note": "At the Balcony climbers change their bottles for fresh ones.",
+          "source": {
+            "title": "Hayden Rue: South Col of Mount Everest → Summit Bid",
+            "url": "https://haydenrue.com/mountaineering/south-col-of-mount-everest/"
+          },
+          "checked": "2026-11-03"
+        }
+      ]
+    },
+    {
+      "id": "oxygen.caches",
+      "kind": "fact",
+      "claim": "Sherpas carry the bottles up and cache them at the high camps, where they can be taken: one low-cost operator reportedly stole bottles at the South Summit rather than buy enough for its members.",
+      "status": "source only",
+      "versions": [
+        {
+          "source": {
+            "title": "Alan Arnette: How Much Does It Cost to Climb Everest? 2026 Edition → Supplies/Gear",
+            "url": "https://www.alanarnette.com/blog/2026/02/03/how-much-does-it-cost-to-climb-everest-2026-edition/"
+          },
+          "checked": "2026-11-03"
+        },
+        {
+          "note": "At the South Col, bottles are the one thing too valuable to leave behind.",
+          "source": {
+            "title": "Alan Arnette: Everest 2026 Season Summary → South Col Mess",
+            "url": "https://www.alanarnette.com/blog/2026/06/02/everest-2026-season-summary-records-crowds-trash-winds/"
+          },
+          "checked": "2026-11-03"
+        }
+      ]
+    },
+    {
+      "id": "oxygen.failures",
+      "kind": "fact",
+      "claim": "Oxygen gear fails in the cold: valves freeze, masks deform in the wind and ice blocks the tubes, so the climber gets too little oxygen, or none.",
+      "status": "source only",
+      "versions": [
+        {
+          "note": "Poisk's valve froze with the moisture of the breath; Alan Arnette's TopOut tube froze shut on the Hillary Step in 2011, and his Sherpa punched it clear.",
+          "source": {
+            "title": "Alan Arnette: Oxygen on Everest – Reviewing the Options",
+            "url": "https://www.alanarnette.com/blog/?p=16718"
+          },
+          "checked": "2026-11-03"
+        },
+        {
+          "note": "The mask's exhalation valve has a rubber snood that lets ice be broken off.",
+          "source": {
+            "title": "Summit Oxygen: Summit Standard System → Himalayan Facemask",
+            "url": "https://summitoxygen.com/summit-standard-system/"
+          },
+          "checked": "2026-11-03"
+        },
+        {
+          "note": "In 1996 Rob Hall's regulator froze and he couldn't descend.",
+          "source": {
+            "title": "Advnture: The 1996 Everest disaster",
+            "url": "https://www.advnture.com/climbing-mountaineering/what-was-the-1996-everest-disaster-the-chain-of-events-that-claimed-eight-lives-and-sparked-never-ending-controversy"
+          },
+          "checked": "2026-11-03"
+        },
+        {
+          "note": "Failures of oxygen sets on the way up aren't unusual, yet no death was found that they caused directly.",
+          "source": {
+            "title": "Firth et al. 2008, Mortality on Mount Everest, 1921–2006 (BMJ) → Discussion",
+            "url": "https://pmc.ncbi.nlm.nih.gov/articles/PMC2602730"
+          },
+          "checked": "2026-11-03"
+        }
+      ]
+    },
+    {
+      "id": "oxygen.run-out",
+      "kind": "fact",
+      "claim": "Running out of oxygen high on the mountain is a danger in itself: climbers watch their supply so that it lasts back to the South Col, and a queue or a late summit eats into it.",
+      "status": "source only",
+      "versions": [
+        {
+          "source": {
+            "title": "Alan Arnette: Comparing the Routes of Everest, 2026 Edition → Return to South Col",
+            "url": "https://www.alanarnette.com/2026/01/28/comparing-the-routes-of-everest-2026-edition/"
+          },
+          "checked": "2026-11-04"
+        },
+        {
+          "note": "In 1996, delays bunched climbers up while their oxygen ran low.",
+          "source": {
+            "title": "Explorersweb: The 1996 Everest tragedy, 30 years later",
+            "url": "https://explorersweb.com/1996-everest-tragedy-30-years-later/"
+          },
+          "checked": "2026-11-03"
+        },
+        {
+          "note": "Going on without enough oxygen to get back down is poor decision-making (guide Eric Murphy).",
+          "source": {
+            "title": "National Geographic: Traffic jams are just one of the problems facing climbers on Everest (2019) → What It's like To Wait in Line at 8,500 Meters",
+            "url": "https://education.nationalgeographic.org/resource/traffic-jams-are-just-one-problems-facing-climbers-everest"
+          },
+          "checked": "2026-11-03"
+        },
+        {
+          "note": "Running out of oxygen on the descent is one possible reason why so many die on the way down.",
+          "source": {
+            "title": "Firth et al. 2008, Mortality on Mount Everest, 1921–2006 (BMJ) → Discussion",
+            "url": "https://pmc.ncbi.nlm.nih.gov/articles/PMC2602730"
+          },
+          "checked": "2026-11-03"
+        }
+      ]
+    },
+    {
+      "id": "oxygen.altitude-advantage",
+      "kind": "fact",
+      "claim": "Bottled oxygen makes the body feel roughly this much lower.",
+      "status": "source only",
+      "versions": [
+        {
+          "value": 914,
+          "unit": "m",
+          "note": "Roughly 3,000 feet: at 28,000 ft the body may feel closer to 25,000 ft; studies give different values.",
+          "source": {
+            "title": "Alan Arnette: How Much Does It Cost to Climb Everest? 2026 Edition → Should I Use Supplemental Oxygen?",
+            "url": "https://www.alanarnette.com/blog/2026/02/03/how-much-does-it-cost-to-climb-everest-2026-edition/"
+          },
+          "checked": "2026-11-03"
+        }
+      ]
+    },
+    {
+      "id": "oxygen.users",
+      "kind": "fact",
+      "claim": "Almost every climber on Everest breathes bottled oxygen: about this share.",
+      "status": "source only",
+      "versions": [
+        {
+          "value": 98,
+          "unit": "%",
+          "note": "Of summiters; in spring 2025, only four members climbed without it.",
+          "source": {
+            "title": "Alan Arnette: How Much Does It Cost to Climb Everest? 2026 Edition",
+            "url": "https://www.alanarnette.com/blog/2026/02/03/how-much-does-it-cost-to-climb-everest-2026-edition/"
+          },
+          "checked": "2026-11-03"
+        },
+        {
+          "value": 97.1,
+          "unit": "%",
+          "note": "Of all climbers, since Mallory and Irvine in 1924.",
+          "source": {
+            "title": "Alan Arnette: Oxygen on Everest – Reviewing the Options",
+            "url": "https://www.alanarnette.com/blog/?p=16718"
+          },
+          "checked": "2026-11-03"
+        }
+      ]
+    },
+    {
+      "id": "oxygen.summits-without",
+      "kind": "fact",
+      "claim": "Only this many climbers have reached the summit without bottled oxygen since 1953.",
+      "status": "source only",
+      "versions": [
+        {
+          "value": 232,
+          "unit": "climbers",
+          "note": "About 1.7% of all summiters, through 2025.",
+          "source": {
+            "title": "Alan Arnette: Everest by the Numbers, 2026 Edition → Oxygen, Summits, and Deaths",
+            "url": "https://www.alanarnette.com/2026/01/26/everest-by-the-numbers-2026-edition/"
+          },
+          "checked": "2026-11-03"
+        },
+        {
+          "value": 229,
+          "unit": "climbers",
+          "note": "An earlier count.",
+          "source": {
+            "title": "Alan Arnette: How Much Does It Cost to Climb Everest? 2026 Edition → Should I Use Supplemental Oxygen?",
+            "url": "https://www.alanarnette.com/blog/2026/02/03/how-much-does-it-cost-to-climb-everest-2026-edition/"
+          },
+          "checked": "2026-11-03"
+        }
+      ]
+    },
+    {
+      "id": "oxygen.summit-rate",
+      "kind": "fact",
+      "claim": "Of the members who set out for the summit with bottled oxygen, about this share reach it; without it, about 4%: twenty times fewer.",
+      "status": "source only",
+      "versions": [
+        {
+          "value": 80,
+          "unit": "%",
+          "source": {
+            "title": "Alan Arnette: Everest by the Numbers, 2026 Edition → Oxygen, Summits, and Deaths",
+            "url": "https://www.alanarnette.com/2026/01/26/everest-by-the-numbers-2026-edition/"
+          },
+          "checked": "2026-11-03"
+        }
+      ]
+    },
+    {
+      "id": "oxygen.death-rate-without",
+      "kind": "fact",
+      "claim": "Summiting without bottled oxygen is far deadlier: of the members who reached the top without it from 2000 to 2024, this share died, against 1.35% of those with it.",
+      "status": "source only",
+      "versions": [
+        {
+          "value": 33,
+          "unit": "%",
+          "note": "32 of 96; with oxygen, 73 of 5,401: about 24 times the risk.",
+          "source": {
+            "title": "Alan Arnette: How Much Does It Cost to Climb Everest? 2026 Edition → Should I Use Supplemental Oxygen?",
+            "url": "https://www.alanarnette.com/blog/2026/02/03/how-much-does-it-cost-to-climb-everest-2026-edition/"
+          },
+          "checked": "2026-11-03"
+        }
+      ]
+    },
+    {
+      "id": "oxygen.sherpa-flow",
+      "kind": "fact",
+      "claim": "A personal Sherpa breathes bottled oxygen too, at a lower flow than the client.",
+      "status": "source only",
+      "versions": [
+        {
+          "source": {
+            "title": "Alan Arnette: How Much Does It Cost to Climb Everest? 2026 Edition → Supplies/Gear",
+            "url": "https://www.alanarnette.com/blog/2026/02/03/how-much-does-it-cost-to-climb-everest-2026-edition/"
+          },
+          "checked": "2026-11-03"
+        }
+      ]
+    },
+    {
+      "id": "oxygen.flow-by-section",
+      "kind": "question",
+      "question": "What flow does a client breathe on each part of the climb today, asleep and climbing, from Camp 2 to the summit and back, now that 4–8 L/min is common?",
+      "about": [
+        "oxygen.usual-flow",
+        "oxygen.peak-flow",
+        "oxygen.start-altitude"
+      ]
+    },
+    {
+      "id": "oxygen.bottles-per-push",
+      "kind": "question",
+      "question": "How many bottles does a client use on the summit push itself, from Camp 3 to the summit and back to the South Col, at today's flows, and how many does their Sherpa use?",
+      "about": [
+        "oxygen.bottles-per-climb",
+        "oxygen.bottle-hours"
+      ]
     }
   ]
 }
