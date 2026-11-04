@@ -11,11 +11,288 @@
           "value": 12,
           "unit": "h",
           "source": {
+            "title": "Alan Arnette: Everest 2026 Season Summary → Summits!",
+            "url": "https://www.alanarnette.com/blog/2026/06/02/everest-2026-season-summary-records-crowds-trash-winds/"
+          },
+          "checked": "2026-11-03"
+        }
+      ]
+    },
+    {
+      "id": "crowds.summits-in-a-day-2026",
+      "kind": "fact",
+      "claim": "On 20 May 2026, a record this many climbers reached the summit in a single day.",
+      "status": "source only",
+      "versions": [
+        {
+          "value": 274,
+          "unit": "summits",
+          "source": {
+            "title": "Alan Arnette: Everest 2026 Season Summary → Summits!",
+            "url": "https://www.alanarnette.com/blog/2026/06/02/everest-2026-season-summary-records-crowds-trash-winds/"
+          },
+          "checked": "2026-11-03"
+        },
+        {
+          "value": 270,
+          "unit": "summits",
+          "note": "The count on the day itself.",
+          "source": {
+            "title": "Alan Arnette: Everest 2026: May 20 Summit Recap: 270 Summits!",
+            "url": "https://www.alanarnette.com/blog/2026/05/20/everest-2026-may-20-summit-recap/"
+          },
+          "checked": "2026-11-03"
+        }
+      ]
+    },
+    {
+      "id": "crowds.season-summits-2026",
+      "kind": "fact",
+      "claim": "Spring 2026 saw a record this many summits of Everest.",
+      "status": "source only",
+      "versions": [
+        {
+          "value": 1008,
+          "unit": "summits",
+          "note": "Tibet's side was closed to foreigners.",
+          "source": {
+            "title": "Alan Arnette: Everest 2026 Season Summary → Big Picture",
+            "url": "https://www.alanarnette.com/blog/2026/06/02/everest-2026-season-summary-records-crowds-trash-winds/"
+          },
+          "checked": "2026-11-03"
+        }
+      ]
+    },
+    {
+      "id": "crowds.summit-days-share",
+      "kind": "fact",
+      "claim": "Most of a season's summits come within about ten days of May: in 2026, this share came between 17 and 26 May, as in past years.",
+      "status": "source only",
+      "versions": [
+        {
+          "value": 80,
+          "unit": "%",
+          "source": {
             "title": "Alan Arnette: Everest 2026 Season Summary",
             "url": "https://www.alanarnette.com/blog/2026/06/02/everest-2026-season-summary-records-crowds-trash-winds/"
           },
-          "checked": "2026-11-01"
+          "checked": "2026-11-03"
         }
+      ]
+    },
+    {
+      "id": "crowds.permits-2026",
+      "kind": "fact",
+      "claim": "Nepal issued a record this many Everest permits for spring 2026.",
+      "status": "source only",
+      "versions": [
+        {
+          "value": 495,
+          "unit": "permits",
+          "source": {
+            "title": "Alan Arnette: Everest 2026 Season Summary → Nepal Permit Update",
+            "url": "https://www.alanarnette.com/blog/2026/06/02/everest-2026-season-summary-records-crowds-trash-winds/"
+          },
+          "checked": "2026-11-03"
+        },
+        {
+          "value": 492,
+          "unit": "permits",
+          "note": "By 8 May.",
+          "source": {
+            "title": "Alan Arnette: Everest 2026: Weather Alert and More Summits → Nepal Permit Update",
+            "url": "https://www.alanarnette.com/2026/05/18/everest-2026-weather-alert-and-more-summits/"
+          },
+          "checked": "2026-11-03"
+        }
+      ]
+    },
+    {
+      "id": "crowds.attrition",
+      "kind": "fact",
+      "claim": "By the last rotation, this share of the climbers with Everest and Lhotse permits have given up: fear, illness, the mind.",
+      "status": "source only",
+      "versions": [
+        {
+          "range": {
+            "min": 10,
+            "max": 20
+          },
+          "unit": "%",
+          "source": {
+            "title": "Alan Arnette: Inside the mind during the last rotation → This is Not Easy",
+            "url": "https://www.alanarnette.com/2018/05/02/everest-2018-inside-the-mind-during-the-last-rotation/"
+          },
+          "checked": "2026-11-03"
+        }
+      ]
+    },
+    {
+      "id": "crowds.window-squeeze",
+      "kind": "fact",
+      "claim": "When the weather leaves few summit days, the crowd crams into them: in 2019 there were only this many days with summit winds under 35 mph, for more than 600 people.",
+      "status": "source only",
+      "versions": [
+        {
+          "value": 3,
+          "unit": "days",
+          "source": {
+            "title": "Alan Arnette: Everest 2026 Season Summary → Building the Route",
+            "url": "https://www.alanarnette.com/blog/2026/06/02/everest-2026-season-summary-records-crowds-trash-winds/"
+          },
+          "checked": "2026-11-03"
+        },
+        {
+          "value": 3,
+          "unit": "days",
+          "note": "In May 2026, with 600 still to go up, a three-day window threatened a 2019-style jam.",
+          "source": {
+            "title": "Alan Arnette: Everest 2026: Weather Alert and More Summits → Critical Issues Identified",
+            "url": "https://www.alanarnette.com/2026/05/18/everest-2026-weather-alert-and-more-summits/"
+          },
+          "checked": "2026-11-03"
+        }
+      ]
+    },
+    {
+      "id": "crowds.queue-2019",
+      "kind": "fact",
+      "claim": "Two climbers who won't step aside can hold up a whole line: on 23 May 2019, two held up a line of 50 for about this long.",
+      "status": "source only",
+      "versions": [
+        {
+          "value": 2,
+          "unit": "h",
+          "note": "Guide Ben Jones's estimate.",
+          "source": {
+            "title": "National Geographic: Traffic jams are just one of the problems facing climbers on Everest (2019) → What It's like To Wait in Line at 8,500 Meters",
+            "url": "https://education.nationalgeographic.org/resource/traffic-jams-are-just-one-problems-facing-climbers-everest"
+          },
+          "checked": "2026-11-03"
+        }
+      ]
+    },
+    {
+      "id": "crowds.step-aside",
+      "kind": "fact",
+      "claim": "A slow climber should step aside, rest and let others pass, and their Sherpa should tell them to.",
+      "status": "source only",
+      "versions": [
+        {
+          "note": "Guide Eric Murphy.",
+          "source": {
+            "title": "National Geographic: Traffic jams are just one of the problems facing climbers on Everest (2019) → What It's like To Wait in Line at 8,500 Meters",
+            "url": "https://education.nationalgeographic.org/resource/traffic-jams-are-just-one-problems-facing-climbers-everest"
+          },
+          "checked": "2026-11-03"
+        }
+      ]
+    },
+    {
+      "id": "crowds.ascender-transition",
+      "kind": "fact",
+      "claim": "Clipping an ascender onto a fixed rope and off again adds this many seconds at each transition; on flat ground a carabiner alone is faster, and fairly safe.",
+      "status": "source only",
+      "versions": [
+        {
+          "range": {
+            "min": 10,
+            "max": 15
+          },
+          "unit": "s",
+          "source": {
+            "title": "National Geographic: Traffic jams are just one of the problems facing climbers on Everest (2019) → What It's like To Wait in Line at 8,500 Meters",
+            "url": "https://education.nationalgeographic.org/resource/traffic-jams-are-just-one-problems-facing-climbers-everest"
+          },
+          "checked": "2026-11-03"
+        }
+      ]
+    },
+    {
+      "id": "crowds.rope-transitions",
+      "kind": "fact",
+      "claim": "One Everest climber puts the climb's rope transitions at this many: made with an ascender each time, they take two hours or more.",
+      "status": "source only",
+      "versions": [
+        {
+          "range": {
+            "min": 500,
+            "max": 600
+          },
+          "unit": "transitions",
+          "source": {
+            "title": "National Geographic: Traffic jams are just one of the problems facing climbers on Everest (2019) → What It's like To Wait in Line at 8,500 Meters",
+            "url": "https://education.nationalgeographic.org/resource/traffic-jams-are-just-one-problems-facing-climbers-everest"
+          },
+          "checked": "2026-11-03"
+        }
+      ]
+    },
+    {
+      "id": "crowds.leave-earlier-or-later",
+      "kind": "fact",
+      "claim": "Teams time their start around the crowds: leaving camp a few hours earlier or later can change the day completely, and the weather window is weighed against the traffic of busy days.",
+      "status": "source only",
+      "versions": [
+        {
+          "note": "Guide Ben Jones.",
+          "source": {
+            "title": "National Geographic: Traffic jams are just one of the problems facing climbers on Everest (2019) → Avoiding Rush Hour the New Normal",
+            "url": "https://education.nationalgeographic.org/resource/traffic-jams-are-just-one-problems-facing-climbers-everest"
+          },
+          "checked": "2026-11-03"
+        },
+        {
+          "note": "With a meteorologist, a team balances promising weather windows with busy days on the mountain.",
+          "source": {
+            "title": "Alpine Ascents: Everest itinerary → Day 36 – 41: Basecamp",
+            "url": "https://www.alpineascents.com/climbs/mount-everest/itinerary/"
+          },
+          "checked": "2026-11-03"
+        }
+      ]
+    },
+    {
+      "id": "crowds.queue-cold",
+      "kind": "fact",
+      "claim": "Stuck in a queue, a climber can't move fast enough to stay warm, and the queues lengthen the summit day and its risks.",
+      "status": "source only",
+      "versions": [
+        {
+          "note": "David Goettler, who turned back 200 m below the summit in 2019 rather than queue on the way down.",
+          "source": {
+            "title": "National Geographic: Traffic jams are just one of the problems facing climbers on Everest (2019) → Avoiding Rush Hour the New Normal",
+            "url": "https://education.nationalgeographic.org/resource/traffic-jams-are-just-one-problems-facing-climbers-everest"
+          },
+          "checked": "2026-11-03"
+        }
+      ]
+    },
+    {
+      "id": "crowds.deaths-2019",
+      "kind": "fact",
+      "claim": "In 2019, crowds may have played a part in as many as this many of the season's 11 deaths on Everest; guides who were there say the deaths came mostly from decisions, not the lines.",
+      "status": "source only",
+      "versions": [
+        {
+          "value": 5,
+          "unit": "deaths",
+          "note": "Alan Arnette's count; guide Ben Jones knew of none who died because they waited in line.",
+          "source": {
+            "title": "National Geographic: Traffic jams are just one of the problems facing climbers on Everest (2019) → What It's like To Wait in Line at 8,500 Meters",
+            "url": "https://education.nationalgeographic.org/resource/traffic-jams-are-just-one-problems-facing-climbers-everest"
+          },
+          "checked": "2026-11-03"
+        }
+      ]
+    },
+    {
+      "id": "crowds.queue-places",
+      "kind": "question",
+      "question": "Where do queues form on a busy summit night (the Balcony, the slabs below the South Summit, the Hillary Step), and how long does a climber wait at each?",
+      "about": [
+        "crowds.queue-2019",
+        "crowds.window-squeeze"
       ]
     }
   ]

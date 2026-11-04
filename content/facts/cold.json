@@ -1,0 +1,241 @@
+{
+  "$schema": "../facts.schema.json",
+  "facts": [
+    {
+      "id": "cold.wind-chill-formula",
+      "kind": "fact",
+      "claim": "The wind chill in °F, from the air temperature T in °F and the wind V in mph at 10 m: 35.74 + 0.6215 T − 35.75 V^0.16 + 0.4275 T V^0.16. It's defined at 50 °F (10 °C) or colder with a wind above 3 mph (5 km/h), and assumes no sun.",
+      "status": "source only",
+      "versions": [
+        {
+          "source": {
+            "title": "US National Weather Service: Understanding Wind Chill",
+            "url": "https://www.weather.gov/safety/cold-wind-chill-chart"
+          },
+          "checked": "2026-11-03"
+        },
+        {
+          "note": "Its chart, in °C and km/h: −30 °C in a 50 km/h wind feels like −49.",
+          "source": {
+            "title": "Environment and Climate Change Canada: Wind chill and the Wind Chill Index → How to estimate the wind chill",
+            "url": "https://www.canada.ca/en/services/environment/weather/severeweather/wind-chill-index.html"
+          },
+          "checked": "2026-11-03"
+        }
+      ]
+    },
+    {
+      "id": "cold.summit-wind-chill",
+      "kind": "fact",
+      "claim": "With the summit wind above 30 mph (48 km/h), the wind chill there falls to about this.",
+      "status": "source only",
+      "versions": [
+        {
+          "range": {
+            "min": -50,
+            "max": -46
+          },
+          "unit": "°C",
+          "note": "\"Minus 50 °F/C\": −50 °F is about −46 °C.",
+          "source": {
+            "title": "Alan Arnette: Everest 2026: Weather Alert and More Summits → Weather Forecast Details",
+            "url": "https://www.alanarnette.com/2026/05/18/everest-2026-weather-alert-and-more-summits/"
+          },
+          "checked": "2026-11-03"
+        }
+      ]
+    },
+    {
+      "id": "cold.wind-chill-moderate",
+      "kind": "fact",
+      "claim": "At a wind chill of −10 to −27, the cold brings a risk of hypothermia and frostbite after long periods outdoors without adequate protection.",
+      "status": "source only",
+      "versions": [
+        {
+          "source": {
+            "title": "Environment and Climate Change Canada: Wind chill and the Wind Chill Index → Your safety risk for wind chill exposure",
+            "url": "https://www.canada.ca/en/services/environment/weather/severeweather/wind-chill-index.html"
+          },
+          "checked": "2026-11-03"
+        }
+      ]
+    },
+    {
+      "id": "cold.freeze-time-high",
+      "kind": "fact",
+      "claim": "At a wind chill of −28 to −39, exposed skin can freeze in this many minutes: a high risk of frostnip and frostbite, so the face and fingers are checked for numbness or whiteness.",
+      "status": "source only",
+      "versions": [
+        {
+          "range": {
+            "min": 10,
+            "max": 30
+          },
+          "unit": "min",
+          "source": {
+            "title": "Environment and Climate Change Canada: Wind chill and the Wind Chill Index → Your safety risk for wind chill exposure",
+            "url": "https://www.canada.ca/en/services/environment/weather/severeweather/wind-chill-index.html"
+          },
+          "checked": "2026-11-03"
+        },
+        {
+          "value": 30,
+          "unit": "min",
+          "note": "At a wind chill of −19 °F, about −28 °C.",
+          "source": {
+            "title": "US National Weather Service: Understanding Wind Chill",
+            "url": "https://www.weather.gov/safety/cold-wind-chill-chart"
+          },
+          "checked": "2026-11-03"
+        }
+      ]
+    },
+    {
+      "id": "cold.freeze-time-very-high",
+      "kind": "fact",
+      "claim": "At a wind chill of −40 to −47, exposed skin can freeze in this many minutes.",
+      "status": "source only",
+      "versions": [
+        {
+          "range": {
+            "min": 5,
+            "max": 10
+          },
+          "unit": "min",
+          "source": {
+            "title": "Environment and Climate Change Canada: Wind chill and the Wind Chill Index → Your safety risk for wind chill exposure",
+            "url": "https://www.canada.ca/en/services/environment/weather/severeweather/wind-chill-index.html"
+          },
+          "checked": "2026-11-03"
+        }
+      ]
+    },
+    {
+      "id": "cold.freeze-time-severe",
+      "kind": "fact",
+      "claim": "At a wind chill of −48 to −54, exposed skin can freeze in this many minutes.",
+      "status": "source only",
+      "versions": [
+        {
+          "range": {
+            "min": 2,
+            "max": 5
+          },
+          "unit": "min",
+          "source": {
+            "title": "Environment and Climate Change Canada: Wind chill and the Wind Chill Index → Your safety risk for wind chill exposure",
+            "url": "https://www.canada.ca/en/services/environment/weather/severeweather/wind-chill-index.html"
+          },
+          "checked": "2026-11-03"
+        }
+      ]
+    },
+    {
+      "id": "cold.freeze-time-extreme",
+      "kind": "fact",
+      "claim": "At a wind chill of −55 or colder, exposed skin can freeze in less than this many minutes: outdoor conditions are hazardous.",
+      "status": "source only",
+      "versions": [
+        {
+          "value": 2,
+          "unit": "min",
+          "source": {
+            "title": "Environment and Climate Change Canada: Wind chill and the Wind Chill Index → Your safety risk for wind chill exposure",
+            "url": "https://www.canada.ca/en/services/environment/weather/severeweather/wind-chill-index.html"
+          },
+          "checked": "2026-11-03"
+        }
+      ]
+    },
+    {
+      "id": "cold.wind-speeds-frostbite",
+      "kind": "fact",
+      "claim": "In a sustained wind above this speed, frostbite can come faster than the wind chill's times say.",
+      "status": "source only",
+      "versions": [
+        {
+          "value": 50,
+          "unit": "km/h",
+          "source": {
+            "title": "Environment and Climate Change Canada: Wind chill and the Wind Chill Index → Your safety risk for wind chill exposure",
+            "url": "https://www.canada.ca/en/services/environment/weather/severeweather/wind-chill-index.html"
+          },
+          "checked": "2026-11-03"
+        }
+      ]
+    },
+    {
+      "id": "cold.frostbite-needs-freezing-air",
+      "kind": "fact",
+      "claim": "Frostbite needs the air itself below freezing: wind chill can't cool skin, or anything else, below the air temperature; it only cools it there faster.",
+      "status": "source only",
+      "versions": [
+        {
+          "source": {
+            "title": "US National Weather Service: Understanding Wind Chill → Wind Chill FAQ",
+            "url": "https://www.weather.gov/safety/cold-wind-chill-chart"
+          },
+          "checked": "2026-11-03"
+        },
+        {
+          "source": {
+            "title": "Environment and Climate Change Canada: Wind chill and the Wind Chill Index → How wind chill relates to temperature",
+            "url": "https://www.canada.ca/en/services/environment/weather/severeweather/wind-chill-index.html"
+          },
+          "checked": "2026-11-03"
+        }
+      ]
+    },
+    {
+      "id": "cold.wet-skin",
+      "kind": "fact",
+      "claim": "Wet skin gets cold quicker in the wind, with more moisture to evaporate.",
+      "status": "source only",
+      "versions": [
+        {
+          "source": {
+            "title": "Environment and Climate Change Canada: Wind chill and the Wind Chill Index → How wind affects your body in cold weather",
+            "url": "https://www.canada.ca/en/services/environment/weather/severeweather/wind-chill-index.html"
+          },
+          "checked": "2026-11-03"
+        }
+      ]
+    },
+    {
+      "id": "cold.sunshine",
+      "kind": "fact",
+      "claim": "Bright sunshine makes the cold feel this much milder than the wind chill says.",
+      "status": "source only",
+      "versions": [
+        {
+          "range": {
+            "min": 5.6,
+            "max": 10
+          },
+          "unit": "°C",
+          "note": "10–18 °F.",
+          "source": {
+            "title": "US National Weather Service: Understanding Wind Chill → Wind Chill FAQ",
+            "url": "https://www.weather.gov/safety/cold-wind-chill-chart"
+          },
+          "checked": "2026-11-03"
+        }
+      ]
+    },
+    {
+      "id": "cold.oxygen-warms",
+      "kind": "fact",
+      "claim": "Bottled oxygen keeps a climber warmer: the heart pumps better-oxygenated blood to the fingers and toes, lowering the risk of frostbite.",
+      "status": "source only",
+      "versions": [
+        {
+          "source": {
+            "title": "Alan Arnette: How Much Does It Cost to Climb Everest? 2026 Edition → Should I Use Supplemental Oxygen?",
+            "url": "https://www.alanarnette.com/blog/2026/02/03/how-much-does-it-cost-to-climb-everest-2026-edition/"
+          },
+          "checked": "2026-11-03"
+        }
+      ]
+    }
+  ]
+}

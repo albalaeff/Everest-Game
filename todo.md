@@ -60,10 +60,10 @@ Tasks marked *Iteration 1–3* are planned into the board's first two-week itera
 - [ ] Done gate
 
 ### Task 4: Knowledge base: oxygen, weather, cold, time and crowds ([#12](https://github.com/albalaeff/Everest-Game/issues/12)) · *Iteration 2*
-- [ ] Oxygen: bottles, flows, regulators
-- [ ] Weather and cold: jet stream, safe summit wind, windows, wind chill
-- [ ] Time and crowds: summit times of survivors and of the dead (BMJ 2008), the 2026 crowd records
-- [ ] Done gate
+- [x] Oxygen: bottles, flows, regulators
+- [x] Weather and cold: jet stream, safe summit wind, windows, wind chill
+- [x] Time and crowds: summit times of survivors and of the dead (BMJ 2008), the 2026 crowd records
+- [x] Done gate
 
 ### Task 5: Knowledge base: tours, prices and rules ([#13](https://github.com/albalaeff/Everest-Game/issues/13)) · *Iteration 3*
 - [ ] The three tour tiers: price ranges, Sherpas per client, oxygen, service

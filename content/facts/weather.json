@@ -10,11 +10,42 @@
         {
           "value": 48,
           "unit": "km/h",
+          "note": "Under 30 mph/48 kph, with little to no snow.",
           "source": {
             "title": "Alan Arnette: Inside the mind during the last rotation",
             "url": "https://www.alanarnette.com/2018/05/02/everest-2018-inside-the-mind-during-the-last-rotation/"
           },
-          "checked": "2026-11-01"
+          "checked": "2026-11-03"
+        },
+        {
+          "value": 48,
+          "unit": "km/h",
+          "note": "30 mph, by meteorologist Chris Tomer, May 2026.",
+          "source": {
+            "title": "Alan Arnette: Everest 2026: Weather Alert and More Summits → Weather Forecast Details",
+            "url": "https://www.alanarnette.com/2026/05/18/everest-2026-weather-alert-and-more-summits/"
+          },
+          "checked": "2026-11-03"
+        },
+        {
+          "value": 48,
+          "unit": "km/h",
+          "note": "Generally less than 48.3 km/h (30 mph).",
+          "source": {
+            "title": "National Geographic: Traffic jams are just one of the problems facing climbers on Everest (2019)",
+            "url": "https://education.nationalgeographic.org/resource/traffic-jams-are-just-one-problems-facing-climbers-everest"
+          },
+          "checked": "2026-11-03"
+        },
+        {
+          "value": 56,
+          "unit": "km/h",
+          "note": "2019's summit days counted as those with winds under 35 mph (56 kph).",
+          "source": {
+            "title": "Alan Arnette: Everest 2026 Season Summary → Building the Route",
+            "url": "https://www.alanarnette.com/blog/2026/06/02/everest-2026-season-summary-records-crowds-trash-winds/"
+          },
+          "checked": "2026-11-03"
         }
       ]
     },
@@ -25,13 +56,293 @@
       "status": "source only",
       "versions": [
         {
-          "range": { "min": 4, "max": 7 },
+          "range": {
+            "min": 4,
+            "max": 7
+          },
           "unit": "days",
+          "note": "With little to no snow.",
           "source": {
             "title": "Alan Arnette: Inside the mind during the last rotation",
             "url": "https://www.alanarnette.com/2018/05/02/everest-2018-inside-the-mind-during-the-last-rotation/"
           },
-          "checked": "2026-11-01"
+          "checked": "2026-11-03"
+        }
+      ]
+    },
+    {
+      "id": "weather.calm-days-in-may",
+      "kind": "fact",
+      "claim": "May usually has this many days of relatively calm weather for summit attempts.",
+      "status": "source only",
+      "versions": [
+        {
+          "range": {
+            "min": 10,
+            "max": 15
+          },
+          "unit": "days",
+          "source": {
+            "title": "National Geographic: Traffic jams are just one of the problems facing climbers on Everest (2019)",
+            "url": "https://education.nationalgeographic.org/resource/traffic-jams-are-just-one-problems-facing-climbers-everest"
+          },
+          "checked": "2026-11-03"
+        }
+      ]
+    },
+    {
+      "id": "weather.jet-stream",
+      "kind": "fact",
+      "claim": "The jet stream sits over the summit for days at a time, blowing too hard for a summit and bringing snow, and leaves it late in May.",
+      "status": "source only",
+      "versions": [
+        {
+          "note": "In May 2026 it locked climbers down at Base Camp and Camp 2 for days with high winds and heavy snow, then came back to the summit for four days.",
+          "source": {
+            "title": "Alan Arnette: Everest 2026 Season Summary → Building the Route",
+            "url": "https://www.alanarnette.com/blog/2026/06/02/everest-2026-season-summary-records-crowds-trash-winds/"
+          },
+          "checked": "2026-11-03"
+        },
+        {
+          "note": "Partly over the summit until 24 May 2026, with erratic winds and no perfect summit day; it fully left around 26–27 May.",
+          "source": {
+            "title": "Alan Arnette: Everest 2026: Weather Alert and More Summits → Jetstream Update",
+            "url": "https://www.alanarnette.com/2026/05/18/everest-2026-weather-alert-and-more-summits/"
+          },
+          "checked": "2026-11-03"
+        }
+      ]
+    },
+    {
+      "id": "weather.jet-stream-wind",
+      "kind": "fact",
+      "claim": "With the jet stream over the summit, the wind there blows at this speed.",
+      "status": "source only",
+      "versions": [
+        {
+          "range": {
+            "min": 64,
+            "max": 97
+          },
+          "unit": "km/h",
+          "note": "Blustery winds averaging 40–60 mph in the unsettled days of May 2019; over 97 km/h was forecast for 24 May.",
+          "source": {
+            "title": "National Geographic: Traffic jams are just one of the problems facing climbers on Everest (2019)",
+            "url": "https://education.nationalgeographic.org/resource/traffic-jams-are-just-one-problems-facing-climbers-everest"
+          },
+          "checked": "2026-11-03"
+        },
+        {
+          "value": 80,
+          "unit": "km/h",
+          "note": "Over 50 mph/80 kph near the summit as a front came through.",
+          "source": {
+            "title": "Alan Arnette: Inside the mind during the last rotation",
+            "url": "https://www.alanarnette.com/2018/05/02/everest-2018-inside-the-mind-during-the-last-rotation/"
+          },
+          "checked": "2026-11-03"
+        }
+      ]
+    },
+    {
+      "id": "weather.wind-by-time-of-day",
+      "kind": "fact",
+      "claim": "With the jet stream close, the summit wind is high in the afternoons and calmer late at night and in the early morning.",
+      "status": "source only",
+      "versions": [
+        {
+          "source": {
+            "title": "Alan Arnette: Everest 2026: Weather Alert and More Summits → Weather Forecast Details",
+            "url": "https://www.alanarnette.com/2026/05/18/everest-2026-weather-alert-and-more-summits/"
+          },
+          "checked": "2026-11-03"
+        }
+      ]
+    },
+    {
+      "id": "weather.stratified",
+      "kind": "fact",
+      "claim": "Each camp can have its own weather: Camp 2 calm while the South Col is in a gale; midway up the Southeast Ridge the westerly winds are no longer blocked by the mountain.",
+      "status": "source only",
+      "versions": [
+        {
+          "source": {
+            "title": "Alan Arnette: Everest 2026: Weather Alert and More Summits → Weather Forecast Details",
+            "url": "https://www.alanarnette.com/2026/05/18/everest-2026-weather-alert-and-more-summits/"
+          },
+          "checked": "2026-11-03"
+        },
+        {
+          "note": "Many climbers consider turning back there.",
+          "source": {
+            "title": "Alan Arnette: Comparing the Routes of Everest, 2026 Edition → South Summit",
+            "url": "https://www.alanarnette.com/2026/01/28/comparing-the-routes-of-everest-2026-edition/"
+          },
+          "checked": "2026-11-04"
+        }
+      ]
+    },
+    {
+      "id": "weather.summit-temperature",
+      "kind": "fact",
+      "claim": "In mid-May the summit's air temperature runs about this cold.",
+      "status": "source only",
+      "versions": [
+        {
+          "range": {
+            "min": -29,
+            "max": -23
+          },
+          "unit": "°C",
+          "note": "−20 °F lows and −10 °F highs on 18 May 2026, with a little warming expected.",
+          "source": {
+            "title": "Alan Arnette: Everest 2026: Weather Alert and More Summits → Weather Forecast Details",
+            "url": "https://www.alanarnette.com/2026/05/18/everest-2026-weather-alert-and-more-summits/"
+          },
+          "checked": "2026-11-03"
+        }
+      ]
+    },
+    {
+      "id": "weather.south-col-warmest",
+      "kind": "fact",
+      "claim": "The warmest the South Col has ever been measured is this, on 21 July 2022: below freezing even in the monsoon.",
+      "status": "source only",
+      "versions": [
+        {
+          "value": -1.4,
+          "unit": "°C",
+          "note": "By the weather station installed in May 2019.",
+          "source": {
+            "title": "Hayden Rue: South Col of Mount Everest → Record-Breaking Landings and High-Altitude Weather on South Col of Mount Everest",
+            "url": "https://haydenrue.com/mountaineering/south-col-of-mount-everest/"
+          },
+          "checked": "2026-11-03"
+        }
+      ]
+    },
+    {
+      "id": "weather.western-cwm-heat",
+      "kind": "fact",
+      "claim": "The Western Cwm can be hot: sunlight reflected off its walls lifts the temperature above about this.",
+      "status": "source only",
+      "versions": [
+        {
+          "value": 38,
+          "unit": "°C",
+          "note": "Above 100 °F.",
+          "source": {
+            "title": "SummitPost: South Col / Southeast Ridge → Camp 1 to Camp 2",
+            "url": "https://summitpost.org/south-col-or-southeast-ridge/165530"
+          },
+          "checked": "2026-11-03"
+        },
+        {
+          "value": 38,
+          "unit": "°C",
+          "note": "Easily reaching 100 °F.",
+          "source": {
+            "title": "Hayden Rue: South Col of Mount Everest → Western Cwm",
+            "url": "https://haydenrue.com/mountaineering/south-col-of-mount-everest/"
+          },
+          "checked": "2026-11-03"
+        },
+        {
+          "note": "The extreme heat takes a toll on climbers.",
+          "source": {
+            "title": "Alan Arnette: Comparing the Routes of Everest, 2026 Edition → C2",
+            "url": "https://www.alanarnette.com/2026/01/28/comparing-the-routes-of-everest-2026-edition/"
+          },
+          "checked": "2026-11-04"
+        }
+      ]
+    },
+    {
+      "id": "weather.monsoon",
+      "kind": "fact",
+      "claim": "The monsoon ends the spring season on the Nepal side around the start of June: once the jet stream leaves, the temperatures rise fast, the monsoon's moisture comes north, and the Icefall Doctors take out the ladders when melting makes the Icefall unstable.",
+      "status": "source only",
+      "versions": [
+        {
+          "note": "It typically arrives around 1 June.",
+          "source": {
+            "title": "Alan Arnette: Everest 2026: Weather Alert and More Summits → Monsoon and Season Timeline",
+            "url": "https://www.alanarnette.com/2026/05/18/everest-2026-weather-alert-and-more-summits/"
+          },
+          "checked": "2026-11-03"
+        },
+        {
+          "note": "In 2026 the ladders came out on 29 May.",
+          "source": {
+            "title": "Alan Arnette: Everest 2026 Season Summary → Building the Route",
+            "url": "https://www.alanarnette.com/blog/2026/06/02/everest-2026-season-summary-records-crowds-trash-winds/"
+          },
+          "checked": "2026-11-03"
+        },
+        {
+          "note": "Sometime in the first week of June.",
+          "source": {
+            "title": "National Geographic: Traffic jams are just one of the problems facing climbers on Everest (2019)",
+            "url": "https://education.nationalgeographic.org/resource/traffic-jams-are-just-one-problems-facing-climbers-everest"
+          },
+          "checked": "2026-11-03"
+        }
+      ]
+    },
+    {
+      "id": "weather.forecast-changes",
+      "kind": "fact",
+      "claim": "Forecasts change and mislead: in 2019 one of the best-looking days, 24 May, turned into the worst five days ahead, and a general mountain forecast that leaves out the jet stream is no guide on Everest.",
+      "status": "source only",
+      "versions": [
+        {
+          "source": {
+            "title": "National Geographic: Traffic jams are just one of the problems facing climbers on Everest (2019)",
+            "url": "https://education.nationalgeographic.org/resource/traffic-jams-are-just-one-problems-facing-climbers-everest"
+          },
+          "checked": "2026-11-03"
+        },
+        {
+          "note": "Mountain-forecast.com, which many teams use, doesn't account for the jet stream.",
+          "source": {
+            "title": "Alan Arnette: Everest 2026: Weather Alert and More Summits → Critical Issues Identified",
+            "url": "https://www.alanarnette.com/2026/05/18/everest-2026-weather-alert-and-more-summits/"
+          },
+          "checked": "2026-11-03"
+        }
+      ]
+    },
+    {
+      "id": "weather.pressure-and-deaths",
+      "kind": "fact",
+      "claim": "Summit days come with higher than usual air pressure over Everest, and deaths in bad weather with lower.",
+      "status": "source only",
+      "versions": [
+        {
+          "source": {
+            "title": "Firth et al. 2008, Mortality on Mount Everest, 1921–2006 (BMJ) → Results",
+            "url": "https://pmc.ncbi.nlm.nih.gov/articles/PMC2602730"
+          },
+          "checked": "2026-11-03"
+        }
+      ]
+    },
+    {
+      "id": "weather.bad-weather-deaths",
+      "kind": "fact",
+      "claim": "Bad weather played a part in only this share of the deaths on May summit days from 1975 to 2006: most climbers died in fair weather.",
+      "status": "source only",
+      "versions": [
+        {
+          "value": 25,
+          "unit": "%",
+          "note": "14 of 56 deaths, on 8 of 141 summit days; deaths came on 31% of the summit days.",
+          "source": {
+            "title": "Firth et al. 2008, Mortality on Mount Everest, 1921–2006 (BMJ) → Results",
+            "url": "https://pmc.ncbi.nlm.nih.gov/articles/PMC2602730"
+          },
+          "checked": "2026-11-03"
         }
       ]
     }
