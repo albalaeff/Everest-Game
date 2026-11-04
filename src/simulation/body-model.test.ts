@@ -1,9 +1,5 @@
 import { describe, expect, it } from "vitest";
-import {
-  createBodyState,
-  updateBodyState,
-  type BodyInputs,
-} from "./body-model";
+import { createBodyState, updateBodyState, type BodyInputs } from "./body-model";
 
 const baseInputs: BodyInputs = {
   altitudeM: 5364,
@@ -105,8 +101,8 @@ describe("body model v1", () => {
       deltaMinutes: 0,
     });
 
-    expect(rested.hydration).toBe(70);
-    expect(rested.nutrition).toBe(70);
+    expect(restored.hydration).toBe(70);
+    expect(restored.nutrition).toBe(70);
   });
 
   it("keeps all body values within their bounds", () => {

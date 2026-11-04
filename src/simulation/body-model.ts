@@ -74,15 +74,9 @@ export function updateBodyState(
   const minutes = Math.max(0, inputs.deltaMinutes);
 
   const altitudePenalty =
-    (Math.max(0, inputs.altitudeM) / 1000) *
-    coefficients.altitudePenaltyPer1000M;
-  const oxygenBonus =
-    Math.max(0, inputs.oxygenFlowLMin) * coefficients.oxygenBonusPerLMin;
-  const spo2 = clamp(
-    coefficients.baseSpo2 - altitudePenalty + oxygenBonus,
-    0,
-    100,
-  );
+    (Math.max(0, inputs.altitudeM) / 1000) * coefficients.altitudePenaltyPer1000M;
+  const oxygenBonus = Math.max(0, inputs.oxygenFlowLMin) * coefficients.oxygenBonusPerLMin;
+  const spo2 = clamp(coefficients.baseSpo2 - altitudePenalty + oxygenBonus, 0, 100);
 
   const paceFatigue =
     inputs.pace === "rest"
@@ -90,19 +84,13 @@ export function updateBodyState(
       : inputs.pace === "normal"
         ? coefficients.normalFatiguePerMinute
         : coefficients.fastFatiguePerMinute;
-  const loadFatigue =
-    Math.max(0, inputs.loadKg) * coefficients.loadFatiguePerKgPerMinute;
+  const loadFatigue = Math.max(0, inputs.loadKg) * coefficients.loadFatiguePerKgPerMinute;
   const dehydrationFatigue =
-    (100 - clamp(state.hydration, 0, 100)) *
-    coefficients.dehydrationFatiguePerPointPerMinute;
+    (100 - clamp(state.hydration, 0, 100)) * coefficients.dehydrationFatiguePerPointPerMinute;
   const malnutritionFatigue =
-    (100 - clamp(state.nutrition, 0, 100)) *
-    coefficients.malnutritionFatiguePerPointPerMinute;
-  const sleepFatigue =
-    Math.max(0, state.sleepDebt) *
-    coefficients.sleepDebtFatiguePerHourPerMinute;
-  const restRecovery =
-    inputs.pace === "rest" ? coefficients.restRecoveryPerMinute : 0;
+    (100 - clamp(state.nutrition, 0, 100)) * coefficients.malnutritionFatiguePerPointPerMinute;
+  const sleepFatigue = Math.max(0, state.sleepDebt) * coefficients.sleepDebtFatiguePerHourPerMinute;
+  const restRecovery = inputs.pace === "rest" ? coefficients.restRecoveryPerMinute : 0;
 
   const fatigueDelta =
     (paceFatigue +
