@@ -42,6 +42,16 @@
       "fitted": "2026-11-04"
     },
     {
+      "id": "hazards.serac-warning",
+      "kind": "coefficient",
+      "claim": "How many seconds pass between the crack of a serac breaking and its ice coming down on the climbers below. Seracs fall with little warning, so this is only the crack and the moment the ice takes to fall: someone at the edge may get clear, few others.",
+      "status": "source only",
+      "value": 15,
+      "unit": "s",
+      "fitted_to": ["route.icefall-hazards"],
+      "fitted": "2026-11-04"
+    },
+    {
       "id": "hazards.avalanche-rate",
       "kind": "coefficient",
       "claim": "How many times an hour an avalanche comes down on a climber under its slope, in the cold of the night and in clear weather. Fitted so that it's rarer than falling ice in clear weather, and that the time spent under the slope is what counts.",
@@ -79,6 +89,16 @@
       "value": 2,
       "unit": "1",
       "fitted_to": ["route.icefall-hazards", "weather.wind-by-time-of-day"],
+      "fitted": "2026-11-04"
+    },
+    {
+      "id": "hazards.avalanche-warning",
+      "kind": "coefficient",
+      "claim": "How many seconds pass between the roar of an avalanche starting above and its reaching the climbers below. Fitted so that a climber near the edge of its path can get out of it, and one in the middle rarely can.",
+      "status": "source only",
+      "value": 30,
+      "unit": "s",
+      "fitted_to": ["route.icefall-hazards"],
       "fitted": "2026-11-04"
     },
     {
@@ -126,6 +146,16 @@
       "fitted": "2026-11-04"
     },
     {
+      "id": "hazards.crevasse-warning",
+      "kind": "coefficient",
+      "claim": "How many seconds of warning a snow bridge gives before it gives way: none, which is why the rope matters.",
+      "status": "source only",
+      "value": 0,
+      "unit": "s",
+      "fitted_to": ["route.icefall-hazards", "route.icefall-lessons"],
+      "fitted": "2026-11-04"
+    },
+    {
       "id": "hazards.cornice-rate",
       "kind": "coefficient",
       "claim": "How many times an hour a cornice on the summit ridge breaks under a climber on it, in the cold of the night and in clear weather. Fitted so that a break is rare, and the time spent on the corniced ridge, in a queue above all, is what counts.",
@@ -163,6 +193,16 @@
       "value": 4,
       "unit": "1",
       "fitted_to": ["route.hillary-step-today", "weather.wind-by-time-of-day"],
+      "fitted": "2026-11-04"
+    },
+    {
+      "id": "hazards.cornice-warning",
+      "kind": "coefficient",
+      "claim": "How many seconds of warning a cornice gives before it breaks: none, as on the Hillary Step in 2024, where the fixed rope held those who were clipped.",
+      "status": "source only",
+      "value": 0,
+      "unit": "s",
+      "fitted_to": ["route.hillary-step-today"],
       "fitted": "2026-11-04"
     },
     {
@@ -253,8 +293,15 @@
     {
       "id": "hazards.caught",
       "kind": "question",
-      "question": "What happens to a climber caught by falling ice, an avalanche, or a breaking snow bridge or cornice, while clipped to the fixed rope? Does the rope hold them, as it held several climbers in the 2024 cornice collapse, and how badly are they hurt? The game knocks them off their feet, and their rope holds them if they're clipped.",
-      "about": ["route.icefall-hazards", "route.hillary-step-today"]
+      "question": "What happens to a climber caught by falling ice, an avalanche, or a breaking snow bridge or cornice, while clipped to the fixed rope? Does the rope hold them, as it held several climbers in the 2024 cornice collapse, and how badly are they hurt? How much warning does each give, and what should a climber do with it? The game knocks them off their feet, spares whoever got clear in the warning, and their rope holds them if they're clipped.",
+      "about": [
+        "route.icefall-hazards",
+        "route.hillary-step-today",
+        "hazards.serac-warning",
+        "hazards.avalanche-warning",
+        "hazards.crevasse-warning",
+        "hazards.cornice-warning"
+      ]
     }
   ]
 }

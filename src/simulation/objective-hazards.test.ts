@@ -13,18 +13,23 @@ const COMPRESSION = 10;
 const HOUR = 3600;
 const SETTINGS: HazardSettings = {
   kinds: {
-    serac: { rate: 72, warmth: 5, snow: 1, wind: 1 },
-    avalanche: { rate: 72, warmth: 2, snow: 4, wind: 2 },
-    crevasse: { rate: 72, warmth: 3, snow: 2, wind: 1 },
-    cornice: { rate: 72, warmth: 2, snow: 3, wind: 4 },
+    serac: { rate: 72, warmth: 5, snow: 1, wind: 1, warning: 5 },
+    avalanche: { rate: 72, warmth: 2, snow: 4, wind: 2, warning: 10 },
+    crevasse: { rate: 72, warmth: 3, snow: 2, wind: 1, warning: 0 },
+    cornice: { rate: 72, warmth: 2, snow: 3, wind: 4, warning: 0 },
   },
   warmth: { from: 6, peak: 14, until: 20 },
   sun: { cloud: 0.5, snow: 0 },
 };
-/** Every step a climber spends under a serac, it falls. */
+/** Every step a climber spends under a serac, it goes, and comes down at once. */
 const CERTAIN: HazardSettings = {
   ...SETTINGS,
-  kinds: { ...SETTINGS.kinds, serac: { rate: 100_000, warmth: 1, snow: 1, wind: 1 } },
+  kinds: { ...SETTINGS.kinds, serac: { rate: 100_000, warmth: 1, snow: 1, wind: 1, warning: 0 } },
+};
+/** The same, with a crack five mountain seconds before it comes down: ten steps at 10. */
+const WARNED: HazardSettings = {
+  ...SETTINGS,
+  kinds: { ...SETTINGS.kinds, serac: { ...CERTAIN.kinds.serac, warning: 5 } },
 };
 const SERAC: HazardZone = { id: "serac", kind: "serac", from: 20, to: 30 };
 const SLOPE: HazardZone = { id: "slope", kind: "avalanche", from: 50, to: 70 };
@@ -155,6 +160,54 @@ describe("ObjectiveHazards", () => {
         climbers: ["first", "second"],
       },
     ]);
+  });
+
+  it("warns before a serac comes down, and spares whoever gets clear in time", () => {
+    const ground = new TestGround({ first: 22, second: 28 });
+    const exposure = new Exposure(ground, "14:00", under(SERAC), WARNED);
+
+    exposure.play(1);
+    const warned = { warnings: exposure.hazards.warnings, at: exposure.hazards.warningAt(25) };
+    ground.put("first", 35);
+    exposure.play(9);
+    const before = exposure.hazards.strikes.length;
+    exposure.play(1);
+
+    expect(warned.warnings).toEqual([{ zone: "serac", kind: "serac", comes: 10 }]);
+    expect(warned.at).toBe("serac");
+    expect(exposure.hazards.warningAt(40)).toBeNull();
+    expect(before).toBe(0);
+    expect(ground.knocks).toEqual([{ climber: "second", step: 10 }]);
+    expect(exposure.hazards.strikes).toMatchObject([{ step: 10, climbers: ["second"] }]);
+    expect(exposure.hazards.warnings).toEqual([]);
+    expect(exposure.hazards.warningAt(25)).toBeNull();
+  });
+
+  it("comes down after its warning even once everyone is clear: a near miss, kept", () => {
+    const ground = new TestGround({ first: 22, second: 0 });
+    const exposure = new Exposure(ground, "14:00", under(SERAC), WARNED);
+
+    exposure.play(1);
+    ground.put("first", 10);
+    exposure.play(10);
+
+    expect(ground.knocks).toEqual([]);
+    expect(exposure.hazards.strikes).toMatchObject([{ zone: "serac", step: 10, climbers: [] }]);
+  });
+
+  it("gives no warning where its kind has none: a snow bridge gives way at once", () => {
+    const bridge: HazardZone = { id: "bridge", kind: "crevasse", from: 20, to: 30 };
+    const settings: HazardSettings = {
+      ...SETTINGS,
+      kinds: { ...SETTINGS.kinds, crevasse: { ...CERTAIN.kinds.serac, warning: 0 } },
+    };
+    const ground = new TestGround({ first: 25, second: 0 });
+    const exposure = new Exposure(ground, "04:00", under(bridge), settings);
+
+    exposure.play(1);
+
+    expect(exposure.hazards.warnings).toEqual([]);
+    expect(ground.knocks).toEqual([{ climber: "first", step: 0 }]);
   });
 
   it("goes on from a save as it would have, its strikes kept", () => {

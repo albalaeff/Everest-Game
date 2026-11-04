@@ -259,6 +259,28 @@ kbd {
   }
 }
 
+/* A serac or an avalanche going over the player: big, red, in the middle of the screen, and the
+ * fingers go through it to the slope, since the player has a moment to get clear. */
+#hazard {
+  position: fixed;
+  top: 30%;
+  left: 50%;
+  max-width: calc(100% - 2rem);
+  margin: 0;
+  padding: 0.5rem 1rem;
+  border-radius: 0.5rem;
+  background: rgb(150 20 20 / 85%);
+  font-size: 1.5rem;
+  font-weight: bold;
+  text-align: center;
+  translate: -50% 0;
+  pointer-events: none;
+}
+
+#hazard[hidden] {
+  display: none;
+}
+
 /* Where a room's connection stands, above the slope: it lets the fingers through, but for its
  * buttons. */
 #room {

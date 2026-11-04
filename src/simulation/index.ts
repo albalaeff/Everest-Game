@@ -33,6 +33,7 @@ export type {
   HazardWeather,
   HazardZone,
   Strike,
+  Warning,
 } from "./objective-hazards";
 export type { Moment, Rule, RuleStates } from "./rule";
 export type { Scenario } from "./scenario";

@@ -44,6 +44,8 @@ export class TestMountain {
     ],
     ladderSlipChance: [[0, 0.05]],
     knock: 3,
+    arrestSpeed: 5,
+    axeReach: 1.5,
   };
   /** Nobody ever slips. */
   static readonly CALM: SlopeSettings = {

@@ -21,7 +21,9 @@
       [90, 0.3]
     ],
     "ladderSlipChance": [[0, 0.02]],
-    "knock": 3
+    "knock": 3,
+    "arrestSpeed": 5,
+    "axeReach": 1.5
   },
   "layout": {
     "terrain": [

@@ -50,6 +50,11 @@
       "id": "technique.slips-by-steepness",
       "kind": "question",
       "question": "How often does a climber slip on snow and ice of each steepness, and on a ladder?"
+    },
+    {
+      "id": "technique.self-arrest",
+      "kind": "question",
+      "question": "Up to what speed can a sliding climber stop themselves with the ice axe, on snow and on hard ice, and within how many seconds of the slip? How far from the body does the axe reach? The game stops a slide no faster than 5 m/s, with the axe driven in within 1.5 m above the body, and never in the air."
     }
   ]
 }

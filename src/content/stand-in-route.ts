@@ -25,6 +25,8 @@ export interface StandInData {
     readonly ladderSpeed: readonly DataPair[];
     readonly ladderSlipChance: readonly DataPair[];
     readonly knock: number;
+    readonly arrestSpeed: number;
+    readonly axeReach: number;
   };
   readonly layout: {
     readonly terrain: readonly DataPair[];
@@ -71,6 +73,8 @@ export class StandInRoute {
       ladderSpeed: StandInRoute.pairs(settings.ladderSpeed),
       ladderSlipChance: StandInRoute.pairs(settings.ladderSlipChance),
       knock: settings.knock,
+      arrestSpeed: settings.arrestSpeed,
+      axeReach: settings.axeReach,
     };
     this.layout = {
       terrain: StandInRoute.pairs(layout.terrain),

@@ -36,6 +36,11 @@ export interface SlopeSettings {
   readonly ladderSlipChance: readonly SteepnessPoint[];
   /** How fast a hazard that goes throws a climber down the slope, in m/s. */
   readonly knock: number;
+  /** The fastest slide a climber can stop with the ice axe driven into the slope, in m/s:
+   * self-arrest works in a slide's first moments, or not at all. */
+  readonly arrestSpeed: number;
+  /** How far from their body a sliding climber can drive the ice axe in, in metres. */
+  readonly axeReach: number;
 }
 
 /**

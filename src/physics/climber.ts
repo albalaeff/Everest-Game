@@ -44,6 +44,7 @@ type FallingSave = {
   readonly top: number;
   readonly lowest: number;
   readonly speed: number;
+  readonly grounded: boolean;
   readonly body: ParticleSave;
 };
 
@@ -139,12 +140,20 @@ class Falling {
   }
 
   static load(save: FallingSave): Falling {
-    return new Falling(Particle.load(save.body), save.step, save.top, save.lowest, save.speed);
+    const falling = new Falling(
+      Particle.load(save.body),
+      save.step,
+      save.top,
+      save.lowest,
+      save.speed,
+    );
+    falling.grounded = save.grounded;
+    return falling;
   }
 
   save(): FallingSave {
-    const { step, top, lowest, speed } = this;
-    return { step, top, lowest, speed, body: this.body.save() };
+    const { step, top, lowest, speed, grounded } = this;
+    return { step, top, lowest, speed, grounded, body: this.body.save() };
   }
 
   beginStep(): void {
@@ -275,6 +284,9 @@ export class Climber {
     }
     if (action.kind === "unclip") {
       this.clip(action.cowstail, null);
+    }
+    if (action.kind === "tool" && action.tool === "ice-axe") {
+      this.arrest(action, slope);
     }
   }
 
@@ -472,6 +484,26 @@ export class Climber {
       this.first = carabiner;
     } else {
       this.second = carabiner;
+    }
+  }
+
+  /** Self-arrest: the ice axe driven into the ground at `axe`, within reach above their body,
+   * ends a slide still slow enough to hold, and they stand where it stopped. In the air, or
+   * too fast, it holds nothing. */
+  private arrest(axe: Point, slope: Slope): void {
+    const { falling } = this;
+    if (falling === null || !falling.grounded) {
+      return;
+    }
+    const { body } = falling;
+    const { arrestSpeed, axeReach } = slope.settings;
+    const x = axe.x - body.x;
+    const y = axe.y - body.y;
+    const reached = y >= 0 && Math.sqrt(x * x + y * y) <= axeReach;
+    if (reached && body.speed(slope.substepSeconds) <= arrestSpeed) {
+      this.falls.push(falling.record());
+      this.along = slope.terrain.nearest(body).along;
+      this.falling = null;
     }
   }
 

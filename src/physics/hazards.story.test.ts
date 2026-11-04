@@ -18,7 +18,7 @@ const { walk, clip, distance } = Climb;
 /** The story's own numbers, not the game's: a mountain hour in six minutes of play, and a serac
  * that goes about once in half an hour under it before dawn, five times as often at 14:00. */
 const COMPRESSION = 10;
-const SERAC_ODDS = { rate: 2, warmth: 5, snow: 1, wind: 1 };
+const SERAC_ODDS = { rate: 2, warmth: 5, snow: 1, wind: 1, warning: 0 };
 const SETTINGS: HazardSettings = {
   kinds: {
     serac: SERAC_ODDS,
@@ -28,6 +28,12 @@ const SETTINGS: HazardSettings = {
   },
   warmth: { from: 6, peak: 14, until: 20 },
   sun: { cloud: 0.5, snow: 0 },
+};
+/** A serac that cracks on the first step anyone is under it, and comes down ten mountain seconds
+ * later: a second of play, half a metre up a 40° slope. */
+const CRACKING: HazardSettings = {
+  ...SETTINGS,
+  kinds: { ...SETTINGS.kinds, serac: { ...SERAC_ODDS, rate: 100_000, warmth: 1, warning: 10 } },
 };
 
 /** A rope up the 40° slope of `TestMountain.SLOPE`, from 10 m up it to 30 m up, a metre slack,
@@ -133,6 +139,27 @@ describe("Two climbers rest under a serac in the afternoon, one clipped to the r
 
     expect(again.hazards.strikes).toEqual(icefall.hazards.strikes);
     expect(again.expedition.save()).toEqual(icefall.expedition.save());
+  });
+});
+
+describe("The serac cracks over two climbers, and the one near its edge walks clear", () => {
+  const layout = TestMountain.SLOPE.layout([
+    { id: "anna", along: TestMountain.upTheSlope(24.8) },
+    { id: "boris", along: TestMountain.upTheSlope(20) },
+  ]);
+  const icefall = new Icefall(Icefall.scenario(1, "14:00", layout), CRACKING);
+  icefall.play(1);
+  const warned = icefall.hazards.warningAt(icefall.physics.along("anna"));
+  icefall.play(25, [walk("anna", "right")]);
+
+  it("the crack warns whoever is under it", () => {
+    expect(warned).toBe("serac");
+  });
+
+  it("the ice comes down on the one who stayed, and spares the one who got clear", () => {
+    expect(icefall.hazards.strikes).toMatchObject([{ zone: "serac", climbers: ["boris"] }]);
+    expect(icefall.physics.climber("anna")).toMatchObject({ falling: false, falls: [] });
+    expect(icefall.physics.climber("boris")).toMatchObject({ falling: true });
   });
 });
 

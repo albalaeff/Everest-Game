@@ -19,6 +19,8 @@ import { ActionQueue, EverySink } from "./action-queue";
 import { BrowserSockets } from "./browser-sockets";
 import { GameLoop } from "./game-loop";
 import type { Played } from "./game-loop";
+import { HazardNotice } from "./hazard-notice";
+import type { HazardTexts } from "./hazard-notice";
 import { PlayerToken } from "./player-token";
 import { ReloadOnce } from "./reload-once";
 import { RoomClient } from "./room-client";
@@ -33,6 +35,7 @@ import { StartMenu } from "./start-menu";
 export interface PageTexts {
   readonly controls: ControlTexts;
   readonly rendering: RenderingTexts;
+  readonly hazards: HazardTexts;
   readonly room: RoomTexts;
 }
 
@@ -169,6 +172,13 @@ export class GamePage {
     });
     button.appendTo(this.elements.find("header"));
     const fps = new FpsReadout(this.elements.find("#fps"), texts.rendering.fps);
+    const hazard = new HazardNotice(
+      this.elements.find("#hazard"),
+      texts.hazards,
+      rules.hazards,
+      physics,
+      player,
+    );
     this.expose({
       pixelAt: (x, y) => scene.pixelAt(x, y),
       climberAt: (climber) => {
@@ -180,10 +190,11 @@ export class GamePage {
       scene.eachFrame((seconds, now) => {
         loop.frame(seconds);
         fps.frame(now);
+        hazard.frame();
       });
     } else {
       host.textContent = texts.rendering["no-webgl"];
-      this.runWithoutPicture(loop);
+      this.runWithoutPicture(loop, hazard);
     }
   }
 
@@ -237,11 +248,13 @@ export class GamePage {
     Object.assign(this.window, { everest: hooks });
   }
 
-  /** The loop on the browser's frames alone, when there's no scene to drive it. */
-  private runWithoutPicture(loop: GameLoop): void {
+  /** The loop on the browser's frames alone, when there's no scene to drive it: the hazards'
+   * warnings still show. */
+  private runWithoutPicture(loop: GameLoop, hazard: HazardNotice): void {
     let last: number | null = null;
     const frame = (now: number): void => {
       loop.frame(last === null ? 0 : (now - last) / 1000);
+      hazard.frame();
       last = now;
       this.window.requestAnimationFrame(frame);
     };

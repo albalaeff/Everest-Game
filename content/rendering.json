@@ -5,7 +5,11 @@
     "medium": "Medium",
     "high": "High",
     "fps": "fps",
-    "no-webgl": "The slope can't be drawn: this browser has no WebGL. The controls still work."
+    "no-webgl": "The slope can't be drawn: this browser has no WebGL. The controls still work.",
+    "warning-serac": "Ice cracks above you. Get clear!",
+    "warning-avalanche": "Avalanche! Get out of its path!",
+    "warning-crevasse": "The snow sags under you. Get off it!",
+    "warning-cornice": "The cornice cracks under you. Get off it!"
   },
   "ru": {
     "graphics": "Графика",
@@ -13,6 +17,10 @@
     "medium": "Средняя",
     "high": "Высокая",
     "fps": "к/с",
-    "no-webgl": "Склон не нарисовать: в этом браузере нет WebGL. Управление работает."
+    "no-webgl": "Склон не нарисовать: в этом браузере нет WebGL. Управление работает.",
+    "warning-serac": "Над вами трещит лёд. Уходите!",
+    "warning-avalanche": "Лавина! Уходите с её пути!",
+    "warning-crevasse": "Снег проседает под вами. Уходите с него!",
+    "warning-cornice": "Карниз трещит под вами. Уходите с него!"
   }
 }

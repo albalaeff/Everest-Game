@@ -17,6 +17,7 @@ new Disclaimer(document, disclaimerTexts.en, new ExpertReview(facts)).show(() =>
   const texts = {
     controls: controlTexts.en,
     rendering: renderingTexts.en,
+    hazards: renderingTexts.en,
     room: new RoomTexts(roomTexts.en),
   };
   void new GamePage(window, texts, facts, build).open();

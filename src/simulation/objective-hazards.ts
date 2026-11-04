@@ -19,6 +19,9 @@ export interface HazardOdds {
   readonly snow: number;
   /** How many times the rate it is in a strong wind. */
   readonly wind: number;
+  /** How many of the mountain's seconds pass between the first sign of it going, a crack or a
+   * roar, and its coming down: whoever gets clear in time is spared. 0 is no warning. */
+  readonly warning: number;
 }
 
 /** The hazards' numbers (docs/conventions.md → Data, not literals). */
@@ -46,7 +49,15 @@ export interface HazardStart {
   readonly zones: readonly HazardZone[];
 }
 
-/** A zone that went: when, on the mountain's clock too, and who was under it. */
+/** A zone that's going: it comes down on the step `comes`. */
+export type Warning = {
+  readonly zone: string;
+  readonly kind: HazardKind;
+  readonly comes: number;
+};
+
+/** A zone that came down: when, on the mountain's clock too, and who was under it then, if
+ * anyone. */
 export type Strike = {
   readonly zone: string;
   readonly kind: HazardKind;
@@ -74,6 +85,7 @@ export interface HazardGround {
 type HazardSave = {
   readonly weather: HazardWeather;
   readonly zones: readonly HazardZone[];
+  readonly warnings: readonly Warning[];
   readonly strikes: readonly Strike[];
 };
 
@@ -122,6 +134,11 @@ export class HazardChance {
     return (this.perHour(kind, timeOfDay, weather) * seconds) / HazardChance.HOUR;
   }
 
+  /** How many steps of `seconds` each `kind` warns for before it comes down: 0 for none. */
+  warningSteps(kind: HazardKind, seconds: number): number {
+    return Math.ceil(this.settings.kinds[kind].warning / seconds);
+  }
+
   /** The day's warmth at a time of day: 0 in the night, 1 at its peak. */
   private warmthAt(timeOfDay: number): number {
     const hour = timeOfDay / HazardChance.HOUR;
@@ -143,8 +160,10 @@ export class HazardChance {
  * The objective hazards, as a rule of the core (spec.md → Simulation systems): seracs, avalanches,
  * crevasses and cornices, which can't be beaten, only avoided by spending less time under them.
  * Each step someone is in a zone, it may go, at the `HazardChance` of the mountain's hour and the
- * weather; when it does, it knocks everyone in it off their feet. A zone nobody is in draws
- * nothing, so a quick crossing is a safer one, and a section with no zones draws as before.
+ * weather. A serac or an avalanche warns first, a crack or a roar, for its kind's `warning`; then
+ * it comes down and knocks everyone still in it off their feet, so whoever gets clear is spared.
+ * A snow bridge or a cornice gives way at once. A zone nobody is in draws nothing, so a quick
+ * crossing is a safer one, and a section with no zones draws as before.
  */
 export class ObjectiveHazards implements Rule {
   /** Its key in scenarios and saves: never change it once saves exist. */
@@ -185,7 +204,12 @@ export class ObjectiveHazards implements Rule {
         );
       }
     }
-    const save: HazardSave = { weather: start.weather, zones: start.zones, strikes: [] };
+    const save: HazardSave = {
+      weather: start.weather,
+      zones: start.zones,
+      warnings: [],
+      strikes: [],
+    };
     return save;
   }
 
@@ -197,9 +221,24 @@ export class ObjectiveHazards implements Rule {
     return this.loaded.zones;
   }
 
-  /** Every zone that went, in order: for the debrief (#46). */
+  /** The zones going now, which haven't come down yet. */
+  get warnings(): readonly Warning[] {
+    return this.loaded.warnings;
+  }
+
+  /** Every zone that came down, in order: for the debrief (#46). */
   get strikes(): readonly Strike[] {
     return this.loaded.strikes;
+  }
+
+  /** The kind of hazard going over a point `along` the ground, for the page to warn whoever is
+   * there, or none. */
+  warningAt(along: number): HazardKind | null {
+    const { zones, warnings } = this.loaded;
+    const going = zones.find(
+      (zone) => ObjectiveHazards.holds(zone, along) && warnings.some((w) => w.zone === zone.id),
+    );
+    return going?.kind ?? null;
   }
 
   load(state: Json): void {
@@ -212,33 +251,55 @@ export class ObjectiveHazards implements Rule {
 
   advance(moment: Moment): void {
     const { weather, zones } = this.loaded;
-    const { timeOfDay } = this.clock;
-    const seconds = this.clock.secondsAStep;
+    const { timeOfDay, secondsAStep } = this.clock;
+    const { step } = moment;
     for (const zone of zones) {
-      const under = this.ground.climbers.filter((climber) => {
-        const along = this.ground.along(climber);
-        return along >= zone.from && along <= zone.to;
-      });
-      if (under.length === 0) {
+      const warning = this.loaded.warnings.find((going) => going.zone === zone.id);
+      if (warning !== undefined) {
+        if (step >= warning.comes) {
+          this.comeDown(zone, step, timeOfDay);
+        }
         continue;
       }
-      if (moment.random.chance(this.chance.within(seconds, zone.kind, timeOfDay, weather))) {
-        this.strike(zone, under, moment.step, timeOfDay);
+      if (this.under(zone).length === 0) {
+        continue;
+      }
+      if (moment.random.chance(this.chance.within(secondsAStep, zone.kind, timeOfDay, weather))) {
+        const steps = this.chance.warningSteps(zone.kind, secondsAStep);
+        if (steps === 0) {
+          this.comeDown(zone, step, timeOfDay);
+        } else {
+          const going: Warning = { zone: zone.id, kind: zone.kind, comes: step + steps };
+          this.state = { ...this.loaded, warnings: [...this.loaded.warnings, going] };
+        }
       }
     }
   }
 
-  private strike(
-    zone: HazardZone,
-    under: readonly ClimberId[],
-    step: number,
-    timeOfDay: number,
-  ): void {
+  private static holds(zone: HazardZone, along: number): boolean {
+    return along >= zone.from && along <= zone.to;
+  }
+
+  /** Who's in a zone now, in the scenario's order. */
+  private under(zone: HazardZone): readonly ClimberId[] {
+    return this.ground.climbers.filter((climber) =>
+      ObjectiveHazards.holds(zone, this.ground.along(climber)),
+    );
+  }
+
+  /** The zone comes down on whoever is in it now, and stops warning. */
+  private comeDown(zone: HazardZone, step: number, timeOfDay: number): void {
+    const under = this.under(zone);
     for (const climber of under) {
       this.ground.knock(climber, step);
     }
     const strike: Strike = { zone: zone.id, kind: zone.kind, step, timeOfDay, climbers: under };
-    this.state = { ...this.loaded, strikes: [...this.loaded.strikes, strike] };
+    const { warnings, strikes } = this.loaded;
+    this.state = {
+      ...this.loaded,
+      warnings: warnings.filter((going) => going.zone !== zone.id),
+      strikes: [...strikes, strike],
+    };
   }
 
   private get loaded(): HazardSave {
