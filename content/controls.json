@@ -9,6 +9,8 @@
     "clip-first": "Clip 1",
     "clip-second": "Clip 2",
     "jumar": "Jumar",
+    "view-farther": "-",
+    "view-closer": "+",
     "hint-click": "Click the slope: ice axe, crampons",
     "hint-tap": "Tap the slope: ice axe, crampons",
     "turn-phone": "Turn your phone sideways to climb"
@@ -23,6 +25,8 @@
     "clip-first": "Ус 1",
     "clip-second": "Ус 2",
     "jumar": "Жумар",
+    "view-farther": "-",
+    "view-closer": "+",
     "hint-click": "Кликни по склону: ледоруб, кошки",
     "hint-tap": "Коснись склона: ледоруб, кошки",
     "turn-phone": "Поверни телефон боком, чтобы идти вверх"

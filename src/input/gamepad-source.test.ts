@@ -17,6 +17,8 @@ const VIEW = 8;
 const MENU = 9;
 const DPAD_UP = 12;
 const DPAD_DOWN = 13;
+const DPAD_LEFT = 14;
+const DPAD_RIGHT = 15;
 
 function setUp() {
   const heard = new HeardActions();
@@ -34,6 +36,8 @@ const ONE_PRESS_BUTTONS = [
   ["B", B, { kind: "panel", panel: "radio" }],
   ["the D-pad's up", DPAD_UP, { kind: "oxygen", climber: "anna", change: "up" }],
   ["the D-pad's down", DPAD_DOWN, { kind: "oxygen", climber: "anna", change: "down" }],
+  ["the D-pad's left", DPAD_LEFT, { kind: "view", change: "farther" }],
+  ["the D-pad's right", DPAD_RIGHT, { kind: "view", change: "closer" }],
   ["View", VIEW, { kind: "check-self", climber: "anna" }],
   ["Menu", MENU, { kind: "panel", panel: "inventory" }],
   ["the right bumper", RIGHT_BUMPER, { kind: "set-up-tent", climber: "anna" }],

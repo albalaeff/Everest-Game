@@ -39,6 +39,8 @@ const THE_CLIMB = [
   { kind: "panel", panel: "radio" },
   { kind: "panel", panel: "inventory" },
   { kind: "set-up-tent", climber: "anna" },
+  { kind: "view", change: "farther" },
+  { kind: "view", change: "closer" },
 ];
 
 function playedOnAPc(): HeardActions {
@@ -68,6 +70,8 @@ function playedOnAPc(): HeardActions {
   keyboard.tap("KeyQ");
   keyboard.tap("KeyI");
   keyboard.tap("KeyT");
+  keyboard.tap("KeyZ");
+  keyboard.tap("KeyX");
   return heard;
 }
 
@@ -104,6 +108,8 @@ function playedOnAPhone(): HeardActions {
   tapTheButton("radio");
   tapTheButton("inventory");
   tapTheButton("set-up-tent");
+  tapTheButton("view-farther");
+  tapTheButton("view-closer");
   return heard;
 }
 
@@ -136,6 +142,8 @@ function playedOnAGamepad(): HeardActions {
   tap(1);
   tap(9);
   tap(5);
+  tap(14);
+  tap(15);
   return heard;
 }
 

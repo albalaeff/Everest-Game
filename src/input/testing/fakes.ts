@@ -4,6 +4,7 @@ import type { KeyPress } from "../keyboard-source";
 import type { ActionSink, PlayerAction } from "../player-action";
 import type { JoystickView, PointerPress } from "../pointer-source";
 import type { ScreenSize, SeenClimber, SlopePoint, SlopeView } from "../slope-view";
+import type { WheelTurn } from "../wheel-source";
 
 /** A plain mapping of the screen onto the slope, a hundred pixels a metre from the screen's
  * middle, with the climber wherever a test puts them, clipped or not. */
@@ -126,6 +127,25 @@ export class FakeSurface extends FakeEvents<PointerPress> {
 
   private press(pointerId: number, pointerType: string, clientX: number, clientY: number) {
     return { pointerId, pointerType, clientX, clientY, button: 0, timeStamp: this.time };
+  }
+}
+
+/** The mouse wheel over the slope. Time is in milliseconds, as a test says. */
+export class FakeWheel extends FakeEvents<WheelTurn> {
+  private time = 0;
+
+  /** Lets time go by between turns. */
+  wait(milliseconds: number): void {
+    this.time += milliseconds;
+  }
+
+  /** A notch away from the player, or towards them, as the browser counts it: 100 px each. */
+  away(details: Partial<WheelTurn> = {}): void {
+    this.fire("wheel", { deltaY: -100, ctrlKey: false, timeStamp: this.time, ...details });
+  }
+
+  towards(details: Partial<WheelTurn> = {}): void {
+    this.fire("wheel", { deltaY: 100, ctrlKey: false, timeStamp: this.time, ...details });
   }
 }
 

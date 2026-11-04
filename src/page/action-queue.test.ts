@@ -1,7 +1,10 @@
 import { describe, expect, it } from "vitest";
 
 import { HeardActions } from "../input/testing/fakes";
-import { ActionQueue, EverySink } from "./action-queue";
+import { Camera } from "../rendering/camera";
+import { Zoom, ZoomChoice } from "../rendering/zoom";
+import { ZoomControl } from "../rendering/zoom-control";
+import { ActionQueue, EverySink, ZoomSink } from "./action-queue";
 
 describe("ActionQueue", () => {
   it("keeps the player's actions for the next step, then starts afresh", () => {
@@ -20,12 +23,34 @@ describe("ActionQueue", () => {
     expect(queue.take()).toEqual([]);
   });
 
-  it("doesn't queue a panel request: that's the page's, not the game's", () => {
+  it("doesn't queue a panel or a view: they're the page's, not the game's", () => {
     const queue = new ActionQueue();
 
     queue.send({ kind: "panel", panel: "radio" });
+    queue.send({ kind: "view", change: "farther" });
 
     expect(queue.take()).toEqual([]);
+  });
+});
+
+describe("ZoomSink", () => {
+  it("hands the player's view to the zoom, and nothing else", () => {
+    const choice = new ZoomChoice(null);
+    const camera = new Camera(
+      { climber: { x: 10, y: 2, first: null, second: null } },
+      640,
+      360,
+      choice.chosen,
+    );
+    const readout = { textContent: "" as string | null };
+    const sink = new ZoomSink(new ZoomControl(choice, camera, readout, "m"));
+
+    sink.send({ kind: "view", change: "farther" });
+    sink.send({ kind: "oxygen", climber: "anna", change: "up" });
+    sink.send({ kind: "panel", panel: "radio" });
+
+    expect(camera.zoom).toBe(Zoom.FAR);
+    expect(readout.textContent).toBe("50 m");
   });
 });
 

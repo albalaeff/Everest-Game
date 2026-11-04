@@ -5,6 +5,7 @@
     "medium": "Medium",
     "high": "High",
     "fps": "fps",
+    "metres": "m",
     "no-webgl": "The slope can't be drawn: this browser has no WebGL. The controls still work."
   },
   "ru": {
@@ -13,6 +14,7 @@
     "medium": "Средняя",
     "high": "Высокая",
     "fps": "к/с",
+    "metres": "м",
     "no-webgl": "Склон не нарисовать: в этом браузере нет WebGL. Управление работает."
   }
 }
