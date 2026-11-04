@@ -1,6 +1,6 @@
 # The input layer
 
-`src/input/` turns keys, the mouse, touch and a gamepad into one set of actions ([../../spec.md](../../spec.md) → Phone and PC). It follows [../conventions.md](../conventions.md) → Modules and Objects; these are its own rules.
+`src/input/` turns keys, the mouse, touch and a gamepad into one set of actions ([../../spec.md](../../spec.md) → Phone and PC). It follows [../conventions.md](../conventions.md) → Modules and Objects; these are its own rules. How the controls feel, their sizes, places and hints, follows the design guidelines too: [../guidelines/usability.md](../guidelines/usability.md) and [../guidelines/interface.md](../guidelines/interface.md).
 
 - **An action more is a row more.** `CONTROLS` in `controls.ts` is the spec's controls table in code: a control's keys, gamepad button, place on the screen and action, with its name in `content/controls.json`, Russian and English. Every device reads the same rows, and a button comes with its row. A new `GameAction` is a line in `game-action.ts` too.
 - **`PlayerInput` is the one way out.** A device tells it what the player does, and only a change goes on, because replays and the room server keep every action: a held key is two actions, and a stick held still is none. `pace` goes before `walk`, on every device, so the same climb gives the same list.
