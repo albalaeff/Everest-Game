@@ -1,4 +1,4 @@
-import type { ActionSink, PlayerAction } from "../input/player-action";
+import { GameActionSink } from "../input/player-action";
 import { CloseCode, Protocol } from "../room/messages";
 import type { Actions, Hello, Refusal, Step, Welcome } from "../room/messages";
 import { RoomCode } from "../room/room-code";
@@ -45,7 +45,7 @@ export interface RoomListener {
  * again every two seconds with the same token, to the room the welcome named, and the welcome
  * that follows is a fresh save, so nothing missed is missed for long; a refusal ends it.
  */
-export class RoomClient implements Played, ActionSink {
+export class RoomClient extends GameActionSink implements Played {
   static readonly RETRY_SECONDS = 2;
   /** The most steps kept between two frames, a minute's: a tab away for longer is quicker to
    * resume from a fresh save than to catch up. */
@@ -69,7 +69,9 @@ export class RoomClient implements Played, ActionSink {
     private readonly rules: readonly Rule[],
     private readonly browser: Browser,
     private readonly listener: RoomListener,
-  ) {}
+  ) {
+    super();
+  }
 
   /** The expedition as the room last handed it over, or null before the welcome. */
   get expedition(): Expedition | null {
@@ -87,11 +89,9 @@ export class RoomClient implements Played, ActionSink {
     this.socket = null;
   }
 
-  /** What the player did: for the room, with the next frame. A panel is the page's. */
-  send(action: PlayerAction): void {
-    if (action.kind !== "panel") {
-      this.queued.push(action);
-    }
+  /** What the player did: for the room, with the next frame. A page request isn't sent. */
+  protected queue(action: GameAction): void {
+    this.queued.push(action);
   }
 
   /** Takes the room's steps that have come since the last frame, and sends the player's actions. */

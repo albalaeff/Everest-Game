@@ -1,6 +1,7 @@
 import { Container, Graphics } from "pixi.js";
 
 import type { ClimberView } from "../physics";
+import type { LeastSize } from "./least-size";
 
 /**
  * A climber's silhouette, in metres with the feet at the origin: a bright suit, a backpack and a
@@ -16,6 +17,8 @@ export class ClimberFigure extends Container {
   private static readonly GOGGLES = 0x9fd3ff;
   /** How far over a fallen climber lies. */
   private static readonly FALLEN_RADIANS = 1.2;
+  /** From the soles to the top of the head. */
+  private static readonly HEIGHT_METRES = 1.77;
 
   private facing: 1 | -1 = 1;
 
@@ -35,15 +38,17 @@ export class ClimberFigure extends Container {
     this.addChild(graphics);
   }
 
-  /** Puts the figure where the climber is, as the physics shows them this frame. */
-  show(climber: ClimberView): void {
+  /** Puts the figure where the climber is, as the physics shows them this frame, and no smaller
+   * than `size` allows. */
+  show(climber: ClimberView, size: LeastSize): void {
     this.position.set(climber.x, climber.y);
     if (climber.walking.includes("left")) {
       this.facing = -1;
     } else if (climber.walking.includes("right")) {
       this.facing = 1;
     }
-    this.scale.x = this.facing;
+    const grown = size.climber(ClimberFigure.HEIGHT_METRES);
+    this.scale.set(this.facing * grown, grown);
     this.rotation = climber.falling ? ClimberFigure.FALLEN_RADIANS * this.facing : 0;
   }
 }

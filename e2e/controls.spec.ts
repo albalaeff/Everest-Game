@@ -30,6 +30,8 @@ const THE_CLIMB = [
   "panel radio",
   "panel inventory",
   "set-up-tent",
+  "view farther",
+  "view closer",
 ];
 
 function received(page: Page): Locator {
@@ -91,6 +93,8 @@ test.describe("on a screen of 640 by 360", () => {
     await page.keyboard.press("KeyQ");
     await page.keyboard.press("KeyI");
     await page.keyboard.press("KeyT");
+    await page.keyboard.press("KeyZ");
+    await page.keyboard.press("KeyX");
 
     await expectReceived(page, THE_CLIMB);
   });
@@ -113,6 +117,8 @@ test.describe("on a screen of 640 by 360", () => {
     await button(page, "radio").tap();
     await button(page, "inventory").tap();
     await button(page, "set-up-tent").tap();
+    await button(page, "view-farther").tap();
+    await button(page, "view-closer").tap();
 
     await expectReceived(page, THE_CLIMB);
   });
@@ -167,7 +173,7 @@ test.describe("on a screen of 640 by 360", () => {
 
     const buttons = await page.locator(".action-button").all();
 
-    expect(buttons).toHaveLength(9);
+    expect(buttons).toHaveLength(11);
     for (const found of buttons) {
       await expect(found).toBeInViewport({ ratio: 1 });
       const box = await found.boundingBox();
@@ -181,7 +187,15 @@ test.describe("on a screen of 640 by 360", () => {
     await openTheGame(page);
     await tap(page, 400, 130);
 
-    for (const name of ["clip-first", "clip-second", "jumar", "oxygen-up", "oxygen-down"]) {
+    for (const name of [
+      "clip-first",
+      "clip-second",
+      "jumar",
+      "oxygen-up",
+      "oxygen-down",
+      "view-farther",
+      "view-closer",
+    ]) {
       const box = await button(page, name).boundingBox();
       expect(box?.width).toBeGreaterThanOrEqual(64);
       expect(box?.height).toBeGreaterThanOrEqual(64);
@@ -202,6 +216,8 @@ test("a PC shows each button with its key, and no thumb buttons", async ({ page,
 
   await expect(button(page, "radio")).toHaveText("Radio Q");
   await expect(button(page, "check-self")).toHaveText("Check yourself Tab");
+  await expect(button(page, "view-farther")).toHaveText("- Z");
+  await expect(button(page, "view-closer")).toHaveText("+ X");
   await expect(button(page, "clip-first")).toBeHidden();
   await expect(button(page, "jumar")).toBeHidden();
 });

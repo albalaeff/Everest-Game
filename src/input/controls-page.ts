@@ -12,6 +12,7 @@ import { PlayerInput } from "./player-input";
 import { PointerSource } from "./pointer-source";
 import type { SlopeView } from "./slope-view";
 import { TouchMode } from "./touch-mode";
+import { WheelSource } from "./wheel-source";
 
 /** The page's words, in one language of content/controls.json. */
 export type ControlTexts = Readonly<
@@ -35,6 +36,7 @@ export class ControlsPage {
     const joystick = new FloatingJoystick(this.element("#joystick"), this.element("#knob"));
     const keyboard = new KeyboardSource(window, player);
     const pointer = new PointerSource(this.element("#slope"), player, joystick, window);
+    new WheelSource(this.element("#slope"), player);
     const buttons = CONTROLS.map((control) => {
       const button = new ActionButton(control, texts[control.name], player);
       button.appendTo(this.element(`#controls .${control.group}`));
