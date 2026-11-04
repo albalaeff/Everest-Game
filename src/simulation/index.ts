@@ -1,6 +1,8 @@
 // The simulation core, as the modules above it see it (docs/conventions.md → Modules).
 export { ActionLog } from "./action-log";
 export type { LoggedStep } from "./action-log";
+export { createBodyState, defaultBodyModelCoefficients, updateBodyState } from "./body-model";
+export type { BodyInputs, BodyModelCoefficients, BodyState } from "./body-model";
 export { Body } from "./body/body";
 export type { Breathing, Legs, Whereabouts } from "./body/body";
 export type { BodyNumbers, PaceNumbers } from "./body/body-numbers";
