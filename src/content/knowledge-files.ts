@@ -1,5 +1,6 @@
 import accidents from "../../content/facts/accidents.json";
 import acclimatization from "../../content/facts/acclimatization.json";
+import body from "../../content/facts/body.json";
 import cold from "../../content/facts/cold.json";
 import crowds from "../../content/facts/crowds.json";
 import deaths from "../../content/facts/deaths.json";
@@ -21,6 +22,7 @@ import type { KnowledgeFile } from "./knowledge-base";
 export const KNOWLEDGE_FILES: readonly KnowledgeFile[] = [
   accidents,
   acclimatization,
+  body,
   cold,
   crowds,
   deaths,

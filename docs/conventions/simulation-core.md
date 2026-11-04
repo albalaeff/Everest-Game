@@ -24,8 +24,9 @@ The game's rules are classes behind the `Rule` interface: `load`, `save` and `ad
 - A rule keeps its whole state in plain data it can `save`: what `load` doesn't restore is lost from saves, and a replay goes wrong.
 - `name` is its key in saves: never change it once saves exist.
 - A rule has its numbers handed to it (conventions.md → Data, not literals), and reads neither the content files nor the rendering.
+- A rule that sets what another reads comes before it in the list, and is handed it through an interface of the core: the body (`body/`, [body.md](body.md)) sets the slope physics' strides through `Legs`, so the physics walks this step at the stride the body gave.
 
-`src/simulation/testing/test-slope.ts` is a small rule that stands in for the real ones in the core's tests, which import nothing above the core. It's no game code, and its numbers are made up.
+`src/simulation/testing/test-slope.ts` is a small rule that stands in for the real ones in the core's tests, which import nothing above the core, and `testing/test-ridge.ts` stands in for the slope physics and the oxygen under the body's (`testing/hike.ts` plays it). They're no game code, and their numbers are made up.
 
 ## Scenarios, saves and replays
 
@@ -39,7 +40,7 @@ The game's rules are classes behind the `Rule` interface: `load`, `save` and `ad
 The same seed and actions must give the same numbers in every browser, in Node and on the room server, down to the last digit.
 
 - Chance comes from `moment.random` alone. Every rule draws from that one generator, in the rules' order, and a change in what a rule draws changes everything after it: an old replay goes with its version of the game.
-- Maths is `+ - * /` and `Math.sqrt`, `abs`, `floor`, `ceil`, `round`, `trunc`, `min`, `max` and `imul`. The language lets each browser round `Math.pow`, `**`, `exp`, `log` and the trigonometric functions its own way, so a curve one of those would give (an exponential in the body model, say) is a class of the core's own built from the operations above, or a table in the content data.
+- Maths is `+ - * /` and `Math.sqrt`, `abs`, `floor`, `ceil`, `round`, `trunc`, `min`, `max` and `imul`. The language lets each browser round `Math.pow`, `**`, `exp`, `log` and the trigonometric functions its own way, so a curve one of those would give (an exponential in the body model, say) is a class of the core's own built from the operations above, or a table in the content data, read through `Curve`, which draws straight lines between its points and holds its end values past its ends: the body's SpO2 by altitude, the physics' speeds by steepness.
 - Sorting uses a comparison of numbers, never `localeCompare`, which differs by device. Maps and arrays keep their order; don't depend on any other.
 
 `npm run typecheck` checks the core alone with `tsconfig.core.json`, which has no DOM, Node or timers in scope, so using one fails there. `core-purity.test.ts` refuses what the language itself offers, in every folder of the core but `testing/`: `Math.random`, `Date`, the rounded maths, `localeCompare` and the like, and any import from outside `src/simulation/`. A rule that runs in the core's step keeps these rules too, and its folder gets the same checks: `testing/module-code.ts` makes them (`src/physics/physics-purity.test.ts`).

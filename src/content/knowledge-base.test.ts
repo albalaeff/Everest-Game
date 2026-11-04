@@ -59,6 +59,13 @@ describe("KnowledgeBase", () => {
     expect(() => base.number("route.summit")).toThrow("route.summit");
   });
 
+  it("gives the range a record's number lies in: from the lowest its sources say to the highest", () => {
+    expect(base.range("route.camp")).toEqual({ min: 6300, max: 6500 });
+    expect(base.range("body.spread")).toEqual({ min: 1, max: 3 });
+    expect(base.range("oxygen.flow")).toEqual({ min: 3, max: 3 });
+    expect(() => base.range("medicine.descent")).toThrow("medicine.descent");
+  });
+
   it("reads the game's own records: the scale, and the summit day it's fitted to", () => {
     const real = new KnowledgeBase([time, crowds]);
 

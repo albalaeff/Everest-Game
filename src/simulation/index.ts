@@ -1,6 +1,12 @@
 // The simulation core, as the modules above it see it (docs/conventions.md → Modules).
 export { ActionLog } from "./action-log";
 export type { LoggedStep } from "./action-log";
+export { Body } from "./body/body";
+export type { Breathing, Legs, Whereabouts } from "./body/body";
+export type { BodyNumbers, PaceNumbers } from "./body/body-numbers";
+export type { BodyStart, BodyView, Symptom, Tiredness } from "./body/condition";
+export { Curve } from "./curve";
+export type { CurvePoint } from "./curve";
 export { Expedition } from "./expedition";
 export type { ExpeditionSave } from "./expedition";
 export { LetGo } from "./game-action";

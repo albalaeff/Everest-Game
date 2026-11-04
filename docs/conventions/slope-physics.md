@@ -13,6 +13,7 @@
 
 - **Walking goes by the steepness ahead.** `walkingSpeed` gives the speed along the ground, and a step stops at a corner, so the next one takes the new ground's speed. Ground steeper up than the curve's last point stops the climber; ground steeper down than its first is a fall.
 - **A slip is a draw**, of `slipChance` per second scaled to the step, made only where that chance isn't zero: walking on flat ground draws nothing, and a change in where the physics draws changes every draw after it (simulation-core.md → The same result everywhere).
+- **The body sets the stride** (`stride(id, share)`, [body.md](body.md) → The pace and the stride): a climber walks and climbs ladders at the speed by steepness times their share, and slips at the chance times it, so a slower climber slips as often for each metre, not each second. A whole stride, 1, until the body sets it; at 0 the climber stands, and draws nothing. `climber(id).moving` says they took a step in the last step, which the body reads to tire those on the move and rest the others.
 - **A fall is a body** under Verlet integration in `Slope.SUBSTEPS` sub-steps a step, starting at the walking speed. The ground pushes it back out, and friction takes from its slide what Coulomb's law gives, so a gentle slope stops it and a steep one doesn't. In the air it loses no speed: a climber hanging on a rope swings until the ground stops them.
 - **A fall is over when the body lies still on the ground** for a whole step (`Slope.REST_SPEED`), and the climber stands where it lies. Its record (`Fall`: the step it began on, the drop and the top speed) stays in the climber's view, for the rules above to read.
 
@@ -37,7 +38,7 @@
 
 - **The mountain's numbers are handed in** through `SlopeSettings` (conventions.md → Data, not literals): gravity, friction, the cowstail's reach, and the speed and slip chance by steepness on the ground and on a ladder, as `[degrees, value]` points; and through the layout, the altitude of the section's ends. Their facts records, and the first real ground, come with the first section of the route, the Khumbu Icefall (#26); until then the speeds and slips are questions for the guide (`technique.speed-by-steepness`, `technique.slips-by-steepness`), and so are each section's hours and length (`time.section-hours`).
 - **The engine's numbers are in the code**, as the core's step is: `Slope.SUBSTEPS`, `Slope.ITERATIONS`, `Slope.REST_SPEED` and `Rope.LINK_METRES`. No source states them; they're how finely the physics works the mountain out.
-- **Steepness is a sine** (`Steepness`): `ofWay` divides, and `ofDegrees` sums a series of its own, since `Math.sin` rounds differently in each browser. A `SteepnessCurve` interpolates over the sine and holds its end values past its ends.
+- **Steepness is a sine** (`Steepness`): `ofWay` divides, and `ofDegrees` sums a series of its own, since `Math.sin` rounds differently in each browser. A `SteepnessCurve` is the core's `Curve` over the sine: it draws straight lines between its points and holds its end values past its ends.
 
 ## The same result everywhere
 
@@ -47,4 +48,4 @@ The physics uses the core's maths alone, and imports only itself and the core. `
 
 The tests play the physics through `Expedition` (`testing/climb.ts`), on the made-up numbers and ground of `testing/test-mountain.ts`: no game code imports either. A test mountain is drawn at life size from `TestMountain.FOOT` unless the test says otherwise. `Climb.under` goes on from a save on other numbers, a gust that makes every step a slip, say. The stories: `slope.story.test.ts`, two friends on a steep fixed rope, one of them careless; and `fixed-ropes.story.test.ts`, two Sherpas on a ladder over a crevasse, one unclipped, and two clients going up a line of fixed ropes on the jumar, one careless at the anchor.
 
-Still to come: climbing a rope where there's no ground (up a wall, out of a crevasse), the pace (#22) and the ice axe and crampons (#55). The rendering draws what the physics shows ([rendering.md](rendering.md)).
+Still to come: climbing a rope where there's no ground (up a wall, out of a crevasse), and the ice axe and crampons (#55). The rendering draws what the physics shows ([rendering.md](rendering.md)).

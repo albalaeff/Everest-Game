@@ -1,5 +1,5 @@
 {
-  "note": "A stand-in for the route's first section until the Khumbu Icefall (#26) brings the real ground and the knowledge base's numbers: a made-up line shaped like the Icefall, with made-up speeds and slip chances. Nothing here is a fact. Every sloping segment is a Pythagorean triple, so the distances along the ground, which the ropes, the ladders and the climbers are laid by, are whole metres: the corners are at 0, 20, 45, 58, 63, 67, 72, 84, 99, 102, 117, 130, 155, 172, 182, 190, 198, 223, 240, 265, 278, 299, 324, 344 and 364 m along it. The altitude of its ends and the clock's start are made up too; the ends are 12 times the drawn rise apart, since every section is drawn at 1/time.compression (docs/conventions/slope-physics.md → The slope).",
+  "note": "A stand-in for the route's first section until the Khumbu Icefall (#26) brings the real ground and the knowledge base's numbers: a made-up line shaped like the Icefall, with made-up speeds and slip chances. Nothing here is a fact. Every sloping segment is a Pythagorean triple, so the distances along the ground, which the ropes, the ladders and the climbers are laid by, are whole metres: the corners are at 0, 20, 45, 58, 63, 67, 72, 84, 99, 102, 117, 130, 155, 172, 182, 190, 198, 223, 240, 265, 278, 299, 324, 344 and 364 m along it. The altitude of its ends and the clock's start are made up too; the ends are 12 times the drawn rise apart, since every section is drawn at 1/time.compression (docs/conventions/slope-physics.md → The slope). So are the climbers' bodies, until the player packs their own: their mass and their pack's in kg, rested, an hour awake, short of no water or food.",
   "settings": {
     "gravity": 9.8,
     "friction": 0.4,
@@ -65,5 +65,9 @@
       { "id": "teammate", "along": 12 }
     ]
   },
+  "bodies": [
+    { "id": "player", "mass": 75, "load": 10, "fatigue": 0, "awake": 1, "water": 0, "food": 0 },
+    { "id": "teammate", "mass": 68, "load": 12, "fatigue": 0, "awake": 1, "water": 0, "food": 0 }
+  ],
   "clock": { "date": "2026-04-20", "time": "04:00" }
 }

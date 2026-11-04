@@ -1,7 +1,13 @@
+/** The lowest and the highest a number can be. */
+export interface KnowledgeRange {
+  readonly min: number;
+  readonly max: number;
+}
+
 /** A number as a record keeps it: a value, or the range it lies in. */
 interface Measured {
   readonly value?: number | undefined;
-  readonly range?: { readonly min: number; readonly max: number } | undefined;
+  readonly range?: KnowledgeRange | undefined;
 }
 
 /** What one source says of a fact. */
@@ -40,6 +46,13 @@ export class KnowledgeBase {
   /** A record's number: a coefficient's value, or the middle of its range; a fact's, or the
    * middle of the range across its sources where they disagree (knowledge-base.md → A fact). */
   number(id: string): number {
+    const { min, max } = this.range(id);
+    return (min + max) / 2;
+  }
+
+  /** The range a record's number lies in: from the lowest of its sources' numbers to the highest,
+   * a coefficient's own range, or a single value at both ends. */
+  range(id: string): KnowledgeRange {
     const record = this.records.get(id);
     if (record === undefined) {
       throw new RangeError(`The knowledge base has no record ${id}`);
@@ -50,9 +63,10 @@ export class KnowledgeBase {
     if (spans.length === 0) {
       throw new RangeError(`The record ${id} has no number`);
     }
-    const low = Math.min(...spans.map(([min]) => min));
-    const high = Math.max(...spans.map(([, max]) => max));
-    return (low + high) / 2;
+    return {
+      min: Math.min(...spans.map(([min]) => min)),
+      max: Math.max(...spans.map(([, max]) => max)),
+    };
   }
 
   private static span(measured: Measured): readonly [min: number, max: number] | null {

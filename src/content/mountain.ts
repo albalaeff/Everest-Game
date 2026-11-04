@@ -1,13 +1,16 @@
 import { SlopePhysics } from "../physics";
-import { MountainClock } from "../simulation";
+import { Body, MountainClock } from "../simulation";
 import type { Rule, Scenario } from "../simulation";
+import { BodyFacts } from "./body-facts";
 import type { KnowledgeBase } from "./knowledge-base";
 import { StandInRoute } from "./stand-in-route";
 
 /** One expedition's rules, with their numbers: the page draws from the physics and reads the
- * clock, and the expedition runs them all, in this order. */
+ * clock and the body, and the expedition runs them all, in this order: the body sets the strides
+ * the physics takes next. */
 export interface ExpeditionRules {
   readonly clock: MountainClock;
+  readonly body: Body;
   readonly physics: SlopePhysics;
   readonly all: readonly Rule[];
 }
@@ -36,6 +39,7 @@ export class Mountain {
   rules(): ExpeditionRules {
     const clock = new MountainClock(this.knowledge.number(Mountain.COMPRESSION));
     const physics = new SlopePhysics(this.route.settings);
-    return { clock, physics, all: [clock, physics] };
+    const body = new Body(new BodyFacts(this.knowledge).numbers, clock, physics);
+    return { clock, body, physics, all: [clock, body, physics] };
   }
 }
