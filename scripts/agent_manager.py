@@ -817,12 +817,16 @@ class AgentResult:
     thrashed: bool = False  # Claude Code stopped it, compacting again and again (#152)
 
     TYPES: ClassVar[tuple[str, ...]] = ('"type":"result"', '"type":"assistant"')
+<<<<<<< HEAD
     # Claude Code's words for a run it stopped for compacting again and again (#152): what it
     # read to begin filled the context again within 3 turns, 3 times in a row.
     THRASHED: ClassVar[Mapping[str, str]] = {
         "api_error": "autocompact_thrashing",
         "terminal_reason": "rapid_refill_breaker",
     }
+=======
+    REFUSAL: ClassVar[int] = 120  # characters of a refused command in the done line
+>>>>>>> 88f7ffa (A refused command is one line of the manager's done line (#8))
     READ: ClassVar[tuple[str, ...]] = (
         "input_tokens",
         "cache_creation_input_tokens",
@@ -881,10 +885,15 @@ class AgentResult:
             return None
         return sum(int(usage.get(name) or 0) for name in cls.READ)
 
-    @staticmethod
-    def _denial(denial: Mapping[str, Any]) -> str:
+    @classmethod
+    def _denial(cls, denial: Mapping[str, Any]) -> str:
+        """One line: what the allow list lacks. A heredoc chained to a command put thirty lines
+        of comment under "1 refusal" (template#3); the agent's own log keeps it whole."""
         said = (denial.get("tool_input") or {}).get("command")
-        return f"{denial.get('tool_name')}({said})" if said else str(denial.get("tool_name"))
+        if not said:
+            return str(denial.get("tool_name"))
+        line = str(said).splitlines()[0][: cls.REFUSAL]
+        return f"{denial.get('tool_name')}({line}{'…' if line != said else ''})"
 
     def __str__(self) -> str:
         parts = []

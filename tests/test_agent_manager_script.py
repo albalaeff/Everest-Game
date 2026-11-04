@@ -1102,6 +1102,35 @@ def test_a_run_s_result_is_found_wherever_its_type_sits(tmp_path: Path) -> None:
     assert str(found) == "$0.00, 0 min, 1 refusal: Bash(uv run python scripts/github.py)"
 
 
+def test_a_refused_command_is_one_line_of_the_done_line(tmp_path: Path) -> None:
+    # template#3, from Everest#8: an agent's comment in a heredoc, chained to mkdir and the
+    # comment command, put thirty lines of comment under "1 refusal". Its log keeps them whole.
+    log = tmp_path / "8.log"
+    chained = (
+        "mkdir -p .agent-runs && cat > .agent-runs/note.md <<'EOF'\n"
+        "The plan, in thirty lines.\n"
+        "EOF\n"
+        "uv run python scripts/github.py comment 8 .agent-runs/note.md --handoff"
+    )
+    long = "uv run python scripts/github.py " + "x" * 200
+    result = {
+        "type": "result",
+        "permission_denials": [
+            {"tool_name": "Bash", "tool_input": {"command": chained}},
+            {"tool_name": "Bash", "tool_input": {"command": long}},
+        ],
+    }
+    log.write_text(json.dumps(result, separators=(",", ":")) + "\n", encoding="utf-8")
+
+    found = AgentResult.read(log)
+
+    assert found.denials == (
+        "Bash(mkdir -p .agent-runs && cat > .agent-runs/note.md <<'EOF'…)",
+        f"Bash({long[:120]}…)",
+    )
+    assert "\n" not in str(found)
+
+
 def test_a_run_in_parts_is_read_from_all_of_them(tmp_path: Path) -> None:
     # #330's run (#408): a background task woke the agent again, so Claude Code wrote a result
     # for each part. The cost is a running total; the minutes and the refusals are each part's.

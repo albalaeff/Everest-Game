@@ -1,6 +1,6 @@
 # Where the rules came from
 
-This template was taken from [bateks/PersonalExchangeBot](https://github.com/bateks/PersonalExchangeBot) (fxbot, a Telegram currency-exchange board) on 2026-10-19, after six weeks of two developers and their Claudes, sessions and agents, working from GitHub issues. `PEB#n` anywhere in CLAUDE.md, the docs and the skills is that repository's issue n; the scripts' and tests' comments say the same issues as a bare `#n`. Each line below is a lesson, with the issue it was learned on. A rule the new repository learns on its own cites its own issues as `#n`.
+This template was taken from [bateks/PersonalExchangeBot](https://github.com/bateks/PersonalExchangeBot) (fxbot, a Telegram currency-exchange board) on 2026-10-19, after six weeks of two developers and their Claudes, sessions and agents, working from GitHub issues. `PEB#n` anywhere in CLAUDE.md, the docs and the skills is that repository's issue n; the scripts' and tests' comments say the same issues as a bare `#n`. `template#n` is [this template's](https://github.com/bateks/claude-workflow-template) issue n, from the projects started from it, such as [albalaeff/Everest-Game](https://github.com/albalaeff/Everest-Game) (`Everest#n`). Each line below is a lesson, with the issue it was learned on. A rule the new repository learns on its own cites its own issues as `#n`.
 
 ## Sessions and handoffs
 
@@ -38,6 +38,7 @@ This template was taken from [bateks/PersonalExchangeBot](https://github.com/bat
 - [PEB#387](https://github.com/bateks/PersonalExchangeBot/issues/387): the agent manager: one headless Claude Code per task, each in its own worktree, power from `model:*` and `effort:*` labels, logs in `.agent-runs/`, `scripts/setup.sh` for a machine.
 - [PEB#409](https://github.com/bateks/PersonalExchangeBot/issues/409): a branch checked out in the checkout keeps the manager from making the worktree: commands asked of a person end with `git switch develop`.
 - [PEB#411](https://github.com/bateks/PersonalExchangeBot/issues/411): agents try ideas as tests, never with `python -c` or ad-hoc scripts, which would run any code.
+- [template#3](https://github.com/bateks/claude-workflow-template/issues/3), from [Everest#8](https://github.com/albalaeff/Everest-Game/issues/8): a refused command is one line of the manager's done line; a comment's file is written with the Write tool, not a heredoc chained to `mkdir` and the command.
 - [PEB#415](https://github.com/bateks/PersonalExchangeBot/issues/415): what an agent needs of a person goes on the issue: permissions as exact rules, `.claude/` changes as diffs.
 - [PEB#436](https://github.com/bateks/PersonalExchangeBot/issues/436): a worktree whose branch was squash-merged without an upstream of its own holds nothing GitHub hasn't: compare its changed files with `develop`.
 - [PEB#441](https://github.com/bateks/PersonalExchangeBot/issues/441): an agent's conversation is compacted at a quarter of the window, since every reply reads all of it again.
