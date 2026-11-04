@@ -1,0 +1,1194 @@
+{
+  "$schema": "../facts.schema.json",
+  "facts": [
+    {
+      "id": "accidents.1996-storm",
+      "kind": "accident",
+      "title": "The storm of 10–11 May 1996",
+      "status": "source only",
+      "date": "1996-05-10",
+      "until": "1996-05-11",
+      "weather": {
+        "what": "A stable morning, clouds from 15:00, then from 17:00 a storm with a whiteout and hurricane-force winds.",
+        "versions": [
+          {
+            "note": "Unusually stable in the morning, changing soon after noon; clouds over the upper slopes by 15:00, the storm at 17:00: light snow, then a whiteout with winds over 100 km/h, and the temperature dropping at once.",
+            "source": {
+              "title": "Explorersweb: The 1996 Everest Tragedy, 30 Years Later",
+              "url": "https://explorersweb.com/1996-everest-tragedy-30-years-later/"
+            },
+            "checked": "2026-11-04"
+          }
+        ]
+      },
+      "crowd": {
+        "what": "Some thirty people trying for the summit the same day, in teams that didn't coordinate.",
+        "versions": [
+          {
+            "value": 30,
+            "unit": "people",
+            "note": "Trying for the summit on the same day; on the Nepal side, two commercial teams and a Taiwanese national team, with a lack of coordination between the teams.",
+            "source": {
+              "title": "Explorersweb: The 1996 Everest Tragedy, 30 Years Later",
+              "url": "https://explorersweb.com/1996-everest-tragedy-30-years-later/"
+            },
+            "checked": "2026-11-04"
+          }
+        ]
+      },
+      "chain": [
+        {
+          "when": "10 May, morning",
+          "what": "Fixed ropes missing at the Balcony and the Hillary Step hold the climbers up, and they bunch up while their oxygen runs down.",
+          "versions": [
+            {
+              "note": "The ropes weren't fixed in time at the Balcony and the Hillary Step: a chain reaction of delays, with climbers waiting their turn as their oxygen ran low.",
+              "source": {
+                "title": "Explorersweb: The 1996 Everest Tragedy, 30 Years Later",
+                "url": "https://explorersweb.com/1996-everest-tragedy-30-years-later/"
+              },
+              "checked": "2026-11-04"
+            },
+            {
+              "note": "It started with missing fixed ropes; the delay caused a bottleneck at the Hillary Step, pushing climbers well past the safe time to summit.",
+              "source": {
+                "title": "Outside: The Worst Disasters on Mount Everest",
+                "url": "https://www.outsideonline.com/outdoor-adventure/everest/worst-everest-disasters/"
+              },
+              "checked": "2026-11-04"
+            }
+          ]
+        },
+        {
+          "when": "10 May, 14:00",
+          "what": "The turnaround time passes with many still on their way to the summit.",
+          "versions": [
+            {
+              "note": "Everyone was to turn around by 14:00, to be back at the high camp before dark; many ignored the rule.",
+              "source": {
+                "title": "Explorersweb: The 1996 Everest Tragedy, 30 Years Later",
+                "url": "https://explorersweb.com/1996-everest-tragedy-30-years-later/"
+              },
+              "checked": "2026-11-04"
+            }
+          ]
+        },
+        {
+          "when": "10 May, 15:00 to 17:00",
+          "what": "The weather turns, and the storm hits while many are still on the summit or above the Hillary Step.",
+          "versions": [
+            {
+              "note": "Visibility vanished, burying the fixed ropes and the path back to Camp 4, and the wind drowned out shouts from a few metres away.",
+              "source": {
+                "title": "Explorersweb: The 1996 Everest Tragedy, 30 Years Later",
+                "url": "https://explorersweb.com/1996-everest-tragedy-30-years-later/"
+              },
+              "checked": "2026-11-04"
+            },
+            {
+              "note": "Two teams were caught on the way down by a powerful blizzard, with climbers trapped in the death zone in a whiteout; of seventeen stranded, only half made it back.",
+              "source": {
+                "title": "Outside: The Worst Disasters on Mount Everest",
+                "url": "https://www.outsideonline.com/outdoor-adventure/everest/worst-everest-disasters/"
+              },
+              "checked": "2026-11-04"
+            }
+          ]
+        },
+        {
+          "when": "Night of 10–11 May",
+          "what": "A group lost in the whiteout on the South Col, close to Camp 4: most are brought in, and one dies there in the early hours.",
+          "versions": [
+            {
+              "value": 11,
+              "unit": "people",
+              "note": "Lost 300 m from Camp 4, unable to find the tents; most were rescued, and one died of exhaustion and cold just outside the camp.",
+              "source": {
+                "title": "Explorersweb: The 1996 Everest Tragedy, 30 Years Later",
+                "url": "https://explorersweb.com/1996-everest-tragedy-30-years-later/"
+              },
+              "checked": "2026-11-04"
+            },
+            {
+              "note": "When the storm eased, help came from Camp 4 to bring climbers in from the South Col; two were left behind, presumed dead, and one of them later reached Camp 4 alone.",
+              "source": {
+                "title": "Outside: The Worst Disasters on Mount Everest",
+                "url": "https://www.outsideonline.com/outdoor-adventure/everest/worst-everest-disasters/"
+              },
+              "checked": "2026-11-04"
+            },
+            {
+              "note": "One died on the South Col in the early hours of 11 May, between about 02:00 and 04:00 by its estimate.",
+              "source": {
+                "title": "The Himalayan Database, Autumn-Winter 2025",
+                "url": "https://www.himalayandatabase.com/"
+              },
+              "checked": "2026-11-03"
+            }
+          ]
+        },
+        {
+          "when": "10–11 May",
+          "what": "Higher up on the south side, a guide, a client and the leaders of both commercial teams die.",
+          "versions": [
+            {
+              "note": "A guide disappeared bringing oxygen to those trapped near the summit, and a client died in the night on the way down; one leader collapsed from exhaustion and altitude sickness, and the other, trapped near the summit, couldn't get down and couldn't be reached.",
+              "source": {
+                "title": "Explorersweb: The 1996 Everest Tragedy, 30 Years Later",
+                "url": "https://explorersweb.com/1996-everest-tragedy-30-years-later/"
+              },
+              "checked": "2026-11-04"
+            },
+            {
+              "note": "One disappeared in the night of 10–11 May, probably in a fall; one died that night of exposure, or possibly in a fall; one died of exposure and altitude sickness, last seen alive, very near death, by a Sherpa rescue party at about 11:00–12:00 on 11 May; one died of exposure on the evening of 11 May, last heard from at 18:20.",
+              "source": {
+                "title": "The Himalayan Database, Autumn-Winter 2025",
+                "url": "https://www.himalayandatabase.com/"
+              },
+              "checked": "2026-11-03"
+            }
+          ]
+        },
+        {
+          "when": "10–11 May",
+          "what": "On the north side, three climbers of an Indian team are caught by the storm high on the ridge and die on the way down.",
+          "versions": [
+            {
+              "note": "They reported reaching the summit in zero visibility, though it's believed they stopped short; on 11 May a Japanese team passed them, still alive but badly frostbitten, and went on to the summit.",
+              "source": {
+                "title": "Explorersweb: The 1996 Everest Tragedy, 30 Years Later",
+                "url": "https://explorersweb.com/1996-everest-tragedy-30-years-later/"
+              },
+              "checked": "2026-11-04"
+            },
+            {
+              "note": "All three died on the descent, two below the Second Step and one above it; last seen alive by Japanese climbers on the morning of 11 May, they probably reached only above 8,700 m, not the summit.",
+              "source": {
+                "title": "The Himalayan Database, Autumn-Winter 2025",
+                "url": "https://www.himalayandatabase.com/"
+              },
+              "checked": "2026-11-03"
+            }
+          ]
+        }
+      ],
+      "deaths": [
+        "deaths.1996-05-10-andrew-michael-andy-harris",
+        "deaths.1996-05-10-douglas-doug-hansen",
+        "deaths.1996-05-11-dorje-morup",
+        "deaths.1996-05-11-robert-edwin-rob-hall",
+        "deaths.1996-05-11-scott-eugene-fischer",
+        "deaths.1996-05-11-tsewang-paljor",
+        "deaths.1996-05-11-tsewang-smanla",
+        "deaths.1996-05-11-yasuko-namba"
+      ],
+      "lesson": "The turnaround time is not up for discussion.",
+      "scenario": "Historical scenario with the old Hillary Step"
+    },
+    {
+      "id": "accidents.2012-ladder-fall",
+      "kind": "accident",
+      "title": "A fall from a ladder near Camp 1, 21 April 2012",
+      "status": "source only",
+      "date": "2012-04-21",
+      "weather": {
+        "what": "Ordinary spring weather: clear, cold mornings, cloud by noon and a little snow late in the day.",
+        "versions": [
+          {
+            "note": "A team's dispatch in the same post: each day starting cold and clear, clouding up by noon, and a little snow by late afternoon or evening.",
+            "source": {
+              "title": "Alan Arnette: Everest 2012: 2nd Sherpa Death, Time for Patience – Update",
+              "url": "https://www.alanarnette.com/blog/2012/04/21/everest-2012-2nd-sherpa-death-time-for-patience/"
+            },
+            "checked": "2026-11-04"
+          }
+        ]
+      },
+      "crowd": {
+        "what": "A big season, with some forty teams at Base Camp.",
+        "versions": [
+          {
+            "value": 40,
+            "unit": "teams",
+            "note": "\"Perhaps 40 other teams\" camped at Base Camp, by a team's dispatch.",
+            "source": {
+              "title": "Alan Arnette: Everest 2012: 2nd Sherpa Death, Time for Patience – Update",
+              "url": "https://www.alanarnette.com/blog/2012/04/21/everest-2012-2nd-sherpa-death-time-for-patience/"
+            },
+            "checked": "2026-11-04"
+          }
+        ]
+      },
+      "chain": [
+        {
+          "when": "21 April, about 10:00",
+          "what": "A Sherpa crosses a ladder over a crevasse near Camp 1, reportedly without clipping into the fixed line.",
+          "versions": [
+            {
+              "note": "Fell from a ladder into a crevasse just below Camp 1 at about 10:00, reportedly not clipped into the fixed lines; there are fixed ropes and ladders around Camp 1, but climbers often walk around it unroped.",
+              "source": {
+                "title": "Alan Arnette: Everest 2012: 2nd Sherpa Death, Time for Patience – Update",
+                "url": "https://www.alanarnette.com/blog/2012/04/21/everest-2012-2nd-sherpa-death-time-for-patience/"
+              },
+              "checked": "2026-11-04"
+            },
+            {
+              "note": "He apparently skipped clipping in, and fell after one of his crampons caught on a rung.",
+              "source": {
+                "title": "National Geographic: Everest Guide Dies After 15-Story Fall Into Ice Chasm",
+                "url": "https://www.nationalgeographic.com/adventure/article/120422-everest-death-sherpa-falls-first-science-world"
+              },
+              "checked": "2026-11-04"
+            },
+            {
+              "note": "A Sherpa fell from a ladder while not clipped into the fixed ropes.",
+              "source": {
+                "title": "Alan Arnette: Everest 2023: First Deaths of Season",
+                "url": "https://www.alanarnette.com/blog/2023/04/12/everest-2023-first-deaths-of-season/"
+              },
+              "checked": "2026-11-04"
+            }
+          ]
+        },
+        {
+          "what": "He falls into the crevasse.",
+          "versions": [
+            {
+              "value": 46,
+              "unit": "m",
+              "note": "150 feet.",
+              "source": {
+                "title": "National Geographic: Everest Guide Dies After 15-Story Fall Into Ice Chasm",
+                "url": "https://www.nationalgeographic.com/adventure/article/120422-everest-death-sherpa-falls-first-science-world"
+              },
+              "checked": "2026-11-04"
+            }
+          ]
+        }
+      ],
+      "deaths": [
+        "deaths.2012-04-21-namgyal-tshering-namgyal-chhiri-sherpa"
+      ],
+      "lesson": "Clip in even on “easy” sections.",
+      "scenario": "Training camp: ladders"
+    },
+    {
+      "id": "accidents.2014-icefall-avalanche",
+      "kind": "accident",
+      "title": "The Icefall avalanche of 18 April 2014",
+      "status": "source only",
+      "date": "2014-04-18",
+      "weather": {
+        "what": "Early morning, hours before the sun reaches the ice: the time climbers count as the safest.",
+        "versions": [
+          {
+            "note": "Climbers cross the Icefall early, when the cold keeps the ice stable, and the danger is highest in the afternoon sun; this release came around 06:45, and the sun usually touches the ice at about 10:00.",
+            "source": {
+              "title": "Alan Arnette: Everest 2023: First Deaths of Season",
+              "url": "https://www.alanarnette.com/blog/2023/04/12/everest-2023-first-deaths-of-season/"
+            },
+            "checked": "2026-11-04"
+          }
+        ]
+      },
+      "crowd": {
+        "what": "Dozens of Sherpas held up at a ladder, in the avalanche's path.",
+        "versions": [
+          {
+            "range": {
+              "min": 40,
+              "max": 50
+            },
+            "unit": "people",
+            "note": "Standing above the fallen ladder, waiting to come down; as many as 100 people were in the Icefall that morning.",
+            "source": {
+              "title": "Mark Horrell: The mother of all avalanches: an eyewitness account",
+              "url": "https://markhorrell.com/blog/2014/the-mother-of-all-avalanches-an-eyewitness-account"
+            },
+            "checked": "2026-11-04"
+          }
+        ]
+      },
+      "chain": [
+        {
+          "what": "A ladder over a crevasse on a steep section is out of place, and Sherpas carrying loads queue at it, waiting for it to be replaced.",
+          "versions": [
+            {
+              "note": "A ladder had fallen out of position at a steep section of the route, causing a bottleneck; 40 or 50 Sherpas stood above it, waiting to come down.",
+              "source": {
+                "title": "Mark Horrell: The mother of all avalanches: an eyewitness account",
+                "url": "https://markhorrell.com/blog/2014/the-mother-of-all-avalanches-an-eyewitness-account"
+              },
+              "checked": "2026-11-04"
+            },
+            {
+              "note": "They were waiting for a ladder to be replaced over a crevasse, ferrying loads to the higher camps.",
+              "source": {
+                "title": "Alan Arnette: Everest 2023: First Deaths of Season",
+                "url": "https://www.alanarnette.com/blog/2023/04/12/everest-2023-first-deaths-of-season/"
+              },
+              "checked": "2026-11-04"
+            },
+            {
+              "note": "A team of Sherpas fixing lines and ladders, waiting for a ladder over a crevasse to be replaced.",
+              "source": {
+                "title": "Outside: The Worst Disasters on Mount Everest",
+                "url": "https://www.outsideonline.com/outdoor-adventure/everest/worst-everest-disasters/"
+              },
+              "checked": "2026-11-04"
+            }
+          ]
+        },
+        {
+          "when": "About 06:45",
+          "what": "A serac breaks off the West Shoulder, and the avalanche sweeps across the Icefall.",
+          "versions": [
+            {
+              "note": "At about 06:45 a huge chunk of ice fell off the West Shoulder, and the avalanche swept across the entire width of the Icefall; many were killed instantly by shattered ice, not by burial.",
+              "source": {
+                "title": "Mark Horrell: The mother of all avalanches: an eyewitness account",
+                "url": "https://markhorrell.com/blog/2014/the-mother-of-all-avalanches-an-eyewitness-account"
+              },
+              "checked": "2026-11-04"
+            },
+            {
+              "note": "A hanging serac released well before the sun reached the Icefall; the post gives 06:35 in one place and around 06:45 in another.",
+              "source": {
+                "title": "Alan Arnette: Everest 2023: First Deaths of Season",
+                "url": "https://www.alanarnette.com/blog/2023/04/12/everest-2023-first-deaths-of-season/"
+              },
+              "checked": "2026-11-04"
+            },
+            {
+              "note": "At 06:45, a huge ice avalanche caused by a toppled serac.",
+              "source": {
+                "title": "Explorersweb: The Khumbu Icefall: A Tomb for Countless Sherpas On Everest",
+                "url": "https://explorersweb.com/khumbu-icefall-a-tomb-for-countless-sherpas-everest/"
+              },
+              "checked": "2026-11-04"
+            },
+            {
+              "note": "06:45, at 5,800 m.",
+              "source": {
+                "title": "The Himalayan Database: Peak Deaths Report, Everest",
+                "url": "https://www.himalayandatabase.com/Online/peakdead.html"
+              },
+              "checked": "2026-11-04"
+            }
+          ]
+        },
+        {
+          "what": "Sixteen die by most counts, all of them Nepali; thirteen bodies are recovered.",
+          "versions": [
+            {
+              "value": 16,
+              "unit": "deaths",
+              "note": "All from Nepal; a team of western clients was 15 minutes away.",
+              "source": {
+                "title": "Mark Horrell: The mother of all avalanches: an eyewitness account",
+                "url": "https://markhorrell.com/blog/2014/the-mother-of-all-avalanches-an-eyewitness-account"
+              },
+              "checked": "2026-11-04"
+            },
+            {
+              "value": 16,
+              "unit": "deaths",
+              "note": "Sherpas, waiting at the ladder while ferrying loads to the higher camps.",
+              "source": {
+                "title": "Alan Arnette: Everest 2023: First Deaths of Season",
+                "url": "https://www.alanarnette.com/blog/2023/04/12/everest-2023-first-deaths-of-season/"
+              },
+              "checked": "2026-11-04"
+            },
+            {
+              "value": 16,
+              "unit": "deaths",
+              "note": "Sherpas; the rest of the season was abandoned, many Sherpas boycotting it out of respect for the dead and for better pay and treatment.",
+              "source": {
+                "title": "Outside: The Worst Disasters on Mount Everest",
+                "url": "https://www.outsideonline.com/outdoor-adventure/everest/worst-everest-disasters/"
+              },
+              "checked": "2026-11-04"
+            },
+            {
+              "value": 16,
+              "unit": "deaths",
+              "note": "A longline operation recovered 13 bodies.",
+              "source": {
+                "title": "Explorersweb: The Khumbu Icefall: A Tomb for Countless Sherpas On Everest",
+                "url": "https://explorersweb.com/khumbu-icefall-a-tomb-for-countless-sherpas-everest/"
+              },
+              "checked": "2026-11-04"
+            },
+            {
+              "value": 15,
+              "unit": "deaths",
+              "note": "All at 06:45 and 5,800 m, all from Nepal.",
+              "source": {
+                "title": "The Himalayan Database: Peak Deaths Report, Everest",
+                "url": "https://www.himalayandatabase.com/Online/peakdead.html"
+              },
+              "checked": "2026-11-04"
+            },
+            {
+              "value": 14,
+              "unit": "deaths",
+              "note": "\"14 in a serac collapse near Camp 1\", of 17 dead that season.",
+              "source": {
+                "title": "Explorersweb: 2023 Everest Deaths Totaled 18, the Worst Ever",
+                "url": "https://explorersweb.com/everest-final-2023-death-toll-worst-ever/"
+              },
+              "checked": "2026-11-04"
+            }
+          ]
+        }
+      ],
+      "deaths": [
+        "deaths.2014-04-18-aash-bahadur-gurung",
+        "deaths.2014-04-18-ang-kazi-ankaji-sherpa",
+        "deaths.2014-04-18-ang-tshiri-sherpa",
+        "deaths.2014-04-18-chhiring-ongchu-sherpa",
+        "deaths.2014-04-18-dorje-khatri",
+        "deaths.2014-04-18-dorje-sherpa",
+        "deaths.2014-04-18-lhakpa-tenjing-sherpa",
+        "deaths.2014-04-18-mingma-nuru-sherpa",
+        "deaths.2014-04-18-ngima-sherpa",
+        "deaths.2014-04-18-pasang-karma-sherpa",
+        "deaths.2014-04-18-pem-tenji-sherpa",
+        "deaths.2014-04-18-phur-temba-sherpa",
+        "deaths.2014-04-18-phurba-ongyal-sherpa",
+        "deaths.2014-04-18-tenzing-chhetar-sherpa",
+        "deaths.2014-04-18-thendorje-thendu-dorje-sherpa"
+      ],
+      "lesson": "Time in the Icefall is the main risk for Sherpas.",
+      "scenario": "Leader: how many trips through the Icefall the Sherpas make"
+    },
+    {
+      "id": "accidents.2015-earthquake-avalanche",
+      "kind": "accident",
+      "title": "The earthquake avalanche at Base Camp, 25 April 2015",
+      "status": "source only",
+      "date": "2015-04-25",
+      "weather": {
+        "what": "Snow that day kept the rescue helicopters from reaching Base Camp.",
+        "versions": [
+          {
+            "note": "Snowy weather prevented any helicopters from reaching Base Camp that day.",
+            "source": {
+              "title": "National Geographic: Everest Base Camp a ‘War Zone’ After Earthquake Triggers Avalanches",
+              "url": "https://www.nationalgeographic.com/science/article/150425-everest-earthquake-basecamp-nepal-himalaya-climbing-sherpa"
+            },
+            "checked": "2026-11-04"
+          }
+        ]
+      },
+      "crowd": {
+        "what": "More than a thousand people at Base Camp, with the season in full swing, and 100–200 more in the camps above.",
+        "versions": [
+          {
+            "value": 1000,
+            "unit": "people",
+            "note": "More than 1,000 at Base Camp, support staff included, with some 359 foreign climbers and 350 Nepali guides attempting Everest that year; approximately 100–200 climbers and Sherpas were acclimatising at the camps higher up when the earthquake struck.",
+            "source": {
+              "title": "National Geographic: Everest Base Camp a ‘War Zone’ After Earthquake Triggers Avalanches",
+              "url": "https://www.nationalgeographic.com/science/article/150425-everest-earthquake-basecamp-nepal-himalaya-climbing-sherpa"
+            },
+            "checked": "2026-11-04"
+          }
+        ]
+      },
+      "chain": [
+        {
+          "when": "11:56",
+          "what": "A magnitude 7.8 earthquake strikes Nepal.",
+          "versions": [
+            {
+              "value": 7.8,
+              "unit": "magnitude",
+              "note": "At 11:56 local time, on Saturday 25 April.",
+              "source": {
+                "title": "National Geographic: Everest Base Camp a ‘War Zone’ After Earthquake Triggers Avalanches",
+                "url": "https://www.nationalgeographic.com/science/article/150425-everest-earthquake-basecamp-nepal-himalaya-climbing-sherpa"
+              },
+              "checked": "2026-11-04"
+            }
+          ]
+        },
+        {
+          "what": "Ice breaks from a cliff in the saddle between Pumori and Lingtren, and the avalanche and its air blast hit Base Camp; more avalanches come off Nuptse.",
+          "versions": [
+            {
+              "note": "A huge block of ice fell from the ice cliff in the saddle between Pumori and Lingtren, about 2,500 feet above the camp; the avalanche and its air blast hit the upper part of Base Camp, which suffered the most damage, and blew many tents across the glacier, while the lower part was largely unscathed. Other large avalanches were reported off Nuptse.",
+              "source": {
+                "title": "National Geographic: Everest Base Camp a ‘War Zone’ After Earthquake Triggers Avalanches",
+                "url": "https://www.nationalgeographic.com/science/article/150425-everest-earthquake-basecamp-nepal-himalaya-climbing-sherpa"
+              },
+              "checked": "2026-11-04"
+            },
+            {
+              "note": "The 7.8 earthquake set off two avalanches from opposite directions, which levelled those at the foot of the mountain.",
+              "source": {
+                "title": "Outside: The Worst Disasters on Mount Everest",
+                "url": "https://www.outsideonline.com/outdoor-adventure/everest/worst-everest-disasters/"
+              },
+              "checked": "2026-11-04"
+            }
+          ]
+        },
+        {
+          "what": "The dead at Base Camp: 18 by the first reports, 22 by a later count, 14 in the Himalayan Database.",
+          "versions": [
+            {
+              "value": 18,
+              "unit": "deaths",
+              "note": "Confirmed dead at Base Camp by several sources on the day, a number expected to change as recovery went on.",
+              "source": {
+                "title": "National Geographic: Everest Base Camp a ‘War Zone’ After Earthquake Triggers Avalanches",
+                "url": "https://www.nationalgeographic.com/science/article/150425-everest-earthquake-basecamp-nepal-himalaya-climbing-sherpa"
+              },
+              "checked": "2026-11-04"
+            },
+            {
+              "value": 22,
+              "unit": "deaths",
+              "note": "In its account of the two avalanches that levelled those at the foot of the mountain.",
+              "source": {
+                "title": "Outside: The Worst Disasters on Mount Everest",
+                "url": "https://www.outsideonline.com/outdoor-adventure/everest/worst-everest-disasters/"
+              },
+              "checked": "2026-11-04"
+            },
+            {
+              "value": 18,
+              "unit": "deaths",
+              "note": "Dead that spring, when the earthquake triggered an avalanche on Pumori that partly buried Base Camp.",
+              "source": {
+                "title": "Explorersweb: 2023 Everest Deaths Totaled 18, the Worst Ever",
+                "url": "https://explorersweb.com/everest-final-2023-death-toll-worst-ever/"
+              },
+              "checked": "2026-11-04"
+            },
+            {
+              "value": 14,
+              "unit": "deaths",
+              "note": "One of them died of his injuries on 30 April, in Kathmandu.",
+              "source": {
+                "title": "The Himalayan Database, Autumn-Winter 2025",
+                "url": "https://www.himalayandatabase.com/"
+              },
+              "checked": "2026-11-03"
+            }
+          ]
+        }
+      ],
+      "deaths": [
+        "deaths.2015-04-25-chhimi-dawa-sherpa",
+        "deaths.2015-04-25-daniel-paul-dan-fredinberg",
+        "deaths.2015-04-25-dawa-chhiri-sherpa",
+        "deaths.2015-04-25-jangbu-sherpa",
+        "deaths.2015-04-25-krishna-kumar-kulung-rai",
+        "deaths.2015-04-25-lhakpa-chhiring-sherpa",
+        "deaths.2015-04-25-maila-rai",
+        "deaths.2015-04-25-marisa-eve-girawong",
+        "deaths.2015-04-25-pasang-temba-sherpa",
+        "deaths.2015-04-25-pemba-sherpa",
+        "deaths.2015-04-25-pemba-yishi-hissi-sherpa",
+        "deaths.2015-04-25-renu-fotedar",
+        "deaths.2015-04-25-shiva-kumar-shrestha",
+        "deaths.2015-04-25-tenjin-bhote"
+      ],
+      "lesson": "What to do in a natural disaster, helping the injured.",
+      "scenario": "Earthquake at Base Camp"
+    },
+    {
+      "id": "accidents.2019-short-window",
+      "kind": "accident",
+      "title": "The short window of May 2019",
+      "status": "source only",
+      "date": "2019-05-16",
+      "until": "2019-05-27",
+      "weather": {
+        "what": "Cyclone Fani's remnants early in May, then strong winds, and a forecast that turned around 19 May.",
+        "versions": [
+          {
+            "note": "Everest typically has 10–15 days of relatively calm weather in May. Fani's remnants struck in the first week of May; after the route opened on 14 May, winds averaged 64.4–96.6 km/h, where under 48.3 km/h is generally safe, with below-average temperatures; around 19 May the weather models completely changed, and 24 May, one of the best-looking days, became the worst, with sustained winds over 96.6 km/h predicted.",
+            "source": {
+              "title": "National Geographic: Traffic Jams Are just One of the Problems Facing Climbers on Everest",
+              "url": "https://education.nationalgeographic.org/resource/traffic-jams-are-just-one-problems-facing-climbers-everest"
+            },
+            "checked": "2026-11-04"
+          },
+          {
+            "note": "That year there were only three summit days with winds under 56 km/h, for over 600 people.",
+            "source": {
+              "title": "Alan Arnette: Everest 2026 Season Summary",
+              "url": "https://www.alanarnette.com/blog/2026/06/02/everest-2026-season-summary-records-crowds-trash-winds/"
+            },
+            "checked": "2026-11-04"
+          }
+        ]
+      },
+      "crowd": {
+        "what": "Record permits, and a line of hundreds on the summit ridge.",
+        "versions": [
+          {
+            "note": "A record 381 permits on the Nepal side and about 140 more permitted climbers from Tibet, working Sherpas not counted; more than 700 summits, Sherpas included, by Alan Arnette's unofficial count. On 22 May, a photo showed a line of hundreds bottlenecked on the summit ridge, all trying to use a narrow window of good weather.",
+            "source": {
+              "title": "National Geographic: Traffic Jams Are just One of the Problems Facing Climbers on Everest",
+              "url": "https://education.nationalgeographic.org/resource/traffic-jams-are-just-one-problems-facing-climbers-everest"
+            },
+            "checked": "2026-11-04"
+          },
+          {
+            "note": "354 people reached the top from both sides on 23 May, the record for a single day by Guinness World Records.",
+            "source": {
+              "title": "Times of Oman: Two Indian climbers die on Everest amid record overcrowding and peak logjams",
+              "url": "https://timesofoman.com/article/172135-two-indian-climbers-die-on-everest-amid-record-overcrowding-and-peak-logjams"
+            },
+            "checked": "2026-11-04"
+          }
+        ]
+      },
+      "chain": [
+        {
+          "when": "First week of May to 14 May",
+          "what": "Cyclone Fani's remnants delay the Sherpa team that fixes the ropes to the summit, and the route opens on 14 May.",
+          "versions": [
+            {
+              "note": "Delayed by a few days.",
+              "source": {
+                "title": "National Geographic: Traffic Jams Are just One of the Problems Facing Climbers on Everest",
+                "url": "https://education.nationalgeographic.org/resource/traffic-jams-are-just-one-problems-facing-climbers-everest"
+              },
+              "checked": "2026-11-04"
+            }
+          ]
+        },
+        {
+          "when": "Around 19 May",
+          "what": "The forecast turns, and many teams move their summit bids up to 22 and 23 May.",
+          "versions": [
+            {
+              "note": "24 May, one of the best-looking days in the forecasts, suddenly became the worst.",
+              "source": {
+                "title": "National Geographic: Traffic Jams Are just One of the Problems Facing Climbers on Everest",
+                "url": "https://education.nationalgeographic.org/resource/traffic-jams-are-just-one-problems-facing-climbers-everest"
+              },
+              "checked": "2026-11-04"
+            }
+          ]
+        },
+        {
+          "when": "22–23 May",
+          "what": "Long lines on the summit ridge add hours in the death zone.",
+          "versions": [
+            {
+              "note": "A guide who summited on 23 May: two climbers who wouldn't move over held up a line of 50, costing most of those waiting about two hours; a fellow guide's team turned its oxygen flow down while waiting, so as not to run out.",
+              "source": {
+                "title": "National Geographic: Traffic Jams Are just One of the Problems Facing Climbers on Everest",
+                "url": "https://education.nationalgeographic.org/resource/traffic-jams-are-just-one-problems-facing-climbers-everest"
+              },
+              "checked": "2026-11-04"
+            },
+            {
+              "note": "Crowds slow a climber's pace, and so add to their fatigue and use of oxygen; some of those who died spent 10 to 12 hours getting to the summit and four to six getting back to the South Col, a 14- to 18-hour day, by Alan Arnette.",
+              "source": {
+                "title": "Outside: The Worst Disasters on Mount Everest",
+                "url": "https://www.outsideonline.com/outdoor-adventure/everest/worst-everest-disasters/"
+              },
+              "checked": "2026-11-04"
+            }
+          ]
+        },
+        {
+          "what": "Whether the lines killed anyone is disputed.",
+          "versions": [
+            {
+              "note": "Not the work of a storm or an avalanche, but the sheer number of people climbing the mountain.",
+              "source": {
+                "title": "Outside: The Worst Disasters on Mount Everest",
+                "url": "https://www.outsideonline.com/outdoor-adventure/everest/worst-everest-disasters/"
+              },
+              "checked": "2026-11-04"
+            },
+            {
+              "note": "Alan Arnette calculated that five of the season's 11 deaths may have been related to the crowds; some veteran guides pushed back, calling the lines a symptom of bigger problems: none of the deaths one of them knew of came from waiting in line, but mostly from decision-making.",
+              "source": {
+                "title": "National Geographic: Traffic Jams Are just One of the Problems Facing Climbers on Everest",
+                "url": "https://education.nationalgeographic.org/resource/traffic-jams-are-just-one-problems-facing-climbers-everest"
+              },
+              "checked": "2026-11-04"
+            }
+          ]
+        }
+      ],
+      "deaths": [
+        "deaths.2019-05-16-ravi-thakur",
+        "deaths.2019-05-16-seamus-sean-lawless",
+        "deaths.2019-05-22-anjali-sharad-kulkarni",
+        "deaths.2019-05-22-donald-lynn-cash",
+        "deaths.2019-05-23-ernst-landgraf",
+        "deaths.2019-05-23-kalpana-dash",
+        "deaths.2019-05-23-kevin-gerard-hynes",
+        "deaths.2019-05-23-nihal-ashpak-bagwan",
+        "deaths.2019-05-24-dhruba-bista",
+        "deaths.2019-05-25-robin-haynes-fisher",
+        "deaths.2019-05-27-christopher-jon-kulish"
+      ],
+      "lesson": "A short window plus crowds means extra hours in the “death zone”.",
+      "scenario": "“Traffic jam”: wait or turn around"
+    },
+    {
+      "id": "accidents.2023-record-season",
+      "kind": "accident",
+      "title": "The 2023 season: eighteen dead",
+      "status": "source only",
+      "date": "2023-04-12",
+      "until": "2023-05-25",
+      "weather": {
+        "what": "No storm: the cold, with the altitude and exhaustion, wore the climbers down.",
+        "versions": [
+          {
+            "note": "All but the first three died after their health deteriorated from altitude, exhaustion and cold.",
+            "source": {
+              "title": "Explorersweb: 2023 Everest Deaths Totaled 18, the Worst Ever",
+              "url": "https://explorersweb.com/everest-final-2023-death-toll-worst-ever/"
+            },
+            "checked": "2026-11-04"
+          },
+          {
+            "note": "The problem wasn't a storm, but a lack of experience and management failures.",
+            "source": {
+              "title": "Explorersweb: The 1996 Everest Tragedy, 30 Years Later",
+              "url": "https://explorersweb.com/1996-everest-tragedy-30-years-later/"
+            },
+            "checked": "2026-11-04"
+          }
+        ]
+      },
+      "crowd": {
+        "what": "Hundreds of permits: too many climbers for anyone to supervise them all.",
+        "versions": [
+          {
+            "value": 479,
+            "unit": "permits",
+            "note": "And 656 summits, 393 of them by Nepali climbers, mostly guides and porters, who need no permit.",
+            "source": {
+              "title": "Explorersweb: 2023 Everest Deaths Totaled 18, the Worst Ever",
+              "url": "https://explorersweb.com/everest-final-2023-death-toll-worst-ever/"
+            },
+            "checked": "2026-11-04"
+          },
+          {
+            "note": "With over 400 permits a season, no one can supervise everyone, and agencies can't always guarantee an experienced guide for every client at the critical moments.",
+            "source": {
+              "title": "Explorersweb: The 1996 Everest Tragedy, 30 Years Later",
+              "url": "https://explorersweb.com/1996-everest-tragedy-30-years-later/"
+            },
+            "checked": "2026-11-04"
+          }
+        ]
+      },
+      "chain": [
+        {
+          "when": "12 April, 09:30",
+          "what": "Ice released off the West Shoulder hits three Sherpas carrying gear through the Icefall, to fix the route above Camp 2.",
+          "versions": [
+            {
+              "value": 5800,
+              "unit": "m",
+              "note": "Relatively late in the morning, at 09:30; they were part of the rope team ferrying gear to begin fixing the route from Camp 2 to the summit. Helicopters had been approved to ferry that gear, and weren't being used that season: Sherpas carrying heavy loads move slower, and stay exposed longer.",
+              "source": {
+                "title": "Alan Arnette: Everest 2023: First Deaths of Season",
+                "url": "https://www.alanarnette.com/blog/2023/04/12/everest-2023-first-deaths-of-season/"
+              },
+              "checked": "2026-11-04"
+            },
+            {
+              "value": 5700,
+              "unit": "m",
+              "note": "An icefall collapse; their bodies could not be recovered.",
+              "source": {
+                "title": "Explorersweb: The Khumbu Icefall: A Tomb for Countless Sherpas On Everest",
+                "url": "https://explorersweb.com/khumbu-icefall-a-tomb-for-countless-sherpas-everest/"
+              },
+              "checked": "2026-11-04"
+            }
+          ]
+        },
+        {
+          "when": "May",
+          "what": "Fifteen more die as their health fails, of altitude, exhaustion and cold, in a season where low-cost agencies took clients who weren't prepared.",
+          "versions": [
+            {
+              "note": "All the other climbers died after their health deteriorated from altitude, exhaustion and cold.",
+              "source": {
+                "title": "Explorersweb: 2023 Everest Deaths Totaled 18, the Worst Ever",
+                "url": "https://explorersweb.com/everest-final-2023-death-toll-worst-ever/"
+              },
+              "checked": "2026-11-04"
+            },
+            {
+              "note": "The 2023 season had 18 deaths, the highest number on record: low-cost agencies took clients who were not physically or technically prepared.",
+              "source": {
+                "title": "Explorersweb: The 1996 Everest Tragedy, 30 Years Later",
+                "url": "https://explorersweb.com/1996-everest-tragedy-30-years-later/"
+              },
+              "checked": "2026-11-04"
+            }
+          ]
+        },
+        {
+          "when": "18–19 May",
+          "what": "A climber who summited without oxygen goes back up from Camp 4 to help a teammate in trouble; the teammate dies, and he goes missing.",
+          "versions": [
+            {
+              "note": "He summited without supplementary oxygen on 18 May, then went back up from Camp 4 to help an expedition partner in trouble; the partner died, and he was left for dead.",
+              "source": {
+                "title": "Explorersweb: 2023 Everest Deaths Totaled 18, the Worst Ever",
+                "url": "https://explorersweb.com/everest-final-2023-death-toll-worst-ever/"
+              },
+              "checked": "2026-11-04"
+            }
+          ]
+        }
+      ],
+      "deaths": [
+        "deaths.2023-04-12-dawa-chhiri-da-chhiri-sherpa",
+        "deaths.2023-04-12-lakpa-rita-sherpa",
+        "deaths.2023-04-12-pemba-tenzing-sherpa",
+        "deaths.2023-05-01-jonathan-reuel-sugarman",
+        "deaths.2023-05-16-phurba-furba-sherpa",
+        "deaths.2023-05-17-victor-brinza",
+        "deaths.2023-05-18-suzanne-leopoldina-jesus",
+        "deaths.2023-05-18-xue-bin-chen",
+        "deaths.2023-05-19-awang-askandar-ampuan-yaacub",
+        "deaths.2023-05-19-jason-bernard-kennison",
+        "deaths.2023-05-19-muhammad-hawari-hashim",
+        "deaths.2023-05-19-shrinivas-sainis-dattatraya",
+        "deaths.2023-05-23-ang-kami-sherpa",
+        "deaths.2023-05-24-petrus-albertyn-swart",
+        "deaths.2023-05-24-swapnil-adinath-garad",
+        "deaths.2023-05-25-lhakpa-nuru-sherpa",
+        "deaths.2023-05-25-ranjit-kumar-shah",
+        "deaths.2023-05-25-szilard-suhajda"
+      ],
+      "lesson": "An oxygen plan and safety standards matter more than speed.",
+      "scenario": "A season with a budget operator"
+    },
+    {
+      "id": "accidents.2024-cornice-collapse",
+      "kind": "accident",
+      "title": "The cornice collapse at the Hillary Step, 21 May 2024",
+      "status": "source only",
+      "date": "2024-05-21",
+      "weather": {
+        "what": "Sporadic winds; most teams went despite forecasts of high winds.",
+        "versions": [
+          {
+            "note": "Sporadic winds and huge crowds that week; most team leaders pushed through despite forecasts of high winds, while the highly experienced stayed in the mid-level camps, letting the crowds thin out. He asks whether the warm Himalayan winter played a part.",
+            "source": {
+              "title": "Alan Arnette: Everest 2024: Weekend Update May 25: Season nears the End with Summits and Death",
+              "url": "https://www.alanarnette.com/blog/?p=45184"
+            },
+            "checked": "2026-11-04"
+          }
+        ]
+      },
+      "crowd": {
+        "what": "Long lines on the ridge, with an estimated fifty climbers at the Hillary Step.",
+        "versions": [
+          {
+            "value": 50,
+            "unit": "climbers",
+            "note": "A long line of an estimated fifty at the Hillary Step; 193 or more summits that day, 83 or more of them clients, and over 500 that week, many of them in long lines from Camp 3 to the South Col and again between the South Summit and the summit.",
+            "source": {
+              "title": "Alan Arnette: Everest 2024: Weekend Update May 25: Season nears the End with Summits and Death",
+              "url": "https://www.alanarnette.com/blog/?p=45184"
+            },
+            "checked": "2026-11-04"
+          }
+        ]
+      },
+      "chain": [
+        {
+          "what": "The line stands on a soft cornice overhanging the Kangshung Face, with the fixed rope near the overhang.",
+          "versions": [
+            {
+              "note": "He asks why climbers overloaded the cornice, why the fixed rope was near the overhang, and why experienced mountaineers didn't see the situation developing and stop them; the incident needs a full independent review, in his view.",
+              "source": {
+                "title": "Alan Arnette: Everest 2024: Weekend Update May 25: Season nears the End with Summits and Death",
+                "url": "https://www.alanarnette.com/blog/?p=45184"
+              },
+              "checked": "2026-11-04"
+            }
+          ]
+        },
+        {
+          "what": "The cornice gives way: those clipped into the fixed rope are held, and two climbers fall and are never found.",
+          "versions": [
+            {
+              "note": "The line was too much for the soft cornice overhanging the Kangshung Face, and it collapsed: several people plummeted down the face but were stopped by being clipped into a fixed rope; a client and his Sherpa fell and have not been found.",
+              "source": {
+                "title": "Alan Arnette: Everest 2024: Weekend Update May 25: Season nears the End with Summits and Death",
+                "url": "https://www.alanarnette.com/blog/?p=45184"
+              },
+              "checked": "2026-11-04"
+            },
+            {
+              "note": "Both at 8,700 m on the descent, in its class of falling rock or ice.",
+              "source": {
+                "title": "The Himalayan Database, Autumn-Winter 2025",
+                "url": "https://www.himalayandatabase.com/"
+              },
+              "checked": "2026-11-03"
+            }
+          ]
+        }
+      ],
+      "deaths": [
+        "deaths.2024-05-21-daniel-paul-paterson",
+        "deaths.2024-05-21-pas-tenji-sherpa"
+      ],
+      "lesson": "Always stay clipped in; a crowd on the ridge is a hazard in itself.",
+      "scenario": "Descending the ridge in a crowd"
+    },
+    {
+      "id": "accidents.2025-late-summit",
+      "kind": "accident",
+      "title": "A late summit and a stop at the Hillary Step, 15–16 May 2025",
+      "status": "source only",
+      "date": "2025-05-15",
+      "until": "2025-05-16",
+      "weather": {
+        "what": "A window of clear weather.",
+        "versions": [
+          {
+            "note": "Several dozen climbers and guides headed for the summit amid a window of clear weather.",
+            "source": {
+              "title": "Outside: Deaths and Rescues Amid the Summit Push on Mount Everest",
+              "url": "https://www.outsideonline.com/outdoor-adventure/everest/mount-everest-four-dead/"
+            },
+            "checked": "2026-11-04"
+          }
+        ]
+      },
+      "crowd": {
+        "what": "Several dozen climbers and guides on their way to the summit.",
+        "versions": [
+          {
+            "note": "Several dozen climbers and guides headed for the summit.",
+            "source": {
+              "title": "Outside: Deaths and Rescues Amid the Summit Push on Mount Everest",
+              "url": "https://www.outsideonline.com/outdoor-adventure/everest/mount-everest-four-dead/"
+            },
+            "checked": "2026-11-04"
+          }
+        ]
+      },
+      "chain": [
+        {
+          "when": "15 May",
+          "what": "The client reaches the summit very late.",
+          "versions": [
+            {
+              "note": "\"Last night the client summited very late, around 2 A.M. or 3 A.M.\", the outfitter's chairman said on 16 May; he was unable to descend from the top.",
+              "source": {
+                "title": "Outside: Deaths and Rescues Amid the Summit Push on Mount Everest",
+                "url": "https://www.outsideonline.com/outdoor-adventure/everest/mount-everest-four-dead/"
+              },
+              "checked": "2026-11-04"
+            }
+          ]
+        },
+        {
+          "what": "Unable to descend, he is dragged by his Sherpa down to the Hillary Step, where he sits and refuses to move.",
+          "versions": [
+            {
+              "note": "It took them a long time to reach it, by the outfitter's account.",
+              "source": {
+                "title": "Outside: Deaths and Rescues Amid the Summit Push on Mount Everest",
+                "url": "https://www.outsideonline.com/outdoor-adventure/everest/mount-everest-four-dead/"
+              },
+              "checked": "2026-11-04"
+            }
+          ]
+        },
+        {
+          "when": "Night of 15–16 May",
+          "what": "The Sherpa stays with him through the night, with enough oxygen but no radio, and can't get him to Camp 4.",
+          "versions": [
+            {
+              "note": "The radio batteries had died, so they couldn't reach the teams lower down; they had enough oxygen to survive the night, but the Sherpa couldn't get him to Camp 4.",
+              "source": {
+                "title": "Outside: Deaths and Rescues Amid the Summit Push on Mount Everest",
+                "url": "https://www.outsideonline.com/outdoor-adventure/everest/mount-everest-four-dead/"
+              },
+              "checked": "2026-11-04"
+            }
+          ]
+        },
+        {
+          "when": "16 May, about 07:00",
+          "what": "The Sherpa reaches Camp 4 alone.",
+          "versions": [
+            {
+              "note": "At around 07:00 he arrived at Camp 4 by himself, by the outfitter's account.",
+              "source": {
+                "title": "Outside: Deaths and Rescues Amid the Summit Push on Mount Everest",
+                "url": "https://www.outsideonline.com/outdoor-adventure/everest/mount-everest-four-dead/"
+              },
+              "checked": "2026-11-04"
+            }
+          ]
+        }
+      ],
+      "deaths": [
+        "deaths.2025-05-15-subrata-ghosh"
+      ],
+      "lesson": "Exhaustion and a late summit; a Sherpa cannot bring down someone who will not walk.",
+      "scenario": "Leader: a client refuses to descend"
+    },
+    {
+      "id": "accidents.2026-ill-on-the-descent",
+      "kind": "accident",
+      "title": "Two climbers taken ill on the descent, 20–22 May 2026",
+      "status": "source only",
+      "date": "2026-05-20",
+      "until": "2026-05-22",
+      "weather": {
+        "what": "Quirky winds after four days of jet stream, in a window narrowed by the Icefall's ladders coming out on 29 May.",
+        "versions": [
+          {
+            "note": "The jet stream returned for four days, and the next summit came on 18 May, in quirky winds; the Icefall Doctors announced they would remove the Icefall's ladders on 29 May, leaving only eleven days for hundreds to attempt the summit.",
+            "source": {
+              "title": "Alan Arnette: Everest 2026 Season Summary",
+              "url": "https://www.alanarnette.com/blog/2026/06/02/everest-2026-season-summary-records-crowds-trash-winds/"
+            },
+            "checked": "2026-11-04"
+          }
+        ]
+      },
+      "crowd": {
+        "what": "Record crowds: 274 summits on 20 May, and reports of twelve hours from the South Col to the top.",
+        "versions": [
+          {
+            "value": 274,
+            "unit": "summits",
+            "note": "On Wednesday 20 May, of a record 1,008 that season, between 17 and 26 May, from a record 495 permits; reports came in of twelve hours to climb from the South Col to the top.",
+            "source": {
+              "title": "Alan Arnette: Everest 2026 Season Summary",
+              "url": "https://www.alanarnette.com/blog/2026/06/02/everest-2026-season-summary-records-crowds-trash-winds/"
+            },
+            "checked": "2026-11-04"
+          },
+          {
+            "value": 274,
+            "unit": "summits",
+            "note": "In a single day, with reports of a five-kilometre-long queue of climbers; Nepal issued 495 permits for Everest, the most ever.",
+            "source": {
+              "title": "Times of Oman: Two Indian climbers die on Everest amid record overcrowding and peak logjams",
+              "url": "https://timesofoman.com/article/172135-two-indian-climbers-die-on-everest-amid-record-overcrowding-and-peak-logjams"
+            },
+            "checked": "2026-11-04"
+          }
+        ]
+      },
+      "chain": [
+        {
+          "when": "On the way up",
+          "what": "Both climbers reportedly feel unwell on the ascent, and go on to the summit.",
+          "versions": [
+            {
+              "note": "There were reports that both felt unwell during the ascent; if true, they should have been turned around and not allowed to continue to the summit, and the deaths were preventable, in his view. He calls for more training in high-altitude medicine for every support climber with client responsibility.",
+              "source": {
+                "title": "Alan Arnette: Everest 2026 Season Summary",
+                "url": "https://www.alanarnette.com/blog/2026/06/02/everest-2026-season-summary-records-crowds-trash-winds/"
+              },
+              "checked": "2026-11-04"
+            }
+          ]
+        },
+        {
+          "when": "20–21 May",
+          "what": "They reach the summit: one on 20 May and the other on 21 May, or both on 21 May.",
+          "versions": [
+            {
+              "note": "One on 20 May, the other on 21 May.",
+              "source": {
+                "title": "CBS News: 2 Mount Everest climbers fall to their deaths as record-holder warns of overcrowding",
+                "url": "https://www.cbsnews.com/news/mount-everest-climbers-die-record-holder-warns-overcrowding/"
+              },
+              "checked": "2026-11-03"
+            },
+            {
+              "note": "Both on Thursday, 21 May, by their outfitter.",
+              "source": {
+                "title": "FBC News: Briton sets 20th Everest ascent record as two Indian climbers die",
+                "url": "https://www.fbcnews.com.fj/entertainment/briton-sets-20th-everest-ascent-record-as-two-indian-climbers-die/"
+              },
+              "checked": "2026-11-03"
+            }
+          ]
+        },
+        {
+          "what": "Both fall ill on the way down, and Sherpas help them: one with suspected HAPE near the Hillary Step, the other snow-blind below the summit ridge.",
+          "versions": [
+            {
+              "note": "By the expedition organiser: one fell ill on his descent on 21 May while four Sherpas helped him, high-altitude pulmonary oedema suspected; the other, who had summited on 20 May, became unwell on the descent, reportedly snow-blind below the summit ridge, and five Sherpas rescued him from the South Summit and brought him to Camp 2.",
+              "source": {
+                "title": "Times of Oman: Two Indian climbers die on Everest amid record overcrowding and peak logjams",
+                "url": "https://timesofoman.com/article/172135-two-indian-climbers-die-on-everest-amid-record-overcrowding-and-peak-logjams"
+              },
+              "checked": "2026-11-04"
+            },
+            {
+              "note": "They fell ill while descending at high altitude.",
+              "source": {
+                "title": "CBS News: 2 Mount Everest climbers fall to their deaths as record-holder warns of overcrowding",
+                "url": "https://www.cbsnews.com/news/mount-everest-climbers-die-record-holder-warns-overcrowding/"
+              },
+              "checked": "2026-11-03"
+            }
+          ]
+        },
+        {
+          "when": "21–22 May",
+          "what": "One dies near the Hillary Step, the other at Camp 2.",
+          "versions": [
+            {
+              "note": "One died at Camp 2 and the other at the Hillary Step, by their outfitter; details of their deaths were not available.",
+              "source": {
+                "title": "FBC News: Briton sets 20th Everest ascent record as two Indian climbers die",
+                "url": "https://www.fbcnews.com.fj/entertainment/briton-sets-20th-everest-ascent-record-as-two-indian-climbers-die/"
+              },
+              "checked": "2026-11-03"
+            },
+            {
+              "note": "One near the Hillary Step, just below the summit; the other at Camp 2, shortly after he arrived.",
+              "source": {
+                "title": "Times of Oman: Two Indian climbers die on Everest amid record overcrowding and peak logjams",
+                "url": "https://timesofoman.com/article/172135-two-indian-climbers-die-on-everest-amid-record-overcrowding-and-peak-logjams"
+              },
+              "checked": "2026-11-04"
+            },
+            {
+              "note": "Both died on 22 May, descending after summitting.",
+              "source": {
+                "title": "Alan Arnette: Everest 2026 Season Summary",
+                "url": "https://www.alanarnette.com/blog/2026/06/02/everest-2026-season-summary-records-crowds-trash-winds/"
+              },
+              "checked": "2026-11-04"
+            }
+          ]
+        }
+      ],
+      "deaths": [
+        "deaths.2026-05-22-arun-kumar-tiwari",
+        "deaths.2026-05-22-sandeep-are"
+      ],
+      "lesson": "Recognize illness and turn around before the summit.",
+      "scenario": "“I feel bad, but the summit is close”"
+    }
+  ]
+}

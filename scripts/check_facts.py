@@ -6,9 +6,11 @@ The records are the JSON files in content/facts/, and docs/conventions/knowledge
 how to write one. Each file must pass content/facts.schema.json; once they all do, this checks
 what a schema can't see: an id used twice, a coefficient fitted to a fact that isn't there, a
 question about a record that isn't, a range upside down, versions in different units, a date
-in the future, a medicine's dose. `pytest` runs it on the real files
-(tests/test_check_facts_script.py), which is what fails CI. Each record also says how it reads
-on an expert's list (scripts/expert_questions.py, #15).
+in the future, a medicine's dose, a death no source dates or gives the cause of, an accident
+naming a death that isn't there (#14). `pytest` runs it on the real files
+(tests/test_check_facts_script.py), which is what fails CI, and holds the chronicle to the
+Himalayan Database's totals there. Each record also says how it reads on an expert's list
+(scripts/expert_questions.py, #15).
 """
 
 import json
@@ -29,6 +31,13 @@ SCHEMA = ROOT / "content" / "facts.schema.json"
 # An amount of a medicine, alone or per something (mg/kg): 2 L/min of oxygen isn't one
 DOSE_UNIT = re.compile(r"(?:mg|mcg|µg|μg|g|ml|IU)(?:/\S+)?", re.IGNORECASE)
 DOSE = re.compile(rf"\d\s*{DOSE_UNIT.pattern}\b", re.IGNORECASE)
+
+
+def first_day(text: str) -> date:
+    """The first day a date can be, as precise as its source gives it: the day (1990-05-11), the
+    month (1990-05) or the year (1990)."""
+    year, month, day = [*text.split("-"), "1", "1"][:3]
+    return date(int(year), int(month), int(day))
 
 
 @dataclass(frozen=True, slots=True)
@@ -94,17 +103,40 @@ class Record:
             return ""
         return f"{number}, an estimate" if measure.get("estimate") else number
 
-    def _problem(self, what: str) -> Problem:
-        return Problem(self.file, self.id, what)
+    def _said(self, version: Mapping[str, Any]) -> str:
+        """What one source says, in a number or in words, where it has them."""
+        return ", ".join(part for part in (self._number(version), version.get("note")) if part)
 
-    def _range(self, measure: Mapping[str, Any]) -> Iterator[Problem]:
+    def _told(self, version: Mapping[str, Any]) -> str:
+        """What one source says, and the source with its check date."""
+        said = self._said(version)
+        source = f"[{version['source']['title']}]({version['source']['url']})"
+        return f"{said + ': ' if said else ''}{source}, checked {version['checked']}"
+
+    def _problem(self, what: str, about: str = "") -> Problem:
+        return Problem(self.file, self.id, f"{about}: {what}" if about else what)
+
+    def _versions(
+        self, versions: list[Mapping[str, Any]], latest: date, about: str = ""
+    ) -> Iterator[Problem]:
+        """What the sources say, as versions: each range upwards, each check date past, all in
+        one unit."""
+        for version in versions:
+            yield from self._range(version, about)
+            yield from self._date(version["checked"], latest, about)
+        units = sorted({version["unit"] for version in versions if "unit" in version})
+        if len(units) > 1:
+            yield self._problem(f"versions in different units: {', '.join(units)}", about)
+
+    def _range(self, measure: Mapping[str, Any], about: str = "") -> Iterator[Problem]:
         bounds = measure.get("range")
         if bounds and bounds["min"] >= bounds["max"]:
-            yield self._problem(f"the range {bounds['min']}–{bounds['max']} doesn't run upwards")
+            what = f"the range {bounds['min']}–{bounds['max']} doesn't run upwards"
+            yield self._problem(what, about)
 
-    def _date(self, text: str, latest: date) -> Iterator[Problem]:
-        if date.fromisoformat(text) > latest:
-            yield self._problem(f"the date {text} is in the future")
+    def _date(self, text: str, latest: date, about: str = "") -> Iterator[Problem]:
+        if first_day(text) > latest:
+            yield self._problem(f"the date {text} is in the future", about)
 
     def _doses(self, texts: Iterable[str], units: Iterable[str]) -> Iterator[Problem]:
         """Never a dose (docs/conventions/knowledge-base.md): a doctor prescribes those."""
@@ -120,20 +152,28 @@ class Fact(Record):
 
     def problems(self, records: Mapping[str, Record], latest: date) -> Iterator[Problem]:
         versions = self.data["versions"]
-        for version in versions:
-            yield from self._range(version)
-            yield from self._date(version["checked"], latest)
+        yield from self._versions(versions, latest)
         units = sorted({version["unit"] for version in versions if "unit" in version})
-        if len(units) > 1:
-            yield self._problem(f"versions in different units: {', '.join(units)}")
         notes = [version["note"] for version in versions if "note" in version]
         yield from self._doses([self.data["claim"], *notes], units)
 
+    @property
+    def bounds(self) -> tuple[float, float]:
+        """The lowest and the highest number its sources give."""
+        lows: list[float] = []
+        highs: list[float] = []
+        for version in self.data["versions"]:
+            if "value" in version:
+                lows.append(version["value"])
+                highs.append(version["value"])
+            elif "range" in version:
+                lows.append(version["range"]["min"])
+                highs.append(version["range"]["max"])
+        return min(lows), max(highs)
+
     def _details(self) -> Iterator[str]:
         for version in self.data["versions"]:
-            said = ", ".join(part for part in (self._number(version), version.get("note")) if part)
-            source = f"[{version['source']['title']}]({version['source']['url']})"
-            yield f"{said + ': ' if said else ''}{source}, checked {version['checked']}"
+            yield self._told(version)
 
 
 @dataclass(frozen=True, slots=True)
@@ -178,6 +218,90 @@ class Question(Record):
             yield f"About: {', '.join(self.data['about'])}"
 
 
+@dataclass(frozen=True, slots=True)
+class Death(Record):
+    """One of the recorded dead: what each source says of the death (#14)."""
+
+    KIND: ClassVar[str] = "a death"
+    # What some source has to say. The place too, where one names it: the Himalayan Database
+    # gives the altitude, and names the place only in its note.
+    TOLD: ClassVar[tuple[str, ...]] = ("date", "cause")
+
+    def problems(self, records: Mapping[str, Record], latest: date) -> Iterator[Problem]:
+        versions = self.data["versions"]
+        yield from self._versions(versions, latest)
+        for version in versions:
+            if "date" in version:
+                yield from self._date(version["date"], latest)
+        for field in self.TOLD:
+            if not any(field in version for version in versions):
+                yield self._problem(f"no source says the {field}")
+
+    @property
+    def day(self) -> date:
+        """The earliest day its sources give: a month's or a year's first, where that's all."""
+        return min(
+            first_day(version["date"]) for version in self.data["versions"] if "date" in version
+        )
+
+    def _text(self) -> str:
+        hired = ", hired" if self.data["hired"] else ""
+        return f"{self.data['name']}, {self.data['citizenship']}{hired}"
+
+    def _details(self) -> Iterator[str]:
+        for version in self.data["versions"]:
+            yield self._told(version)
+
+    def _said(self, version: Mapping[str, Any]) -> str:
+        """When, where, how high, of what, where on the climb, and the words: what it has."""
+        parts = [version.get("date"), version.get("place")]
+        if "altitude" in version:
+            parts.append(f"{version['altitude']} m")
+        parts += [version.get("cause"), version.get("phase"), version.get("note")]
+        return ", ".join(str(part) for part in parts if part)
+
+
+@dataclass(frozen=True, slots=True)
+class Accident(Record):
+    """An accident told in full: its dates, weather, crowd, chain of decisions and its dead
+    (#14)."""
+
+    KIND: ClassVar[str] = "an accident"
+
+    def problems(self, records: Mapping[str, Record], latest: date) -> Iterator[Problem]:
+        began, until = self.data["date"], self.data.get("until")
+        yield from self._date(began, latest)
+        if until:
+            yield from self._date(until, latest)
+            if until < began:
+                yield self._problem(f"it ends on {until}, before it begins on {began}")
+        yield from self._versions(self.data["weather"]["versions"], latest, "the weather")
+        yield from self._versions(self.data["crowd"]["versions"], latest, "the crowd")
+        for number, step in enumerate(self.data["chain"], 1):
+            yield from self._versions(step["versions"], latest, f"step {number}")
+        for death in self.data["deaths"]:
+            if not isinstance(records.get(death), Death):
+                yield self._problem(f"names {death}, which isn't a death here")
+
+    def _text(self) -> str:
+        until = f" to {self.data['until']}" if "until" in self.data else ""
+        return f"{self.data['title']}, {self.data['date']}{until}"
+
+    def _details(self) -> Iterator[str]:
+        yield self._statement("Weather", self.data["weather"])
+        yield self._statement("Crowd", self.data["crowd"])
+        for number, step in enumerate(self.data["chain"], 1):
+            when = f", {step['when']}" if "when" in step else ""
+            yield self._statement(f"Step {number}{when}", step)
+        yield f"Dead: {', '.join(self.data['deaths'])}"
+        yield f"Lesson: {self.data['lesson']} Scenario: {self.data['scenario']}"
+
+    def _statement(self, name: str, statement: Mapping[str, Any]) -> str:
+        """What happened or held, and what each source says of it."""
+        told = "; ".join(self._told(version) for version in statement["versions"])
+        return f"{name}: {statement['what']} ({told})"
+
+
 class FactFile:
     """One JSON file of records."""
 
@@ -185,6 +309,8 @@ class FactFile:
         "fact": Fact,
         "coefficient": Coefficient,
         "question": Question,
+        "death": Death,
+        "accident": Accident,
     }
 
     def __init__(self, path: Path, validator: Draft202012Validator) -> None:

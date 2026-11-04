@@ -13,7 +13,15 @@
         "else": {
           "if": { "properties": { "kind": { "const": "question" } }, "required": ["kind"] },
           "then": { "$ref": "#/$defs/question" },
-          "else": { "$ref": "#/$defs/fact" }
+          "else": {
+            "if": { "properties": { "kind": { "const": "death" } }, "required": ["kind"] },
+            "then": { "$ref": "#/$defs/death" },
+            "else": {
+              "if": { "properties": { "kind": { "const": "accident" } }, "required": ["kind"] },
+              "then": { "$ref": "#/$defs/accident" },
+              "else": { "$ref": "#/$defs/fact" }
+            }
+          }
         }
       }
     }
@@ -74,6 +82,124 @@
       "required": ["id", "kind", "question"],
       "additionalProperties": false
     },
+    "death": {
+      "description": "One of the recorded dead: who they were, and what each source says of the death. Facts and a source only.",
+      "type": "object",
+      "properties": {
+        "id": { "$ref": "#/$defs/id" },
+        "kind": { "const": "death" },
+        "name": { "$ref": "#/$defs/text" },
+        "citizenship": { "$ref": "#/$defs/text" },
+        "hired": {
+          "description": "Hired for the expedition: a Sherpa, a porter, a high-altitude worker.",
+          "type": "boolean"
+        },
+        "status": { "$ref": "#/$defs/status" },
+        "versions": {
+          "type": "array",
+          "minItems": 1,
+          "items": { "$ref": "#/$defs/death-version" }
+        }
+      },
+      "required": ["id", "kind", "name", "citizenship", "hired", "status", "versions"],
+      "additionalProperties": false
+    },
+    "death-version": {
+      "description": "What one source says of the death: when, where, of what, and where on the climb. A source that says only some of it gives only that.",
+      "type": "object",
+      "properties": {
+        "date": { "$ref": "#/$defs/partial-date" },
+        "place": { "$ref": "#/$defs/text" },
+        "altitude": { "description": "Metres above sea level.", "type": "number" },
+        "cause": { "$ref": "#/$defs/cause" },
+        "phase": { "$ref": "#/$defs/phase" },
+        "note": { "$ref": "#/$defs/text" },
+        "source": { "$ref": "#/$defs/source" },
+        "checked": { "$ref": "#/$defs/date" }
+      },
+      "required": ["source", "checked"],
+      "additionalProperties": false
+    },
+    "cause": {
+      "description": "The Himalayan Database's causes of death, in its own classes.",
+      "enum": [
+        "altitude-sickness",
+        "exhaustion",
+        "exposure",
+        "fall",
+        "crevasse",
+        "icefall-collapse",
+        "avalanche",
+        "falling-rock-or-ice",
+        "disappearance",
+        "illness",
+        "other",
+        "unknown"
+      ]
+    },
+    "phase": {
+      "description": "Where on the climb, in the Himalayan Database's own classes: on the way to base camp, at base camp, fixing the route, on the way up or down on a summit bid, in the expedition's evacuation, or other.",
+      "enum": ["approach", "base-camp", "route-preparation", "ascent", "descent", "evacuation", "other"]
+    },
+    "accident": {
+      "description": "An accident the chronicle tells in full: its dates, weather and crowd, the chain of decisions and conditions, and its dead.",
+      "type": "object",
+      "properties": {
+        "id": { "$ref": "#/$defs/id" },
+        "kind": { "const": "accident" },
+        "title": { "$ref": "#/$defs/text" },
+        "status": { "$ref": "#/$defs/status" },
+        "date": { "description": "The day it began.", "$ref": "#/$defs/date" },
+        "until": { "description": "The day it ended, when not the same.", "$ref": "#/$defs/date" },
+        "weather": { "$ref": "#/$defs/statement" },
+        "crowd": { "$ref": "#/$defs/statement" },
+        "chain": { "type": "array", "minItems": 1, "items": { "$ref": "#/$defs/step" } },
+        "deaths": {
+          "description": "The ids of its dead, each a death record.",
+          "type": "array",
+          "minItems": 1,
+          "uniqueItems": true,
+          "items": { "$ref": "#/$defs/id" }
+        },
+        "lesson": { "$ref": "#/$defs/text" },
+        "scenario": { "description": "The scenario it seeds, as the spec names it.", "$ref": "#/$defs/text" }
+      },
+      "required": [
+        "id",
+        "kind",
+        "title",
+        "status",
+        "date",
+        "weather",
+        "crowd",
+        "chain",
+        "deaths",
+        "lesson",
+        "scenario"
+      ],
+      "additionalProperties": false
+    },
+    "statement": {
+      "description": "What happened or held, in a sentence, and what each source says of it: one version when they agree, one for each when they disagree.",
+      "type": "object",
+      "properties": {
+        "what": { "$ref": "#/$defs/text" },
+        "versions": { "type": "array", "minItems": 1, "items": { "$ref": "#/$defs/version" } }
+      },
+      "required": ["what", "versions"],
+      "additionalProperties": false
+    },
+    "step": {
+      "description": "A link in the chain of decisions and conditions, in order, with the time where a source gives one.",
+      "type": "object",
+      "properties": {
+        "when": { "$ref": "#/$defs/text" },
+        "what": { "$ref": "#/$defs/text" },
+        "versions": { "type": "array", "minItems": 1, "items": { "$ref": "#/$defs/version" } }
+      },
+      "required": ["what", "versions"],
+      "additionalProperties": false
+    },
     "version": {
       "description": "What one source says: a value or a range with its unit, words in `note`, or just the claim as it stands.",
       "type": "object",
@@ -121,6 +247,13 @@
     },
     "id": { "type": "string", "pattern": "^[a-z0-9-]+(\\.[a-z0-9-]+)+$" },
     "date": { "type": "string", "pattern": "^\\d{4}-\\d{2}-\\d{2}$", "format": "date" },
+    "partial-date": {
+      "description": "A date as precise as its source gives it: the day, or the month (1990-05), or the year (1990).",
+      "anyOf": [
+        { "$ref": "#/$defs/date" },
+        { "type": "string", "pattern": "^\\d{4}(-(0[1-9]|1[0-2]))?$" }
+      ]
+    },
     "status": { "enum": ["expert-reviewed", "source only"] },
     "text": { "type": "string", "minLength": 1 }
   }

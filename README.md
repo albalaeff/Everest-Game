@@ -209,10 +209,11 @@ npm run e2e -- --project=iphone   # on one of them
   leftovers or write outside its `tmp_path`. A worker takes seconds to start, so a run
   naming files or tests stays in one process.
 - **The knowledge base** is checked with the tests: `uv run pytest` fails on a record in
-  `content/facts/` without a source or a check date, and `uv run python scripts/check_facts.py`
-  lists every problem by file and record. It fails too on a `medicine` record whose source
-  isn't in the medical library, `content/library.json`, and on a source there that no record
-  cites: `uv run python scripts/check_library.py` lists those.
+  `content/facts/` without a source or a check date, and on a chronicle short of the
+  Himalayan Database's totals (#14); `uv run python scripts/check_facts.py` lists every
+  problem by file and record. It fails too on a `medicine` record whose source isn't in the
+  medical library, `content/library.json`, and on a source there that no record cites:
+  `uv run python scripts/check_library.py` lists those.
   `uv run python scripts/expert_questions.py` prints the questions and `source only` records
   for the guide and for the doctor
   ([docs/conventions/knowledge-base.md](docs/conventions/knowledge-base.md)).
