@@ -1,6 +1,17 @@
 // The simulation core, as the modules above it see it (docs/conventions.md → Modules).
 export { ActionLog } from "./action-log";
 export type { LoggedStep } from "./action-log";
+export {
+  createBodyState,
+  defaultBodyModelCoefficients,
+  updateBodyState,
+} from "./body-model";
+export type {
+  BodyInputs,
+  BodyModelCoefficients,
+  BodyState,
+  Pace,
+} from "./body-model";
 export { Expedition } from "./expedition";
 export type { ExpeditionSave } from "./expedition";
 export { LetGo } from "./game-action";
