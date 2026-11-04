@@ -29,6 +29,8 @@ export type { ActionSource } from "./headless-runner";
 export type { Json } from "./json";
 export { MountainClock } from "./mountain-clock";
 export type { ClockStart } from "./mountain-clock";
+export { OxygenSystem } from "./oxygen";
+export type { OxygenNumbers, OxygenView } from "./oxygen";
 export { HazardChance, ObjectiveHazards } from "./objective-hazards";
 export type {
   HazardGround,

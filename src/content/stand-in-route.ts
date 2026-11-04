@@ -8,7 +8,7 @@ import type {
   SlopeLayout,
   SlopeSettings,
 } from "../physics";
-import { Body, MountainClock, ObjectiveHazards } from "../simulation";
+import { Body, MountainClock, ObjectiveHazards, OxygenSystem } from "../simulation";
 import type { BodyStart, ClimberId, ClockStart, HazardStart, Scenario } from "../simulation";
 
 /** A point or a curve's point as the data file keeps it: two numbers. */
@@ -105,6 +105,7 @@ export class StandInRoute {
       climbers: this.layout.climbers.map((climber) => climber.id),
       start: {
         [MountainClock.NAME]: MountainClock.start(this.clock),
+        [OxygenSystem.NAME]: OxygenSystem.start(this.layout.climbers.map(({ id }) => id)),
         [Body.NAME]: Body.start(this.bodies),
         [ObjectiveHazards.NAME]: ObjectiveHazards.start(this.hazards),
         [SlopePhysics.NAME]: SlopePhysics.start(this.layout),

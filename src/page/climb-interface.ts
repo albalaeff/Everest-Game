@@ -1,4 +1,4 @@
-import type { BodyView, ClimberId, MountainClock } from "../simulation";
+import type { BodyView, ClimberId, MountainClock, OxygenSystem, OxygenView } from "../simulation";
 import type { Body } from "../simulation/body/body";
 import type { SlopePhysics } from "../physics";
 
@@ -7,6 +7,8 @@ export class ClimbInterface {
   private readonly readouts: HTMLElement;
   private readonly clock: HTMLElement;
   private readonly altitude: HTMLElement;
+  private readonly pressure: HTMLElement;
+  private readonly flow: HTMLElement;
   private readonly panel: HTMLElement;
   private readonly checkButton: HTMLElement;
   private readonly symptoms: HTMLElement;
@@ -17,6 +19,7 @@ export class ClimbInterface {
     window: Window,
     private readonly mountainClock: MountainClock,
     private readonly body: Body,
+    private readonly oxygen: OxygenSystem,
     private readonly physics: SlopePhysics,
     private readonly player: ClimberId,
   ) {
@@ -24,7 +27,8 @@ export class ClimbInterface {
     this.readouts = this.required(document, "#readouts");
     this.clock = this.required(document, "#readout-clock");
     this.altitude = this.required(document, "#readout-altitude");
-    this.required(document, "#readout-pressure");
+    this.pressure = this.required(document, "#readout-pressure");
+    this.flow = this.required(document, "#oxygen-flow");
     this.panel = this.required(document, "#self-check");
     this.checkButton = this.required(document, "[data-control='check-self']");
     this.symptoms = this.required(document, "#self-check-symptoms");
@@ -46,9 +50,17 @@ export class ClimbInterface {
   update(): void {
     const { altitude } = this.physics.climber(this.player);
     const view = this.body.climber(this.player);
+    const oxygen = this.oxygen.climber(this.player);
     this.clock.textContent = this.time(this.mountainClock.timeOfDay);
     this.altitude.textContent = `${Math.round(altitude).toLocaleString()} m`;
+    this.updateOxygen(oxygen);
     this.updateSelfCheck(view);
+  }
+
+  private updateOxygen(oxygen: OxygenView): void {
+    this.pressure.textContent =
+      oxygen.bottles === 0 ? "Empty" : `${oxygen.pressure} bar · ${oxygen.bottles} bottles`;
+    this.flow.textContent = `${oxygen.flow} L/min`;
   }
 
   private updateSelfCheck(view: BodyView): void {
