@@ -1,5 +1,7 @@
+import accidents from "../../content/facts/accidents.json";
 import acclimatization from "../../content/facts/acclimatization.json";
 import crowds from "../../content/facts/crowds.json";
+import deaths from "../../content/facts/deaths.json";
 import medicine from "../../content/facts/medicine.json";
 import oxygen from "../../content/facts/oxygen.json";
 import rules from "../../content/facts/rules.json";
@@ -15,8 +17,10 @@ import type { KnowledgeFile } from "./knowledge-base";
  * and `knowledge-files.test.ts` fails when the folder has one this list doesn't.
  */
 export const KNOWLEDGE_FILES: readonly KnowledgeFile[] = [
+  accidents,
   acclimatization,
   crowds,
+  deaths,
   medicine,
   oxygen,
   rules,
