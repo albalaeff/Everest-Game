@@ -56,7 +56,13 @@ describe("Mountain", () => {
     expect(first.clock).not.toBe(second.clock);
     expect(first.body).not.toBe(second.body);
     expect(first.hazards).not.toBe(second.hazards);
-    expect(first.all).toEqual([first.clock, first.body, first.hazards, first.physics]);
+    expect(first.all).toEqual([
+      first.clock,
+      first.oxygen,
+      first.body,
+      first.hazards,
+      first.physics,
+    ]);
   });
 
   it("lays the route's hazards, in its weather, where the climbers start clear of them", () => {

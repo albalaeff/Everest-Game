@@ -15,7 +15,7 @@ export class BodyFacts {
 
   readonly numbers: BodyNumbers;
 
-  constructor(knowledge: KnowledgeBase) {
+  constructor(private readonly knowledge: KnowledgeBase) {
     const number = (id: string): number => knowledge.number(id);
     const places = BodyFacts.PLACES.map(
       (place) => [number(`route.${place}-altitude`), number(`body.saturation-${place}`)] as const,
@@ -54,6 +54,20 @@ export class BodyFacts {
         cost: number("body.hunger-cost"),
       },
       sleep: { sleepyAfter: number("body.sleepy-after"), cost: number("body.sleep-loss-cost") },
+    };
+  }
+
+  oxygenNumbers(): {
+    readonly bottleLitres: number;
+    readonly bottlePressure: number;
+    readonly bottles: number;
+    readonly maximumFlow: number;
+  } {
+    return {
+      bottleLitres: this.knowledge.number("oxygen.bottle-litres"),
+      bottlePressure: this.knowledge.number("oxygen.bottle-pressure"),
+      bottles: this.knowledge.range("oxygen.bottles-per-climb").min,
+      maximumFlow: this.knowledge.number("oxygen.regulator-maximum"),
     };
   }
 }

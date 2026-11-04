@@ -182,7 +182,14 @@ export class GamePage {
     );
     const sink = new EverySink([climb.sink, new ZoomSink(zoom), received]);
     new ControlsPage(window, texts.controls, player, camera, sink);
-    const climbInterface = new ClimbInterface(window, rules.clock, rules.body, physics, player);
+    const climbInterface = new ClimbInterface(
+      window,
+      rules.clock,
+      rules.body,
+      rules.oxygen,
+      physics,
+      player,
+    );
     const loop = new GameLoop(climb.played, scene);
     const button = new QualityButton(choice, texts.rendering, (quality) => {
       scene.setQuality(quality, window.devicePixelRatio);
