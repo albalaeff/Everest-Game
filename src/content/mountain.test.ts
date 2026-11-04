@@ -1,12 +1,12 @@
 import { describe, expect, it } from "vitest";
 
-import time from "../../content/facts/time.json";
 import { Expedition, SimulationClock } from "../simulation";
 import { KnowledgeBase } from "./knowledge-base";
+import { KNOWLEDGE_FILES } from "./knowledge-files";
 import { Mountain } from "./mountain";
 import { StandInRoute } from "./stand-in-route";
 
-const knowledge = new KnowledgeBase([time]);
+const knowledge = new KnowledgeBase(KNOWLEDGE_FILES);
 
 describe("Mountain", () => {
   it("builds the same expedition on the page and on the room server: one seed, one climb", () => {
@@ -53,7 +53,8 @@ describe("Mountain", () => {
 
     expect(first.physics).not.toBe(second.physics);
     expect(first.clock).not.toBe(second.clock);
-    expect(first.all).toEqual([first.clock, first.physics]);
+    expect(first.body).not.toBe(second.body);
+    expect(first.all).toEqual([first.clock, first.body, first.physics]);
   });
 
   it("starts every climber of the section at its foot, so a room's players set off together", () => {

@@ -8,8 +8,8 @@ import type {
   SlopeLayout,
   SlopeSettings,
 } from "../physics";
-import { MountainClock } from "../simulation";
-import type { ClimberId, ClockStart, Scenario } from "../simulation";
+import { Body, MountainClock } from "../simulation";
+import type { BodyStart, ClimberId, ClockStart, Scenario } from "../simulation";
 
 /** A point or a curve's point as the data file keeps it: two numbers. */
 type DataPair = readonly number[];
@@ -32,13 +32,14 @@ export interface StandInData {
     readonly ladders: readonly LadderLayout[];
     readonly climbers: readonly ClimberLayout[];
   };
+  readonly bodies: readonly BodyStart[];
   readonly clock: ClockStart;
 }
 
 /**
  * The stand-in section the page plays on until the Khumbu Icefall (#26) brings the real ground and
- * the knowledge base's numbers: its ground and numbers as the physics takes them, when its
- * expedition starts, and the scenario that starts on it.
+ * the knowledge base's numbers: its ground and numbers as the physics takes them, how its climbers
+ * set off, when its expedition starts, and the scenario that starts on it.
  */
 export class StandInRoute {
   /** The player's climber in the stand-in layout. */
@@ -46,10 +47,12 @@ export class StandInRoute {
 
   readonly settings: SlopeSettings;
   readonly layout: SlopeLayout;
+  /** Each climber's body as they set off, in the layout's order. */
+  readonly bodies: readonly BodyStart[];
   readonly clock: ClockStart;
 
   constructor(data: StandInData = standIn) {
-    const { settings, layout, clock } = data;
+    const { settings, layout, bodies, clock } = data;
     this.settings = {
       gravity: settings.gravity,
       friction: settings.friction,
@@ -66,6 +69,13 @@ export class StandInRoute {
       ladders: layout.ladders,
       climbers: layout.climbers,
     };
+    this.bodies = layout.climbers.map(({ id }) => {
+      const body = bodies.find((start) => start.id === id);
+      if (body === undefined) {
+        throw new RangeError(`${id} has no body on the stand-in route`);
+      }
+      return body;
+    });
     this.clock = clock;
   }
 
@@ -77,6 +87,7 @@ export class StandInRoute {
       climbers: this.layout.climbers.map((climber) => climber.id),
       start: {
         [MountainClock.NAME]: MountainClock.start(this.clock),
+        [Body.NAME]: Body.start(this.bodies),
         [SlopePhysics.NAME]: SlopePhysics.start(this.layout),
       },
     };

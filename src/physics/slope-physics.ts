@@ -1,4 +1,4 @@
-import type { ClimberId, Json, Moment, Rule } from "../simulation";
+import type { ClimberId, Json, Legs, Moment, Rule } from "../simulation";
 import { Climber } from "./climber";
 import type { ClimberSave, ClimberView } from "./climber";
 import { Ladder } from "./ladder";
@@ -53,9 +53,10 @@ type SlopeSave = {
  * climbers walk over the ground and cross on ladders, a slip where friction can't hold them
  * becomes a fall, and a fixed rope holds a climber clipped to it, on the carabiner or the jumar.
  * Its numbers are handed to it; the ground, the ropes, the ladders and the climbers are its
- * state, which a scenario starts and a save keeps.
+ * state, which a scenario starts and a save keeps. They're the legs of the body (#22), which sets
+ * how far each climber's strides go.
  */
-export class SlopePhysics implements Rule {
+export class SlopePhysics implements Rule, Legs {
   /** Its key in scenarios and saves: never change it once saves exist. */
   static readonly NAME = "slope-physics";
 
@@ -94,6 +95,13 @@ export class SlopePhysics implements Rule {
   /** What a climber is doing, for the rendering and the rules above. */
   climber(id: ClimberId): ClimberView {
     return this.climberFor(id).view(this.loaded);
+  }
+
+  /** Sets how far a climber's strides go from now on, as a share of the walking and ladder
+   * speeds: the body's, for a climber tired, high up or carrying a load. A whole stride, 1, until
+   * it does. */
+  stride(id: ClimberId, share: number): void {
+    this.climberFor(id).setStride(share);
   }
 
   /** Where a rope lies: its anchors and every point between. */

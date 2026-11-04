@@ -6,6 +6,7 @@ Every change to this codebase follows the rules in this file, and those of each 
 |---|---|
 | the knowledge base: `content/facts/`, `content/library.json` | [conventions/knowledge-base.md](conventions/knowledge-base.md) |
 | the simulation core: `src/simulation/` | [conventions/simulation-core.md](conventions/simulation-core.md) |
+| the body: `src/simulation/body/`, and the numbers `src/content/body-facts.ts` hands it | [conventions/body.md](conventions/body.md) |
 | the input layer: `src/input/` | [conventions/input.md](conventions/input.md) |
 | the slope physics: `src/physics/` | [conventions/slope-physics.md](conventions/slope-physics.md) |
 | the rendering and the page: `src/rendering/`, `src/page/` | [conventions/rendering.md](conventions/rendering.md) |
