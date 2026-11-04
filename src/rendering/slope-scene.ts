@@ -57,12 +57,13 @@ export class SlopeScene {
     return true;
   }
 
-  /** Runs `frame` before each frame is drawn, with the seconds since the last one and the
-   * browser's clock. A frame longer than a tenth of a second counts as a tenth: a tab in the
-   * background pauses the single player's game (spec.md → Phone and PC). */
+  /** Runs `frame` before each frame is drawn, with the real seconds since the last one and the
+   * browser's clock. Not Pixi's `deltaMS`, which counts a frame longer than a tenth of a second
+   * as a tenth: a device drawing a few frames a second would play slow. How long a frame may
+   * count for is the game's. */
   eachFrame(frame: (seconds: number, nowMilliseconds: number) => void): void {
     this.app.ticker.add((ticker) => {
-      frame(ticker.deltaMS / 1000, ticker.lastTime);
+      frame(ticker.elapsedMS / 1000, ticker.lastTime);
     });
   }
 

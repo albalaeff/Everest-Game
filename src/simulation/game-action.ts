@@ -79,3 +79,21 @@ export interface SetUpTent extends ClimberAction {
  */
 export type GameAction =
   Walk | Pace | Clip | Unclip | Jumar | Tool | Oxygen | CheckSelf | Radio | SetUpTent;
+
+/**
+ * A climber let go: stopped where they stand, at a steady pace, the jumar's slide let go. What a
+ * climber does when the releases of whoever steered them will never come: a room's player who
+ * left, a climb alone resumed from a save made mid-stride (docs/conventions/room-server.md).
+ */
+export class LetGo {
+  constructor(private readonly climber: ClimberId) {}
+
+  actions(): readonly GameAction[] {
+    const { climber } = this;
+    return [
+      { kind: "walk", climber, direction: "stop" },
+      { kind: "pace", climber, pace: "steady" },
+      { kind: "jumar", climber, held: false },
+    ];
+  }
+}

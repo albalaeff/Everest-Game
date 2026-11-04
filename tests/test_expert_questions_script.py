@@ -2,6 +2,7 @@
 
 import json
 from datetime import date
+from itertools import takewhile
 from pathlib import Path
 from typing import Any
 
@@ -37,6 +38,27 @@ def coefficient(id: str = "body.fatigue-rate", **fields: Any) -> dict[str, Any]:
 
 def question(id: str = "technique.re-clipping", **fields: Any) -> dict[str, Any]:
     return {"id": id, "kind": "question", "question": "Which cowstail first?"} | fields
+
+
+def death(id: str = "deaths.1990-05-11-a-climber", **fields: Any) -> dict[str, Any]:
+    """One of the dead, made up: on the South Summit, of exposure, on the way down (#14)."""
+    said = {"date": "1990-05-11", "place": "South Summit", "altitude": 8750, "cause": "exposure"}
+    told = said | {"phase": "descent", "source": SOURCE, "checked": "2026-11-01"}
+    record = {"id": id, "kind": "death", "name": "A. Climber", "citizenship": "Nowhere"}
+    return record | {"hired": False, "status": "source only", "versions": [told]} | fields
+
+
+def accident(id: str = "accidents.1990-storm", **fields: Any) -> dict[str, Any]:
+    """An accident, made up, with the death above (#14)."""
+    told = {"note": "From 15:00.", "source": SOURCE, "checked": "2026-11-01"}
+    counted = {"value": 30, "unit": "climbers", "source": SOURCE, "checked": "2026-11-01"}
+    record = {"id": id, "kind": "accident", "title": "The storm", "status": "source only"}
+    record |= {"date": "1990-05-10", "until": "1990-05-11"}
+    record |= {"weather": {"what": "A storm came in.", "versions": [told]}}
+    record |= {"crowd": {"what": "Three teams on the ridge.", "versions": [counted]}}
+    record |= {"chain": [{"when": "14:00", "what": "The turnaround passed.", "versions": [told]}]}
+    record |= {"deaths": ["deaths.1990-05-11-a-climber"], "lesson": "Turn around on time."}
+    return record | {"scenario": "A storm on the ridge"} | fields
 
 
 def experts(tmp_path: Path, *records: dict[str, Any]) -> ExpertList:
@@ -90,6 +112,19 @@ class TestWhatsListed:
         assert "- **body.fatigue-rate** (a coefficient): Fatigue per hour.\n" in listed
         assert "  - 0.2 1/h, fitted to oxygen.usual-flow on 2026-11-01\n" in listed
 
+    def test_an_estimate_says_so(self, tmp_path: Path) -> None:
+        in_words = {"note": "About.", "source": SOURCE, "checked": "2026-10-31"}
+        versions = [
+            version(estimate=True),
+            in_words | {"value": 3, "unit": "L/min", "estimate": True},
+        ]
+        listed = experts(tmp_path, fact(versions=versions)).markdown("guide")
+        link = "[Arnette](https://www.alanarnette.com/blog/?p=16718)"
+        assert [line for line in listed.splitlines() if line.startswith("  - ")] == [
+            f"  - 2–4 L/min, an estimate: {link}, checked 2026-11-01",
+            f"  - 3 L/min, an estimate, About.: {link}, checked 2026-10-31",
+        ]
+
     def test_each_version_is_a_line(self, tmp_path: Path) -> None:
         versions = [
             version(),
@@ -104,6 +139,32 @@ class TestWhatsListed:
             f"  - 3 L/min: {link}, checked 2026-10-30",
             f"  - About 3.: {link}, checked 2026-10-31",
             f"  - {link}, checked 2026-11-01",
+        ]
+
+    def test_a_death_shows_what_each_source_says(self, tmp_path: Path) -> None:
+        listed = experts(tmp_path, death()).markdown("guide")
+        assert "- **deaths.1990-05-11-a-climber** (a death): A. Climber, Nowhere\n" in listed
+        assert (
+            "  - 1990-05-11, South Summit, 8750 m, exposure, descent: "
+            "[Arnette](https://www.alanarnette.com/blog/?p=16718), checked 2026-11-01\n"
+        ) in listed
+
+    def test_a_hired_climber_s_death_says_so(self, tmp_path: Path) -> None:
+        listed = experts(tmp_path, death(hired=True)).markdown("guide")
+        assert "(a death): A. Climber, Nowhere, hired\n" in listed
+
+    def test_an_accident_shows_its_chain(self, tmp_path: Path) -> None:
+        listed = experts(tmp_path, death(), accident()).markdown("guide")
+        link = "[Arnette](https://www.alanarnette.com/blog/?p=16718), checked 2026-11-01"
+        header = "- **accidents.1990-storm** (an accident): The storm, 1990-05-10 to 1990-05-11\n"
+        assert header in listed
+        after = listed.split(header)[1].splitlines()
+        assert list(takewhile(lambda line: line.startswith("  - "), after)) == [
+            f"  - Weather: A storm came in. (From 15:00.: {link})",
+            f"  - Crowd: Three teams on the ridge. (30 climbers: {link})",
+            f"  - Step 1, 14:00: The turnaround passed. (From 15:00.: {link})",
+            "  - Dead: deaths.1990-05-11-a-climber",
+            "  - Lesson: Turn around on time. Scenario: A storm on the ridge",
         ]
 
     def test_an_expert_with_nothing_to_check_says_so(self, tmp_path: Path) -> None:
@@ -141,6 +202,18 @@ class TestByArea:
             "weather.safe-summit-wind",
         ]
         assert "4 to check, in 3 areas." in listed
+
+    def test_the_chronicle_is_the_guide_s(self, tmp_path: Path) -> None:
+        """The deaths, the accidents and the totals (#14), until reviewed, as any record."""
+        reviewed = death("deaths.1990-05-12-b-climber", status="expert-reviewed")
+        total = fact("deaths.recorded-through-2025")
+        listed = experts(tmp_path, death(), reviewed, accident(), total)
+        assert ids(listed.markdown("guide")) == [
+            "accidents.1990-storm",
+            "deaths.1990-05-11-a-climber",
+            "deaths.recorded-through-2025",
+        ]
+        assert ids(listed.markdown("doctor")) == []
 
     def test_an_area_no_expert_reviews_is_a_problem(self, tmp_path: Path) -> None:
         found = experts(tmp_path, fact(), fact("nowhere.thing")).problems()

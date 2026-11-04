@@ -5,7 +5,7 @@
     uv run python scripts/expert_questions.py doctor    # the doctor's: physiology
 
 Each list is Markdown, made from the knowledge base as it stands (content/facts/,
-docs/conventions/knowledge-base.md): every question, and every fact and coefficient still
+docs/conventions/knowledge-base.md): every question, and every other record still
 `source only`, with its values, sources and check dates. A record an expert has reviewed drops
 out, so the list is never copied by hand and never falls behind. Each area goes to the experts
 `ExpertList.EXPERTS` names for it; `pytest` fails on a record in an area no expert reviews
@@ -78,6 +78,7 @@ class ExpertList:
                     "tours",
                     "rules",
                     "accidents",
+                    "deaths",
                 }
             ),
         ),

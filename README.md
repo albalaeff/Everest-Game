@@ -16,7 +16,7 @@ A 2D browser game: a simulator-trainer for climbing Everest by the South route. 
 
 The game is a static TypeScript site that runs in the browser ([spec.md](spec.md) → Technical architecture): a simulation core (body, oxygen, weather, time, hazards; the same result for the same seed), agents and slope physics on it, PixiJS rendering with HTML and CSS for the interface and Web Audio for sound, and JSON content: the route, the scenarios, and the knowledge base of facts with their sources. For co-op, a room server on Cloudflare Workers runs the same core. [docs/conventions.md](docs/conventions.md) → Modules has the rules between them.
 
-The game's project is at the root of the repository: Vite builds `index.html` and `src/` into the static site, on Node 24 and npm. So far it's the simulation core in `src/simulation/` ([docs/conventions/simulation-core.md](docs/conventions/simulation-core.md)), the slope physics on it in `src/physics/` ([docs/conventions/slope-physics.md](docs/conventions/slope-physics.md)), the input layer in `src/input/` ([docs/conventions/input.md](docs/conventions/input.md)), the interface in `src/interface/` (the disclaimer the game opens on, with its beta mark while any record of the knowledge base isn't `expert-reviewed`), the PixiJS rendering in `src/rendering/` and the page that runs the game in `src/page/` ([docs/conventions/rendering.md](docs/conventions/rendering.md)): a climber walking a stand-in section of the Icefall, with the camera following; the other modules come with their issues. Beside it the repository holds the spec, the workflow ([CLAUDE.md](CLAUDE.md), `scripts/`, `.claude/`), the docs and the knowledge base: the fact records in `content/facts/` ([docs/conventions/knowledge-base.md](docs/conventions/knowledge-base.md)).
+The game's project is at the root of the repository: Vite builds `index.html` and `src/` into the static site, on Node 24 and npm. So far it's the simulation core in `src/simulation/` ([docs/conventions/simulation-core.md](docs/conventions/simulation-core.md)), the slope physics on it in `src/physics/` ([docs/conventions/slope-physics.md](docs/conventions/slope-physics.md)), the input layer in `src/input/` ([docs/conventions/input.md](docs/conventions/input.md)), the interface in `src/interface/` (the disclaimer the game opens on, with its beta mark while any record of the knowledge base isn't `expert-reviewed`), the PixiJS rendering in `src/rendering/` and the page that runs the game in `src/page/` ([docs/conventions/rendering.md](docs/conventions/rendering.md)): a climber walking a stand-in section of the Icefall, with the camera following, alone, saved on the device (`src/saves/`), or with a friend, in a room of the room server (`src/room/`, [docs/conventions/room-server.md](docs/conventions/room-server.md)); the other modules come with their issues. Beside it the repository holds the spec, the workflow ([CLAUDE.md](CLAUDE.md), `scripts/`, `.claude/`), the docs and the knowledge base: the fact records in `content/facts/` ([docs/conventions/knowledge-base.md](docs/conventions/knowledge-base.md)).
 
 ## Local development
 
@@ -33,11 +33,15 @@ npx playwright install chromium webkit   # the browsers of its page tests, once 
 The game:
 
 ```
-npm run dev              # at http://localhost:5173, reloading as you edit
-npm run dev -- --host    # on your network too, to open it on a phone
-npm run build            # the static site, in dist/
-npm run preview          # what's in dist/, at http://localhost:4173
+npm run dev                    # at http://localhost:5173, reloading as you edit
+npm run dev -- --host          # on your network too, to open it on a phone
+npm run build                  # the static site, in dist/
+npm run preview                # what's in dist/, at http://localhost:4173
+npm run room                   # the room server, at http://localhost:8787, for [Together]
+npm run room -- --ip 0.0.0.0   # on your network too, for a phone's
 ```
+
+A page served on this machine finds the room server on its own host; `npm run room` keeps its rooms in `.wrangler/state/`.
 
 ## Agents
 
@@ -205,20 +209,22 @@ npm run e2e -- --project=iphone   # on one of them
   leftovers or write outside its `tmp_path`. A worker takes seconds to start, so a run
   naming files or tests stays in one process.
 - **The knowledge base** is checked with the tests: `uv run pytest` fails on a record in
-  `content/facts/` without a source or a check date, and `uv run python scripts/check_facts.py`
-  lists every problem by file and record. It fails too on a `medicine` record whose source
-  isn't in the medical library, `content/library.json`, and on a source there that no record
-  cites: `uv run python scripts/check_library.py` lists those.
+  `content/facts/` without a source or a check date, and on a chronicle short of the
+  Himalayan Database's totals (#14); `uv run python scripts/check_facts.py` lists every
+  problem by file and record. It fails too on a `medicine` record whose source isn't in the
+  medical library, `content/library.json`, and on a source there that no record cites:
+  `uv run python scripts/check_library.py` lists those.
   `uv run python scripts/expert_questions.py` prints the questions and `source only` records
   for the guide and for the doctor
   ([docs/conventions/knowledge-base.md](docs/conventions/knowledge-base.md)).
 - **The game's checks** run in CI beside these. ESLint and Prettier read `src/`, `e2e/` and
   the config files; `tsc` checks `tsconfig.json`, the browser's code, `tsconfig.core.json`,
   the simulation core alone with no DOM, Node or test tool in scope
-  ([docs/conventions/simulation-core.md](docs/conventions/simulation-core.md)), and
-  `tsconfig.node.json`, what runs on Node. Vitest runs `src/**/*.test.ts`. Playwright builds
-  the game, serves the build and runs the stories in `e2e/` on each of its projects: `pc` and
-  `android` in Chromium, `iphone` in WebKit. A headless browser draws WebGL in software, so
+  ([docs/conventions/simulation-core.md](docs/conventions/simulation-core.md)),
+  `tsconfig.node.json`, what runs on Node, and `tsconfig.worker.json`, the room server's
+  Worker, with Cloudflare's types. Vitest runs `src/**/*.test.ts`. Playwright builds the game,
+  serves the build and the room server (`npm run room`) and runs the stories in `e2e/` on each
+  of its projects: `pc` and `android` in Chromium, `iphone` in WebKit. A headless browser draws WebGL in software, so
   the stories run two browsers at once at most (`workers` in `playwright.config.ts`), Chromium
   with `--enable-unsafe-swiftshader`, and the frame rate they see says nothing about the
   game's targets. TypeScript stays on 6.0: typescript-eslint refuses 7.
@@ -258,7 +264,7 @@ One failure isn't the change's:
 
 ## Deployment
 
-The game is a static site, to be published free on GitHub Pages or itch.io, with a small room server on Cloudflare for co-op ([spec.md](spec.md) → Technical architecture). Every merge into `develop` is published as a preview, at https://albalaeff.github.io/Everest-Game/, to open on a PC or a phone ([docs/production.md](docs/production.md) → The preview). The release flow is in place already: a release is a PR from a `release/<date>-NN` branch into `master`, cut by `scripts/github.py release` or the label `release` on an issue. Once its checks pass, CI runs the deploy step of `.github/workflows/release-tool.yml`, which is a stub until the game has a build to publish: it says so on the PR and passes. Merging the PR confirms the release, closing it rolls back: the same workflow's `confirm` and `rollback`. [docs/production.md](docs/production.md) is where the hosting, the pipeline and its secrets get written down.
+The game is a static site, to be published free on GitHub Pages or itch.io, with a small room server on Cloudflare for co-op ([spec.md](spec.md) → Technical architecture). Every merge into `develop` is published as a preview, at https://albalaeff.github.io/Everest-Game/, to open on a PC or a phone, with its room server deployed first ([docs/production.md](docs/production.md) → The preview). The release flow is in place already: a release is a PR from a `release/<date>-NN` branch into `master`, cut by `scripts/github.py release` or the label `release` on an issue. Once its checks pass, CI runs the deploy step of `.github/workflows/release-tool.yml`, which is a stub until the game has a build to publish: it says so on the PR and passes. Merging the PR confirms the release, closing it rolls back: the same workflow's `confirm` and `rollback`. [docs/production.md](docs/production.md) is where the hosting, the pipeline and its secrets get written down.
 
 ## The project board
 

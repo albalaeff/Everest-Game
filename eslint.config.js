@@ -7,7 +7,7 @@ export default defineConfig({
   extends: [js.configs.recommended, tseslint.configs.strictTypeChecked],
   languageOptions: {
     parserOptions: {
-      project: ["./tsconfig.json", "./tsconfig.node.json"],
+      project: ["./tsconfig.json", "./tsconfig.node.json", "./tsconfig.worker.json"],
       tsconfigRootDir: import.meta.dirname,
     },
   },

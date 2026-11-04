@@ -157,10 +157,10 @@ Tasks marked *Iteration 1–3* are planned into the board's first two-week itera
 - [x] Done gate
 
 ### Task 20: Room server v1: a room by code, the simulation on the server ([#28](https://github.com/albalaeff/Everest-Game/issues/28)) · *Iteration 2*
-- [ ] Cloudflare Workers and Durable Objects over WebSocket: players send actions, the server runs #17 and sends the state
-- [ ] Joining by code or link; the server checks the game's version and asks an old one to reload
-- [ ] Runs locally for development and tests; deployed with the account of #27
-- [ ] Done gate
+- [x] Cloudflare Workers and Durable Objects over WebSocket: players send actions, the server runs #17 and sends the state
+- [x] Joining by code or link; the server checks the game's version and asks an old one to reload
+- [x] Runs locally for development and tests; deployed with the account of #27
+- [x] Done gate
 
 ### Task 21: Co-op test: a PC browser and a phone browser in one room ([#29](https://github.com/albalaeff/Everest-Game/issues/29))
 - [ ] Playwright starts the local room server and two browsers, a desktop one and an emulated phone (screen size, touch)

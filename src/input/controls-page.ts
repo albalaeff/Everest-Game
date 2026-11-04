@@ -1,3 +1,4 @@
+import type { ClimberId } from "../simulation";
 import { ActionButton } from "./action-button";
 import { CONTROLS } from "./controls";
 import type { ControlName } from "./controls";
@@ -17,21 +18,20 @@ export type ControlTexts = Readonly<
   Record<ControlName | "hint-click" | "hint-tap" | "turn-phone", string>
 >;
 
-/** Puts the page's controls together, around index.html's elements: the player's actions go to
- * `sink`, and the slope is seen through `slope`, the camera. */
+/** Puts the page's controls together, around index.html's elements: the player's actions, as
+ * `climber`'s, go to `sink`, and the slope is seen through `slope`, the camera. */
 export class ControlsPage {
-  private static readonly CLIMBER = "player";
-
   private readonly elements: PageElements;
 
   constructor(
     private readonly window: Window,
     texts: ControlTexts,
+    climber: ClimberId,
     slope: SlopeView,
     sink: ActionSink,
   ) {
     this.elements = new PageElements(window.document);
-    const player = new PlayerInput(ControlsPage.CLIMBER, slope, sink);
+    const player = new PlayerInput(climber, slope, sink);
     const joystick = new FloatingJoystick(this.element("#joystick"), this.element("#knob"));
     const keyboard = new KeyboardSource(window, player);
     const pointer = new PointerSource(this.element("#slope"), player, joystick, window);
