@@ -34,9 +34,16 @@ the one `origin` points to.
     uv run python scripts/github.py show 180                an issue or PR and its comments,
                                                             as text (#387); --new: only those
                                                             since Claude's last (#442)
+<<<<<<< HEAD
     uv run python scripts/github.py ci feature/180-fx       CI on a branch's latest commit
     uv run python scripts/github.py logs 1253               a CI job's whole log, by the job's
                                                             id: filter it with grep
+=======
+    uv run python scripts/github.py ci feature/180-fx       CI on a branch's latest commit, and
+                                                            each failed job's `logs` command
+    uv run python scripts/github.py logs 1253               a CI job's whole log, by the job's
+                                                            id: filter it with grep (template#5)
+>>>>>>> 6196db6 (github.py logs <job>: a CI job's whole log, and ci names the failed jobs (#11))
     uv run python scripts/github.py pr 457                  a PR in brief, with its CI (#442)
     uv run python scripts/github.py pr open pr.json         opens one, its description signed
     uv run python scripts/github.py merge 457               squashes it into develop
@@ -262,7 +269,12 @@ class GitHub:
 
     def text(self, path: str) -> str:
         """`path`'s plain text in the repository: a job's log, from the storage GitHub sends
+<<<<<<< HEAD
         the asker on to. httpx leaves the token behind on the way there."""
+=======
+        the asker on to, which `call` doesn't follow (template#5, from Everest#18). httpx
+        leaves the token behind on the way there."""
+>>>>>>> 6196db6 (github.py logs <job>: a CI job's whole log, and ci names the failed jobs (#11))
         url = f"/repos/{self.slug}/{path}"
         response = self._http.get(url, follow_redirects=True)
         if response.is_error:
@@ -433,6 +445,18 @@ class CiRuns:
         return ", ".join(
             f"{run['name']}: {run['conclusion'] or run['status']}" for run in self.runs
         )
+
+    def failed_jobs(self, github: GitHub) -> list[str]:
+        """Each failed job of its failed runs, as the `logs` command that prints its log
+        (template#5): "checks failed: scripts/github.py logs 1253". Only `ci` asks, a call
+        for each failed run."""
+        return [
+            f"{job['name']} failed: scripts/github.py logs {job['id']}"
+            for run in self.runs
+            if run.get("conclusion") == "failure"
+            for job in github.call("GET", f"actions/runs/{run['id']}/jobs")["jobs"]
+            if job.get("conclusion") == "failure"
+        ]
 
     @property
     def finished(self) -> bool:
@@ -1857,7 +1881,12 @@ def main(argv: Sequence[str] | None = None) -> None:
         print(thread.new() if args.new else thread.text())
     elif args.command == "ci":
         sha = github.call("GET", f"commits/{args.ref}")["sha"]
+<<<<<<< HEAD
         print(f"{args.ref} ({sha[:7]}): {CiRuns.at(github, sha)}")
+=======
+        runs = CiRuns.at(github, sha)
+        print("\n  ".join([f"{args.ref} ({sha[:7]}): {runs}", *runs.failed_jobs(github)]))
+>>>>>>> 6196db6 (github.py logs <job>: a CI job's whole log, and ci names the failed jobs (#11))
     elif args.command == "logs":
         print(github.text(f"actions/jobs/{args.job}/logs"))
     elif args.command == "pr" and args.what == "open":
