@@ -9,13 +9,21 @@ import type { ControlTexts } from "../input/controls-page";
 import { PageElements } from "../input/page-elements";
 import type { ActionSink } from "../input/player-action";
 import { ReceivedActions } from "../input/received-actions";
-import { Camera, FpsReadout, QualityButton, QualityChoice, SlopeScene } from "../rendering";
+import {
+  Camera,
+  FpsReadout,
+  QualityButton,
+  QualityChoice,
+  SlopeScene,
+  ZoomChoice,
+  ZoomControl,
+} from "../rendering";
 import type { RenderingTexts } from "../rendering";
 import type { RoomCode } from "../room/room-code";
 import { IndexedDbStore } from "../saves";
 import type { ExpeditionStore } from "../saves";
 import type { ClimberId, ExpeditionSave, Scenario } from "../simulation";
-import { ActionQueue, EverySink } from "./action-queue";
+import { ActionQueue, EverySink, ZoomSink } from "./action-queue";
 import { BrowserSockets } from "./browser-sockets";
 import { GameLoop } from "./game-loop";
 import type { Played } from "./game-loop";
@@ -138,6 +146,7 @@ export class GamePage {
     const { window, texts } = this;
     const { physics } = rules;
     const { scenario, player } = climb;
+    const zoomChoice = new ZoomChoice(this.storage());
     const camera = new Camera(
       {
         get climber() {
@@ -146,6 +155,7 @@ export class GamePage {
       },
       window.innerWidth,
       window.innerHeight,
+      zoomChoice.chosen,
     );
     const choice = new QualityChoice(
       this.storage(),
@@ -159,11 +169,18 @@ export class GamePage {
       rules.hazards,
       scenario.climbers,
       player,
-      choice.quality,
+      choice.chosen,
       scenario.seed,
     );
     const received = new ReceivedActions(this.elements.find("#received"));
-    new ControlsPage(window, texts.controls, player, camera, new EverySink([climb.sink, received]));
+    const zoom = new ZoomControl(
+      zoomChoice,
+      camera,
+      this.elements.find("#controls .view output"),
+      texts.rendering.metres,
+    );
+    const sink = new EverySink([climb.sink, new ZoomSink(zoom), received]);
+    new ControlsPage(window, texts.controls, player, camera, sink);
     const loop = new GameLoop(climb.played, scene);
     const button = new QualityButton(choice, texts.rendering, (quality) => {
       scene.setQuality(quality, window.devicePixelRatio);

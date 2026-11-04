@@ -14,7 +14,8 @@ import { SnowLayer } from "./snow-layer";
  * The picture of the slope: a PixiJS application in the page's `#slope`, with the layers the
  * quality asks for, back to front, each placed by the camera every frame, and shaking while a
  * hazard goes. It reads the physics and the hazards and holds no game state: what it owns is the
- * picture's own, the camera's place, the flakes, the warnings' clocks and the frame count. For the page's stories it writes what it draws into `#slope`'s data attributes,
+ * picture's own, the camera's place and zoom, the flakes, the warnings' clocks and the frame
+ * count. For the page's stories it writes what it draws into `#slope`'s data attributes,
  * and reads a pixel back, since Playwright can't read a WebGL canvas.
  */
 export class SlopeScene {
@@ -94,7 +95,7 @@ export class SlopeScene {
     for (const layer of this.layers) {
       layer.place(this.camera);
     }
-    this.slope?.draw(seconds);
+    this.slope?.draw(seconds, this.camera.pixelsPerMetre);
     this.snow?.fall(seconds);
     this.shake();
     this.frames += 1;
@@ -158,6 +159,7 @@ export class SlopeScene {
     dataset.climbers = String(this.slope?.climbers ?? 0);
     dataset.frames = String(this.frames);
     dataset.camera = `${x.toFixed(2)} ${y.toFixed(2)}`;
+    dataset.metresHigh = this.camera.metresHigh.toFixed(2);
     dataset.climber = `${climber.x.toFixed(2)} ${climber.y.toFixed(2)}`;
   }
 }

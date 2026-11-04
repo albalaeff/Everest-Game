@@ -130,6 +130,7 @@ You can also turn around earlier: symptoms, strong wind or a queue at any stage 
 | Radio: guide, Base Camp, your group | Q or its button | [Radio] |
 | Inventory | I or its button | [Inventory] |
 | Set up a tent, in camp | T or its button | [Set up tent] |
+| See more or less of the slope: 10, 20, 50 or 100 m on the screen | Mouse wheel, Z / X | [-], [+] |
 
 Ctrl has no action: Ctrl+W closes the browser's tab and a web page can't stop it, so with WASD one slip would close the game. A gamepad plays the same actions (see Phone and PC). No action depends on reaction speed, so a player on a phone is not at a disadvantage in co-op.
 

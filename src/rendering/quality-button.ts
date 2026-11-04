@@ -14,9 +14,9 @@ export class QualityButton {
     this.element.id = "graphics";
     this.element.className = "setting-button";
     this.element.addEventListener("click", () => {
-      this.choice.choose(this.choice.quality.next);
+      this.choice.choose(this.choice.chosen.next);
       this.show();
-      onChange(this.choice.quality);
+      onChange(this.choice.chosen);
     });
     this.show();
   }
@@ -26,7 +26,7 @@ export class QualityButton {
   }
 
   private show(): void {
-    const { name } = this.choice.quality;
+    const { name } = this.choice.chosen;
     this.element.textContent = `${this.texts.graphics}: ${this.texts[name]}`;
     this.element.dataset.quality = name;
   }

@@ -3,6 +3,7 @@ import { describe, expect, it } from "vitest";
 import type { SlopeView } from "../input/slope-view";
 import { Camera } from "./camera";
 import type { Watched } from "./camera";
+import { Zoom } from "./zoom";
 
 /** The player's climber as the physics would show them, wherever a test puts them. */
 class StillClimber {
@@ -15,6 +16,11 @@ class StillClimber {
 
 const FRAME = 1 / 60;
 
+/** The slope from the top of the screen to the bottom, in metres. */
+function metresHigh(camera: Camera): number {
+  return camera.at(0, 0).y - camera.at(0, camera.screen.height).y;
+}
+
 describe("Camera", () => {
   it("shows 20 m of slope from the top of the screen to the bottom, on a phone as on a PC", () => {
     for (const [width, height] of [
@@ -24,8 +30,104 @@ describe("Camera", () => {
     ]) {
       const camera = new Camera(new StillClimber(), width ?? 0, height ?? 0);
 
-      expect(camera.at(0, 0).y - camera.at(0, height ?? 0).y).toBeCloseTo(Camera.METRES_HIGH, 9);
+      expect(camera.zoom).toBe(Zoom.STANDARD);
+      expect(metresHigh(camera)).toBeCloseTo(20, 9);
     }
+  });
+
+  it("starts on the level it's given: 10, 20, 50 or 100 m from the top to the bottom", () => {
+    for (const zoom of Zoom.LEVELS) {
+      const camera = new Camera(new StillClimber(), 1000, 500, zoom);
+
+      expect(camera.metresHigh).toBe(zoom.metresHigh);
+      expect(metresHigh(camera)).toBeCloseTo(zoom.metresHigh, 9);
+      expect(camera.pixelsPerMetre).toBe(500 / zoom.metresHigh);
+    }
+  });
+
+  it("glides to another level in a quarter of a second, and stays there", () => {
+    const camera = new Camera(new StillClimber(), 640, 360);
+
+    camera.zoomTo(Zoom.FARTHEST);
+    expect(camera.zoom).toBe(Zoom.FARTHEST);
+    expect(camera.metresHigh).toBe(20);
+    const seen: number[] = [];
+    for (let frame = 0; frame < 14; frame += 1) {
+      camera.follow(FRAME);
+      seen.push(camera.metresHigh);
+    }
+    camera.follow(FRAME);
+    camera.follow(FRAME);
+
+    expect(seen.every((metres) => metres > 20 && metres < 100)).toBe(true);
+    expect(seen.every((metres, frame) => frame === 0 || metres > (seen[frame - 1] ?? 0))).toBe(
+      true,
+    );
+    expect(camera.metresHigh).toBe(100);
+    expect(metresHigh(camera)).toBeCloseTo(100, 9);
+  });
+
+  it("glides the same at 30 frames a second as at 60", () => {
+    const climber = new StillClimber();
+    const phone = new Camera(climber, 640, 360);
+    const pc = new Camera(climber, 640, 360);
+    phone.zoomTo(Zoom.FAR);
+    pc.zoomTo(Zoom.FAR);
+
+    phone.follow(1 / 30);
+    phone.follow(1 / 30);
+    for (let frame = 0; frame < 4; frame += 1) {
+      pc.follow(FRAME);
+    }
+
+    expect(phone.metresHigh).toBeCloseTo(pc.metresHigh, 9);
+  });
+
+  it("keeps the climber where they were on the screen as it glides", () => {
+    const camera = new Camera(new StillClimber(), 640, 360);
+    const before = camera.toScreen({ x: 10, y: 2 });
+
+    camera.zoomTo(Zoom.CLOSE);
+    camera.follow(0.1);
+
+    expect(camera.toScreen({ x: 10, y: 2 })).toEqual(before);
+  });
+
+  it("lands a point of the screen where it's drawn this frame, during the glide too", () => {
+    const camera = new Camera(new StillClimber(), 640, 360);
+    camera.zoomTo(Zoom.FAR);
+
+    camera.follow(0.1);
+    const point = camera.at(400, 130);
+
+    expect(camera.metresHigh).toBeGreaterThan(20);
+    expect(camera.metresHigh).toBeLessThan(50);
+    expect(point.x).toBeCloseTo(10 + (400 - 640 / 3) / camera.pixelsPerMetre, 2);
+    expect(point.y).toBeCloseTo(2 + (216 - 130) / camera.pixelsPerMetre, 2);
+  });
+
+  it("turns back from halfway, from where the glide had got to", () => {
+    const camera = new Camera(new StillClimber(), 640, 360);
+    camera.zoomTo(Zoom.FARTHEST);
+    camera.follow(0.1);
+    const halfway = camera.metresHigh;
+
+    camera.zoomTo(Zoom.STANDARD);
+    expect(camera.metresHigh).toBe(halfway);
+    camera.follow(0.05);
+    expect(camera.metresHigh).toBeLessThan(halfway);
+    camera.follow(0.25);
+
+    expect(camera.metresHigh).toBe(20);
+  });
+
+  it("stays put when asked for the level it's at", () => {
+    const camera = new Camera(new StillClimber(), 640, 360, Zoom.FARTHEST);
+    camera.zoomTo(Zoom.FARTHEST.towards("farther"));
+
+    camera.follow(FRAME);
+
+    expect(camera.metresHigh).toBe(100);
   });
 
   it("starts on the climber, a third from the left and below the middle", () => {
@@ -115,6 +217,6 @@ describe("Camera", () => {
 
     expect(camera.screen).toEqual({ width: 360, height: 640 });
     expect(camera.position).toEqual({ x: 10, y: 2 });
-    expect(camera.at(0, 0).y - camera.at(0, 640).y).toBeCloseTo(Camera.METRES_HIGH, 9);
+    expect(metresHigh(camera)).toBeCloseTo(20, 9);
   });
 });

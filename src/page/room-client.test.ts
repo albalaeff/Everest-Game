@@ -190,6 +190,7 @@ describe("RoomClient", () => {
 
     client.send({ kind: "walk", climber: "player", direction: "right" });
     client.send({ kind: "panel", panel: "radio" });
+    client.send({ kind: "view", change: "farther" });
     client.advance();
     client.advance();
 

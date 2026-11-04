@@ -11,7 +11,9 @@ export type ControlName =
   | "oxygen-up"
   | "clip-first"
   | "clip-second"
-  | "jumar";
+  | "jumar"
+  | "view-farther"
+  | "view-closer";
 
 /**
  * One action of the spec's controls table on every device: an action more is a row more. `keys` are
@@ -25,7 +27,7 @@ export interface Control {
   readonly keys: readonly string[];
   readonly keyName: string;
   readonly gamepadButton: number;
-  readonly group: "menu" | "oxygen" | "thumb";
+  readonly group: "menu" | "oxygen" | "view" | "thumb";
   readonly press: (climber: ClimberId, seen: SeenClimber) => PlayerAction;
   readonly release?: (climber: ClimberId) => PlayerAction;
 }
@@ -111,6 +113,22 @@ export const CONTROLS: readonly Control[] = [
     group: "thumb",
     press: (climber) => ({ kind: "jumar", climber, held: true }),
     release: (climber) => ({ kind: "jumar", climber, held: false }),
+  },
+  {
+    name: "view-farther",
+    keys: ["KeyZ"],
+    keyName: "Z",
+    gamepadButton: 14,
+    group: "view",
+    press: () => ({ kind: "view", change: "farther" }),
+  },
+  {
+    name: "view-closer",
+    keys: ["KeyX"],
+    keyName: "X",
+    gamepadButton: 15,
+    group: "view",
+    press: () => ({ kind: "view", change: "closer" }),
   },
 ];
 

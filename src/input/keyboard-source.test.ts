@@ -23,6 +23,8 @@ const ONE_PRESS_KEYS = [
   ["KeyT", { kind: "set-up-tent", climber: "anna" }],
   ["KeyQ", { kind: "panel", panel: "radio" }],
   ["KeyI", { kind: "panel", panel: "inventory" }],
+  ["KeyZ", { kind: "view", change: "farther" }],
+  ["KeyX", { kind: "view", change: "closer" }],
 ] as const;
 
 describe("KeyboardSource", () => {

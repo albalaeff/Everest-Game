@@ -137,6 +137,90 @@ test.describe("on a screen of 630 by 360", () => {
   });
 });
 
+test.describe("the view, 10 to 100 m of slope on a screen of 630 by 360", () => {
+  test.use({ viewport: { width: 630, height: 360 } });
+
+  /** Waits for the glide to end on `metres` of slope from the top of the screen to the bottom. */
+  async function settledOn(page: Page, metres: number): Promise<void> {
+    await expect(page.locator("#slope")).toHaveAttribute("data-metres-high", metres.toFixed(2));
+  }
+
+  test("a click lands where it's drawn at every level", async ({ page, hasTouch }) => {
+    test.skip(hasTouch, "a PC's story");
+    await openTheGame(page);
+    await waitForFrames(page, 1);
+    const levels = [
+      { key: "KeyX", metres: 10, change: "closer" },
+      { key: "KeyZ", metres: 20, change: "farther" },
+      { key: "KeyZ", metres: 50, change: "farther" },
+      { key: "KeyZ", metres: 100, change: "farther" },
+    ];
+    const expected: string[] = [];
+
+    for (const { key, metres, change } of levels) {
+      await page.keyboard.press(key);
+      await settledOn(page, metres);
+      // The anchor, (210, 216), is 0.6 of the screen's metres below its top. 90 px to its right
+      // are a quarter of them, and 9 px to its left and 18 below, a fortieth and a twentieth.
+      await page.mouse.click(210, 0);
+      await page.mouse.click(300, 216);
+      await page.mouse.click(201, 234);
+      expect(await brightness(page, 210, 260)).toBeGreaterThan(200);
+      expected.push(
+        `view ${change}`,
+        `tool ice-axe 10 ${0.6 * metres}`,
+        `tool ice-axe ${10 + metres / 4} 0`,
+        `tool crampons ${10 - metres / 40} ${-metres / 20}`,
+      );
+    }
+
+    await expect(page.locator("#received li")).toHaveText(expected.reverse());
+  });
+
+  test("the wheel, Z and X and the buttons change it, and the device keeps it", async ({
+    page,
+    hasTouch,
+  }) => {
+    test.skip(hasTouch, "a PC's story");
+    await openTheGame(page);
+    await waitForFrames(page, 1);
+    const readout = page.locator("#controls .view output");
+    await expect(readout).toHaveText("20 m");
+
+    await page.mouse.move(400, 200);
+    await page.mouse.wheel(0, 100);
+    await expect(readout).toHaveText("50 m");
+    await page.keyboard.press("KeyZ");
+    await expect(readout).toHaveText("100 m");
+    await page.keyboard.press("KeyZ");
+    await expect(readout).toHaveText("100 m");
+    await page.locator('[data-control="view-closer"]').click();
+    await expect(readout).toHaveText("50 m");
+    await settledOn(page, 50);
+    await openTheGame(page);
+
+    await expect(page.locator("#controls .view output")).toHaveText("50 m");
+    await waitForFrames(page, 1);
+    await settledOn(page, 50);
+  });
+
+  test("a phone's buttons change it", async ({ page, hasTouch }) => {
+    test.skip(!hasTouch, "a phone's story");
+    await openTheGame(page);
+    await waitForFrames(page, 1);
+    const readout = page.locator("#controls .view output");
+
+    await page.locator('[data-control="view-farther"]').tap();
+    await expect(readout).toHaveText("50 m");
+    await settledOn(page, 50);
+    await page.locator('[data-control="view-closer"]').tap();
+    await page.locator('[data-control="view-closer"]').tap();
+
+    await expect(readout).toHaveText("10 m");
+    await settledOn(page, 10);
+  });
+});
+
 test.describe("the graphics setting", () => {
   test("starts on High on a PC: every layer and all the snow", async ({ page, hasTouch }) => {
     test.skip(hasTouch, "a PC's story");

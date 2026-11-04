@@ -1,12 +1,15 @@
 import { Graphics } from "pixi.js";
 
 import type { Terrain } from "../physics";
+import type { Camera } from "./camera";
 import type { Depth } from "./parallax-layer";
 import { ParallaxLayer } from "./parallax-layer";
 import { Skyline } from "./skyline";
+import { Zoom } from "./zoom";
 
 /** How a silhouette looks: its depth, how far above the ground's height its line runs, how fine
- * its peaks are, and its colour. */
+ * its peaks are, and its colour. A layer that would hide the slope zoomed out fades out between
+ * two of the camera's metres high. */
 export interface SkylineStyle {
   readonly label: string;
   readonly depth: Depth;
@@ -15,6 +18,7 @@ export interface SkylineStyle {
   readonly high: number;
   readonly colour: number;
   readonly alpha: number;
+  readonly fadesOut?: { readonly from: number; readonly to: number };
 }
 
 /**
@@ -53,6 +57,7 @@ export class SkylineLayer extends ParallaxLayer {
     colour: 0xc3d4e8,
     alpha: 1,
   };
+  /** The ice in front, along the bottom of the screen: zoomed out, it would cover half of it. */
   static readonly FOREGROUND: SkylineStyle = {
     label: "foreground",
     depth: { x: 1.5, y: 1.5 },
@@ -61,14 +66,18 @@ export class SkylineLayer extends ParallaxLayer {
     high: -4,
     colour: 0x9bb8da,
     alpha: 0.9,
+    fadesOut: { from: Zoom.STANDARD.metresHigh, to: Zoom.FAR.metresHigh },
   };
-  /** Past the section's ends, so the widest screen never sees the layer's edge. */
-  private static readonly MARGIN_METRES = 60;
+  /** Past the section's ends, so the widest screen never sees the layer's edge, at 100 m too. */
+  private static readonly MARGIN_METRES = 300;
   /** How far down the fill goes below the line's lowest point. */
   private static readonly BELOW_METRES = 400;
 
+  private readonly fadesOut: SkylineStyle["fadesOut"];
+
   constructor(style: SkylineStyle, terrain: Terrain, seed: number) {
     super(style.label, style.depth);
+    this.fadesOut = style.fadesOut;
     const { depth } = style;
     const first = terrain.points[0]?.[0] ?? 0;
     const last = terrain.points.at(-1)?.[0] ?? 0;
@@ -89,5 +98,16 @@ export class SkylineLayer extends ParallaxLayer {
       .poly([from, bottom, ...outline, to, bottom])
       .fill({ color: style.colour, alpha: style.alpha });
     this.addChild(graphics);
+  }
+
+  /** Placed as every layer is, and faded as far as the camera's zoom asks. */
+  override place(camera: Camera): void {
+    super.place(camera);
+    const { fadesOut } = this;
+    if (fadesOut !== undefined) {
+      const share = (fadesOut.to - camera.metresHigh) / (fadesOut.to - fadesOut.from);
+      this.alpha = Math.min(Math.max(share, 0), 1);
+      this.visible = this.alpha > 0;
+    }
   }
 }

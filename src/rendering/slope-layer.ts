@@ -4,6 +4,7 @@ import type { Point, SlopePhysics, Terrain } from "../physics";
 import type { ClimberId, ObjectiveHazards } from "../simulation";
 import { ClimberFigure } from "./climber-figure";
 import { HazardDrawing } from "./hazard-drawing";
+import { LeastSize } from "./least-size";
 import { ParallaxLayer } from "./parallax-layer";
 
 interface DrawnRope {
@@ -13,11 +14,18 @@ interface DrawnRope {
   drawn: readonly Point[];
 }
 
+interface DrawnLadder {
+  readonly ends: readonly Point[];
+  readonly graphics: Graphics;
+}
+
 /**
  * The slope itself, at the camera's own depth: the ground as the physics has it, with its ladders,
- * its ropes, its hazards and every climber on it. The ground, the ladders and what stands over
- * the hazards are drawn once; a rope is redrawn when it moves, and the climbers and what comes
- * down are placed each frame.
+ * its ropes, its hazards and every climber on it. In the picture alone, the ground runs on level
+ * past the section's ends, so the view far out shows no cliff there. The snow and what stands over
+ * the hazards are drawn once; the lines, the ground's edge and the ladders, when the scale changes,
+ * since they never get thinner than `LeastSize` allows; a rope when it moves too; and the climbers
+ * and what comes down are placed each frame.
  */
 export class SlopeLayer extends ParallaxLayer {
   private static readonly SNOW = 0xeef3f9;
@@ -33,10 +41,18 @@ export class SlopeLayer extends ParallaxLayer {
   private static readonly RAIL_METRES = 0.05;
   /** How far below its lowest point the ground is filled. */
   private static readonly BELOW_METRES = 80;
+  /** How far the ground runs on, level, past each end of the section: wider than 100 m of slope
+   * on the widest screen. */
+  private static readonly RUN_OUT_METRES = 300;
 
+  private readonly ground: readonly Point[];
+  private readonly surface = new Graphics();
+  private readonly ladders: readonly DrawnLadder[];
   private readonly ropes: readonly DrawnRope[];
   private readonly figures: readonly { readonly id: ClimberId; readonly figure: ClimberFigure }[];
   private readonly hazards: HazardDrawing;
+  /** The scale the lines were last drawn at, in pixels a metre: none yet. */
+  private drawnAt = 0;
 
   constructor(
     private readonly physics: SlopePhysics,
@@ -47,10 +63,13 @@ export class SlopeLayer extends ParallaxLayer {
     super("slope", { x: 1, y: 1 });
     this.hazards = new HazardDrawing(hazards, physics.terrain);
     this.addChild(this.hazards.standing);
-    this.addChild(SlopeLayer.ground(physics.terrain));
-    for (const id of physics.ladders) {
-      this.addChild(SlopeLayer.ladder(physics.ladder(id)));
-    }
+    this.ground = SlopeLayer.runOut(physics.terrain);
+    this.addChild(SlopeLayer.snow(this.ground), this.surface);
+    this.ladders = physics.ladders.map((id) => {
+      const graphics = new Graphics();
+      this.addChild(graphics);
+      return { ends: physics.ladder(id), graphics };
+    });
     this.ropes = physics.ropes.map((id) => {
       const graphics = new Graphics();
       this.addChild(graphics);
@@ -75,46 +94,70 @@ export class SlopeLayer extends ParallaxLayer {
     return this.hazards.going;
   }
 
-  /** Each frame, `seconds` after the last: the ropes where they lie now, the climbers where they
-   * are, and what's coming down. */
-  draw(seconds: number): void {
+  /** Each frame, `seconds` after the last and at the camera's `pixelsPerMetre`: the lines at that
+   * scale, the ropes where they lie now, the climbers where they are, and what's coming down. */
+  draw(seconds: number, pixelsPerMetre: number): void {
     this.hazards.draw(seconds);
+    const size = new LeastSize(pixelsPerMetre);
+    const rescaled = pixelsPerMetre !== this.drawnAt;
+    if (rescaled) {
+      this.drawnAt = pixelsPerMetre;
+      this.drawSurface(size);
+      for (const ladder of this.ladders) {
+        SlopeLayer.ladder(ladder, size);
+      }
+    }
     for (const rope of this.ropes) {
       const points = this.physics.rope(rope.id);
-      if (!SlopeLayer.same(points, rope.drawn)) {
+      if (rescaled || !SlopeLayer.same(points, rope.drawn)) {
         rope.drawn = points;
-        SlopeLayer.rope(rope.graphics, points);
+        SlopeLayer.rope(rope.graphics, points, size);
       }
     }
     for (const { id, figure } of this.figures) {
-      figure.show(this.physics.climber(id));
+      figure.show(this.physics.climber(id), size);
     }
   }
 
-  private static ground(terrain: Terrain): Graphics {
-    const { points } = terrain;
+  private drawSurface(size: LeastSize): void {
+    const [first, ...rest] = this.ground;
+    this.surface.clear();
+    if (first === undefined) {
+      return;
+    }
+    this.surface.moveTo(first.x, first.y);
+    for (const { x, y } of rest) {
+      this.surface.lineTo(x, y);
+    }
+    this.surface.stroke({
+      width: size.line(SlopeLayer.SURFACE_METRES),
+      color: SlopeLayer.SURFACE,
+      join: "round",
+      cap: "round",
+    });
+  }
+
+  /** The ground's points, with a level run-out past each end. */
+  private static runOut(terrain: Terrain): readonly Point[] {
+    const points = terrain.points.map(([x, y]) => ({ x, y }));
     const [first] = points;
     const last = points.at(-1);
     if (first === undefined || last === undefined) {
       throw new RangeError("The ground has no points to draw");
     }
-    const bottom = Math.min(...points.map(([, y]) => y)) - SlopeLayer.BELOW_METRES;
-    const graphics = new Graphics();
-    graphics.poly([first[0], bottom, ...points.flat(), last[0], bottom]).fill(SlopeLayer.SNOW);
-    graphics.moveTo(first[0], first[1]);
-    for (const [x, y] of points) {
-      graphics.lineTo(x, y);
-    }
-    graphics.stroke({
-      width: SlopeLayer.SURFACE_METRES,
-      color: SlopeLayer.SURFACE,
-      join: "round",
-      cap: "round",
-    });
-    return graphics;
+    const runOut = SlopeLayer.RUN_OUT_METRES;
+    return [{ x: first.x - runOut, y: first.y }, ...points, { x: last.x + runOut, y: last.y }];
   }
 
-  private static ladder(ends: readonly Point[]): Graphics {
+  private static snow(ground: readonly Point[]): Graphics {
+    const left = ground[0]?.x ?? 0;
+    const right = ground.at(-1)?.x ?? 0;
+    const bottom = Math.min(...ground.map(({ y }) => y)) - SlopeLayer.BELOW_METRES;
+    const outline = ground.flatMap(({ x, y }) => [x, y]);
+    return new Graphics().poly([left, bottom, ...outline, right, bottom]).fill(SlopeLayer.SNOW);
+  }
+
+  private static ladder({ ends, graphics }: DrawnLadder, size: LeastSize): void {
     const [start, finish] = ends;
     if (start === undefined || finish === undefined) {
       throw new RangeError("A ladder needs two ends to draw");
@@ -124,7 +167,7 @@ export class SlopeLayer extends ParallaxLayer {
     const length = Math.sqrt(acrossX * acrossX + acrossY * acrossY);
     const railX = (-acrossY / length) * SlopeLayer.LADDER_HALF_WIDTH;
     const railY = (acrossX / length) * SlopeLayer.LADDER_HALF_WIDTH;
-    const graphics = new Graphics();
+    graphics.clear();
     graphics.moveTo(start.x + railX, start.y + railY).lineTo(finish.x + railX, finish.y + railY);
     graphics.moveTo(start.x - railX, start.y - railY).lineTo(finish.x - railX, finish.y - railY);
     for (let rung = SlopeLayer.RUNG_METRES / 2; rung < length; rung += SlopeLayer.RUNG_METRES) {
@@ -132,11 +175,14 @@ export class SlopeLayer extends ParallaxLayer {
       const y = start.y + (acrossY / length) * rung;
       graphics.moveTo(x - railX, y - railY).lineTo(x + railX, y + railY);
     }
-    graphics.stroke({ width: SlopeLayer.RAIL_METRES, color: SlopeLayer.LADDER, cap: "round" });
-    return graphics;
+    graphics.stroke({
+      width: size.line(SlopeLayer.RAIL_METRES),
+      color: SlopeLayer.LADDER,
+      cap: "round",
+    });
   }
 
-  private static rope(graphics: Graphics, points: readonly Point[]): void {
+  private static rope(graphics: Graphics, points: readonly Point[], size: LeastSize): void {
     graphics.clear();
     const [first] = points;
     const last = points.at(-1);
@@ -147,14 +193,12 @@ export class SlopeLayer extends ParallaxLayer {
     for (const { x, y } of points.slice(1)) {
       graphics.lineTo(x, y);
     }
-    graphics.stroke({
-      width: SlopeLayer.ROPE_METRES,
-      color: SlopeLayer.ROPE,
-      cap: "round",
-      join: "round",
-    });
+    const width = size.line(SlopeLayer.ROPE_METRES);
+    graphics.stroke({ width, color: SlopeLayer.ROPE, cap: "round", join: "round" });
+    // The anchors keep their size beside the rope's, however wide it's drawn.
+    const radius = SlopeLayer.ANCHOR_METRES * (width / SlopeLayer.ROPE_METRES);
     for (const anchor of [first, last]) {
-      graphics.circle(anchor.x, anchor.y, SlopeLayer.ANCHOR_METRES).fill(SlopeLayer.ANCHOR);
+      graphics.circle(anchor.x, anchor.y, radius).fill(SlopeLayer.ANCHOR);
     }
   }
 

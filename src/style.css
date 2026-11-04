@@ -133,10 +133,20 @@ header {
 }
 
 .menu,
-.oxygen {
+.oxygen,
+.view {
   display: flex;
   gap: 0.5rem;
   align-items: center;
+}
+
+/* The readouts between the buttons, legible on the bright snow close in. */
+#controls output {
+  padding: 0.25rem 0.5rem;
+  border-radius: 0.5rem;
+  background: rgb(11 29 58 / 70%);
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
 }
 
 .thumb {
@@ -174,7 +184,8 @@ kbd {
   display: none;
 }
 
-[data-control="oxygen-down"] {
+[data-control="oxygen-down"],
+[data-control="view-farther"] {
   order: -1;
 }
 
@@ -193,6 +204,7 @@ kbd {
 }
 
 .touch .oxygen,
+.touch .view,
 .touch .thumb {
   display: grid;
   grid-template-columns: repeat(3, 64px);
@@ -201,9 +213,15 @@ kbd {
 }
 
 .touch .oxygen .action-button,
+.touch .view .action-button,
 .touch .thumb .action-button {
   width: 64px;
   height: 64px;
+}
+
+/* The view's row above the oxygen's. */
+.touch .view {
+  order: -1;
 }
 
 [data-control="clip-second"] {

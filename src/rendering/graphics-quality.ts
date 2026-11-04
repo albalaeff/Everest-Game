@@ -1,3 +1,6 @@
+import { KeptChoice } from "./kept-choice";
+import type { ChoiceStorage } from "./kept-choice";
+
 export type QualityName = "low" | "medium" | "high";
 
 /** The layers a level may leave out; the sky, the peaks and the slope are always drawn. */
@@ -44,10 +47,6 @@ export class GraphicsQuality {
     private readonly sharpnessCap: number,
   ) {}
 
-  static named(name: string): GraphicsQuality | undefined {
-    return GraphicsQuality.LEVELS.find((level) => level.name === name);
-  }
-
   /** The level above, and Low again after High. */
   get next(): GraphicsQuality {
     const index = GraphicsQuality.LEVELS.indexOf(this);
@@ -60,47 +59,17 @@ export class GraphicsQuality {
   }
 }
 
-/** The device's storage, as far as the choice uses it: `localStorage`, or none. */
-export interface ChoiceStorage {
-  getItem(key: string): string | null;
-  setItem(key: string, value: string): void;
-}
-
-/**
- * The level this device plays on: High to start with, Medium on a phone (a coarse pointer), and
- * then whatever was chosen last, kept in the storage until the saves take the settings (#60).
- */
-export class QualityChoice {
+/** The level this device plays on: High to start with, Medium on a phone (a coarse pointer), and
+ * then whatever was chosen last. */
+export class QualityChoice extends KeptChoice<GraphicsQuality> {
   static readonly KEY = "everest.graphics";
 
-  private current: GraphicsQuality;
-
-  constructor(
-    private readonly storage: ChoiceStorage | null,
-    coarsePointer: boolean,
-  ) {
-    const stored = QualityChoice.read(storage);
-    this.current = stored ?? (coarsePointer ? GraphicsQuality.MEDIUM : GraphicsQuality.HIGH);
-  }
-
-  get quality(): GraphicsQuality {
-    return this.current;
-  }
-
-  choose(quality: GraphicsQuality): void {
-    this.current = quality;
-    try {
-      this.storage?.setItem(QualityChoice.KEY, quality.name);
-    } catch {
-      // A browser that keeps nothing, as Safari in private mode: the choice holds for the page.
-    }
-  }
-
-  private static read(storage: ChoiceStorage | null): GraphicsQuality | undefined {
-    try {
-      return GraphicsQuality.named(storage?.getItem(QualityChoice.KEY) ?? "");
-    } catch {
-      return undefined;
-    }
+  constructor(storage: ChoiceStorage | null, coarsePointer: boolean) {
+    super(
+      storage,
+      QualityChoice.KEY,
+      GraphicsQuality.LEVELS,
+      coarsePointer ? GraphicsQuality.MEDIUM : GraphicsQuality.HIGH,
+    );
   }
 }

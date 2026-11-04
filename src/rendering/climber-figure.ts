@@ -1,12 +1,13 @@
 import { Container, Graphics } from "pixi.js";
 
 import type { ClimberView } from "../physics";
+import type { LeastSize } from "./least-size";
 
 /**
  * A climber's silhouette, in metres with the feet at the origin: a bright suit, a backpack and a
  * mask, facing the way they last walked, off their feet in a fall, and lying dim once dead, with
- * no words on the screen (#24). A still stand-in until the
- * animation comes with the final style (#86).
+ * no words on the screen (#24). A still stand-in until the animation comes with the final style
+ * (#86).
  */
 export class ClimberFigure extends Container {
   static readonly PLAYER_SUIT = 0xe8412c;
@@ -19,6 +20,8 @@ export class ClimberFigure extends Container {
   private static readonly FALLEN_RADIANS = 1.2;
   private static readonly DEAD_RADIANS = Math.PI / 2;
   private static readonly DEAD_ALPHA = 0.6;
+  /** From the soles to the top of the head. */
+  private static readonly HEIGHT_METRES = 1.77;
 
   private facing: 1 | -1 = 1;
 
@@ -38,15 +41,17 @@ export class ClimberFigure extends Container {
     this.addChild(graphics);
   }
 
-  /** Puts the figure where the climber is, as the physics shows them this frame. */
-  show(climber: ClimberView): void {
+  /** Puts the figure where the climber is, as the physics shows them this frame, and no smaller
+   * than `size` allows. */
+  show(climber: ClimberView, size: LeastSize): void {
     this.position.set(climber.x, climber.y);
     if (climber.walking.includes("left")) {
       this.facing = -1;
     } else if (climber.walking.includes("right")) {
       this.facing = 1;
     }
-    this.scale.x = this.facing;
+    const grown = size.climber(ClimberFigure.HEIGHT_METRES);
+    this.scale.set(this.facing * grown, grown);
     const lying = climber.dead
       ? ClimberFigure.DEAD_RADIANS
       : climber.falling

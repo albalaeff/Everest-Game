@@ -6,3 +6,5 @@ export { GraphicsQuality, QualityChoice } from "./graphics-quality";
 export { QualityButton } from "./quality-button";
 export type { RenderingTexts } from "./rendering-texts";
 export { SlopeScene } from "./slope-scene";
+export { Zoom, ZoomChoice } from "./zoom";
+export { ZoomControl } from "./zoom-control";
