@@ -166,6 +166,7 @@ export class GamePage {
       host,
       camera,
       physics,
+      rules.hazards,
       scenario.climbers,
       player,
       choice.chosen,

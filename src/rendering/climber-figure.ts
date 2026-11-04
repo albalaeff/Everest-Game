@@ -5,8 +5,9 @@ import type { LeastSize } from "./least-size";
 
 /**
  * A climber's silhouette, in metres with the feet at the origin: a bright suit, a backpack and a
- * mask, facing the way they last walked, and off their feet in a fall. A still stand-in until the
- * animation comes with the final style (#86).
+ * mask, facing the way they last walked, off their feet in a fall, and lying dim once dead, with
+ * no words on the screen (#24). A still stand-in until the animation comes with the final style
+ * (#86).
  */
 export class ClimberFigure extends Container {
   static readonly PLAYER_SUIT = 0xe8412c;
@@ -15,8 +16,10 @@ export class ClimberFigure extends Container {
   private static readonly PACK = 0x2a2f36;
   private static readonly MASK = 0x15181c;
   private static readonly GOGGLES = 0x9fd3ff;
-  /** How far over a fallen climber lies. */
+  /** How far over a fallen climber lies, and a dead one, flat and dim. */
   private static readonly FALLEN_RADIANS = 1.2;
+  private static readonly DEAD_RADIANS = Math.PI / 2;
+  private static readonly DEAD_ALPHA = 0.6;
   /** From the soles to the top of the head. */
   private static readonly HEIGHT_METRES = 1.77;
 
@@ -49,6 +52,12 @@ export class ClimberFigure extends Container {
     }
     const grown = size.climber(ClimberFigure.HEIGHT_METRES);
     this.scale.set(this.facing * grown, grown);
-    this.rotation = climber.falling ? ClimberFigure.FALLEN_RADIANS * this.facing : 0;
+    const lying = climber.dead
+      ? ClimberFigure.DEAD_RADIANS
+      : climber.falling
+        ? ClimberFigure.FALLEN_RADIANS
+        : 0;
+    this.rotation = lying * this.facing;
+    this.alpha = climber.dead ? ClimberFigure.DEAD_ALPHA : 1;
   }
 }

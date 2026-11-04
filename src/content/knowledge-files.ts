@@ -4,6 +4,7 @@ import body from "../../content/facts/body.json";
 import cold from "../../content/facts/cold.json";
 import crowds from "../../content/facts/crowds.json";
 import deaths from "../../content/facts/deaths.json";
+import hazards from "../../content/facts/hazards.json";
 import medicine from "../../content/facts/medicine.json";
 import oxygen from "../../content/facts/oxygen.json";
 import route from "../../content/facts/route.json";
@@ -26,6 +27,7 @@ export const KNOWLEDGE_FILES: readonly KnowledgeFile[] = [
   cold,
   crowds,
   deaths,
+  hazards,
   medicine,
   oxygen,
   route,

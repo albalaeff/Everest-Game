@@ -1,0 +1,395 @@
+{
+  "$schema": "../facts.schema.json",
+  "facts": [
+    {
+      "id": "hazards.serac-rate",
+      "kind": "coefficient",
+      "claim": "How many times an hour a serac, or ice from the West Shoulder, falls on a climber under it, in the cold of the night and in clear weather. Fitted so that crossing the Icefall quickly, before dawn, is the safe way: the time spent under the seracs is what counts.",
+      "status": "source only",
+      "value": 0.005,
+      "unit": "1/h",
+      "fitted_to": ["route.icefall-hazards", "route.icefall-lessons", "time.base-camp-to-camp-1"],
+      "fitted": "2026-11-04"
+    },
+    {
+      "id": "hazards.serac-warmth",
+      "kind": "coefficient",
+      "claim": "How many times its rate at night falling ice is at the warmest hour of a clear day. Fitted so that a climber who lingers under the seracs in the afternoon sun is caught several times as often as one who crosses before dawn: the sources name the afternoon the Icefall's worst time.",
+      "status": "source only",
+      "value": 6,
+      "unit": "1",
+      "fitted_to": ["route.icefall-hazards", "route.icefall-lessons"],
+      "fitted": "2026-11-04"
+    },
+    {
+      "id": "hazards.serac-snow",
+      "kind": "coefficient",
+      "claim": "How many times its rate falling ice is while snow falls: the same, since seracs fall as the glacier moves and the sun warms them.",
+      "status": "source only",
+      "value": 1,
+      "unit": "1",
+      "fitted_to": ["route.icefall-hazards"],
+      "fitted": "2026-11-04"
+    },
+    {
+      "id": "hazards.serac-wind",
+      "kind": "coefficient",
+      "claim": "How many times its rate falling ice is in a strong wind: the same.",
+      "status": "source only",
+      "value": 1,
+      "unit": "1",
+      "fitted_to": ["route.icefall-hazards"],
+      "fitted": "2026-11-04"
+    },
+    {
+      "id": "hazards.serac-warning",
+      "kind": "coefficient",
+      "claim": "How many seconds pass between the crack of a serac breaking and its ice coming down on the climbers below. Seracs fall with little warning, so this is only the crack and the moment the ice takes to fall: someone at the edge may get clear, few others.",
+      "status": "source only",
+      "value": 15,
+      "unit": "s",
+      "fitted_to": ["route.icefall-hazards"],
+      "fitted": "2026-11-04"
+    },
+    {
+      "id": "hazards.serac-deadly",
+      "kind": "coefficient",
+      "claim": "The chance falling ice kills outright a climber it catches who isn't clipped to a rope. Fitted to the Icefall's collapses, which killed most of those under the ice.",
+      "status": "source only",
+      "value": 0.6,
+      "unit": "1",
+      "fitted_to": ["route.icefall-hazards", "route.icefall-lessons"],
+      "fitted": "2026-11-04"
+    },
+    {
+      "id": "hazards.serac-deadly-clipped",
+      "kind": "coefficient",
+      "claim": "The chance falling ice kills outright a climber it catches who is clipped to a rope: a little less, since the rope holds them in the fall but not under the ice.",
+      "status": "source only",
+      "value": 0.5,
+      "unit": "1",
+      "fitted_to": ["route.icefall-hazards"],
+      "fitted": "2026-11-04"
+    },
+    {
+      "id": "hazards.avalanche-rate",
+      "kind": "coefficient",
+      "claim": "How many times an hour an avalanche comes down on a climber under its slope, in the cold of the night and in clear weather. Fitted so that it's rarer than falling ice in clear weather, and that the time spent under the slope is what counts.",
+      "status": "source only",
+      "value": 0.003,
+      "unit": "1/h",
+      "fitted_to": ["route.icefall-hazards", "route.icefall-lessons", "time.base-camp-to-camp-1"],
+      "fitted": "2026-11-04"
+    },
+    {
+      "id": "hazards.avalanche-warmth",
+      "kind": "coefficient",
+      "claim": "How many times its rate at night an avalanche is at the warmest hour of a clear day, as the sun warms the snow.",
+      "status": "source only",
+      "value": 3,
+      "unit": "1",
+      "fitted_to": ["route.icefall-lessons"],
+      "fitted": "2026-11-04"
+    },
+    {
+      "id": "hazards.avalanche-snow",
+      "kind": "coefficient",
+      "claim": "How many times its rate an avalanche is while snow falls. Fitted so that a slope loaded with fresh snow is the worst place to be, and waiting out a storm in camp the right call.",
+      "status": "source only",
+      "value": 6,
+      "unit": "1",
+      "fitted_to": ["route.icefall-hazards", "weather.jet-stream"],
+      "fitted": "2026-11-04"
+    },
+    {
+      "id": "hazards.avalanche-wind",
+      "kind": "coefficient",
+      "claim": "How many times its rate an avalanche is in a strong wind, which drifts snow onto the slopes below the ridges.",
+      "status": "source only",
+      "value": 2,
+      "unit": "1",
+      "fitted_to": ["route.icefall-hazards", "weather.wind-by-time-of-day"],
+      "fitted": "2026-11-04"
+    },
+    {
+      "id": "hazards.avalanche-warning",
+      "kind": "coefficient",
+      "claim": "How many seconds pass between the roar of an avalanche starting above and its reaching the climbers below. Fitted so that a climber near the edge of its path can get out of it, and one in the middle rarely can.",
+      "status": "source only",
+      "value": 30,
+      "unit": "s",
+      "fitted_to": ["route.icefall-hazards"],
+      "fitted": "2026-11-04"
+    },
+    {
+      "id": "hazards.avalanche-deadly",
+      "kind": "coefficient",
+      "claim": "The chance an avalanche kills outright a climber it catches who isn't clipped to a rope, buried or swept away: a big one leaves no chance.",
+      "status": "source only",
+      "value": 0.4,
+      "unit": "1",
+      "fitted_to": ["route.icefall-hazards"],
+      "fitted": "2026-11-04"
+    },
+    {
+      "id": "hazards.avalanche-deadly-clipped",
+      "kind": "coefficient",
+      "claim": "The chance an avalanche kills outright a climber it catches who is clipped to a rope: the rope keeps them from being swept away, not from burial.",
+      "status": "source only",
+      "value": 0.3,
+      "unit": "1",
+      "fitted_to": ["route.icefall-hazards"],
+      "fitted": "2026-11-04"
+    },
+    {
+      "id": "hazards.crevasse-rate",
+      "kind": "coefficient",
+      "claim": "How many times an hour a snow bridge over a hidden crevasse gives way under a climber on it, in the cold of the night and in clear weather. Fitted so that the time spent on the bridges is what counts.",
+      "status": "source only",
+      "value": 0.005,
+      "unit": "1/h",
+      "fitted_to": [
+        "route.icefall-hazards",
+        "route.western-cwm-hazards",
+        "time.base-camp-to-camp-1"
+      ],
+      "fitted": "2026-11-04"
+    },
+    {
+      "id": "hazards.crevasse-warmth",
+      "kind": "coefficient",
+      "claim": "How many times its rate at night a snow bridge gives way at the warmest hour of a clear day: the bridges hold best in the cold and soften in the sun, which the Western Cwm's heat makes worst.",
+      "status": "source only",
+      "value": 3,
+      "unit": "1",
+      "fitted_to": ["route.icefall-lessons", "weather.western-cwm-heat"],
+      "fitted": "2026-11-04"
+    },
+    {
+      "id": "hazards.crevasse-snow",
+      "kind": "coefficient",
+      "claim": "How many times its rate a snow bridge gives way while snow falls, which hides the crevasses under thinner bridges.",
+      "status": "source only",
+      "value": 2,
+      "unit": "1",
+      "fitted_to": ["route.icefall-hazards", "route.western-cwm-hazards"],
+      "fitted": "2026-11-04"
+    },
+    {
+      "id": "hazards.crevasse-wind",
+      "kind": "coefficient",
+      "claim": "How many times its rate a snow bridge gives way in a strong wind: the same.",
+      "status": "source only",
+      "value": 1,
+      "unit": "1",
+      "fitted_to": ["route.western-cwm-hazards"],
+      "fitted": "2026-11-04"
+    },
+    {
+      "id": "hazards.crevasse-warning",
+      "kind": "coefficient",
+      "claim": "How many seconds of warning a snow bridge gives before it gives way: none, which is why the rope matters.",
+      "status": "source only",
+      "value": 0,
+      "unit": "s",
+      "fitted_to": ["route.icefall-hazards", "route.icefall-lessons"],
+      "fitted": "2026-11-04"
+    },
+    {
+      "id": "hazards.crevasse-deadly",
+      "kind": "coefficient",
+      "claim": "The chance a climber who isn't clipped to a rope dies when a snow bridge gives way under them, falling into the crevasse.",
+      "status": "source only",
+      "value": 0.5,
+      "unit": "1",
+      "fitted_to": ["route.icefall-hazards", "route.western-cwm-hazards"],
+      "fitted": "2026-11-04"
+    },
+    {
+      "id": "hazards.crevasse-deadly-clipped",
+      "kind": "coefficient",
+      "claim": "The chance a climber clipped to a rope dies when a snow bridge gives way under them: none, since the rope holds them, as it would have held the Sherpa who fell from a ladder in 2012.",
+      "status": "source only",
+      "value": 0,
+      "unit": "1",
+      "fitted_to": ["route.icefall-hazards", "route.icefall-lessons"],
+      "fitted": "2026-11-04"
+    },
+    {
+      "id": "hazards.cornice-rate",
+      "kind": "coefficient",
+      "claim": "How many times an hour a cornice on the summit ridge breaks under a climber on it, in the cold of the night and in clear weather. Fitted so that a break is rare, and the time spent on the corniced ridge, in a queue above all, is what counts.",
+      "status": "source only",
+      "value": 0.002,
+      "unit": "1/h",
+      "fitted_to": ["route.summit-push-hazards", "route.hillary-step-today"],
+      "fitted": "2026-11-04"
+    },
+    {
+      "id": "hazards.cornice-warmth",
+      "kind": "coefficient",
+      "claim": "How many times its rate at night a cornice breaks at the warmest hour of a clear day, as the sun softens it.",
+      "status": "source only",
+      "value": 3,
+      "unit": "1",
+      "fitted_to": ["route.hillary-step-today"],
+      "fitted": "2026-11-04"
+    },
+    {
+      "id": "hazards.cornice-snow",
+      "kind": "coefficient",
+      "claim": "How many times its rate a cornice breaks while snow falls, which builds it out and loads it.",
+      "status": "source only",
+      "value": 3,
+      "unit": "1",
+      "fitted_to": ["route.hillary-step-today"],
+      "fitted": "2026-11-04"
+    },
+    {
+      "id": "hazards.cornice-wind",
+      "kind": "coefficient",
+      "claim": "How many times its rate a cornice breaks in a strong wind, which builds cornices out over the Kangshung Face.",
+      "status": "source only",
+      "value": 4,
+      "unit": "1",
+      "fitted_to": ["route.hillary-step-today", "weather.wind-by-time-of-day"],
+      "fitted": "2026-11-04"
+    },
+    {
+      "id": "hazards.cornice-warning",
+      "kind": "coefficient",
+      "claim": "How many seconds of warning a cornice gives before it breaks: none, as on the Hillary Step in 2024, where the fixed rope held those who were clipped.",
+      "status": "source only",
+      "value": 0,
+      "unit": "s",
+      "fitted_to": ["route.hillary-step-today"],
+      "fitted": "2026-11-04"
+    },
+    {
+      "id": "hazards.cornice-deadly",
+      "kind": "coefficient",
+      "claim": "The chance a climber who isn't clipped to a rope dies when a cornice breaks under them, a fall down the Kangshung Face.",
+      "status": "source only",
+      "value": 0.9,
+      "unit": "1",
+      "fitted_to": ["route.hillary-step-today", "route.summit-push-hazards"],
+      "fitted": "2026-11-04"
+    },
+    {
+      "id": "hazards.cornice-deadly-clipped",
+      "kind": "coefficient",
+      "claim": "The chance a climber clipped to the fixed rope dies when a cornice breaks under them. Fitted to the 2024 collapse, where the rope held several of those who fell.",
+      "status": "source only",
+      "value": 0.05,
+      "unit": "1",
+      "fitted_to": ["route.hillary-step-today"],
+      "fitted": "2026-11-04"
+    },
+    {
+      "id": "hazards.warmth-from",
+      "kind": "coefficient",
+      "claim": "The hour of the day the sun starts to warm the ice, from which the hazards rise with the day's warmth. Fitted to the sources' advice to be through the Icefall early, before the sun warms the glacier.",
+      "status": "source only",
+      "value": 6,
+      "unit": "h",
+      "fitted_to": ["route.icefall-lessons"],
+      "fitted": "2026-11-04"
+    },
+    {
+      "id": "hazards.warmth-peak",
+      "kind": "coefficient",
+      "claim": "The hour the day is warmest, when the hazards are likeliest: the afternoon sun on the seracs.",
+      "status": "source only",
+      "value": 14,
+      "unit": "h",
+      "fitted_to": ["route.icefall-lessons", "weather.western-cwm-heat"],
+      "fitted": "2026-11-04"
+    },
+    {
+      "id": "hazards.warmth-until",
+      "kind": "coefficient",
+      "claim": "The hour the day's warmth is over, and the ice is as stable as in the night again.",
+      "status": "source only",
+      "value": 20,
+      "unit": "h",
+      "fitted_to": ["route.icefall-lessons"],
+      "fitted": "2026-11-04"
+    },
+    {
+      "id": "hazards.sun-under-cloud",
+      "kind": "coefficient",
+      "claim": "How much of the sun's warmth reaches the ice under cloud, as a share of a clear day's.",
+      "status": "source only",
+      "value": 0.3,
+      "unit": "1",
+      "fitted_to": ["route.icefall-lessons"],
+      "fitted": "2026-11-04"
+    },
+    {
+      "id": "hazards.sun-in-snow",
+      "kind": "coefficient",
+      "claim": "How much of the sun's warmth reaches the ice while snow falls, as a share of a clear day's: none.",
+      "status": "source only",
+      "value": 0,
+      "unit": "1",
+      "fitted_to": ["route.icefall-lessons"],
+      "fitted": "2026-11-04"
+    },
+    {
+      "id": "hazards.how-often",
+      "kind": "question",
+      "question": "How often do seracs fall, avalanches come down, snow bridges give way and cornices break on a climber under them, and how much likelier is each in the afternoon sun than before dawn? The game uses rates fitted to the advice to cross early and fast; no source read gives a number.",
+      "about": [
+        "hazards.serac-rate",
+        "hazards.serac-warmth",
+        "hazards.avalanche-rate",
+        "hazards.avalanche-warmth",
+        "hazards.crevasse-rate",
+        "hazards.crevasse-warmth",
+        "hazards.cornice-rate",
+        "hazards.cornice-warmth",
+        "hazards.warmth-from",
+        "hazards.warmth-peak",
+        "hazards.warmth-until"
+      ]
+    },
+    {
+      "id": "hazards.weather",
+      "kind": "question",
+      "question": "How much do falling snow, cloud and a strong wind change each hazard? After how much fresh snow is an avalanche slope to be avoided, and for how long after it falls?",
+      "about": [
+        "hazards.serac-snow",
+        "hazards.serac-wind",
+        "hazards.avalanche-snow",
+        "hazards.avalanche-wind",
+        "hazards.crevasse-snow",
+        "hazards.crevasse-wind",
+        "hazards.cornice-snow",
+        "hazards.cornice-wind",
+        "hazards.sun-under-cloud",
+        "hazards.sun-in-snow"
+      ]
+    },
+    {
+      "id": "hazards.caught",
+      "kind": "question",
+      "question": "What happens to a climber caught by falling ice, an avalanche, or a breaking snow bridge or cornice, while clipped to the fixed rope? Does the rope hold them, as it held several climbers in the 2024 cornice collapse, and how badly are they hurt? How many of those caught die, on a rope and off it? How much warning does each give, and what should a climber do with it? The game spares whoever got clear in the warning, kills some of those caught at each kind's odds, and knocks the rest off their feet, held by their rope if they're clipped.",
+      "about": [
+        "route.icefall-hazards",
+        "route.hillary-step-today",
+        "hazards.serac-warning",
+        "hazards.avalanche-warning",
+        "hazards.crevasse-warning",
+        "hazards.cornice-warning",
+        "hazards.serac-deadly",
+        "hazards.serac-deadly-clipped",
+        "hazards.avalanche-deadly",
+        "hazards.avalanche-deadly-clipped",
+        "hazards.crevasse-deadly",
+        "hazards.crevasse-deadly-clipped",
+        "hazards.cornice-deadly",
+        "hazards.cornice-deadly-clipped"
+      ]
+    }
+  ]
+}

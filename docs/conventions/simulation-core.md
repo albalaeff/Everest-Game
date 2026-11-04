@@ -28,6 +28,16 @@ The game's rules are classes behind the `Rule` interface: `load`, `save` and `ad
 
 `src/simulation/testing/test-slope.ts` is a small rule that stands in for the real ones in the core's tests, which import nothing above the core, and `testing/test-ridge.ts` stands in for the slope physics and the oxygen under the body's (`testing/hike.ts` plays it). They're no game code, and their numbers are made up.
 
+## Objective hazards
+
+`ObjectiveHazards` (`objective-hazards.ts`) is the spec's seracs, avalanches, crevasses and cornices: they can't be beaten, only avoided by spending less time under them (spec.md → Simulation systems).
+
+- **A zone is a stretch of the ground** under a hazard, in metres along it, which the scenario lays with its section, beside the weather. Until the weather (#39) comes, the scenario sets that weather: `clear`, `cloud`, `snow` or `wind`.
+- **Each step someone is in a zone, it may go**, at `HazardChance`: the kind's rate an hour in the cold of the night, raised by the day's warmth (a line up from `warmth.from` to `warmth.peak` and down to `warmth.until`, times the share of the sun the weather lets through), and by snow or wind. The hour is the `MountainClock`'s, and the chance a step is the rate times `MountainClock.secondsAStep`. A zone nobody is in draws nothing.
+- **A serac or an avalanche warns first.** A zone that goes adds a `Warning`, and comes down its kind's `warning` mountain seconds later, rounded up to whole steps, whoever is in it then; the picture shows it with no words, its ice or snow coming down over the zone and the screen shaking ([rendering.md](rendering.md)), so whoever reads it and gets clear in time is spared. A kind whose `warning` is 0, a snow bridge or a cornice, comes down on the step it goes. A warning is saved, and so it resumes; it comes down even once everyone is clear, a near miss kept as a `Strike` with no climbers.
+- **A zone that comes down knocks everyone in it** off their feet through its ground, a `HazardGround`: the slope physics in the game ([slope-physics.md](slope-physics.md) → Walking and falls), which the core can't import. Each climber caught may die outright instead, at the kind's `deadly` odds, or `deadlyClipped` for one on a rope: the rope saves from the fall, a snow bridge's or a cornice's, not from ice or burial. That draw is made only where the odds aren't nought, and the dead are no longer on the ground the hazards see. Each `Strike` is kept, with who it killed, for the debrief. Injury comes with the body model, and what follows a death with #44.
+- **In the rules' order** it comes after the clock, which it reads, and before the physics, so a knock falls in the same step (`Mountain.rules`). Its numbers are the knowledge base's `hazards.*` coefficients.
+
 ## Scenarios, saves and replays
 
 - **A scenario** is a seed, the climbers and each rule's start state, in the form of that rule's save. Conditions set in advance, such as harsh weather, are in the start state, and hold on every seed.

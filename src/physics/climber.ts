@@ -25,9 +25,10 @@ export interface ClimberView {
   readonly altitude: number;
   /** Off their feet: sliding, in the air, or hanging on a rope. */
   readonly falling: boolean;
+  /** Killed: they lie where they came to rest, and do nothing more. */
+  readonly dead: boolean;
   readonly walking: Walk["direction"];
-  /** Whether they took a step in the last step, along the ground or a ladder: not standing,
-   * held back by the ground or a rope, or falling. */
+  /** Whether they took a step in the last step. */
   readonly moving: boolean;
   /** The rope each cowstail is clipped to, or none: the first's is the jumar's. */
   readonly first: string | null;
@@ -47,6 +48,7 @@ type FallingSave = {
   readonly top: number;
   readonly lowest: number;
   readonly speed: number;
+  readonly grounded: boolean;
   readonly body: ParticleSave;
 };
 
@@ -57,7 +59,6 @@ export type ClimberSave = {
   readonly along: number;
   readonly onLadder: OnLadderSave | null;
   readonly walking: Walk["direction"];
-  /** How far their strides go, as a share of the walking and ladder speeds. */
   readonly stride: number;
   readonly moving: boolean;
   /** Whether their hand slides the jumar: its key is held. */
@@ -66,6 +67,7 @@ export type ClimberSave = {
   readonly second: CarabinerSave | null;
   readonly falling: FallingSave | null;
   readonly falls: readonly Fall[];
+  readonly dead: boolean;
 };
 
 /** A cowstail's carabiner, or its jumar, on a rope: it runs along it, or grips it where it is. */
@@ -145,12 +147,20 @@ class Falling {
   }
 
   static load(save: FallingSave): Falling {
-    return new Falling(Particle.load(save.body), save.step, save.top, save.lowest, save.speed);
+    const falling = new Falling(
+      Particle.load(save.body),
+      save.step,
+      save.top,
+      save.lowest,
+      save.speed,
+    );
+    falling.grounded = save.grounded;
+    return falling;
   }
 
   save(): FallingSave {
-    const { step, top, lowest, speed } = this;
-    return { step, top, lowest, speed, body: this.body.save() };
+    const { step, top, lowest, speed, grounded } = this;
+    return { step, top, lowest, speed, grounded, body: this.body.save() };
   }
 
   beginStep(): void {
@@ -210,11 +220,12 @@ export class Climber {
     private second: Carabiner | null,
     private falling: Falling | null,
     private readonly falls: Fall[],
+    private killed: boolean,
   ) {}
 
-  /** A climber standing at `along`, still, at a whole stride, clipped to nothing. */
+  /** A climber standing at `along`, still, clipped to nothing. */
   static standing(id: ClimberId, along: number): Climber {
-    return new Climber(id, along, null, "stop", 1, false, false, null, null, null, []);
+    return new Climber(id, along, null, "stop", 1, false, false, null, null, null, [], false);
   }
 
   static load(save: ClimberSave, slope: Slope): Climber {
@@ -232,6 +243,7 @@ export class Climber {
       carabiner(save.second),
       save.falling === null ? null : Falling.load(save.falling),
       [...save.falls],
+      save.dead,
     );
   }
 
@@ -248,7 +260,12 @@ export class Climber {
       second: this.second?.save() ?? null,
       falling: this.falling?.save() ?? null,
       falls: [...this.falls],
+      dead: this.killed,
     };
+  }
+
+  get dead(): boolean {
+    return this.killed;
   }
 
   view(slope: Slope): ClimberView {
@@ -258,6 +275,7 @@ export class Climber {
       y: where.y,
       altitude: slope.scale.altitudeAt(where),
       falling: this.falling !== null,
+      dead: this.killed,
       walking: this.walking,
       moving: this.moving,
       first: this.first?.rope.id ?? null,
@@ -268,8 +286,12 @@ export class Climber {
   }
 
   /** Takes an action of theirs: the walking, the cowstails and the jumar are the physics', the
-   * rest isn't. */
+   * rest isn't. The dead take none. */
   hear(action: GameAction, slope: Slope): void {
+    if (this.killed) {
+      return;
+    }
+
     if (action.kind === "walk") {
       this.walking = action.direction;
     }
@@ -289,6 +311,9 @@ export class Climber {
     if (action.kind === "unclip") {
       this.clip(action.cowstail, null);
     }
+    if (action.kind === "tool" && action.tool === "ice-axe") {
+      this.arrest(action, slope);
+    }
   }
 
   /** Sets how far their strides go from now on, as a share of the walking and ladder speeds. */
@@ -302,11 +327,10 @@ export class Climber {
   /**
    * Takes this step's steps, on their feet: on a ladder if they're on one or their way steps onto
    * one, and along the ground otherwise. Each goes as far as their ropes let them, and may slip.
-   * At a stride of nought they stay where they are, and nothing is drawn.
    */
   walk(slope: Slope, moment: Moment): void {
     this.moving = false;
-    if (this.falling !== null || this.stride === 0) {
+    if (this.falling !== null || this.killed || this.stride === 0) {
       return;
     }
     const onLadder = this.onLadder ?? this.ladderAhead(slope);
@@ -377,15 +401,35 @@ export class Climber {
     }
   }
 
+  /** Off their feet, thrown down the section, toward its start, at the knock's speed: what a
+   * hazard does when it goes. One already falling falls on. */
+  knock(slope: Slope, step: number): void {
+    if (this.falling === null) {
+      this.fall(slope, slope.terrain.ahead(this.along, -1), slope.settings.knock, step);
+    }
+  }
+
+  /** Killed by a hazard: knocked down as by `knock`, and they never get up. */
+  kill(slope: Slope, step: number): void {
+    this.knock(slope, step);
+    this.killed = true;
+    this.walking = "stop";
+  }
+
+  /** How far along the ground they are: their feet, or the ground nearest their body. */
+  alongNow(slope: Slope): number {
+    return slope.terrain.nearest(this.where(slope)).along;
+  }
+
   /** The ropes their cowstails are clipped to. */
   get ropes(): readonly Rope[] {
     return this.carabiners.map(({ rope }) => rope);
   }
 
   /**
-   * Along the ground at their stride's share of the speed for its steepness, up to the next corner
-   * or ladder's end. Ground too steep to walk up stops them, and so does the ground under a
-   * ladder; ground too steep to walk down is a fall.
+   * Along the ground at the speed for its steepness, up to the next corner or ladder's end. Ground
+   * too steep to walk up stops them, and so does the ground under a ladder; ground too steep to
+   * walk down is a fall.
    */
   private walkGround(slope: Slope, moment: Moment): void {
     const way = Climber.WAYS[this.walking];
@@ -412,8 +456,8 @@ export class Climber {
     }
   }
 
-  /** Along a ladder at their stride's share of its speed for its steepness the way they go, and
-   * off it onto the ground at its end. */
+  /** Along a ladder at its speed for its steepness the way they go, and off it onto the ground at
+   * its end. */
   private climb(onLadder: OnLadder, slope: Slope, moment: Moment): void {
     const { ladder, rung } = onLadder;
     const way = ladder.way(this.walking);
@@ -430,8 +474,13 @@ export class Climber {
     }
     this.onLadder = next === end.rung ? null : new OnLadder(ladder, next);
     this.along = next === end.rung ? end.along : this.along;
-    const chance = slope.ladderSlipChance.at(steepness) * this.stride;
-    this.stepped(slope, moment, ladder.ahead(way), speed, chance);
+    this.stepped(
+      slope,
+      moment,
+      ladder.ahead(way),
+      speed,
+      slope.ladderSlipChance.at(steepness) * this.stride,
+    );
   }
 
   /** The ladder their way steps onto from where they stand, at its end there. */
@@ -449,8 +498,7 @@ export class Climber {
   }
 
   /** After a step `ahead` at `speed`: the carabiners follow, and the step may slip, at `chance`
-   * a second, which the stride scales as it does the speed, so a metre is as slippery at any
-   * pace. */
+   * a second. */
   private stepped(slope: Slope, moment: Moment, ahead: Point, speed: number, chance: number): void {
     this.moving = true;
     this.slide(slope);
@@ -485,6 +533,26 @@ export class Climber {
       this.first = carabiner;
     } else {
       this.second = carabiner;
+    }
+  }
+
+  /** Self-arrest: the ice axe driven into the ground at `axe`, within reach above their body,
+   * ends a slide still slow enough to hold, and they stand where it stopped. In the air, or
+   * too fast, it holds nothing. */
+  private arrest(axe: Point, slope: Slope): void {
+    const { falling } = this;
+    if (falling === null || !falling.grounded) {
+      return;
+    }
+    const { body } = falling;
+    const { arrestSpeed, axeReach } = slope.settings;
+    const x = axe.x - body.x;
+    const y = axe.y - body.y;
+    const reached = y >= 0 && Math.sqrt(x * x + y * y) <= axeReach;
+    if (reached && body.speed(slope.substepSeconds) <= arrestSpeed) {
+      this.falls.push(falling.record());
+      this.along = slope.terrain.nearest(body).along;
+      this.falling = null;
     }
   }
 

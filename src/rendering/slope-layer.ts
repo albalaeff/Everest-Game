@@ -1,8 +1,9 @@
 import { Graphics } from "pixi.js";
 
 import type { Point, SlopePhysics, Terrain } from "../physics";
-import type { ClimberId } from "../simulation";
+import type { ClimberId, ObjectiveHazards } from "../simulation";
 import { ClimberFigure } from "./climber-figure";
+import { HazardDrawing } from "./hazard-drawing";
 import { LeastSize } from "./least-size";
 import { ParallaxLayer } from "./parallax-layer";
 
@@ -20,10 +21,11 @@ interface DrawnLadder {
 
 /**
  * The slope itself, at the camera's own depth: the ground as the physics has it, with its ladders,
- * its ropes and every climber on it. In the picture alone, the ground runs on level past the
- * section's ends, so the view far out shows no cliff there. The snow is drawn once; the lines, the
- * ground's edge and the ladders, when the scale changes, since they never get thinner than
- * `LeastSize` allows; a rope when it moves too; and the climbers are placed each frame.
+ * its ropes, its hazards and every climber on it. In the picture alone, the ground runs on level
+ * past the section's ends, so the view far out shows no cliff there. The snow and what stands over
+ * the hazards are drawn once; the lines, the ground's edge and the ladders, when the scale changes,
+ * since they never get thinner than `LeastSize` allows; a rope when it moves too; and the climbers
+ * and what comes down are placed each frame.
  */
 export class SlopeLayer extends ParallaxLayer {
   private static readonly SNOW = 0xeef3f9;
@@ -48,15 +50,19 @@ export class SlopeLayer extends ParallaxLayer {
   private readonly ladders: readonly DrawnLadder[];
   private readonly ropes: readonly DrawnRope[];
   private readonly figures: readonly { readonly id: ClimberId; readonly figure: ClimberFigure }[];
+  private readonly hazards: HazardDrawing;
   /** The scale the lines were last drawn at, in pixels a metre: none yet. */
   private drawnAt = 0;
 
   constructor(
     private readonly physics: SlopePhysics,
+    hazards: ObjectiveHazards,
     climbers: readonly ClimberId[],
     player: ClimberId,
   ) {
     super("slope", { x: 1, y: 1 });
+    this.hazards = new HazardDrawing(hazards, physics.terrain);
+    this.addChild(this.hazards.standing);
     this.ground = SlopeLayer.runOut(physics.terrain);
     this.addChild(SlopeLayer.snow(this.ground), this.surface);
     this.ladders = physics.ladders.map((id) => {
@@ -75,6 +81,7 @@ export class SlopeLayer extends ParallaxLayer {
       this.addChild(figure);
       return { id, figure };
     });
+    this.addChild(this.hazards.falling);
   }
 
   /** How many climbers are drawn. */
@@ -82,9 +89,15 @@ export class SlopeLayer extends ParallaxLayer {
     return this.figures.length;
   }
 
-  /** Each frame, at the camera's `pixelsPerMetre`: the lines at that scale, the ropes where they
-   * lie now, the climbers where they are. */
-  draw(pixelsPerMetre: number): void {
+  /** Whether a hazard is going now, which shakes the picture. */
+  get shaking(): boolean {
+    return this.hazards.going;
+  }
+
+  /** Each frame, `seconds` after the last and at the camera's `pixelsPerMetre`: the lines at that
+   * scale, the ropes where they lie now, the climbers where they are, and what's coming down. */
+  draw(seconds: number, pixelsPerMetre: number): void {
+    this.hazards.draw(seconds);
     const size = new LeastSize(pixelsPerMetre);
     const rescaled = pixelsPerMetre !== this.drawnAt;
     if (rescaled) {

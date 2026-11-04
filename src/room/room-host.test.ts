@@ -1,8 +1,8 @@
 import { describe, expect, it } from "vitest";
 
 import { KnowledgeBase } from "../content/knowledge-base";
-import { KNOWLEDGE_FILES } from "../content/knowledge-files";
 import { Mountain } from "../content/mountain";
+import { KNOWLEDGE_FILES } from "../content/knowledge-files";
 import { Expedition } from "../simulation";
 import { CloseCode } from "./messages";
 import type { RoomSave } from "./room";

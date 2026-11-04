@@ -1,5 +1,5 @@
 {
-  "note": "A stand-in for the route's first section until the Khumbu Icefall (#26) brings the real ground and the knowledge base's numbers: a made-up line shaped like the Icefall, with made-up speeds and slip chances. Nothing here is a fact. Every sloping segment is a Pythagorean triple, so the distances along the ground, which the ropes, the ladders and the climbers are laid by, are whole metres: the corners are at 0, 20, 45, 58, 63, 67, 72, 84, 99, 102, 117, 130, 155, 172, 182, 190, 198, 223, 240, 265, 278, 299, 324, 344 and 364 m along it. The altitude of its ends and the clock's start are made up too; the ends are 12 times the drawn rise apart, since every section is drawn at 1/time.compression (docs/conventions/slope-physics.md → The slope). So are the climbers' bodies, until the player packs their own: their mass and their pack's in kg, rested, an hour awake, short of no water or food.",
+  "note": "A stand-in for the route's first section until the Khumbu Icefall (#26) brings the real ground and the knowledge base's numbers: a made-up line shaped like the Icefall, with made-up speeds, slip chances, the speed a hazard knocks a climber down at, and stretches of it under a serac, over a hidden crevasse and under an avalanche slope, in clear weather. Nothing here is a fact. Every sloping segment is a Pythagorean triple, so the distances along the ground, which the ropes, the ladders and the climbers are laid by, are whole metres: the corners are at 0, 20, 45, 58, 63, 67, 72, 84, 99, 102, 117, 130, 155, 172, 182, 190, 198, 223, 240, 265, 278, 299, 324, 344 and 364 m along it. The altitude of its ends and the clock's start are made up too; the ends are 12 times the drawn rise apart, since every section is drawn at 1/time.compression (docs/conventions/slope-physics.md → The slope).",
   "settings": {
     "gravity": 9.8,
     "friction": 0.4,
@@ -20,7 +20,10 @@
       [0, 0.6],
       [90, 0.3]
     ],
-    "ladderSlipChance": [[0, 0.02]]
+    "ladderSlipChance": [[0, 0.02]],
+    "knock": 3,
+    "arrestSpeed": 5,
+    "axeReach": 1.5
   },
   "layout": {
     "terrain": [
@@ -63,6 +66,14 @@
     "climbers": [
       { "id": "player", "along": 10 },
       { "id": "teammate", "along": 12 }
+    ]
+  },
+  "hazards": {
+    "weather": "clear",
+    "zones": [
+      { "id": "serac", "kind": "serac", "from": 45, "to": 72 },
+      { "id": "snow-bridge", "kind": "crevasse", "from": 130, "to": 155 },
+      { "id": "slope", "kind": "avalanche", "from": 223, "to": 278 }
     ]
   },
   "bodies": [

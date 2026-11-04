@@ -60,6 +60,25 @@ describe("StandInRoute", () => {
     expect(scale.compression).toBeCloseTo(new KnowledgeBase([time]).number("time.compression"), 6);
   });
 
+  it("lays its serac, hidden crevasse and avalanche slope on its ground, past where climbers start", () => {
+    const { layout, hazards } = new StandInRoute();
+    const terrain = new Terrain(layout.terrain);
+    const highestStart = Math.max(...layout.climbers.map((climber) => climber.along));
+
+    expect(hazards.zones.map((zone) => zone.kind)).toEqual(["serac", "crevasse", "avalanche"]);
+    for (const zone of hazards.zones) {
+      expect(zone.from).toBeGreaterThan(highestStart);
+      expect(zone.to).toBeLessThanOrEqual(terrain.length);
+    }
+  });
+
+  it("refuses a hazard it doesn't know", () => {
+    const zones = [{ id: "rockfall", kind: "rockfall", from: 30, to: 40 }];
+    const route = new StandInRoute({ ...standIn, hazards: { weather: "clear", zones } });
+
+    expect(() => route.scenario(1)).toThrow(RangeError);
+  });
+
   it("starts the mountain's clock at its date and time", () => {
     const route = new StandInRoute();
     const clock = new MountainClock(1);

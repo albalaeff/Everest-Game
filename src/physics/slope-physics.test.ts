@@ -262,6 +262,202 @@ describe("SlopePhysics: slips and falls", () => {
   });
 });
 
+describe("SlopePhysics: as the hazards' ground", () => {
+  it("names its climbers in the layout's order, and says how far along the ground each is", () => {
+    const layout = TestMountain.FLAT.layout([
+      { id: "boris", along: 30 },
+      { id: "anna", along: 10 },
+    ]);
+    const climb = new Climb(TestMountain.CALM, layout);
+
+    climb.play(20, [walk("anna", "right")]);
+
+    expect(climb.physics.climbers).toEqual(["boris", "anna"]);
+    expect(climb.physics.along("boris")).toBe(30);
+    expect(climb.physics.along("anna")).toBeCloseTo(11, 9);
+  });
+
+  it("knocks a climber off their feet, down the slope: unclipped, they fall to its foot", () => {
+    const climb = new Climb(
+      TestMountain.CALM,
+      alone(TestMountain.SLOPE, TestMountain.upTheSlope(20)),
+    );
+
+    climb.physics.knock("anna", climb.expedition.step);
+    const knocked = climb.physics.climber("anna");
+    climb.play(400);
+    const anna = climb.physics.climber("anna");
+
+    expect(knocked.falling).toBe(true);
+    expect(anna.falling).toBe(false);
+    expect(anna.y).toBeCloseTo(0, 6);
+    expect(anna.falls).toHaveLength(1);
+    expect(anna.falls[0]?.step).toBe(0);
+    expect(climb.physics.along("anna")).toBeLessThan(TestMountain.upTheSlope(0));
+  });
+
+  it("knocks over a climber on flat ground too, at the knock's speed", () => {
+    const climb = new Climb(TestMountain.CALM, alone(TestMountain.FLAT, 50));
+
+    climb.physics.knock("anna", 0);
+    climb.play(100);
+    const anna = climb.physics.climber("anna");
+
+    expect(anna.falls).toHaveLength(1);
+    expect(anna.falls[0]?.speed).toBeCloseTo(TestMountain.SETTINGS.knock, 1);
+    expect(anna.x).toBeLessThan(50);
+  });
+
+  it("holds a knocked climber clipped to a rope at the anchor below", () => {
+    const layout = alone(TestMountain.SLOPE, TestMountain.upTheSlope(20), [FIXED]);
+    const climb = new Climb(TestMountain.CALM, layout);
+
+    climb.play(1, [clip("anna")]);
+    climb.physics.knock("anna", climb.expedition.step);
+    climb.play(400);
+    const anna = climb.physics.climber("anna");
+
+    expect(anna.falls).toHaveLength(1);
+    expect(distance(anna, LOWER)).toBeLessThanOrEqual(HELD_WITHIN + 0.01);
+  });
+
+  it("says who is clipped to a rope", () => {
+    const layout = alone(TestMountain.SLOPE, TestMountain.upTheSlope(20), [FIXED]);
+    const climb = new Climb(TestMountain.CALM, layout);
+    const before = climb.physics.clipped("anna");
+
+    climb.play(1, [clip("anna")]);
+
+    expect(before).toBe(false);
+    expect(climb.physics.clipped("anna")).toBe(true);
+  });
+
+  it("kills a climber: they fall, lie where they come to rest, and do nothing more", () => {
+    const layout = TestMountain.SLOPE.layout([
+      { id: "anna", along: TestMountain.upTheSlope(20) },
+      { id: "boris", along: 10 },
+    ]);
+    const climb = new Climb(TestMountain.CALM, layout);
+
+    climb.physics.kill("anna", 0);
+    climb.play(400);
+    const lying = climb.physics.climber("anna");
+    climb.play(100, [walk("anna", "right")]);
+
+    expect(lying).toMatchObject({ dead: true, falling: false });
+    expect(lying.falls).toHaveLength(1);
+    expect(climb.physics.climber("anna")).toEqual(lying);
+    expect(climb.physics.climbers).toEqual(["boris"]);
+    expect(climb.physics.climber("boris").dead).toBe(false);
+  });
+
+  it("keeps the dead dead from a save", () => {
+    const climb = new Climb(TestMountain.CALM, alone(TestMountain.FLAT, 50));
+    climb.physics.kill("anna", 0);
+    climb.play(10);
+
+    const resumed = new Climb(TestMountain.CALM, climb.expedition.save());
+    resumed.play(100, [walk("anna", "right")]);
+
+    expect(resumed.physics.climber("anna").dead).toBe(true);
+    expect(resumed.physics.climber("anna").x).toBeLessThan(50);
+    expect(resumed.physics.climbers).toEqual([]);
+  });
+
+  it("makes no second fall of a knock in a fall", () => {
+    const climb = new Climb(
+      TestMountain.CALM,
+      alone(TestMountain.SLOPE, TestMountain.upTheSlope(20)),
+    );
+
+    climb.physics.knock("anna", 0);
+    climb.play(5);
+    climb.physics.knock("anna", 5);
+    climb.play(400);
+
+    expect(climb.physics.climber("anna").falls).toHaveLength(1);
+    expect(climb.physics.climber("anna").falls[0]?.step).toBe(0);
+  });
+});
+
+describe("SlopePhysics: self-arrest", () => {
+  /** Driving the ice axe into the ground `ahead` metres up it from where anna's body is. */
+  const axe = (climb: Climb, ahead: number): GameAction => {
+    const point = slopeGround.point(climb.physics.along("anna") + ahead);
+    return { kind: "tool", climber: "anna", tool: "ice-axe", ...point };
+  };
+  /** Anna knocked off her feet 20 m up the 40° slope, sliding for `steps`. */
+  const sliding = (steps: number): Climb => {
+    const climb = new Climb(
+      TestMountain.CALM,
+      alone(TestMountain.SLOPE, TestMountain.upTheSlope(20)),
+    );
+    climb.physics.knock("anna", 0);
+    climb.play(steps);
+    return climb;
+  };
+
+  it("stops a slide early, with the axe driven into the slope just above: they stand there", () => {
+    const climb = sliding(4);
+    const before = climb.physics.along("anna");
+
+    climb.play(1, [axe(climb, 1)]);
+    const arrested = climb.physics.climber("anna");
+    climb.play(100);
+
+    expect(arrested.falling).toBe(false);
+    expect(arrested.falls).toHaveLength(1);
+    expect(climb.physics.along("anna")).toBeGreaterThan(before - 1);
+    expect(climb.physics.climber("anna")).toEqual(arrested);
+  });
+
+  it("can't hold a slide grown too fast: it goes on to the foot of the slope", () => {
+    const climb = sliding(40);
+
+    climb.play(1, [axe(climb, 1)]);
+    const late = climb.physics.climber("anna");
+    climb.play(400);
+
+    expect(late.falling).toBe(true);
+    expect(climb.physics.climber("anna").y).toBeCloseTo(0, 6);
+  });
+
+  it("holds only with the axe in the slope above, within reach: not below, nor too far", () => {
+    const below = sliding(4);
+    below.play(1, [axe(below, -1)]);
+    const far = sliding(4);
+    far.play(1, [axe(far, TestMountain.SETTINGS.axeReach + 1)]);
+    const crampons = sliding(4);
+    crampons.play(1, [{ ...axe(crampons, 1), tool: "crampons" } as GameAction]);
+
+    expect(below.physics.climber("anna").falling).toBe(true);
+    expect(far.physics.climber("anna").falling).toBe(true);
+    expect(crampons.physics.climber("anna").falling).toBe(true);
+  });
+
+  it("has nothing to drive the axe into in the air", () => {
+    const climb = new Climb(TestMountain.CALM, alone(TestMountain.CREVASSE, 19));
+    climb.play(30, [walk("anna", "right")]);
+    const body = climb.physics.climber("anna");
+
+    climb.play(1, [{ kind: "tool", climber: "anna", tool: "ice-axe", x: 20, y: body.y + 0.5 }]);
+
+    expect(body.falling).toBe(true);
+    expect(climb.physics.climber("anna").falling).toBe(true);
+  });
+
+  it("stops the same slide resumed from a save as it would have unbroken", () => {
+    const unbroken = sliding(4);
+    const resumed = new Climb(TestMountain.CALM, unbroken.expedition.save());
+
+    unbroken.play(1, [axe(unbroken, 1)]);
+    resumed.play(1, [axe(resumed, 1)]);
+
+    expect(resumed.physics.climber("anna")).toMatchObject({ falling: false });
+    expect(resumed.expedition.save()).toEqual(unbroken.expedition.save());
+  });
+});
+
 describe("SlopePhysics: the layout", () => {
   it("lists its ropes and ladders in the layout's order, for the rendering to draw", () => {
     const layout = TestMountain.CREVASSE.layout(

@@ -1,7 +1,7 @@
 import { Application, Rectangle } from "pixi.js";
 
 import type { SlopePhysics } from "../physics";
-import type { ClimberId } from "../simulation";
+import type { ClimberId, ObjectiveHazards } from "../simulation";
 import type { Camera } from "./camera";
 import type { GraphicsQuality } from "./graphics-quality";
 import type { ParallaxLayer } from "./parallax-layer";
@@ -12,13 +12,18 @@ import { SnowLayer } from "./snow-layer";
 
 /**
  * The picture of the slope: a PixiJS application in the page's `#slope`, with the layers the
- * quality asks for, back to front, each placed by the camera every frame. It reads the physics and
- * holds no game state: what it owns is the picture's own, the camera's place and zoom, the flakes
- * and the frame count. For the page's stories it writes what it draws into `#slope`'s data attributes,
+ * quality asks for, back to front, each placed by the camera every frame, and shaking while a
+ * hazard goes. It reads the physics and the hazards and holds no game state: what it owns is the
+ * picture's own, the camera's place and zoom, the flakes, the warnings' clocks and the frame
+ * count. For the page's stories it writes what it draws into `#slope`'s data attributes,
  * and reads a pixel back, since Playwright can't read a WebGL canvas.
  */
 export class SlopeScene {
   private static readonly BACKGROUND = "#0b1d3a";
+  /** How far the picture shakes while a hazard goes, in slope metres a step of its cycle, and
+   * how many frames the cycle runs. */
+  private static readonly SHAKE_METRES = 0.06;
+  private static readonly SHAKE_FRAMES = 5;
 
   private readonly app = new Application();
   private opened = false;
@@ -31,6 +36,7 @@ export class SlopeScene {
     private readonly host: HTMLElement,
     private readonly camera: Camera,
     private readonly physics: SlopePhysics,
+    private readonly hazards: ObjectiveHazards,
     private readonly climbers: readonly ClimberId[],
     private readonly player: ClimberId,
     private quality: GraphicsQuality,
@@ -89,10 +95,24 @@ export class SlopeScene {
     for (const layer of this.layers) {
       layer.place(this.camera);
     }
-    this.slope?.draw(this.camera.pixelsPerMetre);
+    this.slope?.draw(seconds, this.camera.pixelsPerMetre);
     this.snow?.fall(seconds);
+    this.shake();
     this.frames += 1;
     this.report();
+  }
+
+  /** While a hazard goes, the whole picture shakes, a few centimetres of slope each way from
+   * frame to frame; it's still otherwise. */
+  private shake(): void {
+    if (this.slope?.shaking !== true) {
+      this.app.stage.position.set(0, 0);
+      return;
+    }
+    const pixels = SlopeScene.SHAKE_METRES * this.camera.pixelsPerMetre;
+    const step = (this.frames % SlopeScene.SHAKE_FRAMES) - (SlopeScene.SHAKE_FRAMES - 1) / 2;
+    const [x, y] = this.frames % 2 === 0 ? [step, -step / 2] : [-step / 2, step];
+    this.app.stage.position.set(x * pixels, y * pixels);
   }
 
   /** The colour drawn at a point of the screen, red, green, blue and alpha, 0 to 255. */
@@ -115,7 +135,7 @@ export class SlopeScene {
     const { terrain } = this.physics;
     const skyline = (style: typeof SkylineLayer.PEAKS, seed: number): SkylineLayer =>
       new SkylineLayer(style, terrain, this.seed + seed);
-    this.slope = new SlopeLayer(this.physics, this.climbers, this.player);
+    this.slope = new SlopeLayer(this.physics, this.hazards, this.climbers, this.player);
     this.snow = flakes > 0 ? new SnowLayer(flakes, width, height) : null;
     this.layers = [
       new SkyLayer(),

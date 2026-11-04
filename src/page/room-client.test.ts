@@ -1,8 +1,8 @@
 import { describe, expect, it } from "vitest";
 
 import { KnowledgeBase } from "../content/knowledge-base";
-import { KNOWLEDGE_FILES } from "../content/knowledge-files";
 import { Mountain } from "../content/mountain";
+import { KNOWLEDGE_FILES } from "../content/knowledge-files";
 import type { ExpeditionRules } from "../content/mountain";
 import { CloseCode } from "../room/messages";
 import type { ClientMessage, Hello, Refusal, Welcome } from "../room/messages";
