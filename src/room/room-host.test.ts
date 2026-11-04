@@ -1,9 +1,8 @@
 import { describe, expect, it } from "vitest";
 
-import hazards from "../../content/facts/hazards.json";
-import time from "../../content/facts/time.json";
 import { KnowledgeBase } from "../content/knowledge-base";
 import { Mountain } from "../content/mountain";
+import { KNOWLEDGE_FILES } from "../content/knowledge-files";
 import { Expedition } from "../simulation";
 import { CloseCode } from "./messages";
 import type { RoomSave } from "./room";
@@ -12,7 +11,7 @@ import { RoomStorage } from "./room-storage";
 import { FakeSocket, FakeTicker, MemoryStorage } from "./testing/fakes";
 
 const VERSION = "f06f24b";
-const mountain = new Mountain(new KnowledgeBase([time, hazards]));
+const mountain = new Mountain(new KnowledgeBase(KNOWLEDGE_FILES));
 
 function aHost(memory = new MemoryStorage()): {
   host: RoomHost;

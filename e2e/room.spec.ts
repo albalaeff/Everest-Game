@@ -45,7 +45,11 @@ test("a new room's link brings a friend in; each sees the other climb, and the f
   await readTheDisclaimer(friend, link);
 
   await expect(notice(friend)).toHaveText(`You have joined room ${code}`);
-  await expect(friend.locator("#slope")).toHaveAttribute("data-climber", "12.00 0.00");
+  // The friend's first frame, as long as e2e/slope.spec.ts waits for one: a second browser starts
+  // its WebGL in software beside the first's, which on CI can take more than an expect's 5 s.
+  await expect(friend.locator("#slope")).toHaveAttribute("data-climber", "12.00 0.00", {
+    timeout: 15_000,
+  });
   await page.keyboard.down("KeyD");
   await expect.poll(() => along(friend, "player")).toBeGreaterThan(10.5);
   await page.keyboard.up("KeyD");

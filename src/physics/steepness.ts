@@ -1,3 +1,5 @@
+import { Curve } from "../simulation";
+
 /** A point of a curve by steepness: an angle in degrees, uphill positive, and the value there. */
 export type SteepnessPoint = readonly [degrees: number, value: number];
 
@@ -39,54 +41,29 @@ export class Steepness {
 
 /**
  * A number that depends on how steep the ground is, such as the walking speed: the data's points,
- * from the steepest down to the steepest up, joined by straight lines over the sine. Past its
- * ends it keeps its end values.
+ * from the steepest down to the steepest up, joined by straight lines over the sine, a `Curve` of
+ * the core. Past its ends it keeps its end values.
  */
 export class SteepnessCurve {
-  private readonly points: readonly { readonly sine: number; readonly value: number }[];
-  private readonly first: { readonly sine: number; readonly value: number };
-  private readonly last: { readonly sine: number; readonly value: number };
+  private readonly curve: Curve;
 
   constructor(points: readonly SteepnessPoint[]) {
-    this.points = points.map(([degrees, value]) => ({
-      sine: Steepness.ofDegrees(degrees).sine,
-      value,
-    }));
-    const [first] = this.points;
-    const last = this.points.at(-1);
-    if (first === undefined || last === undefined) {
-      throw new RangeError("A curve needs a point at least");
-    }
-    if (points.some(([degrees], index) => index > 0 && degrees <= (points[index - 1]?.[0] ?? 0))) {
-      throw new RangeError("A curve's points go from the steepest down to the steepest up");
-    }
-    this.first = first;
-    this.last = last;
+    this.curve = new Curve(
+      points.map(([degrees, value]) => [Steepness.ofDegrees(degrees).sine, value] as const),
+    );
   }
 
   at(steepness: Steepness): number {
-    const { sine } = steepness;
-    if (sine <= this.first.sine) {
-      return this.first.value;
-    }
-    let below = this.first;
-    for (const point of this.points) {
-      if (sine <= point.sine) {
-        const share = (sine - below.sine) / (point.sine - below.sine);
-        return below.value + (point.value - below.value) * share;
-      }
-      below = point;
-    }
-    return this.last.value;
+    return this.curve.at(steepness.sine);
   }
 
   /** Whether it's steeper up than the curve's last point. */
   steeperUp(steepness: Steepness): boolean {
-    return steepness.sine > this.last.sine;
+    return steepness.sine > this.curve.end;
   }
 
   /** Whether it's steeper down than the curve's first point. */
   steeperDown(steepness: Steepness): boolean {
-    return steepness.sine < this.first.sine;
+    return steepness.sine < this.curve.start;
   }
 }

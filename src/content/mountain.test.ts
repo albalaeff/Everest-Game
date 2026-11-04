@@ -1,14 +1,12 @@
 import { describe, expect, it } from "vitest";
 
-import hazards from "../../content/facts/hazards.json";
-import time from "../../content/facts/time.json";
 import { Expedition, HazardChance, SimulationClock } from "../simulation";
 import { KnowledgeBase } from "./knowledge-base";
 import { KNOWLEDGE_FILES } from "./knowledge-files";
 import { Mountain } from "./mountain";
 import { StandInRoute } from "./stand-in-route";
 
-const knowledge = new KnowledgeBase([time, hazards]);
+const knowledge = new KnowledgeBase(KNOWLEDGE_FILES);
 const HOUR = 3600;
 
 describe("Mountain", () => {
@@ -56,8 +54,9 @@ describe("Mountain", () => {
 
     expect(first.physics).not.toBe(second.physics);
     expect(first.clock).not.toBe(second.clock);
+    expect(first.body).not.toBe(second.body);
     expect(first.hazards).not.toBe(second.hazards);
-    expect(first.all).toEqual([first.clock, first.hazards, first.physics]);
+    expect(first.all).toEqual([first.clock, first.body, first.hazards, first.physics]);
   });
 
   it("lays the route's hazards, in its weather, where the climbers start clear of them", () => {

@@ -115,6 +115,94 @@ describe("SlopePhysics: walking", () => {
   });
 });
 
+describe("SlopePhysics: the stride", () => {
+  it("walks a climber at their stride's share of the speed, and not at all at nought", () => {
+    const layout = TestMountain.FLAT.layout([
+      { id: "anna", along: 10 },
+      { id: "boris", along: 50 },
+    ]);
+    const climb = new Climb(TestMountain.CALM, layout);
+
+    climb.physics.stride("anna", 0.5);
+    climb.physics.stride("boris", 0);
+    climb.play(20, [walk("anna", "right"), walk("boris", "right")]);
+
+    expect(climb.physics.climber("anna").x).toBeCloseTo(10.5, 9);
+    expect(climb.physics.climber("boris")).toMatchObject({ x: 50, moving: false });
+  });
+
+  it("climbs a ladder at the stride's share of the ladder's speed", () => {
+    const bridge = { id: "bridge", from: 20, to: 83 };
+    const climb = new Climb(
+      TestMountain.CALM,
+      TestMountain.CREVASSE.layout([{ id: "anna", along: 20 }], [], [bridge]),
+    );
+
+    climb.physics.stride("anna", 0.5);
+    climb.play(40, [walk("anna", "right")]);
+
+    expect(climb.physics.climber("anna")).toMatchObject({ ladder: "bridge", y: 0 });
+    expect(climb.physics.climber("anna").x).toBeCloseTo(20.5, 6);
+  });
+
+  it("says whether a climber took a step: not standing, held back by the ground or falling", () => {
+    const climb = new Climb(TestMountain.CALM, alone(TestMountain.CREVASSE, 51.5));
+    const standing = climb.physics.climber("anna").moving;
+
+    climb.play(1, [walk("anna", "left")]);
+    const walking = climb.physics.climber("anna").moving;
+    climb.play(100);
+    const atTheWall = climb.physics.climber("anna");
+
+    expect([standing, walking]).toEqual([false, true]);
+    expect(atTheWall).toMatchObject({ x: 20, moving: false });
+  });
+
+  it("slips as often for each metre at a shorter stride: half as often a second at half", () => {
+    // Every step on the test's harsh ground is a slip at a whole stride.
+    let slips = 0;
+    for (let seed = 1; seed <= 200; seed += 1) {
+      const climb = new Climb(TestMountain.HARSH, alone(TestMountain.GENTLE, 50), seed);
+      climb.physics.stride("anna", 0.5);
+      climb.step("anna", "right");
+      climb.play(8);
+      slips += climb.physics.climber("anna").falls.length;
+    }
+
+    expect(slips).toBeGreaterThan(70);
+    expect(slips).toBeLessThan(130);
+  });
+
+  it("draws nothing for a climber who can't move", () => {
+    const still = new Climb(TestMountain.HARSH, alone(TestMountain.GENTLE, 50));
+    const spent = new Climb(TestMountain.HARSH, alone(TestMountain.GENTLE, 50));
+
+    spent.physics.stride("anna", 0);
+    still.play(20);
+    spent.play(20, [walk("anna", "right")]);
+
+    expect(spent.physics.climber("anna")).toMatchObject({ x: still.physics.climber("anna").x });
+    expect(spent.physics.climber("anna").falls).toEqual([]);
+    expect(spent.expedition.save().random).toEqual(still.expedition.save().random);
+  });
+
+  it("keeps the stride in a save, and refuses one below nought", () => {
+    const climb = new Climb(TestMountain.CALM, alone(TestMountain.FLAT, 10));
+    climb.physics.stride("anna", 0.5);
+    const resumed = new Climb(
+      TestMountain.CALM,
+      JSON.parse(JSON.stringify(climb.expedition.save())) as ExpeditionSave,
+    );
+
+    resumed.play(20, [walk("anna", "right")]);
+
+    expect(resumed.physics.climber("anna").x).toBeCloseTo(10.5, 9);
+    expect(() => {
+      climb.physics.stride("anna", -0.5);
+    }).toThrow(RangeError);
+  });
+});
+
 describe("SlopePhysics: slips and falls", () => {
   it("never slips where the slip chance is nought", () => {
     const climb = new Climb(

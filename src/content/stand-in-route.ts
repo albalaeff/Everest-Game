@@ -8,8 +8,8 @@ import type {
   SlopeLayout,
   SlopeSettings,
 } from "../physics";
-import { MountainClock, ObjectiveHazards } from "../simulation";
-import type { ClimberId, ClockStart, HazardStart, Scenario } from "../simulation";
+import { Body, MountainClock, ObjectiveHazards } from "../simulation";
+import type { BodyStart, ClimberId, ClockStart, HazardStart, Scenario } from "../simulation";
 
 /** A point or a curve's point as the data file keeps it: two numbers. */
 type DataPair = readonly number[];
@@ -44,6 +44,7 @@ export interface StandInData {
       readonly to: number;
     }[];
   };
+  readonly bodies: readonly BodyStart[];
   readonly clock: ClockStart;
 }
 
@@ -58,12 +59,14 @@ export class StandInRoute {
 
   readonly settings: SlopeSettings;
   readonly layout: SlopeLayout;
+  /** Each climber's body as they set off, in the layout's order. */
+  readonly bodies: readonly BodyStart[];
   /** Its weather and the stretches of it under a hazard, which `ObjectiveHazards.start` checks. */
   readonly hazards: HazardStart;
   readonly clock: ClockStart;
 
   constructor(data: StandInData = standIn) {
-    const { settings, layout, hazards, clock } = data;
+    const { settings, layout, hazards, bodies, clock } = data;
     this.settings = {
       gravity: settings.gravity,
       friction: settings.friction,
@@ -84,6 +87,13 @@ export class StandInRoute {
       climbers: layout.climbers,
     };
     this.hazards = hazards as HazardStart;
+    this.bodies = layout.climbers.map(({ id }) => {
+      const body = bodies.find((start) => start.id === id);
+      if (body === undefined) {
+        throw new RangeError(`${id} has no body on the stand-in route`);
+      }
+      return body;
+    });
     this.clock = clock;
   }
 
@@ -95,6 +105,7 @@ export class StandInRoute {
       climbers: this.layout.climbers.map((climber) => climber.id),
       start: {
         [MountainClock.NAME]: MountainClock.start(this.clock),
+        [Body.NAME]: Body.start(this.bodies),
         [ObjectiveHazards.NAME]: ObjectiveHazards.start(this.hazards),
         [SlopePhysics.NAME]: SlopePhysics.start(this.layout),
       },

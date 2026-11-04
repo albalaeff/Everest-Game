@@ -1,0 +1,742 @@
+{
+  "$schema": "../facts.schema.json",
+  "facts": [
+    {
+      "id": "body.saturation-sea-level",
+      "kind": "fact",
+      "claim": "At sea level, at rest, the blood's oxygen saturation (SpO2) is about this.",
+      "status": "source only",
+      "versions": [
+        {
+          "value": 97.63,
+          "unit": "%",
+          "note": "At 75 m, before the Caudwell Xtreme Everest expedition.",
+          "source": {
+            "title": "Wilson et al. 2011, Cerebral artery dilatation maintains cerebral oxygenation at extreme altitude and in acute hypoxia (J Cereb Blood Flow Metab) → Table 1",
+            "url": "https://pmc.ncbi.nlm.nih.gov/articles/PMC3208157"
+          },
+          "checked": "2026-11-04"
+        },
+        {
+          "value": 98,
+          "unit": "%",
+          "note": "The median, before the same expedition.",
+          "source": {
+            "title": "Siervo et al. 2014, Effects of prolonged exposure to hypobaric hypoxia on oxidative stress, inflammation and gluco-insular regulation (PLoS One) → Results",
+            "url": "https://pmc.ncbi.nlm.nih.gov/articles/PMC3986261"
+          },
+          "checked": "2026-11-04"
+        },
+        {
+          "range": {
+            "min": 95,
+            "max": 98
+          },
+          "unit": "%",
+          "note": "Arterial saturation, where the arterial oxygen pressure is about 100 mmHg.",
+          "source": {
+            "title": "Taylor 2011, High-altitude illnesses: physiology, risk factors, prevention, and treatment (Rambam Maimonides Med J) → The hemoglobin saturation curve at altitude",
+            "url": "https://pmc.ncbi.nlm.nih.gov/articles/PMC3678789"
+          },
+          "checked": "2026-11-04"
+        }
+      ]
+    },
+    {
+      "id": "body.saturation-base-camp",
+      "kind": "fact",
+      "claim": "Resting at Base Camp, about 5,300 m, a climber's SpO2 breathing air is about this.",
+      "status": "source only",
+      "versions": [
+        {
+          "value": 79.63,
+          "unit": "%",
+          "note": "Climbers and scientists of Caudwell Xtreme Everest, after trekking in over 13 days.",
+          "source": {
+            "title": "Wilson et al. 2011, Cerebral artery dilatation maintains cerebral oxygenation at extreme altitude and in acute hypoxia (J Cereb Blood Flow Metab) → Table 1",
+            "url": "https://pmc.ncbi.nlm.nih.gov/articles/PMC3208157"
+          },
+          "checked": "2026-11-04"
+        },
+        {
+          "value": 79,
+          "unit": "%",
+          "note": "319 trekkers, after an 11-day ascent from Lukla.",
+          "source": {
+            "title": "Cobb et al. 2021, Physiological responses during ascent to high altitude and the incidence of acute mountain sickness (Physiol Rep) → Table 4",
+            "url": "https://pmc.ncbi.nlm.nih.gov/articles/PMC8077104"
+          },
+          "checked": "2026-11-04"
+        },
+        {
+          "value": 82,
+          "unit": "%",
+          "note": "The median on arrival; it rose to 87% by the 71st day of the expedition, as the body acclimatized.",
+          "source": {
+            "title": "Siervo et al. 2014, Effects of prolonged exposure to hypobaric hypoxia on oxidative stress, inflammation and gluco-insular regulation (PLoS One) → Results",
+            "url": "https://pmc.ncbi.nlm.nih.gov/articles/PMC3986261"
+          },
+          "checked": "2026-11-04"
+        }
+      ]
+    },
+    {
+      "id": "body.saturation-camp-2",
+      "kind": "fact",
+      "claim": "Resting at Camp 2, about 6,400 m, a climber's SpO2 breathing air is about this.",
+      "status": "source only",
+      "versions": [
+        {
+          "value": 75.13,
+          "unit": "%",
+          "note": "The 14 climbers of Caudwell Xtreme Everest who went on from Base Camp.",
+          "source": {
+            "title": "Wilson et al. 2011, Cerebral artery dilatation maintains cerebral oxygenation at extreme altitude and in acute hypoxia (J Cereb Blood Flow Metab) → Table 1",
+            "url": "https://pmc.ncbi.nlm.nih.gov/articles/PMC3208157"
+          },
+          "checked": "2026-11-04"
+        }
+      ]
+    },
+    {
+      "id": "body.saturation-south-col",
+      "kind": "fact",
+      "claim": "Resting at the South Col, about 7,950 m, half an hour off supplemental oxygen, a climber's SpO2 is about this.",
+      "status": "source only",
+      "versions": [
+        {
+          "value": 65.9,
+          "unit": "%",
+          "note": "Five climbers, who had climbed from 7,100 m on oxygen.",
+          "source": {
+            "title": "Wilson et al. 2011, Cerebral artery dilatation maintains cerebral oxygenation at extreme altitude and in acute hypoxia (J Cereb Blood Flow Metab) → Table 1",
+            "url": "https://pmc.ncbi.nlm.nih.gov/articles/PMC3208157"
+          },
+          "checked": "2026-11-04"
+        }
+      ]
+    },
+    {
+      "id": "body.saturation-balcony",
+      "kind": "fact",
+      "claim": "At about 8,400 m, the Balcony's altitude, a climber's arterial oxygen saturation breathing air is only about this.",
+      "status": "source only",
+      "versions": [
+        {
+          "value": 50,
+          "unit": "%",
+          "note": "Where the arterial oxygen pressure drops to 25 mmHg.",
+          "source": {
+            "title": "Taylor 2011, High-altitude illnesses: physiology, risk factors, prevention, and treatment (Rambam Maimonides Med J) → The hemoglobin saturation curve at altitude",
+            "url": "https://pmc.ncbi.nlm.nih.gov/articles/PMC3678789"
+          },
+          "checked": "2026-11-04"
+        }
+      ]
+    },
+    {
+      "id": "body.saturation-on-oxygen-resting",
+      "kind": "fact",
+      "claim": "Resting at the South Col on 2 L/min of supplemental oxygen, a climber's SpO2 is about this: almost sea level's.",
+      "status": "source only",
+      "versions": [
+        {
+          "value": 95.03,
+          "unit": "%",
+          "source": {
+            "title": "Wilson et al. 2011, Cerebral artery dilatation maintains cerebral oxygenation at extreme altitude and in acute hypoxia (J Cereb Blood Flow Metab) → Table 1",
+            "url": "https://pmc.ncbi.nlm.nih.gov/articles/PMC3208157"
+          },
+          "checked": "2026-11-04"
+        }
+      ]
+    },
+    {
+      "id": "body.saturation-on-oxygen-climbing",
+      "kind": "fact",
+      "claim": "Climbing on 2–3 L/min of supplemental oxygen, from the South Col to the summit, a climber's SpO2 is about this.",
+      "status": "source only",
+      "versions": [
+        {
+          "value": 70,
+          "unit": "%",
+          "note": "70% arriving at the South Col on 2 L/min, and 70% on the summit on 3 L/min; on the way down, 80% at the South Col on 3 L/min. One climber, acclimatized beforehand in a hypoxic tent at home.",
+          "source": {
+            "title": "Zelenkova 2026, Breaking limits: rapid sea-to-summit ascent of Mount Everest (8,848 m) in 3 days 23 hours following normobaric-hypoxic pre-acclimatization and staged supplemental oxygen in a non-elite athlete (Front Physiol) → Results",
+            "url": "https://pmc.ncbi.nlm.nih.gov/articles/PMC13696306"
+          },
+          "checked": "2026-11-04"
+        }
+      ]
+    },
+    {
+      "id": "body.vo2max-decline",
+      "kind": "fact",
+      "claim": "With altitude, a climber's maximal oxygen uptake (VO2max), their aerobic capacity, falls by about this much for every 1,000 m.",
+      "status": "source only",
+      "versions": [
+        {
+          "value": 10,
+          "unit": "%/1000 m",
+          "note": "About 10% every 1,000 m above 1,500 m.",
+          "source": {
+            "title": "Furian et al. 2022, Effects of Acute Exposure and Acclimatization to High-Altitude on Oxygen Saturation and Related Cardiorespiratory Fitness in Health and Disease (J Clin Med) → 4.5 Effects of Pre-Existing Cardiovascular and Metabolic Disease",
+            "url": "https://pmc.ncbi.nlm.nih.gov/articles/PMC9697047"
+          },
+          "checked": "2026-11-04"
+        },
+        {
+          "value": 6,
+          "unit": "%/1000 m",
+          "note": "6% for every 1,000 m of elevation gain, from no altitude stated.",
+          "source": {
+            "title": "Karpęcka-Gałka et al. 2024, Nutrition, hydration and supplementation considerations for mountaineers in high-altitude conditions: a narrative review (Front Sports Act Living) → Introduction",
+            "url": "https://pmc.ncbi.nlm.nih.gov/articles/PMC11582915"
+          },
+          "checked": "2026-11-04"
+        }
+      ]
+    },
+    {
+      "id": "body.vo2max-decline-onset",
+      "kind": "fact",
+      "claim": "A climber's VO2max falls with altitude above about this altitude.",
+      "status": "source only",
+      "versions": [
+        {
+          "value": 1500,
+          "unit": "m",
+          "source": {
+            "title": "Furian et al. 2022, Effects of Acute Exposure and Acclimatization to High-Altitude on Oxygen Saturation and Related Cardiorespiratory Fitness in Health and Disease (J Clin Med) → 4.5 Effects of Pre-Existing Cardiovascular and Metabolic Disease",
+            "url": "https://pmc.ncbi.nlm.nih.gov/articles/PMC9697047"
+          },
+          "checked": "2026-11-04"
+        }
+      ]
+    },
+    {
+      "id": "body.vo2max-3000",
+      "kind": "fact",
+      "claim": "At 3,000 m, a climber's VO2max is about this share of their sea-level VO2max.",
+      "status": "source only",
+      "versions": [
+        {
+          "value": 85,
+          "unit": "%",
+          "source": {
+            "title": "Taylor 2011, High-altitude illnesses: physiology, risk factors, prevention, and treatment (Rambam Maimonides Med J) → Physical condition and exercise",
+            "url": "https://pmc.ncbi.nlm.nih.gov/articles/PMC3678789"
+          },
+          "checked": "2026-11-04"
+        }
+      ]
+    },
+    {
+      "id": "body.vo2max-5000",
+      "kind": "fact",
+      "claim": "At 5,000 m, a climber's VO2max is about this share of their sea-level VO2max.",
+      "status": "source only",
+      "versions": [
+        {
+          "value": 60,
+          "unit": "%",
+          "source": {
+            "title": "Taylor 2011, High-altitude illnesses: physiology, risk factors, prevention, and treatment (Rambam Maimonides Med J) → Physical condition and exercise",
+            "url": "https://pmc.ncbi.nlm.nih.gov/articles/PMC3678789"
+          },
+          "checked": "2026-11-04"
+        }
+      ]
+    },
+    {
+      "id": "body.vo2max-summit",
+      "kind": "fact",
+      "claim": "On the summit of Everest, breathing air, a climber's VO2max is about this share of their sea-level VO2max.",
+      "status": "source only",
+      "versions": [
+        {
+          "value": 28,
+          "unit": "%",
+          "note": "16.2 at the summit's mean pressure in May, of a sea-level VO2max of about 57, in millilitres a minute per kilogram.",
+          "source": {
+            "title": "Matthews et al. 2020, Into Thick(er) Air? Oxygen Availability at Humans' Physiological Frontier on Mount Everest (iScience) → Air Pressures Encountered during Oxygenless Summits",
+            "url": "https://pmc.ncbi.nlm.nih.gov/articles/PMC7756134"
+          },
+          "checked": "2026-11-04"
+        },
+        {
+          "note": "About a litre a minute, in well-acclimatized climbers pedalling at 6,300 m on the summit's inspired oxygen: a miserably low maximal oxygen consumption.",
+          "source": {
+            "title": "West 2019, Lessons From Extreme Altitudes (Front Physiol) → American Medical Research Expedition to Everest",
+            "url": "https://pmc.ncbi.nlm.nih.gov/articles/PMC6565947"
+          },
+          "checked": "2026-11-04"
+        }
+      ]
+    },
+    {
+      "id": "body.dehydration-threshold",
+      "kind": "fact",
+      "claim": "Water lost beyond this share of body mass impairs endurance.",
+      "status": "source only",
+      "versions": [
+        {
+          "value": 2,
+          "unit": "%",
+          "note": "More than 2% of body mass impairs endurance cycling; 2–3% decreases it in the heat, at least when little or no fluid is drunk.",
+          "source": {
+            "title": "James et al. 2019, Does Hypohydration Really Impair Endurance Performance? Methodological Considerations for Interpreting Hydration Research (Sports Med) → Abstract",
+            "url": "https://pmc.ncbi.nlm.nih.gov/articles/PMC6901416"
+          },
+          "checked": "2026-11-04"
+        }
+      ]
+    },
+    {
+      "id": "body.dehydration-effect",
+      "kind": "fact",
+      "claim": "Dehydrated past that threshold, a climber does this much less endurance work.",
+      "status": "source only",
+      "versions": [
+        {
+          "range": {
+            "min": 8,
+            "max": 11
+          },
+          "unit": "%",
+          "note": "8% less work at about 2.4% of body mass lost; 10–11% at about 3%, whether or not the subjects knew.",
+          "source": {
+            "title": "James et al. 2019, Does Hypohydration Really Impair Endurance Performance? Methodological Considerations for Interpreting Hydration Research (Sports Med) → Methodology: Blinding Changes in Hydration",
+            "url": "https://pmc.ncbi.nlm.nih.gov/articles/PMC6901416"
+          },
+          "checked": "2026-11-04"
+        }
+      ]
+    },
+    {
+      "id": "body.water-loss",
+      "kind": "fact",
+      "claim": "Climbing on Everest, a climber loses about this much water a day.",
+      "status": "source only",
+      "versions": [
+        {
+          "value": 3.3,
+          "unit": "L/day",
+          "note": "± 0.6 L, climbers from 5,000 m to 8,872 m; about half of the climbers studied were dehydrated.",
+          "source": {
+            "title": "Karpęcka-Gałka et al. 2024, Nutrition, hydration and supplementation considerations for mountaineers in high-altitude conditions: a narrative review (Front Sports Act Living) → 3.4 Importance of hydration and electrolyte supply during high altitude sojourn",
+            "url": "https://pmc.ncbi.nlm.nih.gov/articles/PMC11582915"
+          },
+          "checked": "2026-11-04"
+        }
+      ]
+    },
+    {
+      "id": "body.sleep-loss-cost",
+      "kind": "fact",
+      "claim": "After a short night, each hour awake before exercise takes about this much from physical performance.",
+      "status": "source only",
+      "versions": [
+        {
+          "value": 0.4,
+          "unit": "%/h",
+          "note": "A meta-analysis; acute sleep loss cut endurance by 5.6% on average.",
+          "source": {
+            "title": "Craven et al. 2022, Effects of Acute Sleep Loss on Physical Performance: A Systematic and Meta-Analytical Review (Sports Med) → Abstract",
+            "url": "https://pmc.ncbi.nlm.nih.gov/articles/PMC9584849"
+          },
+          "checked": "2026-11-04"
+        }
+      ]
+    },
+    {
+      "id": "body.acute-sleep-loss",
+      "kind": "fact",
+      "claim": "This many hours of sleep or fewer in a day is acute sleep loss.",
+      "status": "source only",
+      "versions": [
+        {
+          "value": 6,
+          "unit": "h",
+          "note": "6 h or less in any 24 h.",
+          "source": {
+            "title": "Craven et al. 2022, Effects of Acute Sleep Loss on Physical Performance: A Systematic and Meta-Analytical Review (Sports Med) → Introduction",
+            "url": "https://pmc.ncbi.nlm.nih.gov/articles/PMC9584849"
+          },
+          "checked": "2026-11-04"
+        }
+      ]
+    },
+    {
+      "id": "body.energy-expenditure",
+      "kind": "fact",
+      "claim": "Climbing in the Himalaya, on Everest too, a climber spends about this much energy a day.",
+      "status": "source only",
+      "versions": [
+        {
+          "range": {
+            "min": 3248,
+            "max": 5394
+          },
+          "unit": "kcal/day",
+          "note": "4,634 ± 287 (5,900–8,046 m), 5,394 ± 1,565 (5,300–8,848 m) and 3,248 ± 407 kcal a day (5,300–8,872 m), in three studies.",
+          "source": {
+            "title": "Karpęcka-Gałka et al. 2024, Nutrition, hydration and supplementation considerations for mountaineers in high-altitude conditions: a narrative review (Front Sports Act Living) → 3.1 Energy supply and energy expenditure in the context of weight loss of mountaineers during high altitude expeditions",
+            "url": "https://pmc.ncbi.nlm.nih.gov/articles/PMC11582915"
+          },
+          "checked": "2026-11-04"
+        },
+        {
+          "range": {
+            "min": 3250,
+            "max": 4636
+          },
+          "unit": "kcal/day",
+          "source": {
+            "title": "Viscor et al. 2023, Nutrition and Hydration for High-Altitude Alpinism: A Narrative Review (Int J Environ Res Public Health) → 1.1 Environmental Considerations",
+            "url": "https://pmc.ncbi.nlm.nih.gov/articles/PMC9965509"
+          },
+          "checked": "2026-11-04"
+        }
+      ]
+    },
+    {
+      "id": "body.energy-intake-share",
+      "kind": "fact",
+      "claim": "At altitude, climbers eat only about this share of the energy they spend, and lose weight.",
+      "status": "source only",
+      "versions": [
+        {
+          "value": 70,
+          "unit": "%",
+          "note": "Their diet covered 70% of their daily energy requirement.",
+          "source": {
+            "title": "Karpęcka-Gałka et al. 2024, Nutrition, hydration and supplementation considerations for mountaineers in high-altitude conditions: a narrative review (Front Sports Act Living) → 3.1 Energy supply and energy expenditure in the context of weight loss of mountaineers during high altitude expeditions",
+            "url": "https://pmc.ncbi.nlm.nih.gov/articles/PMC11582915"
+          },
+          "checked": "2026-11-04"
+        },
+        {
+          "range": {
+            "min": 50,
+            "max": 70
+          },
+          "unit": "%",
+          "note": "An inadequate intake, below 50–70% of the daily requirement, is what makes climbers lose weight.",
+          "source": {
+            "title": "Viscor et al. 2023, Nutrition and Hydration for High-Altitude Alpinism: A Narrative Review (Int J Environ Res Public Health) → 3.1 Body Weight Loss and Changes in Body Composition at Altitude",
+            "url": "https://pmc.ncbi.nlm.nih.gov/articles/PMC9965509"
+          },
+          "checked": "2026-11-04"
+        }
+      ]
+    },
+    {
+      "id": "body.carbohydrate-effect",
+      "kind": "fact",
+      "claim": "At altitude, climbers given carbohydrate finished a time trial this much faster than those given a placebo.",
+      "status": "source only",
+      "versions": [
+        {
+          "value": 17,
+          "unit": "%",
+          "note": "41 members of a 22-day expedition, the time trial at 5,192 m; the carbohydrate group also rated their effort 18% lower.",
+          "source": {
+            "title": "Viscor et al. 2023, Nutrition and Hydration for High-Altitude Alpinism: A Narrative Review (Int J Environ Res Public Health) → 3. Discussion",
+            "url": "https://pmc.ncbi.nlm.nih.gov/articles/PMC9965509"
+          },
+          "checked": "2026-11-04"
+        }
+      ]
+    },
+    {
+      "id": "body.oxygen-gain-climbing",
+      "kind": "coefficient",
+      "claim": "How much lower the body feels on the move for each litre a minute of supplemental oxygen: a climbing climber's felt altitude is the real one less this much per L/min, and their SpO2 and capacity are the felt altitude's. Fitted to the low flows: climbing to the South Col on 2 L/min and on the summit on 3 L/min, SpO2 stayed about 70%, which the saturation curve gives at about 7,260 m: 350 and 530 m a litre; and the roughly 3,000 ft bottled oxygen is said to buy, 300–460 m a litre at those flows.",
+      "status": "source only",
+      "value": 450,
+      "unit": "m/(L/min)",
+      "fitted_to": [
+        "body.saturation-on-oxygen-climbing",
+        "body.saturation-camp-2",
+        "body.saturation-south-col",
+        "oxygen.altitude-advantage",
+        "route.camp-2-altitude",
+        "route.south-col-altitude",
+        "route.summit-altitude"
+      ],
+      "fitted": "2026-11-04"
+    },
+    {
+      "id": "body.oxygen-gain-resting",
+      "kind": "coefficient",
+      "claim": "How much lower the body feels at rest for each litre a minute of supplemental oxygen: breathing slower, a resting climber gets far more of each litre. Fitted so that resting at the South Col on 2 L/min gives the 95% measured there, which the saturation curve gives at about 500 m.",
+      "status": "source only",
+      "value": 3700,
+      "unit": "m/(L/min)",
+      "fitted_to": [
+        "body.saturation-on-oxygen-resting",
+        "body.saturation-sea-level",
+        "body.saturation-base-camp",
+        "route.base-camp-altitude",
+        "route.south-col-altitude"
+      ],
+      "fitted": "2026-11-04"
+    },
+    {
+      "id": "body.capacity-decline",
+      "kind": "coefficient",
+      "claim": "How much of their sea-level capacity, their VO2max, a climber loses for each 1,000 m they feel above the decline's onset, in a straight line. Fitted to the share left at 3,000 m (85%), at 5,000 m (60%) and on the summit (28%): 10% per 1,000 m from 1,500 m leaves 85%, 65% and 27%, where 6% would leave twice as much on the summit.",
+      "status": "source only",
+      "value": 10,
+      "unit": "%/1000 m",
+      "fitted_to": [
+        "body.vo2max-decline",
+        "body.vo2max-decline-onset",
+        "body.vo2max-3000",
+        "body.vo2max-5000",
+        "body.vo2max-summit",
+        "route.summit-altitude"
+      ],
+      "fitted": "2026-11-04"
+    },
+    {
+      "id": "body.rest-step-speed",
+      "kind": "coefficient",
+      "claim": "The rest step's speed, as a share of the steady pace's. Fitted to the spread of each section's hours across the sources, the steady pace taking their middle and the rest step the longest: 4.5 of 6 hours from the South Col to the Balcony, 4 of 5 to the South Summit, 4 of 5 from Camp 3 to the South Col, 1.5 of 2 to the summit, 5 of 7 from Camp 2 to Camp 3.",
+      "status": "source only",
+      "value": 0.75,
+      "unit": "1",
+      "fitted_to": [
+        "time.camp-2-to-camp-3",
+        "time.camp-3-to-south-col",
+        "time.south-col-to-balcony",
+        "time.balcony-to-south-summit",
+        "time.south-summit-to-summit"
+      ],
+      "fitted": "2026-11-04"
+    },
+    {
+      "id": "body.faster-speed",
+      "kind": "coefficient",
+      "claim": "The faster pace's speed, as a share of the steady pace's. Fitted to the spread of each section's hours across the sources, the steady pace taking their middle and the faster one the shortest: 4.5 against 3 hours from the South Col to the Balcony, 4 against 3 to the South Summit, 4 against 3 from Camp 3 to the South Col, 1.5 against 1 to the summit, 5 against 3 from Camp 2 to Camp 3.",
+      "status": "source only",
+      "value": 1.5,
+      "unit": "1",
+      "fitted_to": [
+        "time.camp-2-to-camp-3",
+        "time.camp-3-to-south-col",
+        "time.south-col-to-balcony",
+        "time.balcony-to-south-summit",
+        "time.south-summit-to-summit"
+      ],
+      "fitted": "2026-11-04"
+    },
+    {
+      "id": "body.steady-endurance",
+      "kind": "coefficient",
+      "claim": "The hours on the move a fresh climber, rested, fed and watered, can keep up the steady pace before they're exhausted. Fitted to summit day: away from the South Col at about 22:00 and back by 12:00–14:00, 14–16 hours on the move after a short night, with little food or water, leaves a steady climber tired but able to go on, unless the summit came late.",
+      "status": "source only",
+      "value": 24,
+      "unit": "h",
+      "fitted_to": [
+        "time.south-col-departure",
+        "time.summit-hour-survivors",
+        "time.back-at-south-col",
+        "time.warning-signs"
+      ],
+      "fitted": "2026-11-04"
+    },
+    {
+      "id": "body.rest-step-effort",
+      "kind": "coefficient",
+      "claim": "How fast the rest step tires a climber, as a share of the steady pace's rate. Fitted so that a climber profoundly tired on the summit can still rest-step down to the South Col in the hours the descent usually takes, slower as they are, before they're exhausted.",
+      "status": "source only",
+      "value": 0.5,
+      "unit": "1",
+      "fitted_to": [
+        "time.summit-to-south-col",
+        "time.warning-signs"
+      ],
+      "fitted": "2026-11-04"
+    },
+    {
+      "id": "body.faster-effort",
+      "kind": "coefficient",
+      "claim": "How fast the faster pace tires a climber, as a share of the steady pace's rate. Fitted so that the faster pace, kept up from the South Col, brings a climber to the summit profoundly tired, with nothing left for the way down: the 10 hours the sections take at a steady pace in the middle of the sources' hours take two-thirds of that, at three times the rate.",
+      "status": "source only",
+      "value": 3,
+      "unit": "1",
+      "fitted_to": [
+        "time.south-col-to-balcony",
+        "time.balcony-to-south-summit",
+        "time.south-summit-to-summit",
+        "time.warning-signs"
+      ],
+      "fitted": "2026-11-04"
+    },
+    {
+      "id": "body.tired",
+      "kind": "coefficient",
+      "claim": "The share of their endurance spent at which a climber feels tired. Fitted so that a steady climber who left the South Col at about 22:00 feels it by the time the survivors' median reaches the summit, 09:00–10:00.",
+      "status": "source only",
+      "value": 0.5,
+      "unit": "1",
+      "fitted_to": [
+        "time.south-col-departure",
+        "time.summit-hour-survivors"
+      ],
+      "fitted": "2026-11-04"
+    },
+    {
+      "id": "body.profoundly-tired",
+      "kind": "coefficient",
+      "claim": "The share of their endurance spent at which a climber is profoundly tired, and can only rest-step. Fitted so that a steady climber gets there on the way down when they reached the summit at 13:00–14:00, the median of those who died, and not when they reached it at the survivors' 09:00–10:00: profound fatigue and a late summit are early signs in those who die on the way down.",
+      "status": "source only",
+      "value": 0.8,
+      "unit": "1",
+      "fitted_to": [
+        "time.south-col-departure",
+        "time.summit-hour-survivors",
+        "time.summit-hour-dead",
+        "time.summit-to-south-col",
+        "time.warning-signs"
+      ],
+      "fitted": "2026-11-04"
+    },
+    {
+      "id": "body.recovery-hours",
+      "kind": "coefficient",
+      "claim": "The hours of rest that take all the fatigue of an exhausted climber away, where the body still recovers: below the death zone, or on oxygen in it. Fitted to the 8–12 hours climbers rest at the South Col, just below the death zone, before the summit push: however tired they arrived, they set off rested, and after the shortest stay, not even tired.",
+      "status": "source only",
+      "value": 10,
+      "unit": "h",
+      "fitted_to": [
+        "time.south-col-stay",
+        "route.south-col-altitude",
+        "medicine.death-zone"
+      ],
+      "fitted": "2026-11-04"
+    },
+    {
+      "id": "body.dehydration-cost",
+      "kind": "coefficient",
+      "claim": "How much endurance a climber loses for each 1% of their body mass in water lost beyond the threshold. Fitted to the 10–11% less work measured at about 3% of body mass lost, 1% past the threshold; the 8% at about 2.4% says the cost comes sooner, which a straight line from the threshold can't follow.",
+      "status": "source only",
+      "value": 10,
+      "unit": "%/%",
+      "fitted_to": [
+        "body.dehydration-threshold",
+        "body.dehydration-effect"
+      ],
+      "fitted": "2026-11-04"
+    },
+    {
+      "id": "body.sleepy-after",
+      "kind": "coefficient",
+      "claim": "The hours awake after which a climber is short of sleep, and feels it: past them, they've slept six hours or fewer in a day.",
+      "status": "source only",
+      "value": 18,
+      "unit": "h",
+      "fitted_to": [
+        "body.acute-sleep-loss"
+      ],
+      "fitted": "2026-11-04"
+    },
+    {
+      "id": "body.hunger-cost",
+      "kind": "coefficient",
+      "claim": "How much endurance a climber loses for each day's energy they're short of. Fitted to the 17% by which climbers given carbohydrate at altitude beat those given none, as if a day's energy short.",
+      "status": "source only",
+      "value": 17,
+      "unit": "%/day",
+      "fitted_to": [
+        "body.carbohydrate-effect",
+        "body.energy-expenditure"
+      ],
+      "fitted": "2026-11-04"
+    },
+    {
+      "id": "body.hungry-after",
+      "kind": "coefficient",
+      "claim": "How short of energy a climber is, in days of what they spend, when they feel hungry: past the shortfall climbers at altitude run every day, eating 50–70% of what they spend.",
+      "status": "source only",
+      "value": 0.4,
+      "unit": "day",
+      "fitted_to": [
+        "body.energy-intake-share",
+        "body.energy-expenditure"
+      ],
+      "fitted": "2026-11-04"
+    },
+    {
+      "id": "body.exercise-saturation",
+      "kind": "question",
+      "question": "How much lower is a climber's SpO2 while climbing than at rest, at each camp, on air and on oxygen? The model reads the resting values on the move too, and has oxygen alone change with effort.",
+      "about": [
+        "body.saturation-base-camp",
+        "body.saturation-camp-2",
+        "body.saturation-south-col",
+        "body.oxygen-gain-climbing"
+      ]
+    },
+    {
+      "id": "body.summit-saturation",
+      "kind": "question",
+      "question": "What is a climber's SpO2 above the Balcony without oxygen, on the South Summit and the summit? The model holds the Balcony's 50% up to the summit.",
+      "about": [
+        "body.saturation-balcony"
+      ]
+    },
+    {
+      "id": "body.pace-effort",
+      "kind": "question",
+      "question": "At 8,000 m, how much faster than a climber's steady pace is the faster one, and how much slower the rest step; and how much more does the faster pace tire them, and how much less the rest step? The model's numbers are fitted to the sections' hours, not measured.",
+      "about": [
+        "body.rest-step-speed",
+        "body.faster-speed",
+        "body.rest-step-effort",
+        "body.faster-effort",
+        "technique.rest-step"
+      ]
+    },
+    {
+      "id": "body.endurance",
+      "kind": "question",
+      "question": "How many hours of steady climbing can a fresh, acclimatized client keep up above 7,000 m before they're exhausted, on oxygen and without; and how long a rest restores them, in a tent and standing on the ridge?",
+      "about": [
+        "body.steady-endurance",
+        "body.recovery-hours",
+        "body.tired",
+        "body.profoundly-tired"
+      ]
+    },
+    {
+      "id": "body.death-zone-rest",
+      "kind": "question",
+      "question": "Does a climber resting above 8,000 m without oxygen grow weaker even at rest, and how fast? The model only stops their recovery there.",
+      "about": [
+        "medicine.death-zone",
+        "body.recovery-hours"
+      ]
+    },
+    {
+      "id": "body.descent-effort",
+      "kind": "question",
+      "question": "How much less does going down tire a climber than going up, at 8,000 m, and how much faster do they go? The model tires them the same either way, and slows them alike.",
+      "about": [
+        "body.steady-endurance",
+        "time.summit-to-south-col"
+      ]
+    },
+    {
+      "id": "body.hunger",
+      "kind": "question",
+      "question": "How much does a day of eating too little at altitude cost a climber's endurance, and when do they feel it? The model's numbers come from one study of carbohydrate.",
+      "about": [
+        "body.hunger-cost",
+        "body.hungry-after"
+      ]
+    }
+  ]
+}

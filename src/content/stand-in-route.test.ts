@@ -3,7 +3,7 @@ import { describe, expect, it } from "vitest";
 import time from "../../content/facts/time.json";
 import standIn from "../../content/route/stand-in.json";
 import { SectionScale, SlopePhysics, Terrain } from "../physics";
-import { Expedition, MountainClock } from "../simulation";
+import { Body, Expedition, MountainClock } from "../simulation";
 import { KnowledgeBase } from "./knowledge-base";
 import { StandInRoute } from "./stand-in-route";
 
@@ -88,6 +88,19 @@ describe("StandInRoute", () => {
 
     expect(clock.start).toEqual(route.clock);
     expect(clock.day).toBe(0);
+  });
+
+  it("sets every climber of the layout off in a body of their own, in the layout's order", () => {
+    const route = new StandInRoute();
+
+    expect(route.bodies.map((body) => body.id)).toEqual(route.layout.climbers.map(({ id }) => id));
+    expect(() => Body.start(route.bodies)).not.toThrow();
+  });
+
+  it("refuses a climber with no body", () => {
+    const bodies = standIn.bodies.filter((body) => body.id !== "teammate");
+
+    expect(() => new StandInRoute({ ...standIn, bodies })).toThrow("teammate");
   });
 
   it("refuses a point of the data that isn't a pair", () => {

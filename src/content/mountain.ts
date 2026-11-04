@@ -1,13 +1,15 @@
 import { SlopePhysics } from "../physics";
-import { MountainClock, ObjectiveHazards } from "../simulation";
+import { Body, MountainClock, ObjectiveHazards } from "../simulation";
 import type { HazardKind, HazardOdds, HazardSettings, Rule, Scenario } from "../simulation";
 import type { KnowledgeBase } from "./knowledge-base";
+import { BodyFacts } from "./body-facts";
 import { StandInRoute } from "./stand-in-route";
 
 /** One expedition's rules, with their numbers: the page draws from the physics and reads the
  * clock, and the expedition runs them all, in this order. */
 export interface ExpeditionRules {
   readonly clock: MountainClock;
+  readonly body: Body;
   readonly hazards: ObjectiveHazards;
   readonly physics: SlopePhysics;
   readonly all: readonly Rule[];
@@ -39,8 +41,9 @@ export class Mountain {
   rules(): ExpeditionRules {
     const clock = new MountainClock(this.knowledge.number(Mountain.COMPRESSION));
     const physics = new SlopePhysics(this.route.settings);
+    const body = new Body(new BodyFacts(this.knowledge).numbers, clock, physics);
     const hazards = new ObjectiveHazards(this.hazardSettings(), clock, physics);
-    return { clock, hazards, physics, all: [clock, hazards, physics] };
+    return { clock, body, hazards, physics, all: [clock, body, hazards, physics] };
   }
 
   /** The hazards' numbers, from their records in content/facts/hazards.json: each kind's

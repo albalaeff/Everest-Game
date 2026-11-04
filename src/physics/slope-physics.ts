@@ -1,4 +1,4 @@
-import type { ClimberId, HazardGround, Json, Moment, Rule } from "../simulation";
+import type { ClimberId, HazardGround, Json, Legs, Moment, Rule } from "../simulation";
 import { Climber } from "./climber";
 import type { ClimberSave, ClimberView } from "./climber";
 import { Ladder } from "./ladder";
@@ -57,7 +57,7 @@ type SlopeSave = {
  * Its numbers are handed to it; the ground, the ropes, the ladders and the climbers are its
  * state, which a scenario starts and a save keeps.
  */
-export class SlopePhysics implements Rule, HazardGround {
+export class SlopePhysics implements Rule, HazardGround, Legs {
   /** Its key in scenarios and saves: never change it once saves exist. */
   static readonly NAME = "slope-physics";
 
@@ -106,6 +106,11 @@ export class SlopePhysics implements Rule, HazardGround {
   /** Whether a climber is clipped to a rope, by either cowstail. */
   clipped(id: ClimberId): boolean {
     return this.climberFor(id).ropes.length > 0;
+  }
+
+  /** Sets how far a climber's strides go from now on, as a share of the walking and ladder speeds. */
+  stride(id: ClimberId, share: number): void {
+    this.climberFor(id).setStride(share);
   }
 
   /** How far along the ground a climber is: their feet, or the ground nearest their body. */
