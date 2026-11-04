@@ -11,7 +11,20 @@
     <div id="slope"></div>
     <main>
       <header>
-        <p id="readouts"><span>06:42</span> <span>8,412 m</span> <span>180 bar</span></p>
+        <div id="readouts" aria-label="Expedition instruments">
+          <span class="readout">
+            <span class="readout-label">Mountain time</span>
+            <strong id="readout-clock">--:--</strong>
+          </span>
+          <span class="readout">
+            <span class="readout-label">Altitude</span>
+            <strong id="readout-altitude">-- m</strong>
+          </span>
+          <span class="readout readout--muted">
+            <span class="readout-label">O₂ bottle</span>
+            <strong id="readout-pressure">Not connected</strong>
+          </span>
+        </div>
         <p id="fps"></p>
       </header>
       <p id="hint-click"></p>
@@ -23,6 +36,35 @@
         <div class="view"><output></output></div>
         <div class="thumb"></div>
       </div>
+      <section
+        id="self-check"
+        role="dialog"
+        aria-modal="false"
+        aria-labelledby="self-check-title"
+        hidden
+      >
+        <div class="self-check__header">
+          <div>
+            <p class="eyebrow">Body status</p>
+            <h2 id="self-check-title">Self-check</h2>
+          </div>
+          <button type="button" aria-label="Close self-check">Close</button>
+        </div>
+        <dl>
+          <div>
+            <dt>Symptoms</dt>
+            <dd id="self-check-symptoms">No symptoms</dd>
+          </div>
+          <div>
+            <dt>Pulse oximeter</dt>
+            <dd id="self-check-oximeter">--%</dd>
+          </div>
+          <div>
+            <dt>Finger colour</dt>
+            <dd id="self-check-fingers">--</dd>
+          </div>
+        </dl>
+      </section>
       <div id="joystick" hidden>
         <div id="knob"></div>
       </div>

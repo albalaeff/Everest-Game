@@ -37,6 +37,7 @@ import { RoomServer } from "./room-server";
 import type { RoomTexts } from "./room-texts";
 import { SoloGame } from "./solo-game";
 import { StartMenu } from "./start-menu";
+import { ClimbInterface } from "./climb-interface";
 
 export interface PageTexts {
   readonly controls: ControlTexts;
@@ -181,6 +182,7 @@ export class GamePage {
     );
     const sink = new EverySink([climb.sink, new ZoomSink(zoom), received]);
     new ControlsPage(window, texts.controls, player, camera, sink);
+    const climbInterface = new ClimbInterface(window, rules.clock, rules.body, physics, player);
     const loop = new GameLoop(climb.played, scene);
     const button = new QualityButton(choice, texts.rendering, (quality) => {
       scene.setQuality(quality, window.devicePixelRatio);
@@ -197,10 +199,12 @@ export class GamePage {
     if (await scene.open(window)) {
       scene.eachFrame((seconds, now) => {
         loop.frame(seconds);
+        climbInterface.update();
         fps.frame(now);
       });
     } else {
       host.textContent = texts.rendering["no-webgl"];
+      climbInterface.update();
       this.runWithoutPicture(loop);
     }
   }
