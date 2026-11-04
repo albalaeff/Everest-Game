@@ -174,6 +174,81 @@ describe("SlopePhysics: slips and falls", () => {
   });
 });
 
+describe("SlopePhysics: as the hazards' ground", () => {
+  it("names its climbers in the layout's order, and says how far along the ground each is", () => {
+    const layout = TestMountain.FLAT.layout([
+      { id: "boris", along: 30 },
+      { id: "anna", along: 10 },
+    ]);
+    const climb = new Climb(TestMountain.CALM, layout);
+
+    climb.play(20, [walk("anna", "right")]);
+
+    expect(climb.physics.climbers).toEqual(["boris", "anna"]);
+    expect(climb.physics.along("boris")).toBe(30);
+    expect(climb.physics.along("anna")).toBeCloseTo(11, 9);
+  });
+
+  it("knocks a climber off their feet, down the slope: unclipped, they fall to its foot", () => {
+    const climb = new Climb(
+      TestMountain.CALM,
+      alone(TestMountain.SLOPE, TestMountain.upTheSlope(20)),
+    );
+
+    climb.physics.knock("anna", climb.expedition.step);
+    const knocked = climb.physics.climber("anna");
+    climb.play(400);
+    const anna = climb.physics.climber("anna");
+
+    expect(knocked.falling).toBe(true);
+    expect(anna.falling).toBe(false);
+    expect(anna.y).toBeCloseTo(0, 6);
+    expect(anna.falls).toHaveLength(1);
+    expect(anna.falls[0]?.step).toBe(0);
+    expect(climb.physics.along("anna")).toBeLessThan(TestMountain.upTheSlope(0));
+  });
+
+  it("knocks over a climber on flat ground too, at the knock's speed", () => {
+    const climb = new Climb(TestMountain.CALM, alone(TestMountain.FLAT, 50));
+
+    climb.physics.knock("anna", 0);
+    climb.play(100);
+    const anna = climb.physics.climber("anna");
+
+    expect(anna.falls).toHaveLength(1);
+    expect(anna.falls[0]?.speed).toBeCloseTo(TestMountain.SETTINGS.knock, 1);
+    expect(anna.x).toBeLessThan(50);
+  });
+
+  it("holds a knocked climber clipped to a rope at the anchor below", () => {
+    const layout = alone(TestMountain.SLOPE, TestMountain.upTheSlope(20), [FIXED]);
+    const climb = new Climb(TestMountain.CALM, layout);
+
+    climb.play(1, [clip("anna")]);
+    climb.physics.knock("anna", climb.expedition.step);
+    climb.play(400);
+    const anna = climb.physics.climber("anna");
+
+    expect(anna.falls).toHaveLength(1);
+    expect(distance(anna, LOWER)).toBeLessThanOrEqual(HELD_WITHIN + 0.01);
+  });
+
+  it("makes no second fall of a knock in a fall", () => {
+    const climb = new Climb(
+      TestMountain.CALM,
+      alone(TestMountain.SLOPE, TestMountain.upTheSlope(20)),
+    );
+
+    climb.physics.knock("anna", 0);
+    climb.play(5);
+    climb.physics.knock("anna", 5);
+    climb.play(400);
+
+    expect(climb.physics.climber("anna").falls).toHaveLength(1);
+    expect(climb.physics.climber("anna").falls[0]?.step).toBe(0);
+  });
+});
+
 describe("SlopePhysics: the layout", () => {
   it("lists its ropes and ladders in the layout's order, for the rendering to draw", () => {
     const layout = TestMountain.CREVASSE.layout(

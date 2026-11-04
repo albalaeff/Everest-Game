@@ -8,8 +8,8 @@ import type {
   SlopeLayout,
   SlopeSettings,
 } from "../physics";
-import { MountainClock } from "../simulation";
-import type { ClimberId, ClockStart, Scenario } from "../simulation";
+import { MountainClock, ObjectiveHazards } from "../simulation";
+import type { ClimberId, ClockStart, HazardStart, Scenario } from "../simulation";
 
 /** A point or a curve's point as the data file keeps it: two numbers. */
 type DataPair = readonly number[];
@@ -24,6 +24,7 @@ export interface StandInData {
     readonly slipChance: readonly DataPair[];
     readonly ladderSpeed: readonly DataPair[];
     readonly ladderSlipChance: readonly DataPair[];
+    readonly knock: number;
   };
   readonly layout: {
     readonly terrain: readonly DataPair[];
@@ -32,13 +33,22 @@ export interface StandInData {
     readonly ladders: readonly LadderLayout[];
     readonly climbers: readonly ClimberLayout[];
   };
+  readonly hazards: {
+    readonly weather: string;
+    readonly zones: readonly {
+      readonly id: string;
+      readonly kind: string;
+      readonly from: number;
+      readonly to: number;
+    }[];
+  };
   readonly clock: ClockStart;
 }
 
 /**
  * The stand-in section the page plays on until the Khumbu Icefall (#26) brings the real ground and
- * the knowledge base's numbers: its ground and numbers as the physics takes them, when its
- * expedition starts, and the scenario that starts on it.
+ * the knowledge base's numbers: its ground and numbers as the physics takes them, its hazards,
+ * when its expedition starts, and the scenario that starts on it.
  */
 export class StandInRoute {
   /** The player's climber in the stand-in layout. */
@@ -46,10 +56,12 @@ export class StandInRoute {
 
   readonly settings: SlopeSettings;
   readonly layout: SlopeLayout;
+  /** Its weather and the stretches of it under a hazard, which `ObjectiveHazards.start` checks. */
+  readonly hazards: HazardStart;
   readonly clock: ClockStart;
 
   constructor(data: StandInData = standIn) {
-    const { settings, layout, clock } = data;
+    const { settings, layout, hazards, clock } = data;
     this.settings = {
       gravity: settings.gravity,
       friction: settings.friction,
@@ -58,6 +70,7 @@ export class StandInRoute {
       slipChance: StandInRoute.pairs(settings.slipChance),
       ladderSpeed: StandInRoute.pairs(settings.ladderSpeed),
       ladderSlipChance: StandInRoute.pairs(settings.ladderSlipChance),
+      knock: settings.knock,
     };
     this.layout = {
       terrain: StandInRoute.pairs(layout.terrain),
@@ -66,6 +79,7 @@ export class StandInRoute {
       ladders: layout.ladders,
       climbers: layout.climbers,
     };
+    this.hazards = hazards as HazardStart;
     this.clock = clock;
   }
 
@@ -77,6 +91,7 @@ export class StandInRoute {
       climbers: this.layout.climbers.map((climber) => climber.id),
       start: {
         [MountainClock.NAME]: MountainClock.start(this.clock),
+        [ObjectiveHazards.NAME]: ObjectiveHazards.start(this.hazards),
         [SlopePhysics.NAME]: SlopePhysics.start(this.layout),
       },
     };

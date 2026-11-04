@@ -137,9 +137,9 @@ Tasks marked *Iteration 1–3* are planned into the board's first two-week itera
 - [ ] Done gate
 
 ### Task 16: Objective hazards: probability by time of day and weather ([#24](https://github.com/albalaeff/Everest-Game/issues/24)) · *Iteration 3*
-- [ ] Each hazard has a probability that depends on time of day and weather
-- [ ] Seracs, avalanches and crevasses on the Icefall; cornices come with the summit push
-- [ ] Done gate
+- [x] Each hazard has a probability that depends on time of day and weather
+- [x] Seracs, avalanches and crevasses on the Icefall; cornices come with the summit push (#24: the kinds and their numbers; the stand-in section has a serac, a hidden crevasse and an avalanche slope; the real Icefall's zones come with #26, the ridge's cornices with #35)
+- [x] Done gate
 
 ### Task 17: Interface v1: clock, altimeter, pressure gauge and self-check ([#25](https://github.com/albalaeff/Everest-Game/issues/25))
 - [ ] Clock, altimeter and bottle pressure gauge, in HTML over the canvas, on PC and phone screens

@@ -15,6 +15,7 @@
 - **A slip is a draw**, of `slipChance` per second scaled to the step, made only where that chance isn't zero: walking on flat ground draws nothing, and a change in where the physics draws changes every draw after it (simulation-core.md → The same result everywhere).
 - **A fall is a body** under Verlet integration in `Slope.SUBSTEPS` sub-steps a step, starting at the walking speed. The ground pushes it back out, and friction takes from its slide what Coulomb's law gives, so a gentle slope stops it and a steep one doesn't. In the air it loses no speed: a climber hanging on a rope swings until the ground stops them.
 - **A fall is over when the body lies still on the ground** for a whole step (`Slope.REST_SPEED`), and the climber stands where it lies. Its record (`Fall`: the step it began on, the drop and the top speed) stays in the climber's view, for the rules above to read.
+- **A hazard's knock is a fall too.** The physics is the objective hazards' ground (`HazardGround`, [simulation-core.md](simulation-core.md) → Objective hazards): `climbers` and `along(id)` say who's where along the ground, and `knock(id, step)` throws a climber on their feet down the section, toward its start, at `knock` metres a second. Their rope holds them as in any fall, and a climber already falling falls on.
 
 ## Ladders
 
@@ -35,7 +36,7 @@
 
 ## Numbers
 
-- **The mountain's numbers are handed in** through `SlopeSettings` (conventions.md → Data, not literals): gravity, friction, the cowstail's reach, and the speed and slip chance by steepness on the ground and on a ladder, as `[degrees, value]` points; and through the layout, the altitude of the section's ends. Their facts records, and the first real ground, come with the first section of the route, the Khumbu Icefall (#26); until then the speeds and slips are questions for the guide (`technique.speed-by-steepness`, `technique.slips-by-steepness`), and so are each section's hours and length (`time.section-hours`).
+- **The mountain's numbers are handed in** through `SlopeSettings` (conventions.md → Data, not literals): gravity, friction, the cowstail's reach, the speed and slip chance by steepness on the ground and on a ladder, as `[degrees, value]` points, and the speed of a hazard's knock; and through the layout, the altitude of the section's ends. Their facts records, and the first real ground, come with the first section of the route, the Khumbu Icefall (#26); until then the speeds and slips are questions for the guide (`technique.speed-by-steepness`, `technique.slips-by-steepness`), and so are each section's hours and length (`time.section-hours`).
 - **The engine's numbers are in the code**, as the core's step is: `Slope.SUBSTEPS`, `Slope.ITERATIONS`, `Slope.REST_SPEED` and `Rope.LINK_METRES`. No source states them; they're how finely the physics works the mountain out.
 - **Steepness is a sine** (`Steepness`): `ofWay` divides, and `ofDegrees` sums a series of its own, since `Math.sin` rounds differently in each browser. A `SteepnessCurve` interpolates over the sine and holds its end values past its ends.
 
@@ -45,6 +46,6 @@ The physics uses the core's maths alone, and imports only itself and the core. `
 
 ## Tests
 
-The tests play the physics through `Expedition` (`testing/climb.ts`), on the made-up numbers and ground of `testing/test-mountain.ts`: no game code imports either. A test mountain is drawn at life size from `TestMountain.FOOT` unless the test says otherwise. `Climb.under` goes on from a save on other numbers, a gust that makes every step a slip, say. The stories: `slope.story.test.ts`, two friends on a steep fixed rope, one of them careless; and `fixed-ropes.story.test.ts`, two Sherpas on a ladder over a crevasse, one unclipped, and two clients going up a line of fixed ropes on the jumar, one careless at the anchor.
+The tests play the physics through `Expedition` (`testing/climb.ts`), on the made-up numbers and ground of `testing/test-mountain.ts`: no game code imports either. A test mountain is drawn at life size from `TestMountain.FOOT` unless the test says otherwise. `Climb.under` goes on from a save on other numbers, a gust that makes every step a slip, say. The stories: `slope.story.test.ts`, two friends on a steep fixed rope, one of them careless; and `fixed-ropes.story.test.ts`, two Sherpas on a ladder over a crevasse, one unclipped, and two clients going up a line of fixed ropes on the jumar, one careless at the anchor; and `hazards.story.test.ts`, two climbers under a serac in the afternoon, one clipped, and crossing under it before dawn against the afternoon.
 
 Still to come: climbing a rope where there's no ground (up a wall, out of a crevasse), the pace (#22) and the ice axe and crampons (#55). The rendering draws what the physics shows ([rendering.md](rendering.md)).

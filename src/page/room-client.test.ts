@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 
+import hazards from "../../content/facts/hazards.json";
 import time from "../../content/facts/time.json";
 import { KnowledgeBase } from "../content/knowledge-base";
 import { Mountain } from "../content/mountain";
@@ -18,7 +19,7 @@ const URL = "ws://localhost:8787/rooms/K7PX3";
 const TOKEN = "anna-token";
 const VERSION = "f06f24b";
 const HELLO: Hello = { type: "hello", token: TOKEN, version: VERSION };
-const mountain = new Mountain(new KnowledgeBase([time]));
+const mountain = new Mountain(new KnowledgeBase([time, hazards]));
 
 /** A socket as a test drives it: what the client sent, and what the room would. */
 class FakeSocket implements ClientSocket {

@@ -34,6 +34,8 @@ export interface SlopeSettings {
   readonly ladderSpeed: readonly SteepnessPoint[];
   /** The chance a climber on a ladder slips, per second, by its steepness the way they go. */
   readonly ladderSlipChance: readonly SteepnessPoint[];
+  /** How fast a hazard that goes throws a climber down the slope, in m/s. */
+  readonly knock: number;
 }
 
 /**

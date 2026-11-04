@@ -354,6 +354,19 @@ export class Climber {
     }
   }
 
+  /** Off their feet, thrown down the section, toward its start, at the knock's speed: what a
+   * hazard does when it goes. One already falling falls on. */
+  knock(slope: Slope, step: number): void {
+    if (this.falling === null) {
+      this.fall(slope, slope.terrain.ahead(this.along, -1), slope.settings.knock, step);
+    }
+  }
+
+  /** How far along the ground they are: their feet, or the ground nearest their body. */
+  alongNow(slope: Slope): number {
+    return slope.terrain.nearest(this.where(slope)).along;
+  }
+
   /** The ropes their cowstails are clipped to. */
   get ropes(): readonly Rope[] {
     return this.carabiners.map(({ rope }) => rope);

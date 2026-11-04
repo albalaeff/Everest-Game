@@ -27,6 +27,15 @@ The game's rules are classes behind the `Rule` interface: `load`, `save` and `ad
 
 `src/simulation/testing/test-slope.ts` is a small rule that stands in for the real ones in the core's tests, which import nothing above the core. It's no game code, and its numbers are made up.
 
+## Objective hazards
+
+`ObjectiveHazards` (`objective-hazards.ts`) is the spec's seracs, avalanches, crevasses and cornices: they can't be beaten, only avoided by spending less time under them (spec.md → Simulation systems).
+
+- **A zone is a stretch of the ground** under a hazard, in metres along it, which the scenario lays with its section, beside the weather. Until the weather (#39) comes, the scenario sets that weather: `clear`, `cloud`, `snow` or `wind`.
+- **Each step someone is in a zone, it may go**, at `HazardChance`: the kind's rate an hour in the cold of the night, raised by the day's warmth (a line up from `warmth.from` to `warmth.peak` and down to `warmth.until`, times the share of the sun the weather lets through), and by snow or wind. The hour is the `MountainClock`'s, and the chance a step is the rate times `MountainClock.secondsAStep`. A zone nobody is in draws nothing.
+- **A zone that goes knocks everyone in it** off their feet through its ground, a `HazardGround`: the slope physics in the game ([slope-physics.md](slope-physics.md) → Walking and falls), which the core can't import. Each `Strike` is kept, for the debrief. Injury and death come with the body model.
+- **In the rules' order** it comes after the clock, which it reads, and before the physics, so a knock falls in the same step (`Mountain.rules`). Its numbers are the knowledge base's `hazards.*` coefficients.
+
 ## Scenarios, saves and replays
 
 - **A scenario** is a seed, the climbers and each rule's start state, in the form of that rule's save. Conditions set in advance, such as harsh weather, are in the start state, and hold on every seed.

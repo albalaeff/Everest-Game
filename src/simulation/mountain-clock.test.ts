@@ -63,6 +63,11 @@ describe("MountainClock", () => {
     expect(clock.elapsed).toBe(90);
   });
 
+  it("says how much of the mountain's time a step takes, for the rules that run by it", () => {
+    expect(aClock().secondsAStep).toBe(COMPRESSION / SimulationClock.STEPS_PER_SECOND);
+    expect(aClock(START, 1).secondsAStep).toBe(SimulationClock.STEP_SECONDS);
+  });
+
   it("doesn't drift over a whole expedition: it counts steps and doesn't add up fractions", () => {
     const tenHours = 10 * HOUR;
     const clock = new MountainClock(COMPRESSION);

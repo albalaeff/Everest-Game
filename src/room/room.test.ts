@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 
+import hazards from "../../content/facts/hazards.json";
 import time from "../../content/facts/time.json";
 import { KnowledgeBase } from "../content/knowledge-base";
 import { Mountain } from "../content/mountain";
@@ -10,7 +11,7 @@ import type { Socket } from "./room";
 import { FakeSocket } from "./testing/fakes";
 
 const VERSION = "f06f24b";
-const mountain = new Mountain(new KnowledgeBase([time]));
+const mountain = new Mountain(new KnowledgeBase([time, hazards]));
 
 function aRoom(): { room: Room; rules: ExpeditionRules } {
   const rules = mountain.rules();

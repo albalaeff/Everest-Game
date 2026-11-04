@@ -1,4 +1,4 @@
-import type { ClimberId, Json, Moment, Rule } from "../simulation";
+import type { ClimberId, HazardGround, Json, Moment, Rule } from "../simulation";
 import { Climber } from "./climber";
 import type { ClimberSave, ClimberView } from "./climber";
 import { Ladder } from "./ladder";
@@ -52,17 +52,18 @@ type SlopeSave = {
  * The slope physics, as a rule of the core run inside its step (docs/conventions/slope-physics.md):
  * climbers walk over the ground and cross on ladders, a slip where friction can't hold them
  * becomes a fall, and a fixed rope holds a climber clipped to it, on the carabiner or the jumar.
+ * It's the ground the objective hazards look at, and the knocks they give are falls here.
  * Its numbers are handed to it; the ground, the ropes, the ladders and the climbers are its
  * state, which a scenario starts and a save keeps.
  */
-export class SlopePhysics implements Rule {
+export class SlopePhysics implements Rule, HazardGround {
   /** Its key in scenarios and saves: never change it once saves exist. */
   static readonly NAME = "slope-physics";
 
   readonly name = SlopePhysics.NAME;
 
   private slope: Slope | null = null;
-  private readonly climbers = new Map<ClimberId, Climber>();
+  private readonly onSlope = new Map<ClimberId, Climber>();
 
   constructor(private readonly settings: SlopeSettings) {}
 
@@ -94,6 +95,22 @@ export class SlopePhysics implements Rule {
   /** What a climber is doing, for the rendering and the rules above. */
   climber(id: ClimberId): ClimberView {
     return this.climberFor(id).view(this.loaded);
+  }
+
+  /** Every climber on the slope, in the layout's order: the hazards' ground. */
+  get climbers(): readonly ClimberId[] {
+    return [...this.onSlope.keys()];
+  }
+
+  /** How far along the ground a climber is: their feet, or the ground nearest their body. */
+  along(id: ClimberId): number {
+    return this.climberFor(id).alongNow(this.loaded);
+  }
+
+  /** Knocks a climber off their feet, down the slope, on `step`: what a hazard does when it goes.
+   * A clipped climber's rope holds them, as in any fall; one already falling falls on. */
+  knock(id: ClimberId, step: number): void {
+    this.climberFor(id).knock(this.loaded, step);
   }
 
   /** Where a rope lies: its anchors and every point between. */
@@ -133,9 +150,9 @@ export class SlopePhysics implements Rule {
       new Map(ladders),
     );
     this.slope = slope;
-    this.climbers.clear();
+    this.onSlope.clear();
     for (const climber of save.climbers) {
-      this.climbers.set(climber.id, Climber.load(climber, slope));
+      this.onSlope.set(climber.id, Climber.load(climber, slope));
     }
   }
 
@@ -146,7 +163,7 @@ export class SlopePhysics implements Rule {
       altitude: scale.altitude,
       ropes: [...ropes.values()].map((rope) => rope.save()),
       ladders: [...ladders.values()].map((ladder) => ladder.save()),
-      climbers: [...this.climbers.values()].map((climber) => climber.save()),
+      climbers: [...this.onSlope.values()].map((climber) => climber.save()),
     };
     return save;
   }
@@ -156,7 +173,7 @@ export class SlopePhysics implements Rule {
     for (const action of moment.actions) {
       this.climberFor(action.climber).hear(action, slope);
     }
-    slope.advance([...this.climbers.values()], moment);
+    slope.advance([...this.onSlope.values()], moment);
   }
 
   private get loaded(): Slope {
@@ -167,7 +184,7 @@ export class SlopePhysics implements Rule {
   }
 
   private climberFor(id: ClimberId): Climber {
-    const climber = this.climbers.get(id);
+    const climber = this.onSlope.get(id);
     if (climber === undefined) {
       throw new RangeError(`${id} isn't on the slope`);
     }

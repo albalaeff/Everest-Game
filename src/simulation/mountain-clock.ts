@@ -63,6 +63,11 @@ export class MountainClock implements Rule {
     return (this.steps * this.compression) / SimulationClock.STEPS_PER_SECOND + this.skipped;
   }
 
+  /** The mountain's seconds a step of play takes, at the ratio: what camp skips aside. */
+  get secondsAStep(): number {
+    return this.compression * SimulationClock.STEP_SECONDS;
+  }
+
   /** Days since the start date: 0 on it, 1 the next day. */
   get day(): number {
     return Math.floor(this.sinceMidnight / MountainClock.SECONDS_A_DAY);

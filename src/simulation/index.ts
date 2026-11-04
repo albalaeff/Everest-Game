@@ -23,6 +23,17 @@ export type { ActionSource } from "./headless-runner";
 export type { Json } from "./json";
 export { MountainClock } from "./mountain-clock";
 export type { ClockStart } from "./mountain-clock";
+export { HazardChance, ObjectiveHazards } from "./objective-hazards";
+export type {
+  HazardGround,
+  HazardKind,
+  HazardOdds,
+  HazardSettings,
+  HazardStart,
+  HazardWeather,
+  HazardZone,
+  Strike,
+} from "./objective-hazards";
 export type { Moment, Rule, RuleStates } from "./rule";
 export type { Scenario } from "./scenario";
 export { SeededRandom } from "./seeded-random";
