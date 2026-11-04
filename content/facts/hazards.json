@@ -52,6 +52,26 @@
       "fitted": "2026-11-04"
     },
     {
+      "id": "hazards.serac-deadly",
+      "kind": "coefficient",
+      "claim": "The chance falling ice kills outright a climber it catches who isn't clipped to a rope. Fitted to the Icefall's collapses, which killed most of those under the ice.",
+      "status": "source only",
+      "value": 0.6,
+      "unit": "1",
+      "fitted_to": ["route.icefall-hazards", "route.icefall-lessons"],
+      "fitted": "2026-11-04"
+    },
+    {
+      "id": "hazards.serac-deadly-clipped",
+      "kind": "coefficient",
+      "claim": "The chance falling ice kills outright a climber it catches who is clipped to a rope: a little less, since the rope holds them in the fall but not under the ice.",
+      "status": "source only",
+      "value": 0.5,
+      "unit": "1",
+      "fitted_to": ["route.icefall-hazards"],
+      "fitted": "2026-11-04"
+    },
+    {
       "id": "hazards.avalanche-rate",
       "kind": "coefficient",
       "claim": "How many times an hour an avalanche comes down on a climber under its slope, in the cold of the night and in clear weather. Fitted so that it's rarer than falling ice in clear weather, and that the time spent under the slope is what counts.",
@@ -98,6 +118,26 @@
       "status": "source only",
       "value": 30,
       "unit": "s",
+      "fitted_to": ["route.icefall-hazards"],
+      "fitted": "2026-11-04"
+    },
+    {
+      "id": "hazards.avalanche-deadly",
+      "kind": "coefficient",
+      "claim": "The chance an avalanche kills outright a climber it catches who isn't clipped to a rope, buried or swept away: a big one leaves no chance.",
+      "status": "source only",
+      "value": 0.4,
+      "unit": "1",
+      "fitted_to": ["route.icefall-hazards"],
+      "fitted": "2026-11-04"
+    },
+    {
+      "id": "hazards.avalanche-deadly-clipped",
+      "kind": "coefficient",
+      "claim": "The chance an avalanche kills outright a climber it catches who is clipped to a rope: the rope keeps them from being swept away, not from burial.",
+      "status": "source only",
+      "value": 0.3,
+      "unit": "1",
       "fitted_to": ["route.icefall-hazards"],
       "fitted": "2026-11-04"
     },
@@ -156,6 +196,26 @@
       "fitted": "2026-11-04"
     },
     {
+      "id": "hazards.crevasse-deadly",
+      "kind": "coefficient",
+      "claim": "The chance a climber who isn't clipped to a rope dies when a snow bridge gives way under them, falling into the crevasse.",
+      "status": "source only",
+      "value": 0.5,
+      "unit": "1",
+      "fitted_to": ["route.icefall-hazards", "route.western-cwm-hazards"],
+      "fitted": "2026-11-04"
+    },
+    {
+      "id": "hazards.crevasse-deadly-clipped",
+      "kind": "coefficient",
+      "claim": "The chance a climber clipped to a rope dies when a snow bridge gives way under them: none, since the rope holds them, as it would have held the Sherpa who fell from a ladder in 2012.",
+      "status": "source only",
+      "value": 0,
+      "unit": "1",
+      "fitted_to": ["route.icefall-hazards", "route.icefall-lessons"],
+      "fitted": "2026-11-04"
+    },
+    {
       "id": "hazards.cornice-rate",
       "kind": "coefficient",
       "claim": "How many times an hour a cornice on the summit ridge breaks under a climber on it, in the cold of the night and in clear weather. Fitted so that a break is rare, and the time spent on the corniced ridge, in a queue above all, is what counts.",
@@ -202,6 +262,26 @@
       "status": "source only",
       "value": 0,
       "unit": "s",
+      "fitted_to": ["route.hillary-step-today"],
+      "fitted": "2026-11-04"
+    },
+    {
+      "id": "hazards.cornice-deadly",
+      "kind": "coefficient",
+      "claim": "The chance a climber who isn't clipped to a rope dies when a cornice breaks under them, a fall down the Kangshung Face.",
+      "status": "source only",
+      "value": 0.9,
+      "unit": "1",
+      "fitted_to": ["route.hillary-step-today", "route.summit-push-hazards"],
+      "fitted": "2026-11-04"
+    },
+    {
+      "id": "hazards.cornice-deadly-clipped",
+      "kind": "coefficient",
+      "claim": "The chance a climber clipped to the fixed rope dies when a cornice breaks under them. Fitted to the 2024 collapse, where the rope held several of those who fell.",
+      "status": "source only",
+      "value": 0.05,
+      "unit": "1",
       "fitted_to": ["route.hillary-step-today"],
       "fitted": "2026-11-04"
     },
@@ -293,14 +373,22 @@
     {
       "id": "hazards.caught",
       "kind": "question",
-      "question": "What happens to a climber caught by falling ice, an avalanche, or a breaking snow bridge or cornice, while clipped to the fixed rope? Does the rope hold them, as it held several climbers in the 2024 cornice collapse, and how badly are they hurt? How much warning does each give, and what should a climber do with it? The game knocks them off their feet, spares whoever got clear in the warning, and their rope holds them if they're clipped.",
+      "question": "What happens to a climber caught by falling ice, an avalanche, or a breaking snow bridge or cornice, while clipped to the fixed rope? Does the rope hold them, as it held several climbers in the 2024 cornice collapse, and how badly are they hurt? How many of those caught die, on a rope and off it? How much warning does each give, and what should a climber do with it? The game spares whoever got clear in the warning, kills some of those caught at each kind's odds, and knocks the rest off their feet, held by their rope if they're clipped.",
       "about": [
         "route.icefall-hazards",
         "route.hillary-step-today",
         "hazards.serac-warning",
         "hazards.avalanche-warning",
         "hazards.crevasse-warning",
-        "hazards.cornice-warning"
+        "hazards.cornice-warning",
+        "hazards.serac-deadly",
+        "hazards.serac-deadly-clipped",
+        "hazards.avalanche-deadly",
+        "hazards.avalanche-deadly-clipped",
+        "hazards.crevasse-deadly",
+        "hazards.crevasse-deadly-clipped",
+        "hazards.cornice-deadly",
+        "hazards.cornice-deadly-clipped"
       ]
     }
   ]

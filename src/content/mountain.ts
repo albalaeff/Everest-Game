@@ -44,7 +44,8 @@ export class Mountain {
   }
 
   /** The hazards' numbers, from their records in content/facts/hazards.json: each kind's
-   * `hazards.<kind>-rate`, `-warmth`, `-snow`, `-wind` and `-warning`, and the day's warmth. */
+   * `hazards.<kind>-rate`, `-warmth`, `-snow`, `-wind`, `-warning`, `-deadly` and
+   * `-deadly-clipped`, and the day's warmth. */
   hazardSettings(): HazardSettings {
     const number = (name: string) => this.knowledge.number(`hazards.${name}`);
     const odds = (kind: HazardKind): HazardOdds => ({
@@ -53,6 +54,8 @@ export class Mountain {
       snow: number(`${kind}-snow`),
       wind: number(`${kind}-wind`),
       warning: number(`${kind}-warning`),
+      deadly: number(`${kind}-deadly`),
+      deadlyClipped: number(`${kind}-deadly-clipped`),
     });
     return {
       kinds: {

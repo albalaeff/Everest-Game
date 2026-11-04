@@ -233,6 +233,49 @@ describe("SlopePhysics: as the hazards' ground", () => {
     expect(distance(anna, LOWER)).toBeLessThanOrEqual(HELD_WITHIN + 0.01);
   });
 
+  it("says who is clipped to a rope", () => {
+    const layout = alone(TestMountain.SLOPE, TestMountain.upTheSlope(20), [FIXED]);
+    const climb = new Climb(TestMountain.CALM, layout);
+    const before = climb.physics.clipped("anna");
+
+    climb.play(1, [clip("anna")]);
+
+    expect(before).toBe(false);
+    expect(climb.physics.clipped("anna")).toBe(true);
+  });
+
+  it("kills a climber: they fall, lie where they come to rest, and do nothing more", () => {
+    const layout = TestMountain.SLOPE.layout([
+      { id: "anna", along: TestMountain.upTheSlope(20) },
+      { id: "boris", along: 10 },
+    ]);
+    const climb = new Climb(TestMountain.CALM, layout);
+
+    climb.physics.kill("anna", 0);
+    climb.play(400);
+    const lying = climb.physics.climber("anna");
+    climb.play(100, [walk("anna", "right")]);
+
+    expect(lying).toMatchObject({ dead: true, falling: false });
+    expect(lying.falls).toHaveLength(1);
+    expect(climb.physics.climber("anna")).toEqual(lying);
+    expect(climb.physics.climbers).toEqual(["boris"]);
+    expect(climb.physics.climber("boris").dead).toBe(false);
+  });
+
+  it("keeps the dead dead from a save", () => {
+    const climb = new Climb(TestMountain.CALM, alone(TestMountain.FLAT, 50));
+    climb.physics.kill("anna", 0);
+    climb.play(10);
+
+    const resumed = new Climb(TestMountain.CALM, climb.expedition.save());
+    resumed.play(100, [walk("anna", "right")]);
+
+    expect(resumed.physics.climber("anna").dead).toBe(true);
+    expect(resumed.physics.climber("anna").x).toBeLessThan(50);
+    expect(resumed.physics.climbers).toEqual([]);
+  });
+
   it("makes no second fall of a knock in a fall", () => {
     const climb = new Climb(
       TestMountain.CALM,

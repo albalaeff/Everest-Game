@@ -25,6 +25,8 @@ export interface ClimberView {
   readonly altitude: number;
   /** Off their feet: sliding, in the air, or hanging on a rope. */
   readonly falling: boolean;
+  /** Killed: they lie where they came to rest, and do nothing more. */
+  readonly dead: boolean;
   readonly walking: Walk["direction"];
   /** The rope each cowstail is clipped to, or none: the first's is the jumar's. */
   readonly first: string | null;
@@ -61,6 +63,7 @@ export type ClimberSave = {
   readonly second: CarabinerSave | null;
   readonly falling: FallingSave | null;
   readonly falls: readonly Fall[];
+  readonly dead: boolean;
 };
 
 /** A cowstail's carabiner, or its jumar, on a rope: it runs along it, or grips it where it is. */
@@ -211,11 +214,12 @@ export class Climber {
     private second: Carabiner | null,
     private falling: Falling | null,
     private readonly falls: Fall[],
+    private killed: boolean,
   ) {}
 
   /** A climber standing at `along`, still, clipped to nothing. */
   static standing(id: ClimberId, along: number): Climber {
-    return new Climber(id, along, null, "stop", false, null, null, null, []);
+    return new Climber(id, along, null, "stop", false, null, null, null, [], false);
   }
 
   static load(save: ClimberSave, slope: Slope): Climber {
@@ -231,6 +235,7 @@ export class Climber {
       carabiner(save.second),
       save.falling === null ? null : Falling.load(save.falling),
       [...save.falls],
+      save.dead,
     );
   }
 
@@ -245,7 +250,12 @@ export class Climber {
       second: this.second?.save() ?? null,
       falling: this.falling?.save() ?? null,
       falls: [...this.falls],
+      dead: this.killed,
     };
+  }
+
+  get dead(): boolean {
+    return this.killed;
   }
 
   view(slope: Slope): ClimberView {
@@ -255,6 +265,7 @@ export class Climber {
       y: where.y,
       altitude: slope.scale.altitudeAt(where),
       falling: this.falling !== null,
+      dead: this.killed,
       walking: this.walking,
       first: this.first?.rope.id ?? null,
       second: this.second?.rope.id ?? null,
@@ -264,8 +275,11 @@ export class Climber {
   }
 
   /** Takes an action of theirs: the walking, the cowstails and the jumar are the physics', the
-   * rest isn't. */
+   * rest isn't. The dead take none. */
   hear(action: GameAction, slope: Slope): void {
+    if (this.killed) {
+      return;
+    }
     if (action.kind === "walk") {
       this.walking = action.direction;
     }
@@ -295,7 +309,7 @@ export class Climber {
    * one, and along the ground otherwise. Each goes as far as their ropes let them, and may slip.
    */
   walk(slope: Slope, moment: Moment): void {
-    if (this.falling !== null) {
+    if (this.falling !== null || this.killed) {
       return;
     }
     const onLadder = this.onLadder ?? this.ladderAhead(slope);
@@ -372,6 +386,13 @@ export class Climber {
     if (this.falling === null) {
       this.fall(slope, slope.terrain.ahead(this.along, -1), slope.settings.knock, step);
     }
+  }
+
+  /** Killed by a hazard: knocked down as by `knock`, and they never get up. */
+  kill(slope: Slope, step: number): void {
+    this.knock(slope, step);
+    this.killed = true;
+    this.walking = "stop";
   }
 
   /** How far along the ground they are: their feet, or the ground nearest their body. */

@@ -22,6 +22,10 @@ export interface HazardOdds {
   /** How many of the mountain's seconds pass between the first sign of it going, a crack or a
    * roar, and its coming down: whoever gets clear in time is spared. 0 is no warning. */
   readonly warning: number;
+  /** The chance it kills outright a climber it catches who isn't clipped to a rope. */
+  readonly deadly: number;
+  /** The same for one clipped to a rope, which holds them in the fall but not under ice. */
+  readonly deadlyClipped: number;
 }
 
 /** The hazards' numbers (docs/conventions.md → Data, not literals). */
@@ -49,15 +53,16 @@ export interface HazardStart {
   readonly zones: readonly HazardZone[];
 }
 
-/** A zone that's going: it comes down on the step `comes`. */
+/** A zone that's going: it began to on the step `began`, and comes down on the step `comes`. */
 export type Warning = {
   readonly zone: string;
   readonly kind: HazardKind;
+  readonly began: number;
   readonly comes: number;
 };
 
-/** A zone that came down: when, on the mountain's clock too, and who was under it then, if
- * anyone. */
+/** A zone that came down: when, on the mountain's clock too, who was under it then, if anyone,
+ * and who of them it killed. */
 export type Strike = {
   readonly zone: string;
   readonly kind: HazardKind;
@@ -65,20 +70,25 @@ export type Strike = {
   /** The mountain's seconds since midnight. */
   readonly timeOfDay: number;
   readonly climbers: readonly ClimberId[];
+  readonly killed: readonly ClimberId[];
 };
 
 /**
- * The ground as the hazards see it: who's on it, where along it, and a way to knock them off
- * their feet. The slope physics is it in the game; the core can't import the physics, so it
- * knows only this (docs/conventions.md → Modules).
+ * The ground as the hazards see it: who's on it, where along it, whether they're on a rope, and
+ * a way to knock them off their feet or kill them. The slope physics is it in the game; the core
+ * can't import the physics, so it knows only this (docs/conventions.md → Modules).
  */
 export interface HazardGround {
-  /** Every climber on the ground, in the scenario's order. */
+  /** Every living climber on the ground, in the scenario's order. */
   readonly climbers: readonly ClimberId[];
   /** How far along the ground a climber is, in metres: their feet, or their body in a fall. */
   along(climber: ClimberId): number;
+  /** Whether a climber is clipped to a rope. */
+  clipped(climber: ClimberId): boolean;
   /** Knocks a climber off their feet on this step: a fall, which their rope holds if clipped. */
   knock(climber: ClimberId, step: number): void;
+  /** Kills a climber on this step: they fall, and never get up. */
+  kill(climber: ClimberId, step: number): void;
 }
 
 /** The hazards' whole state, as saves keep it. */
@@ -134,6 +144,12 @@ export class HazardChance {
     return (this.perHour(kind, timeOfDay, weather) * seconds) / HazardChance.HOUR;
   }
 
+  /** The chance `kind` kills a climber it catches, clipped to a rope or not. */
+  deadly(kind: HazardKind, clipped: boolean): number {
+    const odds = this.settings.kinds[kind];
+    return clipped ? odds.deadlyClipped : odds.deadly;
+  }
+
   /** How many steps of `seconds` each `kind` warns for before it comes down: 0 for none. */
   warningSteps(kind: HazardKind, seconds: number): number {
     return Math.ceil(this.settings.kinds[kind].warning / seconds);
@@ -161,8 +177,9 @@ export class HazardChance {
  * crevasses and cornices, which can't be beaten, only avoided by spending less time under them.
  * Each step someone is in a zone, it may go, at the `HazardChance` of the mountain's hour and the
  * weather. A serac or an avalanche warns first, a crack or a roar, for its kind's `warning`; then
- * it comes down and knocks everyone still in it off their feet, so whoever gets clear is spared.
- * A snow bridge or a cornice gives way at once. A zone nobody is in draws nothing, so a quick
+ * it comes down and knocks everyone still in it off their feet, so whoever gets clear is spared,
+ * and kills some outright, at its kind's odds for those on a rope and those off it. A snow
+ * bridge or a cornice gives way at once. A zone nobody is in draws nothing, so a quick
  * crossing is a safer one, and a section with no zones draws as before.
  */
 export class ObjectiveHazards implements Rule {
@@ -257,7 +274,7 @@ export class ObjectiveHazards implements Rule {
       const warning = this.loaded.warnings.find((going) => going.zone === zone.id);
       if (warning !== undefined) {
         if (step >= warning.comes) {
-          this.comeDown(zone, step, timeOfDay);
+          this.comeDown(zone, moment, timeOfDay);
         }
         continue;
       }
@@ -267,9 +284,14 @@ export class ObjectiveHazards implements Rule {
       if (moment.random.chance(this.chance.within(secondsAStep, zone.kind, timeOfDay, weather))) {
         const steps = this.chance.warningSteps(zone.kind, secondsAStep);
         if (steps === 0) {
-          this.comeDown(zone, step, timeOfDay);
+          this.comeDown(zone, moment, timeOfDay);
         } else {
-          const going: Warning = { zone: zone.id, kind: zone.kind, comes: step + steps };
+          const going: Warning = {
+            zone: zone.id,
+            kind: zone.kind,
+            began: step,
+            comes: step + steps,
+          };
           this.state = { ...this.loaded, warnings: [...this.loaded.warnings, going] };
         }
       }
@@ -287,13 +309,29 @@ export class ObjectiveHazards implements Rule {
     );
   }
 
-  /** The zone comes down on whoever is in it now, and stops warning. */
-  private comeDown(zone: HazardZone, step: number, timeOfDay: number): void {
+  /** The zone comes down on whoever is in it now, and stops warning. Each it catches is killed
+   * at its odds, drawn only where they aren't nought, or knocked off their feet. */
+  private comeDown(zone: HazardZone, moment: Moment, timeOfDay: number): void {
+    const { step, random } = moment;
     const under = this.under(zone);
+    const killed: ClimberId[] = [];
     for (const climber of under) {
-      this.ground.knock(climber, step);
+      const deadly = this.chance.deadly(zone.kind, this.ground.clipped(climber));
+      if (deadly > 0 && random.chance(deadly)) {
+        killed.push(climber);
+        this.ground.kill(climber, step);
+      } else {
+        this.ground.knock(climber, step);
+      }
     }
-    const strike: Strike = { zone: zone.id, kind: zone.kind, step, timeOfDay, climbers: under };
+    const strike: Strike = {
+      zone: zone.id,
+      kind: zone.kind,
+      step,
+      timeOfDay,
+      climbers: under,
+      killed,
+    };
     const { warnings, strikes } = this.loaded;
     this.state = {
       ...this.loaded,

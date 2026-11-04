@@ -18,7 +18,15 @@ const { walk, clip, distance } = Climb;
 /** The story's own numbers, not the game's: a mountain hour in six minutes of play, and a serac
  * that goes about once in half an hour under it before dawn, five times as often at 14:00. */
 const COMPRESSION = 10;
-const SERAC_ODDS = { rate: 2, warmth: 5, snow: 1, wind: 1, warning: 0 };
+const SERAC_ODDS = {
+  rate: 2,
+  warmth: 5,
+  snow: 1,
+  wind: 1,
+  warning: 0,
+  deadly: 0,
+  deadlyClipped: 0,
+};
 const SETTINGS: HazardSettings = {
   kinds: {
     serac: SERAC_ODDS,

@@ -52,7 +52,8 @@ type SlopeSave = {
  * The slope physics, as a rule of the core run inside its step (docs/conventions/slope-physics.md):
  * climbers walk over the ground and cross on ladders, a slip where friction can't hold them
  * becomes a fall, and a fixed rope holds a climber clipped to it, on the carabiner or the jumar.
- * It's the ground the objective hazards look at, and the knocks they give are falls here.
+ * It's the ground the objective hazards look at, and the knocks they give are falls here; a
+ * climber they kill falls and lies still.
  * Its numbers are handed to it; the ground, the ropes, the ladders and the climbers are its
  * state, which a scenario starts and a save keeps.
  */
@@ -97,9 +98,14 @@ export class SlopePhysics implements Rule, HazardGround {
     return this.climberFor(id).view(this.loaded);
   }
 
-  /** Every climber on the slope, in the layout's order: the hazards' ground. */
+  /** Every living climber on the slope, in the layout's order: the hazards' ground. */
   get climbers(): readonly ClimberId[] {
-    return [...this.onSlope.keys()];
+    return [...this.onSlope.values()].filter((climber) => !climber.dead).map(({ id }) => id);
+  }
+
+  /** Whether a climber is clipped to a rope, by either cowstail. */
+  clipped(id: ClimberId): boolean {
+    return this.climberFor(id).ropes.length > 0;
   }
 
   /** How far along the ground a climber is: their feet, or the ground nearest their body. */
@@ -111,6 +117,12 @@ export class SlopePhysics implements Rule, HazardGround {
    * A clipped climber's rope holds them, as in any fall; one already falling falls on. */
   knock(id: ClimberId, step: number): void {
     this.climberFor(id).knock(this.loaded, step);
+  }
+
+  /** Kills a climber on `step`: knocked down as by `knock`, they lie where they come to rest
+   * and take no more actions. */
+  kill(id: ClimberId, step: number): void {
+    this.climberFor(id).kill(this.loaded, step);
   }
 
   /** Where a rope lies: its anchors and every point between. */

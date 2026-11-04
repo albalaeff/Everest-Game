@@ -11,12 +11,14 @@ import { TestGround } from "./testing/test-ground";
  * of 10 a step is half a mountain second, so 72 strikes an hour is a chance of 1 in 100 a step. */
 const COMPRESSION = 10;
 const HOUR = 3600;
+/** Nobody it catches dies: the tests of who's caught leave death to the tests of death. */
+const HARMLESS = { deadly: 0, deadlyClipped: 0 };
 const SETTINGS: HazardSettings = {
   kinds: {
-    serac: { rate: 72, warmth: 5, snow: 1, wind: 1, warning: 5 },
-    avalanche: { rate: 72, warmth: 2, snow: 4, wind: 2, warning: 10 },
-    crevasse: { rate: 72, warmth: 3, snow: 2, wind: 1, warning: 0 },
-    cornice: { rate: 72, warmth: 2, snow: 3, wind: 4, warning: 0 },
+    serac: { rate: 72, warmth: 5, snow: 1, wind: 1, warning: 5, ...HARMLESS },
+    avalanche: { rate: 72, warmth: 2, snow: 4, wind: 2, warning: 10, ...HARMLESS },
+    crevasse: { rate: 72, warmth: 3, snow: 2, wind: 1, warning: 0, ...HARMLESS },
+    cornice: { rate: 72, warmth: 2, snow: 3, wind: 4, warning: 0, ...HARMLESS },
   },
   warmth: { from: 6, peak: 14, until: 20 },
   sun: { cloud: 0.5, snow: 0 },
@@ -24,7 +26,15 @@ const SETTINGS: HazardSettings = {
 /** Every step a climber spends under a serac, it goes, and comes down at once. */
 const CERTAIN: HazardSettings = {
   ...SETTINGS,
-  kinds: { ...SETTINGS.kinds, serac: { rate: 100_000, warmth: 1, snow: 1, wind: 1, warning: 0 } },
+  kinds: {
+    ...SETTINGS.kinds,
+    serac: { rate: 100_000, warmth: 1, snow: 1, wind: 1, warning: 0, ...HARMLESS },
+  },
+};
+/** The same serac, and it kills whoever it catches unclipped, and nobody on the rope. */
+const DEADLY: HazardSettings = {
+  ...CERTAIN,
+  kinds: { ...CERTAIN.kinds, serac: { ...CERTAIN.kinds.serac, deadly: 1, deadlyClipped: 0 } },
 };
 /** The same, with a crack five mountain seconds before it comes down: ten steps at 10. */
 const WARNED: HazardSettings = {
@@ -158,8 +168,36 @@ describe("ObjectiveHazards", () => {
         step: 0,
         timeOfDay: 14 * HOUR + COMPRESSION / 20,
         climbers: ["first", "second"],
+        killed: [],
       },
     ]);
+  });
+
+  it("kills a climber it catches at its kind's odds: the rope saves from the fall, not the ice", () => {
+    const ground = new TestGround({ first: 22, second: 25 });
+    ground.clip("second");
+    const exposure = new Exposure(ground, "14:00", under(SERAC), DEADLY);
+
+    exposure.play(1);
+
+    expect(ground.kills).toEqual([{ climber: "first", step: 0 }]);
+    expect(ground.knocks).toEqual([{ climber: "second", step: 0 }]);
+    expect(exposure.hazards.strikes).toMatchObject([
+      { climbers: ["first", "second"], killed: ["first"] },
+    ]);
+  });
+
+  it("kills about the share of those caught its odds say", () => {
+    const halfDeadly: HazardSettings = {
+      ...CERTAIN,
+      kinds: { ...CERTAIN.kinds, serac: { ...CERTAIN.kinds.serac, deadly: 0.5 } },
+    };
+    const ground = new TestGround({ first: 25, second: 0 });
+    new Exposure(ground, "04:00", under(SERAC), halfDeadly).play(400);
+
+    expect(ground.kills.length + ground.knocks.length).toBe(400);
+    expect(ground.kills.length).toBeGreaterThan(150);
+    expect(ground.kills.length).toBeLessThan(250);
   });
 
   it("warns before a serac comes down, and spares whoever gets clear in time", () => {
@@ -173,7 +211,7 @@ describe("ObjectiveHazards", () => {
     const before = exposure.hazards.strikes.length;
     exposure.play(1);
 
-    expect(warned.warnings).toEqual([{ zone: "serac", kind: "serac", comes: 10 }]);
+    expect(warned.warnings).toEqual([{ zone: "serac", kind: "serac", began: 0, comes: 10 }]);
     expect(warned.at).toBe("serac");
     expect(exposure.hazards.warningAt(40)).toBeNull();
     expect(before).toBe(0);
@@ -199,7 +237,7 @@ describe("ObjectiveHazards", () => {
     const bridge: HazardZone = { id: "bridge", kind: "crevasse", from: 20, to: 30 };
     const settings: HazardSettings = {
       ...SETTINGS,
-      kinds: { ...SETTINGS.kinds, crevasse: { ...CERTAIN.kinds.serac, warning: 0 } },
+      kinds: { ...SETTINGS.kinds, crevasse: CERTAIN.kinds.serac },
     };
     const ground = new TestGround({ first: 25, second: 0 });
     const exposure = new Exposure(ground, "04:00", under(bridge), settings);

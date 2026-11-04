@@ -1,8 +1,9 @@
 import { Graphics } from "pixi.js";
 
 import type { Point, SlopePhysics, Terrain } from "../physics";
-import type { ClimberId } from "../simulation";
+import type { ClimberId, ObjectiveHazards } from "../simulation";
 import { ClimberFigure } from "./climber-figure";
+import { HazardDrawing } from "./hazard-drawing";
 import { ParallaxLayer } from "./parallax-layer";
 
 interface DrawnRope {
@@ -14,8 +15,9 @@ interface DrawnRope {
 
 /**
  * The slope itself, at the camera's own depth: the ground as the physics has it, with its ladders,
- * its ropes and every climber on it. The ground and the ladders are drawn once; a rope is redrawn
- * when it moves, and the climbers are placed each frame.
+ * its ropes, its hazards and every climber on it. The ground, the ladders and what stands over
+ * the hazards are drawn once; a rope is redrawn when it moves, and the climbers and what comes
+ * down are placed each frame.
  */
 export class SlopeLayer extends ParallaxLayer {
   private static readonly SNOW = 0xeef3f9;
@@ -34,13 +36,17 @@ export class SlopeLayer extends ParallaxLayer {
 
   private readonly ropes: readonly DrawnRope[];
   private readonly figures: readonly { readonly id: ClimberId; readonly figure: ClimberFigure }[];
+  private readonly hazards: HazardDrawing;
 
   constructor(
     private readonly physics: SlopePhysics,
+    hazards: ObjectiveHazards,
     climbers: readonly ClimberId[],
     player: ClimberId,
   ) {
     super("slope", { x: 1, y: 1 });
+    this.hazards = new HazardDrawing(hazards, physics.terrain);
+    this.addChild(this.hazards.standing);
     this.addChild(SlopeLayer.ground(physics.terrain));
     for (const id of physics.ladders) {
       this.addChild(SlopeLayer.ladder(physics.ladder(id)));
@@ -56,6 +62,7 @@ export class SlopeLayer extends ParallaxLayer {
       this.addChild(figure);
       return { id, figure };
     });
+    this.addChild(this.hazards.falling);
   }
 
   /** How many climbers are drawn. */
@@ -63,8 +70,15 @@ export class SlopeLayer extends ParallaxLayer {
     return this.figures.length;
   }
 
-  /** Each frame: the ropes where they lie now, the climbers where they are. */
-  draw(): void {
+  /** Whether a hazard is going now, which shakes the picture. */
+  get shaking(): boolean {
+    return this.hazards.going;
+  }
+
+  /** Each frame, `seconds` after the last: the ropes where they lie now, the climbers where they
+   * are, and what's coming down. */
+  draw(seconds: number): void {
+    this.hazards.draw(seconds);
     for (const rope of this.ropes) {
       const points = this.physics.rope(rope.id);
       if (!SlopeLayer.same(points, rope.drawn)) {
