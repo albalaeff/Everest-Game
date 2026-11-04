@@ -10,7 +10,6 @@ export type {
   BodyInputs,
   BodyModelCoefficients,
   BodyState,
-  Pace,
 } from "./body-model";
 export { Expedition } from "./expedition";
 export type { ExpeditionSave } from "./expedition";
