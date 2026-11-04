@@ -146,6 +146,7 @@ header {
   border-radius: 0.5rem;
   background: rgb(11 29 58 / 70%);
   white-space: nowrap;
+  font-variant-numeric: tabular-nums;
 }
 
 .thumb {
