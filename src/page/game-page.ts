@@ -211,8 +211,7 @@ export class GamePage {
       });
     } else {
       host.textContent = texts.rendering["no-webgl"];
-      climbInterface.update();
-      this.runWithoutPicture(loop);
+      this.runWithoutPicture(loop, () => climbInterface.update());
     }
   }
 
@@ -267,10 +266,11 @@ export class GamePage {
   }
 
   /** The loop on the browser's frames alone, when there's no scene to drive it. */
-  private runWithoutPicture(loop: GameLoop): void {
+  private runWithoutPicture(loop: GameLoop, afterFrame: () => void): void {
     let last: number | null = null;
     const frame = (now: number): void => {
       loop.frame(last === null ? 0 : (now - last) / 1000);
+      afterFrame();
       last = now;
       this.window.requestAnimationFrame(frame);
     };
