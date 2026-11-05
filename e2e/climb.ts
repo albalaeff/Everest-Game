@@ -73,6 +73,11 @@ export async function openTheGame(page: Page): Promise<void> {
  * keys to the climb and the climb to the page. */
 export const WALKING = { timeout: 20_000 };
 
+/** The wait for the first frame of a second browser in a story, as an expect takes it: it starts
+ * its WebGL in software beside the first's, and the other worker's two, and on CI it drew none in
+ * 15 s (PR #158). */
+export const SECOND_BROWSER = { timeout: 45_000 };
+
 /** The wait for the climb to be saved on the device, as `expect.poll` takes it: the page saves a
  * new climb as it starts, and every ten seconds of play after, but on CI the first save took more
  * than an expect's 5 s to appear (PR #157), as the browser opened the scene in software beside

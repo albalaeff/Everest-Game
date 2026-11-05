@@ -1,7 +1,16 @@
 import { devices, expect, test } from "@playwright/test";
 import type { Page } from "@playwright/test";
 
-import { WALKING, along, atRest, openARoom, readTheDisclaimer, roomNotice, seen } from "./climb";
+import {
+  SECOND_BROWSER,
+  WALKING,
+  along,
+  atRest,
+  openARoom,
+  readTheDisclaimer,
+  roomNotice,
+  seen,
+} from "./climb";
 
 /**
  * Cross-play (spec.md → Phone and PC): a PC and a phone in one room, on the room server
@@ -121,10 +130,11 @@ test.describe("on a phone's screen of 640 by 360", () => {
     await readTheDisclaimer(phone, pc.url());
 
     await expect(roomNotice(phone)).toHaveText(`You have joined room ${code}`);
-    // Each browser's first frame, as e2e/room.spec.ts waits for the friend's.
-    await expect(phone.locator("#slope")).toHaveAttribute("data-climber", "12.00 0.00", {
-      timeout: 15_000,
-    });
+    await expect(phone.locator("#slope")).toHaveAttribute(
+      "data-climber",
+      "12.00 0.00",
+      SECOND_BROWSER,
+    );
     await expect.poll(() => along(pc, "teammate"), WALKING).toBeCloseTo(12, 1);
     await Promise.all([climbByKeys(pc), climbByTouch(phone)]);
     // Each sees the other on top of the block, clipped to its rope.

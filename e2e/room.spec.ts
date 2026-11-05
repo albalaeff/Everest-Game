@@ -2,6 +2,7 @@ import { expect, test } from "@playwright/test";
 import type { Browser, Page } from "@playwright/test";
 
 import {
+  SECOND_BROWSER,
   WALKING,
   along,
   atRest,
@@ -30,6 +31,8 @@ test("a new room's link brings a friend in; each sees the other climb, and the f
   hasTouch,
 }) => {
   test.skip(hasTouch, "a PC's story");
+  // The friend's first frame, two walks and the friend's stop, each as long as CI may take.
+  test.setTimeout(150_000);
   const code = await openARoom(page);
   const link = page.url();
   expect(new URL(link).searchParams.get("room")).toBe(code);
@@ -38,11 +41,11 @@ test("a new room's link brings a friend in; each sees the other climb, and the f
   await readTheDisclaimer(friend, link);
 
   await expect(notice(friend)).toHaveText(`You have joined room ${code}`);
-  // The friend's first frame, as long as e2e/slope.spec.ts waits for one: a second browser starts
-  // its WebGL in software beside the first's, which on CI can take more than an expect's 5 s.
-  await expect(friend.locator("#slope")).toHaveAttribute("data-climber", "12.00 0.00", {
-    timeout: 15_000,
-  });
+  await expect(friend.locator("#slope")).toHaveAttribute(
+    "data-climber",
+    "12.00 0.00",
+    SECOND_BROWSER,
+  );
   await page.keyboard.down("KeyD");
   await expect.poll(() => along(friend, "player"), WALKING).toBeGreaterThan(10.5);
   await page.keyboard.up("KeyD");
