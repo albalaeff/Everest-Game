@@ -1,0 +1,18 @@
+{
+  "en": {
+    "base-camp": "Base Camp",
+    "camp-1": "Camp 1",
+    "icefall": "Base Camp to Camp 1: {time}.",
+    "first-time": "Climbers take {min} to {max} hours the first time.",
+    "duration": "{hours} h {minutes} min",
+    "continue": "Continue"
+  },
+  "ru": {
+    "base-camp": "Базовый лагерь",
+    "camp-1": "Лагерь 1",
+    "icefall": "От базового лагеря до лагеря 1: {time}.",
+    "first-time": "В первый раз у альпинистов уходит от {min} до {max} часов.",
+    "duration": "{hours} ч {minutes} мин",
+    "continue": "Продолжить"
+  }
+}

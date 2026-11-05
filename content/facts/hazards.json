@@ -373,10 +373,11 @@
     {
       "id": "hazards.caught",
       "kind": "question",
-      "question": "What happens to a climber caught by falling ice, an avalanche, or a breaking snow bridge or cornice, while clipped to the fixed rope? Does the rope hold them, as it held several climbers in the 2024 cornice collapse, and how badly are they hurt? How many of those caught die, on a rope and off it? How much warning does each give, and what should a climber do with it? The game spares whoever got clear in the warning, kills some of those caught at each kind's odds, and knocks the rest off their feet, held by their rope if they're clipped.",
+      "question": "What happens to a climber caught by falling ice, an avalanche, or a breaking snow bridge or cornice, while clipped to the fixed rope? Does the rope hold them, as it held several climbers in the 2024 cornice collapse, and how badly are they hurt? How many of those caught die, on a rope and off it? How much warning does each give, and what should a climber do with it? The game spares whoever got clear in the warning, kills some of those caught at each kind's odds, and knocks the rest off their feet at 3 m/s down the slope, held by their rope if they're clipped.",
       "about": [
         "route.icefall-hazards",
         "route.hillary-step-today",
+        "technique.knock-speed",
         "hazards.serac-warning",
         "hazards.avalanche-warning",
         "hazards.crevasse-warning",

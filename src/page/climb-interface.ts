@@ -1,9 +1,11 @@
+import { Readings } from "../interface/readings";
 import type { BodyView, ClimberId, MountainClock, OxygenSystem, OxygenView } from "../simulation";
 import type { Body } from "../simulation/body/body";
 import type { SlopePhysics } from "../physics";
 
 /** The player's glanceable instruments and the self-check sheet. */
 export class ClimbInterface {
+  private readonly readings = new Readings();
   private readonly readouts: HTMLElement;
   private readonly clock: HTMLElement;
   private readonly altitude: HTMLElement;
@@ -51,8 +53,8 @@ export class ClimbInterface {
     const { altitude } = this.physics.climber(this.player);
     const view = this.body.climber(this.player);
     const oxygen = this.oxygen.climber(this.player);
-    this.clock.textContent = this.time(this.mountainClock.timeOfDay);
-    this.altitude.textContent = `${Math.round(altitude).toLocaleString()} m`;
+    this.clock.textContent = this.readings.clock(this.mountainClock.timeOfDay);
+    this.altitude.textContent = this.readings.altitude(altitude);
     this.updateOxygen(oxygen);
     this.updateSelfCheck(view);
   }
@@ -88,12 +90,6 @@ export class ClimbInterface {
     this.panel.hidden = true;
     this.checkButton.setAttribute("aria-expanded", "false");
     this.checkButton.focus();
-  }
-
-  private time(seconds: number): string {
-    const hours = Math.floor(seconds / 3600) % 24;
-    const minutes = Math.floor((seconds % 3600) / 60);
-    return `${hours.toString().padStart(2, "0")}:${minutes.toString().padStart(2, "0")}`;
   }
 
   private required(document: Document, selector: string): HTMLElement {

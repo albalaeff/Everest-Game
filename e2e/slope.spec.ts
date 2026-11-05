@@ -84,6 +84,16 @@ test.describe("on a screen of 630 by 360", () => {
     expect(await brightness(page, 210, 260)).toBeGreaterThan(200);
   });
 
+  test("the picture knows the hour and the weather: night, and clear, as the climb sets off", async ({
+    page,
+  }) => {
+    await openTheGame(page);
+    await waitForFrames(page, 1);
+
+    expect(await drawn(page, "phase")).toBe("night");
+    expect(await drawn(page, "weather")).toBe("clear");
+  });
+
   test("every climber in the expedition is drawn, and the camera starts on the player", async ({
     page,
   }) => {

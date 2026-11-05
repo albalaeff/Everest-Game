@@ -44,7 +44,7 @@ export class RoomNotice {
 
   /** In the room: its code, said once, which goes after a while. */
   joined(code: string): void {
-    this.show(this.texts.say("joined", code), { copy: this.canCopy() });
+    this.show(this.texts.say("joined", { code }), { copy: this.canCopy() });
     this.hiding = this.window.setTimeout(() => {
       this.hide();
     }, RoomNotice.JOINED_SECONDS * 1000);
@@ -60,7 +60,7 @@ export class RoomNotice {
 
   /** The room can't be played: why, and the way back to the start. */
   stopped(stop: Stop, code: string): void {
-    this.show(this.texts.say(stop, code), { back: true });
+    this.show(this.texts.say(stop, { code }), { back: true });
   }
 
   hide(): void {

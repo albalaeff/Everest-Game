@@ -682,6 +682,100 @@
       ]
     },
     {
+      "id": "route.icefall-length",
+      "kind": "fact",
+      "claim": "The route from Base Camp to Camp 1, through the Khumbu Icefall, is this long.",
+      "status": "source only",
+      "versions": [
+        {
+          "value": 2607,
+          "unit": "m",
+          "note": "1.62 miles, in the table of the South Col route's camps.",
+          "source": {
+            "title": "Alan Arnette: Comparing the Routes of Everest, 2026 Edition → C1",
+            "url": "https://www.alanarnette.com/2026/01/28/comparing-the-routes-of-everest-2026-edition/"
+          },
+          "checked": "2026-11-05"
+        },
+        {
+          "value": 2607,
+          "unit": "m",
+          "note": "1.62 miles, in the Quick Facts.",
+          "source": {
+            "title": "Hayden Rue: South Col of Mount Everest → Quick Facts",
+            "url": "https://haydenrue.com/mountaineering/south-col-of-mount-everest/"
+          },
+          "checked": "2026-11-05"
+        },
+        {
+          "value": 4023,
+          "unit": "m",
+          "note": "2.5 miles: the Icefall itself, where the glacier drops out of the Western Cwm, in the post's description of it; the post gives no figure for the route.",
+          "source": {
+            "title": "Alan Arnette: Everest 2021: Everest's Gatekeeper, the Khumbu Icefall",
+            "url": "https://www.alanarnette.com/2021/04/10/everest-2021-everests-gatekeeper-the-khumbu-icefall/"
+          },
+          "checked": "2026-11-05"
+        }
+      ]
+    },
+    {
+      "id": "route.icefall-steepness",
+      "kind": "fact",
+      "claim": "The Icefall's slopes run from this gentle to this steep, with the walls between them climbed on ladders.",
+      "status": "source only",
+      "versions": [
+        {
+          "range": { "min": 20, "max": 60 },
+          "unit": "degrees",
+          "note": "From steep 60-degree climbs to gentler 20-degree slopes, often with long ladders to cross; the final section has steeper ladders and sharper grades, and at the top the terrain levels out into the Western Cwm, with Camp 1 half an hour to an hour on.",
+          "source": {
+            "title": "Hayden Rue: South Col of Mount Everest → Section 1: Khumbu Icefall to Camp 1",
+            "url": "https://haydenrue.com/mountaineering/south-col-of-mount-everest/"
+          },
+          "checked": "2026-11-05"
+        }
+      ]
+    },
+    {
+      "id": "route.icefall-ladders",
+      "kind": "fact",
+      "claim": "The Icefall Doctors fix the route through the Icefall with this many ladders in a season, across the crevasses and up the walls.",
+      "status": "source only",
+      "versions": [
+        {
+          "value": 21,
+          "unit": "ladders",
+          "note": "Only 21 ladders were used to open the route to Camp I in 2017, on a line that takes about an hour longer than the traditional one.",
+          "source": {
+            "title": "The Himalayan Times: Icefall doctors open Everest route, Base Camp being set up (2017)",
+            "url": "https://thehimalayantimes.com/nepal/icefall-route-opens-base-camp-set-mt-everest-climbers/"
+          },
+          "checked": "2026-11-05"
+        },
+        {
+          "value": 20,
+          "unit": "ladders",
+          "note": "More than 20 aluminium ladders, with ropes, in 2018, on the central traditional route, which has more blue ice but less hanging glacier.",
+          "source": {
+            "title": "The Himalayan Times: Icefall doctors open 'safest' Everest route (2018)",
+            "url": "https://thehimalayantimes.com/nepal/icefall-doctors-open-safest-everest-route/"
+          },
+          "checked": "2026-11-05"
+        },
+        {
+          "value": 8,
+          "unit": "ladders",
+          "note": "Eight ladders across three sections when the route opened on 28 April 2026, with more likely as the crevasses widen; a serac about 55 m long, 28 m high and 37 m wide, with several cracks, hung over the route's critical section.",
+          "source": {
+            "title": "The Himalayan Times: Khumbu Icefall route opened, but risks persist: SPCC (2026)",
+            "url": "https://thehimalayantimes.com/nepal/khumbu-icefall-route-opened-but-risks-persist-spcc"
+          },
+          "checked": "2026-11-05"
+        }
+      ]
+    },
+    {
       "id": "route.western-cwm-hazards",
       "kind": "fact",
       "claim": "In the Western Cwm, hidden crevasses lie under thin snow bridges, and on a clear, windless day the heat is scorching.",
