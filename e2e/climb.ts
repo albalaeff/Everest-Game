@@ -57,6 +57,12 @@ export async function openTheGame(page: Page): Promise<void> {
  * keys to the climb and the climb to the page. */
 export const WALKING = { timeout: 20_000 };
 
+/** The wait for the climb to be saved on the device, as `expect.poll` takes it: the page saves a
+ * new climb as it starts, and every ten seconds of play after, but on CI the first save took more
+ * than an expect's 5 s to appear (PR #157), as the browser opened the scene in software beside
+ * another story's browsers. */
+export const SAVING = { timeout: 20_000 };
+
 /** How far across the slope a climber of the expedition is, in metres, or NaN before the climb:
  * on the flat, how far along it. */
 export async function along(page: Page, climber: string): Promise<number> {
@@ -169,7 +175,7 @@ export function savedPlayer(climb: SavedClimb): { readonly id: string; along: nu
  */
 export async function climbFrom(page: Page, edit: (climb: SavedClimb) => void): Promise<void> {
   await openTheGame(page);
-  await expect.poll(async () => (await savedClimb(page)) !== null).toBe(true);
+  await expect.poll(async () => (await savedClimb(page)) !== null, SAVING).toBe(true);
   await page.goto("/");
   const climb = await savedClimb(page);
   if (climb === null) {

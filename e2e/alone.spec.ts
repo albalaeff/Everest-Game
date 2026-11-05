@@ -2,6 +2,7 @@ import { expect, test } from "@playwright/test";
 import type { Page } from "@playwright/test";
 
 import {
+  SAVING,
   WALKING,
   along,
   atRest,
@@ -32,7 +33,7 @@ test("a climb alone goes on after a reload where the climber was, and [Start ove
   await page.keyboard.up("KeyD");
   const left = await atRest(page, "player");
   // Saved every ten seconds of play: twenty steps a second.
-  await expect.poll(() => savedStep(page), { timeout: 20_000 }).toBeGreaterThanOrEqual(200);
+  await expect.poll(() => savedStep(page), SAVING).toBeGreaterThanOrEqual(200);
 
   await readTheDisclaimer(page);
   await choice(page, "Alone").click();
