@@ -10,7 +10,8 @@ An agent is headless Claude Code in a worktree of its own, started for one issue
 model and effort the issue's labels ask for (`AgentPower`), in the turn its priority label
 gives it (`Priority`, #485). The manager puts that power in the agent's environment, so its
 comments are signed "_Claude Code agent (bateks, opus/xhigh)_" (scripts/github.py), and the
-share of the window at which Claude Code compacts its conversation (`CompactShare`, #441).
+share of the window at which Claude Code compacts its conversation (`CompactShare`, #441), or
+the more its issue's `compact:*` label gives (#152).
 While the manager holds its lock (`ManagerLock`), a session's watcher ends: the agents take
 the issues (CLAUDE.md → Sessions). A session's watcher holds one of its own (`WatchLock`,
 #597), so a second session on the machine takes no issue either.
@@ -156,20 +157,27 @@ class Priority:
         return self.FAMILY.values.index(self.level)
 
 
-# The labels the manager reads: a change to one makes a task new to its watcher (#485).
-LABEL_FAMILIES = (AgentPower.MODEL, AgentPower.EFFORT, Priority.FAMILY)
-
-
 @dataclass(frozen=True, slots=True)
 class CompactShare:
     """The share of its window, in percent, at which Claude Code compacts a conversation:
     what CLAUDE_AUTOCOMPACT_PCT_OVERRIDE says (#399). The manager sets it for its agents
     (#441): each reply reads the whole conversation again, so one compacted early costs less.
-    The Stop hook reads it as Claude Code does (scripts/handoff_due.py)."""
+    The Stop hook reads it as Claude Code does (scripts/handoff_due.py).
+
+    An issue's `compact:*` label gives its agents more (#152): #26's read 300K tokens before
+    it wrote a line, past a quarter of the window, so it read them again after each
+    compaction, until Claude Code stopped it. The manager puts the next label up on an issue
+    whose run ended so (`more`), and a person may for one they know is big."""
 
     percent: float = 100  # all of it: where Claude Code compacts by itself
 
     ENV: ClassVar[str] = "CLAUDE_AUTOCOMPACT_PCT_OVERRIDE"
+    FAMILY: ClassVar[LabelFamily] = LabelFamily(
+        "compact",
+        ("50", "100"),
+        "c5def5",
+        "The agent for this issue compacts its conversation at {}% of the window (#152)",
+    )
 
     @classmethod
     def from_env(cls, env: Mapping[str, str] = os.environ) -> CompactShare:
@@ -183,12 +191,28 @@ class CompactShare:
         """Where it compacts, in tokens, in a window this big."""
         return min(window, int(window * self.percent / 100))
 
+    def from_labels(self, labels: Iterable[str]) -> CompactShare:
+        """This share (agent-manager.toml's), or more where an issue's labels give more: of
+        two, the larger."""
+        found = self.FAMILY.strongest(labels)
+        return CompactShare(float(found)) if found and float(found) > self.percent else self
+
+    def more(self) -> str | None:
+        """The label of the next share up, for an issue whose agent compacted again and again
+        at this one; None at all of the window."""
+        values = self.FAMILY.values
+        return next((self.FAMILY.label(v) for v in values if float(v) > self.percent), None)
+
     def env(self) -> dict[str, str]:
         """What the manager puts in an agent's environment."""
         return {self.ENV: f"{self.percent:g}"}
 
     def __str__(self) -> str:
         return f"{self.percent:g}%"
+
+
+# The labels the manager reads: a change to one makes a task new to its watcher (#485).
+LABEL_FAMILIES = (AgentPower.MODEL, AgentPower.EFFORT, Priority.FAMILY, CompactShare.FAMILY)
 
 
 @dataclass(frozen=True, slots=True)

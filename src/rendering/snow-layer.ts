@@ -1,15 +1,24 @@
 import { Particle, ParticleContainer, Texture } from "pixi.js";
 
 import { SeededRandom } from "../simulation";
+import type { Atmosphere } from "./atmosphere";
 import type { Camera } from "./camera";
 import { ParallaxLayer } from "./parallax-layer";
 import { Snowfall } from "./snowfall";
 
-/** The falling snow, on the screen in front of everything: one particle a flake. */
+/**
+ * The falling snow, on the screen in front of everything: one particle a flake, as many as the
+ * quality allows, of which the weather's share falls and the rest wait off the screen; the wind's
+ * gust blows them all sideways, so their slant tells the wind at the climber.
+ */
 export class SnowLayer extends ParallaxLayer {
   /** The snow's own seed: the picture's, not the expedition's. */
   private static readonly SEED = 42;
   private static readonly ALPHA = 0.85;
+  /** How hard the full gust blows the flakes sideways, in pixels a second. */
+  private static readonly WIND_PIXELS_A_SECOND = 320;
+  /** Where a flake waits while the weather doesn't need it. */
+  private static readonly PARKED = -20;
 
   private readonly snowfall: Snowfall;
   private readonly particles: readonly Particle[];
@@ -44,6 +53,7 @@ export class SnowLayer extends ParallaxLayer {
     this.addChild(container);
   }
 
+  /** How many flakes the layer has: the quality's budget. */
   get flakes(): number {
     return this.particles.length;
   }
@@ -54,14 +64,21 @@ export class SnowLayer extends ParallaxLayer {
     this.snowfall.resize(width, height);
   }
 
-  /** `seconds` more of snow. */
-  fall(seconds: number): void {
-    this.snowfall.fall(seconds);
+  /** `seconds` more of snow in this frame's air: the weather's share of the flakes, on the gust. */
+  fall(seconds: number, atmosphere: Atmosphere): void {
+    const falling = Math.round(this.particles.length * atmosphere.look.snowfall);
+    this.snowfall.fall(seconds, atmosphere.gust * SnowLayer.WIND_PIXELS_A_SECOND);
     for (const [index, flake] of this.snowfall.flakes.entries()) {
       const particle = this.particles[index];
-      if (particle !== undefined) {
+      if (particle === undefined) {
+        continue;
+      }
+      if (index < falling) {
         particle.x = flake.x;
         particle.y = flake.y;
+      } else {
+        particle.x = SnowLayer.PARKED;
+        particle.y = SnowLayer.PARKED;
       }
     }
   }

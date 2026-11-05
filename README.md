@@ -16,7 +16,7 @@ A 2D browser game: a simulator-trainer for climbing Everest by the South route. 
 
 The game is a static TypeScript site that runs in the browser ([spec.md](spec.md) → Technical architecture): a simulation core (body, oxygen, weather, time, hazards; the same result for the same seed), agents and slope physics on it, PixiJS rendering with HTML and CSS for the interface and Web Audio for sound, and JSON content: the route, the scenarios, and the knowledge base of facts with their sources. For co-op, a room server on Cloudflare Workers runs the same core. [docs/conventions.md](docs/conventions.md) → Modules has the rules between them, and [docs/guidelines.md](docs/guidelines.md) how the game looks, sounds and handles.
 
-The game's project is at the root of the repository: Vite builds `index.html` and `src/` into the static site, on Node 24 and npm. So far it's the simulation core in `src/simulation/` ([docs/conventions/simulation-core.md](docs/conventions/simulation-core.md)), the slope physics on it in `src/physics/` ([docs/conventions/slope-physics.md](docs/conventions/slope-physics.md)), the input layer in `src/input/` ([docs/conventions/input.md](docs/conventions/input.md)), the interface in `src/interface/` (the disclaimer the game opens on, with its beta mark while any record of the knowledge base isn't `expert-reviewed`), the PixiJS rendering in `src/rendering/` and the page that runs the game in `src/page/` ([docs/conventions/rendering.md](docs/conventions/rendering.md)): a climber walking a stand-in section of the Icefall, with the camera following, alone, saved on the device (`src/saves/`), or with a friend, in a room of the room server (`src/room/`, [docs/conventions/room-server.md](docs/conventions/room-server.md)); the other modules come with their issues. Beside it the repository holds the spec, the workflow ([CLAUDE.md](CLAUDE.md), `scripts/`, `.claude/`), the docs and the knowledge base: the fact records in `content/facts/` ([docs/conventions/knowledge-base.md](docs/conventions/knowledge-base.md)).
+The game's project is at the root of the repository: Vite builds `index.html` and `src/` into the static site, on Node 24 and npm. So far it's the simulation core in `src/simulation/` ([docs/conventions/simulation-core.md](docs/conventions/simulation-core.md)), the slope physics on it in `src/physics/` ([docs/conventions/slope-physics.md](docs/conventions/slope-physics.md)), the input layer in `src/input/` ([docs/conventions/input.md](docs/conventions/input.md)), the interface in `src/interface/` (the disclaimer the game opens on, with its beta mark while any record of the knowledge base isn't `expert-reviewed`), the PixiJS rendering in `src/rendering/` and the page that runs the game in `src/page/` ([docs/conventions/rendering.md](docs/conventions/rendering.md)): a climber crossing the Khumbu Icefall from Base Camp to Camp 1 (`content/route/icefall.json`, read by `src/content/`), with the camera following, alone, saved on the device (`src/saves/`), or with a friend, in a room of the room server (`src/room/`, [docs/conventions/room-server.md](docs/conventions/room-server.md)); the other modules come with their issues. Beside it the repository holds the spec, the workflow ([CLAUDE.md](CLAUDE.md), `scripts/`, `.claude/`), the docs and the knowledge base: the fact records in `content/facts/` ([docs/conventions/knowledge-base.md](docs/conventions/knowledge-base.md)).
 
 ## Local development
 
@@ -60,8 +60,8 @@ scripts/setup.sh
 
 It checks for Git and uv, installs the dependencies, runs the machine check
 (`scripts/check_setup.py`, which includes Claude Code's command line and its sign-in), puts
-the `model:*`, `effort:*` and `priority:*` labels on the repository, and prints the command
-that starts the manager. It's safe to run again. Each developer signs in with their own accounts: Git
+the `model:*`, `effort:*`, `priority:*` and `compact:*` labels on the repository, and prints
+the command that starts the manager. It's safe to run again. Each developer signs in with their own accounts: Git
 keeps your GitHub token, and `claude` uses the account your VS Code extension uses (`claude
 auth login` if it asks). No secret goes into the repository.
 
@@ -169,6 +169,13 @@ a skill it needs it reads as a file, such as the handoff's format in
 `.claude/skills/handoff/SKILL.md`. CLAUDE.md keeps only what agents and sessions both obey;
 a session's start and close are in the carryon and handoff skills, and the long form of the
 rules in [docs/workflow.md](docs/workflow.md).
+
+**An issue that needs more of the window.** An agent that reads more than its share to begin
+reads it all again after each compaction, until Claude Code stops it ("Autocompact is
+thrashing", #152). The manager then puts `compact:50` on its issue, or `compact:100` after a
+run at 50%, and the watcher's next look brings the issue back for an agent that compacts
+there; at 100% its log says to split the issue. Put one on yourself for an issue you know is
+big.
 
 **What it leaves.** Each agent's run goes to `.agent-runs/<issue>.log`: its command,
 everything it did, and at the end what it cost, how many tokens its first reply read (what
@@ -294,6 +301,6 @@ Set once on GitHub, by the owner:
 - **Default branch `develop`**, so a merged PR's `Closes #n` closes the issue and the scripts' `status` reads the right thing. Push `develop` and `master` first.
 - **Rulesets:** "develop and master": both change only through a PR with the `checks` job green, by squash or merge commit, no force pushes or deletions. "master: deployed": `master` also wants `deploy / release-tool` green, so a release is merged only once it's live (add the check once it has run on the first release PR).
 - **GitHub Pages:** Settings → Pages → Source: *GitHub Actions*, for the preview. Without it the job `preview` fails, on `develop` only.
-- **Labels:** `scripts/setup.sh` makes `model:*`, `effort:*` and `priority:*`; `claude:<login>` for each developer (hand an issue to their Claude); `postponed`; `release`. The `waiting:<login>` labels are made by the scripts.
+- **Labels:** `scripts/setup.sh` makes `model:*`, `effort:*`, `priority:*` and `compact:*`; `claude:<login>` for each developer (hand an issue to their Claude); `postponed`; `release`. The `waiting:<login>` labels are made by the scripts.
 - **Secrets** (Settings → Secrets and variables → Actions): `RELEASE_TOKEN`, a person's fine-grained token with read and write access to Contents, Issues and Pull requests, for `release-cut.yml` (a PR opened with Actions' own token starts no CI); `PROJECT_TOKEN`, the board's owner's classic token with only the `project` scope, for `board.yml` (a fine-grained token can't reach a project a user owns: [github.com/settings/tokens/new?scopes=project](https://github.com/settings/tokens/new?scopes=project&description=Everest%20board) fills it in); `CLOUDFLARE_API_TOKEN` and `CLOUDFLARE_ACCOUNT_ID` for the room server ([docs/production.md](docs/production.md)); the deploy's own once the stub in `release-tool.yml` is filled in.
 - **Each clone:** `git config core.hooksPath .githooks` refuses pushes to `develop` and `master` before GitHub does (`scripts/setup.sh` does it).

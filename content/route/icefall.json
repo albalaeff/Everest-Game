@@ -1,0 +1,108 @@
+{
+  "note": "The Khumbu Icefall, Base Camp to Camp 1, as the sources describe it (route.icefall-hazards, route.icefall-steepness, route.icefall-ladders): broken ice and short walls low down, the first crevasses with ladders across them and snow bridges beside them, a flatter middle, the walls under the West Shoulder with ice towers over them, where the collapses of 2014 and 2023 killed, and the steeper ladders of the top before the ground levels out into the Western Cwm. Drawn at 1/time.compression of its length and its rise (docs/conventions/slope-physics.md → The slope), with every wall, crevasse and ladder at life size: 280 m of ground rising 45 m stand for the Icefall's length and the camps' altitudes, which the knowledge base gives (route.icefall-length, route.base-camp-altitude, route.camp-1-altitude). Every sloping segment is a Pythagorean triple, so the corners, where the ladders' ends and the ropes' anchors go, are at whole metres along the ground: 0, 20, 33, 36, 52, 92, 96, 136, 148, 173, 193, 196, 216, 229, 254, 278, 281, 294, 306, 310, 316, 340, 343, 367, 373, 377, 389, 392, 433, 451 and 471. Each wall's ladder has a rope of its own from its foot to its top, and from the shoulder up the ropes run in a line and share their anchors, as the fixed line does. The camps are the flat at each end: the tents stand on them, and reaching Camp 1's is the arrival. The expedition sets off on the sources' hour (time.base-camp-departure) and the bodies are made up, as the stand-in's were, until the camp screen (#53) and the acclimatization (#51) set them.",
+  "id": "icefall",
+  "from": "base-camp",
+  "to": "camp-1",
+  "date": "2026-04-20",
+  "layout": {
+    "terrain": [
+      [0, 0],
+      [20, 0],
+      [32, 5],
+      [32, 8],
+      [48, 8],
+      [48, -32],
+      [52, -32],
+      [52, 8],
+      [64, 8],
+      [88, 15],
+      [88, -5],
+      [91, -5],
+      [91, 15],
+      [103, 10],
+      [127, 17],
+      [151, 17],
+      [151, 20],
+      [163, 25],
+      [175, 25],
+      [175, 29],
+      [181, 29],
+      [181, 5],
+      [184, 5],
+      [184, 29],
+      [190, 29],
+      [190, 33],
+      [202, 33],
+      [202, 36],
+      [242, 45],
+      [260, 45],
+      [280, 45]
+    ],
+    "ropes": [
+      { "id": "approach", "from": 20, "to": 32, "length": 13 },
+      { "id": "block", "from": 33, "to": 36, "length": 3.5 },
+      { "id": "crevasse", "from": 44, "to": 140, "length": 17 },
+      { "id": "slot-approach", "from": 160, "to": 173, "length": 14 },
+      { "id": "slot", "from": 173, "to": 216, "length": 3.5 },
+      { "id": "slot-exit", "from": 216, "to": 229, "length": 14 },
+      { "id": "shoulder-foot", "from": 278, "to": 281, "length": 3.5 },
+      { "id": "shoulder", "from": 281, "to": 306, "length": 26 },
+      { "id": "shoulder-wall", "from": 306, "to": 310, "length": 4.5 },
+      { "id": "upper-slot", "from": 310, "to": 373, "length": 15.5 },
+      { "id": "top-wall", "from": 373, "to": 377, "length": 4.5 },
+      { "id": "top", "from": 377, "to": 389, "length": 12.5 },
+      { "id": "last-step", "from": 389, "to": 392, "length": 3.5 },
+      { "id": "last-slope", "from": 392, "to": 433, "length": 41.5 }
+    ],
+    "ladders": [
+      { "id": "block", "from": 33, "to": 36 },
+      { "id": "crevasse", "from": 52, "to": 136 },
+      { "id": "slot", "from": 173, "to": 216 },
+      { "id": "shoulder-foot", "from": 278, "to": 281 },
+      { "id": "shoulder-wall", "from": 306, "to": 310 },
+      { "id": "upper-slot", "from": 316, "to": 367 },
+      { "id": "top-wall", "from": 373, "to": 377 },
+      { "id": "last-step", "from": 389, "to": 392 }
+    ],
+    "climbers": [
+      { "id": "player", "along": 10 },
+      { "id": "teammate", "along": 12 }
+    ]
+  },
+  "camps": [
+    { "id": "base-camp", "from": 0, "to": 8 },
+    { "id": "camp-1", "from": 461, "to": 471 }
+  ],
+  "hazards": {
+    "weather": "clear",
+    "zones": [
+      { "id": "bridges-below", "kind": "crevasse", "from": 40, "to": 51 },
+      { "id": "bridges-above", "kind": "crevasse", "from": 136, "to": 148 },
+      { "id": "shoulder", "kind": "serac", "from": 278, "to": 316 },
+      { "id": "hanging-glacier", "kind": "serac", "from": 367, "to": 392 },
+      { "id": "loaded-slope", "kind": "avalanche", "from": 392, "to": 433 }
+    ]
+  },
+  "bodies": [
+    {
+      "id": "player",
+      "mass": 75,
+      "load": 10,
+      "fitness": 1,
+      "fatigue": 0,
+      "awake": 1,
+      "water": 0,
+      "food": 0
+    },
+    {
+      "id": "teammate",
+      "mass": 68,
+      "load": 12,
+      "fitness": 1,
+      "fatigue": 0,
+      "awake": 1,
+      "water": 0,
+      "food": 0
+    }
+  ]
+}

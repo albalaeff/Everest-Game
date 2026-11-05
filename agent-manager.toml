@@ -31,7 +31,9 @@ watcher_backoff_max_seconds = 600
 
 # Where Claude Code compacts an agent's conversation, in percent of its window (about 967K
 # tokens): each reply reads all of it again, so compacted early, a long run costs less
-# (PEB#441). 100 compacts where a session does.
+# (PEB#441). 100 compacts where a session does. An issue's compact:50 or compact:100 label
+# gives its agents more: the manager puts the next one up on an issue whose run Claude Code
+# stopped for compacting again and again (#152), and a person may on one they know is big.
 compact_at_percent = 25
 
 # How often the watcher looks whether PRs merged into develop since the wiki was last brought

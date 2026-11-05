@@ -9,8 +9,8 @@
 # dependencies, turns Git's hooks on and makes .env from .env.example when the project has
 # one and there's none, runs the machine check (scripts/check_setup.py: Docker, the database
 # and .env when the project has them, the GitHub token, Claude Code's command line and its
-# sign-in, …) and says how to fix what's missing, puts the model:*, effort:* and priority:*
-# labels on the repository, and ends with the command that starts the manager.
+# sign-in, …) and says how to fix what's missing, puts the model:*, effort:*, priority:* and
+# compact:* labels on the repository, and ends with the command that starts the manager.
 # Each developer signs in with their own accounts: nothing secret is kept in the repository.
 
 set -u

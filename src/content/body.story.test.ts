@@ -1,12 +1,12 @@
 import { describe, expect, it } from "vitest";
 
-import standIn from "../../content/route/stand-in.json";
+import icefall from "../../content/route/icefall.json";
 import { Expedition, SimulationClock } from "../simulation";
 import type { GameAction } from "../simulation";
 import { KnowledgeBase } from "./knowledge-base";
 import { KNOWLEDGE_FILES } from "./knowledge-files";
 import { Mountain } from "./mountain";
-import { StandInRoute } from "./stand-in-route";
+import { Section } from "./section";
 
 const knowledge = new KnowledgeBase(KNOWLEDGE_FILES);
 const TEAMMATE = "teammate";
@@ -20,13 +20,13 @@ describe("The body on the mountain: the faster pace gets ahead, and tires first"
   it("takes the player, at the faster pace, past their steady teammate, out of breath and tired", () => {
     // Both set off a little short of tired, from the climb before.
     const fatigue = knowledge.number("body.tired") - 0.01;
-    const bodies = standIn.bodies.map((body) => ({ ...body, fatigue }));
-    const mountain = new Mountain(knowledge, new StandInRoute({ ...standIn, bodies }));
+    const bodies = icefall.bodies.map((body) => ({ ...body, fatigue }));
+    const mountain = new Mountain(knowledge, new Section(knowledge, { ...icefall, bodies }));
     const rules = mountain.rules();
     const expedition = Expedition.start(mountain.scenario(2026), rules.all);
     const setOff: readonly GameAction[] = [
-      { kind: "pace", climber: StandInRoute.PLAYER, pace: "faster" },
-      { kind: "walk", climber: StandInRoute.PLAYER, direction: "right" },
+      { kind: "pace", climber: Section.PLAYER, pace: "faster" },
+      { kind: "walk", climber: Section.PLAYER, direction: "right" },
       { kind: "walk", climber: TEAMMATE, direction: "right" },
     ];
 
@@ -36,8 +36,8 @@ describe("The body on the mountain: the faster pace gets ahead, and tires first"
     }
 
     const { physics, body } = rules;
-    expect(physics.climber(StandInRoute.PLAYER).x).toBeGreaterThan(physics.climber(TEAMMATE).x);
-    expect(body.climber(StandInRoute.PLAYER)).toMatchObject({
+    expect(physics.climber(Section.PLAYER).x).toBeGreaterThan(physics.climber(TEAMMATE).x);
+    expect(body.climber(Section.PLAYER)).toMatchObject({
       tiredness: "tired",
       symptoms: ["out-of-breath"],
       pace: "faster",
