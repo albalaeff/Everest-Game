@@ -27,7 +27,9 @@ end, after a wait that grows with each failure). For each task:
   (`CompactShare`, #441), or the more its issue's `compact:*` label gives (#152): every reply
   reads all of it again. For the same reason it's offered only what it can use: the tools in
   `Agent.TOOLS`, the project's settings and hooks, no MCP server (#443), no skills and no
-  auto-memory (#551).
+  auto-memory (#551). The project's hooks have it write its notes before a compaction, and
+  put them back after (scripts/handoff_due.py, #155); a worktree kept from an earlier run
+  loses that run's notes.
 
 A green PR's merge needs no agent when the one that opened the PR left the closing comment in
 its handoff: the manager checks the PR and merges it itself (`SelfMerge`, #550), and starts an
@@ -94,6 +96,7 @@ import httpx  # noqa: E402
 
 from scripts.agents import (  # noqa: E402
     LABEL_FAMILIES,
+    NOTES,
     RUNS,
     WATCH_EVERY,
     AgentPower,
@@ -520,8 +523,9 @@ class Worktree:
 
     def ready(self) -> str:
         """Makes it and warms it, or keeps the one an earlier agent left (with its work, its
-        caches and its .venv); says which."""
+        caches and its .venv, not its notes: #155 puts back only this run's); says which."""
         if self.path.exists():
+            (self.path / NOTES).unlink(missing_ok=True)
             return "kept from before"
         self.git.ok("fetch", "-q", "--prune", "origin")
         own = self.git.count(
