@@ -3,6 +3,7 @@ import { Application, Rectangle } from "pixi.js";
 import type { SlopePhysics } from "../physics";
 import type { ClimberId, ObjectiveHazards } from "../simulation";
 import type { Camera } from "./camera";
+import type { CampStretch } from "./camp-signs";
 import type { GraphicsQuality } from "./graphics-quality";
 import type { ParallaxLayer } from "./parallax-layer";
 import { SkyLayer } from "./sky-layer";
@@ -13,9 +14,9 @@ import { SnowLayer } from "./snow-layer";
 /**
  * The picture of the slope: a PixiJS application in the page's `#slope`, with the layers the
  * quality asks for, back to front, each placed by the camera every frame, and shaking while a
- * hazard goes. It reads the physics and the hazards and holds no game state: what it owns is the
- * picture's own, the camera's place and zoom, the flakes, the warnings' clocks and the frame
- * count. For the page's stories it writes what it draws into `#slope`'s data attributes,
+ * hazard goes. It reads the physics, the hazards and the camps and holds no game state: what it
+ * owns is the picture's own, the camera's place and zoom, the flakes, the warnings' clocks and the
+ * frame count. For the page's stories it writes what it draws into `#slope`'s data attributes,
  * and reads a pixel back, since Playwright can't read a WebGL canvas.
  */
 export class SlopeScene {
@@ -37,6 +38,7 @@ export class SlopeScene {
     private readonly camera: Camera,
     private readonly physics: SlopePhysics,
     private readonly hazards: ObjectiveHazards,
+    private readonly camps: readonly CampStretch[],
     private readonly climbers: readonly ClimberId[],
     private readonly player: ClimberId,
     private quality: GraphicsQuality,
@@ -135,7 +137,7 @@ export class SlopeScene {
     const { terrain } = this.physics;
     const skyline = (style: typeof SkylineLayer.PEAKS, seed: number): SkylineLayer =>
       new SkylineLayer(style, terrain, this.seed + seed);
-    this.slope = new SlopeLayer(this.physics, this.hazards, this.climbers, this.player);
+    this.slope = new SlopeLayer(this.physics, this.hazards, this.camps, this.climbers, this.player);
     this.snow = flakes > 0 ? new SnowLayer(flakes, width, height) : null;
     this.layers = [
       new SkyLayer(),
@@ -157,6 +159,7 @@ export class SlopeScene {
     dataset.layers = String(this.layers.length);
     dataset.flakes = String(this.snow?.flakes ?? 0);
     dataset.climbers = String(this.slope?.climbers ?? 0);
+    dataset.tents = String(this.slope?.tents ?? 0);
     dataset.frames = String(this.frames);
     dataset.camera = `${x.toFixed(2)} ${y.toFixed(2)}`;
     dataset.metresHigh = this.camera.metresHigh.toFixed(2);

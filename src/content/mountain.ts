@@ -3,7 +3,7 @@ import { Body, MountainClock, ObjectiveHazards, OxygenSystem } from "../simulati
 import type { HazardKind, HazardOdds, HazardSettings, Rule, Scenario } from "../simulation";
 import type { KnowledgeBase } from "./knowledge-base";
 import { BodyFacts } from "./body-facts";
-import { StandInRoute } from "./stand-in-route";
+import { Section } from "./section";
 
 /** One expedition's rules, with their numbers: the page draws from the physics and reads the
  * clock, and the expedition runs them all, in this order. */
@@ -17,10 +17,10 @@ export interface ExpeditionRules {
 }
 
 /**
- * The mountain as the game has it today: the stand-in section until the Icefall (#26), and the
- * rules that run on it, handed their numbers from the knowledge base (docs/conventions.md → Data,
- * not literals). The page, the room server and the tests build their expeditions from it, so a
- * room's expedition is the page's, step for step.
+ * The mountain as the game has it today: the route's section, the Khumbu Icefall (#26) unless
+ * another is given, and the rules that run on it, handed their numbers from the knowledge base
+ * (docs/conventions.md → Data, not literals). The page, the room server and the tests build
+ * their expeditions from it, so a room's expedition is the page's, step for step.
  */
 export class Mountain {
   /** The record the mountain's clock runs at: how many times faster than play. */
@@ -28,7 +28,7 @@ export class Mountain {
 
   constructor(
     private readonly knowledge: KnowledgeBase,
-    readonly route: StandInRoute = new StandInRoute(),
+    readonly route: Section = new Section(knowledge),
   ) {}
 
   /** A new expedition's scenario on the route, from its seed. */

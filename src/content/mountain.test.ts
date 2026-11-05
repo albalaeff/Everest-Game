@@ -4,7 +4,7 @@ import { Expedition, HazardChance, SimulationClock } from "../simulation";
 import { KnowledgeBase } from "./knowledge-base";
 import { KNOWLEDGE_FILES } from "./knowledge-files";
 import { Mountain } from "./mountain";
-import { StandInRoute } from "./stand-in-route";
+import { Section } from "./section";
 
 const knowledge = new KnowledgeBase(KNOWLEDGE_FILES);
 const HOUR = 3600;
@@ -17,7 +17,7 @@ describe("Mountain", () => {
     const serverRules = server.rules();
     const onThePage = Expedition.start(page.scenario(7), pageRules.all);
     const onTheServer = Expedition.start(server.scenario(7), serverRules.all);
-    const walk = { kind: "walk", climber: StandInRoute.PLAYER, direction: "right" } as const;
+    const walk = { kind: "walk", climber: Section.PLAYER, direction: "right" } as const;
 
     onThePage.advance([walk]);
     onTheServer.advance([walk]);
@@ -26,9 +26,9 @@ describe("Mountain", () => {
       onTheServer.advance();
     }
 
-    expect(pageRules.physics.climber(StandInRoute.PLAYER).x).toBeGreaterThan(10.5);
-    expect(serverRules.physics.climber(StandInRoute.PLAYER)).toEqual(
-      pageRules.physics.climber(StandInRoute.PLAYER),
+    expect(pageRules.physics.climber(Section.PLAYER).x).toBeGreaterThan(10.5);
+    expect(serverRules.physics.climber(Section.PLAYER)).toEqual(
+      pageRules.physics.climber(Section.PLAYER),
     );
     expect(onTheServer.save()).toEqual(onThePage.save());
   });
@@ -73,8 +73,10 @@ describe("Mountain", () => {
 
     expect(rules.hazards.weather).toBe(mountain.route.hazards.weather);
     expect(rules.hazards.zones.map((zone) => zone.kind)).toEqual([
-      "serac",
       "crevasse",
+      "crevasse",
+      "serac",
+      "serac",
       "avalanche",
     ]);
     for (const id of scenario.climbers) {
