@@ -25,21 +25,23 @@ async function height(page: Page, climber: string): Promise<number> {
   return (await seen(page, climber))?.y ?? Number.NaN;
 }
 
-/** Clips the second cowstail to the block's rope, by `clip`, pressed until it holds: the rope
- * falls into place along the slope as the climb starts, and a press waits for the room's step. */
+/** The wait for a press to come back from the room: its step, and a frame of a browser starved of
+ * them on CI, beside the other worker's (PR #158). */
+const PRESSING = { intervals: [3_000], timeout: 60_000 };
+
+/** Clips the second cowstail to the block's rope, by `clip`, pressed again while it hasn't held.
+ * A press unclips a cowstail the page shows clipped, so each waits for the last to come back, and
+ * none goes while the climber is off their feet. What the climber was doing says why it failed. */
 async function clipToTheBlock(page: Page, climber: string, clip: () => Promise<void>) {
   await expect
-    .poll(
-      async () => {
-        const clipped = (await seen(page, climber))?.second;
-        if (clipped !== "block") {
-          await clip();
-        }
-        return clipped;
-      },
-      { intervals: [1_000], ...WALKING },
-    )
-    .toBe("block");
+    .poll(async () => {
+      const seenNow = await seen(page, climber);
+      if (seenNow?.second === null && !seenNow.falling) {
+        await clip();
+      }
+      return seenNow;
+    }, PRESSING)
+    .toMatchObject({ second: "block" });
 }
 
 /** The PC's player: by the keys, Shift held for the faster pace the phone's full push gives, to
