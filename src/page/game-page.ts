@@ -173,13 +173,17 @@ export class GamePage {
     const scene = new SlopeScene(
       host,
       camera,
-      physics,
-      rules.hazards,
-      this.mountain.route.camps,
-      scenario.climbers,
-      player,
+      {
+        physics,
+        hazards: rules.hazards,
+        clock: rules.clock,
+        body: rules.body,
+        camps: this.mountain.route.camps,
+        climbers: scenario.climbers,
+        player,
+        seed: scenario.seed,
+      },
       choice.chosen,
-      scenario.seed,
     );
     const received = new ReceivedActions(this.elements.find("#received"));
     const zoom = new ZoomControl(

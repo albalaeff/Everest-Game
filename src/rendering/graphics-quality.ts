@@ -12,26 +12,34 @@ export interface OptionalLayers {
 
 /**
  * One of the three levels of the graphics setting (spec.md → Phone and PC: a quality setting
- * reduces the parallax layers and the particles): which optional layers, how many snowflakes, and
- * a cap on how sharp the picture is drawn, in device pixels per CSS pixel.
+ * reduces the parallax layers and the particles): which optional layers, how many snowflakes and
+ * how many motes of spindrift, whether the sky's gradient is dithered, and a cap on how sharp the
+ * picture is drawn, in device pixels per CSS pixel. Low loses beauty, never information: it keeps
+ * some spindrift, which tells the wind.
  */
 export class GraphicsQuality {
   static readonly LOW = new GraphicsQuality(
     "low",
     { farRanges: false, nearRidge: false, foreground: false },
     0,
+    40,
+    false,
     1,
   );
   static readonly MEDIUM = new GraphicsQuality(
     "medium",
     { farRanges: false, nearRidge: false, foreground: true },
     120,
+    90,
+    false,
     1.5,
   );
   static readonly HIGH = new GraphicsQuality(
     "high",
     { farRanges: true, nearRidge: true, foreground: true },
     300,
+    180,
+    true,
     Infinity,
   );
   static readonly LEVELS: readonly GraphicsQuality[] = [
@@ -44,6 +52,8 @@ export class GraphicsQuality {
     readonly name: QualityName,
     readonly layers: OptionalLayers,
     readonly flakes: number,
+    readonly motes: number,
+    readonly dithered: boolean,
     private readonly sharpnessCap: number,
   ) {}
 
