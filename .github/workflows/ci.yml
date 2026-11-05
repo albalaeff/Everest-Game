@@ -72,6 +72,36 @@ jobs:
         env:
           WRANGLER_SEND_METRICS: "false"
 
+  probe:
+    # Temporary, for #154, out before the merge: what slows Chromium's frames on this runner
+    # (e2e/probe.ts), and the two stories that time out, ten times each.
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+
+      - name: Install the game's dependencies
+        run: npm ci
+
+      - name: Install the browsers
+        run: npx playwright install --with-deps chromium
+
+      - name: Frames and taps
+        run: npx playwright test --config probe.config.ts --project=pc --project=android
+        env:
+          WRANGLER_SEND_METRICS: "false"
+
+      - name: The two stories, ten times each
+        if: ${{ !cancelled() }}
+        run: npx playwright test e2e/controls.spec.ts:102 e2e/room.spec.ts:33 --project=pc --project=android --repeat-each=10
+        env:
+          WRANGLER_SEND_METRICS: "false"
+
   secrets:
     # No secret in the history (PEB#59, PEB#538): gitleaks over every commit of what's checked
     # out, a PR's with develop's or what's live on a push, but for the findings .gitleaksignore
