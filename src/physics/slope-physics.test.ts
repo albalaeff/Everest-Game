@@ -203,6 +203,71 @@ describe("SlopePhysics: the stride", () => {
   });
 });
 
+describe("SlopePhysics: technique", () => {
+  /** Anna at the edge of the crevasse, at the foot of a ladder across it, with this technique. */
+  const atTheLadder = (technique: number): SlopeLayout =>
+    TestMountain.CREVASSE.layout(
+      [{ id: "anna", along: 20, technique }],
+      [],
+      [{ id: "bridge", from: 20, to: 83 }],
+    );
+
+  it("goes at the climber's technique's share of the speed on a ladder and on a rope, not off them", () => {
+    const ladder = new Climb(TestMountain.CALM, atTheLadder(0.5));
+    const start = TestMountain.upTheSlope(15);
+    const layout = TestMountain.SLOPE.layout(
+      [
+        { id: "anna", along: start, technique: 0.5 },
+        { id: "boris", along: start },
+        { id: "vera", along: start, technique: 0.5 },
+      ],
+      [FIXED],
+    );
+    const slope = new Climb(TestMountain.CALM, layout);
+    const from = slope.physics.climber("anna");
+
+    ladder.play(40, [walk("anna", "right")]);
+    slope.play(1, [clip("anna"), clip("boris")]);
+    slope.play(100, ["anna", "boris", "vera"].map((id) => walk(id, "right")));
+
+    expect(ladder.physics.climber("anna").x).toBeCloseTo(20.5, 6);
+    const [clipped = 0, usual = 0, unclipped = 0] = ["anna", "boris", "vera"].map((id) =>
+      distance(from, slope.physics.climber(id)),
+    );
+    expect(usual).toBeGreaterThan(2);
+    expect(clipped).toBeCloseTo(usual / 2, 6);
+    expect(unclipped).toBeCloseTo(usual, 6);
+  });
+
+  it("slips as often for each metre at a lesser technique: half as often a second on a ladder", () => {
+    // About once a second at a whole technique: some 40% slip in their first second at half.
+    let slipped = 0;
+    for (let seed = 1; seed <= 200; seed += 1) {
+      const climb = new Climb(TestMountain.ICY_LADDERS, atTheLadder(0.5), seed);
+      climb.play(20, [walk("anna", "right")]);
+      const anna = climb.physics.climber("anna");
+      slipped += anna.falling || anna.falls.length > 0 ? 1 : 0;
+    }
+
+    expect(slipped).toBeGreaterThan(60);
+    expect(slipped).toBeLessThan(100);
+  });
+
+  it("keeps the technique in a save, and refuses one of nought or less", () => {
+    const climb = new Climb(TestMountain.CALM, atTheLadder(0.5));
+    const resumed = new Climb(
+      TestMountain.CALM,
+      JSON.parse(JSON.stringify(climb.expedition.save())) as ExpeditionSave,
+    );
+
+    resumed.play(40, [walk("anna", "right")]);
+
+    expect(resumed.physics.climber("anna").x).toBeCloseTo(20.5, 6);
+    const none = TestMountain.FLAT.layout([{ id: "anna", along: 10, technique: 0 }]);
+    expect(() => SlopePhysics.start(none)).toThrow(RangeError);
+  });
+});
+
 describe("SlopePhysics: slips and falls", () => {
   it("never slips where the slip chance is nought", () => {
     const climb = new Climb(

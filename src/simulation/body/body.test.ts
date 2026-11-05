@@ -69,6 +69,18 @@ describe("Body: the stride", () => {
     expect(hike.stride("vera")).toBe(0);
   });
 
+  it("goes as far as their fitness takes them: their VO2max, as a share of the typical client's", () => {
+    const hike = Hike.on([
+      { id: "anna", altitude: 3000, fitness: 1.25 },
+      { id: "boris", altitude: 3000, fitness: 0.5, load: 10 },
+    ]);
+
+    hike.hours(1);
+
+    expect(hike.stride("anna")).toBeCloseTo(1, 9);
+    expect(hike.stride("boris")).toBeCloseTo(0.35, 9);
+  });
+
   it("gets back with oxygen the capacity of the altitude the body feels on the move", () => {
     const hike = Hike.on([
       { id: "anna", altitude: 6000 },
@@ -135,6 +147,25 @@ describe("Body: fatigue", () => {
 
     expect(early).toEqual(["fresh", "fresh", "tired", "fresh"]);
     expect(tiredness().filter((_, index) => index !== 2)).toEqual(["fresh", "tired", "fresh"]);
+  });
+
+  it("tires a less fit climber more on the same climb, which takes them longer", () => {
+    // At half the fitness, 300 m take six hours instead of three: tired past half of ten.
+    const hike = Hike.on(
+      [
+        { id: "anna", altitude: 0 },
+        { id: "boris", altitude: 0, fitness: 0.5 },
+      ],
+      100,
+    );
+
+    hike.hours(3, [walk("anna"), walk("boris")]);
+    const fit = hike.body.climber("anna").tiredness;
+    hike.hours(3, [{ kind: "walk", climber: "anna", direction: "stop" }]);
+
+    expect(hike.ridge.climber("boris").altitude).toBeCloseTo(hike.ridge.climber("anna").altitude, 6);
+    expect(fit).toBe("fresh");
+    expect(hike.body.climber("boris").tiredness).toBe("tired");
   });
 
   it("lets a profoundly tired climber only rest-step, whatever the pace chosen", () => {
@@ -276,10 +307,22 @@ describe("Body: the same body everywhere", () => {
     expect(() => hike.hours(0.05, [pace("boris", "faster")])).toThrow(RangeError);
   });
 
-  it("refuses a body of no mass, more than exhausted, or short of less than nothing", () => {
+  it("refuses a save from before the climbers had a fitness, so an older build's climb starts anew", () => {
+    const save = Hike.on([{ id: "anna", altitude: 0 }]).expedition.save();
+    const body = save.rules[Body.NAME] as { seen: number; climbers: { fitness?: number }[] };
+    const climbers = body.climbers.map((climber) => ({ ...climber, fitness: undefined }));
+    const before = JSON.parse(
+      JSON.stringify({ ...save, rules: { ...save.rules, [Body.NAME]: { ...body, climbers } } }),
+    ) as ExpeditionSave;
+
+    expect(() => new Hike(before)).toThrow(RangeError);
+  });
+
+  it("refuses a body of no mass or fitness, more than exhausted, or short of less than nothing", () => {
     const anna = { ...TestRidge.FRESH, id: "anna" };
 
     expect(() => Body.start([{ ...anna, mass: 0 }])).toThrow(RangeError);
+    expect(() => Body.start([{ ...anna, fitness: 0 }])).toThrow(RangeError);
     expect(() => Body.start([{ ...anna, fatigue: 1.5 }])).toThrow(RangeError);
     expect(() => Body.start([{ ...anna, water: -1 }])).toThrow(RangeError);
     expect(() => Body.start([{ ...anna, load: -1 }])).toThrow(RangeError);
