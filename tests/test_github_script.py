@@ -763,6 +763,50 @@ def test_a_new_ci_run_on_a_pr_is_new(capsys: pytest.CaptureFixture[str]) -> None
     assert "PR #9 Something to do [CI: failure]" in capsys.readouterr().out
 
 
+def test_a_rerun_of_ci_on_the_same_commit_is_new(capsys: pytest.CaptureFixture[str]) -> None:
+    # #160: #154's agent waited on attempt 2 of CI on its commit. Its success had the key
+    # attempt 1's had, which needed doing when the watcher began, so nothing woke.
+    pr = {**issue(number=9), "pull_request": {}, "body": GENERATED}
+    github = ChangingGitHub([pr])
+    github.pulls = [{"number": 9, "draft": False, "head": {"sha": "abc"}}]
+    github.runs["abc"] = [run("CI", "completed", "success")]
+    again = {"run_attempt": 2}
+    github.later = [
+        lambda: github.runs.__setitem__("abc", [{**run("CI", "in_progress"), **again}]),
+        lambda: github.runs.__setitem__("abc", [{**run("CI", "completed", "success"), **again}]),
+    ]
+
+    watch(github, sleep=github.sleep, now=lambda: datetime(2026, 10, 10, 2, 0))  # type: ignore[arg-type]
+
+    assert "PR #9 Something to do [CI: success]" in capsys.readouterr().out
+
+
+@pytest.mark.parametrize(
+    ("attempts", "key"),
+    [
+        ((None,), "PR #9 at abc: CI: success"),
+        ((1, 1), "PR #9 at abc: CI: success, Project board: success"),
+        ((2, 1), "PR #9 at abc (attempt 2): CI: success, Project board: success"),
+    ],
+)
+def test_a_rerun_s_key_says_its_attempt_and_a_first_one_s_is_as_it_was(
+    capsys: pytest.CaptureFixture[str], attempts: tuple[int | None, ...], key: str
+) -> None:
+    # #160: a first attempt's key is unchanged, so no task already handled turns new.
+    pr = {**issue(number=9), "pull_request": {}, "body": GENERATED}
+    github = ChangingGitHub([pr])
+    github.pulls = [{"number": 9, "draft": False, "head": {"sha": "abc"}}]
+    names = ["CI", "Project board"][: len(attempts)]
+    github.runs["abc"] = [
+        {**run(name, "completed", "success"), **({"run_attempt": n} if n else {})}
+        for name, n in zip(names, attempts, strict=True)
+    ]
+
+    watch(github, longest=0, sleep=github.sleep, output=JsonOutput())  # type: ignore[arg-type]
+
+    assert said(capsys)[0]["key"] == key
+
+
 # --- keeping develop up to date (#347) -------------------------------------------------------
 
 
