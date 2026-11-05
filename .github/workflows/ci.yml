@@ -72,30 +72,6 @@ jobs:
         env:
           WRANGLER_SEND_METRICS: "false"
 
-  repeat:
-    # Temporary, for #154, out before the merge: the two stories that timed out, twenty times
-    # each, on the fix, with develop's graphics of #159.
-    runs-on: ubuntu-latest
-    timeout-minutes: 30
-    steps:
-      - uses: actions/checkout@v7
-
-      - uses: actions/setup-node@v7
-        with:
-          node-version-file: .nvmrc
-          cache: npm
-
-      - name: Install the game's dependencies
-        run: npm ci
-
-      - name: Install the browsers
-        run: npx playwright install --with-deps chromium
-
-      - name: The two stories, twenty times each
-        run: npx playwright test e2e/controls.spec.ts:140 e2e/room.spec.ts:30 --project=pc --project=android --repeat-each=20
-        env:
-          WRANGLER_SEND_METRICS: "false"
-
   secrets:
     # No secret in the history (PEB#59, PEB#538): gitleaks over every commit of what's checked
     # out, a PR's with develop's or what's live on a push, but for the findings .gitleaksignore
