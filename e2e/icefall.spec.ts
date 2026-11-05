@@ -1,7 +1,7 @@
 import { expect, test } from "@playwright/test";
 import type { Locator, Page } from "@playwright/test";
 
-import { along, climbFrom, openTheGame, savedPlayer, seen } from "./climb";
+import { WALKING, along, climbFrom, openTheGame, savedPlayer, seen } from "./climb";
 
 /**
  * The Khumbu Icefall (#26), Base Camp to Camp 1: the climb sets off from Base Camp's tents at
@@ -120,7 +120,7 @@ test.describe("the arrival at Camp 1", () => {
     test.skip(hasTouch, "a PC's story");
 
     await page.keyboard.down("KeyD");
-    await expect.poll(() => along(page, "player")).toBeGreaterThanOrEqual(CAMP_1_X);
+    await expect.poll(() => along(page, "player"), WALKING).toBeGreaterThanOrEqual(CAMP_1_X);
     await page.keyboard.up("KeyD");
 
     await expectTheNotice(page);
@@ -136,7 +136,7 @@ test.describe("the arrival at Camp 1", () => {
 
     await slope.dispatchEvent("pointerdown", { ...thumb, clientX: 100, clientY: 250 });
     await slope.dispatchEvent("pointermove", { ...thumb, clientX: 160, clientY: 250 });
-    await expect.poll(() => along(page, "player")).toBeGreaterThanOrEqual(CAMP_1_X);
+    await expect.poll(() => along(page, "player"), WALKING).toBeGreaterThanOrEqual(CAMP_1_X);
     await slope.dispatchEvent("pointerup", { ...thumb, clientX: 160, clientY: 250 });
 
     await expectTheNotice(page);

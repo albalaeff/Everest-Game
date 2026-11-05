@@ -51,6 +51,12 @@ export async function openTheGame(page: Page): Promise<void> {
   await choice(page, "Alone").click();
 }
 
+/** The wait for a climber to walk a step or two, as `expect.poll` takes it: a few seconds at the
+ * Icefall's pace, 0.4 m/s on the flat before the altitude and the pack slow the climber, and the
+ * frames of a headless browser drawing in software on CI, a second or two apart, which carry the
+ * keys to the climb and the climb to the page. */
+export const WALKING = { timeout: 20_000 };
+
 /** How far across the slope a climber of the expedition is, in metres, or NaN before the climb:
  * on the flat, how far along it. */
 export async function along(page: Page, climber: string): Promise<number> {

@@ -1,7 +1,15 @@
 import { expect, test } from "@playwright/test";
 import type { Page } from "@playwright/test";
 
-import { along, atRest, choice, openTheGame, readTheDisclaimer, savedClimb } from "./climb";
+import {
+  WALKING,
+  along,
+  atRest,
+  choice,
+  openTheGame,
+  readTheDisclaimer,
+  savedClimb,
+} from "./climb";
 
 /**
  * A climb alone, saved on the device as it goes (src/saves): a reload, or a visit tomorrow, goes
@@ -20,7 +28,7 @@ test("a climb alone goes on after a reload where the climber was, and [Start ove
   test.skip(hasTouch, "a PC's story");
   await openTheGame(page);
   await page.keyboard.down("KeyD");
-  await expect.poll(() => along(page, "player")).toBeGreaterThan(10.5);
+  await expect.poll(() => along(page, "player"), WALKING).toBeGreaterThan(10.5);
   await page.keyboard.up("KeyD");
   const left = await atRest(page, "player");
   // Saved every ten seconds of play: twenty steps a second.
