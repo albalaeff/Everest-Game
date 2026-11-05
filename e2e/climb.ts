@@ -45,6 +45,22 @@ export async function readTheDisclaimer(page: Page, path = "/"): Promise<void> {
   await page.getByRole("button", { name: "I understand" }).click();
 }
 
+const JOINED = /^You have joined room ([A-HJ-NP-Z2-9]{5})$/;
+
+/** What the page says of its room, beside the readouts. */
+export function roomNotice(page: Page): Locator {
+  return page.locator("#room span");
+}
+
+/** Opens a new room, and says its code. */
+export async function openARoom(page: Page): Promise<string> {
+  await readTheDisclaimer(page);
+  await choice(page, "Together: a new room").click();
+  await expect(roomNotice(page)).toHaveText(JOINED);
+  const [, code = ""] = JOINED.exec((await roomNotice(page).textContent()) ?? "") ?? [];
+  return code;
+}
+
 /** Opens the game on a climb alone: a new one, or the one the device has saved. */
 export async function openTheGame(page: Page): Promise<void> {
   await readTheDisclaimer(page);
