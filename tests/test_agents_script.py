@@ -141,7 +141,7 @@ def test_a_priority_label_says_how_soon_an_issue_s_agent_starts() -> None:
 
 def test_the_label_families_are_the_manager_s_on_github() -> None:
     # What `scripts/agent_manager.py labels` makes, and what makes a task new to the watcher.
-    assert [family.name for family in LABEL_FAMILIES] == ["model", "effort", "priority"]
+    assert [family.name for family in LABEL_FAMILIES] == ["model", "effort", "priority", "compact"]
     assert AgentPower.MODEL.label("opus") == "model:opus"
     assert Priority.FAMILY.description("high") == (
         "The agent manager starts this issue's agents at high priority; none is medium (#485)"
@@ -185,6 +185,26 @@ def test_a_share_claude_code_ignores_is_all_of_the_window(value: str) -> None:
     # It reads it as JavaScript's parseFloat, and only from above 0 to 100.
     assert CompactShare.from_env({PCT: value}) == CompactShare() == CompactShare.from_env({})
     assert CompactShare().of(967_000) == 967_000
+
+
+def test_a_compact_label_gives_an_issue_s_agents_more_of_the_window() -> None:
+    # #152: #26's agent read 300K tokens before it wrote a line, past a quarter of the window,
+    # and compacted again and again. Its issue's label gives its agents more, and never less
+    # than agent-manager.toml's share.
+    share = CompactShare(25)
+
+    assert share.from_labels(["bug", "model:opus"]) == share
+    assert share.from_labels(["compact:50"]) == CompactShare(50)
+    assert share.from_labels(["compact:50", "compact:100"]) == CompactShare(100)
+    assert CompactShare(60).from_labels(["compact:50"]) == CompactShare(60)
+    assert CompactShare.FAMILY.labels() == ["compact:50", "compact:100"]
+
+
+def test_after_compacting_again_and_again_the_next_label_up_gives_more() -> None:
+    assert CompactShare(25).more() == "compact:50"
+    assert CompactShare(50).more() == "compact:100"
+    assert CompactShare(60).more() == "compact:100"
+    assert CompactShare(100).more() is None  # all of the window: none gives more
 
 
 # --- the lock --------------------------------------------------------------------------------

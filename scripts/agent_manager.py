@@ -5,9 +5,9 @@ its own, so that nobody watches handoffs or starts sessions again.
     uv run python scripts/agent_manager.py --dry-run   says what it would run, runs nothing
     uv run python scripts/agent_manager.py --once      does what needs doing now, then ends
     uv run python scripts/agent_manager.py --issue 7   only #7's tasks (a trial run)
-    uv run python scripts/agent_manager.py labels      puts the model:*, effort:* and
-                                                       priority:* labels on the repository
-                                                       (scripts/setup.sh does)
+    uv run python scripts/agent_manager.py labels      puts the model:*, effort:*,
+                                                       priority:* and compact:* labels on
+                                                       the repository (scripts/setup.sh does)
 
 It runs the watcher, `scripts/github.py watch --json`, as its child: the watcher decides what
 needs doing, as it did for a session, looking every two minutes unless agent-manager.toml says
@@ -24,9 +24,10 @@ end, after a wait that grows with each failure). For each task:
 - `claude -p` there (`Agent`): it works on the issue as CLAUDE.md says, and stops when the
   next move is someone else's. Its output goes to .agent-runs/<issue>.log. Claude Code
   compacts its conversation early, at agent-manager.toml's share of the window
-  (`CompactShare`, #441): every reply reads all of it again. For the same reason it's
-  offered only what it can use: the tools in `Agent.TOOLS`, the project's settings and
-  hooks, no MCP server (#443), no skills and no auto-memory (#551).
+  (`CompactShare`, #441), or the more its issue's `compact:*` label gives (#152): every reply
+  reads all of it again. For the same reason it's offered only what it can use: the tools in
+  `Agent.TOOLS`, the project's settings and hooks, no MCP server (#443), no skills and no
+  auto-memory (#551).
 
 A green PR's merge needs no agent when the one that opened the PR left the closing comment in
 its handoff: the manager checks the PR and merges it itself (`SelfMerge`, #550), and starts an
@@ -46,7 +47,9 @@ checked out in the checkout, say) is tried again at the watcher's next look. One
 ended on the account's usage limit waits its turn again, and no agent starts before the
 limit resets (`UsageLimit`, #476); one whose run ended because the account lacks its model
 (Fable is on some plans only) waits its turn again and runs on the next model down, as every
-later one on that model does (`ModelUnavailable`, #4). While the machine lacks a tool an
+later one on that model does (`ModelUnavailable`, #4). One that Claude Code stopped for
+compacting again and again puts the next `compact:*` label on its issue, which brings it back
+for an agent that compacts later (`IssueLabel`, #152). While the machine lacks a tool an
 agent needs, code work waits, and the manager says what and the fix, and when a restart would
 give its agents a tool installed since it started (`ToolchainHold`, #108). When an agent
 ends, its worktree goes if nothing in it is missing from GitHub; else it stays, and the log
@@ -807,8 +810,15 @@ class AgentResult:
     context: int | None = None  # the tokens its first reply read: what it's offered (#443)
     limit: UsageLimit | None = None  # the usage limit its last part ended on (#476)
     unavailable: ModelUnavailable | None = None  # the model the account lacks, if it ended so (#4)
+    thrashed: bool = False  # Claude Code stopped it, compacting again and again (#152)
 
     TYPES: ClassVar[tuple[str, ...]] = ('"type":"result"', '"type":"assistant"')
+    # Claude Code's words for a run it stopped for compacting again and again (#152): what it
+    # read to begin filled the context again within 3 turns, 3 times in a row.
+    THRASHED: ClassVar[Mapping[str, str]] = {
+        "api_error": "autocompact_thrashing",
+        "terminal_reason": "rapid_refill_breaker",
+    }
     READ: ClassVar[tuple[str, ...]] = (
         "input_tokens",
         "cache_creation_input_tokens",
@@ -836,6 +846,7 @@ class AgentResult:
             next((tokens for tokens in replies if tokens is not None), None),
             UsageLimit.of(parts[-1]) if parts else None,
             ModelUnavailable.of(parts[-1], model) if parts and model else None,
+            bool(parts) and any(parts[-1].get(k) == v for k, v in cls.THRASHED.items()),
         )
 
     @classmethod
@@ -885,6 +896,8 @@ class AgentResult:
             parts.append("ended on the usage limit")
         if self.unavailable is not None:
             parts.append(f"the account lacks the model {self.unavailable.model}")
+        if self.thrashed:
+            parts.append("compacted again and again")
         return ", ".join(parts)
 
 
@@ -955,9 +968,11 @@ class Agent:
         self._offset = 0
         self.limit: UsageLimit | None = None  # the usage limit it ended on, once it has
         self.unavailable: ModelUnavailable | None = None  # the model the account lacked (#4)
+        self.thrashed = False  # Claude Code stopped it, compacting again and again (#152)
 
     def __str__(self) -> str:
-        return f"{self.power}, in {self.worktree.path} on {self.worktree.branch}"
+        where = f"in {self.worktree.path} on {self.worktree.branch}"
+        return f"{self.power}, compacted at {self.compaction}, {where}"
 
     def command(self) -> list[str]:
         """Claude Code's flags, as `claude --help` names them."""
@@ -1036,6 +1051,7 @@ class Agent:
         found = AgentResult.read(self.log, self._offset, self.power.model)
         self.limit = found.limit
         self.unavailable = found.unavailable
+        self.thrashed = found.thrashed
         result = str(found)
         outcome = "done" if code == 0 else "stopped" if code is None else f"failed (exit {code})"
         kept: str | None = outcome
@@ -1097,7 +1113,7 @@ class Launcher:
         return Agent(
             job,
             self._config.power.from_labels(job.labels).without(self.lacking),
-            self._config.compaction,
+            self._config.compaction.from_labels(job.labels),
             worktree,
             self._database(job.slot),
             self._claude,
@@ -1461,6 +1477,23 @@ class HoldNotice:
         return None
 
 
+@dataclass(frozen=True, slots=True)
+class IssueLabel:
+    """Puts a label on an issue, beside those it has: the next `compact:*` one, once Claude
+    Code stopped its agent for compacting again and again (#152). `labels` makes the
+    manager's on the repository."""
+
+    github: GitHub
+
+    def __call__(self, issue: int, label: str) -> str | None:
+        """Why it couldn't; None once it's on."""
+        try:
+            self.github.call("POST", f"issues/{issue}/labels", {"labels": [label]})
+        except SelfMerge.FAILED as error:
+            return SelfMerge.first_line(error)
+        return None
+
+
 # --- one agent per issue, a few at once ------------------------------------------------------
 
 
@@ -1499,6 +1532,12 @@ class Scheduler:
     either: its job waits its turn again, and the launcher runs that model's agents on the
     next one down for the rest of the run, which is said once per model.
 
+    A run Claude Code stopped for compacting again and again (#152) read more to begin than
+    fits under its share of the window: the next share's label goes on its issue (`label`),
+    which makes the task new to the watcher, whose next look brings it back for an agent that
+    compacts later. At all of the window, the issue is too big for one agent's conversation:
+    that's said, and nothing put on.
+
     Code work waits too while the machine lacks a tool an agent needs (`hold`, #108), and is
     tried again at the watcher's next look, as one that couldn't start is.
 
@@ -1520,11 +1559,13 @@ class Scheduler:
         now: Callable[[], datetime] = local_now,
         merger: SelfMerge | None = None,
         hold: ToolchainHold | None = None,
+        label: Callable[[int, str], str | None] | None = None,
     ) -> None:
         self._most = most
         self._launcher = launcher
         self._merger = merger
         self._hold_tools = hold
+        self._label = label
         self._due = due
         self._say = say or Console().say
         self._dry_run = dry_run
@@ -1569,6 +1610,8 @@ class Scheduler:
                     self._hold_for(agent.limit, agent.job)
                 elif agent.unavailable is not None and not self._closed:
                     self._fall_back(agent.unavailable, agent.job)
+                elif agent.thrashed:
+                    self._compact_later(agent)
         if not self._held():
             for job in self._line():
                 if self._room(job):
@@ -1706,6 +1749,22 @@ class Scheduler:
             f"The account lacks the model {unavailable.model}: its agents run on {instead} for "
             "the rest of this run."
         )
+
+    def _compact_later(self, agent: Agent) -> None:
+        """The next share's label on its issue (#152), which brings it back at the watcher's
+        next look, or why not."""
+        job, share = agent.job, agent.compaction
+        said = f"{job}: compacted again and again at {share} of the window"
+        label = share.more()
+        if label is None:
+            self._say(f"{said}: too big for one agent's conversation; split the issue")
+        elif job.issue is None or self._label is None:
+            self._say(f"{said}: compact_at_percent in agent-manager.toml gives its agents more")
+        elif (why := self._label(job.issue, label)) is not None:
+            self._say(f"{said}: {label} not put on #{job.issue}: {why}")
+        else:
+            later = share.from_labels([label])
+            self._say(f"{said}: {label} put on #{job.issue}, so its next agent compacts at {later}")
 
 
 # --- the watcher, as the manager's child ----------------------------------------------------
@@ -1976,8 +2035,8 @@ class AgentManager:
 
 class Labels:
     """The labels the manager reads, on the repository (`LABEL_FAMILIES`): model:* and
-    effort:*, which say how strong an agent an issue gets (#387), and priority:*, how soon
-    (#485)."""
+    effort:*, which say how strong an agent an issue gets (#387), priority:*, how soon (#485),
+    and compact:*, how much of the window its conversation gets (#152)."""
 
     def __init__(self, github: GitHub) -> None:
         self._github = github
@@ -2056,14 +2115,15 @@ def main(argv: Sequence[str] | None = None) -> None:
         retry=config.watch_every_seconds,  # at the watcher's next look
         merger=SelfMerge(github, me, launcher),
         hold=hold,
+        label=IssueLabel(github),
     )
     console.say(
         f"Agent manager for {me} on {github.slug}: at most "
         f"{plural(config.max_parallel, 'agent')} and a merge, "
         f"{config.power} unless labels say otherwise, compacted at {config.compaction} of the "
-        f"window, worktrees in {config.worktrees(ROOT)}, GitHub looked at every "
-        f"{config.watch_every_seconds:g} s. Ctrl+C lets the running agents finish, then "
-        "stops (Esc then carries on); twice stops them too."
+        f"window unless a compact:* label gives more, worktrees in {config.worktrees(ROOT)}, "
+        f"GitHub looked at every {config.watch_every_seconds:g} s. Ctrl+C lets the running "
+        "agents finish, then stops (Esc then carries on); twice stops them too."
     )
     try:
         hold.look()
