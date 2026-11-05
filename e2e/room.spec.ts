@@ -6,8 +6,11 @@ import { along, atRest, choice, readTheDisclaimer } from "./climb";
 /**
  * Rooms, on the room server `npm run room` serves on this machine (playwright.config.ts): each
  * player in a browser of their own, as two people on two devices. The first in a room climbs as
- * `player`, 10 m along the flat; the second as `teammate`, at 12 m.
+ * `player`, 10 m along the flat; the second as `teammate`, at 12 m. Two or three browsers draw the
+ * slope at once, each frame in software, and a step goes from one to another over two of their
+ * frames: on a small screen, those come fast enough (playwright.config.ts, #154).
  */
+test.use({ viewport: { width: 640, height: 360 } });
 
 const JOINED = /^You have joined room ([A-HJ-NP-Z2-9]{5})$/;
 

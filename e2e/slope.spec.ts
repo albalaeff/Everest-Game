@@ -6,7 +6,9 @@ import { openTheGame } from "./climb";
 /**
  * The slope as the page draws it. Playwright can't read a WebGL canvas, so the scene writes what
  * it draws into `#slope`'s data attributes, and `window.everest.pixelAt` reads a pixel back.
+ * It's drawn as a new device starts, not on the other stories' Low (playwright.config.ts).
  */
+test.use({ storageState: { cookies: [], origins: [] } });
 
 /** What the scene says of itself in `#slope`'s data attributes. */
 async function drawn(page: Page, what: string): Promise<string> {

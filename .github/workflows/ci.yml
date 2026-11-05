@@ -72,11 +72,11 @@ jobs:
         env:
           WRANGLER_SEND_METRICS: "false"
 
-  probe:
-    # Temporary, for #154, out before the merge: what slows Chromium's frames on this runner
-    # (e2e/probe.ts), and the two stories that time out, ten times each.
+  repeat:
+    # Temporary, for #154, out before the merge: the two stories that timed out, twenty times
+    # each, on the fix.
     runs-on: ubuntu-latest
-    timeout-minutes: 40
+    timeout-minutes: 30
     steps:
       - uses: actions/checkout@v7
 
@@ -91,14 +91,8 @@ jobs:
       - name: Install the browsers
         run: npx playwright install --with-deps chromium
 
-      - name: Frames and taps
-        run: npx playwright test --config probe.config.ts --project=pc --project=android
-        env:
-          WRANGLER_SEND_METRICS: "false"
-
-      - name: The two stories, ten times each
-        if: ${{ !cancelled() }}
-        run: npx playwright test e2e/controls.spec.ts:102 e2e/room.spec.ts:33 --project=pc --project=android --repeat-each=10
+      - name: The two stories, twenty times each
+        run: npx playwright test e2e/controls.spec.ts:102 e2e/room.spec.ts:36 --project=pc --project=android --repeat-each=20
         env:
           WRANGLER_SEND_METRICS: "false"
 
