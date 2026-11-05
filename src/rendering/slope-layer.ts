@@ -2,6 +2,8 @@ import { Graphics } from "pixi.js";
 
 import type { Point, SlopePhysics, Terrain } from "../physics";
 import type { ClimberId, ObjectiveHazards } from "../simulation";
+import { CampSigns } from "./camp-signs";
+import type { CampStretch } from "./camp-signs";
 import { ClimberFigure } from "./climber-figure";
 import { HazardDrawing } from "./hazard-drawing";
 import { LeastSize } from "./least-size";
@@ -21,11 +23,11 @@ interface DrawnLadder {
 
 /**
  * The slope itself, at the camera's own depth: the ground as the physics has it, with its ladders,
- * its ropes, its hazards and every climber on it. In the picture alone, the ground runs on level
- * past the section's ends, so the view far out shows no cliff there. The snow and what stands over
- * the hazards are drawn once; the lines, the ground's edge and the ladders, when the scale changes,
- * since they never get thinner than `LeastSize` allows; a rope when it moves too; and the climbers
- * and what comes down are placed each frame.
+ * its ropes, its hazards, the camps' tents and every climber on it. In the picture alone, the
+ * ground runs on level past the section's ends, so the view far out shows no cliff there. The
+ * snow, the tents and what stands over the hazards are drawn once; the lines, the ground's edge
+ * and the ladders, when the scale changes, since they never get thinner than `LeastSize` allows;
+ * a rope when it moves too; and the climbers and what comes down are placed each frame.
  */
 export class SlopeLayer extends ParallaxLayer {
   private static readonly SNOW = 0xeef3f9;
@@ -33,6 +35,9 @@ export class SlopeLayer extends ParallaxLayer {
   private static readonly ROPE = 0xff6f3c;
   private static readonly ANCHOR = 0x3a3f47;
   private static readonly LADDER = 0xb9c4cf;
+  private static readonly TENT = 0xe9a13b;
+  private static readonly TENT_EDGE = 0x5a3b12;
+  private static readonly TENT_EDGE_METRES = 0.08;
   private static readonly SURFACE_METRES = 0.15;
   private static readonly ROPE_METRES = 0.07;
   private static readonly ANCHOR_METRES = 0.12;
@@ -51,12 +56,15 @@ export class SlopeLayer extends ParallaxLayer {
   private readonly ropes: readonly DrawnRope[];
   private readonly figures: readonly { readonly id: ClimberId; readonly figure: ClimberFigure }[];
   private readonly hazards: HazardDrawing;
+  /** How many tents stand in the camps. */
+  readonly tents: number;
   /** The scale the lines were last drawn at, in pixels a metre: none yet. */
   private drawnAt = 0;
 
   constructor(
     private readonly physics: SlopePhysics,
     hazards: ObjectiveHazards,
+    camps: readonly CampStretch[],
     climbers: readonly ClimberId[],
     player: ClimberId,
   ) {
@@ -65,6 +73,10 @@ export class SlopeLayer extends ParallaxLayer {
     this.addChild(this.hazards.standing);
     this.ground = SlopeLayer.runOut(physics.terrain);
     this.addChild(SlopeLayer.snow(this.ground), this.surface);
+    const signs = new CampSigns(physics.terrain);
+    const tents = camps.flatMap((camp) => signs.tents(camp));
+    this.addChild(SlopeLayer.tents(tents));
+    this.tents = tents.length;
     this.ladders = physics.ladders.map((id) => {
       const graphics = new Graphics();
       this.addChild(graphics);
@@ -155,6 +167,19 @@ export class SlopeLayer extends ParallaxLayer {
     const bottom = Math.min(...ground.map(({ y }) => y)) - SlopeLayer.BELOW_METRES;
     const outline = ground.flatMap(({ x, y }) => [x, y]);
     return new Graphics().poly([left, bottom, ...outline, right, bottom]).fill(SlopeLayer.SNOW);
+  }
+
+  /** The camps' tents, as `CampSigns` shapes them: filled, with an edge, so they read by shape
+   * and by colour. */
+  private static tents(tents: readonly (readonly Point[])[]): Graphics {
+    const graphics = new Graphics();
+    for (const tent of tents) {
+      graphics
+        .poly(tent.flatMap(({ x, y }) => [x, y]))
+        .fill(SlopeLayer.TENT)
+        .stroke({ width: SlopeLayer.TENT_EDGE_METRES, color: SlopeLayer.TENT_EDGE });
+    }
+    return graphics;
   }
 
   private static ladder({ ends, graphics }: DrawnLadder, size: LeastSize): void {

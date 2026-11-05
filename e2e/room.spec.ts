@@ -54,7 +54,7 @@ test("a new room's link brings a friend in; each sees the other climb, and the f
   await expect.poll(() => along(friend, "player")).toBeGreaterThan(10.5);
   await page.keyboard.up("KeyD");
   await friend.keyboard.down("KeyD");
-  await expect.poll(() => along(page, "teammate")).toBeGreaterThan(12.5);
+  await expect.poll(() => along(page, "teammate")).toBeGreaterThan(12.3);
   await friend.context().close();
   await atRest(page, "teammate");
 });
@@ -105,7 +105,7 @@ test("a player back in the room after a reload finds their climber where they le
   test.skip(hasTouch, "a PC's story");
   const code = await openARoom(page);
   await page.keyboard.down("KeyD");
-  await expect.poll(() => along(page, "player")).toBeGreaterThan(11);
+  await expect.poll(() => along(page, "player")).toBeGreaterThan(10.5);
   await page.keyboard.up("KeyD");
   const left = await atRest(page, "player");
 

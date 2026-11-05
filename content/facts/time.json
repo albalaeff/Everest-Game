@@ -19,6 +19,7 @@
       "question": "The sources give each section's hours (time.base-camp-to-camp-1 to time.camp-2-to-base-camp), but they differ by up to two hours, give lengths on the ground only as far as Camp 3, and don't say how much each section climbs. Which hours hold for a client today, the first time and on later rotations; how long is each section on the ground, and how much does it climb? The game draws every section at the same share of life and walks the climber at real speed, so these hours and lengths are what it has to fit.",
       "about": [
         "time.compression",
+        "route.icefall-length",
         "time.base-camp-to-camp-1",
         "time.camp-1-to-camp-2",
         "time.camp-2-to-camp-3",
@@ -263,6 +264,16 @@
             "url": "https://haydenrue.com/mountaineering/south-col-of-mount-everest/"
           },
           "checked": "2026-11-03"
+        },
+        {
+          "value": 6,
+          "unit": "h",
+          "note": "For foreigners, it may take over 6 hours to climb to Camp 1 on the first rotation.",
+          "source": {
+            "title": "Alan Arnette: Everest 2021: Everest's Gatekeeper, the Khumbu Icefall",
+            "url": "https://www.alanarnette.com/2021/04/10/everest-2021-everests-gatekeeper-the-khumbu-icefall/"
+          },
+          "checked": "2026-11-05"
         }
       ]
     },
@@ -283,6 +294,60 @@
             "url": "https://summitpost.org/south-col-or-southeast-ridge/165530"
           },
           "checked": "2026-11-03"
+        },
+        {
+          "range": {
+            "min": 4,
+            "max": 5
+          },
+          "unit": "h",
+          "note": "Once acclimatized, the time can be cut in half, but most people still take four to five hours; Sherpas make the round trip in the time a foreigner takes one way.",
+          "source": {
+            "title": "Alan Arnette: Everest 2021: Everest's Gatekeeper, the Khumbu Icefall",
+            "url": "https://www.alanarnette.com/2021/04/10/everest-2021-everests-gatekeeper-the-khumbu-icefall/"
+          },
+          "checked": "2026-11-05"
+        }
+      ]
+    },
+    {
+      "id": "time.base-camp-departure",
+      "kind": "fact",
+      "claim": "Climbers leave Base Camp for the Icefall at about this hour of the night, to be through it before the sun warms the ice.",
+      "status": "source only",
+      "versions": [
+        {
+          "value": 3,
+          "unit": "hour of day",
+          "note": "Around 3:00 am, after a quick breakfast.",
+          "source": {
+            "title": "Hayden Rue: South Col of Mount Everest → Section 1: Khumbu Icefall to Camp 1",
+            "url": "https://haydenrue.com/mountaineering/south-col-of-mount-everest/"
+          },
+          "checked": "2026-11-05"
+        },
+        {
+          "range": {
+            "min": 2,
+            "max": 3
+          },
+          "unit": "hour of day",
+          "note": "Leaving base camp no later than 3:00 am; a team that left at 2 am found good conditions and few people on the route; Sherpas leave as early as 1:00 or 2:00, since they make a round trip.",
+          "source": {
+            "title": "Alan Arnette: Everest 2022: Climbers Begin Rotations and Into the Icefall",
+            "url": "https://www.alanarnette.com/2022/04/21/everest-2022-climbers-begin-rotations-and-into-the-icefall/"
+          },
+          "checked": "2026-11-05"
+        },
+        {
+          "value": 4,
+          "unit": "hour of day",
+          "note": "Most teams are on the ice by 4:00 am, leaving base camp no later than 6:00 am; the sun usually touches the ice around 10:00 am, and the highest danger is in the afternoon, when it hits the seracs.",
+          "source": {
+            "title": "Alan Arnette: Everest 2021: Everest's Gatekeeper, the Khumbu Icefall",
+            "url": "https://www.alanarnette.com/2021/04/10/everest-2021-everests-gatekeeper-the-khumbu-icefall/"
+          },
+          "checked": "2026-11-05"
         }
       ]
     },

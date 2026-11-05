@@ -122,6 +122,15 @@ describe("MountainClock", () => {
   it("refuses a start date that isn't one", () => {
     expect(() => aClock({ date: "20 April 2026", time: "04:00" })).toThrow(RangeError);
   });
+
+  it("writes a time of day as HH:MM, the form a start takes, into the next day too", () => {
+    expect(MountainClock.text(3 * HOUR)).toBe("03:00");
+    expect(MountainClock.text(7 * HOUR + 50 * 60 + 59)).toBe("07:50");
+    expect(MountainClock.text(25 * HOUR)).toBe("01:00");
+    expect(() =>
+      aClock({ date: "2026-04-20", time: MountainClock.text(3.5 * HOUR) }),
+    ).not.toThrow();
+  });
 });
 
 describe("MountainClock as a rule of the expedition", () => {

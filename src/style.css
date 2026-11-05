@@ -438,7 +438,8 @@ kbd {
 
 /* Above the game, upright or sideways; on a small screen it scrolls inside itself, not the page. */
 #disclaimer,
-#start {
+#start,
+#camp {
   position: fixed;
   inset: 0;
   display: flex;
@@ -452,12 +453,14 @@ kbd {
 
 #disclaimer[hidden],
 #start[hidden],
-#start [hidden] {
+#start [hidden],
+#camp[hidden] {
   display: none;
 }
 
 #disclaimer > div,
-#start > div {
+#start > div,
+#camp > div {
   max-width: 36rem;
   margin: auto;
   padding: 1rem 0;
@@ -465,10 +468,35 @@ kbd {
 }
 
 #disclaimer h2,
-#start h2 {
+#start h2,
+#camp h2 {
   margin: 0 0 1rem;
   font-size: 1.25rem;
   text-align: center;
+}
+
+/* The arrival's lines, under the camp's name, and [Continue] under them. */
+#camp p {
+  margin: 0 0 0.75rem;
+  font-size: 1rem;
+  text-align: center;
+}
+
+#camp button {
+  display: block;
+  width: 100%;
+  max-width: 20rem;
+  min-width: 48px;
+  min-height: 48px;
+  margin: 1.5rem auto 0;
+  padding: 0 0.5rem;
+  border: 1px solid #9db4d0;
+  border-radius: 0.5rem;
+  background: #16335c;
+  color: inherit;
+  font: inherit;
+  pointer-events: auto;
+  touch-action: none;
 }
 
 /* The start's choices, one under the other: the code and its [Join] share a line. */

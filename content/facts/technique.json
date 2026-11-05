@@ -2,6 +2,178 @@
   "$schema": "../facts.schema.json",
   "facts": [
     {
+      "id": "technique.gravity",
+      "kind": "fact",
+      "claim": "Gravity's pull on a falling climber, a rope or falling ice: standard gravity.",
+      "status": "source only",
+      "versions": [
+        {
+          "value": 9.80665,
+          "unit": "m/s²",
+          "note": "Defined by ISO 80000-3; the real pull is about 0.5% greater at the poles than at the equator.",
+          "source": {
+            "title": "Wikipedia: Standard gravity",
+            "url": "https://en.wikipedia.org/wiki/Standard_gravity"
+          },
+          "checked": "2026-11-05"
+        }
+      ]
+    },
+    {
+      "id": "technique.snow-friction",
+      "kind": "fact",
+      "claim": "How hard snow holds a body sliding over it in ski clothing, the coefficient of kinetic friction: the game uses it for a climber sliding after a slip, and for a rope lying on the ground.",
+      "status": "source only",
+      "versions": [
+        {
+          "range": { "min": 0.19, "max": 0.48 },
+          "unit": "1",
+          "note": "Three fabrics on snow, a ski overall and two race suits, on a linear tribometer: dry friction, highest on the roughest fabric.",
+          "source": {
+            "title": "Nachbauer et al. 2016, Kinetic Friction of Sport Fabrics on Snow (Lubricants) → Abstract",
+            "url": "https://doi.org/10.3390/lubricants4010007"
+          },
+          "checked": "2026-11-05"
+        }
+      ]
+    },
+    {
+      "id": "technique.walking-speed-flat",
+      "kind": "coefficient",
+      "claim": "How fast a fresh climber at sea level, carrying nothing, walks flat snow in crampons, in metres a second: the body scales it by the capacity the altitude leaves, 60% at 5,000 m, and by the pack. Fitted so that a steady first crossing of the Icefall, drawn at 1/12 of its length with its walls and crevasses at life size, takes about 5 hours, the middle of the 3–7 the sources give.",
+      "status": "source only",
+      "value": 0.4,
+      "unit": "m/s",
+      "fitted_to": [
+        "time.base-camp-to-camp-1",
+        "route.icefall-length",
+        "route.base-camp-altitude",
+        "route.camp-1-altitude",
+        "body.vo2max-5000"
+      ],
+      "fitted": "2026-11-05"
+    },
+    {
+      "id": "technique.walking-speed-steep-up",
+      "kind": "coefficient",
+      "claim": "How fast that climber goes up the steepest ground walked without a ladder, the Icefall's 60°, in metres a second; between flat and that, the speed falls in a straight line over the sine of the slope. Fitted with the flat speed to the Icefall's hours.",
+      "status": "source only",
+      "value": 0.12,
+      "unit": "m/s",
+      "fitted_to": ["time.base-camp-to-camp-1", "route.icefall-steepness"],
+      "fitted": "2026-11-05"
+    },
+    {
+      "id": "technique.walking-speed-steep-down",
+      "kind": "coefficient",
+      "claim": "How fast that climber goes down the steepest ground walked without a ladder, in metres a second: faster than up it, slower than the flat, where every step is a brake. Fitted with the flat speed to the Icefall's hours.",
+      "status": "source only",
+      "value": 0.25,
+      "unit": "m/s",
+      "fitted_to": ["time.base-camp-to-camp-1", "route.icefall-steepness"],
+      "fitted": "2026-11-05"
+    },
+    {
+      "id": "technique.slip-free-steepness",
+      "kind": "coefficient",
+      "claim": "Up to this steepness a climber in crampons doesn't slip; steeper, the chance grows in a straight line to technique.slip-chance-steep at the steepest ground walked. Fitted to the Lhotse Face, about 30°, where a slip ends badly, and to the Icefall's 20° slopes, walked without a thought.",
+      "status": "source only",
+      "value": 30,
+      "unit": "degrees",
+      "fitted_to": ["route.lhotse-face-hazards", "route.icefall-steepness"],
+      "fitted": "2026-11-05"
+    },
+    {
+      "id": "technique.slip-chance-steep",
+      "kind": "coefficient",
+      "claim": "The chance a climber slips in a second of walking the steepest ground walked without a ladder, scaled by their stride so that a slow climber slips as often for each metre. Fitted so that a few slips come on a long steep stretch, each held by the rope when the climber is clipped: the lesson is the rope, not the footing.",
+      "status": "source only",
+      "value": 0.02,
+      "unit": "1/s",
+      "fitted_to": ["route.lhotse-face-hazards", "route.icefall-lessons"],
+      "fitted": "2026-11-05"
+    },
+    {
+      "id": "technique.ladder-speed-across",
+      "kind": "coefficient",
+      "claim": "How fast that fresh climber at sea level crosses a ladder laid flat over a crevasse, in metres a second. The ladders are drawn at life size on a section drawn at 1/12, so a ladder takes twelve times its real mountain minutes: fitted so that the Icefall's ladders take about half an hour of its hours together.",
+      "status": "source only",
+      "value": 0.6,
+      "unit": "m/s",
+      "fitted_to": ["time.base-camp-to-camp-1", "route.icefall-ladders"],
+      "fitted": "2026-11-05"
+    },
+    {
+      "id": "technique.ladder-speed-up",
+      "kind": "coefficient",
+      "claim": "How fast that climber goes up a ladder stood against a wall, in metres a second; between flat and vertical, the speed falls in a straight line over the sine of the ladder's angle. Fitted with the crossing speed to the Icefall's hours.",
+      "status": "source only",
+      "value": 0.4,
+      "unit": "m/s",
+      "fitted_to": ["time.base-camp-to-camp-1", "route.icefall-ladders"],
+      "fitted": "2026-11-05"
+    },
+    {
+      "id": "technique.ladder-speed-down",
+      "kind": "coefficient",
+      "claim": "How fast that climber comes down a ladder stood against a wall, in metres a second: slower than up it, feeling for each rung in crampons. Fitted with the crossing speed to the Icefall's hours.",
+      "status": "source only",
+      "value": 0.3,
+      "unit": "m/s",
+      "fitted_to": ["time.base-camp-to-camp-1", "route.icefall-ladders"],
+      "fitted": "2026-11-05"
+    },
+    {
+      "id": "technique.ladder-slip-chance",
+      "kind": "coefficient",
+      "claim": "The chance a climber slips in a second on a ladder, whatever its angle, scaled by their stride. Fitted so that a slip comes on about one crossing of the Icefall in five: a scare on the rope for a climber clipped in, and the 2012 fall for one who isn't.",
+      "status": "source only",
+      "value": 0.004,
+      "unit": "1/s",
+      "fitted_to": ["route.icefall-lessons", "route.icefall-ladders"],
+      "fitted": "2026-11-05"
+    },
+    {
+      "id": "technique.cowstail-reach",
+      "kind": "coefficient",
+      "claim": "How far a cowstail reaches from the climber's harness to the fixed rope, in metres: how far from the rope they can clip, and how far past an anchor the rope lets them. Fitted so that a climber beside a ladder can reach the rope fixed along it.",
+      "status": "source only",
+      "value": 0.8,
+      "unit": "m",
+      "fitted_to": ["route.icefall-lessons"],
+      "fitted": "2026-11-05"
+    },
+    {
+      "id": "technique.knock-speed",
+      "kind": "coefficient",
+      "claim": "How fast falling ice, an avalanche or a breaking snow bridge throws a climber it catches down the slope, in metres a second: a fall their rope holds if they're clipped. Fitted so that an unroped climber caught on a slope slides off it.",
+      "status": "source only",
+      "value": 3,
+      "unit": "m/s",
+      "fitted_to": ["route.icefall-hazards"],
+      "fitted": "2026-11-05"
+    },
+    {
+      "id": "technique.arrest-speed",
+      "kind": "coefficient",
+      "claim": "The fastest slide a climber can stop with the ice axe driven into the slope, in metres a second: self-arrest works in a slide's first moments or not at all. Fitted to the Lhotse Face, where a slip not stopped at once ends badly.",
+      "status": "source only",
+      "value": 5,
+      "unit": "m/s",
+      "fitted_to": ["route.lhotse-face-hazards"],
+      "fitted": "2026-11-05"
+    },
+    {
+      "id": "technique.axe-reach",
+      "kind": "coefficient",
+      "claim": "How far from their body a sliding climber can drive the ice axe into the slope, in metres: an arm and the axe. Fitted with the arrest speed to the Lhotse Face.",
+      "status": "source only",
+      "value": 1.5,
+      "unit": "m",
+      "fitted_to": ["route.lhotse-face-hazards"],
+      "fitted": "2026-11-05"
+    },
+    {
       "id": "technique.re-clipping",
       "kind": "question",
       "question": "At an anchor where one fixed rope ends and the next begins, in what order does a climber move their cowstails across, and are they ever clipped to neither rope?"
@@ -9,17 +181,20 @@
     {
       "id": "technique.cowstails",
       "kind": "question",
-      "question": "How do climbers on the South route rig their cowstails: the jumar on one and a carabiner on the other, and how long is each, so how far can a climber reach to clip?"
+      "question": "How do climbers on the South route rig their cowstails: the jumar on one and a carabiner on the other, and how long is each, so how far can a climber reach to clip? The game gives a cowstail 0.8 m of reach.",
+      "about": ["technique.cowstail-reach"]
     },
     {
       "id": "technique.ladder-across",
       "kind": "question",
-      "question": "How does a climber cross a ladder laid over a crevasse in the Icefall: clipped to what, stepping how in crampons, and how fast?"
+      "question": "How does a climber cross a ladder laid over a crevasse in the Icefall: clipped to what, stepping how in crampons, and how fast? The game crosses at 0.6 m/s at sea level, less at altitude, and slips once in about 250 seconds on a ladder.",
+      "about": ["technique.ladder-speed-across", "technique.ladder-slip-chance"]
     },
     {
       "id": "technique.ladder-up",
       "kind": "question",
-      "question": "How does a climber go up a ladder stood against an ice wall: clipped to what, and what holds a slip?"
+      "question": "How does a climber go up a ladder stood against an ice wall: clipped to what, and what holds a slip? The game climbs at 0.4 m/s at sea level and comes down at 0.3, less at altitude.",
+      "about": ["technique.ladder-speed-up", "technique.ladder-speed-down"]
     },
     {
       "id": "technique.jumar",
@@ -44,17 +219,31 @@
     {
       "id": "technique.speed-by-steepness",
       "kind": "question",
-      "question": "How fast does a climber walk on ground of each steepness, up and down, and how much slower on a ladder?"
+      "question": "How fast does a climber walk on ground of each steepness, up and down, and how much slower on a ladder? The game's speeds are fitted to the hours the sources give the Icefall, not measured: 0.4 m/s on the flat at sea level, 0.12 up a 60° slope and 0.25 down one, before the altitude and the pack slow the climber.",
+      "about": [
+        "technique.walking-speed-flat",
+        "technique.walking-speed-steep-up",
+        "technique.walking-speed-steep-down",
+        "technique.ladder-speed-across",
+        "technique.ladder-speed-up",
+        "technique.ladder-speed-down"
+      ]
     },
     {
       "id": "technique.slips-by-steepness",
       "kind": "question",
-      "question": "How often does a climber slip on snow and ice of each steepness, and on a ladder?"
+      "question": "How often does a climber slip on snow and ice of each steepness, and on a ladder? The game has no slips up to 30°, and a chance rising to once in about 50 seconds of walking at 60°.",
+      "about": [
+        "technique.slip-free-steepness",
+        "technique.slip-chance-steep",
+        "technique.ladder-slip-chance"
+      ]
     },
     {
       "id": "technique.self-arrest",
       "kind": "question",
-      "question": "Up to what speed can a sliding climber stop themselves with the ice axe, on snow and on hard ice, and within how many seconds of the slip? How far from the body does the axe reach? The game stops a slide no faster than 5 m/s, with the axe driven in within 1.5 m above the body, and never in the air."
+      "question": "Up to what speed can a sliding climber stop themselves with the ice axe, on snow and on hard ice, and within how many seconds of the slip? How far from the body does the axe reach, and how hard do snow and hard ice hold a sliding climber without it? The game stops a slide no faster than 5 m/s, with the axe driven in within 1.5 m above the body, and never in the air; without the axe, a slide stops by itself only on ground gentler than about 19°, by the friction measured for ski fabrics on snow.",
+      "about": ["technique.arrest-speed", "technique.axe-reach", "technique.snow-friction"]
     }
   ]
 }

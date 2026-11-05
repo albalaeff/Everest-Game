@@ -1,14 +1,13 @@
 import { describe, expect, it } from "vitest";
 
-import crowds from "../../content/facts/crowds.json";
-import time from "../../content/facts/time.json";
 import { SectionScale, SlopePhysics } from "../physics";
 import { Expedition, MountainClock, SimulationClock } from "../simulation";
 import { KnowledgeBase } from "../content/knowledge-base";
-import { StandInRoute } from "../content/stand-in-route";
+import { KNOWLEDGE_FILES } from "../content/knowledge-files";
+import { Section } from "../content/section";
 
 const HOUR = 3600;
-const base = new KnowledgeBase([time, crowds]);
+const base = new KnowledgeBase(KNOWLEDGE_FILES);
 const compression = base.number("time.compression");
 
 /**
@@ -44,13 +43,13 @@ describe("The game's scale: a mountain hour in minutes of play", () => {
     expect(clock.timeOfDay).toBe(6 * HOUR);
   });
 
-  it("draws the stand-in section at that ratio, and the altimeter and the clock read from it", () => {
-    const route = new StandInRoute();
+  it("draws the Icefall at that ratio, and the altimeter and the clock read from it", () => {
+    const route = new Section(base);
     const physics = new SlopePhysics(route.settings);
     const clock = new MountainClock(compression);
     const expedition = Expedition.start(route.scenario(2026), [clock, physics]);
     const scale = new SectionScale(physics.terrain, route.layout.altitude);
-    const player = StandInRoute.PLAYER;
+    const player = Section.PLAYER;
     const start = physics.climber(player);
 
     expedition.advance([{ kind: "walk", climber: player, direction: "right" }]);
@@ -59,7 +58,7 @@ describe("The game's scale: a mountain hour in minutes of play", () => {
     }
     const later = physics.climber(player);
 
-    expect(scale.compression).toBeCloseTo(compression, 6);
+    expect(Math.abs(scale.compression / compression - 1)).toBeLessThan(0.01);
     expect(start.altitude).toBeGreaterThanOrEqual(route.layout.altitude.start);
     expect(later.altitude).toBeLessThan(route.layout.altitude.end);
     // The altimeter climbs faster than the picture: a drawn metre stands for twelve.

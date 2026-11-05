@@ -66,7 +66,7 @@ export class StartMenu {
       event.preventDefault();
       const code = RoomCode.parse(input.value);
       if (code === null) {
-        input.setCustomValidity(this.texts.say("unknown", input.value.trim()));
+        input.setCustomValidity(this.texts.say("unknown", { code: input.value.trim() }));
         input.reportValidity();
         return;
       }

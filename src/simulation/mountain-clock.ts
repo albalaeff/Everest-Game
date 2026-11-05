@@ -50,6 +50,16 @@ export class MountainClock implements Rule {
     return save;
   }
 
+  /** A time of day, `seconds` since midnight, written `HH:MM`: the form a start's time takes,
+   * and the clock's reading on the screen. */
+  static text(seconds: number): string {
+    const day = MountainClock.SECONDS_A_DAY;
+    const inTheDay = seconds - Math.floor(seconds / day) * day;
+    const hours = Math.floor(inTheDay / 3600);
+    const minutes = Math.floor((inTheDay - hours * 3600) / 60);
+    return `${String(hours).padStart(2, "0")}:${String(minutes).padStart(2, "0")}`;
+  }
+
   /** The date and time the expedition began at. */
   get start(): ClockStart {
     if (this.began === null) {

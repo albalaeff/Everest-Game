@@ -3,12 +3,15 @@ import { KnowledgeBase } from "../content/knowledge-base";
 import type { KnowledgeFile } from "../content/knowledge-base";
 import { Mountain } from "../content/mountain";
 import type { ExpeditionRules } from "../content/mountain";
-import { StandInRoute } from "../content/stand-in-route";
+import { Section } from "../content/section";
 import { ControlsPage } from "../input/controls-page";
 import type { ControlTexts } from "../input/controls-page";
 import { PageElements } from "../input/page-elements";
 import type { ActionSink } from "../input/player-action";
 import { ReceivedActions } from "../input/received-actions";
+import { CampNotice } from "../interface/camp-notice";
+import type { Texts } from "../interface/texts";
+import type { ClimberView } from "../physics";
 import {
   Camera,
   FpsReadout,
@@ -43,6 +46,8 @@ export interface PageTexts {
   readonly controls: ControlTexts;
   readonly rendering: RenderingTexts;
   readonly room: RoomTexts;
+  /** The camps' words: each camp's name, each section's line and the arrival's. */
+  readonly camps: Texts;
 }
 
 /** What the page's stories read that the DOM doesn't show, on `window.everest`. */
@@ -51,6 +56,8 @@ export interface PageHooks {
   pixelAt(x: number, y: number): readonly number[];
   /** Where a climber of the expedition is: metres along and up the slope. */
   climberAt(climber: ClimberId): readonly number[];
+  /** A climber of the expedition as the physics shows them: on a ladder, on a rope, falling. */
+  climber(climber: ClimberId): ClimberView;
 }
 
 /** A climb as the page plays it: alone or in a room, it's the same from here. */
@@ -110,7 +117,7 @@ export class GamePage {
       this.mountain.scenario(this.newSeed()),
     );
     const queue = new ActionQueue();
-    const player = StandInRoute.PLAYER;
+    const player = Section.PLAYER;
     const game = new SoloGame(expedition, queue, store, player);
     game.save();
     this.saveWhenHidden(game);
@@ -168,6 +175,7 @@ export class GamePage {
       camera,
       physics,
       rules.hazards,
+      this.mountain.route.camps,
       scenario.climbers,
       player,
       choice.chosen,
@@ -190,28 +198,41 @@ export class GamePage {
       physics,
       player,
     );
+    const arrival = new CampNotice(
+      window,
+      texts.camps,
+      rules.clock,
+      physics,
+      player,
+      this.mountain.route,
+    );
     const loop = new GameLoop(climb.played, scene);
     const button = new QualityButton(choice, texts.rendering, (quality) => {
       scene.setQuality(quality, window.devicePixelRatio);
     });
     button.appendTo(this.elements.find("header"));
     const fps = new FpsReadout(this.elements.find("#fps"), texts.rendering.fps);
+    const afterFrame = (): void => {
+      climbInterface.update();
+      arrival.update();
+    };
     this.expose({
       pixelAt: (x, y) => scene.pixelAt(x, y),
       climberAt: (climber) => {
         const { x, y } = physics.climber(climber);
         return [x, y];
       },
+      climber: (climber) => physics.climber(climber),
     });
     if (await scene.open(window)) {
       scene.eachFrame((seconds, now) => {
         loop.frame(seconds);
-        climbInterface.update();
+        afterFrame();
         fps.frame(now);
       });
     } else {
       host.textContent = texts.rendering["no-webgl"];
-      this.runWithoutPicture(loop, () => climbInterface.update());
+      this.runWithoutPicture(loop, afterFrame);
     }
   }
 
