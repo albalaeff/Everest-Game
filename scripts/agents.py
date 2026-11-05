@@ -11,7 +11,7 @@ model and effort the issue's labels ask for (`AgentPower`), in the turn its prio
 gives it (`Priority`, #485). The manager puts that power in the agent's environment, so its
 comments are signed "_Claude Code agent (bateks, opus/xhigh)_" (scripts/github.py), and the
 share of the window at which Claude Code compacts its conversation (`CompactShare`, #441), or
-the more its issue's `compact:*` label gives (#152).
+the more its issue's `compact:*` label gives (#152); what it writes for after that is `NOTES`.
 While the manager holds its lock (`ManagerLock`), a session's watcher ends: the agents take
 the issues (CLAUDE.md → Sessions). A session's watcher holds one of its own (`WatchLock`,
 #597), so a second session on the machine takes no issue either.
@@ -29,6 +29,9 @@ from typing import IO, ClassVar
 
 ROOT = Path(__file__).resolve().parents[1]
 RUNS = ROOT / ".agent-runs"
+# What an agent writes in its worktree before Claude Code compacts its conversation, and gets
+# back after (scripts/handoff_due.py, #155): gitignored, as all of .agent-runs/ is.
+NOTES = Path(".agent-runs") / "notes.md"
 # Seconds between the watcher's looks at GitHub (#445): a session's, and the manager's unless
 # agent-manager.toml says otherwise (`ManagerConfig.watch_every_seconds`).
 WATCH_EVERY = 2 * 60

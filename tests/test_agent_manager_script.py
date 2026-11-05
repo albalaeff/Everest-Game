@@ -46,7 +46,14 @@ from scripts.agent_manager import (
     WikiJob,
     Worktree,
 )
-from scripts.agents import WATCH_EVERY, AgentPower, CompactShare, ManagerConfig, Priority
+from scripts.agents import (
+    NOTES,
+    WATCH_EVERY,
+    AgentPower,
+    CompactShare,
+    ManagerConfig,
+    Priority,
+)
 from scripts.check_setup import Check
 from scripts.claude_cost import IssueCost
 from scripts.github import Conversation, Task, sign
@@ -573,6 +580,22 @@ def test_an_earlier_agent_s_worktree_is_kept_with_its_work(tmp_path: Path) -> No
 
     assert said == "kept from before"
     assert fake.commands == [] and uv.ran == []  # its caches and its .venv are there already
+
+
+def test_an_earlier_agent_s_worktree_is_kept_without_its_notes(tmp_path: Path) -> None:
+    # #155: the hook puts back the notes in the worktree once Claude Code has compacted the
+    # conversation: they're this run's, never an earlier one's.
+    path = tmp_path / "7"
+    notes = path / NOTES
+    notes.parent.mkdir(parents=True)
+    notes.write_text("An earlier run's plan.", encoding="utf-8")
+    (notes.parent / "plan.md").write_text("A comment it posted.", encoding="utf-8")
+
+    said = Worktree(path, "feature/7-x", Git(tmp_path, FakeGit({})), FakeUv().warmup).ready()
+
+    assert said == "kept from before"
+    assert not notes.exists()
+    assert (notes.parent / "plan.md").exists()
 
 
 def test_a_new_worktree_gets_the_checkout_s_caches_and_a_venv_of_its_own(tmp_path: Path) -> None:
