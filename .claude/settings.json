@@ -1,5 +1,28 @@
 {
   "hooks": {
+    "PostToolUse": [
+      {
+        "hooks": [
+          {
+            "command": "[ -z \"$CLAUDE_AGENT_MODEL\" ] || uv run --quiet --project \"$CLAUDE_PROJECT_DIR\" python \"$CLAUDE_PROJECT_DIR/scripts/handoff_due.py\"",
+            "timeout": 30,
+            "type": "command"
+          }
+        ]
+      }
+    ],
+    "SessionStart": [
+      {
+        "hooks": [
+          {
+            "command": "uv run --quiet --project \"$CLAUDE_PROJECT_DIR\" python \"$CLAUDE_PROJECT_DIR/scripts/handoff_due.py\"",
+            "timeout": 60,
+            "type": "command"
+          }
+        ],
+        "matcher": "compact"
+      }
+    ],
     "Stop": [
       {
         "hooks": [
