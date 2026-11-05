@@ -45,6 +45,22 @@ export async function readTheDisclaimer(page: Page, path = "/"): Promise<void> {
   await page.getByRole("button", { name: "I understand" }).click();
 }
 
+const JOINED = /^You have joined room ([A-HJ-NP-Z2-9]{5})$/;
+
+/** What the page says of its room, beside the readouts. */
+export function roomNotice(page: Page): Locator {
+  return page.locator("#room span");
+}
+
+/** Opens a new room, and says its code. */
+export async function openARoom(page: Page): Promise<string> {
+  await readTheDisclaimer(page);
+  await choice(page, "Together: a new room").click();
+  await expect(roomNotice(page)).toHaveText(JOINED);
+  const [, code = ""] = JOINED.exec((await roomNotice(page).textContent()) ?? "") ?? [];
+  return code;
+}
+
 /** Opens the game on a climb alone: a new one, or the one the device has saved. */
 export async function openTheGame(page: Page): Promise<void> {
   await readTheDisclaimer(page);
@@ -56,6 +72,11 @@ export async function openTheGame(page: Page): Promise<void> {
  * frames of a headless browser drawing in software on CI, a second or two apart, which carry the
  * keys to the climb and the climb to the page. */
 export const WALKING = { timeout: 20_000 };
+
+/** The wait for the first frame of a second browser in a story, as an expect takes it: it starts
+ * its WebGL in software beside the first's, and the other worker's two, and on CI it drew none in
+ * 15 s (PR #158). */
+export const SECOND_BROWSER = { timeout: 45_000 };
 
 /** The wait for the climb to be saved on the device, as `expect.poll` takes it: the page saves a
  * new climb as it starts, and every ten seconds of play after, but on CI the first save took more
@@ -78,7 +99,9 @@ export async function seen(page: Page, climber: string): Promise<SeenClimber | n
 }
 
 /** Where a climber comes to rest, once the stop has gone round: the same twice, half a second
- * apart. A headless browser draws few frames, and a room's stop takes a step and back. */
+ * apart. A headless browser draws few frames, and a room's stop takes a step and back: on CI, the
+ * stop of a friend whose browser closed took more than an expect's 5 s to reach the page (PR #158),
+ * so the wait is a walk's. */
 export async function atRest(page: Page, climber: string): Promise<number> {
   let last = Number.NaN;
   await expect
@@ -89,7 +112,7 @@ export async function atRest(page: Page, climber: string): Promise<number> {
         last = now;
         return still;
       },
-      { intervals: [500] },
+      { ...WALKING, intervals: [500] },
     )
     .toBe(true);
   return last;

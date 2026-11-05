@@ -1,7 +1,16 @@
 import { expect, test } from "@playwright/test";
-import type { Browser, Locator, Page } from "@playwright/test";
+import type { Browser, Page } from "@playwright/test";
 
-import { WALKING, along, atRest, choice, readTheDisclaimer } from "./climb";
+import {
+  SECOND_BROWSER,
+  WALKING,
+  along,
+  atRest,
+  choice,
+  openARoom,
+  readTheDisclaimer,
+  roomNotice as notice,
+} from "./climb";
 
 /**
  * Rooms, on the room server `npm run room` serves on this machine (playwright.config.ts): each
@@ -9,25 +18,10 @@ import { WALKING, along, atRest, choice, readTheDisclaimer } from "./climb";
  * `player`, 10 m along the flat; the second as `teammate`, at 12 m.
  */
 
-const JOINED = /^You have joined room ([A-HJ-NP-Z2-9]{5})$/;
-
-function notice(page: Page): Locator {
-  return page.locator("#room span");
-}
-
 /** Someone else, on a device of their own. */
 async function anotherPlayer(browser: Browser, baseURL: string | undefined): Promise<Page> {
   const context = await browser.newContext(baseURL === undefined ? {} : { baseURL });
   return context.newPage();
-}
-
-/** Opens a new room, and says its code. */
-async function openARoom(page: Page): Promise<string> {
-  await readTheDisclaimer(page);
-  await choice(page, "Together: a new room").click();
-  await expect(notice(page)).toHaveText(JOINED);
-  const [, code = ""] = JOINED.exec((await notice(page).textContent()) ?? "") ?? [];
-  return code;
 }
 
 test("a new room's link brings a friend in; each sees the other climb, and the friend's climber stands once they leave", async ({
@@ -37,6 +31,8 @@ test("a new room's link brings a friend in; each sees the other climb, and the f
   hasTouch,
 }) => {
   test.skip(hasTouch, "a PC's story");
+  // The friend's first frame, two walks and the friend's stop, each as long as CI may take.
+  test.setTimeout(150_000);
   const code = await openARoom(page);
   const link = page.url();
   expect(new URL(link).searchParams.get("room")).toBe(code);
@@ -45,11 +41,11 @@ test("a new room's link brings a friend in; each sees the other climb, and the f
   await readTheDisclaimer(friend, link);
 
   await expect(notice(friend)).toHaveText(`You have joined room ${code}`);
-  // The friend's first frame, as long as e2e/slope.spec.ts waits for one: a second browser starts
-  // its WebGL in software beside the first's, which on CI can take more than an expect's 5 s.
-  await expect(friend.locator("#slope")).toHaveAttribute("data-climber", "12.00 0.00", {
-    timeout: 15_000,
-  });
+  await expect(friend.locator("#slope")).toHaveAttribute(
+    "data-climber",
+    "12.00 0.00",
+    SECOND_BROWSER,
+  );
   await page.keyboard.down("KeyD");
   await expect.poll(() => along(friend, "player"), WALKING).toBeGreaterThan(10.5);
   await page.keyboard.up("KeyD");
