@@ -28,6 +28,7 @@ from scripts.agent_manager import (
     Console,
     HoldNotice,
     IssueJob,
+    IssueLabel,
     Job,
     Keys,
     Labels,
@@ -67,6 +68,11 @@ SESSION_LIMIT = "You've hit your session limit · resets 12pm (Europe/Prague)"
 NO_FABLE = (
     'API Error: 404 {"type":"error","error":{"type":"not_found_error",'
     '"message":"model: claude-fable-5-1"}}'
+)
+THRASHING = (  # #152: Claude Code's words, as #26's run of 2026-11-05 ended on them
+    "Autocompact is thrashing: the context refilled to the limit within 3 turns of the "
+    "previous compact, 3 times in a row. A file being read or a tool output is likely too "
+    "large for the context window. Try reading in smaller chunks, or use /clear to start fresh."
 )
 SERVER = "postgresql://everest:everest@localhost:5433/everest_test"  # the tests' database server
 BEHIND = WikiNews(  # #126: what the watcher found the wiki lacks
@@ -990,10 +996,20 @@ def test_an_agent_s_conversation_is_compacted_where_the_settings_say(tmp_path: P
     assert CompactShare.from_env(half) == CompactShare(50)
 
 
+def test_an_issue_s_compact_label_gives_its_agent_more_of_the_window(tmp_path: Path) -> None:
+    # #152: put on by the manager after a run that compacted again and again, or by a person.
+    labelled = agent(tmp_path, labels=("model:fable", "compact:50"))
+
+    assert labelled.compaction == CompactShare(50)
+    assert CompactShare.from_env(labelled.environment({})) == CompactShare(50)
+    assert str(labelled).startswith("fable/xhigh, compacted at 50%, in ")  # the log's line
+    assert agent(tmp_path).compaction == CompactShare(25)
+
+
 def test_the_dry_run_says_issue_power_worktree_and_command(tmp_path: Path) -> None:
     plan = agent(tmp_path).plan()
 
-    assert plan.startswith("#7 (it's to start): haiku/high, in ")
+    assert plan.startswith("#7 (it's to start): haiku/high, compacted at 25%, in ")
     assert "everest_7_test" in plan
     assert "\n  $ claude -p " in plan and "--model haiku --effort high" in plan
 
@@ -1167,6 +1183,43 @@ def test_a_run_that_failed_otherwise_holds_nothing(tmp_path: Path) -> None:
 
     assert made.limit is None
     assert made.unavailable is None
+    assert not made.thrashed
+
+
+@pytest.mark.parametrize(
+    "said",
+    [
+        {"api_error": "autocompact_thrashing", "terminal_reason": "rapid_refill_breaker"},
+        {"api_error": "autocompact_thrashing"},
+        {"terminal_reason": "rapid_refill_breaker"},
+    ],
+)
+def test_a_run_claude_code_stopped_for_compacting_again_and_again_says_so(
+    tmp_path: Path, said: dict[str, str]
+) -> None:
+    # #152: #26's run of 2026-11-05 07:09 read 300K tokens to begin, past a quarter of the
+    # window, and read them again after each compaction, until Claude Code stopped it.
+    made = agent(tmp_path)
+    made.log.parent.mkdir()
+    result = {
+        "type": "result",
+        "subtype": "success",
+        "is_error": True,
+        **said,
+        "duration_ms": 2_079_838,
+        "result": THRASHING,
+        "total_cost_usd": 27.873306900000006,
+    }
+    made.log.write_text(json.dumps(result, separators=(",", ":")) + "\n", encoding="utf-8")
+
+    line = made.finish(1)
+
+    assert made.thrashed
+    assert made.limit is None and made.unavailable is None
+    assert line.startswith(
+        "#7 (it's to start): failed (exit 1), $27.87, 35 min, compacted again and again; "
+        "worktree kept at "
+    )
 
 
 def test_a_run_whose_model_the_account_lacks_says_so(tmp_path: Path) -> None:
@@ -1597,6 +1650,8 @@ class FakeAgent:
         self.code: int | None = None
         self.limit: UsageLimit | None = None
         self.unavailable: ModelUnavailable | None = None
+        self.thrashed = False
+        self.compaction = CompactShare(25)
         self.stopped = False
 
     def __str__(self) -> str:
@@ -1609,6 +1664,11 @@ class FakeAgent:
     def end_on_a_missing_model(self, model: str = "fable") -> None:
         self.code = 1
         self.unavailable = ModelUnavailable(model, NO_FABLE)
+
+    def end_compacting_again_and_again(self, at: float = 25) -> None:
+        self.code = 1
+        self.thrashed = True
+        self.compaction = CompactShare(at)
 
     def poll(self) -> int | None:
         return self.code
@@ -1667,6 +1727,19 @@ class FakeMerge:
         return "merged it itself, no agent"
 
 
+class FakeLabel:
+    """Puts labels on issues (#152), noted in `put`, unless it `refuses`."""
+
+    def __init__(self, refuses: str | None = None) -> None:
+        self.put: list[tuple[int, str]] = []
+        self.refuses = refuses
+
+    def __call__(self, issue: int, label: str) -> str | None:
+        if self.refuses is None:
+            self.put.append((issue, label))
+        return self.refuses
+
+
 NO_NODE = Check("Node", False, "not installed", "winget install --id OpenJS.NodeJS.LTS")
 HELD = "Node: not installed (fix: winget install --id OpenJS.NodeJS.LTS)"
 
@@ -1698,6 +1771,7 @@ def scheduler(
     clock: Clock | None = None,
     merger: FakeMerge | None = None,
     tools: Toolbox | None = None,
+    label: FakeLabel | None = None,
 ) -> tuple[Scheduler, FakeLauncher, list[str]]:
     said: list[str] = []
     fake = FakeLauncher(refuse)
@@ -1713,6 +1787,7 @@ def scheduler(
         now=lambda: LIMIT_HIT,
         merger=merger,  # type: ignore[arg-type]
         hold=hold,
+        label=label,
     )
     return made, fake, said
 
@@ -2085,6 +2160,67 @@ def test_a_run_whose_model_the_account_lacks_runs_again_on_the_next_model_down()
     assert [line for line in said if line.startswith("The account lacks")] == [
         "The account lacks the model fable: its agents run on opus for the rest of this run."
     ]
+
+
+def test_a_run_that_compacted_again_and_again_gives_its_issue_more_of_the_window() -> None:
+    # #152: the label makes the task new to the watcher, whose next look brings it back for an
+    # agent that compacts later: the scheduler starts nothing again itself.
+    labels = FakeLabel()
+    made, launcher, said = scheduler(label=labels)
+    look(made, IssueJob(task(9, "CI finished", kind="pull", issue=7, ci="CI: failure", sha="b")))
+
+    launcher.started[0].end_compacting_again_and_again()
+    made.tick()
+
+    assert labels.put == [(7, "compact:50")]  # a PR's work goes on its issue's label
+    assert said[-1].endswith(
+        ": compacted again and again at 25% of the window: compact:50 put on #7, so its next "
+        "agent compacts at 50%"
+    )
+    assert len(launcher.started) == 1
+    assert not made.busy()
+
+
+def test_a_run_that_compacted_again_and_again_at_all_of_the_window_says_to_split_it() -> None:
+    labels = FakeLabel()
+    made, launcher, said = scheduler(label=labels)
+    look(made, IssueJob(task(7)))
+
+    launcher.started[0].end_compacting_again_and_again(100)
+    made.tick()
+
+    assert labels.put == []
+    assert said[-1] == (
+        "#7 (it's to start): compacted again and again at 100% of the window: too big for one "
+        "agent's conversation; split the issue"
+    )
+
+
+def test_a_compact_label_github_refused_is_said() -> None:
+    made, launcher, said = scheduler(label=FakeLabel(refuses="GitHub said 403"))
+    look(made, IssueJob(task(7)))
+
+    launcher.started[0].end_compacting_again_and_again()
+    made.tick()
+
+    assert said[-1] == (
+        "#7 (it's to start): compacted again and again at 25% of the window: compact:50 not "
+        "put on #7: GitHub said 403"
+    )
+
+
+def test_a_job_of_no_issue_that_compacted_again_and_again_is_said_with_the_setting() -> None:
+    # The wiki's agent has no issue to label: agent-manager.toml's share is all there is.
+    made, launcher, said = scheduler(label=FakeLabel())
+    look(made, WikiJob(BEHIND, TODAY))
+
+    launcher.started[0].end_compacting_again_and_again()
+    made.tick()
+
+    assert said[-1].endswith(
+        ": compacted again and again at 25% of the window: compact_at_percent in "
+        "agent-manager.toml gives its agents more"
+    )
 
 
 def test_a_job_on_a_missing_model_keeps_a_once_run_going() -> None:
@@ -2549,6 +2685,36 @@ def test_each_line_in_the_console_starts_with_its_time(capsys: pytest.CaptureFix
     assert capsys.readouterr().out == "2026-10-16 08:05:07 #481: started\n"
 
 
+class LabelGitHub:
+    """GitHub, as `IssueLabel` calls it: what it was asked, in `calls`; or a refusal."""
+
+    def __init__(self, refuses: BaseException | None = None) -> None:
+        self.calls: list[tuple[str, str, Any]] = []
+        self.refuses = refuses
+
+    def call(self, method: str, path: str, body: Any = None) -> object:
+        if self.refuses is not None:
+            raise self.refuses
+        self.calls.append((method, path, body))
+        return []
+
+
+def test_a_compact_label_goes_on_the_issue() -> None:
+    # #152: added to the issue's labels, none taken off.
+    github = LabelGitHub()
+
+    assert IssueLabel(github)(7, "compact:50") is None  # type: ignore[arg-type]
+    assert github.calls == [("POST", "issues/7/labels", {"labels": ["compact:50"]})]
+
+
+def test_a_label_github_refuses_is_said_not_raised() -> None:
+    github = LabelGitHub(SystemExit("GitHub said 403: Resource not accessible\nmore"))
+
+    said = IssueLabel(github)(7, "compact:50")  # type: ignore[arg-type]
+
+    assert said == "GitHub said 403: Resource not accessible"
+
+
 # --- the labels and the test database --------------------------------------------------------
 
 
@@ -2570,8 +2736,10 @@ def test_the_missing_labels_are_made_once() -> None:
 
     made = Labels(github).ensure()  # type: ignore[arg-type]
 
-    # #4: three more models (fable among them), the three efforts, the three priorities.
-    assert "model:opus" not in made and len(made) == 9
+    # #4: three more models (fable among them), the three efforts, the three priorities, and
+    # #152's two shares of the window.
+    assert "model:opus" not in made and len(made) == 11
+    assert "compact:50" in made and "compact:100" in made
     assert "model:fable" in made and "effort:low" not in made
     assert github.made["effort:max"]["description"] == (
         "The agent for this issue runs with effort max (#387)"
