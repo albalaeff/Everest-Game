@@ -5,22 +5,22 @@ The picture: silhouettes and gradients in layers, with light and weather that te
 ## Readable first
 
 - **The play plane reads first: the climber, the rope, the anchors, the ladders.** What the player acts on has the clearest silhouette and the strongest contrast of light and dark on the screen, and the background the least; colour comes after. Valve made each of Team Fortress 2's characters read by its silhouette, and led the eye with light and dark ([Mitchell, Francke and Eng, Illustrative rendering in Team Fortress 2](https://www.cs.princeton.edu/courses/archive/fall07/cos597B/papers/mitchell-team-fortress.pdf)).
-  - *In Everest:* `SlopeLayer` and `ClimberFigure`, until the final style (#86, #87).
+  - *In Everest:* `SlopeLayer` and `ClimberFigure` (#149): the rope has a dark edge, the figure a drawn silhouette, and the far layers are tinted paler and hazier than the play plane (`Palette.faded`).
   - *Check:* the screen in greyscale (Chrome DevTools → Rendering → Emulate vision deficiencies → Achromatopsia), and blurred: the climber, the rope and the next anchor are found within a second.
 - **A line the player follows is at least 2 CSS px wide, whatever its real width, and 3:1 against the snow and the rock** ([WCAG 2.2, 1.4.11](https://www.w3.org/TR/WCAG22/#non-text-contrast): 3:1 for the graphics needed to understand). A thin line gets a dark edge, like a road on a map, so it reads on snow and on rock alike.
-  - *In Everest:* the fixed rope is 7 cm wide (`SlopeLayer.ROPE_METRES`), so about 1.4 px on a phone held sideways (20 m of slope in 390 px), and its orange (`0xff6f3c`) is 2.5:1 on the snow (`0xeef3f9`); the anchors and the ladders' rails need the same check (#86).
-  - *Check:* a Vitest test computes the contrast of each pair in the palette; a story reads the rope's width in pixels on each phone.
+  - *In Everest:* the fixed rope is 7 cm wide (`SlopeLayer.ROPE_METRES`), never under 1.5 px (`LeastSize`), and drawn over a dark edge half its width each side (`Palette.ROPE_SHADE`, 7:1 on the snow), so its orange (`Palette.ROPE`, 2.5:1 on the snow) reads on snow, ice and rock; the ladders' rails have the same shade.
+  - *Check:* `palette.test.ts` computes the contrast of the suit, the rope and its edge on the snow; a story reads the rope's width in pixels on each phone (#92).
 - **The player's own climber is found in a second, and by more than colour.** Every climber is drawn, the player's in the brighter suit ([../conventions/rendering.md](../conventions/rendering.md)); it stays at the camera's anchor, and has a shape the others don't: a mark above it, its own headlamp's beam, its name in co-op.
-  - *In Everest:* the player's suit (`0xe8412c`) is 3.6:1 on the snow and the others' (`0xf5c518`) 1.5:1, and they differ by colour alone (`ClimberFigure`); the mark and the names come with #87 and #78.
+  - *In Everest:* the player's suit (`Palette.PLAYER_SUIT`) is 3.6:1 on the snow and the others' (`Palette.OTHER_SUIT`) 1.5:1, and they differ by colour alone (`ClimberFigure`); the mark and the names come with #87 and #78.
   - *Check:* a crowd on the ridge (#40), in greyscale: the player's climber is found in a second.
 - **The night is dark, and what the player needs still shows.** Summit night is an almost black screen with the headlamp's cone ([../../spec.md](../../spec.md) → Graphics): the cone lights the rope and the snow ahead, the lights of other groups show the queue, and a brightness setting before the first night lets the player set the darkest shade they can still see.
-  - *In Everest:* #35.
+  - *In Everest:* the night sky is near black with the stars out (`SkyLayer`, `DayLight`), the snow stays blue-white (`Palette.NIGHT_SNOW_TINT`) and the rope orange, each climber's headlamp cone shows by the hour (`ClimberFigure`), and the tents glow from inside; the brightness setting comes with #35.
   - *Check:* on the phones of #92 at half brightness, indoors and in daylight.
 
 ## Depth in layers
 
 - **Five to seven layers, each farther one paler, hazier and slower** ([../../spec.md](../../spec.md) → Graphics), as the air makes far mountains look, and as [Alto's Adventure](https://en.wikipedia.org/wiki/Alto%27s_Adventure) and Limbo draw them. Only the play plane has full contrast and detail; a far layer has less of both, and costs less to draw.
-  - *In Everest:* the depths and colours of `skyline-layer.ts`; Low draws none of the optional layers (`GraphicsQuality`).
+  - *In Everest:* the depths and the haze of each style in `skyline-layer.ts`, faded into the air's colour by `Palette.faded`, further in cloud and snow (`WeatherLook.haze`); Low draws none of the optional layers (`GraphicsQuality`).
 - **The foreground never hides the climber or the rope ahead.** It passes low on the screen, or thins where it crosses them; it moves faster than the slope, and motion pulls the eye, so it's sparse.
   - *In Everest:* the foreground is drawn in front of the climber, at depth 1.5 and alpha 0.9 (`skyline-layer.ts`).
   - *Check:* a story walks the section and reads the suit's colour at the climber's place with `window.everest.pixelAt`.
@@ -28,20 +28,22 @@ The picture: silhouettes and gradients in layers, with light and weather that te
 ## Colour and light
 
 - **The palette is named, in one place, and a strong colour means one thing.** The world is low in saturation, the snow, the rock and the sky, and strong colour is kept for what matters: the player's suit, the rope, the turnaround mark, danger. Hypoxia mutes the colours ([../../spec.md](../../spec.md) → Graphics), so meaning never rests on saturation alone: shape, and light and dark, carry it. Where colours must tell groups apart for everyone, as the co-op players' suits, they come from Okabe and Ito's palette, made for colour-blind readers: `#E69F00`, `#56B4E9`, `#009E73`, `#F0E442`, `#0072B2`, `#D55E00`, `#CC79A7`, `#000000`.
-  - *In Everest:* each layer has its colours as literals (`slope-layer.ts`, `climber-figure.ts`, `skyline-layer.ts`, `sky-layer.ts`): one `Palette` ([../conventions.md](../conventions.md) → Objects: one thing, one class) comes with #86, and the contrast check above with it.
+  - *In Everest:* one `Palette` (`palette.ts`, #149): the fixed colours are its statics, and an instance is the colours at one hour's light; the layers draw white and are tinted from it. The co-op suits' colours come with #78.
 - **Light tells the time and the altitude.** The sky changes with the time of day and darkens with altitude ([../../spec.md](../../spec.md) → Graphics); one sun lights every layer from the same side, and a dawn behind the climber rims them with light (#125).
+  - *In Everest:* `DayLight` reads the mountain clock's hour: night with the stars, the blue hour, the alpenglow on the crests (`MountainFaces.crests`) and the glow on the horizon on the sun's side, the right in the morning and the left in the evening, then the day; the altitude's darkening comes with the higher sections.
 - **Gradients are dithered, so they don't band** (#125). A dark gradient shows steps on an 8-bit screen; noise of less than one step of colour hides them ([Anisoptera Games, banding and dithering](https://www.anisopteragames.com/how-to-fix-color-banding-with-dithering/)).
-  - *In Everest:* the sky's gradient, `#0b1d3a` to `#6f94c6` (`sky-layer.ts`, #86).
+  - *In Everest:* the sky's gradient is mixed from the palette and, on High, passed through a `NoiseFilter` too faint to see (`SkyLayer`, `GraphicsQuality.dithered`).
   - *Check:* by hand, the night sky on a phone at full brightness.
 
 ## Weather and effects
 
 - **An effect tells something, or keeps out of the way.** The plume tells the wind's strength, the snow's slant and speed the wind at the climber, a chain of headlamps the queue ahead ([../../spec.md](../../spec.md) → Graphics); an effect that tells nothing is soft and sparse, and never covers the play plane.
-  - *In Everest:* the snow falls in front of everything (`SnowLayer`), so it stays small and thin; the weather comes with #39 and #86.
+  - *In Everest:* the snow falls in front of everything (`SnowLayer`), so it stays small and thin, the weather's share of the flakes and slanted by the gust (`WeatherLook`, `Gust`); the spindrift along the snow and the plume off Nuptse (`Drift`) stream with the same gust; the chains of other groups' lamps come with #40, and the weather's own changes with #39.
 - **Low quality loses beauty, never information.** What an effect tells stays at every quality level: Low draws it more cheaply, never not at all.
-  - *In Everest:* Low draws no flakes (`GraphicsQuality`): once the snow tells the wind (#39, #86), Low keeps a few, or another cue tells it.
+  - *In Everest:* Low draws no flakes but keeps 40 motes of spindrift (`GraphicsQuality.motes`), which tell the wind.
   - *Check:* each effect's story runs at Low too, and reads the same information from `#slope`'s data attributes.
 - **A whiteout hides the mountain, not the rope in the climber's hand.** Fog and drifting snow can hide the route ahead, as on the mountain, but the rope the climber is clipped to and their own gear always show.
+  - *In Everest:* the weather's veil (`WeatherLook.veil`) is drawn by the slope layer behind the slope, over the sky and the far layers alone.
 
 ## Motion
 
@@ -49,6 +51,8 @@ The picture: silhouettes and gradients in layers, with light and weather that te
   - *In Everest:* `GameLoop` and the scene draw at the last step, and `StepPacer.progress` is unused (#90).
   - *Check:* a Vitest test of the positions drawn between two steps; by hand, a slow walk at 60 frames a second.
 - **The animation shows the body's state, and never hides it.** The rest step, and breathing that speeds up with altitude ([../../spec.md](../../spec.md) → Graphics and Sound): a tired climber moves tired, and a clip is seen to happen (#87).
+  - *In Everest:* `ClimberPose` paces the stride by the ground covered, so the feet stay planted as the physics moves the climber, shortens it in the rest step, leans the spine by the tiredness and bends an exhausted climber double at a halt; a clipped cowstail puts the hand on the jumar, a ladder both hands on its lines. `Breathing` speeds up with the altitude, the tiredness and the effort, and shows as the chest and a breath cloud. The clip's own motion comes with #87.
+  - *Check:* `climber-pose.test.ts` and `breathing.test.ts`; by hand, the rest step at 20 m beside a steady walk.
 - **The camera is calm, and shows what's ahead.** It eases after the climber, never shakes unless the player turns shaking on ([XAG 117](https://learn.microsoft.com/en-us/gaming/accessibility/xbox-accessibility-guidelines/117)), and looks ahead where the climber is going, so the next anchor and the rope ahead are in view on the way down as on the way up ([Keren, Scroll back, GDC 2015](https://gdcvault.com/play/1022243/Scroll-Back-The-Theory-and)). Almost a third of Everest's deaths come on the descent ([../../spec.md](../../spec.md) → Real accidents as training scenarios).
   - *In Everest:* `Camera` keeps the climber a third across, which leaves two thirds of the screen ahead walking right and one third walking left; the look-ahead comes with #86.
   - *Check:* a Vitest test of `Camera`: walking left, the anchor moves towards the right.

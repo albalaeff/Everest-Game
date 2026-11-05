@@ -1,26 +1,41 @@
 import { Application, Rectangle } from "pixi.js";
 
 import type { SlopePhysics } from "../physics";
-import type { ClimberId, ObjectiveHazards } from "../simulation";
+import type { Body, ClimberId, MountainClock, ObjectiveHazards } from "../simulation";
+import { Atmosphere } from "./atmosphere";
 import type { Camera } from "./camera";
 import type { CampStretch } from "./camp-signs";
 import type { GraphicsQuality } from "./graphics-quality";
+import { Palette } from "./palette";
 import type { ParallaxLayer } from "./parallax-layer";
 import { SkyLayer } from "./sky-layer";
 import { SkylineLayer } from "./skyline-layer";
 import { SlopeLayer } from "./slope-layer";
 import { SnowLayer } from "./snow-layer";
 
+/** What the scene draws, and reads each frame: the expedition's rules and who's on the slope. */
+export interface SceneWorld {
+  readonly physics: SlopePhysics;
+  readonly hazards: ObjectiveHazards;
+  readonly clock: MountainClock;
+  readonly body: Body;
+  readonly camps: readonly CampStretch[];
+  readonly climbers: readonly ClimberId[];
+  readonly player: ClimberId;
+  readonly seed: number;
+}
+
 /**
  * The picture of the slope: a PixiJS application in the page's `#slope`, with the layers the
- * quality asks for, back to front, each placed by the camera every frame, and shaking while a
- * hazard goes. It reads the physics, the hazards and the camps and holds no game state: what it
- * owns is the picture's own, the camera's place and zoom, the flakes, the warnings' clocks and the
- * frame count. For the page's stories it writes what it draws into `#slope`'s data attributes,
- * and reads a pixel back, since Playwright can't read a WebGL canvas.
+ * quality asks for, back to front, each placed by the camera every frame and lit by the hour of
+ * the mountain's clock and the hazards' weather, and shaking while a hazard goes. It reads the
+ * physics, the hazards, the clock, the body and the camps and holds no game state: what it owns
+ * is the picture's own, the camera's place and zoom, the flakes and the motes, the warnings'
+ * clocks, its own seconds and the frame count. For the page's stories it writes what it draws
+ * into `#slope`'s data attributes, and reads a pixel back, since Playwright can't read a WebGL
+ * canvas.
  */
 export class SlopeScene {
-  private static readonly BACKGROUND = "#0b1d3a";
   /** How far the picture shakes while a hazard goes, in slope metres a step of its cycle, and
    * how many frames the cycle runs. */
   private static readonly SHAKE_METRES = 0.06;
@@ -29,21 +44,21 @@ export class SlopeScene {
   private readonly app = new Application();
   private opened = false;
   private layers: readonly ParallaxLayer[] = [];
+  private sky: SkyLayer | null = null;
+  private skylines: readonly SkylineLayer[] = [];
   private slope: SlopeLayer | null = null;
   private snow: SnowLayer | null = null;
+  private atmosphere: Atmosphere;
   private frames = 0;
 
   constructor(
     private readonly host: HTMLElement,
     private readonly camera: Camera,
-    private readonly physics: SlopePhysics,
-    private readonly hazards: ObjectiveHazards,
-    private readonly camps: readonly CampStretch[],
-    private readonly climbers: readonly ClimberId[],
-    private readonly player: ClimberId,
+    private readonly world: SceneWorld,
     private quality: GraphicsQuality,
-    private readonly seed: number,
-  ) {}
+  ) {
+    this.atmosphere = Atmosphere.at(world.clock.timeOfDay, world.hazards.weather);
+  }
 
   /** Opens the canvas in the host: false when the browser can't draw, which is no WebGL. */
   async open(window: Window): Promise<boolean> {
@@ -53,7 +68,7 @@ export class SlopeScene {
         autoDensity: true,
         resolution: this.quality.resolution(window.devicePixelRatio),
         antialias: true,
-        background: SlopeScene.BACKGROUND,
+        background: Palette.NIGHT_SKY_HORIZON,
         preference: "webgl",
       });
     } catch {
@@ -86,19 +101,26 @@ export class SlopeScene {
     this.build();
   }
 
-  /** A frame: the camera follows for `seconds` more, and every layer is placed by it. */
+  /** A frame: the camera follows for `seconds` more, the air and the light are read from the
+   * clock and the weather, and every layer is placed by the camera and lit. */
   draw(seconds: number): void {
     if (!this.opened) {
       return;
     }
     const { width, height } = this.app.screen;
+    const { clock, hazards } = this.world;
     this.camera.resize(width, height);
     this.camera.follow(seconds);
+    this.atmosphere = this.atmosphere.after(seconds, clock.timeOfDay, hazards.weather);
     for (const layer of this.layers) {
       layer.place(this.camera);
     }
-    this.slope?.draw(seconds, this.camera.pixelsPerMetre);
-    this.snow?.fall(seconds);
+    this.sky?.light(this.atmosphere);
+    for (const skyline of this.skylines) {
+      skyline.light(this.atmosphere, seconds);
+    }
+    this.slope?.draw(seconds, this.camera, this.atmosphere);
+    this.snow?.fall(seconds, this.atmosphere);
     this.shake();
     this.frames += 1;
     this.report();
@@ -132,20 +154,27 @@ export class SlopeScene {
     for (const layer of this.layers) {
       layer.destroy({ children: true });
     }
-    const { layers: optional, flakes } = this.quality;
+    const { layers: optional, flakes, motes, dithered } = this.quality;
     const { width, height } = this.app.screen;
-    const { terrain } = this.physics;
-    const skyline = (style: typeof SkylineLayer.PEAKS, seed: number): SkylineLayer =>
-      new SkylineLayer(style, terrain, this.seed + seed);
-    this.slope = new SlopeLayer(this.physics, this.hazards, this.camps, this.climbers, this.player);
-    this.snow = flakes > 0 ? new SnowLayer(flakes, width, height) : null;
-    this.layers = [
-      new SkyLayer(),
+    const { physics, hazards, body, camps, climbers, player, seed } = this.world;
+    const skyline = (style: typeof SkylineLayer.PEAKS, offset: number): SkylineLayer =>
+      new SkylineLayer(style, physics.terrain, seed + offset);
+    this.sky = new SkyLayer(dithered);
+    this.skylines = [
       ...(optional.farRanges ? [skyline(SkylineLayer.FAR_RANGES, 1)] : []),
       skyline(SkylineLayer.PEAKS, 2),
       ...(optional.nearRidge ? [skyline(SkylineLayer.NEAR_RIDGE, 3)] : []),
-      this.slope,
       ...(optional.foreground ? [skyline(SkylineLayer.FOREGROUND, 4)] : []),
+    ];
+    this.slope = new SlopeLayer(physics, hazards, body, camps, climbers, player, seed, motes);
+    this.snow = flakes > 0 ? new SnowLayer(flakes, width, height) : null;
+    const behind = this.skylines.filter((layer) => layer.depth.x < 1);
+    const inFront = this.skylines.filter((layer) => layer.depth.x >= 1);
+    this.layers = [
+      this.sky,
+      ...behind,
+      this.slope,
+      ...inFront,
       ...(this.snow === null ? [] : [this.snow]),
     ];
     this.app.stage.addChild(...this.layers);
@@ -164,5 +193,7 @@ export class SlopeScene {
     dataset.camera = `${x.toFixed(2)} ${y.toFixed(2)}`;
     dataset.metresHigh = this.camera.metresHigh.toFixed(2);
     dataset.climber = `${climber.x.toFixed(2)} ${climber.y.toFixed(2)}`;
+    dataset.phase = this.atmosphere.light.phase;
+    dataset.weather = this.atmosphere.look.weather;
   }
 }
