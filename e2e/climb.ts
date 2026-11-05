@@ -94,7 +94,9 @@ export async function seen(page: Page, climber: string): Promise<SeenClimber | n
 }
 
 /** Where a climber comes to rest, once the stop has gone round: the same twice, half a second
- * apart. A headless browser draws few frames, and a room's stop takes a step and back. */
+ * apart. A headless browser draws few frames, and a room's stop takes a step and back: on CI, the
+ * stop of a friend whose browser closed took more than an expect's 5 s to reach the page (PR #158),
+ * so the wait is a walk's. */
 export async function atRest(page: Page, climber: string): Promise<number> {
   let last = Number.NaN;
   await expect
@@ -105,7 +107,7 @@ export async function atRest(page: Page, climber: string): Promise<number> {
         last = now;
         return still;
       },
-      { intervals: [500] },
+      { ...WALKING, intervals: [500] },
     )
     .toBe(true);
   return last;
