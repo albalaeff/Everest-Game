@@ -138,7 +138,7 @@ Tasks marked *Iteration 1–3* are planned into the board's first two-week itera
 
 ### Task 16: Objective hazards: probability by time of day and weather ([#24](https://github.com/albalaeff/Everest-Game/issues/24)) · *Iteration 3*
 - [x] Each hazard has a probability that depends on time of day and weather
-- [x] Seracs, avalanches and crevasses on the Icefall; cornices come with the summit push (#24: the kinds and their numbers; the stand-in section has a serac, a hidden crevasse and an avalanche slope; the real Icefall's zones come with #26, the ridge's cornices with #35)
+- [x] Seracs, avalanches and crevasses on the Icefall; cornices come with the summit push (#24: the kinds and their numbers; #26: the Icefall's zones; the ridge's cornices come with #35)
 - [x] Done gate
 
 ### Task 17: Interface v1: clock, altimeter, pressure gauge and self-check ([#25](https://github.com/albalaeff/Everest-Game/issues/25))
@@ -147,9 +147,9 @@ Tasks marked *Iteration 1–3* are planned into the board's first two-week itera
 - [ ] Done gate
 
 ### Task 18: The Khumbu Icefall: Base Camp to Camp 1 ([#26](https://github.com/albalaeff/Everest-Game/issues/26))
-- [ ] Playable from Base Camp to Camp 1, on a PC and on a phone
-- [ ] Ladders, fixed ropes, seracs and crevasses; leaving early is safer
-- [ ] Done gate
+- [x] Playable from Base Camp to Camp 1, on a PC and on a phone (#26: `content/route/icefall.json` at the game's 1/12 scale, the physics' numbers as records, Camp 1's arrival notice)
+- [x] Ladders, fixed ropes, seracs and crevasses; leaving early is safer (#26: eight ladders and eight ropes, the zones at the collapses' heights; a crossing from 03:00 runs under half the risk of one from 10:00)
+- [x] Done gate
 
 ### Task 19: A Cloudflare account for the room server ([#27](https://github.com/albalaeff/Everest-Game/issues/27)) · *Iteration 1*
 - [x] The account exists, and its API token is in the repository's Actions secrets

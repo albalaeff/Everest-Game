@@ -13,6 +13,16 @@ describe("GraphicsQuality", () => {
     expect(LOW.layers).toEqual({ farRanges: false, nearRidge: false, foreground: false });
     expect(MEDIUM.layers).toEqual({ farRanges: false, nearRidge: false, foreground: true });
     expect(HIGH.layers).toEqual({ farRanges: true, nearRidge: true, foreground: true });
+    expect(LOW.dithered).toBe(false);
+    expect(HIGH.dithered).toBe(true);
+  });
+
+  it("keeps some spindrift at every level, since it tells the wind", () => {
+    const { LOW, MEDIUM, HIGH } = GraphicsQuality;
+
+    expect(LOW.motes).toBeGreaterThan(0);
+    expect(MEDIUM.motes).toBeGreaterThan(LOW.motes);
+    expect(HIGH.motes).toBeGreaterThan(MEDIUM.motes);
   });
 
   it("steps through the levels, and round again", () => {

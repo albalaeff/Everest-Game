@@ -42,6 +42,44 @@ function button(page: Page, name: string): Locator {
   return page.locator(`[data-control="${name}"]`);
 }
 
+/** A box on the screen, in CSS pixels from its top left corner. */
+interface Box {
+  readonly x: number;
+  readonly y: number;
+  readonly width: number;
+  readonly height: number;
+}
+
+/**
+ * The boxes of what `selector` matches, in one round trip to the page. A round trip to a headless
+ * browser waits for a frame of its picture, drawn in software, and on CI's runners that's up to a
+ * third of a second (PR #157); Playwright's `boundingBox` takes several.
+ */
+async function boxesOf(page: Page, selector: string): Promise<Box[]> {
+  return page.evaluate(
+    (found) =>
+      [...document.querySelectorAll(found)].map((element) => {
+        const { x, y, width, height } = element.getBoundingClientRect();
+        return { x, y, width, height };
+      }),
+    selector,
+  );
+}
+
+/**
+ * A thumb on a button: a real touch at its middle, where it's drawn. Playwright's tap first waits
+ * for frames in which the button stands still and checks what's under the touch, a dozen round
+ * trips, and eleven such taps took a story past its minute on CI. A button never moves, and what
+ * the touch does says whether it landed.
+ */
+async function tapButton(page: Page, name: string): Promise<void> {
+  const [box] = await boxesOf(page, `[data-control="${name}"]`);
+  if (box === undefined) {
+    throw new Error(`There's no ${name} button on the page`);
+  }
+  await page.touchscreen.tap(box.x + box.width / 2, box.y + box.height / 2);
+}
+
 /** The newest action comes first on the page. */
 async function expectReceived(page: Page, actions: readonly string[]): Promise<void> {
   await expect(received(page)).toHaveText([...actions].reverse());
@@ -101,6 +139,8 @@ test.describe("on a screen of 640 by 360", () => {
 
   test("a player climbs the same way by touch", async ({ page, hasTouch }) => {
     test.skip(!hasTouch, "a phone's story");
+    // Fourteen touches, over a hundred round trips: half a minute on CI's slowest runners.
+    test.slow();
     await openTheGame(page);
 
     await tap(page, 400, 130);
@@ -108,17 +148,17 @@ test.describe("on a screen of 640 by 360", () => {
     await tap(page, 200, 130);
     await drag(page, [100, 250], [160, 250]);
     await drag(page, [100, 250], [100, 230]);
-    await button(page, "clip-first").tap();
-    await button(page, "clip-second").tap();
-    await button(page, "jumar").tap();
-    await button(page, "oxygen-up").tap();
-    await button(page, "oxygen-down").tap();
-    await button(page, "check-self").tap();
-    await button(page, "radio").tap();
-    await button(page, "inventory").tap();
-    await button(page, "set-up-tent").tap();
-    await button(page, "view-farther").tap();
-    await button(page, "view-closer").tap();
+    await tapButton(page, "clip-first");
+    await tapButton(page, "clip-second");
+    await tapButton(page, "jumar");
+    await tapButton(page, "oxygen-up");
+    await tapButton(page, "oxygen-down");
+    await tapButton(page, "check-self");
+    await tapButton(page, "radio");
+    await tapButton(page, "inventory");
+    await tapButton(page, "set-up-tent");
+    await tapButton(page, "view-farther");
+    await tapButton(page, "view-closer");
 
     await expectReceived(page, THE_CLIMB);
   });
@@ -174,11 +214,11 @@ test.describe("on a screen of 640 by 360", () => {
     const buttons = await page.locator(".action-button").all();
 
     expect(buttons).toHaveLength(11);
-    for (const found of buttons) {
-      await expect(found).toBeInViewport({ ratio: 1 });
-      const box = await found.boundingBox();
-      expect(box?.width).toBeGreaterThanOrEqual(48);
-      expect(box?.height).toBeGreaterThanOrEqual(48);
+    // All in one go: each check waits for a frame, and CI's frames are seconds apart.
+    await Promise.all(buttons.map((found) => expect(found).toBeInViewport({ ratio: 1 })));
+    for (const box of await boxesOf(page, ".action-button")) {
+      expect(box.width).toBeGreaterThanOrEqual(48);
+      expect(box.height).toBeGreaterThanOrEqual(48);
     }
   });
 
@@ -196,7 +236,7 @@ test.describe("on a screen of 640 by 360", () => {
       "view-farther",
       "view-closer",
     ]) {
-      const box = await button(page, name).boundingBox();
+      const [box] = await boxesOf(page, `[data-control="${name}"]`);
       expect(box?.width).toBeGreaterThanOrEqual(64);
       expect(box?.height).toBeGreaterThanOrEqual(64);
     }
