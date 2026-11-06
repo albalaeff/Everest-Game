@@ -84,14 +84,23 @@ export interface Pose {
 /** What the figure is doing, as the pose draws it: from one to the next, it blends. */
 type Mode = "walk" | "rungs" | "wall" | "rise" | "fall" | "hang" | "dead";
 
+/** The points a boot turns on as its stiff ankle needs, in its frame from the point of the sole
+ * under the ankle, x along the sole and y up off it: as the shin leans too far forward over it,
+ * and too far back. */
+interface Pivots {
+  readonly forward: Joint;
+  readonly back: Joint;
+}
+
 /** Where the pose's joints go before the limbs are bent to them: what a blend mixes, so the bones
- * keep their lengths through it. */
+ * keep their lengths through it; and what each boot turns on. */
 interface Targets {
   readonly pelvis: Joint;
   readonly lean: number;
   readonly nod: number;
   readonly ankles: readonly [Joint, Joint];
   readonly soles: readonly [number, number];
+  readonly pivots: readonly [Pivots, Pivots];
   readonly hands: readonly [Joint, Joint];
   readonly tilt: number;
   readonly offset: Joint;
@@ -114,13 +123,18 @@ interface Gait {
   readonly settled: readonly [number, number];
 }
 
-/** A boot this frame: its ankle, its sole's angle, whether it's down, and how far its leg bears
- * the weight, 0 to 1. */
-interface Boot {
+/** A boot where it's drawn: its ankle, and its sole's angle. */
+interface Foot {
   readonly ankle: Joint;
   readonly sole: number;
+}
+
+/** A boot this frame: where it is, whether it's down, how far its leg bears the weight, 0 to 1,
+ * and what it turns on. */
+interface Boot extends Foot {
   readonly down: boolean;
   readonly weight: number;
+  readonly pivots: Pivots;
 }
 
 /** A foot or a hand on a wall's rungs: how far up the ladder, how far off it, and whether it's on
@@ -144,8 +158,10 @@ interface Lying {
  * How a climber stands and moves (docs/guidelines/graphics.md → The animation shows the body's
  * state): a skeleton in metres, its legs and arms bent to their places by two-bone inverse
  * kinematics. The walk is paced by the ground covered: each boot stays where it came down on the
- * real ground, rolls over its ball as the heel lifts, and swings to its next place clear of the
- * snow; the hips sink so both boots reach the slope, and the body leans into it. The rest step
+ * real ground, rolls on its toe as the heel lifts, and swings to its next place clear of the
+ * snow; the hips sink so both boots reach the slope, and the body leans into it. The boots are
+ * stiff: the shin leans only so far from a boot's upright, and past that the boot turns with it,
+ * rolling on its toe up a steep slope and on its heel down one (#175). The rest step
  * stands still on the locked lower leg after each step; tiredness shortens and lowers the steps,
  * stills the arms, bends the back and drops the head, and an exhausted climber at a halt bends
  * double, hands on knees. Clipped, the near hand holds the jumar and pushes it up in strokes while
@@ -184,7 +200,7 @@ export class ClimberPose {
   static readonly RUNG_STEP = 0.3;
   /** How high a boot lifts in a step, and on a ladder. */
   static readonly LIFT = 0.14;
-  static readonly RUNG_LIFT = 0.2;
+  static readonly RUNG_LIFT = 0.22;
   /** How much of a leg's cycle its boot is down. */
   static readonly STANCE = 0.6;
   /** How much of each step of the rest step the figure stands still on its locked lower leg. */
@@ -249,8 +265,22 @@ export class ClimberPose {
    * cycle. */
   private static readonly HEEL_LIFT = 0.4;
   private static readonly HEEL_FROM = 0.35;
-  /** From the point of the sole under the ankle to the ball of the foot, which it rolls on. */
+  /** How far a boot's stiff shaft lets the shin lean from the boot's upright, in radians: forward
+   * over the toe, and back. Past them the boot turns with the shin: down, it rolls on its toe or
+   * its heel as far as the leg needs. */
+  static readonly BOOT_FLEX: Readonly<{ forward: number; back: number }> = {
+    forward: 0.55,
+    back: 0.3,
+  };
+  /** From the point of the sole under the ankle to its toe, where the stiff sole's rocker begins,
+   * and to its heel: what a boot rolls on. */
+  static readonly TOE = 0.2;
+  static readonly HEEL = -0.105;
+  /** From the point of the sole under the ankle to the ball of the foot, where a boot coming down
+   * kicks up the snow. */
   static readonly BALL = 0.13;
+  /** The most a boot turns on its toe or its heel for its stiff ankle. */
+  private static readonly MOST_TURN = 1.2;
   /** The steepest a sole lies along the ground, in radians. */
   private static readonly SOLE_STEEPEST = 0.6;
   /** How far the slope leans the body into it: a share of its angle, between these. */
@@ -274,11 +304,13 @@ export class ClimberPose {
   /** Across a ladder: how far ahead of the shoulders each hand holds the lines. */
   private static readonly LINE_HOLDS: readonly [number, number] = [0.3, 0.18];
   /** Up a wall: how far toward the wall from the ladder's line the balls of the feet and the
-   * hands are; the pelvis, up the ladder and off it; how high over the feet the hands hold, about,
-   * and over the top; how far a foot or a hand comes off between the rungs; the lean into it. */
+   * hands are, and the ball of the foot from the ankle; the pelvis, up the ladder and off it; how
+   * high over the feet the hands hold, about, and over the top; how far a foot or a hand comes off
+   * between the rungs; the lean into it. */
   private static readonly WALL = {
     foot: 0.04,
     hand: 0.03,
+    ball: 0.07,
     pelvis: { up: 0.68, off: -0.3 },
     hands: 1.2,
     over: 0.1,
@@ -341,6 +373,28 @@ export class ClimberPose {
   private static readonly ORIGIN: Joint = { x: 0, y: 0 };
   private static readonly UP: Joint = { x: 0, y: 1 };
   private static readonly NONE_DOWN: readonly [boolean, boolean] = [false, false];
+  /** What a boot turns on for its stiff ankle: on the snow its toe or its heel, on a ladder's
+   * rung the rung under it, on a wall's the ball of the foot, and off the ground its ankle. */
+  private static readonly ON_SNOW: Pivots = {
+    forward: { x: ClimberPose.TOE, y: 0 },
+    back: { x: ClimberPose.HEEL, y: 0 },
+  };
+  private static readonly ON_A_RUNG: Pivots = {
+    forward: ClimberPose.ORIGIN,
+    back: ClimberPose.ORIGIN,
+  };
+  private static readonly ON_A_WALL: Pivots = {
+    forward: { x: ClimberPose.WALL.ball, y: 0 },
+    back: { x: ClimberPose.WALL.ball, y: 0 },
+  };
+  private static readonly ON_THE_TOE: Pivots = {
+    forward: { x: ClimberPose.TOE, y: 0 },
+    back: { x: ClimberPose.TOE, y: 0 },
+  };
+  private static readonly OFF_THE_GROUND: Pivots = {
+    forward: { x: 0, y: ClimberPose.ANKLE },
+    back: { x: 0, y: ClimberPose.ANKLE },
+  };
 
   /** Where in the stride, 0 to 1, as the way covered paces it. */
   private cycle = ClimberPose.START;
@@ -600,15 +654,21 @@ export class ClimberPose {
     const bob = ClimberPose.BOB * dip * (1 - this.standing);
     const sink = ClimberPose.SINK[state.tiredness] + ClimberPose.CLIP_CROUCH * this.reach();
     let height = this.height(state, pelvisX, behind) + ClimberPose.STANDING - sink - bob;
-    // In the rest step's pause the climber stands straight on the back leg, locked.
+    // In the rest step's pause the climber stands straight on the back leg, locked, the boot on
+    // its toe as far as its stiff ankle needs.
     const backIsNear = near.ankle.x < far.ankle.x;
     const back = backIsNear ? near : far;
-    const locked = ClimberPose.reachUp(ClimberPose.hipOf(pelvisX, backIsNear ? 0 : 1), back.ankle);
-    height += gait.pausing * (locked - height);
-    // The hips sink as far as each leg bearing the weight needs to reach its boot.
-    const nearReach = ClimberPose.reachUp(ClimberPose.hipOf(pelvisX, 0), near.ankle);
+    const backHip = ClimberPose.hipOf(pelvisX, backIsNear ? 0 : 1);
+    const straight: Joint = { x: backHip.x, y: ClimberPose.reachUp(backHip, back.ankle) };
+    const onToe = ClimberPose.stiff(straight, back, back.pivots);
+    height += gait.pausing * (ClimberPose.reachUp(backHip, onToe.ankle) - height);
+    // Each boot turns as far as its stiff ankle needs, and the hips sink as far as each leg
+    // bearing the weight needs to reach it.
+    const nearFoot = ClimberPose.stiff(ClimberPose.hipOf(pelvisX, 0, height), near, near.pivots);
+    const farFoot = ClimberPose.stiff(ClimberPose.hipOf(pelvisX, 1, height), far, far.pivots);
+    const nearReach = ClimberPose.reachUp(ClimberPose.hipOf(pelvisX, 0), nearFoot.ankle);
     height += near.weight * (Math.min(height, nearReach) - height);
-    const farReach = ClimberPose.reachUp(ClimberPose.hipOf(pelvisX, 1), far.ankle);
+    const farReach = ClimberPose.reachUp(ClimberPose.hipOf(pelvisX, 1), farFoot.ankle);
     height += far.weight * (Math.min(height, farReach) - height);
     const pelvis: Joint = { x: pelvisX, y: height };
     const shoulder = ClimberPose.shoulderOf(pelvis, lean);
@@ -622,16 +682,17 @@ export class ClimberPose {
       shoulder,
       offset,
       along,
-      this.walkingHand(state, gait, shoulder, pelvis, lean, near.ankle, 0),
-      this.walkingHand(state, gait, shoulder, pelvis, lean, far.ankle, 1),
+      this.walkingHand(state, gait, shoulder, pelvis, lean, nearFoot.ankle, 0),
+      this.walkingHand(state, gait, shoulder, pelvis, lean, farFoot.ankle, 1),
     );
     return {
       targets: {
         pelvis,
         lean,
         nod: lean * 1.3 + tired.nod,
-        ankles: [near.ankle, far.ankle],
-        soles: [near.sole, far.sole],
+        ankles: [nearFoot.ankle, farFoot.ankle],
+        soles: [nearFoot.sole, farFoot.sole],
+        pivots: [near.pivots, far.pivots],
         hands,
         tilt: 0,
         offset,
@@ -733,23 +794,26 @@ export class ClimberPose {
     return [onTheJumar, ClimberPose.between(far, carabiner, reach)];
   }
 
-  /** A boot at `phase` of its leg's cycle: down where it came down, its heel lifting at the end,
-   * or swinging from where it lifted to where it comes down, clear of the snow; at a halt, coming
-   * down where it was going. */
+  /** A boot at `phase` of its leg's cycle: down where it came down, its heel lifting at the end
+   * as it rolls on its toe, or on the rung under it; or swinging from where it lifted to where it
+   * comes down, clear of the snow, turning on its ankle once it's off it; at a halt, coming down
+   * where it was going. */
   private boot(state: PoseState, gait: Gait, leg: 0 | 1, lift: number): Boot {
     const { stride, behind } = gait;
     const phase = (gait.phase + leg / 2) % 1;
     const stance = ClimberPose.STANCE;
     const half = (stance * stride) / 2;
     const heelUp = ClimberPose.HEEL_LIFT * (1 - this.standing) * (1 - gait.pausing);
+    const pivots = state.ladder === null ? ClimberPose.ON_SNOW : ClimberPose.ON_A_RUNG;
+    const on = pivots.forward.x;
     if (phase < stance) {
       const x = this.plant(state, half - phase * stride, behind);
       const rise = (phase - ClimberPose.HEEL_FROM) / (stance - ClimberPose.HEEL_FROM);
       const heel = heelUp * ClimberPose.smooth(rise);
       const slope = this.soleSlope(state, x, behind);
       const contact: Joint = { x, y: this.height(state, x, behind) };
-      const ankle = ClimberPose.rolled(contact, slope, heel);
-      return { ankle, sole: slope - heel, down: true, weight: 1 };
+      const ankle = ClimberPose.rolled(contact, slope, heel, on);
+      return { ankle, sole: slope - heel, down: true, weight: 1, pivots };
     }
     const swung = (phase - stance) / (1 - stance);
     const lifted = -half - (1 - stance) * stride * swung;
@@ -761,22 +825,24 @@ export class ClimberPose {
     const toY = this.height(state, to, behind);
     const fromSlope = this.soleSlope(state, from, behind);
     const toSlope = this.soleSlope(state, to, behind);
-    const off = ClimberPose.rolled({ x: from, y: fromY }, fromSlope, heelUp);
-    const on = ClimberPose.rolled({ x: to, y: toY }, toSlope, 0);
+    const off = ClimberPose.rolled({ x: from, y: fromY }, fromSlope, heelUp, on);
+    const onto = ClimberPose.rolled({ x: to, y: toY }, toSlope, 0, on);
     // The ankle goes from its place over the sole as it lifted to the one it comes down at.
-    const overX = off.x - from + (on.x - to - (off.x - from)) * eased;
-    const overY = off.y - fromY + (on.y - toY - (off.y - fromY)) * eased;
+    const overX = off.x - from + (onto.x - to - (off.x - from)) * eased;
+    const overY = off.y - fromY + (onto.y - toY - (off.y - fromY)) * eased;
     const swinging: Joint = {
       x: x + overX,
       y: this.height(state, x, behind) + overY + lift * Math.sin(Math.PI * swung),
     };
     const sole = fromSlope - heelUp + (toSlope - fromSlope + heelUp) * eased;
     const settled = gait.settled[leg];
+    const aloft = Math.sin(Math.PI * swung) * (1 - settled);
     return {
-      ankle: ClimberPose.between(swinging, on, settled),
+      ankle: ClimberPose.between(swinging, onto, settled),
       sole: sole + (toSlope - sole) * settled,
       down: settled > 0.95,
       weight: settled,
+      pivots: ClimberPose.pivotsBetween(pivots, ClimberPose.OFF_THE_GROUND, aloft),
     };
   }
 
@@ -802,8 +868,8 @@ export class ClimberPose {
     const ankleOf = (onRungs: OnRungs): Joint => {
       const ball = at(Math.max(onRungs.up, bottom), wall.foot - onRungs.off);
       return {
-        x: ball.x - 0.07 * toWall.x + ClimberPose.ANKLE * rise.x,
-        y: ball.y - 0.07 * toWall.y + ClimberPose.ANKLE * rise.y,
+        x: ball.x - wall.ball * toWall.x + ClimberPose.ANKLE * rise.x,
+        y: ball.y - wall.ball * toWall.y + ClimberPose.ANKLE * rise.y,
       };
     };
     const handOf = (onRungs: OnRungs): Joint =>
@@ -839,6 +905,7 @@ export class ClimberPose {
         nod: sign > 0 ? -0.3 : 0.4,
         ankles: [nearAnkle, farAnkle],
         soles: [0, 0],
+        pivots: [ClimberPose.ON_A_WALL, ClimberPose.ON_A_WALL],
         hands,
         tilt: 0,
         offset: ClimberPose.ORIGIN,
@@ -912,6 +979,7 @@ export class ClimberPose {
         { x: x + ankles[1].x, y: y + ankles[1].y },
       ],
       soles: [-0.3, -0.25],
+      pivots: [ClimberPose.OFF_THE_GROUND, ClimberPose.OFF_THE_GROUND],
       hands: [
         { x: x + hands[0].x, y: y + hands[0].y },
         { x: x + hands[1].x, y: y + hands[1].y },
@@ -943,6 +1011,7 @@ export class ClimberPose {
         { x: farFoot.x - sway, y: farFoot.y },
       ],
       soles: [-0.35, -0.3],
+      pivots: [ClimberPose.OFF_THE_GROUND, ClimberPose.OFF_THE_GROUND],
       hands: [
         {
           x: shoulder.x + (above.x - shoulder.x) * share,
@@ -971,6 +1040,7 @@ export class ClimberPose {
       nod: kneel.lean,
       ankles: [frontAnkle, backAnkle],
       soles: [slope, kneel.toes],
+      pivots: [ClimberPose.ON_SNOW, ClimberPose.ON_THE_TOE],
       hands: [
         { x: knee.x + 0.04, y: knee.y + 0.04 },
         { x: knee.x, y: knee.y + 0.03 },
@@ -980,9 +1050,10 @@ export class ClimberPose {
     };
   }
 
-  /** The skeleton bent to its targets, with the cowstails' ends. */
+  /** The skeleton bent to its targets, each boot turned as far as its stiff ankle needs, with the
+   * cowstails' ends. */
   private solve(state: PoseState, targets: Targets, landed: readonly [boolean, boolean]): Pose {
-    const { pelvis, lean, nod, ankles, hands, soles, tilt, offset } = targets;
+    const { pelvis, lean, nod, ankles, hands, soles, pivots, tilt, offset } = targets;
     const { THIGH, SHIN, UPPER_ARM, FOREARM, NECK } = ClimberPose;
     const shoulder = ClimberPose.shoulderOf(pelvis, lean);
     const head: Joint = {
@@ -991,6 +1062,8 @@ export class ClimberPose {
     };
     const nearHip = ClimberPose.hipOf(pelvis.x, 0, pelvis.y);
     const farHip = ClimberPose.hipOf(pelvis.x, 1, pelvis.y);
+    const near = ClimberPose.stiff(nearHip, { ankle: ankles[0], sole: soles[0] }, pivots[0]);
+    const far = ClimberPose.stiff(farHip, { ankle: ankles[1], sole: soles[1] }, pivots[1]);
     const nearRoot = ClimberPose.armRoot(shoulder, 0);
     const farRoot = ClimberPose.armRoot(shoulder, 1);
     const nearArm = ClimberPose.bend(nearRoot, hands[0], UPPER_ARM, FOREARM, -1);
@@ -1002,11 +1075,11 @@ export class ClimberPose {
       shoulder,
       head,
       legs: [
-        ClimberPose.bend(nearHip, ankles[0], THIGH, SHIN, 1),
-        ClimberPose.bend(farHip, ankles[1], THIGH, SHIN, 1),
+        ClimberPose.bend(nearHip, near.ankle, THIGH, SHIN, 1),
+        ClimberPose.bend(farHip, far.ankle, THIGH, SHIN, 1),
       ],
       arms: [nearArm, farArm],
-      soles,
+      soles: [near.sole, far.sole],
       lean,
       nod,
       tilt,
@@ -1034,13 +1107,16 @@ export class ClimberPose {
     return Math.atan(rise / 0.6);
   }
 
-  /** The angle a sole lies at `x` ahead: along the ground, or the ladder. */
+  /** The angle a sole lies at `x` ahead: along the ground under it, from its heel to its toe, or
+   * the ladder. */
   private soleSlope(state: PoseState, x: number, behind: number): number {
     const { ladder } = state;
     if (ladder !== null) {
       return Math.atan2(ladder.way.y, Math.abs(ladder.way.x));
     }
-    const rise = (this.height(state, x + 0.1, behind) - this.height(state, x - 0.1, behind)) / 0.2;
+    const { HEEL, TOE } = ClimberPose;
+    const toe = this.height(state, x + TOE, behind);
+    const rise = (toe - this.height(state, x + HEEL, behind)) / (TOE - HEEL);
     const steepest = ClimberPose.SOLE_STEEPEST;
     return Math.min(Math.max(Math.atan(rise), -steepest), steepest);
   }
@@ -1093,17 +1169,79 @@ export class ClimberPose {
   }
 
   /** The ankle of a boot whose sole touches `contact` under it at `slope`, its heel come up by
-   * `heel`, rolling on the ball of the foot. */
-  private static rolled(contact: Joint, slope: number, heel: number): Joint {
+   * `heel`, rolling on the point `on` along the sole from there: its toe, or the rung under it. */
+  private static rolled(contact: Joint, slope: number, heel: number, on: number): Joint {
     const cos = Math.cos(slope);
     const sin = Math.sin(slope);
-    const ballX = contact.x + ClimberPose.BALL * cos;
-    const ballY = contact.y + ClimberPose.BALL * sin;
-    const dx = contact.x - ClimberPose.ANKLE * sin - ballX;
-    const dy = contact.y + ClimberPose.ANKLE * cos - ballY;
-    const turnCos = Math.cos(-heel);
-    const turnSin = Math.sin(-heel);
-    return { x: ballX + dx * turnCos - dy * turnSin, y: ballY + dx * turnSin + dy * turnCos };
+    const ankle: Joint = {
+      x: contact.x - ClimberPose.ANKLE * sin,
+      y: contact.y + ClimberPose.ANKLE * cos,
+    };
+    return ClimberPose.round(ankle, { x: contact.x + on * cos, y: contact.y + on * sin }, -heel);
+  }
+
+  /** A boot turned on one of its pivots as far as its stiff ankle needs: so its shin, from `hip`,
+   * leans no further from the boot's upright than the boot lets it. */
+  private static stiff(hip: Joint, foot: Foot, pivots: Pivots): Foot {
+    const { forward, back } = ClimberPose.BOOT_FLEX;
+    const flex = ClimberPose.flexOf(hip, foot);
+    if (flex > forward) {
+      return ClimberPose.turnedTo(hip, foot, pivots.forward, forward, -1);
+    }
+    if (flex < -back) {
+      return ClimberPose.turnedTo(hip, foot, pivots.back, -back, 1);
+    }
+    return foot;
+  }
+
+  /** How far the shin of a leg from `hip` to a boot leans forward of the boot's upright, in
+   * radians. */
+  private static flexOf(hip: Joint, foot: Foot): number {
+    const { THIGH, SHIN } = ClimberPose;
+    const { middle: knee, end: ankle } = ClimberPose.bend(hip, foot.ankle, THIGH, SHIN, 1);
+    const shin = Math.atan2(knee.y - ankle.y, knee.x - ankle.x);
+    return ClimberPose.wrapped(foot.sole + Math.PI / 2 - shin);
+  }
+
+  /** A boot turned `way`, its toe up at 1, on `pivot`, a point of it, till its shin from `hip`
+   * leans `limit` from its upright: the knee bends again as the ankle goes round, so it's found
+   * by halving, from a turn far enough. */
+  private static turnedTo(hip: Joint, foot: Foot, pivot: Joint, limit: number, way: 1 | -1): Foot {
+    const { ankle, sole } = foot;
+    const cos = Math.cos(sole);
+    const sin = Math.sin(sole);
+    const above = pivot.y - ClimberPose.ANKLE;
+    const on: Joint = {
+      x: ankle.x + pivot.x * cos - above * sin,
+      y: ankle.y + pivot.x * sin + above * cos,
+    };
+    const turn = (angle: number): Foot => ({
+      ankle: ClimberPose.round(ankle, on, way * angle),
+      sole: sole + way * angle,
+    });
+    const past = (angle: number): boolean =>
+      way * (ClimberPose.flexOf(hip, turn(angle)) - limit) < 0;
+    let short = 0;
+    let far = Math.min(Math.abs(ClimberPose.flexOf(hip, foot) - limit), ClimberPose.MOST_TURN);
+    while (past(far) && far < ClimberPose.MOST_TURN) {
+      short = far;
+      far = Math.min(far * 2, ClimberPose.MOST_TURN);
+    }
+    for (let halving = 0; halving < 40; halving += 1) {
+      const middle = (short + far) / 2;
+      if (past(middle)) {
+        short = middle;
+      } else {
+        far = middle;
+      }
+    }
+    return turn(far);
+  }
+
+  /** `point` turned round `centre` by `angle`, anticlockwise: as a sole's angle goes up. */
+  private static round(point: Joint, centre: Joint, angle: number): Joint {
+    const away = ClimberPose.turned({ x: point.x - centre.x, y: point.y - centre.y }, -angle);
+    return { x: centre.x + away.x, y: centre.y + away.y };
   }
 
   private static shoulderOf(pelvis: Joint, lean: number): Joint {
@@ -1142,12 +1280,14 @@ export class ClimberPose {
   private static mix(from: Targets, to: Targets, share: number): Targets {
     const joint = (a: Joint, b: Joint): Joint => ClimberPose.between(a, b, share);
     const angle = (a: number, b: number): number => a + (b - a) * share;
+    const pivots = (a: Pivots, b: Pivots): Pivots => ClimberPose.pivotsBetween(a, b, share);
     return {
       pelvis: joint(from.pelvis, to.pelvis),
       lean: angle(from.lean, to.lean),
       nod: angle(from.nod, to.nod),
       ankles: [joint(from.ankles[0], to.ankles[0]), joint(from.ankles[1], to.ankles[1])],
       soles: [angle(from.soles[0], to.soles[0]), angle(from.soles[1], to.soles[1])],
+      pivots: [pivots(from.pivots[0], to.pivots[0]), pivots(from.pivots[1], to.pivots[1])],
       hands: [joint(from.hands[0], to.hands[0]), joint(from.hands[1], to.hands[1])],
       tilt: angle(from.tilt, to.tilt),
       offset: joint(from.offset, to.offset),
@@ -1156,6 +1296,13 @@ export class ClimberPose {
 
   private static between(from: Joint, to: Joint, share: number): Joint {
     return { x: from.x + (to.x - from.x) * share, y: from.y + (to.y - from.y) * share };
+  }
+
+  private static pivotsBetween(from: Pivots, to: Pivots, share: number): Pivots {
+    return {
+      forward: ClimberPose.between(from.forward, to.forward, share),
+      back: ClimberPose.between(from.back, to.back, share),
+    };
   }
 
   /** `angle` moved by whole turns to within half a turn of `to`, so a blend goes the short way. */

@@ -40,11 +40,11 @@ export class RimRig extends FigureRig {
       part(...outlines),
       part(...outlines),
     ];
-    const { thigh, shin, boot, upperArm, forearm, mitt, pack, lid, torso, neck, hood, mask } =
-      RimRig.SHAPES;
+    const { thigh, shin, gaiter, boot, upperArm, forearm, mitt } = RimRig.SHAPES;
+    const { pack, lid, torso, neck, hood, mask } = RimRig.SHAPES;
     return {
       thighs: pair(thigh),
-      shins: pair(shin),
+      shins: pair(shin, gaiter),
       boots: pair(boot),
       upperArms: pair(upperArm),
       forearms: pair(forearm, mitt),
