@@ -67,6 +67,38 @@ describe("Base Camp to Camp 1 at a steady pace, clipped in all the way", () => {
   });
 });
 
+describe("Experience on the ladders and ropes: a novice and a veteran, as fit as the typical client", () => {
+  /** The shortest a first crossing takes in Alan Arnette's table of the routes, 4–6 hours
+   * (time.base-camp-to-camp-1), which a veteran's share of the speed is fitted to. */
+  const ARNETTE_SHORTEST = 4;
+
+  /** The hours a careful climber at a steady pace, with this experience, takes to Camp 1. */
+  const hours = (experience: string): number => {
+    const mountain = new Mountain(knowledge);
+    const rules = mountain.rules();
+    const answers = { ...mountain.questionnaire.typical, experience };
+    const expedition = Expedition.start(mountain.scenario(SEED, answers), rules.all);
+    const crossing = new Crossing(expedition, rules.physics, Section.PLAYER);
+    const steps = LONGEST_HOURS * HOUR * (1 / rules.clock.secondsAStep);
+    if (!crossing.until(mountain.route.destination.from, steps)) {
+      throw new Error(`Still in the Icefall after ${LONGEST_HOURS} hours, with ${experience}`);
+    }
+    return rules.clock.elapsed / HOUR;
+  };
+
+  it("takes one who has never used crampons, a jumar or a ladder about the longest hours the sources give", () => {
+    const { max } = new Mountain(knowledge).route.hours;
+    const novice = hours("none");
+
+    expect(novice).toBeLessThanOrEqual(max);
+    expect(max - novice).toBeLessThan(0.25);
+  });
+
+  it("takes one who has climbed an 8,000 m peak about the shortest of Arnette's", () => {
+    expect(Math.abs(hours("8000") - ARNETTE_SHORTEST)).toBeLessThan(0.25);
+  });
+});
+
 describe("Leaving early is safer: the night's crossing against the morning's", () => {
   /** The chance a hazard goes on the climber, summed over every step they're under one, on a
    * crossing that sets off at `time`. */

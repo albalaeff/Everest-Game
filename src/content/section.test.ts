@@ -171,6 +171,20 @@ describe("Section: the Khumbu Icefall from content/route/icefall.json", () => {
     expect(() => Body.start(section.bodies)).not.toThrow();
   });
 
+  it("sets the player off as their answers make them, at their mass, fitness and technique, the others as they were", () => {
+    const player = { mass: 92, fitness: 0.8, technique: 0.6 };
+    const { start } = section.scenario(1, player);
+    const bodies = (start[Body.NAME] as { climbers: { id: string }[] }).climbers;
+    const climbers = (start[SlopePhysics.NAME] as { climbers: { id: string }[] }).climbers;
+    const of = (all: { id: string }[], id: string) => all.find((climber) => climber.id === id);
+
+    expect(of(bodies, Section.PLAYER)).toMatchObject({ mass: 92, fitness: 0.8 });
+    expect(of(climbers, Section.PLAYER)).toMatchObject({ technique: 0.6 });
+    expect(of(bodies, "teammate")).toMatchObject({ mass: 68, fitness: 1 });
+    expect(of(climbers, "teammate")).toMatchObject({ technique: 1 });
+    expect(section.scenario(1)).toEqual(section.scenario(1, { mass: 75, fitness: 1, technique: 1 }));
+  });
+
   it("refuses a climber with no body", () => {
     const bodies = icefall.bodies.filter((body) => body.id !== "teammate");
 

@@ -105,6 +105,48 @@
         </form>
       </div>
     </section>
+    <section id="climber" role="dialog" aria-modal="true" aria-labelledby="climber-title" hidden>
+      <div>
+        <h2 id="climber-title" data-text="title"></h2>
+        <p data-text="intro"></p>
+        <dl hidden></dl>
+        <form id="climber-answers" hidden>
+          <div class="numbers">
+            <label>
+              <span data-text="age"></span>
+              <input name="age" type="number" inputmode="numeric" step="1" required />
+            </label>
+            <label>
+              <span data-text="height"></span>
+              <input name="height" type="number" inputmode="numeric" step="1" required />
+              <span data-text="cm"></span>
+            </label>
+            <label>
+              <span data-text="weight"></span>
+              <input name="weight" type="number" inputmode="numeric" step="1" required />
+              <span data-text="kg"></span>
+            </label>
+          </div>
+          <fieldset data-question="sex"><legend data-text="sex"></legend></fieldset>
+          <fieldset data-question="training"><legend data-text="training"></legend></fieldset>
+          <fieldset data-question="experience"><legend data-text="experience"></legend></fieldset>
+          <fieldset data-question="illness"><legend data-text="illness"></legend></fieldset>
+          <details>
+            <summary data-text="conditions"></summary>
+            <fieldset data-question="conditions">
+              <legend data-text="conditions-legend"></legend>
+            </fieldset>
+          </details>
+        </form>
+        <div class="guide" aria-live="polite">
+          <h3 data-text="guide"></h3>
+          <ul></ul>
+        </div>
+        <button type="button" data-text="keep" hidden></button>
+        <button type="button" data-text="edit" hidden></button>
+        <button type="submit" form="climber-answers" data-text="climb" hidden></button>
+      </div>
+    </section>
     <section id="disclaimer" role="dialog" aria-modal="true" aria-labelledby="disclaimer-title">
       <div>
         <h2 id="disclaimer-title" data-text="title"></h2>

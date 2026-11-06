@@ -1,4 +1,5 @@
 import campTexts from "../content/camps.json";
+import climberTexts from "../content/climber.json";
 import controlTexts from "../content/controls.json";
 import disclaimerTexts from "../content/disclaimer.json";
 import renderingTexts from "../content/rendering.json";
@@ -20,6 +21,7 @@ new Disclaimer(document, disclaimerTexts.en, new ExpertReview(facts)).show(() =>
     rendering: renderingTexts.en,
     room: new Texts(roomTexts.en),
     camps: new Texts(campTexts.en),
+    climber: new Texts(climberTexts.en),
   };
   void new GamePage(window, texts, facts, build).open();
 });

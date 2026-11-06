@@ -1,6 +1,6 @@
 import type { ExpeditionStore } from "../saves";
 import { Expedition, LetGo, SimulationClock, StepPacer } from "../simulation";
-import type { ClimberId, ExpeditionSave, Rule, Scenario } from "../simulation";
+import type { ClimberId, ExpeditionSave, Rule } from "../simulation";
 import type { ActionQueue } from "./action-queue";
 import type { Played } from "./game-loop";
 
@@ -33,21 +33,17 @@ export class SoloGame implements Played {
     }
   }
 
-  /** The climb saved on the device, resumed on `rules`, or a new one on `scenario` when there's
-   * none, or none this build can go on with: a save from before a rule changed starts anew. */
-  static resumeOrStart(
-    saved: ExpeditionSave | null,
-    rules: readonly Rule[],
-    scenario: () => Scenario,
-  ): Expedition {
-    if (saved !== null) {
-      try {
-        return Expedition.resume(saved, rules);
-      } catch {
-        // An older build's save: the climb starts anew, and the next save replaces it.
-      }
+  /** The climb saved on the device, resumed on `rules`, or null when there's none, or none this
+   * build can go on with: a save from before a rule changed, which a new climb replaces. */
+  static resume(saved: ExpeditionSave | null, rules: readonly Rule[]): Expedition | null {
+    if (saved === null) {
+      return null;
     }
-    return Expedition.start(scenario(), rules);
+    try {
+      return Expedition.resume(saved, rules);
+    } catch {
+      return null;
+    }
   }
 
   advance(seconds: number): void {

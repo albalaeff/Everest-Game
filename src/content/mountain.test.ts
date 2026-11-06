@@ -4,6 +4,7 @@ import { Expedition, HazardChance, SimulationClock } from "../simulation";
 import { KnowledgeBase } from "./knowledge-base";
 import { KNOWLEDGE_FILES } from "./knowledge-files";
 import { Mountain } from "./mountain";
+import type { ClimberAnswers } from "./questionnaire";
 import { Section } from "./section";
 
 const knowledge = new KnowledgeBase(KNOWLEDGE_FILES);
@@ -31,6 +32,23 @@ describe("Mountain", () => {
       pageRules.physics.climber(Section.PLAYER),
     );
     expect(onTheServer.save()).toEqual(onThePage.save());
+  });
+
+  it("sets the player off as their answers make them: the typical client as the route has them, a heavy novice slower", () => {
+    const mountain = new Mountain(knowledge);
+    const { typical } = mountain.questionnaire;
+    const walked = (answers: ClimberAnswers): number => {
+      const rules = mountain.rules();
+      const expedition = Expedition.start(mountain.scenario(7, answers), rules.all);
+      expedition.advance([{ kind: "walk", climber: Section.PLAYER, direction: "right" }]);
+      for (let step = 1; step < 200; step += 1) {
+        expedition.advance();
+      }
+      return rules.physics.climber(Section.PLAYER).x;
+    };
+
+    expect(mountain.scenario(7, typical)).toEqual(mountain.scenario(7));
+    expect(walked({ ...typical, weight: 110, training: "none" })).toBeLessThan(walked(typical) - 0.5);
   });
 
   it("runs the mountain's clock at the knowledge base's ratio", () => {

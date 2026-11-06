@@ -1,7 +1,7 @@
 import { expect, test } from "@playwright/test";
 import type { Locator, Page } from "@playwright/test";
 
-import { choice } from "./climb";
+import { choice, climberScreen } from "./climb";
 
 function disclaimer(page: Page): Locator {
   return page.getByRole("dialog", { name: "Before you climb" });
@@ -9,6 +9,11 @@ function disclaimer(page: Page): Locator {
 
 function understand(page: Page): Locator {
   return page.getByRole("button", { name: "I understand" });
+}
+
+/** Your climber's [Climb], which sets a new climb off. */
+function climb(page: Page): Locator {
+  return climberScreen(page).getByRole("button", { name: "Climb" });
 }
 
 function received(page: Page): Locator {
@@ -36,19 +41,22 @@ test("a player's keys and clicks do nothing until they've read it", async ({ pag
   await expect(received(page)).toHaveCount(0);
   await understand(page).click();
   await choice(page, "Alone").click();
+  await climb(page).click();
   await page.keyboard.press("KeyE");
 
   await expect(disclaimer(page)).toBeHidden();
   await expect(received(page)).toHaveText(["clip first"]);
 });
 
-test("Enter on a PC is [I understand], and then [Alone]", async ({ page, hasTouch }) => {
+test("Enter on a PC is [I understand], then [Alone], then [Climb]", async ({ page, hasTouch }) => {
   test.skip(hasTouch, "a PC's story");
   await page.goto("/");
   await expect(disclaimer(page)).toBeVisible();
 
   await page.keyboard.press("Enter");
   await expect(choice(page, "Alone")).toBeFocused();
+  await page.keyboard.press("Enter");
+  await expect(climberScreen(page).getByLabel("Age")).toBeFocused();
   await page.keyboard.press("Enter");
   await page.keyboard.press("KeyE");
 
@@ -65,6 +73,7 @@ test("a player's taps do nothing until they've read it", async ({ page, hasTouch
   await expect(received(page)).toHaveCount(0);
   await understand(page).tap();
   await choice(page, "Alone").tap();
+  await climb(page).tap();
   await page.locator("#slope").tap({ position: { x: 400, y: 130 } });
 
   await expect(disclaimer(page)).toBeHidden();
@@ -77,6 +86,7 @@ test("the climb shows no beta mark and no build", async ({ page }) => {
 
   await understand(page).click();
   await choice(page, "Alone").click();
+  await climb(page).click();
 
   await expect(page.getByText("Beta: not reviewed by an expert")).toBeHidden();
   await expect(page.getByRole("heading", { name: "Everest" })).toBeHidden();
@@ -98,6 +108,8 @@ test.describe("held upright", () => {
     await expect(page.getByText("Turn your phone sideways to climb")).toBeHidden();
     await understand(page).tap();
     await choice(page, "Alone").tap();
+    await expect(page.getByText("Turn your phone sideways to climb")).toBeHidden();
+    await climb(page).tap();
 
     await expect(page.getByText("Turn your phone sideways to climb")).toBeVisible();
   });

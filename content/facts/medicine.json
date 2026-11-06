@@ -1203,6 +1203,83 @@
       ]
     },
     {
+      "id": "medicine.illness-history",
+      "kind": "fact",
+      "claim": "A history of HAPE or HACE puts a climber at high risk of altitude illness, and a history of moderate to severe AMS at medium risk; none, or mild AMS, is a low risk.",
+      "status": "source only",
+      "versions": [
+        {
+          "note": "With the sleeping altitude of the first day and the rate of ascent, the table's other two measures of the risk.",
+          "source": {
+            "title": "CDC Yellow Book 2026: High-Altitude Travel and Altitude Illness → Table 3.5.1, Risk categories for developing acute mountain sickness",
+            "url": "https://www.cdc.gov/yellow-book/hcp/environmental-hazards-risks/high-altitude-travel-and-altitude-illness.html"
+          },
+          "checked": "2026-11-06"
+        }
+      ]
+    },
+    {
+      "id": "medicine.see-a-doctor",
+      "kind": "fact",
+      "claim": "A climber with coronary artery disease, chronic lung disease, low blood oxygen already, obstructive sleep apnoea or sickle cell trait, even well controlled, sees a doctor who knows high-altitude medicine before going up, with the treatment settled and a plan for a flare-up at altitude.",
+      "status": "source only",
+      "versions": [
+        {
+          "source": {
+            "title": "CDC Yellow Book 2026: High-Altitude Travel and Altitude Illness → Preventing severe altitude illness or death → Preexisting medical conditions",
+            "url": "https://www.cdc.gov/yellow-book/hcp/environmental-hazards-risks/high-altitude-travel-and-altitude-illness.html"
+          },
+          "checked": "2026-11-06"
+        }
+      ]
+    },
+    {
+      "id": "medicine.conditions-and-risk",
+      "kind": "fact",
+      "claim": "How conditions change the risk of going high: well-controlled asthma, mild COPD, diabetes and class 1 or 2 obesity likely add none; stable angina, moderate COPD, compensated heart failure, coronary artery disease not treated by revascularization and severe obstructive sleep apnoea need caution; poorly controlled asthma, unstable angina, decompensated heart failure, a heart attack or a stroke in the 90 days before, and class 3 obesity rule it out.",
+      "status": "source only",
+      "versions": [
+        {
+          "note": "Also low-risk pregnancy, controlled high blood pressure and stable psychiatric disorders add none; mild pulmonary hypertension and sickle cell trait need caution; high-risk pregnancy and sickle cell anaemia rule it out.",
+          "source": {
+            "title": "CDC Yellow Book 2026: High-Altitude Travel and Altitude Illness → Table 3.5.3, Ascent risk associated with various underlying medical conditions and risk factors",
+            "url": "https://www.cdc.gov/yellow-book/hcp/environmental-hazards-risks/high-altitude-travel-and-altitude-illness.html"
+          },
+          "checked": "2026-11-06"
+        }
+      ]
+    },
+    {
+      "id": "medicine.diabetes",
+      "kind": "fact",
+      "claim": "A climber with diabetes can go high safely if used to exercise; altitude illness can bring on diabetic ketoacidosis, and not every glucometer reads true at altitude.",
+      "status": "source only",
+      "versions": [
+        {
+          "source": {
+            "title": "CDC Yellow Book 2026: High-Altitude Travel and Altitude Illness → Preexisting medical conditions → Diabetes mellitus",
+            "url": "https://www.cdc.gov/yellow-book/hcp/environmental-hazards-risks/high-altitude-travel-and-altitude-illness.html"
+          },
+          "checked": "2026-11-06"
+        }
+      ]
+    },
+    {
+      "id": "medicine.sleep-apnoea",
+      "kind": "fact",
+      "claim": "A climber with severe obstructive sleep apnoea avoids high altitude unless on supplemental oxygen with their CPAP; one with mild to moderate apnoea, not short of oxygen at home, may go without the CPAP.",
+      "status": "source only",
+      "versions": [
+        {
+          "source": {
+            "title": "CDC Yellow Book 2026: High-Altitude Travel and Altitude Illness → Preexisting medical conditions → Obstructive sleep apnea",
+            "url": "https://www.cdc.gov/yellow-book/hcp/environmental-hazards-risks/high-altitude-travel-and-altitude-illness.html"
+          },
+          "checked": "2026-11-06"
+        }
+      ]
+    },
+    {
       "id": "medicine.higher-sleep-risk",
       "kind": "fact",
       "claim": "A climber acclimatized to one altitude is at risk again when sleeping higher, the more so for a gain of this much.",
