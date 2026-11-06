@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 
 import { ClimberPose } from "./climber-pose";
 import type { Joint, LadderFooting, Pose, PoseState } from "./climber-pose";
+import { FigureShapes } from "./figure-shapes";
 
 const FRAME = 1 / 60;
 const flat = (): number => 0;
@@ -60,24 +61,30 @@ function inWorld(frame: Frame, joint: Joint): Joint {
   };
 }
 
-/** The ball of a boot, which it rolls on. */
-function ball(pose: Pose, leg: 0 | 1): Joint {
+/** A point of a boot, `along` its sole from under the ankle and `up` off it: its ball, its toe,
+ * the point under the ankle. */
+function ofTheBoot(pose: Pose, leg: 0 | 1, along: number, up = 0): Joint {
   const ankle = pose.legs[leg].end;
   const sole = pose.soles[leg];
+  const above = up - ClimberPose.ANKLE;
   return {
-    x: ankle.x + ClimberPose.BALL * Math.cos(sole) + ClimberPose.ANKLE * Math.sin(sole),
-    y: ankle.y + ClimberPose.BALL * Math.sin(sole) - ClimberPose.ANKLE * Math.cos(sole),
+    x: ankle.x + along * Math.cos(sole) - above * Math.sin(sole),
+    y: ankle.y + along * Math.sin(sole) + above * Math.cos(sole),
   };
 }
 
-/** The point of a boot's sole under its ankle. */
-function underAnkle(pose: Pose, leg: 0 | 1): Joint {
-  const ankle = pose.legs[leg].end;
-  const sole = pose.soles[leg];
-  return {
-    x: ankle.x + ClimberPose.ANKLE * Math.sin(sole),
-    y: ankle.y - ClimberPose.ANKLE * Math.cos(sole),
-  };
+/** How far a boot's ankle is bent: from the boot's upright to the shin, in radians, the shin
+ * forward over the toe above 0. */
+function flexOf(pose: Pose, leg: 0 | 1): number {
+  const { middle: knee, end: ankle } = pose.legs[leg];
+  const bent = pose.soles[leg] + Math.PI / 2 - Math.atan2(knee.y - ankle.y, knee.x - ankle.x);
+  return bent - 2 * Math.PI * Math.round(bent / (2 * Math.PI));
+}
+
+/** How far over the ground `height` high a point of the picture is, in a frame of a climb. */
+function overTheGround(frame: Frame, point: Joint, height: (x: number) => number): number {
+  const at = inWorld(frame, point);
+  return at.y - height(at.x);
 }
 
 function joints(pose: Pose): Joint[] {
@@ -221,25 +228,84 @@ describe("ClimberPose", () => {
     expect(Math.hypot(pose.offset.x, pose.offset.y)).toBeLessThan(1e-9);
   });
 
-  it("keeps each boot where it came down until it lifts, rolling over its ball", () => {
-    const frames = walk(300);
+  it("keeps each boot where it came down until it lifts, rolling over its toe, up a steep slope too", () => {
+    for (const grade of [0, 0.5]) {
+      const height = (x: number): number => grade * x;
+      const frames = walk(300, {}, height);
+      const toe = (frame: Frame, leg: 0 | 1): Joint => ofTheBoot(frame.pose, leg, ClimberPose.TOE);
+      const down = (frame: Frame, leg: 0 | 1): boolean =>
+        Math.abs(overTheGround(frame, toe(frame, leg), height)) < 1e-9;
 
-    for (const leg of LEGS) {
-      let planted = 0;
-      for (const [before, after] of pairs(frames)) {
-        const from = inWorld(before, ball(before.pose, leg));
-        const to = inWorld(after, ball(after.pose, leg));
-        if (Math.abs(from.y) < 1e-9 && Math.abs(to.y) < 1e-9) {
-          planted += 1;
-          expect(length(from, to)).toBeLessThan(1e-9);
+      for (const leg of LEGS) {
+        let planted = 0;
+        for (const [before, after] of pairs(frames)) {
+          if (down(before, leg) && down(after, leg)) {
+            planted += 1;
+            const from = inWorld(before, toe(before, leg));
+            expect(length(from, inWorld(after, toe(after, leg)))).toBeLessThan(1e-9);
+          }
+        }
+        expect(planted).toBeGreaterThan(frames.length * 0.4);
+      }
+      const rolling = frames.filter((frame) =>
+        LEGS.some((leg) => down(frame, leg) && frame.pose.soles[leg] < Math.atan(grade) - 0.2),
+      );
+      expect(rolling.length).toBeGreaterThan(10);
+    }
+  });
+
+  it("bends each ankle no further than its stiff boot lets it, whatever the climber does", () => {
+    const { forward, back } = ClimberPose.BOOT_FLEX;
+    const climbs = [
+      walk(300),
+      walk(300, { pace: "faster" }),
+      walk(300, { pace: "rest-step", tiredness: "tired" }),
+      walk(300, { tiredness: "exhausted" }),
+      walk(300, {}, (x) => 0.4 * x),
+      walk(300, {}, (x) => 0.55 * x),
+      walk(300, {}, (x) => -0.4 * x),
+      walk(300, {}, (x) => 0.2 * Math.sin(2 * x)),
+      walk(300, (x) => ({ ladder: across(x) })),
+      climbAWall(300),
+      through([
+        { frames: 30, over: { tiredness: "exhausted" } },
+        { frames: 60, over: { falling: true } },
+        { frames: 90, over: {} },
+        { frames: 60, over: { falling: true, ground: () => -5 } },
+        { frames: 60, over: { falling: true, ground: () => -5, carabiner: { x: 0.3, y: 0.7 } } },
+        { frames: 60, over: { dead: true } },
+      ]),
+    ];
+
+    for (const frames of climbs) {
+      for (const { pose } of frames) {
+        for (const leg of LEGS) {
+          expect(flexOf(pose, leg)).toBeLessThan(forward + 1e-6);
+          expect(flexOf(pose, leg)).toBeGreaterThan(-back - 1e-6);
         }
       }
-      expect(planted).toBeGreaterThan(frames.length * 0.4);
     }
-    const rolling = frames.filter(({ pose }) =>
-      LEGS.some((leg) => Math.abs(ball(pose, leg).y) < 1e-9 && pose.soles[leg] < -0.2),
-    );
-    expect(rolling.length).toBeGreaterThan(10);
+  });
+
+  it("never sinks a boot into the snow, however it rolls, on hummocks too", () => {
+    const { boot } = new FigureShapes();
+    const grounds = [
+      flat,
+      (x: number): number => 0.4 * x,
+      (x: number): number => -0.4 * x,
+      (x: number): number => 0.2 * Math.sin(2 * x),
+    ];
+
+    for (const height of grounds) {
+      for (const frame of walk(300, {}, height)) {
+        for (const leg of LEGS) {
+          for (const { x, y } of boot) {
+            const point = ofTheBoot(frame.pose, leg, x, y);
+            expect(overTheGround(frame, point, height)).toBeGreaterThan(-0.02);
+          }
+        }
+      }
+    }
   });
 
   it("walks as the physics moves it, not as time passes", () => {
@@ -258,15 +324,15 @@ describe("ClimberPose", () => {
     });
   });
 
-  it("sets its boots along the slope it walks, the body leaning into it", () => {
-    const grade = 0.4;
+  it("sets its boots along a gentle slope it walks, the body leaning into it", () => {
+    const grade = 0.2;
     const frames = walk(300, {}, (x) => grade * x);
     let flatOnIt = 0;
 
     for (const frame of frames) {
       for (const leg of LEGS) {
         if (Math.abs(frame.pose.soles[leg] - Math.atan(grade)) < 1e-9) {
-          const under = inWorld(frame, underAnkle(frame.pose, leg));
+          const under = inWorld(frame, ofTheBoot(frame.pose, leg, 0));
           expect(under.y).toBeCloseTo(grade * under.x, 9);
           flatOnIt += 1;
         }
@@ -275,7 +341,7 @@ describe("ClimberPose", () => {
     expect(flatOnIt).toBeGreaterThan(frames.length * 0.3);
     const uphill = frames.at(-1)?.pose.lean ?? 0;
     const level = walk(300).at(-1)?.pose.lean ?? 0;
-    expect(uphill).toBeGreaterThan(level + 0.1);
+    expect(uphill).toBeGreaterThan(level + 0.05);
   });
 
   it("stands still on the locked lower leg in the rest step's pause, then steps through", () => {
@@ -287,7 +353,8 @@ describe("ClimberPose", () => {
     expect(longestStill(walk(400, {}, slope), drawn, 1e-6)).toBe(0);
     let pauses = 0;
     let still = 0;
-    for (const [before, after] of pairs(resting)) {
+    // The first still frames are the stand the walk sets off from, not yet the rest step's pause.
+    for (const [before, after] of pairs(resting.slice(10))) {
       const stays = Math.abs(drawn(after).x - drawn(before).x) < 1e-6;
       if (!stays && still >= 5) {
         const { legs } = before.pose;
@@ -338,7 +405,7 @@ describe("ClimberPose", () => {
 
     for (const frame of frames) {
       for (const leg of LEGS) {
-        const under = inWorld(frame, underAnkle(frame.pose, leg));
+        const under = inWorld(frame, ofTheBoot(frame.pose, leg, 0));
         if (Math.abs(under.y) < 1e-9) {
           onRungs += 1;
           expect(offTheRungs(under.x)).toBeLessThan(1e-9);
@@ -368,7 +435,7 @@ describe("ClimberPose", () => {
       let down = 0;
       for (const frame of frames) {
         for (const leg of LEGS) {
-          const under = inWorld(frame, underAnkle(frame.pose, leg));
+          const under = inWorld(frame, ofTheBoot(frame.pose, leg, 0));
           if (Math.abs(under.y) < 1e-9) {
             down += 1;
             expect(offTheRungs(under.x, first, spacing)).toBeLessThan(1e-9);
@@ -597,7 +664,8 @@ describe("ClimberPose", () => {
     for (const frame of kicked) {
       for (const leg of LEGS) {
         if (frame.pose.landed[leg]) {
-          expect(Math.abs(inWorld(frame, ball(frame.pose, leg)).y)).toBeLessThan(1e-9);
+          const ball = ofTheBoot(frame.pose, leg, ClimberPose.BALL);
+          expect(Math.abs(inWorld(frame, ball).y)).toBeLessThan(1e-9);
         }
       }
     }

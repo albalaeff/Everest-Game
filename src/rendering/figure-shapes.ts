@@ -37,17 +37,16 @@ export class FigureShapes {
     ClimberPose.FOREARM - 0.02,
     0.058,
   );
-  /** An eight-thousander's boot with its gaiter, the sole from the heel to the toe on y = 0. */
-  readonly boot = FigureShapes.path({ x: -0.105, y: 0 }, [
-    [0.2, 0],
-    [0.248, 0.004, 0.243, 0.046],
-    [0.236, 0.088, 0.172, 0.102],
-    [0.085, 0.132],
-    [0.072, 0.256],
-    [-0.086, 0.256],
-    [-0.098, 0.12],
-    [-0.122, 0.052, -0.105, 0],
-  ]);
+  /** An eight-thousander's boot: its shell, the sole from the heel to the toe on y = 0, and round
+   * the ankle at its top, where the gaiter turns in it as the ankle bends (#175). */
+  readonly boot = FigureShapes.shell();
+  /** The boot's gaiter, on the shin and turning with it: from its collar down round the ankle, its
+   * end inside the shell however far the boot lets the ankle bend. */
+  readonly gaiter: Outline = [
+    ...FigureShapes.arc({ x: ClimberPose.SHIN - 0.015, y: 0 }, 0.09, Math.PI / 2, -Math.PI / 2),
+    { x: ClimberPose.SHIN - 0.176, y: -0.08 },
+    { x: ClimberPose.SHIN - 0.176, y: 0.08 },
+  ];
   /** The crampon under it: its frame along the sole, its points, and the front points ahead. */
   readonly crampon: readonly Outline[] = [
     FigureShapes.box(-0.09, -0.009, 0.2, 0),
@@ -124,6 +123,21 @@ export class FigureShapes {
       }
     }
     return kept;
+  }
+
+  /** The boot's shell: from the heel along the sole, round the toe and up over the instep, round
+   * the ankle a little wider than the gaiter's end, and down the heel. */
+  private static shell(): Outline {
+    const { HEEL, TOE, ANKLE } = ClimberPose;
+    const front = FigureShapes.path({ x: HEEL, y: 0 }, [
+      [TOE, 0],
+      [0.248, 0.004, 0.243, 0.046],
+      [0.236, 0.088, 0.172, 0.102],
+    ]);
+    const round = FigureShapes.arc({ x: 0, y: ANKLE }, 0.1, 0.55, 2.8);
+    const top = round.at(-1) ?? { x: 0, y: 0 };
+    const heel = FigureShapes.path(top, [[-0.122, 0.052, HEEL, 0]]);
+    return [...front, ...round, ...heel.slice(1, -1)];
   }
 
   /** A limb `length` long along +x, as thick as `from` round its root and `to` round its end, the

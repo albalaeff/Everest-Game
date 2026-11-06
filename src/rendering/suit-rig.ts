@@ -22,13 +22,14 @@ interface SuitParts extends RigParts {
 
 /**
  * A climber in their kit (#168), as #125's scene draws one: a down suit with its baffles, its dark
- * yoke and shins and its hood with a brim; the boots with their gaiters and rands, and the
- * crampons' points and front points under them; the mitts; the pack with its lid, the oxygen's
- * bottle and regulator in it and the ice axe strapped to it; the harness, its belt and its slings;
- * the mask with its valve and hose, on the face or hanging on the chest, the goggles with the sky
- * in them, and the headlamp. Each part is shaded from where the light comes from and drawn once,
- * the far limbs darker and as cold as the sky; what runs between the parts, the hose to the
- * mask's valve and the cowstails to the jumar and the carabiner, is drawn each frame.
+ * yoke and shins and its hood with a brim; the boots with their rands, their gaiters on the shins
+ * turning in the shells as the ankles bend (#175), and the crampons' points and front points
+ * under them; the mitts; the pack with its lid, the oxygen's bottle and regulator in it and the
+ * ice axe strapped to it; the harness, its belt and its slings; the mask with its valve and hose,
+ * on the face or hanging on the chest, the goggles with the sky in them, and the headlamp. Each
+ * part is shaded from where the light comes from and drawn once, the far limbs darker and as cold
+ * as the sky; what runs between the parts, the hose to the mask's valve and the cowstails to the
+ * jumar and the carabiner, is drawn each frame.
  */
 export class SuitRig extends FigureRig<SuitParts> {
   /** Where the lamp shines from, and where the mask's valve breathes out, in the head's frame. */
@@ -51,9 +52,11 @@ export class SuitRig extends FigureRig<SuitParts> {
   private static readonly ARM_SEAMS = [0.4, 0.7];
   private static readonly FOREARM_SEAMS = [0.45];
   private static readonly TORSO_SEAMS = [0.1, 0.185, 0.27, 0.355];
-  /** How far up the torso its dark yoke begins, and down a shin its dark panel. */
+  /** How far up the torso its dark yoke begins, and down a shin its dark panel; how deep the
+   * gaiter's collar is. */
   private static readonly YOKE = 0.43;
   private static readonly SHIN_PANEL = 0.17;
+  private static readonly COLLAR = 0.03;
   /** The harness's belt: the slant it runs across the torso at, and its edges along it. */
   private static readonly BELT = { normal: { x: -0.055, y: 1 }, from: 0.005, to: 0.055 };
   /** Where the cowstails tie in at the harness, in the torso's frame; how far below the tie one
@@ -217,13 +220,23 @@ export class SuitRig extends FigureRig<SuitParts> {
     return limb;
   }
 
-  /** The shin, its knee in the suit and the rest of it in the dark panel that takes the scuffs. */
+  /** The shin, its knee in the suit and the rest of it in the dark panel that takes the scuffs;
+   * and over it the boot's gaiter, turning with it, its collar and its zip. */
   private static shin(suit: number): Graphics {
-    const { shin } = SuitRig.SHAPES;
-    const panel = FigureShapes.band(shin, FigureShapes.AHEAD, SuitRig.SHIN_PANEL, Infinity);
+    const { shin, gaiter } = SuitRig.SHAPES;
+    const { AHEAD } = FigureShapes;
+    const panel = FigureShapes.band(shin, AHEAD, SuitRig.SHIN_PANEL, Infinity);
+    const collar = Math.min(...gaiter.map(({ x }) => x)) + SuitRig.COLLAR;
     return SuitRig.limb(shin, suit, [])
       .poly([...panel])
-      .fill(SuitRig.shading(Palette.PANEL, "across"));
+      .fill(SuitRig.shading(Palette.PANEL, "across"))
+      .poly([...gaiter])
+      .fill(SuitRig.shading(Palette.BOOTS, "across"))
+      .poly([...FigureShapes.band(gaiter, AHEAD, -Infinity, collar)])
+      .fill(Palette.RAND)
+      .moveTo(0.26, 0.055)
+      .lineTo(0.36, 0.08)
+      .stroke({ width: 0.01, color: Palette.RAND });
   }
 
   /** The forearm, its cuff over the wrist and the mitt on its end. */
@@ -237,8 +250,8 @@ export class SuitRig extends FigureRig<SuitParts> {
       .fill(SuitRig.shading(Palette.MITTS, "across"));
   }
 
-  /** The boot on its sole: the crampon under it, the shell, the rubber rand round the sole and
-   * over the toe, the gaiter's collar and its zip. */
+  /** The boot on its sole: the crampon under it, the shell, and the rubber rand round the sole and
+   * over the toe. */
   private static boot(): Graphics {
     const { boot: shell, crampon } = SuitRig.SHAPES;
     const { UP, AHEAD } = FigureShapes;
@@ -253,14 +266,10 @@ export class SuitRig extends FigureRig<SuitParts> {
       -Infinity,
       0.075,
     );
-    for (const rubber of [
-      FigureShapes.band(shell, UP, -Infinity, 0.03),
-      toe,
-      FigureShapes.band(shell, UP, 0.226, Infinity),
-    ]) {
+    for (const rubber of [FigureShapes.band(shell, UP, -Infinity, 0.03), toe]) {
       boot.poly([...rubber]).fill(Palette.RAND);
     }
-    return boot.moveTo(0.06, 0.22).lineTo(0.09, 0.115).stroke({ width: 0.01, color: Palette.RAND });
+    return boot;
   }
 
   /** The pack on the back: the bottle standing in it, its top and the regulator over the lid,
