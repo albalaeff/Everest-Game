@@ -23,6 +23,13 @@ describe("Steepness", () => {
     expect(Steepness.ofWay(5, 0).sine).toBe(0);
     expect(Steepness.ofWay(0, -2).sine).toBe(-1);
   });
+
+  it("reads a gradient, the rise over the run, as the sources give it: 1 is 45°", () => {
+    expect(Steepness.ofGradient(1).sine).toBeCloseTo(Math.SQRT1_2, 12);
+    expect(Steepness.ofGradient(0.75).sine).toBeCloseTo(0.6, 12);
+    expect(Steepness.ofGradient(-0.75).sine).toBeCloseTo(-0.6, 12);
+    expect(Steepness.ofGradient(0).sine).toBe(0);
+  });
 });
 
 describe("SteepnessCurve", () => {

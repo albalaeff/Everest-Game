@@ -203,6 +203,107 @@ describe("SlopePhysics: the stride", () => {
   });
 });
 
+describe("SlopePhysics: what a step costs", () => {
+  it("goes up as fast as the stride's power buys, over the energy each metre takes", () => {
+    const start = TestMountain.upTheSlope(20);
+    const layout = TestMountain.SLOPE.layout([
+      { id: "anna", along: start },
+      { id: "boris", along: start },
+    ]);
+    const climb = new Climb(TestMountain.CALM, layout);
+    const from = climb.physics.climber("anna");
+
+    climb.physics.stride("boris", 0.5);
+    climb.play(20, [walk("anna", "right"), walk("boris", "right")]);
+
+    const strong = distance(from, climb.physics.climber("anna"));
+    expect(strong).toBeGreaterThan(0.1);
+    expect(strong).toBeLessThan(0.5);
+    expect(distance(from, climb.physics.climber("boris"))).toBeCloseTo(strong / 2, 9);
+    expect(climb.physics.climber("anna").exertion).toBe(1);
+    expect(climb.physics.climber("boris").exertion).toBe(1);
+  });
+
+  it("costs each metre of height the same past the steepest gradient measured", () => {
+    // 21 m up over 20, about 46°, then 4 up over 3, about 53°: both past the test's 45°.
+    const steep = TestMountain.STEEP.layout([
+      { id: "anna", along: 1 },
+      { id: "boris", along: 30 },
+    ]);
+    const climb = new Climb(TestMountain.CALM, steep);
+    const before = ["anna", "boris"].map((id) => climb.physics.climber(id).y);
+
+    climb.play(20, [walk("anna", "right"), walk("boris", "right")]);
+
+    const [lower = 0, upper = 0] = ["anna", "boris"].map(
+      (id, index) => climb.physics.climber(id).y - (before[index] ?? 0),
+    );
+    expect(lower).toBeGreaterThan(0.1);
+    expect(upper).toBeCloseTo(lower, 9);
+  });
+
+  it("walks the flat no faster than the fastest walk, however strong: it takes less of their power", () => {
+    const layout = TestMountain.FLAT.layout([
+      { id: "anna", along: 10 },
+      { id: "boris", along: 50 },
+    ]);
+    const climb = new Climb(TestMountain.CALM, layout);
+
+    climb.physics.stride("boris", 2);
+    climb.play(20, [walk("anna", "right"), walk("boris", "right")]);
+
+    expect(climb.physics.climber("anna")).toMatchObject({ exertion: 1 });
+    expect(climb.physics.climber("anna").x).toBeCloseTo(11, 9);
+    expect(climb.physics.climber("boris")).toMatchObject({ exertion: 0.5 });
+    expect(climb.physics.climber("boris").x).toBeCloseTo(51, 9);
+  });
+
+  it("comes down a gentle slope faster than it goes up, on less of its power", () => {
+    const layout = TestMountain.GENTLE.layout([
+      { id: "anna", along: 50 },
+      { id: "boris", along: 50 },
+    ]);
+    const climb = new Climb(TestMountain.CALM, layout);
+    const from = climb.physics.climber("anna");
+
+    climb.play(20, [walk("anna", "left"), walk("boris", "right")]);
+    const down = climb.physics.climber("anna");
+    const up = climb.physics.climber("boris");
+
+    expect(distance(from, down)).toBeGreaterThan(distance(from, up));
+    expect(down.exertion).toBeGreaterThan(0.5);
+    expect(down.exertion).toBeLessThan(1);
+    expect(up.exertion).toBe(1);
+  });
+
+  it("takes nothing of a climber standing, and all of their stride on a ladder", () => {
+    const bridge = { id: "bridge", from: 20, to: 83 };
+    const climb = new Climb(
+      TestMountain.CALM,
+      TestMountain.CREVASSE.layout([{ id: "anna", along: 20 }], [], [bridge]),
+    );
+    const standing = climb.physics.climber("anna").exertion;
+
+    climb.physics.stride("anna", 2);
+    climb.play(20, [walk("anna", "right")]);
+
+    expect(standing).toBe(0);
+    expect(climb.physics.climber("anna")).toMatchObject({ ladder: "bridge", exertion: 1 });
+  });
+
+  it("keeps how hard the last step was in a save", () => {
+    const climb = new Climb(TestMountain.CALM, alone(TestMountain.GENTLE, 50));
+    climb.play(1, [walk("anna", "left")]);
+    const resumed = new Climb(
+      TestMountain.CALM,
+      JSON.parse(JSON.stringify(climb.expedition.save())) as ExpeditionSave,
+    );
+
+    expect(resumed.physics.climber("anna").exertion).toBe(climb.physics.climber("anna").exertion);
+    expect(resumed.physics.climber("anna").exertion).toBeLessThan(1);
+  });
+});
+
 describe("SlopePhysics: technique", () => {
   /** Anna at the edge of the crevasse, at the foot of a ladder across it, with this technique. */
   const atTheLadder = (technique: number): SlopeLayout =>

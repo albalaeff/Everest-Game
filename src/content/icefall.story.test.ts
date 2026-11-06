@@ -1,7 +1,8 @@
 import { describe, expect, it } from "vitest";
 
 import icefall from "../../content/route/icefall.json";
-import { Expedition, HazardChance, MountainClock } from "../simulation";
+import { SlopePhysics } from "../physics";
+import { Body, Expedition, HazardChance, MountainClock } from "../simulation";
 import type { ClockStart, Scenario } from "../simulation";
 import { KnowledgeBase } from "./knowledge-base";
 import { KNOWLEDGE_FILES } from "./knowledge-files";
@@ -26,6 +27,54 @@ function scenarioAt(mountain: Mountain, seed: number, time: string): Scenario {
     ...scenario,
     start: { ...scenario.start, [MountainClock.NAME]: MountainClock.start(start) },
   };
+}
+
+/** The Icefall with its climbers at Camp 1, the player where the way up arrives, to go down. */
+function atCampOne(mountain: Mountain, seed: number): Scenario {
+  const scenario = mountain.scenario(seed);
+  const { layout, destination } = mountain.route;
+  const climbers = layout.climbers.map((climber, index) => ({
+    ...climber,
+    along: destination.from + index,
+  }));
+  const physics = SlopePhysics.start({ ...layout, climbers });
+  return { ...scenario, start: { ...scenario.start, [SlopePhysics.NAME]: physics } };
+}
+
+/** The Icefall with `more` kilograms in the player's pack than the route gives them. */
+function carrying(mountain: Mountain, seed: number, more: number): Scenario {
+  const scenario = mountain.scenario(seed);
+  const bodies = mountain.route.bodies.map((body) =>
+    body.id === Section.PLAYER ? { ...body, load: body.load + more } : body,
+  );
+  return { ...scenario, start: { ...scenario.start, [Body.NAME]: Body.start(bodies) } };
+}
+
+/** What a careful crossing from `scenario` up to Camp 1, or down to where the way up sets off,
+ * took of the player, the hazards left out: the hours, and the share of their endurance. */
+function crossed(
+  mountain: Mountain,
+  scenario: Scenario,
+  way: "up" | "down",
+): { readonly hours: number; readonly fatigue: number } {
+  const rules = mountain.rules();
+  const expedition = Expedition.start(scenario, [
+    rules.clock,
+    rules.oxygen,
+    rules.body,
+    rules.physics,
+  ]);
+  const crossing = new Crossing(expedition, rules.physics, Section.PLAYER, way);
+  const setOff = mountain.route.layout.climbers.find(({ id }) => id === Section.PLAYER)?.along;
+  const end = way === "up" ? mountain.route.destination.from : (setOff ?? 0);
+  if (!crossing.until(end, LONGEST_HOURS * HOUR * (1 / rules.clock.secondsAStep))) {
+    throw new Error(`Still in the Icefall after ${LONGEST_HOURS} hours, going ${way}`);
+  }
+  const body = rules.body.save() as unknown as {
+    readonly climbers: readonly { readonly id: string; readonly fatigue: number }[];
+  };
+  const fatigue = body.climbers.find(({ id }) => id === Section.PLAYER)?.fatigue ?? 0;
+  return { hours: rules.clock.elapsed / HOUR, fatigue };
 }
 
 /**
@@ -96,6 +145,40 @@ describe("Experience on the ladders and ropes: a novice and a veteran, as fit as
 
   it("takes one who has climbed an 8,000 m peak about the shortest of Arnette's", () => {
     expect(Math.abs(hours("8000") - ARNETTE_SHORTEST)).toBeLessThan(0.25);
+  });
+});
+
+/**
+ * What the walking costs (Minetti et al. 2002, technique.walking-cost-*): up the Icefall a
+ * climber is held back by their power, down it by their footing, so the way down is quicker and
+ * tires them less; a heavier pack takes more of the same power.
+ */
+describe("The cost of the steps: down from Camp 1, and up with a heavier pack", () => {
+  const mountain = new Mountain(knowledge);
+  const up = crossed(mountain, mountain.scenario(SEED), "up");
+
+  it("comes down in about the hours of the way down from Camp 2, shared as the way up's are", () => {
+    const { hours } = crossed(mountain, atCampOne(mountain, SEED), "down");
+    const icefall = knowledge.number("time.base-camp-to-camp-1");
+    const cwm = knowledge.number("time.camp-1-to-camp-2");
+    const down = (knowledge.number("time.camp-2-to-base-camp") * icefall) / (icefall + cwm);
+
+    expect(hours).toBeLessThan(up.hours);
+    expect(Math.abs(hours - down)).toBeLessThan(0.5);
+  });
+
+  it("tires a climber less for each hour of the way down than of the way up", () => {
+    const down = crossed(mountain, atCampOne(mountain, SEED), "down");
+
+    expect(down.fatigue).toBeGreaterThan(0);
+    expect(down.fatigue / down.hours).toBeLessThan(up.fatigue / up.hours);
+  });
+
+  it("takes one with 20 kg more on their back longer up, and tires them more", () => {
+    const heavier = crossed(mountain, carrying(mountain, SEED, 20), "up");
+
+    expect(heavier.hours).toBeGreaterThan(up.hours + 0.5);
+    expect(heavier.fatigue).toBeGreaterThan(up.fatigue);
   });
 });
 

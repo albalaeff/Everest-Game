@@ -38,40 +38,165 @@
       ]
     },
     {
-      "id": "technique.walking-speed-flat",
-      "kind": "coefficient",
-      "claim": "How fast a fresh climber at sea level, carrying nothing, walks flat snow in crampons, in metres a second: the body scales it by the capacity the altitude leaves, 60% at 5,000 m, and by the pack. Fitted so that a steady first crossing of the Icefall, drawn at 1/12 of its length with its walls and crevasses at life size, takes about 5 hours, the middle of the 3–7 the sources give.",
+      "id": "technique.walking-cost-gradients",
+      "kind": "fact",
+      "claim": "The gradients, the rise over the run, on which the energy cost of walking was measured: from 0.45 m down to 0.45 m up for each metre across, about 24°.",
       "status": "source only",
-      "value": 0.4,
-      "unit": "m/s",
+      "versions": [
+        {
+          "range": { "min": -0.45, "max": 0.45 },
+          "unit": "1",
+          "note": "Ten runners on a treadmill, walking and running at gradients from −0.45 to +0.45.",
+          "source": {
+            "title": "Minetti et al. 2002, Energy cost of walking and running at extreme uphill and downhill slopes (J Appl Physiol) → Abstract",
+            "url": "https://pubmed.ncbi.nlm.nih.gov/12183501/"
+          },
+          "checked": "2026-11-06"
+        }
+      ]
+    },
+    {
+      "id": "technique.walking-cost-level",
+      "kind": "fact",
+      "claim": "The energy walking on the level costs, for each kilogram of body mass and metre walked, at the speed that makes it least.",
+      "status": "source only",
+      "versions": [
+        {
+          "value": 1.64,
+          "unit": "J/kg/m",
+          "note": "1.64 ± 0.50 J/kg/m, at 1.0 ± 0.3 m/s.",
+          "source": {
+            "title": "Minetti et al. 2002, Energy cost of walking and running at extreme uphill and downhill slopes (J Appl Physiol) → Abstract",
+            "url": "https://pubmed.ncbi.nlm.nih.gov/12183501/"
+          },
+          "checked": "2026-11-06"
+        }
+      ]
+    },
+    {
+      "id": "technique.walking-cost-steep-up",
+      "kind": "fact",
+      "claim": "The energy walking up the steepest gradient measured, +0.45, costs for each kilogram of body mass and metre walked.",
+      "status": "source only",
+      "versions": [
+        {
+          "value": 17.33,
+          "unit": "J/kg/m",
+          "note": "17.33 ± 1.11 J/kg/m at +0.45.",
+          "source": {
+            "title": "Minetti et al. 2002, Energy cost of walking and running at extreme uphill and downhill slopes (J Appl Physiol) → Abstract",
+            "url": "https://pubmed.ncbi.nlm.nih.gov/12183501/"
+          },
+          "checked": "2026-11-06"
+        }
+      ]
+    },
+    {
+      "id": "technique.walking-cost-steep-down",
+      "kind": "fact",
+      "claim": "The energy walking down the steepest gradient measured, −0.45, costs for each kilogram of body mass and metre walked: a fifth of the way up it.",
+      "status": "source only",
+      "versions": [
+        {
+          "value": 3.46,
+          "unit": "J/kg/m",
+          "note": "3.46 ± 0.95 J/kg/m at −0.45.",
+          "source": {
+            "title": "Minetti et al. 2002, Energy cost of walking and running at extreme uphill and downhill slopes (J Appl Physiol) → Abstract",
+            "url": "https://pubmed.ncbi.nlm.nih.gov/12183501/"
+          },
+          "checked": "2026-11-06"
+        }
+      ]
+    },
+    {
+      "id": "technique.walking-cost-least",
+      "kind": "fact",
+      "claim": "The least energy walking costs on any gradient, for each kilogram of body mass and metre walked: on a gentle way down, technique.walking-cost-least-gradient, half the level's.",
+      "status": "source only",
+      "versions": [
+        {
+          "value": 0.81,
+          "unit": "J/kg/m",
+          "note": "Reduced to 0.81 ± 0.37 J/kg/m at −0.10.",
+          "source": {
+            "title": "Minetti et al. 2002, Energy cost of walking and running at extreme uphill and downhill slopes (J Appl Physiol) → Abstract",
+            "url": "https://pubmed.ncbi.nlm.nih.gov/12183501/"
+          },
+          "checked": "2026-11-06"
+        }
+      ]
+    },
+    {
+      "id": "technique.walking-cost-least-gradient",
+      "kind": "fact",
+      "claim": "The gradient on which walking costs least: 0.10 m down for each metre across, about 6°.",
+      "status": "source only",
+      "versions": [
+        {
+          "value": -0.1,
+          "unit": "1",
+          "note": "The cost is reduced to its least at −0.10.",
+          "source": {
+            "title": "Minetti et al. 2002, Energy cost of walking and running at extreme uphill and downhill slopes (J Appl Physiol) → Abstract",
+            "url": "https://pubmed.ncbi.nlm.nih.gov/12183501/"
+          },
+          "checked": "2026-11-06"
+        }
+      ]
+    },
+    {
+      "id": "technique.walking-efficiency-gradient",
+      "kind": "fact",
+      "claim": "Steeper than this gradient, up or down, walking works the muscles at the efficiency of their contraction, concentric up and eccentric down: the work against gravity is most of the cost, so each metre of height costs about the same however steep. The game takes it from 0.15 up, and from the steepest measured down.",
+      "status": "source only",
+      "versions": [
+        {
+          "value": 0.15,
+          "unit": "1",
+          "note": "The mechanical efficiencies of walking and running above +0.15 and below −0.15 attained those of concentric and eccentric muscular contraction.",
+          "source": {
+            "title": "Minetti et al. 2002, Energy cost of walking and running at extreme uphill and downhill slopes (J Appl Physiol) → Abstract",
+            "url": "https://pubmed.ncbi.nlm.nih.gov/12183501/"
+          },
+          "checked": "2026-11-06"
+        }
+      ]
+    },
+    {
+      "id": "technique.walking-power",
+      "kind": "coefficient",
+      "claim": "The power a fresh typical client at sea level, at a steady pace and carrying nothing, walks on, in watts for each kilogram they move: the body scales it by the capacity the altitude leaves, 60% at 5,000 m, and by the pack, and a step goes as fast as it pays for on the ground's gradient (technique.walking-cost-*). Fitted with the fastest walk so that a steady first crossing of the Icefall, drawn at 1/12 of its length with its walls and crevasses at life size, takes about 5 hours, the middle of the 3–7 the sources give: 4.9.",
+      "status": "source only",
+      "value": 2.5,
+      "unit": "W/kg",
       "fitted_to": [
         "time.base-camp-to-camp-1",
         "route.icefall-length",
         "route.base-camp-altitude",
         "route.camp-1-altitude",
-        "body.vo2max-5000"
+        "body.vo2max-5000",
+        "technique.walking-cost-steep-up",
+        "technique.walking-cost-level"
       ],
-      "fitted": "2026-11-05"
+      "fitted": "2026-11-06"
     },
     {
-      "id": "technique.walking-speed-steep-up",
+      "id": "technique.fastest-walk",
       "kind": "coefficient",
-      "claim": "How fast that climber goes up the steepest ground walked without a ladder, the Icefall's 60°, in metres a second; between flat and that, the speed falls in a straight line over the sine of the slope. Fitted with the flat speed to the Icefall's hours.",
+      "claim": "The fastest a climber walks in crampons, in metres a second, whatever power they have to spare: down a slope and on the flat their footing holds them to it, so their steps take less of their power and tire them less. Fitted with the walking power so that the way down the Icefall takes about 2.5 hours, the 4 from Camp 2 to Base Camp shared between the Icefall and the Western Cwm as the way up's 5 and 3 are: 2.7.",
       "status": "source only",
-      "value": 0.12,
+      "value": 0.5,
       "unit": "m/s",
-      "fitted_to": ["time.base-camp-to-camp-1", "route.icefall-steepness"],
-      "fitted": "2026-11-05"
-    },
-    {
-      "id": "technique.walking-speed-steep-down",
-      "kind": "coefficient",
-      "claim": "How fast that climber goes down the steepest ground walked without a ladder, in metres a second: faster than up it, slower than the flat, where every step is a brake. Fitted with the flat speed to the Icefall's hours.",
-      "status": "source only",
-      "value": 0.25,
-      "unit": "m/s",
-      "fitted_to": ["time.base-camp-to-camp-1", "route.icefall-steepness"],
-      "fitted": "2026-11-05"
+      "fitted_to": [
+        "time.camp-2-to-base-camp",
+        "time.base-camp-to-camp-1",
+        "time.camp-1-to-camp-2",
+        "route.icefall-length",
+        "technique.walking-cost-steep-down",
+        "technique.walking-cost-least"
+      ],
+      "fitted": "2026-11-06"
     },
     {
       "id": "technique.slip-free-steepness",
@@ -86,7 +211,7 @@
     {
       "id": "technique.slip-chance-steep",
       "kind": "coefficient",
-      "claim": "The chance a climber slips in a second of walking the steepest ground walked without a ladder, scaled by their stride so that a slow climber slips as often for each metre. Fitted so that a few slips come on a long steep stretch, each held by the rope when the climber is clipped: the lesson is the rope, not the footing.",
+      "claim": "The chance a climber slips in a second of walking the steepest ground walked without a ladder at a whole stride, scaled by their speed against that so that a slow climber slips as often for each metre. Fitted so that a few slips come on a long steep stretch, each held by the rope when the climber is clipped: the lesson is the rope, not the footing.",
       "status": "source only",
       "value": 0.02,
       "unit": "1/s",
@@ -152,7 +277,7 @@
     {
       "id": "technique.novice-share",
       "kind": "coefficient",
-      "claim": "The share of the speed on a ladder and clipped to a fixed rope of a climber who has never used crampons, a jumar or a ladder, against one with alpine climbs behind them, whom the ladder and walking speeds are fitted to. Fitted so that such a climber, as fit as the typical client, takes the longest the sources give a first crossing of the Icefall, 7 hours against the middle's 5.",
+      "claim": "The share of the speed on a ladder and clipped to a fixed rope of a climber who has never used crampons, a jumar or a ladder, against one with alpine climbs behind them, whom the ladder speeds and the walking power are fitted to. Fitted so that such a climber, as fit as the typical client, takes the longest the sources give a first crossing of the Icefall, 7 hours against the middle's 5.",
       "status": "source only",
       "value": 0.63,
       "unit": "1",
@@ -259,11 +384,12 @@
     {
       "id": "technique.speed-by-steepness",
       "kind": "question",
-      "question": "How fast does a climber walk on ground of each steepness, up and down, and how much slower on a ladder? The game's speeds are fitted to the hours the sources give the Icefall, not measured: 0.4 m/s on the flat at sea level, 0.12 up a 60° slope and 0.25 down one, before the altitude and the pack slow the climber.",
+      "question": "How fast does a climber walk on ground of each steepness, up and down, in crampons and with a pack, and how much slower on a ladder? The game's walking costs what Minetti et al. measured on a treadmill, read as rise over run, from 24° down to 24° up, each metre of height costing the same past that up to 60°; a climber walks on 2.5 W/kg at sea level, before the altitude and the pack take their share, and no faster than 0.5 m/s whatever they have to spare. The power, the fastest walk and the ladder speeds are fitted to the hours the sources give the Icefall, up and down, not measured.",
       "about": [
-        "technique.walking-speed-flat",
-        "technique.walking-speed-steep-up",
-        "technique.walking-speed-steep-down",
+        "technique.walking-cost-gradients",
+        "technique.walking-efficiency-gradient",
+        "technique.walking-power",
+        "technique.fastest-walk",
         "technique.ladder-speed-across",
         "technique.ladder-speed-up",
         "technique.ladder-speed-down"

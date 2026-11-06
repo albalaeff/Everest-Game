@@ -25,20 +25,41 @@ describe("SlopeFacts: the slope physics' numbers from the knowledge base", () =>
     expect(Math.round(degrees)).toBe(19);
   });
 
-  it("walks the flat at the fitted speed, and the Icefall's steepest ground slower, up and down", () => {
-    const steepest = range("route.icefall-steepness").max;
+  it("costs each gradient's steps what Minetti et al. measured, and costs uphill more than down", () => {
+    const { min, max } = range("technique.walking-cost-gradients");
+    const [steepDown, least, level, , steepUp] = settings.walkingCost;
 
-    expect(settings.walkingSpeed).toEqual([
-      [-steepest, number("technique.walking-speed-steep-down")],
-      [0, number("technique.walking-speed-flat")],
-      [steepest, number("technique.walking-speed-steep-up")],
+    expect(steepDown).toEqual([min, number("technique.walking-cost-steep-down")]);
+    expect(least).toEqual([
+      number("technique.walking-cost-least-gradient"),
+      number("technique.walking-cost-least"),
     ]);
-    expect(number("technique.walking-speed-steep-up")).toBeLessThan(
-      number("technique.walking-speed-steep-down"),
+    expect(level).toEqual([0, number("technique.walking-cost-level")]);
+    expect(steepUp).toEqual([max, number("technique.walking-cost-steep-up")]);
+    expect(min).toBe(-max);
+    expect(number("technique.walking-cost-steep-down")).toBeLessThan(
+      number("technique.walking-cost-steep-up") / 4,
     );
-    expect(number("technique.walking-speed-steep-down")).toBeLessThan(
-      number("technique.walking-speed-flat"),
+  });
+
+  it("costs each metre of height the same from the gradient the muscles work at their efficiency, up", () => {
+    const efficient = number("technique.walking-efficiency-gradient");
+    const { max } = range("technique.walking-cost-gradients");
+    const sine = (gradient: number): number => gradient / Math.sqrt(1 + gradient * gradient);
+    const [gradient, cost] = settings.walkingCost[3] ?? [0, 0];
+
+    expect(gradient).toBe(efficient);
+    expect(cost / sine(efficient)).toBeCloseTo(
+      number("technique.walking-cost-steep-up") / sine(max),
+      12,
     );
+    expect(settings.walkingCost).toHaveLength(5);
+  });
+
+  it("walks on the fitted power, no faster than the fitted fastest walk, up to the Icefall's steepest", () => {
+    expect(settings.walkingPower).toBe(number("technique.walking-power"));
+    expect(settings.fastestWalk).toBe(number("technique.fastest-walk"));
+    expect(settings.steepest).toBe(range("route.icefall-steepness").max);
   });
 
   it("slips nowhere up to the slip-free steepness, and at the fitted chance on the steepest", () => {

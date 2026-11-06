@@ -21,16 +21,23 @@ export class TestMountain {
   /** The altitude of every test mountain's foot. A layout is drawn at life size unless it says
    * otherwise: a climber's altitude is this and their height on the picture. */
   static readonly FOOT = 5000;
-  /** Friction 0.4 holds a slide on ground up to about 22°, and slips start past 25°. */
+  /** Friction 0.4 holds a slide on ground up to about 22°, and slips start past 25°. A whole
+   * stride walks the flat at the fastest walk, 1 m/s, on all its power; down a gentle slope at
+   * it on less, and up one slower; past 45°, each metre of height costs the same. */
   static readonly SETTINGS: SlopeSettings = {
     gravity: 9.8,
     friction: 0.4,
     cowstail: 0.8,
-    walkingSpeed: [
-      [-60, 0.4],
+    walkingCost: [
+      [-1, 2],
+      [-0.1, 0.5],
       [0, 1],
-      [60, 0.25],
+      [0.27, 1.3],
+      [1, 2.6],
     ],
+    steepest: 60,
+    walkingPower: 1,
+    fastestWalk: 1,
     slipChance: [
       [-45, 2],
       [-25, 0],
@@ -91,6 +98,14 @@ export class TestMountain {
   static readonly GENTLE = new TestMountain([
     [0, 0],
     [100, 26.8],
+  ]);
+  /** Steeper than the test's 45°: 21 m up over 20 m across, 29 m long, then 4 up over 3, and a
+   * ledge. */
+  static readonly STEEP = new TestMountain([
+    [0, 0],
+    [20, 21],
+    [35, 41],
+    [60, 41],
   ]);
   /** Flat ground with a crevasse 3 m wide and 30 m deep, from x = 20 to 23. */
   static readonly CREVASSE = new TestMountain([
