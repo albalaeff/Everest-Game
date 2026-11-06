@@ -12,6 +12,7 @@ import { SkyLayer } from "./sky-layer";
 import { SkylineLayer } from "./skyline-layer";
 import { SlopeLayer } from "./slope-layer";
 import { SnowLayer } from "./snow-layer";
+import type { BetweenSteps } from "./stepped-points";
 
 /** What the scene draws, and reads each frame: the expedition's rules and who's on the slope. */
 export interface SceneWorld {
@@ -101,16 +102,18 @@ export class SlopeScene {
     this.build();
   }
 
-  /** A frame: the camera follows for `seconds` more, the air and the light are read from the
+  /** A frame, `between` the steps: the climbers and the ropes move to where they are drawn, the
+   * camera follows the player there for `seconds` more, the air and the light are read from the
    * clock and the weather, and every layer is placed by the camera and lit. */
-  draw(seconds: number): void {
+  draw(seconds: number, between: BetweenSteps): void {
     if (!this.opened) {
       return;
     }
     const { width, height } = this.app.screen;
     const { clock, hazards } = this.world;
     this.camera.resize(width, height);
-    this.camera.follow(seconds);
+    this.slope?.move(between);
+    this.camera.follow(seconds, this.slope?.player ?? this.camera.climber);
     this.atmosphere = this.atmosphere.after(seconds, clock.timeOfDay, hazards.weather);
     for (const layer of this.layers) {
       layer.place(this.camera);

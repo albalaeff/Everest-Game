@@ -1,7 +1,7 @@
 import { Container } from "pixi.js";
 
 import { ClimberPose } from "./climber-pose";
-import type { Foot, Joint, Pose } from "./climber-pose";
+import type { Joint, Pose } from "./climber-pose";
 import { FigureShapes } from "./figure-shapes";
 
 /** A figure's parts, each drawn once in the frame of what it's on (`FigureShapes`): each limb's
@@ -48,7 +48,7 @@ export abstract class FigureRig<Parts extends RigParts = RigParts> extends Conta
       FigureRig.bone(parts.shins[side], leg.middle, leg.end);
       FigureRig.bone(parts.upperArms[side], arm.root, arm.middle);
       FigureRig.bone(parts.forearms[side], arm.middle, arm.end);
-      FigureRig.foot(parts.boots[side], pose.feet[side]);
+      FigureRig.foot(parts.boots[side], leg.end, pose.soles[side]);
     }
     const { pelvis, shoulder, head } = pose;
     const spine = Math.atan2(shoulder.y - pelvis.y, shoulder.x - pelvis.x) - Math.PI / 2;
@@ -59,7 +59,8 @@ export abstract class FigureRig<Parts extends RigParts = RigParts> extends Conta
     parts.torso.scale.x = 1 + swell;
     FigureRig.bone(parts.neck, shoulder, head);
     parts.head.position.set(head.x, head.y);
-    parts.head.rotation = pose.gaze;
+    // The head nods down by `nod`: its x ahead turns towards its -y.
+    parts.head.rotation = -pose.nod;
   }
 
   /** Where a point of a part's own frame is in the figure's, as the part was last placed. */
@@ -85,13 +86,12 @@ export abstract class FigureRig<Parts extends RigParts = RigParts> extends Conta
     }
   }
 
-  /** A boot on its sole under the ankle, turned as the foot is. */
-  private static foot(part: Container, foot: Foot): void {
-    const { ankle, angle } = foot;
+  /** A boot on its sole under the ankle, turned as the sole is. */
+  private static foot(part: Container, ankle: Joint, sole: number): void {
     part.position.set(
-      ankle.x + ClimberPose.ANKLE * Math.sin(angle),
-      ankle.y - ClimberPose.ANKLE * Math.cos(angle),
+      ankle.x + ClimberPose.ANKLE * Math.sin(sole),
+      ankle.y - ClimberPose.ANKLE * Math.cos(sole),
     );
-    part.rotation = angle;
+    part.rotation = sole;
   }
 }

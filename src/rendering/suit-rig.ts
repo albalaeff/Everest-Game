@@ -1,7 +1,7 @@
 import { Container, FillGradient, Graphics } from "pixi.js";
 
 import { ClimberPose } from "./climber-pose";
-import type { Ground, Joint, Pose } from "./climber-pose";
+import type { Joint, Pose } from "./climber-pose";
 import { FigureRig } from "./figure-rig";
 import type { RigParts } from "./figure-rig";
 import { FigureShapes } from "./figure-shapes";
@@ -27,8 +27,8 @@ interface SuitParts extends RigParts {
  * bottle and regulator in it and the ice axe strapped to it; the harness, its belt and its slings;
  * the mask with its valve and hose, the goggles with the sky in them, and the headlamp. Each part
  * is shaded from where the light comes from and drawn once, the far limbs darker and as cold as
- * the sky; what runs between the parts, the hose, the slings and the rope through the jumar, is
- * drawn each frame.
+ * the sky; what runs between the parts, the hose and the cowstails to the jumar and the
+ * carabiner, is drawn each frame.
  */
 export class SuitRig extends FigureRig<SuitParts> {
   /** Where the lamp shines from, and where the mask's valve breathes out, in the head's frame. */
@@ -56,13 +56,11 @@ export class SuitRig extends FigureRig<SuitParts> {
   private static readonly SHIN_PANEL = 0.17;
   /** The harness's belt: the slant it runs across the torso at, and its edges along it. */
   private static readonly BELT = { normal: { x: -0.055, y: 1 }, from: 0.005, to: 0.055 };
-  /** Where the slings tie in at the harness, in the torso's frame, and where the cowstails hang
-   * to from there, in the figure's, when nothing's clipped to them. */
+  /** Where the cowstails tie in at the harness, in the torso's frame; how far below the tie one
+   * off the rope hangs, and either side of it; and the carabiner's ring. */
   private static readonly TIE: Joint = { x: 0.2, y: 0.035 };
-  private static readonly HANGING: readonly Joint[] = [
-    { x: 0.06, y: -0.22 },
-    { x: 0.14, y: -0.16 },
-  ];
+  private static readonly HANGING = { down: 0.26, ahead: 0.05 };
+  private static readonly CARABINER = 0.03;
   /** The oxygen's hose: from the regulator, in the torso's frame, round in front of the chest to
    * the mask's valve. */
   private static readonly HOSE = {
@@ -70,14 +68,6 @@ export class SuitRig extends FigureRig<SuitParts> {
     round: { x: 0.18, y: 0.42 },
     width: 0.022,
   };
-  /** The jumar: where the near hand grips it and where its sling clips in, in its frame on the
-   * rope; how firmly it must be held to show; and how thick the rope and the slings are. */
-  private static readonly GRIP: Joint = { x: 0.035, y: -0.052 };
-  private static readonly SLING_END: Joint = { x: -0.03, y: -0.055 };
-  private static readonly SHOWN = 0.05;
-  private static readonly ROPE_METRES = 0.06;
-  private static readonly SLING_METRES = 0.016;
-  private static readonly KARABINER = { width: 0.04, height: 0.022 };
   /** Each colour's shading, made once for every figure that wears it. */
   private static readonly SHADINGS = new Map<string, FillGradient>();
 
@@ -131,10 +121,10 @@ export class SuitRig extends FigureRig<SuitParts> {
     this.parts.lens.tint = palette.skyHorizon;
   }
 
-  /** The jumar on the rope in the near hand, as firmly as the pose holds it, the rope from it down
-   * to the snow `ground` has ahead and its sling from the harness; the cowstails; and the oxygen's
-   * hose. Drawn each frame, once the parts are placed. */
-  hold(pose: Pose, ground: Ground): void {
+  /** The oxygen's hose; and the cowstails, `length` long and `width` wide, from the harness to the
+   * jumar in the near hand and the second carabiner where they're on the rope, slack or taut, and
+   * hanging where they're off. Drawn each frame, once the parts are placed. */
+  hold(pose: Pose, length: number, width: number): void {
     const { parts, lines } = this;
     const { torso, head, jumar } = parts;
     lines.clear();
@@ -145,55 +135,51 @@ export class SuitRig extends FigureRig<SuitParts> {
       .moveTo(regulator.x, regulator.y)
       .quadraticCurveTo(round.x, round.y, valve.x, valve.y)
       .stroke({ width: SuitRig.HOSE.width, color: Palette.HOSE, cap: "round" });
-    const held = Math.min(1, pose.holding * 1.25);
     const tie = SuitRig.at(torso, SuitRig.TIE);
-    // The cowstails hang from the harness, but for the jumar's while the jumar is held.
-    for (const [index, hanging] of SuitRig.HANGING.entries()) {
-      const alpha = index === 0 ? 1 - held : 1;
-      if (alpha > 0) {
-        SuitRig.cowstail(lines, tie, { x: tie.x + hanging.x, y: tie.y + hanging.y }, alpha);
-      }
-    }
-    jumar.visible = held >= SuitRig.SHOWN;
-    if (!jumar.visible) {
-      return;
-    }
-    const hand = pose.arms[0].end;
-    const off = ClimberPose.ropeOff(hand, ground);
-    const along = Math.atan2(off.y - hand.y, off.x - hand.x);
-    const cos = Math.cos(along);
-    const sin = Math.sin(along);
-    const { GRIP } = SuitRig;
-    jumar.position.set(hand.x - GRIP.x * cos + GRIP.y * sin, hand.y - GRIP.x * sin - GRIP.y * cos);
-    jumar.rotation = along;
-    jumar.alpha = held;
-    const rope = SuitRig.ROPE_METRES;
-    for (const [width, color] of [
-      [rope * 2, Palette.ROPE_SHADE],
-      [rope, Palette.ROPE],
-    ] as const) {
-      lines
-        .moveTo(jumar.x, jumar.y)
-        .lineTo(off.x, off.y)
-        .stroke({ width, color, alpha: held, cap: "round" });
-    }
-    const end = SuitRig.at(jumar, SuitRig.SLING_END);
+    // Down, in the figure's turned frame: what a slack cowstail sags toward.
+    const down = { x: Math.sin(pose.tilt), y: -Math.cos(pose.tilt) };
+    const { HANGING } = SuitRig;
+    const off = (ahead: number): Joint => ({
+      x: tie.x + down.x * HANGING.down + ahead,
+      y: tie.y + down.y * HANGING.down,
+    });
+    const first = pose.jumar ?? off(HANGING.ahead);
+    const second = pose.carabiner ?? off(-HANGING.ahead);
+    SuitRig.cowstail(lines, tie, first, pose.jumar === null ? HANGING.down * 2 : length, down);
+    SuitRig.cowstail(lines, tie, second, pose.carabiner === null ? HANGING.down * 2 : length, down);
+    lines.stroke({ width, color: Palette.SLING, cap: "round", join: "round" });
     lines
-      .moveTo(tie.x, tie.y)
-      .lineTo(end.x, end.y)
-      .stroke({ width: SuitRig.SLING_METRES, color: Palette.SLING, alpha: held, cap: "round" });
+      .circle(second.x, second.y, SuitRig.CARABINER)
+      .stroke({ width: width * 0.8, color: Palette.STEEL });
+    // The jumar along its cowstail, where the hand holds it.
+    jumar.position.set(first.x, first.y);
+    jumar.rotation = Math.atan2(first.y - tie.y, first.x - tie.x);
   }
 
-  /** A cowstail from the harness, its karabiner on its end. */
-  private static cowstail(lines: Graphics, tie: Joint, end: Joint, alpha: number): void {
-    const { width, height } = SuitRig.KARABINER;
-    lines
-      .moveTo(tie.x, tie.y)
-      .lineTo(end.x, end.y)
-      .stroke({ width: SuitRig.SLING_METRES, color: Palette.SLING, alpha, cap: "round" });
-    lines
-      .roundRect(end.x - width / 2, end.y - height, width, height, height / 2)
-      .fill({ color: Palette.STEEL, alpha });
+  /** A cowstail `length` long from the harness to `to`: a curve that sags `down` between them as
+   * far as its slack lets it, straight when it's taut. In pieces: a curve's own are too few at the
+   * figure's metres. */
+  private static cowstail(
+    lines: Graphics,
+    from: Joint,
+    to: Joint,
+    length: number,
+    down: Joint,
+  ): void {
+    const apart = Math.hypot(to.x - from.x, to.y - from.y);
+    const sag = Math.sqrt(Math.max(length * length - apart * apart, 0)) / 2;
+    const controlX = (from.x + to.x) / 2 + down.x * 2 * sag;
+    const controlY = (from.y + to.y) / 2 + down.y * 2 * sag;
+    const pieces = 8;
+    lines.moveTo(from.x, from.y);
+    for (let piece = 1; piece <= pieces; piece += 1) {
+      const t = piece / pieces;
+      const s = 1 - t;
+      lines.lineTo(
+        s * s * from.x + 2 * s * t * controlX + t * t * to.x,
+        s * s * from.y + 2 * s * t * controlY + t * t * to.y,
+      );
+    }
   }
 
   private static drawParts(suit: number): SuitParts {
