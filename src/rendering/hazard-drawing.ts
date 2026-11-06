@@ -1,6 +1,6 @@
 import { Graphics } from "pixi.js";
 
-import type { Terrain } from "../physics";
+import type { Point, Terrain } from "../physics";
 import { SimulationClock } from "../simulation";
 import type { HazardKind, HazardZone, ObjectiveHazards, Warning } from "../simulation";
 import { HazardSigns } from "./hazard-signs";
@@ -30,6 +30,10 @@ export class HazardDrawing {
     cornice: 0xffffff,
   };
   private static readonly EDGE_METRES = 0.08;
+  /** A tower's shaded face, how much of its width that is, and where its cracks run. */
+  private static readonly ICE_SHADE = 0x9db8d0;
+  private static readonly SHADED_SHARE = 0.38;
+  private static readonly CRACKS: readonly number[] = [0.55, 0.78];
   /** How long what came down lies on the ground before the picture clears it, in seconds. */
   private static readonly SETTLE_SECONDS = 2;
 
@@ -51,10 +55,32 @@ export class HazardDrawing {
         const ice = zone.kind === "serac";
         this.standing.poly(flat).fill(ice ? HazardDrawing.ICE : HazardDrawing.LOADED);
         if (ice) {
-          this.standing.stroke({ width: HazardDrawing.EDGE_METRES, color: HazardDrawing.ICE_EDGE });
+          this.shadeTower(outline);
+          this.standing
+            .poly(flat)
+            .stroke({ width: HazardDrawing.EDGE_METRES, color: HazardDrawing.ICE_EDGE });
         }
       }
     }
+  }
+
+  /** A tower's face away from the light, its left side, and the cracks down its ice. */
+  private shadeTower(outline: readonly Point[]): void {
+    const xs = outline.map(({ x }) => x);
+    const left = Math.min(...xs);
+    const right = Math.max(...xs);
+    const bottom = Math.min(...outline.map(({ y }) => y));
+    const cut = left + (right - left) * HazardDrawing.SHADED_SHARE;
+    // Each point's x held to the cut leaves the part of the tower left of it.
+    this.standing
+      .poly(outline.flatMap(({ x, y }) => [Math.min(x, cut), y]))
+      .fill(HazardDrawing.ICE_SHADE);
+    const height = Math.max(...outline.map(({ y }) => y)) - bottom;
+    for (const share of HazardDrawing.CRACKS) {
+      const x = left + (right - left) * share;
+      this.standing.moveTo(x, bottom + height * 0.15).lineTo(x + 0.15, bottom + height * 0.8);
+    }
+    this.standing.stroke({ width: HazardDrawing.EDGE_METRES, color: HazardDrawing.ICE_EDGE });
   }
 
   /** Whether a zone is going now: the picture shakes. */

@@ -9,7 +9,9 @@ const state = (over: Partial<PoseState> = {}): PoseState => ({
   falling: false,
   dead: false,
   onRope: false,
+  clipped: [null, null],
   onLadder: false,
+  rise: 0,
   tiredness: "fresh",
   pace: "steady",
   ...over,
@@ -28,6 +30,10 @@ function walked(metres: number, over: Partial<PoseState> = {}): { pose: Pose; po
   }
   return { pose, poses };
 }
+
+/** How far a leg reaches from its hip to its foot, as a share of the leg's whole length. */
+const stretch = (leg: Pose["legs"][number]): number =>
+  length(leg.root, leg.end) / (ClimberPose.THIGH + ClimberPose.SHIN);
 
 describe("ClimberPose", () => {
   it("keeps its bones' lengths in every pose", () => {
@@ -92,6 +98,98 @@ describe("ClimberPose", () => {
     }
   });
 
+  it("keeps a foot where it was set down as the climber walks on over it", () => {
+    // Each frame the climber comes 2 cm, so a planted foot goes 2 cm back under them, once the
+    // walk has settled out of the stand.
+    const { poses } = walked(5);
+    let planted = 0;
+
+    for (const [index, pose] of poses.entries()) {
+      const before = poses[index - 1];
+      if (index < 90 || before === undefined) {
+        continue;
+      }
+      for (const [leg, { end }] of pose.legs.entries()) {
+        const was = before.legs[leg === 0 ? 0 : 1].end;
+        if (end.y < 1e-6 && was.y < 1e-6) {
+          planted += 1;
+          expect(end.x - was.x).toBeCloseTo(-0.02, 3);
+        }
+      }
+    }
+    expect(planted).toBeGreaterThan(poses.length - 90);
+  });
+
+  it("stands its feet on the slope, the lifted one above it, and leans into it going up", () => {
+    const rise = 0.5;
+    const { poses } = walked(2, { rise });
+    const standing = new ClimberPose().advance(1, state({ rise }));
+
+    for (const pose of poses.slice(40)) {
+      const [lower, higher] = pose.legs
+        .map((leg) => leg.end.y - rise * leg.end.x)
+        .sort((a, b) => a - b);
+      expect(lower).toBeCloseTo(0, 6);
+      expect(higher).toBeGreaterThanOrEqual(-1e-6);
+    }
+    for (const leg of standing.legs) {
+      expect(leg.end.y).toBeCloseTo(rise * leg.end.x, 6);
+    }
+    expect(standing.lean).toBeGreaterThan(new ClimberPose().advance(1, state()).lean);
+  });
+
+  it("locks the downhill leg straight in each rest step, and keeps the knees bent at a steady pace", () => {
+    const rest = walked(3, { rise: 0.4, pace: "rest-step" }).poses.slice(40);
+    const steady = walked(3, { rise: 0.4 }).poses.slice(40);
+    const locked = rest.filter((pose) =>
+      pose.legs.some((leg) => stretch(leg) > 0.995 && leg.end.x < 0),
+    );
+
+    // At least once in each stride of 0.42 m / 0.6 = 0.7 m: four or more in 3 m.
+    expect(locked.length).toBeGreaterThan(4);
+    for (const pose of steady) {
+      for (const leg of pose.legs) {
+        expect(stretch(leg)).toBeLessThan(0.99);
+      }
+    }
+  });
+
+  it("holds the jumar still on the rope as the climber steps up to it, then slides it on", () => {
+    const { poses } = walked(3, { onRope: true, clipped: ["line", null] });
+    let held = 0;
+    let slid = 0;
+
+    for (const [index, pose] of poses.entries()) {
+      const before = poses[index - 1];
+      if (index < 40 || before === undefined) {
+        continue;
+      }
+      const moved = pose.arms[0].end.x - before.arms[0].end.x;
+      if (Math.abs(moved + 0.02) < 0.004) {
+        held += 1;
+      } else if (moved > 0.01) {
+        slid += 1;
+      }
+    }
+    expect(held).toBeGreaterThan(slid);
+    expect(slid).toBeGreaterThan(5);
+  });
+
+  it("bends to the anchor to move the jumar past it, then stands to the rope again", () => {
+    const climber = new ClimberPose();
+    const onFirst = state({ onRope: true, clipped: ["first", "first"] });
+    const holding = climber.advance(2, onFirst);
+    climber.advance(1 / 60, state({ ...onFirst, clipped: ["first", "second"] }));
+    const bent = climber.advance(0.5, state({ ...onFirst, clipped: ["second", "second"] }));
+    const after = climber.advance(3, state({ ...onFirst, clipped: ["second", "second"] }));
+
+    expect(bent.lean).toBeGreaterThan(holding.lean + 0.3);
+    expect(bent.arms[0].end.y).toBeLessThan(holding.arms[0].end.y - 0.15);
+    expect(bent.arms[1].end.y).toBeLessThan(holding.arms[1].end.y);
+    expect(after.lean).toBeCloseTo(holding.lean, 3);
+    expect(length(after.arms[0].end, holding.arms[0].end)).toBeLessThan(1e-3);
+  });
+
   it("comes to a stand when it stops, the feet together", () => {
     const climber = new ClimberPose();
     for (let travelled = 10; travelled <= 10.4; travelled += 0.02) {
@@ -131,8 +229,8 @@ describe("ClimberPose", () => {
     const ladder = walked(0.5, { onLadder: true }).pose;
     const free = walked(0.3).pose;
 
-    expect(clipped.arms[0].end.x).toBeGreaterThan(0.35);
-    expect(clipped.arms[0].end.y).toBeLessThan(0.8);
+    expect(clipped.arms[0].end.x).toBeGreaterThan(0.2);
+    expect(clipped.arms[0].end.y).toBeLessThan(clipped.shoulder.y - 0.2);
     expect(clipped.lean).toBeGreaterThan(free.lean + 0.1);
     expect(length(clipped.arms[0].end, free.arms[0].end)).toBeGreaterThan(0.1);
     for (const arm of ladder.arms) {

@@ -229,14 +229,14 @@ Principles of presentation:
 
 ## Graphics, sound and interface
 
-The style is silhouettes and gradients: the mountain is drawn in layers, and light, sky and weather create the atmosphere. The graphics teach too: the snow plume above the summit shows the wind strength, and a chain of headlamps on the ridge shows a coming traffic jam.
+The visual target is the Everest scene on [albalaeff.eu](https://albalaeff.eu/#game): before dawn on the summit ridge, a climber in a red down suit climbs a fixed rope with the rest step, lit by their headlamp. Every screen of the climb is drawn to that standard: light that tells the time, depth, a drawn climber and moving air. The mountain is drawn in layers of gradients, and light, sky and weather create the atmosphere. The graphics teach too: the snow plume above the summit shows the wind strength, and a chain of headlamps on the ridge shows a coming traffic jam.
 
 **Graphics**
 
 - 5–7 parallax layers: distant ranges, neighbouring peaks (Lhotse, Nuptse, Pumori), the slope, the foreground.
-- The sky changes with the time of day and darkens with altitude: the higher you are, the deeper the blue.
-- Particle weather: snow, drifting snow, fog, the snow plume above the summit.
-- The climber is a silhouette with skeletal 2D animation; the oxygen mask, backpack, cowstails and a bright suit are visible.
+- The sky changes with the time of day and darkens with altitude: the higher you are, the deeper the blue. At night the snow is navy under the stars, blue in the hour before the sun and white in it; the dawn glows pink and then orange on the horizon and the summits, and the gradients are dithered so they don't band.
+- Particle weather: snow, drifting snow, fog, the snow plume above the summit; the headlamp's beam lights the snow grains in the air and the breath at the mask.
+- The climber is drawn, not a silhouette: a red down suit with baffles, a pack with the oxygen bottle and an ice axe, the mask, goggles, headlamp, harness, cowstails and crampons. They're lit as one figure, with a rim of the low sun's light on its side and the sky's cold light on the other. A skeleton with two-bone IK moves them as a climber moves: the feet planted on the snow, the rest step on the fixed rope (slide the jumar, step, lock the downhill leg, breathe), and a bend at each anchor to move the jumar past it.
 - Summit night: an almost black screen, a cone of light from the headlamp and the lights of other groups.
 - Hypoxia can be seen and felt: a narrowing field of view, muted colours, slower reactions. With cerebral edema the controls become imprecise, but the game stays playable.
 
