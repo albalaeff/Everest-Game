@@ -18,26 +18,34 @@ export class Palette {
   /** The climbers: the player's suit, 3.6:1 on the snow, and the others', apart by colour alone. */
   static readonly PLAYER_SUIT = 0xe8412c;
   static readonly OTHER_SUIT = 0xf5c518;
-  static readonly BOOTS = 0x1d2024;
-  static readonly CRAMPONS = 0x8e97a3;
+  /** Their kit, as on #125's scene: the suit's dark panels and seams, the boots and their rands,
+   * the mitts, the steel of the crampons and the axe, the pack, the oxygen's bottle, regulator
+   * and hose, the mask, the goggles, the harness, the slings and the jumar with its grip. */
+  static readonly PANEL = 0x1a1a21;
+  static readonly SEAM = 0x180406;
+  static readonly BOOTS = 0xb0842c;
+  static readonly RAND = 0x17171c;
+  static readonly MITTS = 0x16171d;
+  static readonly STEEL = 0xa3acc0;
+  static readonly AXE = 0x9aa2b4;
   static readonly PACK = 0x262e47;
   static readonly PACK_LID = 0x313a59;
   static readonly STRAP = 0x15171f;
-  static readonly BOTTLE = 0xd7dde6;
-  static readonly MASK = 0x15181c;
-  static readonly VALVE = 0x3c404a;
+  static readonly BOTTLE = 0xc4652f;
+  static readonly REGULATOR = 0x8b93a2;
   static readonly HOSE = 0x2b313d;
-  static readonly GOGGLES = 0x7fc4ff;
-  static readonly HARNESS = 0x3b4a6b;
+  static readonly MASK = 0x131418;
+  static readonly VALVE = 0x3c404a;
+  static readonly HOOD_SHADOW = 0x0c0c11;
+  static readonly GOGGLES = 0x0e0f12;
+  static readonly HARNESS = 0x1d2029;
+  static readonly SLING = 0x2f6bd0;
   static readonly JUMAR = 0xb5bdca;
-  static readonly AXE_SHAFT = 0x2b2f36;
+  static readonly GRIP = 0xc9332c;
+  static readonly LAMP_CASE = 0x2a2d36;
   static readonly LAMP = 0xfff1b0;
   static readonly BREATH = 0xffffff;
-  /** The cowstails' slings, a light blue on a dark edge, 3:1 on the night's snow and the edge on
-   * the day's. */
-  static readonly SLING = 0x6f9be8;
-  static readonly SLING_SHADE = 0x1d2029;
-  /** The mark over the player's climber: white on a dark edge, in every light. */
+  /** The mark over the player's climber in a crowd: white on a dark edge, in every light. */
   static readonly MARK = 0xffffff;
   static readonly MARK_EDGE = 0x15181c;
   /** The fixed line and what holds it: the one orange of the slope. */
@@ -50,6 +58,11 @@ export class Palette {
   /** The camps' tents, lit from inside at night. */
   static readonly TENT = 0xe9a13b;
   static readonly TENT_DOOR = 0xb06a1e;
+  /** The prayer flags over Base Camp, blue, white, red, green and yellow in their order: muted, so
+   * the suits and the rope keep their colours. */
+  static readonly PRAYER_FLAGS: readonly number[] = [
+    0x5b7aa6, 0xdcd8cc, 0x9e5a52, 0x5f8a69, 0xc4ab6a,
+  ];
   /** The snow of the play plane: its body, its crest in the light, the shade of its sastrugi. */
   static readonly SNOW = 0xeef3f9;
   static readonly SNOW_CREST = 0xffffff;

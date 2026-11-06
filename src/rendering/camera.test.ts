@@ -151,6 +151,28 @@ describe("Camera", () => {
     expect(camera.toScreen(point).y).toBeCloseTo(130, 0);
   });
 
+  it("tells a slope point on the screen from one past its edges", () => {
+    const camera = new Camera(new StillClimber(), 640, 360);
+
+    // 18 px a metre, the climber at (10, 2) a third across and 216 px down: from -1.85 to
+    // 33.7 m across, and from -6 to 14 m up.
+    for (const point of [
+      { x: 10, y: 2 },
+      { x: -1.8, y: -5.9 },
+      { x: 33.6, y: 13.9 },
+    ]) {
+      expect(camera.shows(point)).toBe(true);
+    }
+    for (const point of [
+      { x: -1.9, y: 2 },
+      { x: 33.8, y: 2 },
+      { x: 10, y: 14.1 },
+      { x: 10, y: -6.1 },
+    ]) {
+      expect(camera.shows(point)).toBe(false);
+    }
+  });
+
   it("follows the climber smoothly, and settles on them", () => {
     const climber = new StillClimber();
     const camera = new Camera(climber, 640, 360);
@@ -166,6 +188,20 @@ describe("Camera", () => {
     expect(afterOneFrame.x).toBeLessThan(11);
     expect(camera.position.x).toBeCloseTo(16, 3);
     expect(camera.position.y).toBeCloseTo(5, 3);
+  });
+
+  it("follows the climber as the picture draws them, between the steps, when it's told where", () => {
+    const climber = new StillClimber();
+    const camera = new Camera(climber, 640, 360);
+    climber.moveTo(16, 5);
+
+    for (let frame = 0; frame < 180; frame += 1) {
+      camera.follow(FRAME, { x: 12, y: 3 });
+    }
+
+    expect(camera.position.x).toBeCloseTo(12, 3);
+    expect(camera.position.y).toBeCloseTo(3, 3);
+    expect(camera.climber).toMatchObject({ x: 16, y: 5 });
   });
 
   it("lands in the same place after a second at 30 frames a second as at 60", () => {

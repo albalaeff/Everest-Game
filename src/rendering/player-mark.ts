@@ -4,11 +4,12 @@ import type { Point } from "../physics";
 import { Palette } from "./palette";
 
 /**
- * The mark over the player's own climber, so they find themselves in a second by its shape as well
- * as by the suit's colour, in a crowd as in a room (docs/guidelines/graphics.md → Readable first):
- * a small triangle pointing down at them, white on a dark edge, the same few pixels at every zoom
- * and in every light. It stays upright when they fall, and still: it never bobs with the stride or
- * blinks, kind for six hours. Drawn once in pixels, and placed each frame over their head.
+ * The mark over the player's own climber in a crowd, four or more climbers on the screen
+ * (`Crowd`), so they find themselves in a second by its shape as well as by the suit's colour
+ * (docs/guidelines/graphics.md → Readable first): a small triangle pointing down at them, white on
+ * a dark edge, the same few pixels at every zoom and in every light. It stays upright when they
+ * fall, and still: it never bobs with the stride or blinks, kind for six hours. Drawn once in
+ * pixels, and placed each frame over their head.
  */
 export class PlayerMark extends Graphics {
   /** In pixels: how wide and how tall it is, its dark edge, and the gap over the head. */

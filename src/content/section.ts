@@ -6,6 +6,7 @@ import type {
   RopeLayout,
   SlopeLayout,
   SlopeSettings,
+  SnowLayout,
 } from "../physics";
 import { Body, MountainClock, ObjectiveHazards, OxygenSystem } from "../simulation";
 import type { BodyStart, ClimberId, ClockStart, HazardStart, Scenario } from "../simulation";
@@ -23,6 +24,10 @@ export interface CampData {
   readonly to: number;
 }
 
+/** The snow on a section's ground, as its file gives it: level over the camps, and trodden flat
+ * `trodden` metres round each, where the climbs set off and arrive. */
+type SnowData = Omit<SnowLayout, "level"> & { readonly trodden: number };
+
 /** A section of the route as its file in content/route/ has it: its ground and what's fixed on
  * it, its camps at each end, its hazards, and who sets off on it. Its numbers come from the
  * knowledge base by its ids: the camps' altitudes, the hours it takes, its length and the hour
@@ -37,6 +42,8 @@ export interface SectionData {
   readonly date: string;
   readonly layout: {
     readonly terrain: readonly DataPair[];
+    /** The snow on the ground, if it has any. */
+    readonly snow?: SnowData;
     readonly ropes: readonly RopeLayout[];
     readonly ladders: readonly LadderLayout[];
     readonly climbers: readonly ClimberLayout[];
@@ -89,8 +96,13 @@ export class Section {
     const { layout, hazards, bodies } = data;
     this.id = data.id;
     this.settings = new SlopeFacts(knowledge).settings;
+    const terrain = Section.pairs(layout.terrain, data.id);
+    const ground = new Terrain(terrain);
     this.layout = {
-      terrain: Section.pairs(layout.terrain, data.id),
+      terrain,
+      ...(layout.snow === undefined
+        ? {}
+        : { snow: Section.snow(layout.snow, data.camps, ground.length) }),
       altitude: {
         start: knowledge.number(`route.${data.from}-altitude`),
         end: knowledge.number(`route.${data.to}-altitude`),
@@ -99,7 +111,6 @@ export class Section {
       ladders: layout.ladders,
       climbers: layout.climbers,
     };
-    const ground = new Terrain(this.layout.terrain);
     this.camps = data.camps.map((camp) => {
       if (!(camp.from >= 0 && camp.from < camp.to && camp.to <= ground.length)) {
         throw new RangeError(`The camp ${camp.id} isn't on the ground of ${data.id}`);
@@ -165,6 +176,20 @@ export class Section {
       bodies: this.bodies.map((body) => (mine(body.id) ? { ...body, mass, fitness } : body)),
       layout: { ...this.layout, climbers },
     };
+  }
+
+  /** The file's snow, level over the camps and `trodden` metres round each, as far as the
+   * ground goes. */
+  private static snow(
+    { trodden, ...snow }: SnowData,
+    camps: readonly CampData[],
+    length: number,
+  ): SnowLayout {
+    const level = camps.map(({ from, to }) => ({
+      from: Math.max(from - trodden, 0),
+      to: Math.min(to + trodden, length),
+    }));
+    return { ...snow, level };
   }
 
   private static pairs(points: readonly DataPair[], id: string): (readonly [number, number])[] {

@@ -127,8 +127,9 @@ describe("Mountain", () => {
     Expedition.start(scenario, rules.all);
 
     for (const id of scenario.climbers) {
-      expect(rules.physics.climber(id)).toMatchObject({ y: 0, falling: false });
-      expect(rules.physics.climber(id).x).toBeLessThan(20);
+      const climber = rules.physics.climber(id);
+      expect(climber).toMatchObject({ y: rules.physics.terrain.height(climber.x), falling: false });
+      expect(climber.x).toBeLessThan(20);
     }
   });
 });

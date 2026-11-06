@@ -129,25 +129,23 @@ test.describe("on a screen of 630 by 360", () => {
     expect(await pair(page, "camera")).toEqual([10, 0]);
   });
 
-  test("a white mark is over the player's climber, and none over their teammate", async ({
+  test("the player's climber has no mark over it while only their teammate shares the screen", async ({
     page,
   }) => {
     await openTheGame(page);
     await waitForFrames(page, 1);
 
     // The camera is on the player at (10, 0), 18 px a metre; a head is 1.77 m, 32 px, over the
-    // feet, and the mark's middle 10 px over the head.
-    const overTheHead = async (climber: string): Promise<[number, number][]> => {
-      const [x = 0, y = 0] = await page.evaluate((id) => window.everest.climberAt(id), climber);
-      const middle = { x: 210 + (x - 10) * 18, y: 216 - y * 18 - 42 };
-      return [
-        [middle.x, middle.y],
-        [middle.x - 2, middle.y - 2],
-        [middle.x + 2, middle.y - 2],
-      ];
-    };
-    expect(await brightAmong(page, await overTheHead("player"), 200)).toBeGreaterThanOrEqual(2);
-    expect(await brightAmong(page, await overTheHead("teammate"), 200)).toBeLessThanOrEqual(1);
+    // feet, and a mark's middle would be 10 px over the head: in a crowd of four alone (`Crowd`).
+    const [x = 0, y = 0] = await page.evaluate(() => window.everest.climberAt("player"));
+    const middle = { x: 210 + (x - 10) * 18, y: 216 - y * 18 - 42 };
+    const overTheHead: [number, number][] = [
+      [middle.x, middle.y],
+      [middle.x - 2, middle.y - 2],
+      [middle.x + 2, middle.y - 2],
+    ];
+    expect(await drawn(page, "climbers")).toBe("2");
+    expect(await brightAmong(page, overTheHead, 200)).toBeLessThanOrEqual(1);
   });
 
   test("the camera follows the climber as they walk, and settles on them", async ({

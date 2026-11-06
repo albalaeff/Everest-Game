@@ -454,7 +454,7 @@ Tasks marked *Iteration 1–3* are planned into the board's first two-week itera
 - [ ] Done gate
 
 ### Task 73: The climber: skeletal 2D animation and visible gear ([#87](https://github.com/albalaeff/Everest-Game/issues/87))
-- [x] Skeletal animation; the mask, backpack, cowstails and a bright suit visible (#87: each cowstail's gear on the rope or at the hip, carried by the hand in a clip; the mask on the face while the oxygen flows; the pack's lid and strap; a mark over the player's climber)
+- [x] Skeletal animation; the mask, backpack, cowstails and a bright suit visible (the skeleton and the kit with #149, #168 and #170; #87: the mask on the face while the oxygen flows and on the chest while it doesn't, and a mark over the player's climber in a crowd of four or more on the screen)
 - [x] Done gate
 
 ### Task 74: Sound synthesis: wind, breathing, regulator, crampons, radio ([#88](https://github.com/albalaeff/Everest-Game/issues/88))

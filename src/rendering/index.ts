@@ -7,5 +7,6 @@ export { QualityButton } from "./quality-button";
 export type { RenderingTexts } from "./rendering-texts";
 export { SlopeScene } from "./slope-scene";
 export type { SceneWorld } from "./slope-scene";
+export type { BetweenSteps } from "./stepped-points";
 export { Zoom, ZoomChoice } from "./zoom";
 export { ZoomControl } from "./zoom-control";

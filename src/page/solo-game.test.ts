@@ -78,6 +78,17 @@ describe("SoloGame", () => {
     expect(expedition.step).toBe(200);
   });
 
+  it("says how many steps a frame took, and how far the next one has come, for the picture", () => {
+    const { game } = aGame();
+
+    expect(game.advance(0.07)).toBe(1);
+    expect(game.progress).toBeCloseTo(0.4, 9);
+    expect(game.advance(0.01)).toBe(0);
+    expect(game.progress).toBeCloseTo(0.6, 9);
+    expect(game.advance(0.12)).toBe(3);
+    expect(game.progress).toBeCloseTo(0, 9);
+  });
+
   it("counts a frame for a second at most: a tab back from the background goes on where it paused", () => {
     const { game, expedition } = aGame();
 

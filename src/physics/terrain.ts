@@ -15,11 +15,20 @@ export interface SurfacePoint extends Point {
 /** Which way a climber walks along the ground: right is 1, left −1. */
 export type Way = 1 | -1;
 
+/** How a ground laid on a line is measured: how far along the line each of its points is, and
+ * how far along it each of the line's corners is. */
+export interface Measure {
+  readonly alongs: readonly number[];
+  readonly corners: readonly number[];
+}
+
 interface Segment {
   readonly from: Point;
   readonly to: Point;
-  /** How far along the ground it starts, and how long it is. */
+  /** How far along the ground it starts, and how far along it it goes. */
   readonly start: number;
+  readonly span: number;
+  /** How long it is, end to end. */
   readonly length: number;
 }
 
@@ -27,19 +36,28 @@ interface Segment {
  * The slope's ground, seen from the side: a line of points in metres, left to right. Its x never
  * goes back, so nothing overhangs, and a wall is two points one above the other. Below the line
  * is solid, and past its ends the ground goes on flat. A climber on their feet is somewhere
- * along it: the distance from its first point, over the surface.
+ * along it: the distance from its first point, over the surface; or, on ground laid on a line, as
+ * the snow is (`Snow`), along the line under it, which turns only at the line's corners.
  */
 export class Terrain {
+  /** How far along the ground each point is. */
+  readonly alongs: readonly number[];
+  /** How far along the ground each corner is, where a step stops: every point of a line. */
+  readonly corners: readonly number[];
   private readonly segments: readonly Segment[];
   private readonly first: Segment;
   private readonly last: Segment;
 
-  constructor(readonly points: readonly Pair[]) {
+  constructor(
+    readonly points: readonly Pair[],
+    measure?: Measure,
+  ) {
     const segments: Segment[] = [];
-    let start = 0;
+    const alongs = [measure?.alongs[0] ?? 0];
     for (const [index, [x, y]] of points.entries()) {
       const before = points[index - 1];
-      if (before === undefined) {
+      const start = alongs.at(-1);
+      if (before === undefined || start === undefined) {
         continue;
       }
       const [fromX, fromY] = before;
@@ -47,22 +65,37 @@ export class Terrain {
       if (x < fromX || length === 0) {
         throw new RangeError(`The ground goes back on itself, or stands still, at point ${index}`);
       }
-      segments.push({ from: { x: fromX, y: fromY }, to: { x, y }, start, length });
-      start += length;
+      const end = measure === undefined ? start + length : (measure.alongs[index] ?? start);
+      if (!(end > start)) {
+        throw new RangeError(`The ground's measure doesn't go on along it at point ${index}`);
+      }
+      segments.push({
+        from: { x: fromX, y: fromY },
+        to: { x, y },
+        start,
+        span: end - start,
+        length,
+      });
+      alongs.push(end);
     }
     const [first] = segments;
     const last = segments.at(-1);
     if (first === undefined || last === undefined) {
       throw new RangeError("The ground needs two points at least");
     }
+    if (measure !== undefined && measure.alongs.length !== points.length) {
+      throw new RangeError("The ground's measure misses some of its points");
+    }
     this.segments = segments;
     this.first = first;
     this.last = last;
+    this.alongs = measure?.alongs ?? alongs;
+    this.corners = measure?.corners ?? alongs;
   }
 
   /** The distance along the whole ground. */
   get length(): number {
-    return this.last.start + this.last.length;
+    return this.last.start + this.last.span;
   }
 
   /** The point at a distance along the ground, which stops at its ends. */
@@ -71,7 +104,7 @@ export class Terrain {
       return this.last.to;
     }
     const segment = this.under(Math.max(along, 0), 1);
-    const share = (Math.max(along, 0) - segment.start) / segment.length;
+    const share = (Math.max(along, 0) - segment.start) / segment.span;
     return {
       x: segment.from.x + (segment.to.x - segment.from.x) * share,
       y: segment.from.y + (segment.to.y - segment.from.y) * share,
@@ -89,8 +122,23 @@ export class Terrain {
 
   /** How far along the ground the next corner in the walking direction is, or its end. */
   cornerAhead(along: number, way: Way): number {
-    const segment = this.under(along, way);
-    return way > 0 ? segment.start + segment.length : segment.start;
+    const { corners } = this;
+    // The first corner further along than `along`.
+    let low = 0;
+    let high = corners.length;
+    while (low < high) {
+      const middle = Math.floor((low + high) / 2);
+      if ((corners[middle] ?? Infinity) > along) {
+        high = middle;
+      } else {
+        low = middle + 1;
+      }
+    }
+    if (way > 0) {
+      return corners[low] ?? this.length;
+    }
+    const behind = corners[low - 1] === along ? low - 2 : low - 1;
+    return corners[behind] ?? this.first.start;
   }
 
   /** The height of the ground at `x`: a wall's top, on the wall. */
@@ -159,8 +207,8 @@ export class Terrain {
     let high = this.segments.length - 1;
     while (low < high) {
       const middle = Math.floor((low + high) / 2);
-      const { start, length } = this.segment(middle);
-      const past = way > 0 ? along >= start + length : along > start + length;
+      const { start, span } = this.segment(middle);
+      const past = way > 0 ? along >= start + span : along > start + span;
       if (past) {
         low = middle + 1;
       } else {
@@ -194,7 +242,7 @@ export class Terrain {
   }
 
   private static onSegment(segment: Segment, point: Point): SurfacePoint {
-    const { from, to, start, length } = segment;
+    const { from, to, start, span, length } = segment;
     const acrossX = to.x - from.x;
     const acrossY = to.y - from.y;
     const projected =
@@ -203,7 +251,7 @@ export class Terrain {
     return {
       x: from.x + acrossX * share,
       y: from.y + acrossY * share,
-      along: start + length * share,
+      along: start + span * share,
     };
   }
 }
