@@ -6,6 +6,7 @@ import type {
   RopeLayout,
   SlopeLayout,
   SlopeSettings,
+  SnowLayout,
 } from "../physics";
 import { Body, MountainClock, ObjectiveHazards, OxygenSystem } from "../simulation";
 import type { BodyStart, ClimberId, ClockStart, HazardStart, Scenario } from "../simulation";
@@ -37,6 +38,8 @@ export interface SectionData {
   readonly date: string;
   readonly layout: {
     readonly terrain: readonly DataPair[];
+    /** The snow on the ground, if it has any: it lies level over the camps too. */
+    readonly snow?: Omit<SnowLayout, "level">;
     readonly ropes: readonly RopeLayout[];
     readonly ladders: readonly LadderLayout[];
     readonly climbers: readonly ClimberLayout[];
@@ -89,8 +92,10 @@ export class Section {
     const { layout, hazards, bodies } = data;
     this.id = data.id;
     this.settings = new SlopeFacts(knowledge).settings;
+    const level = data.camps.map(({ from, to }) => ({ from, to }));
     this.layout = {
       terrain: Section.pairs(layout.terrain, data.id),
+      ...(layout.snow === undefined ? {} : { snow: { ...layout.snow, level } }),
       altitude: {
         start: knowledge.number(`route.${data.from}-altitude`),
         end: knowledge.number(`route.${data.to}-altitude`),

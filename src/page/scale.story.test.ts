@@ -74,8 +74,18 @@ describe("The game's scale: a mountain hour in under two minutes of play", () =>
   it("walks the climber faster than in life by the clock's ratio over the drawing's, and slower up the first slope than on Base Camp's flat", () => {
     const mountain = new Mountain(base);
     const rules = mountain.rules();
-    const expedition = Expedition.start(mountain.scenario(2026), rules.all);
     const player = Section.PLAYER;
+    const { layout, camps } = mountain.route;
+    const scenario = mountain.scenario(2026);
+    // The player among Base Camp's tents, where the snow lies level.
+    const climbers = layout.climbers.map((climber) =>
+      climber.id === player ? { ...climber, along: (camps[0]?.from ?? 0) + 1 } : climber,
+    );
+    const physics = SlopePhysics.start({ ...layout, climbers });
+    const expedition = Expedition.start(
+      { ...scenario, start: { ...scenario.start, [SlopePhysics.NAME]: physics } },
+      rules.all,
+    );
     const along = (): number => rules.physics.along(player);
     /** The metres along the ground the climber walks in the next second of play. */
     const aSecond = (): number => {

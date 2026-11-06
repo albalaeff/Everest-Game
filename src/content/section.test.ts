@@ -101,8 +101,10 @@ describe("Section: the Khumbu Icefall from content/route/icefall.json", () => {
 
     expect(expedition.scenario.climbers).toEqual([Section.PLAYER, "teammate"]);
     for (const id of expedition.scenario.climbers) {
-      expect(physics.climber(id)).toMatchObject({ y: 0, falling: false, ladder: null });
-      expect(physics.climber(id).x).toBeLessThan(20);
+      const { x, y } = physics.climber(id);
+      expect(physics.climber(id)).toMatchObject({ falling: false, ladder: null });
+      expect(x).toBeLessThan(20);
+      expect(y).toBe(physics.terrain.height(x));
     }
     expect(physics.ropes).toEqual(section.layout.ropes.map((rope) => rope.id));
     expect(physics.ladders).toEqual(section.layout.ladders.map((ladder) => ladder.id));
@@ -137,6 +139,37 @@ describe("Section: the Khumbu Icefall from content/route/icefall.json", () => {
     expect(section.destination).toBe(camp1);
   });
 
+  it("lays the file's snow on the ground, level over the camps and at the ladders' ends", () => {
+    const physics = new SlopePhysics(section.settings);
+    Expedition.start(section.scenario(1), [physics]);
+    const snow = physics.terrain;
+    const camps = section.camps.map(({ from, to }) => ({ from, to }));
+    const lift = (x: number): number => snow.height(x) - terrain.height(x);
+
+    expect(section.layout.snow).toEqual({ ...icefall.layout.snow, level: camps });
+    for (const { from, to } of [...camps, ...section.layout.ladders]) {
+      for (const along of [from, (from + to) / 2, to]) {
+        expect(snow.point(along)).toEqual(terrain.point(along));
+      }
+    }
+    // Between them it rises and falls by tens of centimetres.
+    const open = Array.from({ length: 200 }, (_, index) => lift(64 + index * 0.12));
+    expect(Math.max(...open) - Math.min(...open)).toBeGreaterThan(0.2);
+    expect(Math.max(...open.map(Math.abs))).toBeLessThan(0.8);
+  });
+
+  it("keeps its snow below the slip-free steepness off the walls, so its hummocks slow a climber and never throw them", () => {
+    const physics = new SlopePhysics(section.settings);
+    Expedition.start(section.scenario(1), [physics]);
+    const { points } = physics.terrain;
+    const degrees = points.flatMap(([x, y], index) => {
+      const [nextX, nextY] = points[index + 1] ?? [x, y];
+      return nextX > x ? [(Math.atan(Math.abs(nextY - y) / (nextX - x)) * 180) / Math.PI] : [];
+    });
+
+    expect(Math.max(...degrees)).toBeLessThan(knowledge.number("technique.slip-free-steepness"));
+  });
+
   it("sets off at the sources' hour, on the section's date", () => {
     const clock = new MountainClock(1);
     const expedition = Expedition.start(section.scenario(1), [clock]);
@@ -159,7 +192,7 @@ describe("Section: the Khumbu Icefall from content/route/icefall.json", () => {
     }
     const later = physics.climber(Section.PLAYER);
 
-    expect(start).toMatchObject({ x: 10, y: 0 });
+    expect(start).toMatchObject({ x: 10, y: physics.terrain.height(10) });
     expect(later.x).toBeGreaterThan(21);
     expect(later.y).toBeGreaterThan(0.5);
   });
