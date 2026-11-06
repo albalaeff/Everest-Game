@@ -166,9 +166,9 @@
     {
       "id": "technique.walking-power",
       "kind": "coefficient",
-      "claim": "The power a fresh typical client at sea level, at a steady pace and carrying nothing, walks on, in watts for each kilogram they move: the body scales it by the capacity the altitude leaves, 60% at 5,000 m, and by the pack, and a step goes as fast as it pays for on the ground's gradient (technique.walking-cost-*). Fitted with the fastest walk so that a steady first crossing of the Icefall, drawn at 1/12 of its length (route.drawn-scale) with its walls and crevasses at life size, takes about 5 hours, the middle of the 3–7 the sources give: 4.9.",
+      "claim": "The power a fresh typical client at sea level, at a steady pace and carrying nothing, walks on, in watts for each kilogram they move: the body scales it by the capacity the altitude leaves, 60% at 5,000 m, and by the pack, and a step goes as fast as it pays for on the ground's gradient (technique.walking-cost-*). Fitted with the fastest walk and the ladder speeds so that a steady first crossing of the Icefall, drawn at 1/12 of its length (route.drawn-scale) with its walls and crevasses at life size, takes about 5 hours, the middle of the 3–7 the sources give: 4.8.",
       "status": "source only",
-      "value": 2.5,
+      "value": 2.2,
       "unit": "W/kg",
       "fitted_to": [
         "time.base-camp-to-camp-1",
@@ -184,9 +184,9 @@
     {
       "id": "technique.fastest-walk",
       "kind": "coefficient",
-      "claim": "The fastest a climber walks in crampons, in metres a second, whatever power they have to spare: down a slope and on the flat their footing holds them to it, so their steps take less of their power and tire them less. Fitted with the walking power so that the way down the Icefall takes about 2.5 hours, the 4 from Camp 2 to Base Camp shared between the Icefall and the Western Cwm as the way up's 5 and 3 are: 2.7.",
+      "claim": "The fastest a climber walks in crampons, in metres a second, whatever power they have to spare: down a slope and on the flat their footing holds them to it, so their steps take less of their power and tire them less. Fitted with the walking power and the ladder speeds so that the way down the Icefall takes about 2.5 hours, the 4 from Camp 2 to Base Camp shared between the Icefall and the Western Cwm as the way up's 5 and 3 are: 2.8.",
       "status": "source only",
-      "value": 0.5,
+      "value": 0.7,
       "unit": "m/s",
       "fitted_to": [
         "time.camp-2-to-base-camp",
@@ -221,32 +221,37 @@
     {
       "id": "technique.ladder-speed-across",
       "kind": "coefficient",
-      "claim": "How fast that fresh climber at sea level crosses a ladder laid flat over a crevasse, in metres a second. The ladders are drawn at life size on a section drawn at 1/12 (route.drawn-scale), so a ladder takes twelve times its real mountain minutes: fitted so that the Icefall's ladders take about half an hour of its hours together.",
+      "claim": "How fast that fresh climber at sea level crosses a ladder laid flat over a crevasse, in metres a second. The ladders are drawn at life size on a section drawn at 1/12 (route.drawn-scale), so a ladder takes twelve times its real mountain minutes: fitted with the speeds up and down a wall so that the Icefall's twenty ladders, nine over crevasses and eleven up and down walls of 3 to 11 m, take about an hour and a half of the way up's hours together.",
       "status": "source only",
       "value": 0.6,
       "unit": "m/s",
       "fitted_to": ["time.base-camp-to-camp-1", "route.icefall-ladders"],
-      "fitted": "2026-11-05"
+      "fitted": "2026-11-06"
     },
     {
       "id": "technique.ladder-speed-up",
       "kind": "coefficient",
       "claim": "How fast that climber goes up a ladder stood against a wall, in metres a second; between flat and vertical, the speed falls in a straight line over the sine of the ladder's angle. Fitted with the crossing speed to the Icefall's hours.",
       "status": "source only",
-      "value": 0.4,
+      "value": 0.3,
       "unit": "m/s",
       "fitted_to": ["time.base-camp-to-camp-1", "route.icefall-ladders"],
-      "fitted": "2026-11-05"
+      "fitted": "2026-11-06"
     },
     {
       "id": "technique.ladder-speed-down",
       "kind": "coefficient",
-      "claim": "How fast that climber comes down a ladder stood against a wall, in metres a second: slower than up it, feeling for each rung in crampons. Fitted with the crossing speed to the Icefall's hours.",
+      "claim": "How fast that climber comes down a wall a ladder stands against, in metres a second: three times as fast as up it, as down the fixed rope beside it (technique.down-a-fixed-rope asks how climbers go down one). Fitted with the crossing speed and the fastest walk to the Icefall's hours down, which go down 48 m of its walls and up 22.",
       "status": "source only",
-      "value": 0.3,
+      "value": 0.9,
       "unit": "m/s",
-      "fitted_to": ["time.base-camp-to-camp-1", "route.icefall-ladders"],
-      "fitted": "2026-11-05"
+      "fitted_to": [
+        "time.camp-2-to-base-camp",
+        "time.base-camp-to-camp-1",
+        "time.camp-1-to-camp-2",
+        "route.icefall-ladders"
+      ],
+      "fitted": "2026-11-06"
     },
     {
       "id": "technique.ladder-slip-chance",
@@ -279,7 +284,7 @@
       "kind": "coefficient",
       "claim": "The share of the speed on a ladder and clipped to a fixed rope of a climber who has never used crampons, a jumar or a ladder, against one with alpine climbs behind them, whom the ladder speeds and the walking power are fitted to. Fitted so that such a climber, as fit as the typical client, takes the longest the sources give a first crossing of the Icefall, 7 hours against the middle's 5.",
       "status": "source only",
-      "value": 0.63,
+      "value": 0.65,
       "unit": "1",
       "fitted_to": ["time.base-camp-to-camp-1", "route.icefall-ladders"],
       "fitted": "2026-11-06"
@@ -289,7 +294,7 @@
       "kind": "coefficient",
       "claim": "The same share for a climber who has climbed a 7,000 m or an 8,000 m peak. Fitted so that such a climber, as fit as the typical client, crosses the Icefall the first time in 4 hours, the shortest Alan Arnette's routes give it, and summits more often: they take less time on the ropes, not fewer risks (technique.experience-and-summits).",
       "status": "source only",
-      "value": 1.5,
+      "value": 1.3,
       "unit": "1",
       "fitted_to": [
         "time.base-camp-to-camp-1",
@@ -358,7 +363,7 @@
     {
       "id": "technique.ladder-up",
       "kind": "question",
-      "question": "How does a climber go up a ladder stood against an ice wall: clipped to what, and what holds a slip? The game climbs at 0.4 m/s at sea level and comes down at 0.3, less at altitude.",
+      "question": "How does a climber go up a ladder stood against an ice wall: clipped to what, and what holds a slip? The game climbs at 0.3 m/s at sea level and comes down at 0.9, as fast as down the rope beside it, less at altitude.",
       "about": ["technique.ladder-speed-up", "technique.ladder-speed-down"]
     },
     {
@@ -384,7 +389,7 @@
     {
       "id": "technique.speed-by-steepness",
       "kind": "question",
-      "question": "How fast does a climber walk on ground of each steepness, up and down, in crampons and with a pack, and how much slower on a ladder? The game's walking costs what Minetti et al. measured on a treadmill, read as rise over run, from 24° down to 24° up, each metre of height costing the same past that up to 60°; a climber walks on 2.5 W/kg at sea level, before the altitude and the pack take their share, and no faster than 0.5 m/s whatever they have to spare. The power, the fastest walk and the ladder speeds are fitted to the hours the sources give the Icefall, up and down, not measured.",
+      "question": "How fast does a climber walk on ground of each steepness, up and down, in crampons and with a pack, and how much slower on a ladder? The game's walking costs what Minetti et al. measured on a treadmill, read as rise over run, from 24° down to 24° up, each metre of height costing the same past that up to 60°; a climber walks on 2.2 W/kg at sea level, before the altitude and the pack take their share, and no faster than 0.7 m/s whatever they have to spare. The power, the fastest walk and the ladder speeds are fitted to the hours the sources give the Icefall, up and down, not measured.",
       "about": [
         "technique.walking-cost-gradients",
         "technique.walking-efficiency-gradient",

@@ -12,6 +12,9 @@ const section = new Section(knowledge);
 const terrain = new Terrain(section.layout.terrain);
 const scale = new SectionScale(terrain, section.layout.altitude);
 const altitudeAlong = (along: number): number => scale.altitudeAt(terrain.point(along));
+/** The part of the route a point along the ground is in. */
+const partAt = (along: number): string | undefined =>
+  section.parts.find(({ from, to }) => from <= along && along < to)?.id;
 
 describe("Section: the Khumbu Icefall from content/route/icefall.json", () => {
   it("runs from Base Camp to Camp 1, at the knowledge base's altitudes", () => {
@@ -51,10 +54,60 @@ describe("Section: the Khumbu Icefall from content/route/icefall.json", () => {
     }
   });
 
-  it("fixes a rope along every ladder, in order, and from the shoulder up in one line of shared anchors", () => {
+  it("names its parts as the sources do, in their order, end to end from Base Camp's moraine", () => {
+    expect(section.parts.map(({ id }) => id)).toEqual([
+      "moraine",
+      "popcorn",
+      "maze",
+      "football-field",
+      "upper-icefall",
+      "western-cwm",
+    ]);
+    for (const [index, part] of section.parts.entries()) {
+      expect(part.from).toBe(section.parts[index - 1]?.to ?? 0);
+    }
+    expect(section.parts.at(-1)?.to).toBe(terrain.length);
+    // The moraine ends at Crampon Point, where the first rope is fixed.
+    expect(section.parts[0]?.to).toBe(section.layout.ropes[0]?.from);
+  });
+
+  it("lays the Football Field flat, where the altimeter reads route.football-field-altitude", () => {
+    const field = section.parts.find(({ id }) => id === "football-field");
+    const altitude = knowledge.number("route.football-field-altitude");
+    const { from = 0, to = 0 } = field ?? {};
+    const heights = Array.from(
+      { length: to - from + 1 },
+      (_, metre) => terrain.point(from + metre).y,
+    );
+
+    expect(to - from).toBeGreaterThan(20);
+    expect(new Set(heights).size).toBe(1);
+    expect(altitudeAlong(from)).toBeLessThan(altitude);
+    expect(altitudeAlong(to)).toBeGreaterThan(altitude);
+  });
+
+  it("puts most of the ladders, and the longest, past the Popcorn, where the walls stand tallest at the top", () => {
+    const { ladders } = section.layout;
+    const length = ({ from, to }: { from: number; to: number }): number => {
+      const [start, end] = [terrain.point(from), terrain.point(to)];
+      return Math.hypot(end.x - start.x, end.y - start.y);
+    };
+    const longest = (part: string): number =>
+      Math.max(...ladders.filter(({ from }) => partAt(from) === part).map(length));
+    const upright = ladders.filter(({ from, to }) => terrain.point(from).x === terrain.point(to).x);
+
+    expect(ladders.filter(({ from }) => partAt(from) !== "popcorn").length).toBeGreaterThan(
+      ladders.length / 2,
+    );
+    expect(longest("maze")).toBeGreaterThan(longest("popcorn"));
+    expect(Math.max(...upright.map(length))).toBe(longest("upper-icefall"));
+    expect(ladders.filter(({ from }) => partAt(from) === "football-field")).toEqual([]);
+  });
+
+  it("fixes a rope along every ladder, in order, and from the maze up in one line of shared anchors", () => {
     const { ropes, ladders } = section.layout;
-    const shoulder = ladders.find((ladder) => ladder.id === "shoulder-foot");
-    const line = ropes.filter((rope) => rope.from >= (shoulder?.from ?? Infinity));
+    const maze = ladders.find(({ from }) => partAt(from) === "maze");
+    const line = ropes.filter((rope) => rope.from >= (maze?.from ?? Infinity));
 
     for (const ladder of ladders) {
       expect(ropes.some((rope) => rope.from <= ladder.from && rope.to >= ladder.to)).toBe(true);
@@ -110,18 +163,30 @@ describe("Section: the Khumbu Icefall from content/route/icefall.json", () => {
     expect(physics.ladders).toEqual(section.layout.ladders.map((ladder) => ladder.id));
   });
 
-  it("lays the seracs where the collapses killed, between 5,600 and 5,800 m, past the crevasses", () => {
-    const kinds = section.hazards.zones.map((zone) => zone.kind);
-    const seracs = section.hazards.zones.filter((zone) => zone.kind === "serac");
-    const crevasses = section.hazards.zones.filter((zone) => zone.kind === "crevasse");
+  it("lays the seracs where the collapses killed, between 5,600 and 5,800 m and over the Football Field, the snow bridges below and above them", () => {
+    const { zones } = section.hazards;
+    const seracs = zones.filter((zone) => zone.kind === "serac");
+    const crevasses = zones.filter((zone) => zone.kind === "crevasse");
+    const field = section.parts.find(({ id }) => id === "football-field");
     const highestStart = Math.max(...section.layout.climbers.map((climber) => climber.along));
 
-    expect(kinds).toEqual(["crevasse", "crevasse", "serac", "serac", "avalanche"]);
+    expect(zones.map(({ kind, from }) => `${kind} in the ${partAt(from) ?? "air"}`)).toEqual([
+      "crevasse in the popcorn",
+      "crevasse in the maze",
+      "serac in the maze",
+      "serac in the football-field",
+      "serac in the upper-icefall",
+      "avalanche in the western-cwm",
+      "crevasse in the western-cwm",
+    ]);
     for (const zone of seracs) {
       expect(altitudeAlong(zone.from)).toBeGreaterThan(5600);
       expect(altitudeAlong(zone.to)).toBeLessThan(5800);
-      expect(crevasses.every((crevasse) => crevasse.to < zone.from)).toBe(true);
+      expect(crevasses.every(({ from, to }) => to <= zone.from || from >= zone.to)).toBe(true);
     }
+    expect(
+      seracs.some(({ from, to }) => from <= (field?.from ?? 0) && to >= (field?.to ?? 0)),
+    ).toBe(true);
     for (const zone of section.hazards.zones) {
       expect(zone.from).toBeGreaterThan(highestStart);
       expect(zone.to).toBeLessThanOrEqual(terrain.length);
@@ -242,8 +307,20 @@ describe("Section: the Khumbu Icefall from content/route/icefall.json", () => {
     expect(() => route.scenario(1)).toThrow(RangeError);
   });
 
+  it("refuses parts that leave the ground, or a stretch of it out of every part", () => {
+    const last = icefall.parts.at(-1) ?? { id: "western-cwm", from: 0, to: 0 };
+    const beyond = [...icefall.parts.slice(0, -1), { ...last, to: last.to + 10 }];
+    const gap = icefall.parts.map((part, index) =>
+      index === 1 ? { ...part, from: part.from + 1 } : part,
+    );
+
+    expect(() => new Section(knowledge, { ...icefall, parts: beyond })).toThrow("western-cwm");
+    expect(() => new Section(knowledge, { ...icefall, parts: gap })).toThrow("popcorn");
+  });
+
   it("refuses a camp off the ground, and a destination that isn't a camp", () => {
-    const offTheGround = [...icefall.camps.slice(0, 1), { id: "camp-1", from: 470, to: 480 }];
+    const end = terrain.length;
+    const offTheGround = [...icefall.camps.slice(0, 1), { id: "camp-1", from: end, to: end + 10 }];
     const elsewhere = { ...icefall, to: "camp-2" };
 
     expect(() => new Section(knowledge, { ...icefall, camps: offTheGround })).toThrow("camp-1");
