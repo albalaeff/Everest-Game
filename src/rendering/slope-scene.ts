@@ -5,6 +5,7 @@ import type { Body, ClimberId, MountainClock, ObjectiveHazards } from "../simula
 import { Atmosphere } from "./atmosphere";
 import type { Camera } from "./camera";
 import type { CampStretch } from "./camp-signs";
+import type { PartStretch } from "./glacier";
 import type { GraphicsQuality } from "./graphics-quality";
 import { Palette } from "./palette";
 import type { ParallaxLayer } from "./parallax-layer";
@@ -21,6 +22,7 @@ export interface SceneWorld {
   readonly clock: MountainClock;
   readonly body: Body;
   readonly camps: readonly CampStretch[];
+  readonly parts: readonly PartStretch[];
   readonly climbers: readonly ClimberId[];
   readonly player: ClimberId;
   readonly seed: number;
@@ -30,7 +32,8 @@ export interface SceneWorld {
  * The picture of the slope: a PixiJS application in the page's `#slope`, with the layers the
  * quality asks for, back to front, each placed by the camera every frame and lit by the hour of
  * the mountain's clock and the hazards' weather, and shaking while a hazard goes. It reads the
- * physics, the hazards, the clock, the body and the camps and holds no game state: what it owns
+ * physics, the hazards, the clock, the body, the camps and the route's parts and holds no game
+ * state: what it owns
  * is the picture's own, the camera's place and zoom, the flakes and the motes, the warnings'
  * clocks, its own seconds and the frame count. For the page's stories it writes what it draws
  * into `#slope`'s data attributes, and reads a pixel back, since Playwright can't read a WebGL
@@ -159,7 +162,7 @@ export class SlopeScene {
     }
     const { layers: optional, flakes, motes, dithered } = this.quality;
     const { width, height } = this.app.screen;
-    const { physics, hazards, body, camps, climbers, player, seed } = this.world;
+    const { physics, hazards, body, camps, parts, climbers, player, seed } = this.world;
     const skyline = (style: typeof SkylineLayer.PEAKS, offset: number): SkylineLayer =>
       new SkylineLayer(style, physics.terrain, seed + offset);
     this.sky = new SkyLayer(dithered);
@@ -169,7 +172,17 @@ export class SlopeScene {
       ...(optional.nearRidge ? [skyline(SkylineLayer.NEAR_RIDGE, 3)] : []),
       ...(optional.foreground ? [skyline(SkylineLayer.FOREGROUND, 4)] : []),
     ];
-    this.slope = new SlopeLayer(physics, hazards, body, camps, climbers, player, seed, motes);
+    this.slope = new SlopeLayer(
+      physics,
+      hazards,
+      body,
+      camps,
+      parts,
+      climbers,
+      player,
+      seed,
+      motes,
+    );
     this.snow = flakes > 0 ? new SnowLayer(flakes, width, height) : null;
     const behind = this.skylines.filter((layer) => layer.depth.x < 1);
     const inFront = this.skylines.filter((layer) => layer.depth.x >= 1);

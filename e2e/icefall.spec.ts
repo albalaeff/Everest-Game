@@ -16,7 +16,8 @@ async function pixel(page: Page, x: number, y: number): Promise<readonly number[
   return page.evaluate((point) => window.everest.pixelAt(point.x, point.y), { x, y });
 }
 
-/** How much redder than blue a point of the canvas is: the snow and the sky aren't, a tent is. */
+/** How much redder than blue a point of the canvas is: the snow, the moraine at night and the sky
+ * aren't, a tent is. */
 async function warmth(page: Page, x: number, y: number): Promise<number> {
   const [red = 0, , blue = 0] = await pixel(page, x, y);
   return red - blue;
@@ -31,10 +32,10 @@ async function height(page: Page): Promise<number> {
   return (await seen(page, "player"))?.y ?? Number.NaN;
 }
 
-/** The camp's stretch begins 461 m along the ground, 270 m across the picture, on the flat; the
- * climb is saved a step short of it, 4 h 50 min of the mountain's time after setting off: 9,667
- * steps at 36 times play. */
-const CAMP_1_EDGE = 460.8;
+/** The camp's stretch begins 775 m along the ground, 270 m across the picture, on the flat; the
+ * climb is saved a step short of it, 4 h 50 min of the mountain's time after setting off, a
+ * typical crossing's: 9,667 steps at 36 times play. */
+const CAMP_1_EDGE = 774.8;
 const CAMP_1_X = 270;
 const STEPS_TO_CAMP_1 = 9_667;
 

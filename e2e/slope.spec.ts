@@ -35,9 +35,10 @@ async function brightness(page: Page, x: number, y: number): Promise<number> {
   return (red + green + blue) / 3;
 }
 
-/** Whether a point shows the night's snow: navy, bluer than the purple of the far faces, and
- * lighter than the night behind it (#125). */
-async function nightSnow(page: Page, x: number, y: number): Promise<boolean> {
+/** Whether a point shows the night's ground: navy, bluer than the purple of the far faces, and
+ * lighter than the night behind it (#125); under the climber at the start, the moraine Base Camp
+ * stands on (#172). */
+async function nightGround(page: Page, x: number, y: number): Promise<boolean> {
   const [red = 0, green = 0, blue = 0] = await pixel(page, x, y);
   return blue - red > 40 && (red + green + blue) / 3 > 45;
 }
@@ -78,7 +79,7 @@ test.describe("on a screen of 630 by 360", () => {
     await expect(page.locator("#fps")).toHaveText(/^\d+ fps$/, { timeout: 15_000 });
   });
 
-  test("the night is dark above, the snow navy under the climber's feet, and their headlamp lights it ahead", async ({
+  test("the night is dark above, the ground navy under the climber's feet, and their headlamp lights it ahead", async ({
     page,
   }) => {
     await openTheGame(page);
@@ -90,8 +91,8 @@ test.describe("on a screen of 630 by 360", () => {
       [580, 8],
     ];
     expect(await darkAmong(page, sky, 90)).toBeGreaterThanOrEqual(2);
-    expect(await nightSnow(page, 210, 260)).toBe(true);
-    // The beam comes down to the snow about 5 m ahead of the climber: 90 px right of the anchor.
+    expect(await nightGround(page, 210, 260)).toBe(true);
+    // The beam comes down to the ground about 5 m ahead of the climber: 90 px right of the anchor.
     expect(await brightness(page, 300, 218)).toBeGreaterThan(
       (await brightness(page, 210, 260)) + 40,
     );
@@ -190,7 +191,7 @@ test.describe("the view, 10 to 100 m of slope on a screen of 630 by 360", () => 
       await page.mouse.click(210, 0);
       await page.mouse.click(300, 216);
       await page.mouse.click(201, 234);
-      expect(await nightSnow(page, 210, 260)).toBe(true);
+      expect(await nightGround(page, 210, 260)).toBe(true);
       expected.push(
         `view ${change}`,
         `tool ice-axe 10 ${0.6 * metres}`,

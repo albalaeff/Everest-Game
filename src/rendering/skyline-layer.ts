@@ -48,8 +48,9 @@ export interface SkylineStyle {
  */
 export class SkylineLayer extends ParallaxLayer {
   /** The Khumbu's skyline from the Icefall, left to right in each layer's metres: Pumori and its
-   * neighbours across the valley behind, the West Shoulder and Nuptse's fluted wall nearer, and
-   * the Icefall's own seracs around the slope. */
+   * neighbours across the valley behind, the West Shoulder, Lhotse at the head of the Western Cwm,
+   * ahead of the climber once they're in it, and Nuptse's fluted wall nearer, and the Icefall's
+   * own seracs around the slope. */
   static readonly FAR_RANGES: SkylineStyle = {
     label: "far-ranges",
     depth: { x: 0.1, y: 0 },
@@ -74,6 +75,7 @@ export class SkylineLayer extends ParallaxLayer {
     high: 7,
     massifs: [
       { name: "West Shoulder", summit: -60, halfWidth: 150, height: 30, shape: 1.6, bands: [] },
+      { name: "Lhotse", summit: 88, halfWidth: 40, height: 44, shape: 0.9, bands: [0.45] },
       { name: "Nuptse", summit: 220, halfWidth: 170, height: 48, shape: 0.85, bands: [0.35, 0.6] },
     ],
     haze: 0.35,

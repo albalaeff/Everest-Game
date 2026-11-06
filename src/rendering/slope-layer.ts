@@ -1,4 +1,4 @@
-import { Graphics, Particle, ParticleContainer, Texture } from "pixi.js";
+import { FillGradient, Graphics, Particle, ParticleContainer, Texture } from "pixi.js";
 
 import type { ClimberView, Point, SlopePhysics, Terrain } from "../physics";
 import { SeededRandom } from "../simulation";
@@ -12,6 +12,8 @@ import { ClimberFigure } from "./climber-figure";
 import { ClimberPose } from "./climber-pose";
 import { ClimberReading } from "./climber-reading";
 import { Drift } from "./drift";
+import { Glacier } from "./glacier";
+import type { PartStretch } from "./glacier";
 import { HazardDrawing } from "./hazard-drawing";
 import { LadderBow } from "./ladder-bow";
 import { LeastSize } from "./least-size";
@@ -71,10 +73,13 @@ interface InView {
 }
 
 /**
- * The slope itself, at the camera's own depth: the ground as the physics has it, its snow and its
- * hummocks (#168) marked with sastrugi and the boot track of the climbers before, its walls of
- * ice, its ladders, its ropes with their pickets, its hazards, the camps' tents, lit from inside
- * at night, the prayer flags over Base Camp, and every climber on it, drawn by `ClimberFigure`;
+ * The slope itself, at the camera's own depth: the ground as the physics has it, the moraine's
+ * rubble Base Camp stands on and, from Crampon Point, its snow and its hummocks (#168) marked with
+ * sastrugi and the boot track of the climbers before, its walls of blue ice, the crevasses its
+ * ladders cross, going black inside as they go down, and the cracks around Camp 1 (#172), as
+ * `Glacier` lays them; its ladders, a long one lashed from sections, its ropes with their pickets,
+ * its hazards, the camps' tents, lit from inside at night, the prayer flags over Base Camp, and
+ * every climber on it, drawn by `ClimberFigure`;
  * the snow their boots kick up, the spindrift the wind blows along the snow around the camera,
  * its grains glinting in the headlamps' beams, and the veil of a cloudy day behind the slope. In
  * the picture alone, the ground runs on level past the section's ends, so the view far out shows
@@ -100,6 +105,18 @@ export class SlopeLayer extends ParallaxLayer {
    * this wide, on posts this much over the line, and sags so far in its middle by itself. */
   private static readonly BOW_PIECES = 12;
   private static readonly HAND_LINE = { width: 0.03, over: 0.1, sag: 0.03 };
+  /** The longest a single ladder is, in the drawing: a longer one is two or more lashed end to
+   * end, each joint bound by so many wraps of cord round each rail, this far apart, reaching this
+   * far each side of it. */
+  private static readonly SECTION_METRES = 3;
+  private static readonly LASHING = { wraps: 3, apart: 0.1, reach: 0.06, width: 0.025 };
+  /** How far under its lips a crevasse's inside goes black. */
+  private static readonly DARK_METRES = 6;
+  /** The part of the route that's rubble, not snow; the camp the snow is cracked around, and how
+   * far before it the cracks start. */
+  private static readonly BARE = "moraine";
+  private static readonly CRACKED = "camp-1";
+  private static readonly CRACKS_BEFORE = 6;
   private static readonly TENT_EDGE_METRES = 0.08;
   private static readonly TENT_GLOW_METRES = 1.6;
   private static readonly TENT_GLOW_ALPHA = 0.35;
@@ -140,9 +157,15 @@ export class SlopeLayer extends ParallaxLayer {
   private static readonly GLINT = { least: 0.04, size: 0.45, alpha: 2.2, calm: 0.45 };
 
   private readonly ground: readonly Point[];
+  /** How far down the ground is filled; where the moraine's rubble ends and the snow begins,
+   * Crampon Point, if the section has a moraine. */
+  private readonly bottom: number;
+  private readonly cramponPoint: Point | null;
   private readonly veil = new Graphics();
   private readonly snow = new Graphics();
   private readonly shade = new Graphics();
+  private readonly crevasses = new Graphics();
+  private readonly moraine = new Graphics();
   private readonly sastrugi = new Graphics();
   private readonly track = new Graphics();
   private readonly walls = new Graphics();
@@ -206,6 +229,7 @@ export class SlopeLayer extends ParallaxLayer {
     hazards: ObjectiveHazards,
     private readonly body: Body,
     camps: readonly CampStretch[],
+    parts: readonly PartStretch[],
     climbers: readonly ClimberId[],
     player: ClimberId,
     seed: number,
@@ -216,8 +240,25 @@ export class SlopeLayer extends ParallaxLayer {
     this.addChild(this.veil);
     this.hazards = new HazardDrawing(hazards, terrain);
     this.ground = SlopeLayer.runOut(terrain);
+    this.bottom = Math.min(...this.ground.map(({ y }) => y)) - SlopeLayer.BELOW_METRES;
+    this.ladders = physics.ladders.map((id) => {
+      const [start, finish] = physics.ladder(id);
+      if (start === undefined || finish === undefined) {
+        throw new RangeError("A ladder needs two ends to draw");
+      }
+      const length = Math.hypot(finish.x - start.x, finish.y - start.y);
+      const graphics = new Graphics();
+      const across = Math.abs(finish.y - start.y) < length / 2;
+      const bow = new LadderBow(length);
+      return { id, start, finish, length, across, graphics, bow, loads: [], bowed: false };
+    });
+    const bare = parts.find(({ id }) => id === SlopeLayer.BARE) ?? null;
+    this.cramponPoint = bare === null ? null : terrain.point(bare.to);
     this.drawSnow();
     this.drawDetails(new SlopeDetails(terrain, seed));
+    this.drawGlacier(new Glacier(terrain, seed + 4), bare, camps);
+    // A crevasse's inside goes over the marks on its walls and its foot, so it's dark all the way
+    // down, and a crack breaks the snow's crest.
     this.addChild(
       this.snow,
       this.shade,
@@ -225,7 +266,9 @@ export class SlopeLayer extends ParallaxLayer {
       this.walls,
       this.wallEdges,
       this.track,
+      this.moraine,
       this.surface,
+      this.crevasses,
       this.hazards.standing,
       this.tentGlow,
       this.flagGraphics,
@@ -240,18 +283,9 @@ export class SlopeLayer extends ParallaxLayer {
     this.campSpans = [...this.tentShapes, ...(this.flags?.strings ?? [])].map((points) =>
       SlopeLayer.across(points),
     );
-    this.ladders = physics.ladders.map((id) => {
-      const [start, finish] = physics.ladder(id);
-      if (start === undefined || finish === undefined) {
-        throw new RangeError("A ladder needs two ends to draw");
-      }
-      const length = Math.hypot(finish.x - start.x, finish.y - start.y);
-      const graphics = new Graphics();
+    for (const { graphics } of this.ladders) {
       this.addChild(graphics);
-      const across = Math.abs(finish.y - start.y) < length / 2;
-      const bow = new LadderBow(length);
-      return { id, start, finish, length, across, graphics, bow, loads: [], bowed: false };
-    });
+    }
     this.ropes = physics.ropes.map((id) => {
       const graphics = new Graphics();
       this.addChild(graphics);
@@ -391,6 +425,8 @@ export class SlopeLayer extends ParallaxLayer {
       this.track.tint = palette.track;
       this.walls.tint = palette.iceWall;
       this.wallEdges.tint = palette.iceEdge;
+      this.crevasses.tint = palette.crevasse;
+      this.moraine.tint = palette.moraine;
       this.surface.tint = palette.snowCrest;
       this.hazards.standing.tint = palette.snowTint;
       this.hazards.falling.tint = palette.snowTint;
@@ -441,8 +477,9 @@ export class SlopeLayer extends ParallaxLayer {
   }
 
   /** A ladder's rails and rungs, every `ClimberReading.RUNG_METRES` as the climbers' boots find
-   * them, bowed under the climbers on it; across a crevasse, its hand line on a post at each end,
-   * at the height of their hands, going down with the ladder under them. */
+   * them, and a long one's lashings, bowed under the climbers on it; across a crevasse, its hand
+   * line on a post at each end, at the height of their hands, going down with the ladder under
+   * them. */
   private drawLadder(ladder: DrawnLadder, size: LeastSize): void {
     const { start, finish, length, graphics, bow, loads, across } = ladder;
     const alongX = (finish.x - start.x) / (length || 1);
@@ -478,10 +515,43 @@ export class SlopeLayer extends ParallaxLayer {
     graphics.stroke({ width: width * 2.2, color: Palette.LADDER_SHADE, cap: "round" });
     rails();
     graphics.stroke({ width, color: Palette.LADDER, cap: "round" });
+    SlopeLayer.lashings(graphics, ladder, sag, size);
     if (across) {
       SlopeLayer.handLine(graphics, ladder, sag, size);
     }
     ladder.bowed = bowed;
+  }
+
+  /** Where a ladder longer than `SECTION_METRES` is lashed from sections end to end: at each joint,
+   * a few wraps of cord round each rail, bowed with the ladder. */
+  private static lashings(
+    graphics: Graphics,
+    { start, finish, length }: DrawnLadder,
+    sag: (along: number) => number,
+    size: LeastSize,
+  ): void {
+    const { LASHING, LADDER_HALF_WIDTH } = SlopeLayer;
+    const sections = Math.ceil(length / SlopeLayer.SECTION_METRES - 1e-6);
+    if (sections < 2) {
+      return;
+    }
+    const alongX = (finish.x - start.x) / length;
+    const alongY = (finish.y - start.y) / length;
+    for (let joint = 1; joint < sections; joint += 1) {
+      for (let wrap = 0; wrap < LASHING.wraps; wrap += 1) {
+        const along =
+          (length * joint) / sections + (wrap - (LASHING.wraps - 1) / 2) * LASHING.apart;
+        for (const side of [1, -1]) {
+          const rail = side * LADDER_HALF_WIDTH;
+          const x = start.x + alongX * along - alongY * rail;
+          const y = start.y + alongY * along + alongX * rail - sag(along);
+          graphics
+            .moveTo(x + alongY * LASHING.reach, y - alongX * LASHING.reach)
+            .lineTo(x - alongY * LASHING.reach, y + alongX * LASHING.reach);
+        }
+      }
+    }
+    graphics.stroke({ width: size.line(LASHING.width), color: Palette.LASHING, cap: "round" });
   }
 
   /** The hand line across a ladder over a crevasse, where the climbers' hands hold it as
@@ -699,8 +769,11 @@ export class SlopeLayer extends ParallaxLayer {
       .fill({ color: atmosphere.palette.haze, alpha: veil });
   }
 
+  /** The snow's crest along the ground, from Crampon Point on: the moraine's rubble has none. */
   private drawSurface(size: LeastSize): void {
-    const [first, ...rest] = this.ground;
+    const edge = this.cramponPoint;
+    const [first, ...rest] =
+      edge === null ? this.ground : [edge, ...this.ground.filter(({ x }) => x > edge.x)];
     this.surface.clear();
     if (first === undefined) {
       return;
@@ -731,10 +804,9 @@ export class SlopeLayer extends ParallaxLayer {
 
   /** The snow's body, filled down from the surface, and the shade just under its surface. */
   private drawSnow(): void {
-    const { ground } = this;
+    const { ground, bottom } = this;
     const left = ground[0]?.x ?? 0;
     const right = ground.at(-1)?.x ?? 0;
-    const bottom = Math.min(...ground.map(({ y }) => y)) - SlopeLayer.BELOW_METRES;
     const outline = ground.flatMap(({ x, y }) => [x, y]);
     this.snow.poly([left, bottom, ...outline, right, bottom]).fill(0xffffff);
     const [first, ...rest] = ground;
@@ -775,6 +847,53 @@ export class SlopeLayer extends ParallaxLayer {
       this.wallEdges.moveTo(from.x, from.y).lineTo(to.x, to.y);
     }
     this.wallEdges.stroke({ width: SlopeLayer.WALL_EDGE_METRES, color: 0xffffff });
+  }
+
+  /** The glacier where it's more than snow, as `Glacier` lays it: the moraine's rubble and its
+   * stones, out to Crampon Point; the inside of each crevasse a ladder crosses, going black as it
+   * goes down; and the cracks in the snow around Camp 1. */
+  private drawGlacier(
+    glacier: Glacier,
+    bare: PartStretch | null,
+    camps: readonly CampStretch[],
+  ): void {
+    const flat = (points: readonly Point[]): number[] => points.flatMap(({ x, y }) => [x, y]);
+    if (bare !== null) {
+      const back = SlopeLayer.RUN_OUT_METRES;
+      this.moraine.poly(flat(glacier.moraine(bare.to, back, this.bottom))).fill(0xffffff);
+      for (const { outline, dark } of glacier.stones(bare.to, back)) {
+        this.moraine.poly(flat(outline)).fill(Palette.shaded(0xffffff, dark));
+      }
+    }
+    for (const { start, finish, across } of this.ladders) {
+      if (across) {
+        const { outline, depth } = glacier.inside(start, finish);
+        this.crevasses.poly(flat(outline)).fill(SlopeLayer.deepening(depth));
+      }
+    }
+    const cracked = camps.find(({ id }) => id === SlopeLayer.CRACKED);
+    if (cracked !== undefined) {
+      for (const crack of glacier.cracks(cracked.from - SlopeLayer.CRACKS_BEFORE, cracked.to)) {
+        this.crevasses.poly(flat(crack)).fill(0xffffff);
+      }
+    }
+  }
+
+  /** A crevasse's inside going black as it goes down: white at its lips, for the tint to colour,
+   * and black `DARK_METRES` under them, or at its foot. The layer's y is up, so the gradient runs
+   * from the top of the shape's bounds, 1, to their foot, 0. */
+  private static deepening(depth: number): FillGradient {
+    const black = Math.min(1, SlopeLayer.DARK_METRES / (depth || 1));
+    return new FillGradient({
+      type: "linear",
+      start: { x: 0, y: 1 },
+      end: { x: 0, y: 0 },
+      colorStops: [
+        { offset: 0, color: Palette.css(0xffffff) },
+        { offset: black, color: Palette.css(0x000000) },
+        { offset: 1, color: Palette.css(0x000000) },
+      ],
+    });
   }
 
   /** The glow behind each tent, for the night. */
