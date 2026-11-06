@@ -139,18 +139,27 @@ describe("Section: the Khumbu Icefall from content/route/icefall.json", () => {
     expect(section.destination).toBe(camp1);
   });
 
-  it("lays the file's snow on the ground, level over the camps and at the ladders' ends", () => {
+  it("lays the file's snow on the ground, level over the camps, trodden flat round them and at the ladders' ends", () => {
     const physics = new SlopePhysics(section.settings);
     Expedition.start(section.scenario(1), [physics]);
     const snow = physics.terrain;
-    const camps = section.camps.map(({ from, to }) => ({ from, to }));
+    const { trodden, ...file } = icefall.layout.snow;
+    const level = section.camps.map(({ from, to }) => ({
+      from: Math.max(from - trodden, 0),
+      to: Math.min(to + trodden, terrain.length),
+    }));
     const lift = (x: number): number => snow.height(x) - terrain.height(x);
 
-    expect(section.layout.snow).toEqual({ ...icefall.layout.snow, level: camps });
-    for (const { from, to } of [...camps, ...section.layout.ladders]) {
+    expect(trodden).toBeGreaterThan(0);
+    expect(section.layout.snow).toEqual({ ...file, level });
+    for (const { from, to } of [...level, ...section.layout.ladders]) {
       for (const along of [from, (from + to) / 2, to]) {
         expect(snow.point(along)).toEqual(terrain.point(along));
       }
+    }
+    // The climbers set off on it, as the line has them.
+    for (const { along } of section.layout.climbers) {
+      expect(snow.point(along)).toEqual(terrain.point(along));
     }
     // Between them it rises and falls by tens of centimetres.
     const open = Array.from({ length: 200 }, (_, index) => lift(64 + index * 0.12));

@@ -27,7 +27,7 @@ export type SnowLayout = {
   readonly blend: number;
   /** Its draw: the same seed, the same snow. */
   readonly seed: number;
-  /** Where else it lies on the line: the camps' stretches. */
+  /** Where else it lies on the line: the camps' stretches, and round them. */
   readonly level: readonly Stretch[];
 };
 
