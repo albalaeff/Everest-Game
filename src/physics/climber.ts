@@ -30,6 +30,9 @@ export interface ClimberView {
   readonly walking: Walk["direction"];
   /** Whether they took a step in the last step. */
   readonly moving: boolean;
+  /** The share of their stride's power their last step took: all of it on a ladder and wherever
+   * the power holds them back, less where their footing does, and nought still. */
+  readonly exertion: number;
   /** The rope each cowstail is clipped to, or none: the first's is the jumar's. */
   readonly first: string | null;
   readonly second: string | null;
@@ -63,6 +66,9 @@ export type ClimberSave = {
   readonly walking: Walk["direction"];
   readonly stride: number;
   readonly moving: boolean;
+  /** Missing from the saves of builds before steps had a cost (#150): all of their power on the
+   * move, as it was then. */
+  readonly exertion?: number;
   /** Whether their hand slides the jumar: its key is held. */
   readonly jumarHeld: boolean;
   readonly first: CarabinerSave | null;
@@ -218,6 +224,7 @@ export class Climber {
     private walking: Walk["direction"],
     private stride: number,
     private moving: boolean,
+    private exertion: number,
     private jumarHeld: boolean,
     private first: Carabiner | null,
     private second: Carabiner | null,
@@ -237,6 +244,7 @@ export class Climber {
       "stop",
       1,
       false,
+      0,
       false,
       null,
       null,
@@ -257,6 +265,7 @@ export class Climber {
       save.walking,
       save.stride,
       save.moving,
+      save.exertion ?? (save.moving ? 1 : 0),
       save.jumarHeld,
       carabiner(save.first),
       carabiner(save.second),
@@ -275,6 +284,7 @@ export class Climber {
       walking: this.walking,
       stride: this.stride,
       moving: this.moving,
+      exertion: this.exertion,
       jumarHeld: this.jumarHeld,
       first: this.first?.save() ?? null,
       second: this.second?.save() ?? null,
@@ -298,6 +308,7 @@ export class Climber {
       dead: this.killed,
       walking: this.walking,
       moving: this.moving,
+      exertion: this.exertion,
       first: this.first?.rope.id ?? null,
       second: this.second?.rope.id ?? null,
       ladder: this.onLadder?.ladder.id ?? null,
@@ -336,7 +347,8 @@ export class Climber {
     }
   }
 
-  /** Sets how far their strides go from now on, as a share of the walking and ladder speeds. */
+  /** Sets how far their strides go from now on, as a share of the walking power and the ladder
+   * speeds. */
   setStride(share: number): void {
     if (!(share >= 0)) {
       throw new RangeError(`${this.id} can't take strides of ${share} times the speed`);
@@ -350,6 +362,7 @@ export class Climber {
    */
   walk(slope: Slope, moment: Moment): void {
     this.moving = false;
+    this.exertion = 0;
     if (this.falling !== null || this.killed || this.stride === 0) {
       return;
     }
@@ -447,24 +460,26 @@ export class Climber {
   }
 
   /**
-   * Along the ground at the speed for its steepness, up to the next corner or ladder's end, and
-   * at their technique's share of it clipped to a rope. Ground too steep to walk up stops them,
-   * and so does the ground under a ladder; ground too steep to walk down is a fall.
+   * Along the ground at the speed their stride's power pays for on its steepness, no faster than
+   * the fastest walk, up to the next corner or ladder's end, and at their technique's share of it
+   * clipped to a rope. Ground too steep to walk up stops them, and so does the ground under a
+   * ladder; ground too steep to walk down is a fall. Each metre walked on a steepness slips at
+   * the same chance, however fast.
    */
   private walkGround(slope: Slope, moment: Moment): void {
     const way = Climber.WAYS[this.walking];
     if (way === 0 || slope.underLadder(this.along, way)) {
       return;
     }
-    const { terrain, walkingSpeed, slipChance } = slope;
+    const { terrain, walking, slipChance } = slope;
     const ahead = terrain.ahead(this.along, way);
     const steepness = Steepness.ofWay(ahead.x, ahead.y);
-    const share = this.carabiners.length > 0 ? this.stride * this.technique : this.stride;
-    const speed = walkingSpeed.at(steepness) * share;
-    if (walkingSpeed.steeperUp(steepness)) {
+    const step = walking.step(steepness, this.stride);
+    const speed = step.speed * (this.carabiners.length > 0 ? this.technique : 1);
+    if (walking.steeperUp(steepness)) {
       return;
     }
-    if (walkingSpeed.steeperDown(steepness)) {
+    if (walking.steeperDown(steepness)) {
       this.fall(slope, ahead, speed, moment.step);
       return;
     }
@@ -473,7 +488,9 @@ export class Climber {
     const along = way > 0 ? Math.min(walked, stop) : Math.max(walked, stop);
     if (this.ropesLet(terrain.point(along), slope)) {
       this.along = along;
-      this.stepped(slope, moment, ahead, speed, slipChance.at(steepness) * share);
+      this.exertion = step.exertion;
+      const chance = (slipChance.at(steepness) * speed) / walking.step(steepness, 1).speed;
+      this.stepped(slope, moment, ahead, speed, chance);
     }
   }
 
@@ -496,6 +513,7 @@ export class Climber {
     }
     this.onLadder = next === end.rung ? null : new OnLadder(ladder, next);
     this.along = next === end.rung ? end.along : this.along;
+    this.exertion = 1;
     this.stepped(
       slope,
       moment,

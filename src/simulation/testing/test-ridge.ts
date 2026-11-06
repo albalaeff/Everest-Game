@@ -19,14 +19,20 @@ export type RidgeClimber = {
   readonly flow: number;
   /** The share of the ridge's climbing speed they go at, as the body last set it. */
   readonly stride: number;
+  /** The share of their stride's power each of their steps on the ridge takes. */
+  readonly ground: number;
+  /** What their last step took of it: the ground's share on the move, nought still. */
+  readonly exertion: number;
 };
 
-/** A climber as a test puts them on the ridge: where, on how much oxygen, and how their body
- * starts, fresh unless it says otherwise. */
+/** A climber as a test puts them on the ridge: where, on how much oxygen, how much of their
+ * stride's power each step takes (all of it unless it says otherwise, as up a slope), and how
+ * their body starts, fresh unless it says otherwise. */
 export interface RidgeStart extends Partial<BodyStart> {
   readonly id: ClimberId;
   readonly altitude: number;
   readonly flow?: number;
+  readonly exertion?: number;
 }
 
 type TestRidgeState = {
@@ -38,7 +44,8 @@ type TestRidgeState = {
  * The body's test expedition: climbers on a ridge, standing in for the slope physics and the
  * oxygen system, which sit above the core, where its tests can't import them. A walking climber
  * goes on walking until told otherwise, at `climbing` metres of altitude a second of play times
- * the stride the body gives them, and breathes the oxygen the test gives them. Its numbers, and
+ * the stride the body gives them, each step taking the share of its power the test gives them,
+ * and breathes the oxygen the test gives them. Its numbers, and
  * the body's of `NUMBERS`, are made up, and it isn't game code: only tests import it.
  */
 export class TestRidge implements Rule, Legs, Breathing {
@@ -100,8 +107,16 @@ export class TestRidge implements Rule, Legs, Breathing {
   /** A scenario on the ridge, which rises `climbing` metres a second of play at a whole stride:
    * the clock, each climber's body, and where they stand. */
   static scenario(seed: number, climbers: readonly RidgeStart[], climbing = 0): Scenario {
-    const standing = climbers.map(({ id, altitude, flow = 0 }) => {
-      const climber: RidgeClimber = { altitude, moving: false, way: 0, flow, stride: 1 };
+    const standing = climbers.map(({ id, altitude, flow = 0, exertion = 1 }) => {
+      const climber: RidgeClimber = {
+        altitude,
+        moving: false,
+        way: 0,
+        flow,
+        stride: 1,
+        ground: exertion,
+        exertion: 0,
+      };
       return [id, climber] as const;
     });
     const ridge: TestRidgeState = { climbing, climbers: Object.fromEntries(standing) };
@@ -159,7 +174,8 @@ export class TestRidge implements Rule, Legs, Breathing {
     for (const [id, climber] of this.climbers) {
       const moving = climber.way !== 0 && climber.stride > 0;
       const climbed = climber.way * this.climbing * climber.stride * SimulationClock.STEP_SECONDS;
-      this.climbers.set(id, { ...climber, moving, altitude: climber.altitude + climbed });
+      const exertion = moving ? climber.ground : 0;
+      this.climbers.set(id, { ...climber, moving, exertion, altitude: climber.altitude + climbed });
     }
   }
 }

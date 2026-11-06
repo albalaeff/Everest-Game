@@ -1,5 +1,6 @@
 import type { ClimberId, Pace } from "../game-action";
 import type { BodyNumbers } from "./body-numbers";
+import type { PaceEffort } from "./pace-effort";
 
 /** How a climber starts an expedition, as its scenario sets them. */
 export interface BodyStart {
@@ -57,9 +58,9 @@ export type ConditionSave = {
 
 /**
  * One climber's condition: how much of their endurance they've spent, the pace they chose, and
- * how short they are of water, food and sleep. On the move they tire at their pace's rate, faster
- * the shorter they are; at rest they recover, where the body can. Spent, they're exhausted and
- * stop, until rest brings them back below profound fatigue.
+ * how short they are of water, food and sleep. On the move they tire at their pace's rate for
+ * the work their steps do, faster the shorter they are; at rest they recover, where the body can.
+ * Spent, they're exhausted and stop, until rest brings them back below profound fatigue.
  */
 export class Condition {
   private static readonly HOURS_A_DAY = 24;
@@ -119,12 +120,20 @@ export class Condition {
     return (speed * capacity * this.fitness * this.mass) / (this.mass + this.load);
   }
 
-  /** Lives through `hours` of the mountain's time, on the move or not: they grow short of water,
-   * food and sleep, and tire or, where the body `recovers`, rest. */
-  live(hours: number, moving: boolean, recovers: boolean, numbers: BodyNumbers): void {
+  /** Lives through `hours` of the mountain's time, on the move, their steps taking `exertion` of
+   * their stride's power, or not: they grow short of water, food and sleep, and tire as `effort`
+   * says or, where the body `recovers`, rest. */
+  live(
+    hours: number,
+    moving: boolean,
+    exertion: number,
+    recovers: boolean,
+    numbers: BodyNumbers,
+    effort: PaceEffort,
+  ): void {
     if (moving) {
-      const { effort } = numbers.paces[this.pace(numbers)];
-      const spent = (effort / numbers.endurance) * this.strain(numbers) * hours;
+      const rate = effort.at(numbers.paces[this.pace(numbers)], exertion);
+      const spent = (rate / numbers.endurance) * this.strain(numbers) * hours;
       this.fatigue = Math.min(1, this.fatigue + spent);
     } else if (recovers) {
       this.fatigue = Math.max(0, this.fatigue - hours / numbers.recovery);

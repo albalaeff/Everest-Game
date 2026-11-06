@@ -881,7 +881,7 @@
     {
       "id": "body.pace-effort",
       "kind": "question",
-      "question": "At 8,000 m, how much faster than a climber's steady pace is the faster one, and how much slower the rest step; and how much more does the faster pace tire them, and how much less the rest step? The model's numbers are fitted to the sections' hours, not measured.",
+      "question": "At 8,000 m, how much faster than a climber's steady pace is the faster one, and how much slower the rest step; and how much more does the faster pace tire them, and how much less the rest step? The model's numbers are fitted to the sections' hours, not measured. Where the footing, not the power, holds a climber back, as on the way down, it tires them as the pace whose power their steps take, in straight lines between the paces and down to nothing standing: is that how it goes?",
       "about": [
         "body.rest-step-speed",
         "body.faster-speed",
@@ -913,10 +913,12 @@
     {
       "id": "body.descent-effort",
       "kind": "question",
-      "question": "How much less does going down tire a climber than going up, at 8,000 m, and how much faster do they go? The model tires them the same either way, and slows them alike.",
+      "question": "How much less does going down tire a climber than going up, at 8,000 m, and how much faster do they go? The model has them walk down as fast as their footing lets them, no faster than the fastest walk, and tires them by the share of their power the steps take, from the energy cost of walking measured near sea level (Minetti et al.): does it hold in crampons, at altitude, with a pack?",
       "about": [
         "body.steady-endurance",
-        "time.summit-to-south-col"
+        "time.summit-to-south-col",
+        "technique.walking-cost-steep-down",
+        "technique.fastest-walk"
       ]
     },
     {

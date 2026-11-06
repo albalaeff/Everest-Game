@@ -1,17 +1,21 @@
 import type { SlopePhysics } from "../../physics";
 import type { Expedition } from "../../simulation";
-import type { ClimberId, GameAction } from "../../simulation";
+import type { ClimberId, GameAction, Walk } from "../../simulation";
 
 /**
- * A climber crossing a section headless, as a careful player would: walking up and right, the
- * jumar's slide held, clipped to the fixed ropes with both cowstails wherever one is within reach,
- * the cowstails moved across one at a time where a rope ends at the next one's anchor, and both
- * off where a rope ends and nothing follows. Only tests import it.
+ * A climber crossing a section headless, as a careful player would: walking up and right, or down
+ * and left, the jumar's slide held, clipped to the fixed ropes with both cowstails wherever one is
+ * within reach, the cowstails moved across one at a time where a rope ends at the next one's
+ * anchor, and both off where a rope ends and nothing follows. Only tests import it.
  */
 export class Crossing {
   /** How far past where it unclipped the walker goes before it clips again: the old rope's
    * anchor is still within reach there. */
   private static readonly FREE_METRES = 1;
+  private static readonly WAYS: Readonly<Record<"up" | "down", Walk["direction"]>> = {
+    up: "up-right",
+    down: "down-left",
+  };
 
   /** The ladders climbed, in order. */
   readonly laddersClimbed: string[] = [];
@@ -26,6 +30,7 @@ export class Crossing {
     private readonly expedition: Expedition,
     private readonly physics: SlopePhysics,
     private readonly climber: ClimberId,
+    private readonly way: "up" | "down" = "up",
   ) {}
 
   /** One step of the crossing: what the walker does, then the expedition's step. */
@@ -37,12 +42,18 @@ export class Crossing {
    * they got there. */
   until(along: number, steps: number): boolean {
     for (let step = 0; step < steps; step += 1) {
-      if (this.physics.along(this.climber) >= along) {
+      if (this.reached(along)) {
         return true;
       }
       this.step();
     }
-    return this.physics.along(this.climber) >= along;
+    return this.reached(along);
+  }
+
+  /** Whether the climber is `along` metres along the ground, or past it, the way they go. */
+  private reached(along: number): boolean {
+    const now = this.physics.along(this.climber);
+    return this.way === "up" ? now >= along : now <= along;
   }
 
   private actions(): readonly GameAction[] {
@@ -57,7 +68,7 @@ export class Crossing {
       this.started = true;
       return [
         { kind: "jumar", climber, held: true },
-        { kind: "walk", climber, direction: "up-right" },
+        { kind: "walk", climber, direction: Crossing.WAYS[this.way] },
       ];
     }
     if (view.falling || view.dead) {
@@ -67,7 +78,7 @@ export class Crossing {
     if (held || this.reclipping > 0) {
       return this.reclip(held, along);
     }
-    if (this.freedAt !== null && along < this.freedAt + Crossing.FREE_METRES) {
+    if (this.freedAt !== null && Math.abs(along - this.freedAt) < Crossing.FREE_METRES) {
       return [];
     }
     this.freedAt = null;

@@ -10,6 +10,6 @@ export type {
   SlopeLayout,
   SlopeSettings,
 } from "./slope-physics";
-export type { SteepnessPoint } from "./steepness";
+export type { GradientPoint, SteepnessPoint } from "./steepness";
 export { Terrain } from "./terrain";
 export type { Pair, Point } from "./terrain";

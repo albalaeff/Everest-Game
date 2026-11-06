@@ -149,6 +149,24 @@ describe("Body: fatigue", () => {
     expect(tiredness().filter((_, index) => index !== 2)).toEqual(["fresh", "tired", "fresh"]);
   });
 
+  it("tires a climber by the share of their stride's power their steps take", () => {
+    // Where the ground holds them back to half of it, as down a gentle slope, half as fast; at the
+    // faster pace held back to the steady pace's power, as fast as at the steady pace.
+    const hike = Hike.on([
+      { id: "anna", altitude: 0 },
+      { id: "boris", altitude: 0, exertion: 0.5 },
+      { id: "vera", altitude: 0, exertion: 0.5 },
+    ]);
+
+    hike.hours(6, [walk("anna"), walk("boris"), pace("vera", "faster"), walk("vera")]);
+
+    expect(["anna", "boris", "vera"].map((id) => hike.body.climber(id).tiredness)).toEqual([
+      "tired",
+      "fresh",
+      "tired",
+    ]);
+  });
+
   it("tires a less fit climber more on the same climb, which takes them longer", () => {
     // At half the fitness, 300 m take six hours instead of three: tired past half of ten.
     const hike = Hike.on(

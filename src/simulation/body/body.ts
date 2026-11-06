@@ -6,6 +6,7 @@ import { BloodOxygen } from "./blood-oxygen";
 import type { BodyNumbers } from "./body-numbers";
 import { Condition } from "./condition";
 import type { BodyStart, BodyView, ConditionSave } from "./condition";
+import { PaceEffort } from "./pace-effort";
 
 /** Where a climber is, as the body needs to know it. */
 export interface Whereabouts {
@@ -14,6 +15,9 @@ export interface Whereabouts {
   /** Whether they took a step in the last step, on their feet: not stopped, held back or
    * falling. */
   readonly moving: boolean;
+  /** The share of their stride's power that step took: all of it where the power holds them
+   * back, as up a slope, less where their footing does, and nought still. */
+  readonly exertion: number;
 }
 
 /** What moves the climbers, as the body sees it: the slope physics, which sits above the core. */
@@ -39,11 +43,12 @@ type BodySave = {
 
 /**
  * The climbers' bodies, as a rule of the core (docs/conventions/body.md): each step, it lives
- * through the mountain's time since the last, tiring each climber on the move and resting them
- * still, and sets the stride the slope physics walks them at in the same step, so it runs
- * between the mountain's clock and the physics. Their blood oxygen comes from the altitude and the
- * oxygen they breathe. Its numbers are handed to it; each climber's condition is its state, which
- * a scenario starts and a save keeps. The player sees no number of it but the oximeter's.
+ * through the mountain's time since the last, tiring each climber on the move by what their steps
+ * take of their power and resting them still, and sets the stride the slope physics walks them at
+ * in the same step, so it runs between the mountain's clock and the physics. Their blood oxygen
+ * comes from the altitude and the oxygen they breathe. Its numbers are handed to it; each
+ * climber's condition is its state, which a scenario starts and a save keeps. The player sees no
+ * number of it but the oximeter's.
  */
 export class Body implements Rule {
   /** Its key in scenarios and saves: never change it once saves exist. */
@@ -55,6 +60,7 @@ export class Body implements Rule {
   readonly name = Body.NAME;
 
   private readonly oxygen: BloodOxygen;
+  private readonly effort: PaceEffort;
   private seen = 0;
   private readonly climbers = new Map<ClimberId, Condition>();
 
@@ -65,6 +71,7 @@ export class Body implements Rule {
     private readonly breathing: Breathing = Body.AIR,
   ) {
     this.oxygen = new BloodOxygen(numbers);
+    this.effort = new PaceEffort(numbers.paces);
   }
 
   /** A scenario's start state: each climber as it starts them, at a steady pace. */
@@ -110,10 +117,10 @@ export class Body implements Rule {
     const hours = (elapsed - this.seen) / Body.SECONDS_AN_HOUR;
     this.seen = elapsed;
     for (const [id, condition] of this.climbers) {
-      const { altitude, moving } = this.legs.climber(id);
+      const { altitude, moving, exertion } = this.legs.climber(id);
       const flow = this.breathing.flow(id);
       const recovers = this.oxygen.felt(altitude, flow, false) <= this.numbers.deathZone;
-      condition.live(hours, moving, recovers, this.numbers);
+      condition.live(hours, moving, exertion, recovers, this.numbers, this.effort);
       const capacity = this.oxygen.capacity(this.oxygen.felt(altitude, flow, true));
       this.legs.stride(id, condition.stride(this.numbers, capacity));
     }

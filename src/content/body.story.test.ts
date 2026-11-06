@@ -14,9 +14,13 @@ const TEAMMATE = "teammate";
 /**
  * The body on the mountain (#22): the knowledge base's numbers set how far each climber's strides
  * go, so the pace they choose shows on the slope, and in how they feel. Nobody sees a number for
- * their condition but the oximeter's.
+ * their condition but the oximeter's. On the flat, both walk as fast as their footing lets them
+ * (#150): the faster pace tells once the way goes up, its first 13 m from 20 m along.
  */
 describe("The body on the mountain: the faster pace gets ahead, and tires first", () => {
+  /** Seconds of play: to the first slope at the fastest walk, and a few metres up it. */
+  const SECONDS = 60;
+
   it("takes the player, at the faster pace, past their steady teammate, out of breath and tired", () => {
     // Both set off a little short of tired, from the climb before.
     const fatigue = knowledge.number("body.tired") - 0.01;
@@ -31,7 +35,7 @@ describe("The body on the mountain: the faster pace gets ahead, and tires first"
     ];
 
     expedition.advance(setOff);
-    for (let step = 1; step < 40 * SimulationClock.STEPS_PER_SECOND; step += 1) {
+    for (let step = 1; step < SECONDS * SimulationClock.STEPS_PER_SECOND; step += 1) {
       expedition.advance();
     }
 
