@@ -29,12 +29,12 @@ describe("Section: the Khumbu Icefall from content/route/icefall.json", () => {
     expect(section.length).toBe(knowledge.number("route.icefall-length"));
   });
 
-  it("is drawn at 1/time.compression of life: its rise within 1% of the ratio, its width within 5%", () => {
-    const compression = knowledge.number("time.compression");
+  it("is drawn at 1/route.drawn-scale of life: its rise within 1% of the scale, its width within 5%", () => {
+    const drawnScale = knowledge.number("route.drawn-scale");
     const width = terrain.point(terrain.length).x - terrain.point(0).x;
 
-    expect(Math.abs(scale.compression / compression - 1)).toBeLessThan(0.01);
-    expect(Math.abs(width / (section.length / compression) - 1)).toBeLessThan(0.05);
+    expect(Math.abs(scale.ratio / drawnScale - 1)).toBeLessThan(0.01);
+    expect(Math.abs(width / (section.length / drawnScale) - 1)).toBeLessThan(0.05);
   });
 
   it("has as many ladders as the Icefall Doctors fix in a season, each with its ends at corners", () => {

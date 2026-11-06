@@ -186,7 +186,7 @@ Tasks marked *Iteration 1–3* are planned into the board's first two-week itera
 ### Task 24: Summit push: South Col to the summit and back ([#35](https://github.com/albalaeff/Everest-Game/issues/35))
 - [ ] South Col → Balcony → South Summit → Hillary Step (today's snow slope) → summit → descent
 - [ ] Summit night: an almost black screen, the headlamp's cone, other groups' lights
-- [ ] Solo and as a pair online; the push takes 60–90 minutes
+- [ ] Solo and as a pair online; the push takes 20–30 minutes
 - [ ] Done gate
 
 ### Task 25: Turnaround time: set before the push, a red mark on the clock ([#36](https://github.com/albalaeff/Everest-Game/issues/36))
@@ -257,7 +257,7 @@ Tasks marked *Iteration 1–3* are planned into the board's first two-week itera
 - [ ] What they found goes into issues; the check is answered on this issue
 - [ ] Done gate
 
-**Milestone 3:** South Col → summit → descent, solo and as a pair online. Check: the push takes 60–90 min, and the turnaround decisions are clear.
+**Milestone 3:** South Col → summit → descent, solo and as a pair online. Check: the push takes 20–30 min, and the turnaround decisions are clear.
 
 ---
 

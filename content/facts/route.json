@@ -720,6 +720,16 @@
       ]
     },
     {
+      "id": "route.drawn-scale",
+      "kind": "coefficient",
+      "claim": "The scale every section of the route is drawn at: how many real metres a drawn metre of its length and its rise stands for, with its walls, crevasses and ladders at life size, so that a fall reads true. The mountain's clock runs faster than this (time.compression), and the climber goes faster than in life over the drawn ground by as much, so a section still takes its real hours. Fitted to the Icefall, Base Camp to Camp 1: 280 m of ground rising 45 m stand for its length and its rise.",
+      "status": "source only",
+      "value": 12,
+      "unit": "1",
+      "fitted_to": ["route.icefall-length", "route.base-camp-altitude", "route.camp-1-altitude"],
+      "fitted": "2026-11-06"
+    },
+    {
       "id": "route.icefall-steepness",
       "kind": "fact",
       "claim": "The Icefall's slopes run from this gentle to this steep, with the walls between them climbed on ladders.",

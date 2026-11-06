@@ -18,7 +18,7 @@ The pages' rules come from these; where no rule fits, they decide.
 3. **Every cue twice.** Nothing the player must know comes by one sense alone: a colour comes with a shape or a word, a sound with a picture, a vibration with a sound or a picture. About one man in twelve sees colours differently, iPhones don't vibrate, and a phone on a train plays with the sound off.
 4. **One game on every device.** A phone, a PC and a gamepad get the same information, the same actions and the same chances ([../spec.md](../spec.md) → Phone and PC → Cross-play). A device changes the layout, never what the player can know or do.
 5. **Easy hands, hard decisions.** The difficulty is in the decisions: when to turn around, how much oxygen, whom to help. It's never in reflexes, precision or a button held for minutes, and a slip of a finger never makes a fatal mistake.
-6. **Kind for six hours.** An expedition lasts 5–7 hours, so nothing flashes or shakes, nothing is held for long, the frame rate is steady, the phone stays cool, and a pause keeps the player's place.
+6. **Kind for two hours.** An expedition lasts about 2 hours, so nothing flashes or shakes, nothing is held for long, the frame rate is steady, the phone stays cool, and a pause keeps the player's place.
 7. **Teach by doing.** The player learns a control by using it, where the slope first needs it, one thing at a time ([../spec.md](../spec.md) → Training: explain briefly, show, let them do it, test under stress).
 
 ## Using them
