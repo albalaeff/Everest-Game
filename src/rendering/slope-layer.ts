@@ -138,6 +138,10 @@ export class SlopeLayer extends ParallaxLayer {
   private static readonly DRIFT_SPEED = { min: 4, max: 14 };
   private static readonly DRIFT_FROM_GUST = 0.05;
   private static readonly DRIFT_ALPHA = 0.8;
+  /** How long a mote streaks at the full gust, in its sizes, and how much lower it rides: the
+   * stronger the wind, the longer and lower the spindrift's streaks along the snow. */
+  private static readonly DRIFT_STREAK = 7;
+  private static readonly DRIFT_LOWER = 0.6;
   /** The grains glinting in a headlamp's beam: the least light that shows one, its size against
    * the mote's, its brightness, and the share of it that shows with no wind. */
   private static readonly GLINT = { least: 0.04, size: 0.45, alpha: 2.2, calm: 0.45 };
@@ -295,7 +299,7 @@ export class SlopeLayer extends ParallaxLayer {
     this.driftContainer = new ParticleContainer({
       dynamicProperties: {
         position: true,
-        vertex: false,
+        vertex: true,
         rotation: false,
         uvs: false,
         color: false,
@@ -667,8 +671,9 @@ export class SlopeLayer extends ParallaxLayer {
     this.puffs.forEach(this.drawPuff);
   }
 
-  /** The spindrift along the snow around the camera, blown by the gust, and its grains glinting
-   * in the headlamps' beams: the air's ice crystals faintly with no wind, as #125's scene has. */
+  /** The spindrift along the snow around the camera, blown by the gust in streaks that grow
+   * longer and lower with it, and its grains glinting in the headlamps' beams: the air's ice
+   * crystals faintly with no wind, as #125's scene has. */
   private blow(seconds: number, camera: Camera, atmosphere: Atmosphere): void {
     const { gust, elapsed } = atmosphere;
     const { beams } = this;
@@ -687,13 +692,17 @@ export class SlopeLayer extends ParallaxLayer {
     this.driftContainer.position.set(cameraX, 0);
     this.drift.blow(seconds, gust, (x) => terrain.height(cameraX + x), elapsed);
     const shown = SlopeLayer.GLINT.calm + (1 - SlopeLayer.GLINT.calm) * Math.min(1, strength * 1.5);
+    const streak = 1 + SlopeLayer.DRIFT_STREAK * strength;
+    const lower = 1 - SlopeLayer.DRIFT_LOWER * strength;
     for (const [index, mote] of this.drift.motes.entries()) {
+      const ground = terrain.height(cameraX + mote.x);
+      const at = { x: cameraX + mote.x, y: ground + (mote.y - ground) * lower };
       const particle = this.motes[index];
       if (particle !== undefined) {
         particle.x = mote.x;
-        particle.y = mote.y;
+        particle.y = at.y;
+        particle.scaleX = (mote.size * streak) / particle.texture.width;
       }
-      const at = { x: cameraX + mote.x, y: mote.y };
       const lit = Math.max(0, ...beams.map((beam) => beam.lights(at)));
       if (lit > SlopeLayer.GLINT.least) {
         this.glints

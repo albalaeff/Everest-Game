@@ -1,4 +1,6 @@
 import type { DayLight } from "./day-light";
+import type { ThinAir } from "./thin-air";
+import type { WeatherLook } from "./weather-look";
 
 /** A colour's channels, 0 to 255 each. */
 export interface Channels {
@@ -11,8 +13,9 @@ export interface Channels {
  * The picture's colours, named once (docs/guidelines/graphics.md → colour: one palette), so a
  * strong colour means one thing on the screen: the player's suit, the rope, the others' suits. The
  * fixed colours are the class's; an instance is the palette at one hour's light, its sky, air,
- * faces and snow mixed from the night's and the day's colours by `DayLight`. The interface's
- * blues live in the style sheet, where the text is.
+ * faces and snow mixed from the night's and the day's colours by `DayLight`, the top of the sky
+ * deeper the thinner the air above (`ThinAir`), and the sky greyer the more of it is cloud
+ * (`WeatherLook.overcast`). The interface's blues live in the style sheet, where the text is.
  */
 export class Palette {
   /** The climbers: the player's suit, 3.6:1 on the snow, and the others', apart by colour alone. */
@@ -79,12 +82,18 @@ export class Palette {
   static readonly NIGHT_SKY_HORIZON = 0x1d2550;
   static readonly NIGHT_HAZE = 0x151b38;
   static readonly NIGHT_FACE = 0x231f45;
+  static readonly NIGHT_FACE_SHADE = 0x19173a;
   static readonly NIGHT_ICE = 0x26315e;
   static readonly NIGHT_CLOUD = 0x544a7a;
-  static readonly DAY_SKY_TOP = 0x1b4a97;
+  /** The top of the day's sky under all the air there is and under none: over Base Camp, about
+   * half way, it's #149's blue, 0x1b4a97, and it deepens to indigo by the summit. */
+  static readonly SEA_LEVEL_SKY_TOP = 0x3087fa;
+  static readonly SPACE_SKY_TOP = 0x060c30;
   static readonly DAY_SKY_HORIZON = 0xa9c8ea;
   static readonly DAY_HAZE = 0xc4d6ec;
   static readonly DAY_FACE = 0xd9e6f4;
+  /** Snow in the shade by day is blue: the sky lights it, not the sun. */
+  static readonly DAY_FACE_SHADE = 0x9cb2d6;
   static readonly DAY_ICE = 0xc3dff2;
   static readonly DAY_CLOUD = 0xf4f7fb;
   /** The snow of the play plane: navy under the stars, blue as the sky pales before the sun, and
@@ -100,6 +109,14 @@ export class Palette {
   static readonly NIGHT_RIM = 0x8fa3d9;
   static readonly DAY_RIM = 0xfff6e8;
   static readonly STAR = 0xffffff;
+  /** The sky under cloud, at night and by day: a flat grey, its top little darker than its
+   * horizon. */
+  static readonly NIGHT_OVERCAST_TOP = 0x0e1120;
+  static readonly NIGHT_OVERCAST_HORIZON = 0x1c2031;
+  static readonly DAY_OVERCAST_TOP = 0xa3acb8;
+  static readonly DAY_OVERCAST_HORIZON = 0xc8ced6;
+  /** How far the air between the layers greys with the cloud. */
+  private static readonly HAZE_UNDER_CLOUD = 0.7;
   /** How much of the horizon the glow colours at its strongest. */
   private static readonly GLOW_SHARE = 0.75;
   /** How much the glow lights the snow before the sun is up: the sky's light, earlier than the
@@ -115,8 +132,10 @@ export class Palette {
   readonly skyHorizon: number;
   /** The air between the layers: what a far face fades into. */
   readonly haze: number;
-  /** The snow faces of the far mountains, their flutings in the light, and their rock. */
+  /** The snow faces of the far mountains, their flanks away from the sun, their flutings in the
+   * light, and their rock. */
   readonly face: number;
+  readonly faceShade: number;
   readonly fluting: number;
   readonly rock: number;
   /** The ice of the near seracs, and the sea of clouds in the valley. */
@@ -136,17 +155,35 @@ export class Palette {
   readonly iceEdge: number;
   readonly track: number;
 
-  constructor(light: DayLight) {
+  constructor(light: DayLight, air: ThinAir, look: WeatherLook) {
     const { daylight, glow } = light;
+    const { overcast } = look;
     const by = (night: number, day: number): number => Palette.mix(night, day, daylight);
     // The sky lights the snow before the sun is up: as far as the glow, at half its strength.
     const skylight = daylight + (1 - daylight) * glow * Palette.GLOW_SKYLIGHT;
     const horizon = by(Palette.NIGHT_SKY_HORIZON, Palette.DAY_SKY_HORIZON);
     const glowHorizon = by(Palette.EARLY_SKY_HORIZON, Palette.DAWN_SKY_HORIZON);
-    this.skyTop = by(Palette.NIGHT_SKY_TOP, Palette.DAY_SKY_TOP);
-    this.skyHorizon = Palette.mix(horizon, glowHorizon, glow * Palette.GLOW_SHARE);
-    this.haze = by(Palette.NIGHT_HAZE, Palette.DAY_HAZE);
+    const dayTop = Palette.mix(Palette.SEA_LEVEL_SKY_TOP, Palette.SPACE_SKY_TOP, air.share);
+    const cloudHorizon = by(Palette.NIGHT_OVERCAST_HORIZON, Palette.DAY_OVERCAST_HORIZON);
+    // Under cloud the glow doesn't reach the snow, or a figure's edge.
+    const sunGlow = glow * (1 - overcast);
+    this.skyTop = Palette.mix(
+      by(Palette.NIGHT_SKY_TOP, dayTop),
+      by(Palette.NIGHT_OVERCAST_TOP, Palette.DAY_OVERCAST_TOP),
+      overcast,
+    );
+    this.skyHorizon = Palette.mix(
+      Palette.mix(horizon, glowHorizon, glow * Palette.GLOW_SHARE),
+      cloudHorizon,
+      overcast,
+    );
+    this.haze = Palette.mix(
+      by(Palette.NIGHT_HAZE, Palette.DAY_HAZE),
+      cloudHorizon,
+      overcast * Palette.HAZE_UNDER_CLOUD,
+    );
     this.face = by(Palette.NIGHT_FACE, Palette.DAY_FACE);
+    this.faceShade = by(Palette.NIGHT_FACE_SHADE, Palette.DAY_FACE_SHADE);
     // The flutings catch the light: faint under the stars, bright by day.
     this.fluting = Palette.mix(
       this.face,
@@ -157,7 +194,7 @@ export class Palette {
     this.ice = by(Palette.NIGHT_ICE, Palette.DAY_ICE);
     this.cloud = by(Palette.NIGHT_CLOUD, Palette.DAY_CLOUD);
     this.glow = by(Palette.EARLY_GLOW, Palette.GLOW);
-    this.rim = Palette.mix(by(Palette.NIGHT_RIM, Palette.DAY_RIM), this.glow, glow);
+    this.rim = Palette.mix(by(Palette.NIGHT_RIM, Palette.DAY_RIM), this.glow, sunGlow);
     this.snowTint =
       skylight < 0.5
         ? Palette.mix(Palette.NIGHT_SNOW_TINT, Palette.TWILIGHT_SNOW_TINT, skylight * 2)
@@ -166,7 +203,7 @@ export class Palette {
     this.snowCrest = Palette.mix(
       Palette.mix(this.snowTint, Palette.SNOW_CREST, Palette.CREST_LIGHT),
       warmed,
-      glow * Palette.CREST_GLOW,
+      sunGlow * Palette.CREST_GLOW,
     );
     this.snowShade = Palette.tinted(this.snowTint, Palette.SNOW_SHADE);
     this.snowDeep = Palette.tinted(this.snowTint, Palette.SNOW_DEEP);

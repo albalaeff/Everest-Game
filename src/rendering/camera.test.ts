@@ -246,6 +246,82 @@ describe("Camera", () => {
     expect(view.climber).toMatchObject({ x: 10, y: 2, first: "fixed", second: null });
   });
 
+  it("looks ahead the way the climber goes: walking left, they slide over to two thirds across", () => {
+    const climber = new StillClimber();
+    const camera = new Camera(climber, 640, 360);
+    const across = (): number => camera.toScreen(climber.climber).x / 640;
+
+    // Down the slope at a slow walk, 1 m a second, for six seconds.
+    const seen: number[] = [];
+    for (let frame = 1; frame <= 360; frame += 1) {
+      climber.moveTo(10 - frame / 60, 2);
+      camera.follow(FRAME);
+      seen.push(across());
+    }
+
+    expect(seen[30]).toBeLessThan(0.45);
+    expect(seen.every((share, frame) => frame < 30 || share >= (seen[frame - 30] ?? 0))).toBe(true);
+    expect(across()).toBeGreaterThan(0.64);
+    expect(across()).toBeLessThan(2 / 3 + 0.01);
+  });
+
+  it("keeps looking the way the climber went when they stop or take a step back", () => {
+    const climber = new StillClimber();
+    const camera = new Camera(climber, 640, 360);
+
+    climber.moveTo(9.8, 2);
+    for (let frame = 0; frame < 300; frame += 1) {
+      camera.follow(FRAME);
+    }
+
+    expect(camera.toScreen(climber.climber).x).toBeCloseTo(640 / 3, 1);
+  });
+
+  it("turns back to look up the slope when the climber walks up again", () => {
+    const climber = new StillClimber();
+    const camera = new Camera(climber, 640, 360);
+    climber.moveTo(4, 2);
+    for (let frame = 0; frame < 600; frame += 1) {
+      camera.follow(FRAME);
+    }
+
+    climber.moveTo(8, 2);
+    for (let frame = 0; frame < 600; frame += 1) {
+      camera.follow(FRAME);
+    }
+
+    expect(camera.toScreen(climber.climber).x).toBeCloseTo(640 / 3, 0);
+  });
+
+  it("lands a click where it's drawn while the view slides", () => {
+    const climber = new StillClimber();
+    const camera = new Camera(climber, 640, 360);
+    climber.moveTo(6, 2);
+
+    camera.follow(0.5);
+    const point = camera.at(400, 130);
+
+    expect(camera.toScreen(climber.climber).x).toBeGreaterThan(640 / 3);
+    expect(camera.toScreen(point).x).toBeCloseTo(400, 0);
+    expect(camera.toScreen(point).y).toBeCloseTo(130, 0);
+  });
+
+  it("slides the same at 30 frames a second as at 60", () => {
+    const climber = new StillClimber();
+    const phone = new Camera(climber, 640, 360);
+    const pc = new Camera(climber, 640, 360);
+    climber.moveTo(5, 2);
+
+    for (let frame = 0; frame < 30; frame += 1) {
+      phone.follow(1 / 30);
+    }
+    for (let frame = 0; frame < 60; frame += 1) {
+      pc.follow(FRAME);
+    }
+
+    expect(phone.position.x).toBeCloseTo(pc.position.x, 9);
+  });
+
   it("keeps its place on the slope when the screen turns", () => {
     const camera = new Camera(new StillClimber(), 640, 360);
 

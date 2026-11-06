@@ -50,10 +50,18 @@ export class MountainFaces {
   private static readonly FLUTED_WIDTH = 0.85;
   private static readonly FLUTING_DROP = 0.45;
   private static readonly FLUTING_SPLAY = 0.12;
-  /** A rock band's depth, as a share of the massif's height, and how far down the flanks it
-   * runs: where the face is still this share of the summit's height. */
+  /** A rock band's depth, as a share of the massif's height, and how uneven its edges are, as a
+   * share of its depth. */
   private static readonly BAND_DEPTH = 0.05;
-  private static readonly BAND_REACH = 0.3;
+  private static readonly BAND_UNEVEN = 0.3;
+  /** How a band breaks where the snow runs down through it: the share of its depth it keeps on
+   * average, and how far that swings either way, so it thins out and stops in places. */
+  private static readonly BAND_KEPT = 0.55;
+  private static readonly BAND_BROKEN = 0.8;
+  /** A shaded flank's spine: how far its foot leans from under the summit, as a share of the
+   * massif's half width, and in how many pieces it's drawn. */
+  private static readonly SPINE_LEAN = 0.2;
+  private static readonly SPINE_PIECES = 6;
 
   /** The skyline, left to right. */
   readonly outline: readonly Point[];
@@ -83,10 +91,7 @@ export class MountainFaces {
   massifs(x: number): number {
     let height = 0;
     for (const massif of this.options.massifs) {
-      const across = Math.abs(x - massif.summit) / massif.halfWidth;
-      if (across < 1) {
-        height = Math.max(height, massif.height * (1 - across) ** massif.shape);
-      }
+      height = Math.max(height, MountainFaces.rise(massif, x));
     }
     return height;
   }
@@ -137,6 +142,52 @@ export class MountainFaces {
     return crests;
   }
 
+  /** The flanks on one `side` of the summits, 1 the right and -1 the left, that the layer shades
+   * when the sun is on the other: from each summit down the skyline as far as its massif holds it,
+   * down to `below` under the base, and back up a spine that leans from under the summit the
+   * flank's way. As closed outlines, one a massif. */
+  shades(side: 1 | -1, below: number): readonly (readonly Point[])[] {
+    const { base } = this.options;
+    const outward = side === 1 ? this.outline : [...this.outline].reverse();
+    const shades: (readonly Point[])[] = [];
+    for (const massif of this.options.massifs) {
+      const peak = { x: massif.summit, y: this.top(massif.summit) };
+      const flank: Point[] = [peak];
+      for (const point of outward) {
+        if ((point.x - massif.summit) * side <= 0) {
+          continue;
+        }
+        const rise = MountainFaces.rise(massif, point.x);
+        if (rise <= 0 || rise < this.massifs(point.x)) {
+          break;
+        }
+        flank.push(point);
+      }
+      const end = flank.at(-1);
+      if (flank.length < 2 || end === undefined) {
+        continue;
+      }
+      const lean = Math.min(
+        massif.halfWidth * MountainFaces.SPINE_LEAN,
+        Math.abs(end.x - massif.summit) / 2,
+      );
+      const foot = massif.summit + side * lean;
+      const spine: Point[] = [];
+      for (let piece = MountainFaces.SPINE_PIECES; piece > 0; piece -= 1) {
+        const down = piece / MountainFaces.SPINE_PIECES;
+        const x = massif.summit + side * lean * down ** 1.5;
+        spine.push({ x, y: peak.y + (base(x) - peak.y) * down });
+      }
+      shades.push([
+        ...flank,
+        { x: end.x, y: base(end.x) - below },
+        { x: foot, y: base(foot) - below },
+        ...spine,
+      ]);
+    }
+    return shades;
+  }
+
   private flute(massif: Massif): Fluting[] {
     const flutings: Fluting[] = [];
     const reach = massif.halfWidth * MountainFaces.FLUTED_WIDTH;
@@ -154,26 +205,38 @@ export class MountainFaces {
     return flutings;
   }
 
-  /** A band across a massif at `share` of its height: the line of that height, there and back
-   * a band's depth lower, as far down the flanks as the face is still high. */
+  /** A band across a massif at `share` of its height: level, as strata lie, as wide as the
+   * massif's face stands above it, thinning out at its ends and where the snow runs down through
+   * it, its edges a little uneven. */
   private band(massif: Massif, share: number): readonly Point[] {
     const { base, step } = this.options;
+    const { BAND_KEPT, BAND_BROKEN } = MountainFaces;
     const depth = massif.height * MountainFaces.BAND_DEPTH;
+    const level = massif.height * share;
     const upper: Point[] = [];
     const lower: Point[] = [];
     for (
       let x = massif.summit - massif.halfWidth;
       x <= massif.summit + massif.halfWidth;
-      x += step
+      x += step / 2
     ) {
-      const rise = this.massifs(x);
-      if (rise < massif.height * MountainFaces.BAND_REACH) {
+      const above = MountainFaces.rise(massif, x) - level - depth;
+      if (above <= 0) {
         continue;
       }
-      const y = base(x) + rise * share;
-      upper.push({ x, y: y + depth / 2 });
-      lower.push({ x, y: y - depth / 2 });
+      const kept = BAND_KEPT + BAND_BROKEN * Math.sin(x * 0.9 + share * 11) * Math.sin(x * 0.37);
+      const thickness = depth * Math.min(1, above / depth) * Math.min(Math.max(kept, 0), 1);
+      const middle =
+        base(x) + level + depth * MountainFaces.BAND_UNEVEN * Math.sin(x * 1.3 + share * 7);
+      upper.push({ x, y: middle + thickness / 2 });
+      lower.push({ x, y: middle - thickness / 2 });
     }
     return [...upper, ...lower.reverse()];
+  }
+
+  /** How high one massif rises over the ridge at `x`, the others aside. */
+  private static rise(massif: Massif, x: number): number {
+    const across = Math.abs(x - massif.summit) / massif.halfWidth;
+    return across < 1 ? massif.height * (1 - across) ** massif.shape : 0;
   }
 }

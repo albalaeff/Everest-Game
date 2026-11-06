@@ -43,6 +43,23 @@ describe("CloudSea", () => {
     expect(rises).toBeGreaterThan(20);
   });
 
+  it("lays rows, the farthest first, each nearer one lower and its puffs bigger", () => {
+    const rows = CloudSea.rows(options(), 3, 1.5);
+    const highest = (sea: CloudSea | undefined): number =>
+      Math.max(...(sea?.outline ?? []).map(({ y }) => y));
+    const lowest = (sea: CloudSea | undefined): number =>
+      Math.min(...(sea?.outline ?? []).map(({ y }) => y));
+
+    expect(rows).toHaveLength(3);
+    expect(lowest(rows[0])).toBeGreaterThanOrEqual(6);
+    expect(lowest(rows[1])).toBeGreaterThanOrEqual(4.5);
+    expect(lowest(rows[2])).toBeGreaterThanOrEqual(3);
+    expect(lowest(rows[2])).toBeLessThan(lowest(rows[1]));
+    expect(lowest(rows[1])).toBeLessThan(lowest(rows[0]));
+    expect(highest(rows[0]) - 6).toBeLessThan(highest(rows[2]) - 3);
+    expect(rows[0]?.outline).not.toEqual(rows[1]?.outline);
+  });
+
   it("is the same sea on the same seed, and another on another", () => {
     expect(new CloudSea(options()).outline).toEqual(new CloudSea(options()).outline);
     expect(new CloudSea(options({ seed: 12 })).outline).not.toEqual(

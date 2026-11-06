@@ -60,7 +60,7 @@ export class SlopeScene {
     private readonly world: SceneWorld,
     private quality: GraphicsQuality,
   ) {
-    this.atmosphere = Atmosphere.at(world.clock.timeOfDay, world.hazards.weather);
+    this.atmosphere = Atmosphere.at(world.clock.timeOfDay, world.hazards.weather, this.altitude);
   }
 
   /** Opens the canvas in the host: false when the browser can't draw, which is no WebGL. */
@@ -106,7 +106,8 @@ export class SlopeScene {
 
   /** A frame, `between` the steps: the climbers and the ropes move to where they are drawn, the
    * camera follows the player there for `seconds` more, the air and the light are read from the
-   * clock and the weather, and every layer is placed by the camera and lit. */
+   * clock, the player's altitude and the weather, and every layer is placed by the camera and
+   * lit. */
   draw(seconds: number, between: BetweenSteps): void {
     if (!this.opened) {
       return;
@@ -116,7 +117,12 @@ export class SlopeScene {
     this.camera.resize(width, height);
     this.slope?.move(between);
     this.camera.follow(seconds, this.slope?.player ?? this.camera.climber);
-    this.atmosphere = this.atmosphere.after(seconds, clock.timeOfDay, hazards.weather);
+    this.atmosphere = this.atmosphere.after(
+      seconds,
+      clock.timeOfDay,
+      hazards.weather,
+      this.altitude,
+    );
     for (const layer of this.layers) {
       layer.place(this.camera);
     }
@@ -129,6 +135,11 @@ export class SlopeScene {
     this.shake();
     this.frames += 1;
     this.report();
+  }
+
+  /** The player's altitude, in metres: the air the sky is seen through. */
+  private get altitude(): number {
+    return this.world.physics.climber(this.world.player).altitude;
   }
 
   /** While a hazard goes, the whole picture shakes, a few centimetres of slope each way from
@@ -159,11 +170,11 @@ export class SlopeScene {
     for (const layer of this.layers) {
       layer.destroy({ children: true });
     }
-    const { layers: optional, flakes, motes, dithered } = this.quality;
+    const { layers: optional, flakes, motes, fogBanks, dithered } = this.quality;
     const { width, height } = this.app.screen;
     const { physics, hazards, body, oxygen, camps, climbers, player, seed } = this.world;
     const skyline = (style: typeof SkylineLayer.PEAKS, offset: number): SkylineLayer =>
-      new SkylineLayer(style, physics.terrain, seed + offset);
+      new SkylineLayer(style, physics.terrain, seed + offset, fogBanks);
     this.sky = new SkyLayer(dithered);
     this.skylines = [
       ...(optional.farRanges ? [skyline(SkylineLayer.FAR_RANGES, 1)] : []),

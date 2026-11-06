@@ -59,17 +59,70 @@ describe("MountainFaces", () => {
     }
   });
 
-  it("lays a rock band across a massif at its share of the height, under the skyline", () => {
+  it("lays a rock band level across a massif at its share of the height, inside its face", () => {
     const faces = new MountainFaces(options());
     const [band] = faces.bands;
+    const heights = (band ?? []).map(({ y }) => y);
+    const middle = heights.reduce((sum, y) => sum + y, 0) / heights.length;
 
     expect(faces.bands).toHaveLength(1);
-    expect(band).toBeDefined();
     expect(band?.length).toBeGreaterThan(8);
     for (const { x, y } of band ?? []) {
       expect(y).toBeLessThan(faces.top(x));
-      expect(y).toBeGreaterThan(0);
-      expect(Math.abs(y - faces.massifs(x) * 0.5)).toBeLessThanOrEqual(0.5 + 1e-9);
+      expect(Math.abs(x)).toBeLessThan(60);
+    }
+    // Strata lie level: half of Pumori's 20 m up, a little uneven, as thick as a twentieth of it.
+    expect(Math.abs(middle - 10)).toBeLessThan(0.5);
+    expect(Math.max(...heights) - Math.min(...heights)).toBeLessThan(2);
+  });
+
+  it("breaks a rock band where the snow runs down through it, so it shows as rock, not a bar", () => {
+    const [band = []] = new MountainFaces(options()).bands;
+    // The outline runs along the band's top and back along its foot: a point and its pair below.
+    const thickness = band
+      .slice(0, band.length / 2)
+      .map(({ y }, index) => y - (band[band.length - 1 - index]?.y ?? y));
+
+    expect(Math.max(...thickness)).toBeGreaterThan(0.9);
+    expect(thickness.filter((depth) => depth < 0.1).length).toBeGreaterThan(2);
+  });
+
+  it("shades each massif's flank on a side: from its summit down the skyline, up a spine back", () => {
+    const faces = new MountainFaces(options());
+
+    for (const side of [1, -1] as const) {
+      const shades = faces.shades(side, 30);
+      expect(shades).toHaveLength(2);
+      for (const [index, shade] of shades.entries()) {
+        const { summit = 0, halfWidth = 0 } = options().massifs[index] ?? {};
+        expect(shade.length).toBeGreaterThan(5);
+        expect(shade[0]).toEqual({ x: summit, y: faces.top(summit) });
+        for (const { x, y } of shade) {
+          expect(side * (x - summit)).toBeGreaterThanOrEqual(0);
+          expect(Math.abs(x - summit)).toBeLessThanOrEqual(halfWidth);
+          expect(y).toBeLessThanOrEqual(faces.top(x) + 1e-9);
+        }
+        // Down to where the face is hidden below the eye line.
+        expect(Math.min(...shade.map(({ y }) => y))).toBeCloseTo(-30, 6);
+      }
+    }
+  });
+
+  it("ends a flank's shade where a higher massif takes over the skyline", () => {
+    const faces = new MountainFaces(
+      options({
+        massifs: [
+          { name: "West Shoulder", summit: 0, halfWidth: 60, height: 12, shape: 1.6, bands: [] },
+          { name: "Nuptse", summit: 50, halfWidth: 40, height: 20, shape: 0.8, bands: [] },
+        ],
+      }),
+    );
+    const [shoulder = []] = faces.shades(1, 30);
+
+    // Nuptse's flank rises over the shoulder's about 19.5 m right of its top.
+    expect(shoulder.length).toBeGreaterThan(5);
+    for (const { x } of shoulder) {
+      expect(x).toBeLessThan(19.5);
     }
   });
 
