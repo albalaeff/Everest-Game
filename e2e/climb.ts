@@ -13,6 +13,14 @@ export interface SeenClimber {
   readonly ladder: string | null;
 }
 
+/** A climber on the slope as the device saves them (src/physics → ClimberSave), as far as the
+ * stories read and edit them: where they stand, and their technique as they set off. */
+export interface SavedClimber {
+  readonly id: string;
+  along: number;
+  readonly technique: number;
+}
+
 /** A climb as the device saves it (src/simulation → ExpeditionSave), as far as the stories read
  * and edit it: the steps played, where the clock and each climber stand, and each climber's body
  * and technique as they set off. */
@@ -21,9 +29,7 @@ export interface SavedClimb {
   rules: {
     "mountain-clock": { steps: number };
     body: { climbers: { readonly id: string; readonly mass: number; readonly fitness: number }[] };
-    "slope-physics": {
-      climbers: { readonly id: string; along: number; readonly technique: number }[];
-    };
+    "slope-physics": { climbers: SavedClimber[] };
   };
 }
 
@@ -83,6 +89,13 @@ export async function openTheGame(page: Page): Promise<void> {
   await readTheDisclaimer(page);
   await choice(page, "Alone").click();
   await climberScreen(page).getByRole("button", { name: "Climb" }).click();
+}
+
+/** Opens the game again on the climb alone the device has saved: [Alone] goes on with it, with
+ * no Your climber. */
+export async function goOnWithTheClimb(page: Page): Promise<void> {
+  await readTheDisclaimer(page);
+  await choice(page, "Alone").click();
 }
 
 /** The wait for a climber to walk a step or two, as `expect.poll` takes it: a few seconds at the
@@ -201,7 +214,7 @@ export async function storeClimb(page: Page, climb: SavedClimb): Promise<void> {
 }
 
 /** The player's climber in a saved climb. */
-export function savedPlayer(climb: SavedClimb): { readonly id: string; along: number } {
+export function savedPlayer(climb: SavedClimb): SavedClimber {
   const player = climb.rules["slope-physics"].climbers.find((climber) => climber.id === "player");
   if (player === undefined) {
     throw new Error("The saved climb has no player");

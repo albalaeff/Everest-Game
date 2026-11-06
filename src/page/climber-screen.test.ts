@@ -15,7 +15,13 @@ describe("ClimberScreen's words, content/climber.json", () => {
     const choices = [...Questionnaire.ONE, ...Questionnaire.SOME].flatMap((question) =>
       questionnaire.answers(question).map((id) => `${question}-${id}`),
     );
-    const names = [...ClimberScreen.TEXTS, "height-value", "weight-value", ...choices, ...guide.names];
+    const names = [
+      ...ClimberScreen.TEXTS,
+      "height-value",
+      "weight-value",
+      ...choices,
+      ...guide.names,
+    ];
     const english: Readonly<Record<string, string>> = texts.en;
     const russian: Readonly<Record<string, string>> = texts.ru;
 

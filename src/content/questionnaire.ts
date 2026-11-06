@@ -82,8 +82,12 @@ export class Questionnaire {
       return typeof value === "number" && value >= min && value <= max;
     });
     const choices =
-      Questionnaire.ONE.every((question) => this.answers(question).includes(given[question] as string)) &&
-      Questionnaire.SOME.every((question) => Questionnaire.some(given[question], this.answers(question)));
+      Questionnaire.ONE.every((question) =>
+        this.answers(question).includes(given[question] as string),
+      ) &&
+      Questionnaire.SOME.every((question) =>
+        Questionnaire.some(given[question], this.answers(question)),
+      );
     if (!numbers || !choices) {
       return null;
     }

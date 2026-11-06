@@ -182,7 +182,9 @@ describe("Section: the Khumbu Icefall from content/route/icefall.json", () => {
     expect(of(climbers, Section.PLAYER)).toMatchObject({ technique: 0.6 });
     expect(of(bodies, "teammate")).toMatchObject({ mass: 68, fitness: 1 });
     expect(of(climbers, "teammate")).toMatchObject({ technique: 1 });
-    expect(section.scenario(1)).toEqual(section.scenario(1, { mass: 75, fitness: 1, technique: 1 }));
+    expect(section.scenario(1)).toEqual(
+      section.scenario(1, { mass: 75, fitness: 1, technique: 1 }),
+    );
   });
 
   it("refuses a climber with no body", () => {

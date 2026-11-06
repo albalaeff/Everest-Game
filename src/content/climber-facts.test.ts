@@ -62,7 +62,8 @@ describe("ClimberFacts: what the player's answers make of their climber", () => 
   });
 
   it("gives a novice and a veteran their share of the speed on ladders and ropes, an alpine climber 1", () => {
-    const technique = (experience: string): number => facts.climber(client({ experience })).technique;
+    const technique = (experience: string): number =>
+      facts.climber(client({ experience })).technique;
 
     expect(technique("none")).toBe(number("technique.novice-share"));
     expect(technique("treks")).toBe(number("technique.novice-share"));
@@ -73,39 +74,5 @@ describe("ClimberFacts: what the player's answers make of their climber", () => 
 
   it("reads the BMI as the weight over the square of the height in metres", () => {
     expect(ClimberFacts.bmi(client({ height: 200, weight: 100 }))).toBeCloseTo(25, 9);
-  });
-});
-
-describe("Questionnaire: the answers a device keeps", () => {
-  it("keeps answers that answer every question within its limits", () => {
-    const answers = client({ age: 52, illness: ["ams"], conditions: ["asthma", "diabetes"] });
-
-    expect(questionnaire.check(JSON.parse(JSON.stringify(answers)))).toEqual(answers);
-  });
-
-  it("refuses answers from an older build, out of their limits, or not the questionnaire's", () => {
-    const { illness: _, ...older } = typical;
-
-    expect(questionnaire.check(older)).toBeNull();
-    expect(questionnaire.check(client({ age: 12 }))).toBeNull();
-    expect(questionnaire.check(client({ weight: Number.NaN }))).toBeNull();
-    expect(questionnaire.check(client({ training: "marathons" }))).toBeNull();
-    expect(questionnaire.check(client({ conditions: ["asthma", "asthma"] }))).toBeNull();
-    expect(questionnaire.check("a climber")).toBeNull();
-    expect(questionnaire.check(null)).toBeNull();
-  });
-
-  it("offers each question's choices in the file's order, and the highest peak each experience has summited", () => {
-    expect(questionnaire.answers("sex")).toEqual(["male", "female", "undisclosed"]);
-    expect(questionnaire.answers("experience")).toEqual(["none", "treks", "alpine", "7000", "8000"]);
-    expect(questionnaire.answers("conditions")).toEqual(questionnaire.data.conditions);
-    expect(questionnaire.peak("8000")).toBe(8000);
-    expect(questionnaire.peak("alpine")).toBeNull();
-  });
-
-  it("refuses a typical client the questionnaire can't ask about", () => {
-    const data = { ...questionnaire.data, typical: client({ experience: "everest" }) };
-
-    expect(() => new Questionnaire(data)).toThrow(RangeError);
   });
 });

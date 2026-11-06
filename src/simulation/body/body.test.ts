@@ -163,7 +163,10 @@ describe("Body: fatigue", () => {
     const fit = hike.body.climber("anna").tiredness;
     hike.hours(3, [{ kind: "walk", climber: "anna", direction: "stop" }]);
 
-    expect(hike.ridge.climber("boris").altitude).toBeCloseTo(hike.ridge.climber("anna").altitude, 6);
+    expect(hike.ridge.climber("boris").altitude).toBeCloseTo(
+      hike.ridge.climber("anna").altitude,
+      6,
+    );
     expect(fit).toBe("fresh");
     expect(hike.body.climber("boris").tiredness).toBe("tired");
   });

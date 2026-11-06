@@ -40,10 +40,12 @@ test("a heavy, untrained climber new to the mountains hears what it means, and s
   await readTheDisclaimer(page);
   await choice(page, "Alone").click();
   const screen = climberScreen(page);
-  await expect(screen.getByLabel("Weight")).toHaveValue("75");
+  // A training's words have weights in them: the number is the one question that's a spinbutton.
+  const weight = screen.getByRole("spinbutton", { name: "Weight" });
+  await expect(weight).toHaveValue("75");
   await expect(guide(page)).toContainText("about as fit as most of our clients");
 
-  await screen.getByLabel("Weight").fill("110");
+  await weight.fill("110");
   await screen.getByLabel("I avoid walking and exercise").check();
   await screen.getByLabel("None", { exact: true }).check();
 

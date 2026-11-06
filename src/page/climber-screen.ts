@@ -84,6 +84,9 @@ export class ClimberScreen {
       if (this.dialog.hidden) {
         return;
       }
+      // An answer that keeps the keys, hidden, keeps them from the climb: the controls leave keys
+      // typed into a field alone.
+      this.dialog.querySelector<HTMLElement>(":focus")?.blur();
       this.dialog.hidden = true;
       then(answers);
     };
@@ -149,9 +152,9 @@ export class ClimberScreen {
 
   private advise(answers: ClimberAnswers): void {
     this.advice.replaceChildren(
-      ...this.guide.lines(answers).map(({ name, fills }) =>
-        this.written("li", this.texts.say(name, fills)),
-      ),
+      ...this.guide
+        .lines(answers)
+        .map(({ name, fills }) => this.written("li", this.texts.say(name, fills))),
     );
   }
 

@@ -228,7 +228,10 @@ describe("SlopePhysics: technique", () => {
 
     ladder.play(40, [walk("anna", "right")]);
     slope.play(1, [clip("anna"), clip("boris")]);
-    slope.play(100, ["anna", "boris", "vera"].map((id) => walk(id, "right")));
+    slope.play(
+      100,
+      ["anna", "boris", "vera"].map((id) => walk(id, "right")),
+    );
 
     expect(ladder.physics.climber("anna").x).toBeCloseTo(20.5, 6);
     const [clipped = 0, usual = 0, unclipped = 0] = ["anna", "boris", "vera"].map((id) =>

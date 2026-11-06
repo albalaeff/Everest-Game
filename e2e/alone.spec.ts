@@ -8,6 +8,7 @@ import {
   atRest,
   choice,
   climberScreen,
+  goOnWithTheClimb,
   openTheGame,
   readTheDisclaimer,
   savedClimb,
@@ -36,8 +37,7 @@ test("a climb alone goes on after a reload where the climber was, and [Start ove
   // Saved every ten seconds of play: twenty steps a second.
   await expect.poll(() => savedStep(page), SAVING).toBeGreaterThanOrEqual(200);
 
-  await readTheDisclaimer(page);
-  await choice(page, "Alone").click();
+  await goOnWithTheClimb(page);
 
   await expect(climberScreen(page)).toBeHidden();
   await expect.poll(() => along(page, "player")).toBeCloseTo(left, 1);

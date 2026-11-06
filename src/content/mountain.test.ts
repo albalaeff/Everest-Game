@@ -48,7 +48,9 @@ describe("Mountain", () => {
     };
 
     expect(mountain.scenario(7, typical)).toEqual(mountain.scenario(7));
-    expect(walked({ ...typical, weight: 110, training: "none" })).toBeLessThan(walked(typical) - 0.5);
+    expect(walked({ ...typical, weight: 110, training: "none" })).toBeLessThan(
+      walked(typical) - 0.5,
+    );
   });
 
   it("runs the mountain's clock at the knowledge base's ratio", () => {
