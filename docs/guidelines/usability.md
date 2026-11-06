@@ -1,6 +1,6 @@
 # Usability
 
-How the game is learnt, and played for six hours by everyone, on every device ([../guidelines.md](../guidelines.md) has the principles): teaching, feedback, mistakes, interruptions, the settings, accessibility and the four input devices. The [Game Accessibility Guidelines](https://gameaccessibilityguidelines.com/)' basic level is the floor, and the [Xbox Accessibility Guidelines](https://learn.microsoft.com/en-us/gaming/accessibility/guidelines) (XAG) give the detail; text and colour are in [interface.md](interface.md).
+How the game is learnt, and played for two hours by everyone, on every device ([../guidelines.md](../guidelines.md) has the principles): teaching, feedback, mistakes, interruptions, the settings, accessibility and the four input devices. The [Game Accessibility Guidelines](https://gameaccessibilityguidelines.com/)' basic level is the floor, and the [Xbox Accessibility Guidelines](https://learn.microsoft.com/en-us/gaming/accessibility/guidelines) (XAG) give the detail; text and colour are in [interface.md](interface.md).
 
 ## Teaching
 

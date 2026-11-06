@@ -32,11 +32,11 @@ async function height(page: Page): Promise<number> {
 }
 
 /** The camp's stretch begins 461 m along the ground, 270 m across the picture, on the flat; the
- * climb is saved a step short of it, 4 h 50 min of the mountain's time after setting off: 29,000
- * steps at 12 times play. */
+ * climb is saved a step short of it, 4 h 50 min of the mountain's time after setting off: 9,667
+ * steps at 36 times play. */
 const CAMP_1_EDGE = 460.8;
 const CAMP_1_X = 270;
-const STEPS_TO_CAMP_1 = 29_000;
+const STEPS_TO_CAMP_1 = 9_667;
 
 test.describe("on a screen of 630 by 360", () => {
   test.use({ viewport: { width: 630, height: 360 } });
@@ -46,7 +46,9 @@ test.describe("on a screen of 630 by 360", () => {
   }) => {
     await openTheGame(page);
 
-    await expect(page.locator("#readout-clock")).toHaveText("03:00");
+    // The readout says 03:00 for under two seconds of play, which an expect's polls, a second
+    // apart, can miss: by then it may say a minute or two past.
+    await expect(page.locator("#readout-clock")).toHaveText(/^03:0\d$/);
     await expect(page.locator("#readout-altitude")).toHaveText(/^5,3\d\d m$/);
     await expect(page.locator("#slope")).toHaveAttribute("data-tents", "6", { timeout: 15_000 });
     // A tent stands 3 m behind the climber: 54 px left of the anchor, a few pixels up its canvas.

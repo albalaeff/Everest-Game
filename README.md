@@ -1,6 +1,6 @@
 # Everest
 
-A 2D browser game: a simulator-trainer for climbing Everest by the South route. The player completes a whole expedition in 5–7 hours and learns the decisions that save lives in real mountains: the turnaround time, the symptoms of altitude illness, the oxygen arithmetic, staying clipped in. Every number and piece of advice comes from an open source and says so; the game replaces no course, instructor or doctor, and says that too. [spec.md](spec.md) is the plan: the concept, the systems, the gameplay, co-op, the training, the real accidents, the architecture and the development plan.
+A 2D browser game: a simulator-trainer for climbing Everest by the South route. The player completes a whole expedition in about 2 hours and learns the decisions that save lives in real mountains: the turnaround time, the symptoms of altitude illness, the oxygen arithmetic, staying clipped in. Every number and piece of advice comes from an open source and says so; the game replaces no course, instructor or doctor, and says that too. [spec.md](spec.md) is the plan: the concept, the systems, the gameplay, co-op, the training, the real accidents, the architecture and the development plan.
 
 ## Contents
 

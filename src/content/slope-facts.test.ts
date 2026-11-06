@@ -8,6 +8,9 @@ const knowledge = new KnowledgeBase(KNOWLEDGE_FILES);
 const { settings } = new SlopeFacts(knowledge);
 const number = (id: string): number => knowledge.number(id);
 const range = (id: string) => knowledge.range(id);
+/** How many times faster than in life the game goes over the drawn ground: the clock runs
+ * `time.compression` times faster than play, on ground drawn at 1/`route.drawn-scale`. */
+const speedUp = number("time.compression") / number("route.drawn-scale");
 
 describe("SlopeFacts: the slope physics' numbers from the knowledge base", () => {
   it("takes gravity and the snow's friction from their facts", () => {
@@ -56,16 +59,20 @@ describe("SlopeFacts: the slope physics' numbers from the knowledge base", () =>
     expect(settings.walkingCost).toHaveLength(5);
   });
 
-  it("walks on the fitted power, no faster than the fitted fastest walk, up to the Icefall's steepest", () => {
-    expect(settings.walkingPower).toBe(number("technique.walking-power"));
-    expect(settings.fastestWalk).toBe(number("technique.fastest-walk"));
+  it("goes faster than in life over the drawn ground, as the clock runs faster than the drawing's scale", () => {
+    expect(speedUp).toBeGreaterThan(1);
+  });
+
+  it("walks on the fitted power, no faster than the fitted fastest walk, both sped up, up to the Icefall's steepest", () => {
+    expect(settings.walkingPower).toBe(number("technique.walking-power") * speedUp);
+    expect(settings.fastestWalk).toBe(number("technique.fastest-walk") * speedUp);
     expect(settings.steepest).toBe(range("route.icefall-steepness").max);
   });
 
-  it("slips nowhere up to the slip-free steepness, and at the fitted chance on the steepest", () => {
+  it("slips nowhere up to the slip-free steepness, and on the steepest at the fitted chance sped up, so each metre slips as often as in life", () => {
     const steepest = range("route.icefall-steepness").max;
     const slipFree = number("technique.slip-free-steepness");
-    const chance = number("technique.slip-chance-steep");
+    const chance = number("technique.slip-chance-steep") * speedUp;
 
     expect(settings.slipChance).toEqual([
       [-steepest, chance],
@@ -77,16 +84,18 @@ describe("SlopeFacts: the slope physics' numbers from the knowledge base", () =>
     expect(slipFree).toBeLessThan(steepest);
   });
 
-  it("crosses, climbs and comes down a ladder at the fitted speeds, slipping at one chance", () => {
+  it("crosses, climbs and comes down a ladder at the fitted speeds, slipping at one chance, all sped up", () => {
     expect(settings.ladderSpeed).toEqual([
-      [-SlopeFacts.WALL, number("technique.ladder-speed-down")],
-      [0, number("technique.ladder-speed-across")],
-      [SlopeFacts.WALL, number("technique.ladder-speed-up")],
+      [-SlopeFacts.WALL, number("technique.ladder-speed-down") * speedUp],
+      [0, number("technique.ladder-speed-across") * speedUp],
+      [SlopeFacts.WALL, number("technique.ladder-speed-up") * speedUp],
     ]);
-    expect(settings.ladderSlipChance).toEqual([[0, number("technique.ladder-slip-chance")]]);
+    expect(settings.ladderSlipChance).toEqual([
+      [0, number("technique.ladder-slip-chance") * speedUp],
+    ]);
   });
 
-  it("reaches, knocks and arrests by the records", () => {
+  it("reaches, knocks and arrests by the records, at life size as the falls are", () => {
     expect(settings.cowstail).toBe(number("technique.cowstail-reach"));
     expect(settings.knock).toBe(number("technique.knock-speed"));
     expect(settings.arrestSpeed).toBe(number("technique.arrest-speed"));

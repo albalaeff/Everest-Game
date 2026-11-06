@@ -166,7 +166,7 @@
     {
       "id": "technique.walking-power",
       "kind": "coefficient",
-      "claim": "The power a fresh typical client at sea level, at a steady pace and carrying nothing, walks on, in watts for each kilogram they move: the body scales it by the capacity the altitude leaves, 60% at 5,000 m, and by the pack, and a step goes as fast as it pays for on the ground's gradient (technique.walking-cost-*). Fitted with the fastest walk so that a steady first crossing of the Icefall, drawn at 1/12 of its length with its walls and crevasses at life size, takes about 5 hours, the middle of the 3–7 the sources give: 4.9.",
+      "claim": "The power a fresh typical client at sea level, at a steady pace and carrying nothing, walks on, in watts for each kilogram they move: the body scales it by the capacity the altitude leaves, 60% at 5,000 m, and by the pack, and a step goes as fast as it pays for on the ground's gradient (technique.walking-cost-*). Fitted with the fastest walk so that a steady first crossing of the Icefall, drawn at 1/12 of its length (route.drawn-scale) with its walls and crevasses at life size, takes about 5 hours, the middle of the 3–7 the sources give: 4.9.",
       "status": "source only",
       "value": 2.5,
       "unit": "W/kg",
@@ -221,7 +221,7 @@
     {
       "id": "technique.ladder-speed-across",
       "kind": "coefficient",
-      "claim": "How fast that fresh climber at sea level crosses a ladder laid flat over a crevasse, in metres a second. The ladders are drawn at life size on a section drawn at 1/12, so a ladder takes twelve times its real mountain minutes: fitted so that the Icefall's ladders take about half an hour of its hours together.",
+      "claim": "How fast that fresh climber at sea level crosses a ladder laid flat over a crevasse, in metres a second. The ladders are drawn at life size on a section drawn at 1/12 (route.drawn-scale), so a ladder takes twelve times its real mountain minutes: fitted so that the Icefall's ladders take about half an hour of its hours together.",
       "status": "source only",
       "value": 0.6,
       "unit": "m/s",
