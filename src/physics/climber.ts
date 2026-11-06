@@ -36,6 +36,11 @@ export interface ClimberView {
   /** The rope each cowstail is clipped to, or none: the first's is the jumar's. */
   readonly first: string | null;
   readonly second: string | null;
+  /** Where each cowstail's carabiner is on its rope, or none: the picture draws them there. */
+  readonly firstAt: Point | null;
+  readonly secondAt: Point | null;
+  /** Whether their hand slides the jumar: its key is held. */
+  readonly jumarHeld: boolean;
   /** The ladder they're on, or none. */
   readonly ladder: string | null;
   /** Each fall that's over, in order. */
@@ -87,6 +92,11 @@ class Carabiner {
 
   save(): CarabinerSave {
     return { rope: this.rope.id, slide: this.slide };
+  }
+
+  /** Where it is on its rope. */
+  get at(): Point {
+    return this.rope.at(this.slide);
   }
 
   /** Slides along the rope to where it's nearest the climber. */
@@ -311,6 +321,9 @@ export class Climber {
       exertion: this.exertion,
       first: this.first?.rope.id ?? null,
       second: this.second?.rope.id ?? null,
+      firstAt: this.first?.at ?? null,
+      secondAt: this.second?.at ?? null,
+      jumarHeld: this.jumarHeld,
       ladder: this.onLadder?.ladder.id ?? null,
       falls: [...this.falls],
     };

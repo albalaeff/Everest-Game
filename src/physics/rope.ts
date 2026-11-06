@@ -171,6 +171,13 @@ export class Rope {
     return best;
   }
 
+  /** Where a carabiner at `slide` is: on the link it's on, as far along it. */
+  at(slide: Slide): Point {
+    const index = this.linkAt(slide);
+    const share = Math.min(Math.max(slide / this.link - index, 0), 1);
+    return Rope.along(this.linkOf(index), share);
+  }
+
   /** Slides a carabiner from where it is to the point of the rope nearest a climber, link by
    * link: it runs along the rope, and can't jump across a loop of it. */
   slideToward(slide: Slide, point: Point): Slide {

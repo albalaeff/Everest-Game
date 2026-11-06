@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 
 import type { ExpeditionSave } from "../simulation";
 import type { RopeLayout, SlopeLayout } from "./slope-physics";
+import type { Point } from "./terrain";
 import { Climb } from "./testing/climb";
 import { TestMountain } from "./testing/test-mountain";
 
@@ -22,6 +23,22 @@ const HELD_WITHIN = 0.5 + TestMountain.SETTINGS.cowstail;
 
 const onTheLine = (along: number): SlopeLayout =>
   TestMountain.SLOPE.layout([{ id: "anna", along }], [LOWER, UPPER]);
+
+/** How far a point is from a rope's chain of points: its nearest link. */
+function fromTheRope(rope: readonly Point[], point: Point): number {
+  let nearest = Infinity;
+  for (const [index, from] of rope.slice(0, -1).entries()) {
+    const to = rope[index + 1] ?? from;
+    const x = to.x - from.x;
+    const y = to.y - from.y;
+    const share = Math.min(
+      Math.max(((point.x - from.x) * x + (point.y - from.y) * y) / (x * x + y * y || 1), 0),
+      1,
+    );
+    nearest = Math.min(nearest, distance(point, { x: from.x + x * share, y: from.y + y * share }));
+  }
+  return nearest;
+}
 
 /** Anna, 20 m up the slope, goes up the lower rope on the jumar until it stops her past the
  * anchor. */
@@ -128,6 +145,28 @@ describe("SlopePhysics: the jumar", () => {
     expect(distance(jumared, BOTTOM)).toBeGreaterThan(12);
     expect(slid.falls[0]?.drop).toBeGreaterThan(8);
     expect(distance(slid, BOTTOM)).toBeLessThanOrEqual(HELD_WITHIN + 0.01);
+  });
+
+  it("shows where each carabiner is on its rope, within a cowstail of its climber, for the picture", () => {
+    const climb = new Climb(TestMountain.CALM, onTheLine(up(15)));
+    const unclipped = climb.physics.climber("anna");
+
+    climb.play(200, [
+      clip("anna", "first"),
+      clip("anna", "second"),
+      jumar("anna", true),
+      walk("anna", "right"),
+    ]);
+    const anna = climb.physics.climber("anna");
+    const rope = climb.physics.rope("lower");
+
+    expect(unclipped).toMatchObject({ firstAt: null, secondAt: null, jumarHeld: false });
+    expect(anna.jumarHeld).toBe(true);
+    for (const at of [anna.firstAt, anna.secondAt]) {
+      const carabiner = at ?? { x: Infinity, y: Infinity };
+      expect(distance(anna, carabiner)).toBeLessThan(TestMountain.SETTINGS.cowstail + 0.1);
+      expect(fromTheRope(rope, carabiner)).toBeLessThan(1e-9);
+    }
   });
 
   it("goes on exactly from a save with the jumar held, through JSON", () => {
