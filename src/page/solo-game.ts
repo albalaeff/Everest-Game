@@ -46,7 +46,7 @@ export class SoloGame implements Played {
     }
   }
 
-  advance(seconds: number): void {
+  advance(seconds: number): number {
     const steps = this.pacer.due(seconds);
     for (let step = 0; step < steps; step += 1) {
       this.expedition.advance(step === 0 ? this.actions.take() : []);
@@ -55,6 +55,11 @@ export class SoloGame implements Played {
     if (this.unsaved >= SoloGame.SAVE_EVERY_SECONDS * SimulationClock.STEPS_PER_SECOND) {
       this.save();
     }
+    return steps;
+  }
+
+  get progress(): number {
+    return this.pacer.progress;
   }
 
   /** Saves the expedition now: the tab going to the background, the page closing. */

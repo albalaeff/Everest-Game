@@ -18,6 +18,7 @@ const URL = "ws://localhost:8787/rooms/K7PX3";
 const TOKEN = "anna-token";
 const VERSION = "f06f24b";
 const HELLO: Hello = { type: "hello", token: TOKEN, version: VERSION };
+const FRAME = 1 / 60;
 const mountain = new Mountain(new KnowledgeBase(KNOWLEDGE_FILES));
 
 /** A socket as a test drives it: what the client sent, and what the room would. */
@@ -177,11 +178,27 @@ describe("RoomClient", () => {
       actions: [{ kind: "walk", climber: "player", direction: "right" }],
     });
     browser.socket.receive({ type: "step", step: 1, actions: [] });
-    client.advance();
+    client.advance(FRAME);
 
     expect(client.expedition?.step).toBe(2);
     expect(rules.physics.climber("player").walking).toBe("right");
     expect(rules.physics.climber("player").x).toBeGreaterThan(10);
+  });
+
+  it("says how many steps a frame took, and how far the next one has come since, for the picture", () => {
+    const { client, browser } = joined();
+
+    browser.socket.receive({ type: "step", step: 0, actions: [] });
+    browser.socket.receive({ type: "step", step: 1, actions: [] });
+    expect(client.advance(FRAME)).toBe(2);
+    expect(client.progress).toBe(0);
+    expect(client.advance(0.02)).toBe(0);
+    expect(client.progress).toBeCloseTo(0.4, 9);
+    expect(client.advance(0.1)).toBe(0);
+    expect(client.progress).toBe(1);
+    browser.socket.receive({ type: "step", step: 2, actions: [] });
+    expect(client.advance(FRAME)).toBe(1);
+    expect(client.progress).toBe(0);
   });
 
   it("sends what the player did with the next frame, and never runs it here first", () => {
@@ -190,8 +207,8 @@ describe("RoomClient", () => {
     client.send({ kind: "walk", climber: "player", direction: "right" });
     client.send({ kind: "panel", panel: "radio" });
     client.send({ kind: "view", change: "farther" });
-    client.advance();
-    client.advance();
+    client.advance(FRAME);
+    client.advance(FRAME);
 
     expect(browser.socket.sent).toEqual([
       HELLO,
@@ -222,12 +239,12 @@ describe("RoomClient", () => {
     browser.elapse();
 
     client.send({ kind: "check-self", climber: "player" });
-    client.advance();
+    client.advance(FRAME);
     browser.socket.open();
-    client.advance();
+    client.advance(FRAME);
     const beforeTheWelcome = [...browser.socket.sent];
     browser.socket.receive(welcome(50));
-    client.advance();
+    client.advance(FRAME);
 
     expect(beforeTheWelcome).toEqual([HELLO]);
     expect(browser.socket.sent).toEqual([
@@ -261,7 +278,7 @@ describe("RoomClient", () => {
     const { client, browser, heard } = joined();
 
     browser.socket.receive({ type: "step", step: 5, actions: [] });
-    client.advance();
+    client.advance(FRAME);
 
     expect(browser.socket.closed).toBe(true);
     expect(heard.losses).toBe(1);

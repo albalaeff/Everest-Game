@@ -59,6 +59,8 @@ export class RoomClient extends GameActionSink implements Played {
   private buffered: Step[] = [];
   private queued: GameAction[] = [];
   private over = false;
+  /** Real seconds since a frame last took a step. */
+  private sinceStep = 0;
 
   /** `code`: the room to join, or null to open a new one, whose code the welcome then names.
    * `hello`: the player's token and the game's version, said on every connection. */
@@ -94,18 +96,33 @@ export class RoomClient extends GameActionSink implements Played {
     this.queued.push(action);
   }
 
-  /** Takes the room's steps that have come since the last frame, and sends the player's actions. */
-  advance(): void {
+  /** How far the room's next step has come, from 0 up to 1: by the real time since this browser
+   * last took a step, since the room sends them at its own pace. */
+  get progress(): number {
+    return Math.min(1, this.sinceStep * SimulationClock.STEPS_PER_SECOND);
+  }
+
+  /** Takes the room's steps that have come since the last frame, `seconds` ago, and sends the
+   * player's actions: the steps it took, how many. */
+  advance(seconds: number): number {
+    const taken = this.takeSteps();
+    this.sinceStep = taken > 0 ? 0 : this.sinceStep + Math.max(seconds, 0);
+    return taken;
+  }
+
+  private takeSteps(): number {
     const { played, socket } = this;
     if (played === null || socket === null || socket !== this.welcomedOn) {
-      return;
+      return 0;
     }
+    let taken = 0;
     for (const step of this.buffered) {
       if (step.step !== played.step) {
         this.resync();
-        return;
+        return taken;
       }
       played.advance(step.actions);
+      taken += 1;
     }
     this.buffered = [];
     if (this.queued.length > 0) {
@@ -113,6 +130,7 @@ export class RoomClient extends GameActionSink implements Played {
       socket.send(JSON.stringify(message));
       this.queued = [];
     }
+    return taken;
   }
 
   private connect(): void {

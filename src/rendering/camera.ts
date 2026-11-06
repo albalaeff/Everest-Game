@@ -143,13 +143,13 @@ export class Camera {
     return { x: x + reach, y: y + (tool === "ice-axe" ? reach : -reach) };
   }
 
-  /** Closes on the climber, and glides on to its zoom, for `seconds` more: the same place after a
-   * second at 30 frames a second as at 60, and never past them. */
-  follow(seconds: number): void {
+  /** Closes on the climber, `on` the point the picture draws them at this frame, between the
+   * steps, and glides on to its zoom, for `seconds` more: the same place after a second at 30
+   * frames a second as at 60, and never past them. */
+  follow(seconds: number, on: Point = this.climber): void {
     const share = 1 - Math.exp(-Math.max(seconds, 0) / Camera.SETTLE_SECONDS);
-    const { x, y } = this.climber;
-    this.x += (x - this.x) * share;
-    this.y += (y - this.y) * share;
+    this.x += (on.x - this.x) * share;
+    this.y += (on.y - this.y) * share;
     this.glide = this.glide.after(seconds);
   }
 

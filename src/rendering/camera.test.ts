@@ -168,6 +168,20 @@ describe("Camera", () => {
     expect(camera.position.y).toBeCloseTo(5, 3);
   });
 
+  it("follows the climber as the picture draws them, between the steps, when it's told where", () => {
+    const climber = new StillClimber();
+    const camera = new Camera(climber, 640, 360);
+    climber.moveTo(16, 5);
+
+    for (let frame = 0; frame < 180; frame += 1) {
+      camera.follow(FRAME, { x: 12, y: 3 });
+    }
+
+    expect(camera.position.x).toBeCloseTo(12, 3);
+    expect(camera.position.y).toBeCloseTo(3, 3);
+    expect(camera.climber).toMatchObject({ x: 16, y: 5 });
+  });
+
   it("lands in the same place after a second at 30 frames a second as at 60", () => {
     const climber = new StillClimber();
     const phone = new Camera(climber, 640, 360);

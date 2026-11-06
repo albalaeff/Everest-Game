@@ -38,6 +38,11 @@ export class Palette {
   /** The camps' tents, lit from inside at night. */
   static readonly TENT = 0xe9a13b;
   static readonly TENT_DOOR = 0xb06a1e;
+  /** The prayer flags over Base Camp, blue, white, red, green and yellow in their order: muted, so
+   * the suits and the rope keep their colours. */
+  static readonly PRAYER_FLAGS: readonly number[] = [
+    0x5b7aa6, 0xdcd8cc, 0x9e5a52, 0x5f8a69, 0xc4ab6a,
+  ];
   /** The snow of the play plane: its body, its crest in the light, the shade of its sastrugi. */
   static readonly SNOW = 0xeef3f9;
   static readonly SNOW_CREST = 0xffffff;
