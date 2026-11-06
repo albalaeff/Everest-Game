@@ -71,13 +71,14 @@ interface InView {
 }
 
 /**
- * The slope itself, at the camera's own depth: the ground as the physics has it, its snow marked
- * with sastrugi and the boot track of the climbers before, its walls of ice, its ladders, its
- * ropes with their pickets, its hazards, the camps' tents, lit from inside at night, the prayer
- * flags over Base Camp, and every climber on it, drawn by `ClimberFigure`; the snow their boots
- * kick up, the spindrift the wind blows along the snow around the camera, its grains glinting in
- * the headlamps' beams, and the veil of a cloudy day behind the slope. In the picture alone, the ground runs on level past the section's ends, so
- * the view far out shows no cliff there. What moves is drawn between the steps
+ * The slope itself, at the camera's own depth: the ground as the physics has it, its snow and its
+ * hummocks (#168) marked with sastrugi and the boot track of the climbers before, its walls of
+ * ice, its ladders, its ropes with their pickets, its hazards, the camps' tents, lit from inside
+ * at night, the prayer flags over Base Camp, and every climber on it, drawn by `ClimberFigure`;
+ * the snow their boots kick up, the spindrift the wind blows along the snow around the camera,
+ * its grains glinting in the headlamps' beams, and the veil of a cloudy day behind the slope. In
+ * the picture alone, the ground runs on level past the section's ends, so the view far out shows
+ * no cliff there. What moves is drawn between the steps
  * (docs/guidelines/graphics.md → Motion): the climbers and the ropes, which `RopeCurve` draws
  * smooth, through the jumar in a climber's hand, and swaying on the gust where they hang free; a
  * ladder across a crevasse gives under the climbers on it. The snow and what marks it are drawn

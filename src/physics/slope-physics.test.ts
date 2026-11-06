@@ -759,6 +759,89 @@ describe("SlopePhysics: the rope", () => {
   });
 });
 
+describe("SlopePhysics: on the snow", () => {
+  const snowy = (layout: SlopeLayout): SlopeLayout => ({ ...layout, snow: TestMountain.SNOW });
+
+  it("walks the snow's hummocks slower than the flat: harder up each, and no faster down", () => {
+    const flat = new Climb(TestMountain.CALM, alone(TestMountain.FLAT, 10));
+    const bumpy = new Climb(TestMountain.CALM, snowy(alone(TestMountain.FLAT, 10)));
+    const heights: number[] = [];
+    const exertions: number[] = [];
+
+    for (const climb of [flat, bumpy]) {
+      climb.play(1, [walk("anna", "right")]);
+    }
+    for (let step = 1; step < 400; step += 1) {
+      flat.play(1);
+      bumpy.play(1);
+      const anna = bumpy.physics.climber("anna");
+      heights.push(anna.y);
+      exertions.push(anna.exertion);
+    }
+
+    expect(bumpy.physics.climber("anna").x).toBeLessThan(flat.physics.climber("anna").x - 0.3);
+    expect(Math.max(...heights) - Math.min(...heights)).toBeGreaterThan(0.15);
+    expect(Math.min(...exertions)).toBeLessThan(0.9);
+    expect(Math.max(...exertions)).toBe(1);
+  });
+
+  it("lays the ladders, the ropes and the climbers where the layout has them, on the snow", () => {
+    const rope = { id: "fixed", from: 2, to: 18, length: 16.5 };
+    const bridge = { id: "bridge", from: 20, to: 83 };
+    const layout = snowy(
+      TestMountain.CREVASSE.layout([{ id: "anna", along: 10 }], [rope], [bridge]),
+    );
+    const climb = new Climb(TestMountain.CALM, layout);
+    const ground = climb.physics.terrain;
+
+    climb.play(200);
+
+    expect(climb.physics.climber("anna")).toMatchObject({ x: 10, y: ground.height(10) });
+    expect(climb.physics.ladder("bridge")).toEqual([
+      { x: 20, y: 0 },
+      { x: 23, y: 0 },
+    ]);
+    for (const point of climb.physics.rope("fixed")) {
+      expect(point.y).toBeGreaterThanOrEqual(ground.height(point.x) - 1e-9);
+    }
+    expect(ground.points.length).toBeGreaterThan(TestMountain.CREVASSE.ground.length * 10);
+  });
+
+  it("keeps the line and how the snow lies on it in a save, not the snow's every point", () => {
+    const save = SlopePhysics.start(snowy(alone(TestMountain.FLAT, 10))) as {
+      readonly terrain: unknown;
+      readonly snow: unknown;
+    };
+
+    expect(save.terrain).toEqual(TestMountain.FLAT.ground);
+    expect(save.snow).toEqual(TestMountain.SNOW);
+    expect("snow" in (SlopePhysics.start(alone(TestMountain.FLAT, 10)) as object)).toBe(false);
+  });
+
+  it("goes on exactly from a save, the snow and all, through JSON", () => {
+    const climb = new Climb(TestMountain.CALM, snowy(alone(TestMountain.FLAT, 10)));
+    climb.play(100, [walk("anna", "right")]);
+    const resumed = new Climb(
+      TestMountain.CALM,
+      JSON.parse(JSON.stringify(climb.expedition.save())) as ExpeditionSave,
+    );
+
+    climb.play(100);
+    resumed.play(100);
+
+    expect(resumed.physics.terrain.points).toEqual(climb.physics.terrain.points);
+    expect(resumed.expedition.save()).toEqual(climb.expedition.save());
+  });
+
+  it("refuses snow lying level off the ground", () => {
+    const off = { ...TestMountain.SNOW, level: [{ from: 90, to: 120 }] };
+
+    expect(() => SlopePhysics.start({ ...alone(TestMountain.FLAT, 10), snow: off })).toThrow(
+      RangeError,
+    );
+  });
+});
+
 describe("SlopePhysics: the same climb everywhere", () => {
   const layout = TestMountain.SLOPE.layout(
     [

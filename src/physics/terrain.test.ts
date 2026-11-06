@@ -48,6 +48,48 @@ describe("Terrain", () => {
     expect(beside.along).toBeCloseTo(53 + 18, 12);
   });
 
+  it("measures a ground laid on a line along that line, and turns only at the line's corners", () => {
+    // A hump on 4 m of flat, measured along the flat under it.
+    const laid = new Terrain(
+      [
+        [0, 0],
+        [1, 0.1],
+        [2, 0],
+        [4, 0],
+      ],
+      { alongs: [0, 1, 2, 4], corners: [0, 4] },
+    );
+    const up = laid.ahead(0.5, 1);
+
+    expect(laid.length).toBe(4);
+    expect(laid.alongs).toEqual([0, 1, 2, 4]);
+    expect(laid.point(0.5)).toEqual({ x: 0.5, y: 0.05 });
+    expect(laid.point(3)).toEqual({ x: 3, y: 0 });
+    expect(up.x).toBeCloseTo(1 / Math.sqrt(1.01), 12);
+    expect(up.y).toBeCloseTo(0.1 / Math.sqrt(1.01), 12);
+    expect(laid.height(1.5)).toBeCloseTo(0.05, 12);
+    expect(laid.nearest({ x: 1, y: 2 }).along).toBeCloseTo(1, 12);
+    expect(laid.cornerAhead(0.5, 1)).toBe(4);
+    expect(laid.cornerAhead(1, 1)).toBe(4);
+    expect(laid.cornerAhead(3, -1)).toBe(0);
+  });
+
+  it("measures a line over its surface, every point a corner", () => {
+    expect(crevasse.alongs).toEqual([0, 20, 50, 53, 83, 110]);
+    expect(crevasse.corners).toEqual(crevasse.alongs);
+  });
+
+  it("refuses a measure that doesn't go on along the ground, or misses a point", () => {
+    const points: readonly (readonly [number, number])[] = [
+      [0, 0],
+      [1, 0],
+      [2, 0],
+    ];
+
+    expect(() => new Terrain(points, { alongs: [0, 1, 1], corners: [0, 1] })).toThrow(RangeError);
+    expect(() => new Terrain(points, { alongs: [0, 2], corners: [0, 2] })).toThrow(RangeError);
+  });
+
   it("refuses ground that goes back on itself or stands still", () => {
     expect(
       () =>

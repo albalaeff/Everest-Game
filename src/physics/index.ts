@@ -9,6 +9,7 @@ export type {
   RopeLayout,
   SlopeLayout,
   SlopeSettings,
+  SnowLayout,
 } from "./slope-physics";
 export type { GradientPoint, SteepnessPoint } from "./steepness";
 export { Terrain } from "./terrain";

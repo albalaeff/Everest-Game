@@ -9,6 +9,7 @@ import type {
   SlopeLayout,
   SlopeSettings,
 } from "../slope-physics";
+import type { SnowLayout } from "../snow";
 import { Terrain } from "../terrain";
 import type { Pair } from "../terrain";
 
@@ -80,6 +81,19 @@ export class TestMountain {
   static readonly ICY_LADDERS: SlopeSettings = {
     ...TestMountain.CALM,
     ladderSlipChance: [[0, 1]],
+  };
+  /** Snow to lay on a test mountain's ground: hummocks 3 m long rising 20 cm, and the crust's
+   * bumps on them, level a metre round the walls and the ladders and rising over 2 m past. */
+  static readonly SNOW: SnowLayout = {
+    waves: [
+      { length: 3, height: 0.2 },
+      { length: 1, height: 0.05 },
+    ],
+    rounding: 1,
+    margin: 1,
+    blend: 2,
+    seed: 1,
+    level: [],
   };
 
   /** A hundred metres of flat ground. */
