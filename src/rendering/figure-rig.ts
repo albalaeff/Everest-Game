@@ -5,7 +5,8 @@ import type { Joint, Pose } from "./climber-pose";
 import { FigureShapes } from "./figure-shapes";
 
 /** A figure's parts, each drawn once in the frame of what it's on (`FigureShapes`): each limb's
- * pair, the near one first, the boots, the pack and the torso, the neck and the head. */
+ * pair, the near one first, the boots, the pack and the torso, the neck, the head, and the mask,
+ * in the head's frame wherever it is. */
 export interface RigParts {
   readonly thighs: readonly [Container, Container];
   readonly shins: readonly [Container, Container];
@@ -16,14 +17,16 @@ export interface RigParts {
   readonly torso: Container;
   readonly neck: Container;
   readonly head: Container;
+  readonly mask: Container;
 }
 
 /**
  * A climber's figure as a rig (#168): its parts drawn once, each in its own frame, and moved each
  * frame to where `ClimberPose` has its bones, so a stride costs no drawing. A limb is shaded from
  * one side of it to the other, and turned over to keep its lit side towards the light as it
- * swings. What the parts look like is the subclass's: the climber in their kit, or the rim of
- * light round them.
+ * swings. The mask is on the face while the oxygen flows, and hangs from its strap on the chest
+ * while it doesn't (#87). What the parts look like is the subclass's: the climber in their kit,
+ * or the rim of light round them.
  */
 export abstract class FigureRig<Parts extends RigParts = RigParts> extends Container {
   /** Where the light on the figure comes from, in its own frame: ahead of the climber, above. */
@@ -33,13 +36,21 @@ export abstract class FigureRig<Parts extends RigParts = RigParts> extends Conta
   /** How far past square to the light a limb swings before its lit side turns over, so it
    * doesn't flicker there. */
   private static readonly TURN = 0.2;
+  /** The mask off the face: its middle, in the head's frame, hangs at this point of the chest, in
+   * the torso's, turned this far down from the torso's line, its valve below. */
+  private static readonly HUNG = {
+    middle: { x: 0.11, y: -0.07 },
+    at: { x: 0.2, y: 0.42 },
+    turn: -0.9,
+  };
 
   constructor(protected readonly parts: Parts) {
     super();
   }
 
-  /** Moves the parts to the pose, the chest swollen by `swell` of its depth with the breath. */
-  place(pose: Pose, swell: number): void {
+  /** Moves the parts to the pose, the chest swollen by `swell` of its depth with the breath, the
+   * mask on the face while the oxygen flows, `masked`, and on the chest while it doesn't. */
+  place(pose: Pose, swell: number, masked: boolean): void {
     const { parts } = this;
     for (const side of [0, 1] as const) {
       const leg = pose.legs[side];
@@ -61,6 +72,26 @@ export abstract class FigureRig<Parts extends RigParts = RigParts> extends Conta
     parts.head.position.set(head.x, head.y);
     // The head nods down by `nod`: its x ahead turns towards its -y.
     parts.head.rotation = -pose.nod;
+    FigureRig.wear(parts, masked);
+  }
+
+  /** The mask over the mouth and nose, where the head is; or off it, hanging on the chest. */
+  private static wear({ mask, head, torso }: RigParts, masked: boolean): void {
+    if (masked) {
+      mask.position.set(head.x, head.y);
+      mask.rotation = head.rotation;
+      return;
+    }
+    const { middle, at, turn } = FigureRig.HUNG;
+    const chest = FigureRig.at(torso, at);
+    const rotation = torso.rotation + turn;
+    const cos = Math.cos(rotation);
+    const sin = Math.sin(rotation);
+    mask.position.set(
+      chest.x - (middle.x * cos - middle.y * sin),
+      chest.y - (middle.x * sin + middle.y * cos),
+    );
+    mask.rotation = rotation;
   }
 
   /** Where a point of a part's own frame is in the figure's, as the part was last placed. */

@@ -2,7 +2,7 @@ import { Graphics, Particle, ParticleContainer, Texture } from "pixi.js";
 
 import type { ClimberView, Point, SlopePhysics, Terrain } from "../physics";
 import { SeededRandom } from "../simulation";
-import type { Body, ClimberId, ObjectiveHazards } from "../simulation";
+import type { Body, Breathing, ClimberId, ObjectiveHazards } from "../simulation";
 import type { Atmosphere } from "./atmosphere";
 import type { Beam } from "./beam";
 import type { Camera } from "./camera";
@@ -11,12 +11,14 @@ import type { CampStretch } from "./camp-signs";
 import { ClimberFigure } from "./climber-figure";
 import { ClimberPose } from "./climber-pose";
 import { ClimberReading } from "./climber-reading";
+import { Crowd } from "./crowd";
 import { Drift } from "./drift";
 import { HazardDrawing } from "./hazard-drawing";
 import { LadderBow } from "./ladder-bow";
 import { LeastSize } from "./least-size";
 import { Palette } from "./palette";
 import { ParallaxLayer } from "./parallax-layer";
+import { PlayerMark } from "./player-mark";
 import { PrayerFlags } from "./prayer-flags";
 import { RopeCurve } from "./rope-curve";
 import type { Held } from "./rope-curve";
@@ -74,7 +76,8 @@ interface InView {
  * The slope itself, at the camera's own depth: the ground as the physics has it, its snow and its
  * hummocks (#168) marked with sastrugi and the boot track of the climbers before, its walls of
  * ice, its ladders, its ropes with their pickets, its hazards, the camps' tents, lit from inside
- * at night, the prayer flags over Base Camp, and every climber on it, drawn by `ClimberFigure`;
+ * at night, the prayer flags over Base Camp, and every climber on it, drawn by `ClimberFigure`,
+ * their mask on as their oxygen flows, and the player's marked in a crowd (`Crowd`, `PlayerMark`);
  * the snow their boots kick up, the spindrift the wind blows along the snow around the camera,
  * its grains glinting in the headlamps' beams, and the veil of a cloudy day behind the slope. In
  * the picture alone, the ground runs on level past the section's ends, so the view far out shows
@@ -84,8 +87,8 @@ interface InView {
  * ladder across a crevasse gives under the climbers on it. The snow and what marks it are drawn
  * once in white and tinted by the hour's light; the lines and the ground's edge when the scale
  * changes, since they never get thinner than `LeastSize` allows; a rope or a ladder when it moves
- * too, and the tents and the flags while the wind blows on them, in view; and the climbers and
- * what comes down each frame.
+ * too, and the tents and the flags while the wind blows on them, in view; and the climbers, the
+ * mark and what comes down each frame.
  */
 export class SlopeLayer extends ParallaxLayer {
   private static readonly SURFACE_METRES = 0.15;
@@ -163,6 +166,7 @@ export class SlopeLayer extends ParallaxLayer {
   private readonly ropes: readonly DrawnRope[];
   private readonly figures: readonly DrawnClimber[];
   private readonly playerFigure: ClimberFigure | null;
+  private readonly mark = new PlayerMark();
   private readonly puffs = new SnowPuffs();
   private readonly puffGraphics = new Graphics();
   private readonly hazards: HazardDrawing;
@@ -209,6 +213,7 @@ export class SlopeLayer extends ParallaxLayer {
     private readonly physics: SlopePhysics,
     hazards: ObjectiveHazards,
     private readonly body: Body,
+    private readonly oxygen: Breathing,
     camps: readonly CampStretch[],
     climbers: readonly ClimberId[],
     player: ClimberId,
@@ -314,7 +319,7 @@ export class SlopeLayer extends ParallaxLayer {
       return particle;
     });
     this.glints.blendMode = "add";
-    this.addChild(this.driftContainer, this.glints, this.hazards.falling);
+    this.addChild(this.driftContainer, this.glints, this.hazards.falling, this.mark);
   }
 
   /** How many climbers are drawn. */
@@ -344,9 +349,9 @@ export class SlopeLayer extends ParallaxLayer {
   }
 
   /** Each frame, `seconds` after the last, as the camera sees it and in this frame's air: the
-   * snow in the hour's light, the lines at the camera's scale, the climbers as they are, the
-   * ladders under them and the ropes through their hands, the camps in the wind, the snow they
-   * kick up, the spindrift on the gust, and what's coming down. */
+   * snow in the hour's light, the lines at the camera's scale, the climbers as they are and the
+   * player's mark, the ladders under them and the ropes through their hands, the camps in the
+   * wind, the snow they kick up, the spindrift on the gust, and what's coming down. */
   draw(seconds: number, camera: Camera, atmosphere: Atmosphere): void {
     this.hazards.draw(seconds);
     this.light(atmosphere);
@@ -363,11 +368,13 @@ export class SlopeLayer extends ParallaxLayer {
     this.beams.length = 0;
     for (const { id, figure, view: climber } of this.figures) {
       const sag = this.sagUnder(climber, figure.at);
-      figure.show(this.body.climber(id), atmosphere, seconds, size, sag);
+      const masked = this.oxygen.flow(id) > 0;
+      figure.show(this.body.climber(id), masked, atmosphere, seconds, size, sag);
       if (figure.beam !== null) {
         this.beams.push(figure.beam);
       }
     }
+    this.markPlayer(camera, size);
     for (const ladder of this.ladders) {
       if (rescaled || ladder.bowed || ladder.loads.length > 0) {
         this.drawLadder(ladder, size);
@@ -404,6 +411,22 @@ export class SlopeLayer extends ParallaxLayer {
     this.tintedWith = atmosphere;
     this.tentGlow.alpha = atmosphere.light.lamps * SlopeLayer.TENT_GLOW_ALPHA;
     this.tentGlow.visible = this.tentGlow.alpha > 0.01;
+  }
+
+  /** The mark over the player's head while they're in a crowd on the screen: as high over where
+   * they're drawn as the figure is tall, so it stays still as they stride. */
+  private markPlayer(camera: Camera, size: LeastSize): void {
+    const player = this.playerFigure;
+    const crowd = new Crowd(
+      camera,
+      this.figures.map(({ figure }) => figure.at),
+    );
+    this.mark.visible = player !== null && crowd.marked;
+    if (player !== null && crowd.marked) {
+      const { x, y } = player.at;
+      const tall = ClimberFigure.HEIGHT_METRES * size.climber(ClimberFigure.HEIGHT_METRES);
+      this.mark.place({ x, y: y + tall }, camera.pixelsPerMetre);
+    }
   }
 
   /** Where along each ladder across a crevasse each climber on it is drawn, this frame. */
