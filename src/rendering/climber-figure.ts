@@ -1,26 +1,51 @@
 import { Container, FillGradient, Graphics } from "pixi.js";
 
-import type { ClimberView } from "../physics";
+import type { ClimberView, Point, SlopePhysics } from "../physics";
 import type { BodyView } from "../simulation";
 import type { Atmosphere } from "./atmosphere";
 import { Beam } from "./beam";
 import { Breathing } from "./breathing";
 import { ClimberPose } from "./climber-pose";
 import type { Joint, Limb, Pose } from "./climber-pose";
-import type { LeastSize } from "./least-size";
+import { Cowstails } from "./cowstails";
+import { LeastSize } from "./least-size";
 import { Palette } from "./palette";
+import { RopeBeside } from "./rope-beside";
+
+/** What a figure is drawn from each frame: the climber as the physics shows them, the fixed ropes
+ * their cowstails clip to, their body, whether their oxygen flows, and how far the ground under
+ * them rises a metre to the right. */
+export interface FigureState {
+  readonly climber: ClimberView;
+  readonly ropes: Pick<SlopePhysics, "rope">;
+  readonly body: BodyView;
+  readonly oxygen: boolean;
+  readonly rise: number;
+}
+
+/** Where the pack sits on the back: its middle, the way up the spine, and the way back from it. */
+interface OnTheBack {
+  readonly middle: Joint;
+  readonly up: Joint;
+  readonly back: Joint;
+}
 
 /**
  * A climber drawn in metres with the feet at the origin, facing +x and flipped to face the way
  * they last walked: a figure in a down suit with its baffles, boots and crampons, a pack with its
- * bottle and an ice axe, a harness with the two cowstails, the jumar on the rope in the near hand
- * when clipped, hood, mask and goggles, and a headlamp. It's lit as one figure, as #125's scene
- * is: a rim of the hour's light on the side the sun is, the far side cold, and at night the lamp's
- * beam, soft, ahead and down the slope, with the pool it throws on the snow. Its joints are
- * `ClimberPose`'s, paced by the ground the physics has them cover, and its chest and breath cloud
- * `Breathing`'s, by the altitude and the body; a fallen climber goes over, and a dead one lies
- * flat and dim, with no words on the screen (#24). It reads the physics and the body each frame
- * and keeps only the picture's own: the pose, the breath, the way it faces and how far it's come.
+ * lid, its strap over the suit, the bottle and an ice axe, a harness with the two cowstails, hood,
+ * goggles, the oxygen mask with its hose, and a headlamp. It's lit as one figure, as #125's scene
+ * is: a rim of the hour's light on the side the sun is, the pack's edge too, the far side cold,
+ * and at night the lamp's beam, soft, ahead and down the slope, with the pool it throws on the
+ * snow. Its joints are `ClimberPose`'s, paced by the ground the physics has them cover; its gear
+ * is where `Cowstails` puts it on the ropes the physics lays beside them (`RopeBeside`), each
+ * sling drawn as the rope is, a light line on a dark edge never thinner than `LeastSize` allows,
+ * so a sling out to the rope reads at a glance, and the rope lifted through the jumar as the slope
+ * draws the rope; the mask is on the face while the oxygen flows and hangs at the chest while it
+ * doesn't; and its chest and breath cloud are `Breathing`'s, by the altitude and the body. A
+ * fallen climber goes over, and a dead one lies flat and dim, with no words on the screen (#24).
+ * It reads the physics, the body and the oxygen each frame and keeps only the picture's own: the
+ * pose, the breath, the mask's place, the way it faces and how far it's come.
  */
 export class ClimberFigure extends Container {
   /** From the soles to the top of the head. */
@@ -58,13 +83,28 @@ export class ClimberFigure extends Container {
    * night, by day and in the glow of dawn and dusk. */
   private static readonly RIM_METRES = 0.025;
   private static readonly RIM_ALPHA = { night: 0.35, day: 0.45, glow: 0.95 };
-  /** The rope through the jumar: how far ahead of the hand it comes up off the snow, and how
-   * thick it's drawn. */
-  private static readonly ROPE_AHEAD = 1.3;
-  private static readonly ROPE_METRES = 0.06;
+  /** The rope lifted through the jumar, as wide as the slope draws the rope, and its dark edge as
+   * a share of its width each side. */
+  private static readonly ROPE_METRES = 0.07;
+  private static readonly ROPE_EDGE = 0.5;
+  /** The cowstails' slings: how wide, their dark edge as a share of that each side, and how far
+   * they sag, as a share of their length; and the gear on them, the carabiner's ring and the
+   * jumar's body. */
+  private static readonly SLING_METRES = 0.03;
+  private static readonly SLING_EDGE = 0.4;
+  private static readonly SLING_SAG = 0.12;
+  private static readonly CARABINER_METRES = 0.035;
   private static readonly JUMAR_SIZE = { length: 0.14, width: 0.06 };
   /** The ice axe strapped to the pack: its shaft's length and its head's. */
   private static readonly AXE = { shaft: 0.62, head: 0.26 };
+  /** The pack's lid, and the shoulder strap over the suit. */
+  private static readonly LID = 0.11;
+  private static readonly STRAP_METRES = 0.035;
+  /** How long the mask takes to go on or come off, how far below the shoulders it hangs when it's
+   * off, and how wide its hose is. */
+  private static readonly MASK_SECONDS = 0.3;
+  private static readonly MASK_HANGS = 0.14;
+  private static readonly HOSE_METRES = 0.025;
 
   private readonly pose = new ClimberPose();
   private readonly breathing = new Breathing();
@@ -77,6 +117,8 @@ export class ClimberFigure extends Container {
   private facing: 1 | -1 = 1;
   private travelled = 0;
   private last: Joint | null = null;
+  /** How far the mask is on the face, 0 hanging at the chest to 1. */
+  private masked = 0;
   /** The lamp's beam this frame, in the layer's metres, or none while it's off. */
   private shining: Beam | null = null;
 
@@ -91,16 +133,10 @@ export class ClimberFigure extends Container {
   }
 
   /** Puts the figure where the climber is and draws them as they are this frame, `seconds`
-   * after the last, as the physics and the body show them, in the frame's light, on ground that
-   * rises `rise` a metre to the right, and no smaller than `size` allows. */
-  show(
-    climber: ClimberView,
-    body: BodyView,
-    atmosphere: Atmosphere,
-    seconds: number,
-    size: LeastSize,
-    rise = 0,
-  ): void {
+   * after the last, as `state` shows them, in the frame's light, and no smaller than `size`
+   * allows. */
+  show(state: FigureState, atmosphere: Atmosphere, seconds: number, size: LeastSize): void {
+    const { climber, body } = state;
     this.position.set(climber.x, climber.y);
     if (climber.walking.includes("left")) {
       this.facing = -1;
@@ -113,13 +149,18 @@ export class ClimberFigure extends Container {
     this.last = { x: climber.x, y: climber.y };
     const grown = size.climber(ClimberFigure.HEIGHT_METRES);
     this.scale.set(this.facing * grown, grown);
-    const ahead = rise * this.facing;
+    const ahead = state.rise * this.facing;
+    const beside = (id: string, rotation: number): RopeBeside =>
+      new RopeBeside(state.ropes.rope(id).map((point) => this.local(point, rotation)));
+    // The near hand holds the jumar where it can lift the rope off the snow, read with the figure
+    // upright: it holds nothing in a fall.
+    const lifts = climber.first !== null && beside(climber.first, 0).lies();
     const pose = this.pose.advance(seconds, {
       travelled: this.travelled,
       moving: climber.moving,
       falling: climber.falling,
       dead: climber.dead,
-      onRope: climber.first !== null,
+      onRope: lifts,
       clipped: [climber.first, climber.second],
       onLadder: climber.ladder !== null,
       rise: ahead,
@@ -130,16 +171,42 @@ export class ClimberFigure extends Container {
     if (!climber.dead) {
       this.breathing.advance(seconds, Breathing.period(climber.altitude, body.tiredness, moving));
     }
+    const share = 1 - Math.exp(-Math.max(seconds, 0) / ClimberFigure.MASK_SECONDS);
+    this.masked += ((state.oxygen ? 1 : 0) - this.masked) * share;
     // Over onto the back, whichever way they face: the layer's y is up, so the sign is turned.
     this.rotation = pose.tilt * this.facing;
     this.alpha = climber.dead ? ClimberFigure.DEAD_ALPHA : 1;
-    this.draw(pose, atmosphere, climber.dead, ahead);
+    const gear = new Cowstails(pose, (id) => beside(id, this.rotation));
+    this.draw(pose, gear, atmosphere, climber.dead, grown, size);
     const upright = !climber.dead && !climber.falling;
     this.drawLamp(pose, atmosphere, upright ? ahead : null, grown);
     this.drawBreath(pose, atmosphere, climber.dead);
   }
 
-  private draw(pose: Pose, atmosphere: Atmosphere, dead: boolean, rise: number): void {
+  /** A point of the layer in the figure's metres, as it's placed this frame and turned by
+   * `rotation`: the feet at the origin, x the way it faces, y up the body. */
+  private local(point: Point, rotation: number): Joint {
+    const dx = point.x - this.x;
+    const dy = point.y - this.y;
+    const cos = Math.cos(rotation);
+    const sin = Math.sin(rotation);
+    return {
+      x: (dx * cos + dy * sin) / this.scale.x,
+      y: (dy * cos - dx * sin) / this.scale.y,
+    };
+  }
+
+  /** The figure in `pose` with its `gear`, `grown` times life size at the scale `size` is for. */
+  private draw(
+    pose: Pose,
+    gear: Cowstails,
+    atmosphere: Atmosphere,
+    dead: boolean,
+    grown: number,
+    size: LeastSize,
+  ): void {
+    // The least the figure's own metres are drawn, `grown` times bigger on the screen.
+    const least = new LeastSize(size.pixelsPerMetre * grown);
     const g = this.body;
     const { suit } = this;
     const { palette } = atmosphere;
@@ -155,26 +222,31 @@ export class ClimberFigure extends Container {
     const [nearArm, farArm] = pose.arms;
     this.drawRim(pose, atmosphere, dead);
     g.clear();
-    // The far side first: the far leg, the pack on the back with the axe, the far arm.
+    // The far side first: the far leg, the pack on the back with the axe and the bottle, the far
+    // arm.
     ClimberFigure.limb(g, farLeg, ClimberFigure.LEG, farSuit);
     ClimberFigure.boot(g, farLeg, farBoots);
-    ClimberFigure.pack(g, pose);
+    const regulator = ClimberFigure.pack(g, pose);
     ClimberFigure.limb(g, farArm, ClimberFigure.ARM, farSuit);
     ClimberFigure.mitten(g, farArm.end, farBoots);
-    // The torso, swelling with each breath, its baffles and the harness.
+    // The torso, swelling with each breath, its baffles, the harness and the pack's strap.
     const swell = 1 + ClimberFigure.CHEST_SWELL * this.breathing.chest;
     g.moveTo(pose.pelvis.x, pose.pelvis.y)
       .lineTo(pose.shoulder.x, pose.shoulder.y)
       .stroke({ width: ClimberFigure.TORSO * swell, color: suit, cap: "round" });
     ClimberFigure.baffles(g, pose, suit);
     ClimberFigure.harness(g, pose);
-    ClimberFigure.jumar(g, pose, rise);
-    // The near side: the near leg and arm, then the hood, the mask, the goggles and the lamp.
+    ClimberFigure.strap(g, pose);
+    // The near side: the near leg, the cowstails and the rope through the jumar, the near arm on
+    // it, then the hood, the mask and its hose, the goggles and the lamp.
     ClimberFigure.limb(g, nearLeg, ClimberFigure.LEG, suit);
     ClimberFigure.boot(g, nearLeg, Palette.BOOTS);
+    ClimberFigure.cowstails(g, gear, least, least.line(ClimberFigure.ROPE_METRES / grown));
     ClimberFigure.limb(g, nearArm, ClimberFigure.ARM, suit);
     ClimberFigure.mitten(g, nearArm.end, Palette.BOOTS);
-    ClimberFigure.head(g, pose, suit, dead);
+    ClimberFigure.hood(g, pose, suit);
+    ClimberFigure.mask(g, pose, this.masked, regulator, least);
+    ClimberFigure.face(g, pose, dead);
   }
 
   /** The rim of the hour's light along the body's edge on the side the sun is: the same shapes a
@@ -205,6 +277,15 @@ export class ClimberFigure extends Container {
     for (const arm of pose.arms) {
       ClimberFigure.limb(r, shiftLimb(arm), ClimberFigure.ARM + edge, palette.rim);
     }
+    // The pack from its foot to its lid's top.
+    const onTheBack = ClimberFigure.onTheBack(pose);
+    const { middle, up } = onTheBack;
+    const { width, height } = ClimberFigure.PACK;
+    const lid = ClimberFigure.LID * 0.8;
+    const pack = { x: middle.x + (up.x * lid) / 2, y: middle.y + (up.y * lid) / 2 };
+    r.poly(ClimberFigure.box(onTheBack, shift(pack), width + edge, height + lid + edge)).fill(
+      palette.rim,
+    );
     const pelvis = shift(pose.pelvis);
     const shoulder = shift(pose.shoulder);
     const head = shift(pose.head);
@@ -239,8 +320,8 @@ export class ClimberFigure extends Container {
     g.circle(hand.x, hand.y, ClimberFigure.MITTEN).fill(colour);
   }
 
-  /** The pack on the back, hung from the shoulders along the spine, with the bottle in it. */
-  private static pack(g: Graphics, pose: Pose): void {
+  /** Where the pack sits: hung from the shoulders along the spine, behind it. */
+  private static onTheBack(pose: Pose): OnTheBack {
     const { pelvis, shoulder } = pose;
     const dx = shoulder.x - pelvis.x;
     const dy = shoulder.y - pelvis.y;
@@ -248,28 +329,49 @@ export class ClimberFigure extends Container {
     const up = { x: dx / spine, y: dy / spine };
     // Behind the spine: its normal, which points to -x standing.
     const back = { x: -up.y, y: up.x };
-    const { width, height } = ClimberFigure.PACK;
-    const bottle = ClimberFigure.BOTTLE;
-    const middle = {
-      x: pelvis.x + up.x * spine * 0.55 + back.x * (ClimberFigure.TORSO / 2 + width * 0.35),
-      y: pelvis.y + up.y * spine * 0.55 + back.y * (ClimberFigure.TORSO / 2 + width * 0.35),
+    const out = ClimberFigure.TORSO / 2 + ClimberFigure.PACK.width * 0.35;
+    return {
+      middle: {
+        x: pelvis.x + up.x * spine * 0.55 + back.x * out,
+        y: pelvis.y + up.y * spine * 0.55 + back.y * out,
+      },
+      up,
+      back,
     };
-    const corners: readonly (readonly [number, number])[] = [
+  }
+
+  /** The corners of a box on the back round `at`, `w` across the back and `h` along the spine. */
+  private static box({ up, back }: OnTheBack, at: Joint, w: number, h: number): number[] {
+    const points: number[] = [];
+    for (const [sx, sy] of [
       [-1, -1],
       [1, -1],
       [1, 1],
       [-1, 1],
-    ];
-    const box = (at: Joint, w: number, h: number): number[] => {
-      const points: number[] = [];
-      for (const [sx, sy] of corners) {
-        const across = (sx * w) / 2;
-        const along = (sy * h) / 2;
-        points.push(at.x + back.x * across + up.x * along, at.y + back.y * across + up.y * along);
-      }
-      return points;
-    };
+    ] as const) {
+      const across = (sx * w) / 2;
+      const along = (sy * h) / 2;
+      points.push(at.x + back.x * across + up.x * along, at.y + back.y * across + up.y * along);
+    }
+    return points;
+  }
+
+  /** The pack on the back with its lid, the ice axe and the bottle in it: where the bottle's
+   * regulator is, for the mask's hose. */
+  private static pack(g: Graphics, pose: Pose): Joint {
+    const onTheBack = ClimberFigure.onTheBack(pose);
+    const { middle, up, back } = onTheBack;
+    const { width, height } = ClimberFigure.PACK;
+    const bottle = ClimberFigure.BOTTLE;
+    const box = (at: Joint, w: number, h: number): number[] =>
+      ClimberFigure.box(onTheBack, at, w, h);
     g.poly(box(middle, width, height)).fill(Palette.PACK);
+    const lid = ClimberFigure.LID;
+    const lidAt = {
+      x: middle.x + up.x * (height / 2 + lid * 0.3),
+      y: middle.y + up.y * (height / 2 + lid * 0.3),
+    };
+    g.poly(box(lidAt, width * 1.06, lid)).fill(Palette.PACK_LID);
     // The ice axe in its loop on the back of the pack, its head over the top.
     const { shaft, head } = ClimberFigure.AXE;
     const axeFoot = {
@@ -288,11 +390,32 @@ export class ClimberFigure extends Container {
       y: middle.y + back.y * (width / 2 + bottle.width * 0.3) + up.y * 0.04,
     };
     g.poly(box(bottleAt, bottle.width, bottle.height)).fill(Palette.BOTTLE);
-    const valve = {
+    const regulator = {
       x: bottleAt.x + up.x * (bottle.height / 2 + 0.025),
       y: bottleAt.y + up.y * (bottle.height / 2 + 0.025),
     };
-    g.poly(box(valve, bottle.width * 0.5, 0.05)).fill(Palette.CRAMPONS);
+    g.poly(box(regulator, bottle.width * 0.5, 0.05)).fill(Palette.CRAMPONS);
+    return regulator;
+  }
+
+  /** The way along the spine, up, and the way the chest faces, forward. */
+  private static spine(pose: Pose): { up: Joint; forward: Joint } {
+    const { pelvis, shoulder } = pose;
+    const dx = shoulder.x - pelvis.x;
+    const dy = shoulder.y - pelvis.y;
+    const spine = Math.hypot(dx, dy) || 1;
+    return { up: { x: dx / spine, y: dy / spine }, forward: { x: dy / spine, y: -dx / spine } };
+  }
+
+  /** Where the chest is, `down` below the shoulders along the spine, at the suit's front. */
+  private static chest(pose: Pose, down: number): Joint {
+    const { up, forward } = ClimberFigure.spine(pose);
+    const { shoulder } = pose;
+    const front = ClimberFigure.TORSO * 0.42;
+    return {
+      x: shoulder.x - up.x * down + forward.x * front,
+      y: shoulder.y - up.y * down + forward.y * front,
+    };
   }
 
   /** The down suit's baffles: a few lines across the torso, in the suit's shade. */
@@ -314,68 +437,143 @@ export class ClimberFigure extends Container {
     g.stroke({ width: 0.02, color: Palette.shaded(suit, 0.18), cap: "round" });
   }
 
-  /** The harness around the hips, and the two cowstails hanging from it. */
+  /** The harness's belt around the hips. */
   private static harness(g: Graphics, pose: Pose): void {
     const { pelvis } = pose;
     const half = ClimberFigure.TORSO * 0.55;
     g.moveTo(pelvis.x - half, pelvis.y + 0.02)
       .lineTo(pelvis.x + half, pelvis.y + 0.02)
       .stroke({ width: 0.05, color: Palette.HARNESS, cap: "round" });
-    const tie = { x: pelvis.x + half * 0.6, y: pelvis.y };
-    g.moveTo(tie.x, tie.y)
-      .lineTo(tie.x + 0.08, tie.y - 0.2)
-      .moveTo(tie.x, tie.y)
-      .lineTo(tie.x + 0.16, tie.y - 0.14)
-      .stroke({ width: 0.025, color: Palette.JUMAR, cap: "round" });
   }
 
-  /** The jumar in the near hand on the rope, which comes up to it off the snow ahead, and its
-   * sling from the harness. */
-  private static jumar(g: Graphics, pose: Pose, rise: number): void {
-    const alpha = Math.min(1, pose.holding * 1.25);
-    if (alpha < 0.05) {
-      return;
+  /** The pack's shoulder strap, from the top of the pack over the shoulder and down the chest. */
+  private static strap(g: Graphics, pose: Pose): void {
+    const { up, forward } = ClimberFigure.spine(pose);
+    const { shoulder } = pose;
+    const behind = ClimberFigure.TORSO * 0.45;
+    const over = 0.06;
+    const chest = ClimberFigure.chest(pose, 0.24);
+    g.moveTo(shoulder.x - forward.x * behind, shoulder.y - forward.y * behind)
+      .quadraticCurveTo(
+        shoulder.x + up.x * over + forward.x * behind,
+        shoulder.y + up.y * over + forward.y * behind,
+        chest.x,
+        chest.y,
+      )
+      .stroke({ width: ClimberFigure.STRAP_METRES, color: Palette.STRAP, cap: "round" });
+  }
+
+  /** The cowstails from the belay loop to their gear, as `gear` places it: the rope lifted
+   * through the jumar first, as wide as the slope draws the rope, `ropeWidth`; the slings over
+   * it, a light line on a dark edge; then the carabiner and the jumar. None is drawn thinner than
+   * `least` allows. */
+  private static cowstails(g: Graphics, gear: Cowstails, least: LeastSize, ropeWidth: number) {
+    const [first, ...rest] = gear.through;
+    if (first !== undefined) {
+      const line = (): void => {
+        g.moveTo(first.x, first.y);
+        for (const { x, y } of rest) {
+          g.lineTo(x, y);
+        }
+      };
+      line();
+      g.stroke({
+        width: ropeWidth * (1 + 2 * ClimberFigure.ROPE_EDGE),
+        color: Palette.ROPE_SHADE,
+        cap: "round",
+        join: "round",
+      });
+      line();
+      g.stroke({ width: ropeWidth, color: Palette.ROPE, cap: "round", join: "round" });
     }
-    const hand = pose.arms[0].end;
-    const aheadX = hand.x + ClimberFigure.ROPE_AHEAD;
-    const ahead = { x: aheadX, y: rise * aheadX };
-    const width = ClimberFigure.ROPE_METRES;
-    const rope = (stroke: number, colour: number): void => {
-      g.moveTo(hand.x, hand.y)
-        .lineTo(ahead.x, ahead.y)
-        .stroke({ width: stroke, color: colour, alpha, cap: "round" });
+    const { loop } = gear;
+    const slings = (): void => {
+      for (const end of [gear.jumar, gear.carabiner]) {
+        const sag = Math.hypot(end.x - loop.x, end.y - loop.y) * ClimberFigure.SLING_SAG;
+        g.moveTo(loop.x, loop.y).quadraticCurveTo(
+          (loop.x + end.x) / 2,
+          (loop.y + end.y) / 2 - sag,
+          end.x,
+          end.y,
+        );
+      }
     };
-    rope(width * 2, Palette.ROPE_SHADE);
-    rope(width, Palette.ROPE);
-    const tie = { x: pose.pelvis.x + ClimberFigure.TORSO * 0.33, y: pose.pelvis.y };
-    g.moveTo(tie.x, tie.y)
-      .lineTo(hand.x, hand.y)
-      .stroke({ width: 0.025, color: Palette.JUMAR, alpha, cap: "round" });
-    const along = Math.atan2(ahead.y - hand.y, ahead.x - hand.x);
-    const { length, width: thick } = ClimberFigure.JUMAR_SIZE;
-    const ux = Math.cos(along);
-    const uy = Math.sin(along);
-    const corner = (a: number, b: number): number[] => [
-      hand.x + ux * a - uy * b,
-      hand.y + uy * a + ux * b,
-    ];
-    g.poly([
-      ...corner(-length * 0.2, thick / 2),
-      ...corner(length * 0.8, thick / 2),
-      ...corner(length * 0.8, -thick / 2),
-      ...corner(-length * 0.2, -thick / 2),
-    ]).fill({ color: Palette.JUMAR, alpha });
+    const sling = least.line(ClimberFigure.SLING_METRES);
+    slings();
+    g.stroke({
+      width: sling * (1 + 2 * ClimberFigure.SLING_EDGE),
+      color: Palette.SLING_SHADE,
+      cap: "round",
+    });
+    slings();
+    g.stroke({ width: sling, color: Palette.SLING, cap: "round" });
+    const ring = least.line(ClimberFigure.CARABINER_METRES);
+    g.circle(gear.carabiner.x, gear.carabiner.y, ring).fill(Palette.SLING_SHADE);
+    g.circle(gear.carabiner.x, gear.carabiner.y, ring * 0.55).fill(Palette.JUMAR);
+    // The jumar along the rope through it, or hanging from its sling off the rope.
+    const { jumar } = gear;
+    const ahead = rest.at(-1);
+    const along =
+      ahead === undefined ? -Math.PI / 2 : Math.atan2(ahead.y - jumar.y, ahead.x - jumar.x);
+    const { length, width } = ClimberFigure.JUMAR_SIZE;
+    const ux = Math.cos(along) * length;
+    const uy = Math.sin(along) * length;
+    const body = (): void => {
+      g.moveTo(jumar.x - ux * 0.2, jumar.y - uy * 0.2).lineTo(
+        jumar.x + ux * 0.8,
+        jumar.y + uy * 0.8,
+      );
+    };
+    const thick = least.line(width);
+    body();
+    g.stroke({
+      width: thick * (1 + 2 * ClimberFigure.SLING_EDGE),
+      color: Palette.SLING_SHADE,
+      cap: "round",
+    });
+    body();
+    g.stroke({ width: thick, color: Palette.JUMAR, cap: "round" });
   }
 
-  /** The hood over the head, the mask and the goggles on its face, and the headlamp's band. */
-  private static head(g: Graphics, pose: Pose, suit: number, dead: boolean): void {
+  /** The hood over the head, grown out of the suit. */
+  private static hood(g: Graphics, pose: Pose, suit: number): void {
     const { head, shoulder } = pose;
     const radius = ClimberPose.HEAD_RADIUS;
     g.moveTo(shoulder.x, shoulder.y)
       .lineTo(head.x, head.y)
       .stroke({ width: radius * 1.6, color: suit, cap: "round" });
     g.circle(head.x, head.y, radius * 1.15).fill(suit);
-    g.circle(head.x + radius * 0.45, head.y - radius * 0.1, radius * 0.75).fill(Palette.MASK);
+  }
+
+  /** The oxygen mask with its exhale valve, on the face as far as `on` has it, and hanging at the
+   * chest otherwise, and its hose from the bottle's `regulator` over the shoulder. */
+  private static mask(
+    g: Graphics,
+    pose: Pose,
+    on: number,
+    regulator: Joint,
+    least: LeastSize,
+  ): void {
+    const { head, shoulder } = pose;
+    const { up } = ClimberFigure.spine(pose);
+    const radius = ClimberPose.HEAD_RADIUS;
+    const face = { x: head.x + radius * 0.45, y: head.y - radius * 0.1 };
+    const chest = ClimberFigure.chest(pose, ClimberFigure.MASK_HANGS);
+    const mask = {
+      x: chest.x + (face.x - chest.x) * on,
+      y: chest.y + (face.y - chest.y) * on,
+    };
+    g.moveTo(regulator.x, regulator.y)
+      .quadraticCurveTo(shoulder.x + up.x * 0.2, shoulder.y + up.y * 0.2, mask.x, mask.y)
+      .stroke({ width: least.line(ClimberFigure.HOSE_METRES), color: Palette.HOSE, cap: "round" });
+    g.circle(mask.x, mask.y, radius * 0.75).fill(Palette.MASK);
+    g.circle(mask.x + radius * 0.5, mask.y - radius * 0.2, radius * 0.28).fill(Palette.VALVE);
+  }
+
+  /** The goggles on the face, and the headlamp on its band. */
+  private static face(g: Graphics, pose: Pose, dead: boolean): void {
+    const { head } = pose;
+    const radius = ClimberPose.HEAD_RADIUS;
     g.ellipse(head.x + radius * 0.55, head.y + radius * 0.4, radius * 0.5, radius * 0.32).fill(
       dead ? Palette.shaded(Palette.GOGGLES, 0.5) : Palette.GOGGLES,
     );

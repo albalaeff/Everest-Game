@@ -44,6 +44,20 @@ describe("Palette", () => {
     expect(Palette.contrast(Palette.OTHER_SUIT, snow)).toBeGreaterThan(3);
   });
 
+  it("keeps a sling 3:1 on the night's snow and on either suit by its edge, and the mark on any light", () => {
+    const night = at(3);
+
+    expect(Palette.contrast(Palette.SLING, night.snowTint)).toBeGreaterThan(3);
+    expect(Palette.contrast(Palette.SLING_SHADE, Palette.SNOW)).toBeGreaterThan(7);
+    for (const suit of [Palette.PLAYER_SUIT, Palette.OTHER_SUIT]) {
+      expect(Palette.contrast(Palette.SLING_SHADE, suit)).toBeGreaterThan(3);
+    }
+    for (const behind of [night.skyTop, night.snowTint, at(12).skyTop]) {
+      expect(Palette.contrast(Palette.MARK, behind)).toBeGreaterThan(3);
+    }
+    expect(Palette.contrast(Palette.MARK_EDGE, Palette.SNOW)).toBeGreaterThan(7);
+  });
+
   it("is dark at night, the snow navy under the stars, blue at first light and white by day", () => {
     const night = at(3);
     const blueHour = at(5, 25);

@@ -21,7 +21,8 @@ export interface PoseState {
   readonly moving: boolean;
   readonly falling: boolean;
   readonly dead: boolean;
-  /** A cowstail clipped to a rope: the near hand holds the jumar on the line ahead. */
+  /** The jumar clipped to a rope lying along the ground: the near hand holds it on the line
+   * ahead. */
   readonly onRope: boolean;
   /** The ropes the jumar's cowstail and the other one are clipped to, or none: when one changes,
    * the climber bends to the anchor and its hand clips it there. */
@@ -31,6 +32,14 @@ export interface PoseState {
   readonly rise: number;
   readonly tiredness: Tiredness;
   readonly pace: Pace["pace"];
+}
+
+/** A cowstail's last clip: the rope it came off and the one it's on now, either none, and how far
+ * the hand has moved it, 0 to 1: 1 once done, and ever since. */
+export interface Clip {
+  readonly from: string | null;
+  readonly to: string | null;
+  readonly share: number;
 }
 
 /** The figure's joints this frame, in metres from the ground under the climber, facing +x. */
@@ -47,6 +56,9 @@ export interface Pose {
   readonly tilt: number;
   /** How far the near hand holds the jumar on the rope, 0 to 1. */
   readonly holding: number;
+  /** The jumar's cowstail's last clip, which the near hand makes, and the other's, the far
+   * hand's. */
+  readonly clips: readonly [Clip, Clip];
 }
 
 /**
@@ -60,8 +72,10 @@ export interface Pose {
  * on the rope while the climber steps up to it and then slides on; when a cowstail moves to
  * another rope, the climber crouches and bends to the anchor, and that hand clips it there. On a
  * ladder the steps are short and high and both hands hold the lines; a fall takes them off their
- * feet, and a dead climber lies flat. It keeps only the picture's own: where in the stride, how
- * long a fall and each clip have run, and the ropes it last saw clipped.
+ * feet, and a dead climber lies flat. Each pose tells how far each clip has gone, from which rope
+ * to which, for the gear to be moved with the hand (`Cowstails`). It keeps only the picture's own:
+ * where in the stride, how long a fall and each clip have run, the ropes it last saw clipped and
+ * the ones the cowstails came off.
  */
 export class ClimberPose {
   /** The bones, in metres, of a climber 1.77 m tall in boots and a down suit. */
@@ -170,9 +184,10 @@ export class ClimberPose {
   private holding = 0;
   /** How long the fall has run, in seconds. */
   private fallen = 0;
-  /** The ropes the cowstails were on last frame, none before the first; and how long each hand's
-   * clip has run, in seconds. */
+  /** The ropes the cowstails were on last frame, none before the first; the rope each came off at
+   * its last clip; and how long each hand's clip has run, in seconds. */
   private clipped: readonly [string | null, string | null] | null = null;
+  private readonly came: [string | null, string | null] = [null, null];
   private readonly clipping: [number, number] = [Infinity, Infinity];
 
   /** The pose `seconds` after the last one, for the climber in `state`. */
@@ -192,11 +207,17 @@ export class ClimberPose {
     }
     for (const hand of [0, 1] as const) {
       if (this.clipped !== null && this.clipped[hand] !== state.clipped[hand]) {
+        this.came[hand] = this.clipped[hand];
         this.clipping[hand] = 0;
       }
       this.clipping[hand] += frame;
     }
     this.clipped = state.clipped;
+    const clips = ([0, 1] as const).map((hand) => ({
+      from: this.came[hand],
+      to: state.clipped[hand],
+      share: Math.min(1, this.clipping[hand] / ClimberPose.CLIP_SECONDS),
+    })) as [Clip, Clip];
     const share = 1 - Math.exp(-frame / ClimberPose.SETTLE_SECONDS);
     this.standing += ((walking ? 0 : 1) - this.standing) * share;
     this.holding += ((state.onRope && upright ? 1 : 0) - this.holding) * share;
@@ -208,6 +229,7 @@ export class ClimberPose {
         ClimberPose.DEAD_RADIANS,
         ClimberPose.DEAD_FEET,
         ClimberPose.DEAD_HANDS,
+        clips,
       );
     }
     if (state.falling) {
@@ -218,9 +240,10 @@ export class ClimberPose {
         ClimberPose.FALLEN_RADIANS * over,
         ClimberPose.FALLING_FEET,
         ClimberPose.FALLING_HANDS,
+        clips,
       );
     }
-    return this.onFeet(state, stride, rise);
+    return this.onFeet(state, stride, rise, clips);
   }
 
   /** The middle joint of a limb from `root` towards `end`, its bones `upper` and `lower` long,
@@ -241,13 +264,18 @@ export class ClimberPose {
     };
   }
 
-  private onFeet(state: PoseState, stride: number, rise: number): Pose {
+  private onFeet(
+    state: PoseState,
+    stride: number,
+    rise: number,
+    clips: readonly [Clip, Clip],
+  ): Pose {
     const { standing, holding, phase } = this;
     const bentDouble = state.tiredness === "exhausted" && !state.moving;
     const resting = state.pace === "rest-step" && !state.onLadder;
     const tired = ClimberPose.LEAN[state.tiredness];
-    const clips = this.clipping.map((seconds) => ClimberPose.clipBend(seconds));
-    const clip = Math.max(...clips);
+    const bends = clips.map(({ share }) => ClimberPose.clipBend(share));
+    const clip = Math.max(...bends);
     const lean =
       tired +
       (1 - standing) * ClimberPose.WALKING_LEAN +
@@ -328,10 +356,10 @@ export class ClimberPose {
       } else if (arm === 0) {
         hand = ClimberPose.between(hand, jumar, holding);
       }
-      hand = ClimberPose.between(hand, anchor, clips[arm] ?? 0);
+      hand = ClimberPose.between(hand, anchor, bends[arm] ?? 0);
       return ClimberPose.bend(root, hand, ClimberPose.UPPER_ARM, ClimberPose.FOREARM, -1);
     }) as [Limb, Limb];
-    return { pelvis, shoulder, head, legs, arms, lean, tilt: 0, holding };
+    return { pelvis, shoulder, head, legs, arms, lean, tilt: 0, holding, clips };
   }
 
   /** Where the jumar is in the near hand as the climber walks, on the rope ahead along the slope:
@@ -351,9 +379,9 @@ export class ClimberPose {
     return { x, y: ClimberPose.JUMAR.y + rise * x };
   }
 
-  /** How far a hand's clip bends the climber, `seconds` into it: down and back up, 0 once done. */
-  private static clipBend(seconds: number): number {
-    const share = seconds / ClimberPose.CLIP_SECONDS;
+  /** How far a hand's clip bends the climber, `share` of the way through it: down and back up, 0
+   * once done. */
+  private static clipBend(share: number): number {
     return share < 1 ? Math.sin(Math.PI * share) : 0;
   }
 
@@ -378,6 +406,7 @@ export class ClimberPose {
     tilt: number,
     feet: readonly [Joint, Joint],
     hands: readonly [Joint, Joint],
+    clips: readonly [Clip, Clip],
   ): Pose {
     const shoulder: Joint = {
       x: pelvis.x + ClimberPose.SPINE * Math.sin(lean),
@@ -405,7 +434,7 @@ export class ClimberPose {
         -1,
       ),
     ) as [Limb, Limb];
-    return { pelvis, shoulder, head, legs, arms, lean, tilt, holding: 0 };
+    return { pelvis, shoulder, head, legs, arms, lean, tilt, holding: 0, clips };
   }
 
   private static between(from: Joint, to: Joint, share: number): Joint {

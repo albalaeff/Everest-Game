@@ -21,14 +21,25 @@ export class Palette {
   static readonly BOOTS = 0x1d2024;
   static readonly CRAMPONS = 0x8e97a3;
   static readonly PACK = 0x262e47;
+  static readonly PACK_LID = 0x313a59;
+  static readonly STRAP = 0x15171f;
   static readonly BOTTLE = 0xd7dde6;
   static readonly MASK = 0x15181c;
+  static readonly VALVE = 0x3c404a;
+  static readonly HOSE = 0x2b313d;
   static readonly GOGGLES = 0x7fc4ff;
   static readonly HARNESS = 0x3b4a6b;
   static readonly JUMAR = 0xb5bdca;
   static readonly AXE_SHAFT = 0x2b2f36;
   static readonly LAMP = 0xfff1b0;
   static readonly BREATH = 0xffffff;
+  /** The cowstails' slings, a light blue on a dark edge, 3:1 on the night's snow and the edge on
+   * the day's. */
+  static readonly SLING = 0x6f9be8;
+  static readonly SLING_SHADE = 0x1d2029;
+  /** The mark over the player's climber: white on a dark edge, in every light. */
+  static readonly MARK = 0xffffff;
+  static readonly MARK_EDGE = 0x15181c;
   /** The fixed line and what holds it: the one orange of the slope. */
   static readonly ROPE = 0xff6f3c;
   static readonly ROPE_SHADE = 0x6b2810;

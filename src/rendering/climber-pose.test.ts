@@ -190,6 +190,26 @@ describe("ClimberPose", () => {
     expect(length(after.arms[0].end, holding.arms[0].end)).toBeLessThan(1e-3);
   });
 
+  it("tells how far each cowstail's clip has gone, and from which rope to which", () => {
+    const climber = new ClimberPose();
+    const onFirst = state({ onRope: true, clipped: ["first", "first"] });
+    const settled = climber.advance(2, onFirst);
+    const moving = climber.advance(0.6, state({ ...onFirst, clipped: ["first", "second"] }));
+    const done = climber.advance(1, state({ ...onFirst, clipped: ["first", "second"] }));
+    const falling = new ClimberPose().advance(
+      1,
+      state({ falling: true, clipped: ["first", null] }),
+    );
+
+    expect(settled.clips.map((clip) => clip.share)).toEqual([1, 1]);
+    expect(settled.clips[0].to).toBe("first");
+    expect(moving.clips[0]).toEqual(settled.clips[0]);
+    expect(moving.clips[1]).toMatchObject({ from: "first", to: "second" });
+    expect(moving.clips[1].share).toBeCloseTo(0.5, 9);
+    expect(done.clips[1]).toEqual({ from: "first", to: "second", share: 1 });
+    expect(falling.clips[0].to).toBe("first");
+  });
+
   it("comes to a stand when it stops, the feet together", () => {
     const climber = new ClimberPose();
     for (let travelled = 10; travelled <= 10.4; travelled += 0.02) {

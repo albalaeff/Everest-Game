@@ -19,7 +19,7 @@ How the game is learnt, and played for two hours by everyone, on every device ([
 ## Feedback
 
 - **Every action answers at once, and every wait says how long.** Within 0.1 s the game shows it heard ([interface.md](interface.md) → Buttons); what takes the climber more than a second shows that it's going, the cowstail moving to the rope, the jumar sliding; a wait over 10 s says how long ([Nielsen](https://www.nngroup.com/articles/response-times-3-important-limits/): 0.1, 1 and 10 s).
-  - *In Everest:* the climber's animation (#87); each camp says how long the next section takes ([../../spec.md](../../spec.md) → Phone and PC → Long sessions, #53).
+  - *In Everest:* a clip's 1.2 s show the hand carry the jumar or the carabiner off the rope or the hip, and onto the next rope or back (`ClimberPose`, `Cowstails`, #87); each camp says how long the next section takes ([../../spec.md](../../spec.md) → Phone and PC → Long sessions, #53).
 - **What matters can always be found** ([Pinelle et al.](https://course.ccs.neu.edu/is4300f15/ssl/pinelle-chi08.pdf), heuristic 8: status): the readouts on the screen, the body on Tab, the group on the radio.
 - **A consequence that comes late is traced back.** Consequences often come hours after the decision ([../../spec.md](../../spec.md) → Gameplay), so the debrief shows the decision, and the point where it could still have been fixed (#46).
 

@@ -2,7 +2,7 @@ import { Graphics, Particle, ParticleContainer, Texture } from "pixi.js";
 
 import type { Point, SlopePhysics, Terrain } from "../physics";
 import { SeededRandom } from "../simulation";
-import type { Body, ClimberId, ObjectiveHazards } from "../simulation";
+import type { Body, Breathing, ClimberId, ObjectiveHazards } from "../simulation";
 import type { Atmosphere } from "./atmosphere";
 import type { Beam } from "./beam";
 import type { Camera } from "./camera";
@@ -14,6 +14,7 @@ import { HazardDrawing } from "./hazard-drawing";
 import { LeastSize } from "./least-size";
 import { Palette } from "./palette";
 import { ParallaxLayer } from "./parallax-layer";
+import { PlayerMark } from "./player-mark";
 import { SlopeDetails } from "./slope-details";
 
 interface DrawnRope {
@@ -32,13 +33,15 @@ interface DrawnLadder {
  * The slope itself, at the camera's own depth: the ground as the physics has it, its snow marked
  * with sastrugi and the boot track of the climbers before, its walls of ice, its ladders, its
  * ropes with their pickets, its hazards, the camps' tents, lit from inside at night, and every
- * climber on it, drawn by `ClimberFigure` on the ground's rise under them; the spindrift the wind
- * blows along the snow around the camera, its grains glinting in the headlamps' beams, and the
- * veil of a cloudy day behind the slope. In the picture alone, the ground runs on
- * level past the section's ends, so the view far out shows no cliff there. The snow and what
- * marks it are drawn once in white and tinted by the hour's light; the lines, the ground's edge
- * and the ladders, when the scale changes, since they never get thinner than `LeastSize` allows;
- * a rope when it moves too; and the climbers and what comes down are drawn each frame.
+ * climber on it, drawn by `ClimberFigure` on the ground's rise under them, their gear on the
+ * ropes and their mask on as their oxygen flows, the player's with its mark over them
+ * (`PlayerMark`); the spindrift the wind blows along the snow around the camera, its grains
+ * glinting in the headlamps' beams, and the veil of a cloudy day behind the slope. In the picture
+ * alone, the ground runs on level past the section's ends, so the view far out shows no cliff
+ * there. The snow and what marks it are drawn once in white and tinted by the hour's light; the
+ * lines, the ground's edge and the ladders, when the scale changes, since they never get thinner
+ * than `LeastSize` allows; a rope when it moves too; and the climbers, the mark and what comes
+ * down are drawn each frame.
  */
 export class SlopeLayer extends ParallaxLayer {
   private static readonly SURFACE_METRES = 0.15;
@@ -95,6 +98,7 @@ export class SlopeLayer extends ParallaxLayer {
   private readonly ladders: readonly DrawnLadder[];
   private readonly ropes: readonly DrawnRope[];
   private readonly figures: readonly { readonly id: ClimberId; readonly figure: ClimberFigure }[];
+  private readonly mark = new PlayerMark();
   private readonly hazards: HazardDrawing;
   private readonly drift: Drift;
   private readonly driftContainer: ParticleContainer;
@@ -110,9 +114,10 @@ export class SlopeLayer extends ParallaxLayer {
     private readonly physics: SlopePhysics,
     hazards: ObjectiveHazards,
     private readonly body: Body,
+    private readonly oxygen: Breathing,
     camps: readonly CampStretch[],
     climbers: readonly ClimberId[],
-    player: ClimberId,
+    private readonly player: ClimberId,
     seed: number,
     motes: number,
   ) {
@@ -154,6 +159,7 @@ export class SlopeLayer extends ParallaxLayer {
       this.addChild(figure);
       return { id, figure };
     });
+    this.addChild(this.mark);
     this.drift = new Drift(
       {
         count: motes,
@@ -226,12 +232,26 @@ export class SlopeLayer extends ParallaxLayer {
       }
     }
     const beams: Beam[] = [];
+    const tall = ClimberFigure.HEIGHT_METRES * size.climber(ClimberFigure.HEIGHT_METRES);
     for (const { id, figure } of this.figures) {
       const climber = this.physics.climber(id);
-      const rise = this.rise(climber.x);
-      figure.show(climber, this.body.climber(id), atmosphere, seconds, size, rise);
+      figure.show(
+        {
+          climber,
+          ropes: this.physics,
+          body: this.body.climber(id),
+          oxygen: this.oxygen.flow(id) > 0,
+          rise: this.rise(climber.x),
+        },
+        atmosphere,
+        seconds,
+        size,
+      );
       if (figure.beam !== null) {
         beams.push(figure.beam);
+      }
+      if (id === this.player) {
+        this.mark.place({ x: climber.x, y: climber.y + tall }, pixelsPerMetre);
       }
     }
     this.blow(seconds, camera, atmosphere, beams);
