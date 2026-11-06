@@ -5,6 +5,7 @@ import type { Body, Breathing, ClimberId, MountainClock, ObjectiveHazards } from
 import { Atmosphere } from "./atmosphere";
 import type { Camera } from "./camera";
 import type { CampStretch } from "./camp-signs";
+import type { PartStretch } from "./glacier";
 import type { GraphicsQuality } from "./graphics-quality";
 import { Palette } from "./palette";
 import type { ParallaxLayer } from "./parallax-layer";
@@ -23,6 +24,7 @@ export interface SceneWorld {
   /** The supplemental oxygen: a climber's mask is on while it flows. */
   readonly oxygen: Breathing;
   readonly camps: readonly CampStretch[];
+  readonly parts: readonly PartStretch[];
   readonly climbers: readonly ClimberId[];
   readonly player: ClimberId;
   readonly seed: number;
@@ -32,11 +34,11 @@ export interface SceneWorld {
  * The picture of the slope: a PixiJS application in the page's `#slope`, with the layers the
  * quality asks for, back to front, each placed by the camera every frame and lit by the hour of
  * the mountain's clock and the hazards' weather, and shaking while a hazard goes. It reads the
- * physics, the hazards, the clock, the body, the oxygen and the camps and holds no game state:
- * what it owns is the picture's own, the camera's place and zoom, the flakes and the motes, the
- * warnings' clocks, its own seconds and the frame count. For the page's stories it writes what it
- * draws into `#slope`'s data attributes, and reads a pixel back, since Playwright can't read a
- * WebGL canvas.
+ * physics, the hazards, the clock, the body, the oxygen, the camps and the route's parts and holds
+ * no game state: what it owns is the picture's own, the camera's place and zoom, the flakes and
+ * the motes, the warnings' clocks, its own seconds and the frame count. For the page's stories it
+ * writes what it draws into `#slope`'s data attributes, and reads a pixel back, since Playwright
+ * can't read a WebGL canvas.
  */
 export class SlopeScene {
   /** How far the picture shakes while a hazard goes, in slope metres a step of its cycle, and
@@ -172,7 +174,7 @@ export class SlopeScene {
     }
     const { layers: optional, flakes, motes, fogBanks, dithered } = this.quality;
     const { width, height } = this.app.screen;
-    const { physics, hazards, body, oxygen, camps, climbers, player, seed } = this.world;
+    const { physics, hazards, body, oxygen, camps, parts, climbers, player, seed } = this.world;
     const skyline = (style: typeof SkylineLayer.PEAKS, offset: number): SkylineLayer =>
       new SkylineLayer(style, physics.terrain, seed + offset, fogBanks);
     this.sky = new SkyLayer(dithered);
@@ -188,6 +190,7 @@ export class SlopeScene {
       body,
       oxygen,
       camps,
+      parts,
       climbers,
       player,
       seed,

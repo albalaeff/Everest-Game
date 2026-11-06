@@ -58,6 +58,8 @@ export class Palette {
   static readonly ANCHOR = 0x3a3f47;
   static readonly LADDER = 0xc9d3dd;
   static readonly LADDER_SHADE = 0x4a5560;
+  /** The cord lashing a long ladder's sections end to end: muted, so the rope keeps its orange. */
+  static readonly LASHING = 0x7d6a4f;
   /** The camps' tents, lit from inside at night. */
   static readonly TENT = 0xe9a13b;
   static readonly TENT_DOOR = 0xb06a1e;
@@ -72,11 +74,18 @@ export class Palette {
   static readonly SNOW_SHADE = 0xc3d2e6;
   static readonly SNOW_DEEP = 0x9fb6d4;
   static readonly TRACK = 0xd3dfed;
-  static readonly ICE = 0xcfe6f5;
-  static readonly ICE_EDGE = 0x8fb7d4;
+  /** The walls' blue ice, and the inside of a crevasse at its lips, deep blue, going black as it
+   * goes down. */
+  static readonly ICE = 0xa6d4f2;
+  static readonly ICE_EDGE = 0x5f97c8;
   static readonly ICE_DEEP = 0x7fa9d0;
+  static readonly CREVASSE = 0x1f5f9f;
   static readonly LOADED = 0xffffff;
   static readonly ROCK = 0x3a3d48;
+  /** The moraine Base Camp stands on, rubble bare of snow: navy under the stars, darker than the
+   * snow, and grey by day. */
+  static readonly NIGHT_MORAINE = 0x20264f;
+  static readonly DAY_MORAINE = 0x8b857d;
   /** The sky and the air at night and by day, and the glow of dawn and dusk between them. */
   static readonly NIGHT_SKY_TOP = 0x02040c;
   static readonly NIGHT_SKY_HORIZON = 0x1d2550;
@@ -154,6 +163,9 @@ export class Palette {
   readonly iceWall: number;
   readonly iceEdge: number;
   readonly track: number;
+  /** A crevasse's inside at its lips, and the moraine's rubble, in the snow's light. */
+  readonly crevasse: number;
+  readonly moraine: number;
 
   constructor(light: DayLight, air: ThinAir, look: WeatherLook) {
     const { daylight, glow } = light;
@@ -210,6 +222,8 @@ export class Palette {
     this.iceWall = Palette.tinted(this.snowTint, Palette.ICE);
     this.iceEdge = Palette.tinted(this.snowTint, Palette.ICE_EDGE);
     this.track = Palette.tinted(this.snowTint, Palette.TRACK);
+    this.crevasse = Palette.tinted(this.snowTint, Palette.CREVASSE);
+    this.moraine = Palette.mix(Palette.NIGHT_MORAINE, Palette.DAY_MORAINE, skylight);
   }
 
   /** A colour `share` of the way into the haze: a layer's, by how far behind the slope it is. */

@@ -117,6 +117,40 @@ describe("Palette", () => {
     }
   });
 
+  it("keeps the moraine navy under the stars, as the stories read the ground at Base Camp, darker than the snow, and grey by day", () => {
+    const night = at(3);
+    const day = at(12);
+    const { red, blue } = Palette.channels(night.moraine);
+    const grey = Palette.channels(day.moraine);
+
+    expect(blue - red).toBeGreaterThan(40);
+    expect(Palette.brightness(night.moraine)).toBeGreaterThan(45);
+    expect(Palette.brightness(night.moraine)).toBeLessThan(Palette.brightness(night.snowTint));
+    expect(Math.abs(grey.red - grey.blue)).toBeLessThan(20);
+    expect(Palette.brightness(day.moraine)).toBeLessThan(Palette.brightness(day.snowTint) - 80);
+  });
+
+  it("darkens a crevasse's inside under the snow at every hour, and blues the walls' ice by day", () => {
+    const blueness = (colour: number): number => {
+      const { red, blue } = Palette.channels(colour);
+      return blue - red;
+    };
+    for (const [hours, minutes] of [
+      [3, 0],
+      [5, 24],
+      [6, 0],
+      [12, 0],
+    ] as const) {
+      const palette = at(hours, minutes);
+
+      expect(Palette.brightness(palette.crevasse)).toBeLessThan(
+        Palette.brightness(palette.snowTint) / 2,
+      );
+      expect(blueness(palette.crevasse)).toBeGreaterThan(0);
+    }
+    expect(blueness(at(12).iceWall)).toBeGreaterThan(60);
+  });
+
   it("glows pink before the sun is up and orange as it rises, on the crest of the snow too", () => {
     const blueHour = at(5, 15);
     const sunrise = at(5, 50);

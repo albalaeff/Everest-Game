@@ -24,6 +24,14 @@ export interface CampData {
   readonly to: number;
 }
 
+/** A part of the section, by the name the sources give it, and its stretch of the ground: the
+ * parts follow each other from the section's foot to its top, with nothing between them. */
+export interface PartData {
+  readonly id: string;
+  readonly from: number;
+  readonly to: number;
+}
+
 /** The snow on a section's ground, as its file gives it: level over the camps, and trodden flat
  * `trodden` metres round each, where the climbs set off and arrive. */
 type SnowData = Omit<SnowLayout, "level"> & { readonly trodden: number };
@@ -48,6 +56,8 @@ export interface SectionData {
     readonly ladders: readonly LadderLayout[];
     readonly climbers: readonly ClimberLayout[];
   };
+  /** Its parts, from its foot to its top, which the picture draws each in its own way. */
+  readonly parts: readonly PartData[];
   readonly camps: readonly CampData[];
   readonly hazards: {
     readonly weather: string;
@@ -70,8 +80,8 @@ export interface Camp extends CampData {
  * A section of the route, as the page plays it: the Khumbu Icefall, Base Camp to Camp 1, unless
  * another file is given (#26). Its ground, ropes and ladders are the file's; its ends' altitudes,
  * the hour it sets off at, its hours and its length are the knowledge base's, by the file's ids,
- * and so are the physics' numbers (`SlopeFacts`). It names its camps' stretches for the picture,
- * and the one it ends at for the arrival.
+ * and so are the physics' numbers (`SlopeFacts`). It names its parts' and its camps' stretches for
+ * the picture, and the camp it ends at for the arrival.
  */
 export class Section {
   /** The player's climber in the layout. */
@@ -80,6 +90,8 @@ export class Section {
   readonly id: string;
   readonly settings: SlopeSettings;
   readonly layout: SlopeLayout;
+  /** Its parts, from its foot to its top, end to end over its whole ground. */
+  readonly parts: readonly PartData[];
   /** Its camps, in the layout's order: the first at its foot, the last at its top. */
   readonly camps: readonly Camp[];
   /** Each climber's body as they set off, in the layout's order. */
@@ -111,6 +123,7 @@ export class Section {
       ladders: layout.ladders,
       climbers: layout.climbers,
     };
+    this.parts = Section.partsOf(data, ground.length);
     this.camps = data.camps.map((camp) => {
       if (!(camp.from >= 0 && camp.from < camp.to && camp.to <= ground.length)) {
         throw new RangeError(`The camp ${camp.id} isn't on the ground of ${data.id}`);
@@ -176,6 +189,22 @@ export class Section {
       bodies: this.bodies.map((body) => (mine(body.id) ? { ...body, mass, fitness } : body)),
       layout: { ...this.layout, climbers },
     };
+  }
+
+  /** The file's parts, each from where the one before it ends, the first from the foot and the
+   * last to the top. */
+  private static partsOf({ id, parts }: SectionData, length: number): readonly PartData[] {
+    if (parts.length === 0) {
+      throw new RangeError(`${id} has no parts`);
+    }
+    for (const [index, part] of parts.entries()) {
+      const from = parts[index - 1]?.to ?? 0;
+      const to = index === parts.length - 1 ? length : part.to;
+      if (!(part.from === from && part.to === to && from < to)) {
+        throw new RangeError(`The part ${part.id} of ${id} isn't from ${from} to ${to} m along`);
+      }
+    }
+    return parts;
   }
 
   /** The file's snow, level over the camps and `trodden` metres round each, as far as the

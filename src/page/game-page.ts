@@ -206,6 +206,7 @@ export class GamePage {
         body: rules.body,
         oxygen: rules.oxygen,
         camps: this.mountain.route.camps,
+        parts: this.mountain.route.parts,
         climbers: scenario.climbers,
         player,
         seed: scenario.seed,

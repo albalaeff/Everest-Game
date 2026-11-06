@@ -97,7 +97,9 @@ describe("Mountain", () => {
       "crevasse",
       "serac",
       "serac",
+      "serac",
       "avalanche",
+      "crevasse",
     ]);
     for (const id of scenario.climbers) {
       const along = rules.physics.along(id);
