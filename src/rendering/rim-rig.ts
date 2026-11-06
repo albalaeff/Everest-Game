@@ -22,7 +22,7 @@ export class RimRig extends FigureRig {
         parts.forearms[side],
       );
     }
-    this.addChild(parts.pack, parts.torso, parts.neck, parts.head);
+    this.addChild(parts.pack, parts.torso, parts.neck, parts.head, parts.mask);
   }
 
   private static drawParts(width: number): RigParts {
@@ -51,7 +51,8 @@ export class RimRig extends FigureRig {
       pack: part(pack, lid),
       torso: part(torso),
       neck: part(neck),
-      head: part(hood, mask),
+      head: part(hood),
+      mask: part(mask),
     };
   }
 }

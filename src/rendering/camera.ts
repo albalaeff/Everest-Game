@@ -135,6 +135,12 @@ export class Camera {
     return { x: x + (point.x - this.x) * metres, y: y - (point.y - this.y) * metres };
   }
 
+  /** Whether a slope point is on the screen this frame. */
+  shows(point: Point): boolean {
+    const { x, y } = this.toScreen(point);
+    return x >= 0 && x <= this.width && y >= 0 && y <= this.height;
+  }
+
   /** Where a tool goes when the player has nothing to point with: a metre ahead of the climber,
    * the ice axe above and the crampons below. */
   ahead(tool: Tool["tool"]): Point {

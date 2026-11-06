@@ -45,6 +45,9 @@ export class Palette {
   static readonly LAMP_CASE = 0x2a2d36;
   static readonly LAMP = 0xfff1b0;
   static readonly BREATH = 0xffffff;
+  /** The mark over the player's climber in a crowd: white on a dark edge, in every light. */
+  static readonly MARK = 0xffffff;
+  static readonly MARK_EDGE = 0x15181c;
   /** The fixed line and what holds it: the one orange of the slope. */
   static readonly ROPE = 0xff6f3c;
   static readonly ROPE_SHADE = 0x6b2810;

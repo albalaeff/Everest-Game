@@ -25,10 +25,10 @@ interface SuitParts extends RigParts {
  * yoke and shins and its hood with a brim; the boots with their gaiters and rands, and the
  * crampons' points and front points under them; the mitts; the pack with its lid, the oxygen's
  * bottle and regulator in it and the ice axe strapped to it; the harness, its belt and its slings;
- * the mask with its valve and hose, the goggles with the sky in them, and the headlamp. Each part
- * is shaded from where the light comes from and drawn once, the far limbs darker and as cold as
- * the sky; what runs between the parts, the hose and the cowstails to the jumar and the
- * carabiner, is drawn each frame.
+ * the mask with its valve and hose, on the face or hanging on the chest, the goggles with the sky
+ * in them, and the headlamp. Each part is shaded from where the light comes from and drawn once,
+ * the far limbs darker and as cold as the sky; what runs between the parts, the hose to the
+ * mask's valve and the cowstails to the jumar and the carabiner, is drawn each frame.
  */
 export class SuitRig extends FigureRig<SuitParts> {
   /** Where the lamp shines from, and where the mask's valve breathes out, in the head's frame. */
@@ -94,6 +94,7 @@ export class SuitRig extends FigureRig<SuitParts> {
       this.lines,
       parts.neck,
       parts.head,
+      parts.mask,
       parts.jumar,
       parts.upperArms[0],
       parts.forearms[0],
@@ -105,8 +106,9 @@ export class SuitRig extends FigureRig<SuitParts> {
     return SuitRig.at(this.parts.head, SuitRig.LAMP);
   }
 
-  /** Where the breath comes out of the mask, as the head was last placed. */
-  get valve(): Joint {
+  /** Where the breath comes out, as the head was last placed: through the mask's valve while
+   * it's on. */
+  get mouth(): Joint {
     return SuitRig.at(this.parts.head, SuitRig.VALVE);
   }
 
@@ -121,16 +123,17 @@ export class SuitRig extends FigureRig<SuitParts> {
     this.parts.lens.tint = palette.skyHorizon;
   }
 
-  /** The oxygen's hose; and the cowstails, `length` long and `width` wide, from the harness to the
-   * jumar in the near hand and the second carabiner where they're on the rope, slack or taut, and
-   * hanging where they're off. Drawn each frame, once the parts are placed. */
+  /** The oxygen's hose to the mask's valve, wherever the mask is; and the cowstails, `length` long
+   * and `width` wide, from the harness to the jumar in the near hand and the second carabiner
+   * where they're on the rope, slack or taut, and hanging where they're off. Drawn each frame,
+   * once the parts are placed. */
   hold(pose: Pose, length: number, width: number): void {
     const { parts, lines } = this;
-    const { torso, head, jumar } = parts;
+    const { torso, mask, jumar } = parts;
     lines.clear();
     const regulator = SuitRig.at(torso, SuitRig.HOSE.from);
     const round = SuitRig.at(torso, SuitRig.HOSE.round);
-    const valve = SuitRig.at(head, SuitRig.VALVE);
+    const valve = SuitRig.at(mask, SuitRig.VALVE);
     lines
       .moveTo(regulator.x, regulator.y)
       .quadraticCurveTo(round.x, round.y, valve.x, valve.y)
@@ -200,6 +203,7 @@ export class SuitRig extends FigureRig<SuitParts> {
       torso: SuitRig.torso(suit),
       neck: SuitRig.limb(neck, suit, []),
       head: SuitRig.head(suit, lens),
+      mask: SuitRig.mask(),
       lens,
       jumar: SuitRig.jumar(),
     };
@@ -314,9 +318,9 @@ export class SuitRig extends FigureRig<SuitParts> {
   }
 
   /** The head: the hood, the face dark in it, the goggles' frame, their lens, and over them the
-   * glint, the mask and its valve, and the headlamp on its strap. */
+   * glint and the headlamp on its strap. */
   private static head(suit: number, lens: Graphics): Container {
-    const { hood: shape, mask } = SuitRig.SHAPES;
+    const { hood: shape } = SuitRig.SHAPES;
     const hood = new Graphics()
       .poly([...shape])
       .fill(SuitRig.shading(suit, "above"))
@@ -324,14 +328,10 @@ export class SuitRig extends FigureRig<SuitParts> {
       .fill(Palette.HOOD_SHADOW)
       .roundRect(0.066, -0.004, 0.088, 0.058, 0.022)
       .fill(Palette.GOGGLES);
-    const { VALVE, LAMP } = SuitRig;
+    const { LAMP } = SuitRig;
     const front = new Graphics()
       .ellipse(0.124, 0.034, 0.015, 0.006)
       .fill({ color: 0xffffff, alpha: 0.7 })
-      .poly([...mask])
-      .fill(SuitRig.shading(Palette.MASK, "front"))
-      .circle(VALVE.x, VALVE.y, 0.022)
-      .fill(Palette.VALVE)
       .moveTo(0.07, 0.112)
       .bezierCurveTo(0, 0.155, -0.11, 0.13, -0.142, 0.03)
       .stroke({ width: 0.02, color: Palette.STRAP })
@@ -342,6 +342,16 @@ export class SuitRig extends FigureRig<SuitParts> {
     const head = new Container();
     head.addChild(hood, lens, front);
     return head;
+  }
+
+  /** The oxygen mask over the mouth and nose, and its valve, in the head's frame. */
+  private static mask(): Graphics {
+    const { VALVE } = SuitRig;
+    return new Graphics()
+      .poly([...SuitRig.SHAPES.mask])
+      .fill(SuitRig.shading(Palette.MASK, "front"))
+      .circle(VALVE.x, VALVE.y, 0.022)
+      .fill(Palette.VALVE);
   }
 
   /** The goggles' lens, drawn white and shaded, for the sky's colour to tint. */
