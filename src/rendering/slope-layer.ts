@@ -4,6 +4,7 @@ import type { Point, SlopePhysics, Terrain } from "../physics";
 import { SeededRandom } from "../simulation";
 import type { Body, ClimberId, ObjectiveHazards } from "../simulation";
 import type { Atmosphere } from "./atmosphere";
+import type { Beam } from "./beam";
 import type { Camera } from "./camera";
 import { CampSigns } from "./camp-signs";
 import type { CampStretch } from "./camp-signs";
@@ -31,8 +32,9 @@ interface DrawnLadder {
  * The slope itself, at the camera's own depth: the ground as the physics has it, its snow marked
  * with sastrugi and the boot track of the climbers before, its walls of ice, its ladders, its
  * ropes with their pickets, its hazards, the camps' tents, lit from inside at night, and every
- * climber on it, drawn by `ClimberFigure`; the spindrift the wind blows along the snow around the
- * camera, and the veil of a cloudy day behind the slope. In the picture alone, the ground runs on
+ * climber on it, drawn by `ClimberFigure` on the ground's rise under them; the spindrift the wind
+ * blows along the snow around the camera, its grains glinting in the headlamps' beams, and the
+ * veil of a cloudy day behind the slope. In the picture alone, the ground runs on
  * level past the section's ends, so the view far out shows no cliff there. The snow and what
  * marks it are drawn once in white and tinted by the hour's light; the lines, the ground's edge
  * and the ladders, when the scale changes, since they never get thinner than `LeastSize` allows;
@@ -72,6 +74,13 @@ export class SlopeLayer extends ParallaxLayer {
   private static readonly DRIFT_SPEED = { min: 4, max: 14 };
   private static readonly DRIFT_FROM_GUST = 0.05;
   private static readonly DRIFT_ALPHA = 0.8;
+  /** The grains glinting in a headlamp's beam: the least light that shows one, its size against
+   * the mote's, its brightness, and the share of it that shows with no wind. */
+  private static readonly GLINT = { least: 0.04, size: 0.45, alpha: 2.2, calm: 0.45 };
+  /** How far behind and ahead a climber's feet read the ground's rise, in metres, and the
+   * steepest rise they stand on. */
+  private static readonly RISE_METRES = 0.4;
+  private static readonly MOST_RISE = 1.2;
 
   private readonly ground: readonly Point[];
   private readonly veil = new Graphics();
@@ -90,6 +99,7 @@ export class SlopeLayer extends ParallaxLayer {
   private readonly drift: Drift;
   private readonly driftContainer: ParticleContainer;
   private readonly motes: readonly Particle[];
+  private readonly glints = new Graphics();
   /** How many tents stand in the camps. */
   readonly tents: number;
   /** The scale the lines were last drawn at, in pixels a metre: none yet. */
@@ -178,7 +188,8 @@ export class SlopeLayer extends ParallaxLayer {
       this.driftContainer.addParticle(particle);
       return particle;
     });
-    this.addChild(this.driftContainer, this.hazards.falling);
+    this.glints.blendMode = "add";
+    this.addChild(this.driftContainer, this.glints, this.hazards.falling);
   }
 
   /** How many climbers are drawn. */
@@ -214,11 +225,30 @@ export class SlopeLayer extends ParallaxLayer {
         SlopeLayer.rope(rope.graphics, points, size);
       }
     }
+    const beams: Beam[] = [];
     for (const { id, figure } of this.figures) {
-      figure.show(this.physics.climber(id), this.body.climber(id), atmosphere, seconds, size);
+      const climber = this.physics.climber(id);
+      const rise = this.rise(climber.x);
+      figure.show(climber, this.body.climber(id), atmosphere, seconds, size, rise);
+      if (figure.beam !== null) {
+        beams.push(figure.beam);
+      }
     }
-    this.blow(seconds, camera, atmosphere);
+    this.blow(seconds, camera, atmosphere, beams);
     this.drawVeil(camera, atmosphere);
+  }
+
+  /** How far the ground rises a metre to the right at `x`: what a climber's feet stand on. Of the
+   * ground just behind and just ahead, the gentler, so a climber at the foot of a wall stands on
+   * the snow before it, and no steeper than a slope a climber walks up. */
+  private rise(x: number): number {
+    const { terrain } = this.physics;
+    const reach = SlopeLayer.RISE_METRES;
+    const here = terrain.height(x);
+    const behind = (here - terrain.height(x - reach)) / reach;
+    const ahead = (terrain.height(x + reach) - here) / reach;
+    const gentler = Math.abs(behind) < Math.abs(ahead) ? behind : ahead;
+    return Math.min(Math.max(gentler, -SlopeLayer.MOST_RISE), SlopeLayer.MOST_RISE);
   }
 
   /** The snow and the ice in the hour's light: tinted again when the colours change. */
@@ -241,8 +271,14 @@ export class SlopeLayer extends ParallaxLayer {
     this.tentGlow.visible = this.tentGlow.alpha > 0.01;
   }
 
-  /** The spindrift along the snow around the camera, blown by the gust. */
-  private blow(seconds: number, camera: Camera, atmosphere: Atmosphere): void {
+  /** The spindrift along the snow around the camera, blown by the gust, and its grains glinting
+   * in the headlamps' `beams`: the air's ice crystals faintly with no wind, as #125's scene has. */
+  private blow(
+    seconds: number,
+    camera: Camera,
+    atmosphere: Atmosphere,
+    beams: readonly Beam[],
+  ): void {
     const { gust, elapsed } = atmosphere;
     const strength = Math.max(
       0,
@@ -250,18 +286,27 @@ export class SlopeLayer extends ParallaxLayer {
     );
     this.driftContainer.alpha = Math.min(1, strength * 1.5) * SlopeLayer.DRIFT_ALPHA;
     this.driftContainer.visible = this.driftContainer.alpha > 0.01;
-    if (!this.driftContainer.visible) {
+    this.glints.clear();
+    if (!this.driftContainer.visible && beams.length === 0) {
       return;
     }
     const { terrain } = this.physics;
     const cameraX = camera.position.x;
     this.driftContainer.position.set(cameraX, 0);
     this.drift.blow(seconds, gust, (x) => terrain.height(cameraX + x), elapsed);
+    const shown = SlopeLayer.GLINT.calm + (1 - SlopeLayer.GLINT.calm) * Math.min(1, strength * 1.5);
     for (const [index, mote] of this.drift.motes.entries()) {
       const particle = this.motes[index];
       if (particle !== undefined) {
         particle.x = mote.x;
         particle.y = mote.y;
+      }
+      const at = { x: cameraX + mote.x, y: mote.y };
+      const lit = Math.max(0, ...beams.map((beam) => beam.lights(at)));
+      if (lit > SlopeLayer.GLINT.least) {
+        this.glints
+          .circle(at.x, at.y, mote.size * SlopeLayer.GLINT.size)
+          .fill({ color: Palette.LAMP, alpha: Math.min(1, lit * shown * SlopeLayer.GLINT.alpha) });
       }
     }
   }

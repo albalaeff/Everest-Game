@@ -88,9 +88,11 @@ export class SkyLayer extends ParallaxLayer {
     this.gradient.clear().rect(0, 0, width, height).fill(gradient);
   }
 
-  /** The glow of dawn or dusk: a disc of warm light fading out, low on the sun's side. */
+  /** The glow of dawn or dusk: a disc of the hour's glow fading out, low on the sun's side, pink
+   * before the sun is up and orange as it rises. */
   private drawGlow(atmosphere: Atmosphere, width: number, height: number): void {
     const { glow, glowSide } = atmosphere.light;
+    const colour = atmosphere.palette.glow;
     this.glow.clear();
     this.glow.visible = glow > 0.01;
     if (!this.glow.visible) {
@@ -108,9 +110,9 @@ export class SkyLayer extends ParallaxLayer {
       outerCenter: { x: 0.5, y: 0.5 },
       outerRadius: 0.5,
       colorStops: [
-        { offset: 0, color: Palette.css(Palette.GLOW, SkyLayer.GLOW_ALPHA * glow) },
-        { offset: 0.5, color: Palette.css(Palette.GLOW, SkyLayer.GLOW_ALPHA * glow * 0.35) },
-        { offset: 1, color: Palette.css(Palette.GLOW, 0) },
+        { offset: 0, color: Palette.css(colour, SkyLayer.GLOW_ALPHA * glow) },
+        { offset: 0.5, color: Palette.css(colour, SkyLayer.GLOW_ALPHA * glow * 0.35) },
+        { offset: 1, color: Palette.css(colour, 0) },
       ],
       textureSpace: "local",
     });
