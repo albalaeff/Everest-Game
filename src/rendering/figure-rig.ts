@@ -2,6 +2,7 @@ import { Container } from "pixi.js";
 
 import { ClimberPose } from "./climber-pose";
 import type { Foot, Joint, Pose } from "./climber-pose";
+import { FigureShapes } from "./figure-shapes";
 
 /** A figure's parts, each drawn once in the frame of what it's on (`FigureShapes`): each limb's
  * pair, the near one first, the boots, the pack and the torso, the neck and the head. */
@@ -27,6 +28,8 @@ export interface RigParts {
 export abstract class FigureRig<Parts extends RigParts = RigParts> extends Container {
   /** Where the light on the figure comes from, in its own frame: ahead of the climber, above. */
   static readonly LIGHT: Joint = { x: 0.62, y: 0.78 };
+  /** The parts' shapes, cut once for every figure. */
+  protected static readonly SHAPES = new FigureShapes();
   /** How far past square to the light a limb swings before its lit side turns over, so it
    * doesn't flicker there. */
   private static readonly TURN = 0.2;
@@ -45,7 +48,7 @@ export abstract class FigureRig<Parts extends RigParts = RigParts> extends Conta
       FigureRig.bone(parts.shins[side], leg.middle, leg.end);
       FigureRig.bone(parts.upperArms[side], arm.root, arm.middle);
       FigureRig.bone(parts.forearms[side], arm.middle, arm.end);
-      FigureRig.boot(parts.boots[side], pose.feet[side]);
+      FigureRig.foot(parts.boots[side], pose.feet[side]);
     }
     const { pelvis, shoulder, head } = pose;
     const spine = Math.atan2(shoulder.y - pelvis.y, shoulder.x - pelvis.x) - Math.PI / 2;
@@ -83,7 +86,7 @@ export abstract class FigureRig<Parts extends RigParts = RigParts> extends Conta
   }
 
   /** A boot on its sole under the ankle, turned as the foot is. */
-  private static boot(part: Container, foot: Foot): void {
+  private static foot(part: Container, foot: Foot): void {
     const { ankle, angle } = foot;
     part.position.set(
       ankle.x + ClimberPose.ANKLE * Math.sin(angle),

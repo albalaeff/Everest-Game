@@ -514,7 +514,10 @@ export class ClimberPose {
       under = Math.max(under, ground(x) - (sin / cos) * (x - ball));
     }
     const y = under + ClimberPose.CRAMPONS;
-    return { ankle: { x: ball - BALL * cos - ANKLE * sin, y: y - BALL * sin + ANKLE * cos }, angle };
+    return {
+      ankle: { x: ball - BALL * cos - ANKLE * sin, y: y - BALL * sin + ANKLE * cos },
+      angle,
+    };
   }
 
   /** Where the far hand holds the rope: a little beyond the jumar, towards where the rope comes

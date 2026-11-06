@@ -10,6 +10,7 @@ import { CampSigns } from "./camp-signs";
 import type { CampStretch } from "./camp-signs";
 import { ClimberFigure } from "./climber-figure";
 import { Drift } from "./drift";
+import { Footing } from "./footing";
 import { HazardDrawing } from "./hazard-drawing";
 import { LeastSize } from "./least-size";
 import { Palette } from "./palette";
@@ -29,16 +30,17 @@ interface DrawnLadder {
 }
 
 /**
- * The slope itself, at the camera's own depth: the ground as the physics has it, its snow marked
- * with sastrugi and the boot track of the climbers before, its walls of ice, its ladders, its
- * ropes with their pickets, its hazards, the camps' tents, lit from inside at night, and every
- * climber on it, drawn by `ClimberFigure` on the ground's rise under them; the spindrift the wind
- * blows along the snow around the camera, its grains glinting in the headlamps' beams, and the
- * veil of a cloudy day behind the slope. In the picture alone, the ground runs on
- * level past the section's ends, so the view far out shows no cliff there. The snow and what
- * marks it are drawn once in white and tinted by the hour's light; the lines, the ground's edge
- * and the ladders, when the scale changes, since they never get thinner than `LeastSize` allows;
- * a rope when it moves too; and the climbers and what comes down are drawn each frame.
+ * The slope itself, at the camera's own depth: the ground as the physics has it, its snow and its
+ * hummocks (#168) marked with sastrugi and the boot track of the climbers before, its walls of
+ * ice, its ladders, its ropes with their pickets, its hazards, the camps' tents, lit from inside
+ * at night, and every climber on it, drawn by `ClimberFigure` on the snow under their boots
+ * (`Footing`); the spindrift the wind blows along the snow around the camera, its grains glinting
+ * in the headlamps' beams, and the veil of a cloudy day behind the slope. In the picture alone,
+ * the ground runs on level past the section's ends, so the view far out shows no cliff there.
+ * The snow and what marks it are drawn once in white and tinted by the hour's light; the lines,
+ * the ground's edge and the ladders, when the scale changes, since they never get thinner than
+ * `LeastSize` allows; a rope when it moves too; and the climbers and what comes down are drawn
+ * each frame.
  */
 export class SlopeLayer extends ParallaxLayer {
   private static readonly SURFACE_METRES = 0.15;
@@ -77,12 +79,9 @@ export class SlopeLayer extends ParallaxLayer {
   /** The grains glinting in a headlamp's beam: the least light that shows one, its size against
    * the mote's, its brightness, and the share of it that shows with no wind. */
   private static readonly GLINT = { least: 0.04, size: 0.45, alpha: 2.2, calm: 0.45 };
-  /** How far behind and ahead a climber's feet read the ground's rise, in metres, and the
-   * steepest rise they stand on. */
-  private static readonly RISE_METRES = 0.4;
-  private static readonly MOST_RISE = 1.2;
 
   private readonly ground: readonly Point[];
+  private readonly footing: Footing;
   private readonly veil = new Graphics();
   private readonly snow = new Graphics();
   private readonly shade = new Graphics();
@@ -121,6 +120,7 @@ export class SlopeLayer extends ParallaxLayer {
     this.addChild(this.veil);
     this.hazards = new HazardDrawing(hazards, terrain);
     this.ground = SlopeLayer.runOut(terrain);
+    this.footing = new Footing(terrain);
     this.drawSnow();
     this.drawDetails(new SlopeDetails(terrain, seed));
     this.addChild(
@@ -228,27 +228,14 @@ export class SlopeLayer extends ParallaxLayer {
     const beams: Beam[] = [];
     for (const { id, figure } of this.figures) {
       const climber = this.physics.climber(id);
-      const rise = this.rise(climber.x);
-      figure.show(climber, this.body.climber(id), atmosphere, seconds, size, rise);
+      const underfoot = this.footing.under(this.physics.along(id));
+      figure.show(climber, this.body.climber(id), atmosphere, seconds, size, underfoot);
       if (figure.beam !== null) {
         beams.push(figure.beam);
       }
     }
     this.blow(seconds, camera, atmosphere, beams);
     this.drawVeil(camera, atmosphere);
-  }
-
-  /** How far the ground rises a metre to the right at `x`: what a climber's feet stand on. Of the
-   * ground just behind and just ahead, the gentler, so a climber at the foot of a wall stands on
-   * the snow before it, and no steeper than a slope a climber walks up. */
-  private rise(x: number): number {
-    const { terrain } = this.physics;
-    const reach = SlopeLayer.RISE_METRES;
-    const here = terrain.height(x);
-    const behind = (here - terrain.height(x - reach)) / reach;
-    const ahead = (terrain.height(x + reach) - here) / reach;
-    const gentler = Math.abs(behind) < Math.abs(ahead) ? behind : ahead;
-    return Math.min(Math.max(gentler, -SlopeLayer.MOST_RISE), SlopeLayer.MOST_RISE);
   }
 
   /** The snow and the ice in the hour's light: tinted again when the colours change. */

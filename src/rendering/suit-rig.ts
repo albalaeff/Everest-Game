@@ -197,22 +197,22 @@ export class SuitRig extends FigureRig<SuitParts> {
   }
 
   private static drawParts(suit: number): SuitParts {
-    const { THIGH, UPPER_ARM, NECK } = FigureShapes;
+    const { thigh, upperArm, neck } = SuitRig.SHAPES;
     const along = (shares: readonly number[], length: number): number[] =>
       shares.map((share) => share * length);
     const pair = (draw: () => Graphics): [Graphics, Graphics] => [draw(), draw()];
     const lens = SuitRig.lens();
     return {
-      thighs: pair(() => SuitRig.limb(THIGH, suit, along(SuitRig.THIGH_SEAMS, ClimberPose.THIGH))),
+      thighs: pair(() => SuitRig.limb(thigh, suit, along(SuitRig.THIGH_SEAMS, ClimberPose.THIGH))),
       shins: pair(() => SuitRig.shin(suit)),
       boots: pair(() => SuitRig.boot()),
       upperArms: pair(() =>
-        SuitRig.limb(UPPER_ARM, suit, along(SuitRig.ARM_SEAMS, ClimberPose.UPPER_ARM)),
+        SuitRig.limb(upperArm, suit, along(SuitRig.ARM_SEAMS, ClimberPose.UPPER_ARM)),
       ),
       forearms: pair(() => SuitRig.forearm(suit)),
       pack: SuitRig.pack(),
       torso: SuitRig.torso(suit),
-      neck: SuitRig.limb(NECK, suit, []),
+      neck: SuitRig.limb(neck, suit, []),
       head: SuitRig.head(suit, lens),
       lens,
       jumar: SuitRig.jumar(),
@@ -229,37 +229,44 @@ export class SuitRig extends FigureRig<SuitParts> {
 
   /** The shin, its knee in the suit and the rest of it in the dark panel that takes the scuffs. */
   private static shin(suit: number): Graphics {
-    const { SHIN, AHEAD } = FigureShapes;
-    const panel = FigureShapes.band(SHIN, AHEAD, SuitRig.SHIN_PANEL, Infinity);
-    return SuitRig.limb(SHIN, suit, [])
+    const { shin } = SuitRig.SHAPES;
+    const panel = FigureShapes.band(shin, FigureShapes.AHEAD, SuitRig.SHIN_PANEL, Infinity);
+    return SuitRig.limb(shin, suit, [])
       .poly([...panel])
       .fill(SuitRig.shading(Palette.PANEL, "across"));
   }
 
   /** The forearm, its cuff over the wrist and the mitt on its end. */
   private static forearm(suit: number): Graphics {
+    const { forearm, cuff, mitt } = SuitRig.SHAPES;
     const seams = SuitRig.FOREARM_SEAMS.map((share) => share * ClimberPose.FOREARM);
-    return SuitRig.limb(FigureShapes.FOREARM, suit, seams)
-      .poly([...FigureShapes.CUFF])
+    return SuitRig.limb(forearm, suit, seams)
+      .poly([...cuff])
       .fill(SuitRig.shading(Palette.shaded(suit, 0.45), "across"))
-      .poly([...FigureShapes.MITT])
+      .poly([...mitt])
       .fill(SuitRig.shading(Palette.MITTS, "across"));
   }
 
   /** The boot on its sole: the crampon under it, the shell, the rubber rand round the sole and
    * over the toe, the gaiter's collar and its zip. */
   private static boot(): Graphics {
-    const { BOOT, CRAMPON, UP, AHEAD } = FigureShapes;
+    const { boot: shell, crampon } = SuitRig.SHAPES;
+    const { UP, AHEAD } = FigureShapes;
     const boot = new Graphics();
-    for (const piece of CRAMPON) {
+    for (const piece of crampon) {
       boot.poly([...piece]).fill(Palette.STEEL);
     }
-    boot.poly([...BOOT]).fill(SuitRig.shading(Palette.BOOTS, "front"));
-    const toe = FigureShapes.band(FigureShapes.band(BOOT, AHEAD, 0.175, Infinity), UP, -Infinity, 0.075);
+    boot.poly([...shell]).fill(SuitRig.shading(Palette.BOOTS, "front"));
+    const toe = FigureShapes.band(
+      FigureShapes.band(shell, AHEAD, 0.175, Infinity),
+      UP,
+      -Infinity,
+      0.075,
+    );
     for (const rubber of [
-      FigureShapes.band(BOOT, UP, -Infinity, 0.03),
+      FigureShapes.band(shell, UP, -Infinity, 0.03),
       toe,
-      FigureShapes.band(BOOT, UP, 0.226, Infinity),
+      FigureShapes.band(shell, UP, 0.226, Infinity),
     ]) {
       boot.poly([...rubber]).fill(Palette.RAND);
     }
@@ -269,14 +276,16 @@ export class SuitRig extends FigureRig<SuitParts> {
   /** The pack on the back: the bottle standing in it, its top and the regulator over the lid,
    * the compression straps across it, and the axe strapped on with its head at the top. */
   private static pack(): Graphics {
-    const { PACK, LID, UP } = FigureShapes;
+    const { pack: bag, lid } = SuitRig.SHAPES;
     const pack = new Graphics()
       .roundRect(-0.295, 0.48, 0.08, 0.17, 0.035)
       .fill(SuitRig.shading(Palette.BOTTLE, "front"))
-      .poly([...PACK])
+      .poly([...bag])
       .fill(SuitRig.shading(Palette.PACK, "front"));
     for (const y of [0.22, 0.38]) {
-      pack.poly([...FigureShapes.band(PACK, UP, y - 0.011, y + 0.011)]).fill(Palette.STRAP);
+      pack
+        .poly([...FigureShapes.band(bag, FigureShapes.UP, y - 0.011, y + 0.011)])
+        .fill(Palette.STRAP);
     }
     return pack
       .moveTo(-0.37, -0.06)
@@ -285,7 +294,7 @@ export class SuitRig extends FigureRig<SuitParts> {
       .moveTo(-0.41, 0.49)
       .quadraticCurveTo(-0.35, 0.495, -0.27, 0.452)
       .stroke({ width: 0.026, color: Palette.STEEL, cap: "round" })
-      .poly([...LID])
+      .poly([...lid])
       .fill(SuitRig.shading(Palette.PACK_LID, "front"))
       .rect(-0.272, 0.64, 0.036, 0.035)
       .fill(Palette.REGULATOR)
@@ -296,16 +305,17 @@ export class SuitRig extends FigureRig<SuitParts> {
   /** The suit's body: its dark yoke over the shoulders, the seams between its baffles, the
    * harness's belt and buckle, and the pack's shoulder strap and chest strap over it. */
   private static torso(suit: number): Graphics {
-    const { TORSO, UP } = FigureShapes;
+    const { torso: body } = SuitRig.SHAPES;
+    const { UP } = FigureShapes;
     const { normal, from, to } = SuitRig.BELT;
     const torso = new Graphics()
-      .poly([...TORSO])
+      .poly([...body])
       .fill(SuitRig.shading(suit, "front"))
-      .poly([...FigureShapes.band(TORSO, UP, SuitRig.YOKE, Infinity)])
+      .poly([...FigureShapes.band(body, UP, SuitRig.YOKE, Infinity)])
       .fill(SuitRig.shading(Palette.PANEL, "front"));
-    SuitRig.seams(torso, TORSO, UP, SuitRig.TORSO_SEAMS);
+    SuitRig.seams(torso, body, UP, SuitRig.TORSO_SEAMS);
     return torso
-      .poly([...FigureShapes.band(TORSO, normal, from, to)])
+      .poly([...FigureShapes.band(body, normal, from, to)])
       .fill(Palette.HARNESS)
       .roundRect(0.12, 0.014, 0.04, 0.042, 0.01)
       .fill(Palette.STEEL)
@@ -320,8 +330,9 @@ export class SuitRig extends FigureRig<SuitParts> {
   /** The head: the hood, the face dark in it, the goggles' frame, their lens, and over them the
    * glint, the mask and its valve, and the headlamp on its strap. */
   private static head(suit: number, lens: Graphics): Container {
+    const { hood: shape, mask } = SuitRig.SHAPES;
     const hood = new Graphics()
-      .poly([...FigureShapes.HOOD])
+      .poly([...shape])
       .fill(SuitRig.shading(suit, "above"))
       .ellipse(0.085, -0.01, 0.06, 0.088)
       .fill(Palette.HOOD_SHADOW)
@@ -331,7 +342,7 @@ export class SuitRig extends FigureRig<SuitParts> {
     const front = new Graphics()
       .ellipse(0.124, 0.034, 0.015, 0.006)
       .fill({ color: 0xffffff, alpha: 0.7 })
-      .poly([...FigureShapes.MASK])
+      .poly([...mask])
       .fill(SuitRig.shading(Palette.MASK, "front"))
       .circle(VALVE.x, VALVE.y, 0.022)
       .fill(Palette.VALVE)
@@ -367,7 +378,12 @@ export class SuitRig extends FigureRig<SuitParts> {
   }
 
   /** The seams across a part where `normal` reaches each of `seams`. */
-  private static seams(part: Graphics, outline: Outline, normal: Joint, seams: readonly number[]): void {
+  private static seams(
+    part: Graphics,
+    outline: Outline,
+    normal: Joint,
+    seams: readonly number[],
+  ): void {
     const half = SuitRig.SEAM.width / 2;
     for (const seam of seams) {
       part

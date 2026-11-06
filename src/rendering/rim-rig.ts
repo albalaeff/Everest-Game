@@ -2,7 +2,6 @@ import { Graphics } from "pixi.js";
 
 import { FigureRig } from "./figure-rig";
 import type { RigParts } from "./figure-rig";
-import { FigureShapes } from "./figure-shapes";
 import type { Outline } from "./figure-shapes";
 
 /**
@@ -30,23 +29,29 @@ export class RimRig extends FigureRig {
     const part = (...outlines: Outline[]): Graphics => {
       const silhouette = new Graphics();
       for (const outline of outlines) {
-        silhouette.poly([...outline]).fill(0xffffff).stroke({ width, color: 0xffffff, join: "round" });
+        silhouette
+          .poly([...outline])
+          .fill(0xffffff)
+          .stroke({ width, color: 0xffffff, join: "round" });
       }
       return silhouette;
     };
-    const pair = (...outlines: Outline[]): [Graphics, Graphics] => [part(...outlines), part(...outlines)];
-    const { THIGH, SHIN, BOOT, UPPER_ARM, FOREARM, MITT, PACK, LID, TORSO, NECK, HOOD, MASK } =
-      FigureShapes;
+    const pair = (...outlines: Outline[]): [Graphics, Graphics] => [
+      part(...outlines),
+      part(...outlines),
+    ];
+    const { thigh, shin, boot, upperArm, forearm, mitt, pack, lid, torso, neck, hood, mask } =
+      RimRig.SHAPES;
     return {
-      thighs: pair(THIGH),
-      shins: pair(SHIN),
-      boots: pair(BOOT),
-      upperArms: pair(UPPER_ARM),
-      forearms: pair(FOREARM, MITT),
-      pack: part(PACK, LID),
-      torso: part(TORSO),
-      neck: part(NECK),
-      head: part(HOOD, MASK),
+      thighs: pair(thigh),
+      shins: pair(shin),
+      boots: pair(boot),
+      upperArms: pair(upperArm),
+      forearms: pair(forearm, mitt),
+      pack: part(pack, lid),
+      torso: part(torso),
+      neck: part(neck),
+      head: part(hood, mask),
     };
   }
 }

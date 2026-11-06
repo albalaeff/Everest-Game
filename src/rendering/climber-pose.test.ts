@@ -192,7 +192,10 @@ describe("ClimberPose", () => {
     // The snow rises and falls under a climber going level; the figure gives the pose the snow's
     // height ahead of them, above the snow under them.
     const snow = (x: number): number => 0.12 * Math.sin(2.3 * x) + 0.05 * Math.sin(5.1 * x + 1);
-    const under = (x: number): Ground => (ahead) => snow(x + ahead) - snow(x);
+    const under =
+      (x: number): Ground =>
+      (ahead) =>
+        snow(x + ahead) - snow(x);
     const climber = new ClimberPose();
     climber.advance(1, state({ ground: under(0) }));
     const frames: { x: number; pose: Pose }[] = [];
