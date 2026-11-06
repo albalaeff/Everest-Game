@@ -17,12 +17,15 @@ describe("GraphicsQuality", () => {
     expect(HIGH.dithered).toBe(true);
   });
 
-  it("keeps some spindrift at every level, since it tells the wind", () => {
+  it("keeps some spindrift and some fog at every level, since they tell the wind and the weather", () => {
     const { LOW, MEDIUM, HIGH } = GraphicsQuality;
 
     expect(LOW.motes).toBeGreaterThan(0);
     expect(MEDIUM.motes).toBeGreaterThan(LOW.motes);
     expect(HIGH.motes).toBeGreaterThan(MEDIUM.motes);
+    expect(LOW.fogBanks).toBeGreaterThan(0);
+    expect(MEDIUM.fogBanks).toBeGreaterThan(LOW.fogBanks);
+    expect(HIGH.fogBanks).toBeGreaterThan(MEDIUM.fogBanks);
   });
 
   it("steps through the levels, and round again", () => {

@@ -1,7 +1,7 @@
 import { Application, Rectangle } from "pixi.js";
 
 import type { SlopePhysics } from "../physics";
-import type { Body, ClimberId, MountainClock, ObjectiveHazards } from "../simulation";
+import type { Body, Breathing, ClimberId, MountainClock, ObjectiveHazards } from "../simulation";
 import { Atmosphere } from "./atmosphere";
 import type { Camera } from "./camera";
 import type { CampStretch } from "./camp-signs";
@@ -21,6 +21,8 @@ export interface SceneWorld {
   readonly hazards: ObjectiveHazards;
   readonly clock: MountainClock;
   readonly body: Body;
+  /** The supplemental oxygen: a climber's mask is on while it flows. */
+  readonly oxygen: Breathing;
   readonly camps: readonly CampStretch[];
   readonly parts: readonly PartStretch[];
   readonly climbers: readonly ClimberId[];
@@ -32,12 +34,11 @@ export interface SceneWorld {
  * The picture of the slope: a PixiJS application in the page's `#slope`, with the layers the
  * quality asks for, back to front, each placed by the camera every frame and lit by the hour of
  * the mountain's clock and the hazards' weather, and shaking while a hazard goes. It reads the
- * physics, the hazards, the clock, the body, the camps and the route's parts and holds no game
- * state: what it owns
- * is the picture's own, the camera's place and zoom, the flakes and the motes, the warnings'
- * clocks, its own seconds and the frame count. For the page's stories it writes what it draws
- * into `#slope`'s data attributes, and reads a pixel back, since Playwright can't read a WebGL
- * canvas.
+ * physics, the hazards, the clock, the body, the oxygen, the camps and the route's parts and holds
+ * no game state: what it owns is the picture's own, the camera's place and zoom, the flakes and
+ * the motes, the warnings' clocks, its own seconds and the frame count. For the page's stories it
+ * writes what it draws into `#slope`'s data attributes, and reads a pixel back, since Playwright
+ * can't read a WebGL canvas.
  */
 export class SlopeScene {
   /** How far the picture shakes while a hazard goes, in slope metres a step of its cycle, and
@@ -61,7 +62,7 @@ export class SlopeScene {
     private readonly world: SceneWorld,
     private quality: GraphicsQuality,
   ) {
-    this.atmosphere = Atmosphere.at(world.clock.timeOfDay, world.hazards.weather);
+    this.atmosphere = Atmosphere.at(world.clock.timeOfDay, world.hazards.weather, this.altitude);
   }
 
   /** Opens the canvas in the host: false when the browser can't draw, which is no WebGL. */
@@ -107,7 +108,8 @@ export class SlopeScene {
 
   /** A frame, `between` the steps: the climbers and the ropes move to where they are drawn, the
    * camera follows the player there for `seconds` more, the air and the light are read from the
-   * clock and the weather, and every layer is placed by the camera and lit. */
+   * clock, the player's altitude and the weather, and every layer is placed by the camera and
+   * lit. */
   draw(seconds: number, between: BetweenSteps): void {
     if (!this.opened) {
       return;
@@ -117,7 +119,12 @@ export class SlopeScene {
     this.camera.resize(width, height);
     this.slope?.move(between);
     this.camera.follow(seconds, this.slope?.player ?? this.camera.climber);
-    this.atmosphere = this.atmosphere.after(seconds, clock.timeOfDay, hazards.weather);
+    this.atmosphere = this.atmosphere.after(
+      seconds,
+      clock.timeOfDay,
+      hazards.weather,
+      this.altitude,
+    );
     for (const layer of this.layers) {
       layer.place(this.camera);
     }
@@ -130,6 +137,11 @@ export class SlopeScene {
     this.shake();
     this.frames += 1;
     this.report();
+  }
+
+  /** The player's altitude, in metres: the air the sky is seen through. */
+  private get altitude(): number {
+    return this.world.physics.climber(this.world.player).altitude;
   }
 
   /** While a hazard goes, the whole picture shakes, a few centimetres of slope each way from
@@ -160,11 +172,11 @@ export class SlopeScene {
     for (const layer of this.layers) {
       layer.destroy({ children: true });
     }
-    const { layers: optional, flakes, motes, dithered } = this.quality;
+    const { layers: optional, flakes, motes, fogBanks, dithered } = this.quality;
     const { width, height } = this.app.screen;
-    const { physics, hazards, body, camps, parts, climbers, player, seed } = this.world;
+    const { physics, hazards, body, oxygen, camps, parts, climbers, player, seed } = this.world;
     const skyline = (style: typeof SkylineLayer.PEAKS, offset: number): SkylineLayer =>
-      new SkylineLayer(style, physics.terrain, seed + offset);
+      new SkylineLayer(style, physics.terrain, seed + offset, fogBanks);
     this.sky = new SkyLayer(dithered);
     this.skylines = [
       ...(optional.farRanges ? [skyline(SkylineLayer.FAR_RANGES, 1)] : []),
@@ -176,6 +188,7 @@ export class SlopeScene {
       physics,
       hazards,
       body,
+      oxygen,
       camps,
       parts,
       climbers,

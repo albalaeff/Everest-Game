@@ -28,7 +28,8 @@ interface Spot {
  * A climber drawn in metres from their point, facing +x and turned round to face the way they go
  * (docs/guidelines/graphics.md → The animation shows the body's state): a figure in their kit as
  * #125's scene draws one (`SuitRig`, #168), its parts drawn once and moved onto the bones, the
- * cowstails from the harness to the jumar and the carabiner on the rope drawn each frame. It's lit
+ * cowstails from the harness to the jumar and the carabiner on the rope drawn each frame, and the
+ * mask on the face while their oxygen flows, hanging on the chest while it doesn't (#87). It's lit
  * as one figure: each part shaded from the light, the far limbs cold, a rim of the hour's light on
  * the side the sun is (`RimRig`), and at night the lamp's beam, soft, ahead and down the slope,
  * with the pool it throws on the snow. It's drawn between the steps, where `SteppedPoints` has the
@@ -163,10 +164,17 @@ export class ClimberFigure extends Container {
     this.second.y = stepped.y(2);
   }
 
-  /** Draws them as they are this frame, `seconds` after the last, as the body shows them, in the
-   * frame's light, no smaller than `size` allows, and `sag` lower where a ladder gives under them.
-   */
-  show(body: BodyView, atmosphere: Atmosphere, seconds: number, size: LeastSize, sag = 0): void {
+  /** Draws them as they are this frame, `seconds` after the last, as the body shows them, the mask
+   * on while their oxygen flows (`masked`), in the frame's light, no smaller than `size` allows,
+   * and `sag` lower where a ladder gives under them. */
+  show(
+    body: BodyView,
+    masked: boolean,
+    atmosphere: Atmosphere,
+    seconds: number,
+    size: LeastSize,
+    sag = 0,
+  ): void {
     const { climber, drawn } = this;
     if (climber === null) {
       return;
@@ -197,7 +205,7 @@ export class ClimberFigure extends Container {
       this.breathing.advance(seconds, Breathing.period(climber.altitude, body.tiredness, moving));
     }
     this.alpha = climber.dead ? ClimberFigure.DEAD_ALPHA : 1;
-    this.draw(pose, atmosphere, climber.dead, grown, size);
+    this.draw(pose, masked, atmosphere, climber.dead, grown, size);
     const upright = !climber.dead && !climber.falling;
     this.drawLamp(pose, atmosphere, upright ? state.ground : null);
     this.drawBreath(atmosphere, climber.dead, atmosphere.gust * facing);
@@ -240,11 +248,12 @@ export class ClimberFigure extends Container {
     into.y = this.position.y + sin * across * joint.x + cos * grown * joint.y;
   }
 
-  /** The kit on the pose, the chest swollen with the breath, the far limbs in the hour's cold
-   * light; the cowstails no thinner than a line can be drawn, however small the figure; and the
-   * rim behind it. */
+  /** The kit on the pose, the chest swollen with the breath, the mask on the face or on the chest,
+   * the far limbs in the hour's cold light; the cowstails no thinner than a line can be drawn,
+   * however small the figure; and the rim behind it. */
   private draw(
     pose: Pose,
+    masked: boolean,
     atmosphere: Atmosphere,
     dead: boolean,
     grown: number,
@@ -253,15 +262,21 @@ export class ClimberFigure extends Container {
     const { figure } = this;
     const swell = ClimberFigure.CHEST_SWELL * this.breathing.chest;
     figure.recolour(atmosphere.palette);
-    figure.place(pose, swell);
+    figure.place(pose, swell, masked);
     const thin = size.line(ClimberFigure.COWSTAIL_WIDTH * grown) / grown;
     figure.hold(pose, ClimberFigure.COWSTAIL_METRES / grown, thin);
-    this.drawRim(pose, swell, atmosphere, dead);
+    this.drawRim(pose, swell, masked, atmosphere, dead);
   }
 
   /** The rim of the hour's light along the body's edge on the side the sun is: the figure's
    * silhouette a little wider and moved towards it, behind the body, so only that edge shows. */
-  private drawRim(pose: Pose, swell: number, atmosphere: Atmosphere, dead: boolean): void {
+  private drawRim(
+    pose: Pose,
+    swell: number,
+    masked: boolean,
+    atmosphere: Atmosphere,
+    dead: boolean,
+  ): void {
     const { light, palette } = atmosphere;
     const { rim } = this;
     rim.visible = !dead;
@@ -277,7 +292,7 @@ export class ClimberFigure extends Container {
     // The figure's x is the way it faces, and turns over halfway round.
     const side = light.glowSide * (this.turn >= 0 ? 1 : -1);
     rim.position.set(side * edge, edge * 0.4);
-    rim.place(pose, swell);
+    rim.place(pose, swell, masked);
   }
 
   /** The headlamp's light, as bright as the hour asks, while the climber is on their feet: the
@@ -416,9 +431,9 @@ export class ClimberFigure extends Container {
     });
   }
 
-  /** The breath cloud out of the mask's valve on each breath out, drifting ahead, blown on the
-   * gust the way the wind blows, `downwind` of 1 the way they face, and thinning; warm in the
-   * lamp's light at night. */
+  /** The breath cloud out of the mouth, through the mask's valve while it's on, on each breath
+   * out, drifting ahead, blown on the gust the way the wind blows, `downwind` of 1 the way they
+   * face, and thinning; warm in the lamp's light at night. */
   private drawBreath(atmosphere: Atmosphere, dead: boolean, downwind: number): void {
     this.breath.clear();
     if (dead || !this.breathing.exhaling) {
@@ -428,13 +443,13 @@ export class ClimberFigure extends Container {
     const { from, to } = Breathing.EXHALE;
     const share = (this.breathing.where - from) / (to - from);
     const size = ClimberFigure.BREATH_RADIUS * (0.4 + 0.6 * share);
-    const valve = this.figure.valve;
+    const mouth = this.figure.mouth;
     const calm = 1 - Math.abs(downwind);
     const x =
-      valve.x +
+      mouth.x +
       ClimberFigure.BREATH_AHEAD +
       share * (ClimberFigure.BREATH_DRIFT * calm + ClimberFigure.BREATH_BLOWN * downwind);
-    const y = valve.y + 0.08 * share;
+    const y = mouth.y + 0.08 * share;
     const alpha = 1 - share;
     this.breath.circle(x, y, size).fill({ color: colour, alpha: 0.45 * alpha });
     this.breath
