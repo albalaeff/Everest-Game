@@ -25,7 +25,19 @@ const LADDERS: Readonly<Record<string, readonly Point[]>> = {
     { x: 28, y: 5 },
   ],
 };
-const slope: ReadSlope = { terrain, ladder: (id) => LADDERS[id] ?? [] };
+/** A rope up the rise, its anchors at 10 and 14 m. */
+const ROPES: Readonly<Record<string, readonly Point[]>> = {
+  rise: [
+    { x: 10, y: 0 },
+    { x: 12, y: 1 },
+    { x: 14, y: 2 },
+  ],
+};
+const slope: ReadSlope = {
+  terrain,
+  ladder: (id) => LADDERS[id] ?? [],
+  rope: (id) => ROPES[id] ?? [],
+};
 const BODY: BodyView = { tiredness: "fresh", symptoms: [], oximeter: 90, pace: "steady" };
 
 const view = (over: Partial<ClimberView> = {}): ClimberView => ({
@@ -144,5 +156,19 @@ describe("ClimberReading", () => {
 
     expect(state.jumar).toEqual({ x: -0.5, y: 0.5 });
     expect(state.carabiner).toBeNull();
+  });
+
+  it("measures the rope from the jumar to its nearer anchor, in the figure's metres", () => {
+    const reading = new ClimberReading(slope);
+    const up = Math.hypot(2, 1);
+    const low = reading.read(view({ first: "rise" }), BODY, drawn(11, 0.5, 2, { x: 11, y: 0.5 }));
+    const high = reading.read(
+      view({ first: "rise" }),
+      BODY,
+      drawn(13, 1.5, 1, { x: 13.6, y: 1.8 }),
+    );
+
+    expect(low.slack).toBeCloseTo(up / 4, 9);
+    expect(high.slack).toBeCloseTo(up / 5, 9);
   });
 });

@@ -2,10 +2,11 @@ import type { ClimberView, Point, Terrain } from "../physics";
 import type { BodyView } from "../simulation";
 import type { Joint, LadderFooting, PoseState } from "./climber-pose";
 
-/** What a figure reads the ground and the ladders from: the slope physics. */
+/** What a figure reads the ground, the ladders and the ropes from: the slope physics. */
 export interface ReadSlope {
   readonly terrain: Terrain;
   ladder(id: string): readonly Point[];
+  rope(id: string): readonly Point[];
 }
 
 /** Where a figure's climber is drawn this frame, between the steps: their point and each
@@ -19,12 +20,12 @@ export interface DrawnAt {
 
 /**
  * How a figure reads its climber for the pose (`ClimberPose`), each frame: which way they face,
- * how far they've come, the ground under the boots and the ladder they're on, in the figure's
- * metres, `grown` times life size from where the climber is drawn, x the way they face. On the
- * ground they face the way they last walked; on a ladder up a wall, the wall, going up or down it
- * by the key. A wall's face or a crevasse's edge beside them is no ground for a boot, which stands
- * level there. It keeps only the picture's own: the way they face and go, how far they've come,
- * and where they were drawn last.
+ * how far they've come, the ground under the boots, the ladder they're on and the rope from the
+ * jumar to its anchor, in the figure's metres, `grown` times life size from where the climber is
+ * drawn, x the way they face. On the ground they face the way they last walked; on a ladder up a
+ * wall, the wall, going up or down it by the key. A wall's face or a crevasse's edge beside them
+ * is no ground for a boot, which stands level there. It keeps only the picture's own: the way
+ * they face and go, how far they've come, and where they were drawn last.
  */
 export class ClimberReading {
   /** A ladder's rungs, as the slope layer draws them: every 30 cm, from 15 cm off its `from` end. */
@@ -105,6 +106,10 @@ export class ClimberReading {
       jumar: this.local(drawn.jumar, at),
       carabiner: this.local(drawn.carabiner, at),
       sliding: view.jumarHeld,
+      slack:
+        view.first === null || drawn.jumar === null
+          ? 0
+          : ClimberReading.toAnchor(this.slope.rope(view.first), drawn.jumar) / grown,
       ladder: along === null || heading === null ? null : this.footing(along, heading, at, wall),
     };
   }
@@ -163,6 +168,34 @@ export class ClimberReading {
       x: ((point.x - at.x) * this.facingNow) / this.grown,
       y: (point.y - at.y) / this.grown,
     };
+  }
+
+  /** How far a rope runs from `point` on it to its nearer end, its anchor: along its `chain`,
+   * from where on it the point is nearest. */
+  private static toAnchor(chain: readonly Point[], point: Point): number {
+    let along = 0;
+    let total = 0;
+    let nearest = Infinity;
+    for (let link = 1; link < chain.length; link += 1) {
+      const from = chain[link - 1];
+      const to = chain[link];
+      if (from === undefined || to === undefined) {
+        continue;
+      }
+      const dx = to.x - from.x;
+      const dy = to.y - from.y;
+      const length = Math.hypot(dx, dy);
+      const onIt =
+        length > 0 ? ((point.x - from.x) * dx + (point.y - from.y) * dy) / length ** 2 : 0;
+      const share = Math.min(Math.max(onIt, 0), 1);
+      const away = Math.hypot(from.x + dx * share - point.x, from.y + dy * share - point.y);
+      if (away < nearest) {
+        nearest = away;
+        along = total + length * share;
+      }
+      total += length;
+    }
+    return Math.min(along, total - along);
   }
 
   private static heading(start: Point, finish: Point): Point {

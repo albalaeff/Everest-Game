@@ -46,6 +46,9 @@ export interface PoseState {
   readonly carabiner: Joint | null;
   /** Whether their hand slides the jumar up the rope: its key is held. */
   readonly sliding: boolean;
+  /** How far the rope runs on from the jumar to its nearer anchor, in the figure's metres: the
+   * most it comes up off where it lies. */
+  readonly slack: number;
   readonly ladder: LadderFooting | null;
 }
 
@@ -146,8 +149,9 @@ interface Lying {
  * stands still on the locked lower leg after each step; tiredness shortens and lowers the steps,
  * stills the arms, bends the back and drops the head, and an exhausted climber at a halt bends
  * double, hands on knees. Clipped, the near hand holds the jumar and pushes it up in strokes while
- * its key is held; as the second carabiner is clipped or unclipped, the climber bends and crouches
- * to it, the far hand on it.
+ * its key is held, and lets it go near an anchor, where the rope can't come up to the hand; as the
+ * second carabiner is clipped or unclipped, the climber bends and crouches to it, the far hand on
+ * it.
  * Across a ladder each boot comes down on a rung, the hands on its lines; up a wall, boot and hand
  * go rung over rung. A fall takes them over face down, tumbling in the air, or hangs them below
  * the rope; they get up through a kneel; a dead climber lies still. From each to the next the pose
@@ -257,9 +261,11 @@ export class ClimberPose {
   private static readonly REACH = 0.995;
   /** Where the near hand holds the jumar when the rope is out of its reach, from the shoulder:
    * the rope is lifted to it. How much of each step pushes the jumar up the rope; it grips for
-   * the rest. */
+   * the rest. How much shorter than that lift the rope to the anchor gets as the hand lets go:
+   * nearer, the rope can't come up to it. */
   private static readonly JUMAR_HOLD: Joint = { x: 0.34, y: -0.3 };
   private static readonly JUMAR_PUSH = 0.7;
+  private static readonly LET_GO = 0.3;
   /** How long the far hand takes to clip the second cowstail, or unclip it, and come back; how
    * far the body leans into the reach, and crouches to the rope. */
   private static readonly CLIP_SECONDS = 0.6;
@@ -346,10 +352,11 @@ export class ClimberPose {
    * step would have brought it there. */
   private standing = 1;
   private settled: [number, number] = [0, 0];
-  /** How far the near hand is on the jumar, 0 to 1, and where it held it last; how far it
-   * pushes it in strokes. */
+  /** How far the near hand is on the jumar, 0 to 1, where it held it last, and how far off the
+   * rope that lifted it; how far it pushes it in strokes. */
   private holding = 0;
   private heldAt: Joint | null = null;
+  private lift = 0;
   private pushing = 0;
   /** How far into the rest step's rhythm, 0 to 1. */
   private resting = 0;
@@ -443,7 +450,9 @@ export class ClimberPose {
   private keepTime(frame: number, share: number, state: PoseState, mode: Mode): void {
     const upright = mode === "walk" || mode === "rungs" || mode === "wall";
     this.standing += ((state.moving && upright ? 0 : 1) - this.standing) * share;
-    this.holding += ((state.jumar !== null && upright ? 1 : 0) - this.holding) * share;
+    // The hand lets the jumar go where the rope runs on to its anchor less far than it lifts it.
+    const grip = ClimberPose.smooth(1 + (state.slack - this.lift) / ClimberPose.LET_GO);
+    this.holding += ((state.jumar !== null && upright ? grip : 0) - this.holding) * share;
     const pushing = state.sliding && state.moving && upright;
     this.pushing += ((pushing ? 1 : 0) - this.pushing) * share;
     const resting = state.pace === "rest-step" && mode === "walk";
@@ -711,6 +720,7 @@ export class ClimberPose {
         x: x + (onX - x) * within + along.x * ahead,
         y: y + (onY - y) * within + along.y * ahead,
       };
+      this.lift = Math.hypot(this.heldAt.x - onX, this.heldAt.y - onY);
     }
     const held = this.heldAt;
     const onTheJumar = held === null ? near : ClimberPose.between(near, held, this.holding);
