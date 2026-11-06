@@ -786,6 +786,80 @@
       ]
     },
     {
+      "id": "route.icefall-ladders-lashed",
+      "kind": "fact",
+      "claim": "Where one ladder isn't long enough, the Icefall's ladders are lashed together end to end, three, four or more, and a long one sags in the middle and bounces; they go across, up, down and at an angle.",
+      "status": "source only",
+      "versions": [
+        {
+          "note": "How many ladders are lashed together? Not too bad if only one, but three, four or more, it sinks in the middle, it bounces. They go down, straight up and at an angle, almost never straight across; dual ladders in high-traffic areas; the safety line is tied to an ice screw across the crevasse, and climbers clip into both lines.",
+          "source": {
+            "title": "Alan Arnette: Everest 2013: Crossing the Ladders of Everest",
+            "url": "https://www.alanarnette.com/2013/04/12/everest-2013-crossing-the-ladders-of-everest/"
+          },
+          "checked": "2026-11-06"
+        }
+      ]
+    },
+    {
+      "id": "route.icefall-parts",
+      "kind": "fact",
+      "claim": "From Base Camp the route crosses to Crampon Point, then climbs the lower Icefall, the Popcorn, the flat Football Field about halfway up and the steeper Upper Icefall, to the flat snow at its top that leads into the Western Cwm and on to Camp 1.",
+      "status": "source only",
+      "versions": [
+        {
+          "note": "Crampon Point is the last flat section, where climbers attach their crampons; the first section is a continuous climb that undulates wildly, with the first ladder after an hour and huge seracs teetering above; then the section known as the Popcorn; then the Football Field, a large area of flat hard-packed snow, about halfway up, after two or three hours the first time; then the Upper Icefall, whose final section always has steeper ladders and sharper grades; at the top, a flat expanse of snow leads into the Western Cwm, with Camp 1 half an hour to an hour on.",
+          "source": {
+            "title": "Alan Arnette: Mt. Everest South Col Route Maps",
+            "url": "https://www.alanarnette.com/everest/everestsouthroutes.php"
+          },
+          "checked": "2026-11-06"
+        }
+      ]
+    },
+    {
+      "id": "route.football-field-altitude",
+      "kind": "fact",
+      "claim": "The Football Field, the flat in the middle of the Icefall, lies at this altitude, and it is the part most exposed to falling seracs.",
+      "status": "source only",
+      "versions": [
+        {
+          "value": 5700,
+          "unit": "m",
+          "note": "The serac accident of April 2023 struck as the climbers were crossing the so-called Football Field at 5,700 m, the section in the middle of the Icefall most exposed to falling seracs.",
+          "source": {
+            "title": "Explorersweb: Cause of Everest Tragedy Remains Unclear (2023)",
+            "url": "https://explorersweb.com/cause-of-everest-tragedy-remains-unclear/"
+          },
+          "checked": "2026-11-06"
+        }
+      ]
+    },
+    {
+      "id": "route.base-camp-ground",
+      "kind": "fact",
+      "claim": "Base Camp's tents stand on the Khumbu Glacier itself, on ice covered in dirt and rocks, not on snow.",
+      "status": "source only",
+      "versions": [
+        {
+          "note": "The moving river of ice under Base Camp is covered in dirt, and carries rocks down from high in the Western Cwm; a steep path leads down onto the glacier.",
+          "source": {
+            "title": "Alan Arnette: Everest Base Camp (2011)",
+            "url": "https://www.alanarnette.com/2011/04/11/everest-base-camp/"
+          },
+          "checked": "2026-11-06"
+        },
+        {
+          "note": "Base Camp sits on the Khumbu Glacier, and the ice underfoot melts much faster in the climbing season; the authorities thought of moving it to the top of a lateral moraine.",
+          "source": {
+            "title": "Explorersweb: Will Everest Base Camp Move Next Spring? (2022)",
+            "url": "https://explorersweb.com/will-everest-base-camp-move-next-spring/"
+          },
+          "checked": "2026-11-06"
+        }
+      ]
+    },
+    {
       "id": "route.western-cwm-hazards",
       "kind": "fact",
       "claim": "In the Western Cwm, hidden crevasses lie under thin snow bridges, and on a clear, windless day the heat is scorching.",
