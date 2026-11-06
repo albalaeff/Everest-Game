@@ -36,6 +36,7 @@ const view = (over: Partial<ClimberView> = {}): ClimberView => ({
   dead: false,
   walking: "stop",
   moving: false,
+  exertion: 0,
   first: null,
   second: null,
   firstAt: null,

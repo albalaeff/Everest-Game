@@ -146,7 +146,8 @@ interface Lying {
  * stands still on the locked lower leg after each step; tiredness shortens and lowers the steps,
  * stills the arms, bends the back and drops the head, and an exhausted climber at a halt bends
  * double, hands on knees. Clipped, the near hand holds the jumar and pushes it up in strokes while
- * its key is held, and the far hand goes to the second carabiner as it's clipped and unclipped.
+ * its key is held; as the second carabiner is clipped or unclipped, the climber bends and crouches
+ * to it, the far hand on it.
  * Across a ladder each boot comes down on a rung, the hands on its lines; up a wall, boot and hand
  * go rung over rung. A fall takes them over face down, tumbling in the air, or hangs them below
  * the rope; they get up through a kneel; a dead climber lies still. From each to the next the pose
@@ -260,9 +261,10 @@ export class ClimberPose {
   private static readonly JUMAR_HOLD: Joint = { x: 0.34, y: -0.3 };
   private static readonly JUMAR_PUSH = 0.7;
   /** How long the far hand takes to clip the second cowstail, or unclip it, and come back; how
-   * far the body leans into the reach. */
+   * far the body leans into the reach, and crouches to the rope. */
   private static readonly CLIP_SECONDS = 0.6;
   private static readonly CLIP_LEAN = 0.3;
+  private static readonly CLIP_CROUCH = 0.15;
   /** Across a ladder: how far ahead of the shoulders each hand holds the lines. */
   private static readonly LINE_HOLDS: readonly [number, number] = [0.3, 0.18];
   /** Up a wall: how far toward the wall from the ladder's line the balls of the feet and the
@@ -587,7 +589,7 @@ export class ClimberPose {
     const pelvisX = -0.08 * lean - ClimberPose.REST_BACK * gait.pausing;
     const dip = (1 + Math.cos(4 * Math.PI * (gait.phase - ClimberPose.START))) / 2;
     const bob = ClimberPose.BOB * dip * (1 - this.standing);
-    const sink = ClimberPose.SINK[state.tiredness];
+    const sink = ClimberPose.SINK[state.tiredness] + ClimberPose.CLIP_CROUCH * this.reach();
     let height = this.height(state, pelvisX, behind) + ClimberPose.STANDING - sink - bob;
     // In the rest step's pause the climber stands straight on the back leg, locked.
     const backIsNear = near.ankle.x < far.ankle.x;

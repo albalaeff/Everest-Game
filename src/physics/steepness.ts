@@ -3,11 +3,15 @@ import { Curve } from "../simulation";
 /** A point of a curve by steepness: an angle in degrees, uphill positive, and the value there. */
 export type SteepnessPoint = readonly [degrees: number, value: number];
 
+/** A point of a curve by gradient: the rise over the run, uphill positive, and the value there. */
+export type GradientPoint = readonly [gradient: number, value: number];
+
 /**
  * How steep a way over the ground is, as the sine of its angle: up is positive, down negative, a
- * wall ±1. The data gives angles in degrees, as climbers and sources do. Their sine is worked out
- * here with `+ - * /` alone, because each browser rounds `Math.sin` its own way
- * (docs/conventions/simulation-core.md → The same result everywhere).
+ * wall ±1. The data gives angles in degrees, as climbers and sources do, or gradients, as the
+ * physiologists' treadmills do. An angle's sine is worked out here with `+ - * /` alone, because
+ * each browser rounds `Math.sin` its own way (docs/conventions/simulation-core.md → The same
+ * result everywhere).
  */
 export class Steepness {
   /** Terms of the sine's series past the first: the last is below 10⁻¹⁸ at a wall. */
@@ -37,10 +41,15 @@ export class Steepness {
     }
     return new Steepness(up / length);
   }
+
+  /** The steepness of a gradient: `gradient` metres up for each metre across. */
+  static ofGradient(gradient: number): Steepness {
+    return Steepness.ofWay(1, gradient);
+  }
 }
 
 /**
- * A number that depends on how steep the ground is, such as the walking speed: the data's points,
+ * A number that depends on how steep the ground is, such as the slip chance: the data's points,
  * from the steepest down to the steepest up, joined by straight lines over the sine, a `Curve` of
  * the core. Past its ends it keeps its end values.
  */

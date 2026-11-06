@@ -417,7 +417,7 @@ describe("ClimberPose", () => {
     expect(longestStill(slid, jumar, 1e-3)).toBe(0);
   });
 
-  it("reaches with the far hand to the second carabiner as it's clipped, and back", () => {
+  it("bends to the second carabiner as it's clipped, the far hand on it, and stands again", () => {
     const climber = new ClimberPose();
     const before = climber.advance(5, state());
     const carabiner = { x: 0.5, y: 0.8 };
@@ -429,10 +429,14 @@ describe("ClimberPose", () => {
     const reached = length(pose.arms[1].end, carabiner);
     expect(reached).toBeLessThan(length(before.arms[1].end, carabiner) - 0.15);
     expect(pose.carabiner).toEqual(carabiner);
+    expect(pose.lean).toBeGreaterThan(before.lean + 0.2);
+    expect(pose.pelvis.y).toBeLessThan(before.pelvis.y - 0.1);
     for (let frame = 18; frame < 90; frame += 1) {
       pose = climber.advance(FRAME, state({ carabiner }));
     }
     expect(length(pose.arms[1].end, before.arms[1].end)).toBeLessThan(0.02);
+    expect(pose.pelvis.y).toBeCloseTo(before.pelvis.y, 6);
+    expect(pose.lean).toBeCloseTo(before.lean, 6);
   });
 
   it("goes over face down in a fall and lies along the ground, the head the way it faced", () => {

@@ -9,11 +9,11 @@ export type SectionAltitude = {
 
 /**
  * The scale a section is drawn at, and the altimeter's reading on it (docs/conventions/slope-physics.md
- * → The slope). Every section is drawn at the same share of life, 1/`time.compression`, so a
- * climber at real speed over it takes the section's real hours. The real altitude goes from the
- * start's to the end's by the share of the section's width crossed, and the drawn ground's own ups
- * and downs, above and below the straight line between the ends, read at life size: a 10 m fall
- * reads 10 m.
+ * → The slope). Every section is drawn at the same share of life, 1/`route.drawn-scale`, and the
+ * mountain's clock runs faster than that, the climber with it, so a section takes its real hours.
+ * The real altitude goes from the start's to the end's by the share of the section's width
+ * crossed, and the drawn ground's own ups and downs, above and below the straight line between the
+ * ends, read at life size: a 10 m fall reads 10 m.
  */
 export class SectionScale {
   private readonly first: Point;
@@ -37,7 +37,7 @@ export class SectionScale {
   }
 
   /** How many real metres a drawn metre stands for: the real rise over the drawn one. */
-  get compression(): number {
+  get ratio(): number {
     const drawn = this.last.y - this.first.y;
     if (drawn === 0) {
       throw new RangeError("A section that neither rises nor falls has no scale of its own");

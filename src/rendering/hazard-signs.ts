@@ -70,17 +70,29 @@ export class HazardSigns {
     return zone.from + (zone.to - zone.from) * share;
   }
 
+  /** Each tower a block of ice with a broken top, every other one turned the other way so no two
+   * neighbours match: across its foot from -1 to 1, and up it from 0 to 1. */
+  private static readonly SERAC_SHAPE: readonly (readonly [number, number])[] = [
+    [-1, 0],
+    [1, 0],
+    [0.85, 0.7],
+    [0.7, 0.93],
+    [0.25, 1],
+    [-0.15, 0.86],
+    [-0.55, 0.9],
+    [-0.9, 0.72],
+  ];
+
   private towers(zone: HazardZone): readonly (readonly Point[])[] {
     const heights = HazardSigns.TOWER_METRES;
     const half = HazardSigns.TOWER_HALF_WIDTH;
     return heights.map((height, tower) => {
       const foot = this.terrain.point(HazardSigns.across(zone, (tower + 0.5) / heights.length));
-      return [
-        { x: foot.x - half, y: foot.y },
-        { x: foot.x + half, y: foot.y },
-        { x: foot.x + half * 0.7, y: foot.y + height },
-        { x: foot.x - half * 0.9, y: foot.y + height * 0.85 },
-      ];
+      const turned = tower % 2 === 0 ? 1 : -1;
+      return HazardSigns.SERAC_SHAPE.map(([across, up]) => ({
+        x: foot.x + turned * across * half,
+        y: foot.y + up * height,
+      }));
     });
   }
 

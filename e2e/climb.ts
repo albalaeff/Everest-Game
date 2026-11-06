@@ -98,10 +98,10 @@ export async function goOnWithTheClimb(page: Page): Promise<void> {
   await choice(page, "Alone").click();
 }
 
-/** The wait for a climber to walk a step or two, as `expect.poll` takes it: a few seconds at the
- * Icefall's pace, 0.4 m/s on the flat before the altitude and the pack slow the climber, and the
- * frames of a headless browser drawing in software on CI, a second or two apart, which carry the
- * keys to the climb and the climb to the page. */
+/** The wait for a climber to walk a step or two, as `expect.poll` takes it: a second or two at
+ * the Icefall's pace, 1.5 m/s on the flat, and the frames of a headless browser drawing in
+ * software on CI, a second or two apart, which carry the keys to the climb and the climb to the
+ * page. */
 export const WALKING = { timeout: 20_000 };
 
 /** The wait for the first frame of a second browser in a story, as an expect takes it: it starts

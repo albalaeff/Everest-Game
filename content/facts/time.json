@@ -4,21 +4,22 @@
     {
       "id": "time.compression",
       "kind": "coefficient",
-      "claim": "The game's scale: how many times faster than play the mountain's time runs, and how many real metres a drawn metre of a section stands for. One ratio for the clock and the route, so that a climber walking at real speed over a section drawn at 1/12 takes the section's real hours; an hour on the mountain passes in five minutes of play. Fitted so that the slowest summit day on record, 12 hours from the South Col to the summit in the queue of 20 May 2026, plays in an hour, within the 60–90 minutes the spec gives the push, and so that the whole climb takes about six hours once camp skips the waits.",
+      "claim": "How many times faster than play the mountain's time runs: an hour on the mountain passes in 100 seconds of play. It's three times the scale the route is drawn at (route.drawn-scale), so a climber goes three times as fast over the drawn ground as in life, quick enough to play, and still takes a section's real hours on the clock, which their body tires, thirsts and sickens by. Fitted so that the slowest summit day on record, 12 hours from the South Col to the summit in the queue of 20 May 2026, plays in 20 minutes, within the 20–30 the spec gives the push, and so that the whole climb takes about two hours once camp skips the waits.",
       "status": "source only",
-      "value": 12,
+      "value": 36,
       "unit": "1",
       "fitted_to": [
         "crowds.south-col-to-summit-2026"
       ],
-      "fitted": "2026-11-03"
+      "fitted": "2026-11-06"
     },
     {
       "id": "time.section-hours",
       "kind": "question",
-      "question": "The sources give each section's hours (time.base-camp-to-camp-1 to time.camp-2-to-base-camp), but they differ by up to two hours, give lengths on the ground only as far as Camp 3, and don't say how much each section climbs. Which hours hold for a client today, the first time and on later rotations; how long is each section on the ground, and how much does it climb? The game draws every section at the same share of life and walks the climber at real speed, so these hours and lengths are what it has to fit.",
+      "question": "The sources give each section's hours (time.base-camp-to-camp-1 to time.camp-2-to-base-camp), but they differ by up to two hours, give lengths on the ground only as far as Camp 3, and don't say how much each section climbs. Which hours hold for a client today, the first time and on later rotations; how long is each section on the ground, and how much does it climb? The game draws every section at the same share of life and walks the climber over it at real speed by the mountain's clock, so these hours and lengths are what it has to fit.",
       "about": [
         "time.compression",
+        "route.drawn-scale",
         "route.icefall-length",
         "time.base-camp-to-camp-1",
         "time.camp-1-to-camp-2",

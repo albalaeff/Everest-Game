@@ -1,4 +1,4 @@
-import { Graphics } from "pixi.js";
+import { FillGradient, Graphics } from "pixi.js";
 
 import type { Point, Terrain } from "../physics";
 import { SeededRandom } from "../simulation";
@@ -121,8 +121,10 @@ export class SkylineLayer extends ParallaxLayer {
   private static readonly CREST_DEPTH = 3;
   private static readonly CREST_SHARE = 0.5;
   private static readonly CREST_ALPHA = 0.7;
-  /** The ice's edge: a brighter line along the seracs' tops. */
+  /** The ice's edge: a brighter line along the seracs' tops, and how far towards white it is by
+   * day. */
   private static readonly ICE_EDGE_METRES = 0.3;
+  private static readonly ICE_EDGE_LIGHT = 0.5;
   /** The plume: its motes, how high over the summit they ride and how big they are, and from
    * what gust it shows. */
   private static readonly PLUME_MOTES = 60;
@@ -235,9 +237,11 @@ export class SkylineLayer extends ParallaxLayer {
       this.fill.tint = palette.faded(body, haze);
       this.flutings.tint = palette.faded(palette.fluting, haze);
       this.bands.tint = palette.faded(palette.rock, haze);
-      this.edge.tint = palette.faded(Palette.mix(palette.ice, 0xffffff, 0.5), haze);
+      // The seracs' tops catch the light: barely under the stars, brightly by day.
+      const edgeLight = SkylineLayer.ICE_EDGE_LIGHT * (0.1 + 0.9 * light.daylight);
+      this.edge.tint = palette.faded(Palette.mix(palette.ice, 0xffffff, edgeLight), haze);
       this.cloudSea.tint = palette.faded(palette.cloud, haze * 0.5);
-      this.crests.tint = Palette.GLOW;
+      this.crests.tint = palette.glow;
       this.plumeGraphics.tint = palette.faded(palette.fluting, haze);
     }
     this.tintedWith = atmosphere;
@@ -262,8 +266,22 @@ export class SkylineLayer extends ParallaxLayer {
     this.fill
       .poly([from, bottom, ...outline.flatMap(({ x, y }) => [x, y]), to, bottom])
       .fill(0xffffff);
+    // The glow lights a crest from its top down, fading out as it goes: the layer's y is up, so
+    // the gradient's first stop is the crest's foot.
     for (const crest of this.faces.crests(SkylineLayer.CREST_DEPTH, SkylineLayer.CREST_SHARE)) {
-      this.crests.poly(crest.flatMap(({ x, y }) => [x, y])).fill(0xffffff);
+      this.crests.poly(crest.flatMap(({ x, y }) => [x, y])).fill(
+        new FillGradient({
+          type: "linear",
+          start: { x: 0, y: 0 },
+          end: { x: 0, y: 1 },
+          colorStops: [
+            { offset: 0, color: Palette.css(0xffffff, 0) },
+            { offset: 0.5, color: Palette.css(0xffffff, 0.45) },
+            { offset: 1, color: Palette.css(0xffffff, 1) },
+          ],
+          textureSpace: "local",
+        }),
+      );
     }
     for (const { top, foot } of flutings) {
       this.flutings.moveTo(top.x, top.y).lineTo(foot.x, foot.y);

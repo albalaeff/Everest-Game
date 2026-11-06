@@ -35,6 +35,13 @@ async function brightness(page: Page, x: number, y: number): Promise<number> {
   return (red + green + blue) / 3;
 }
 
+/** Whether a point shows the night's snow: navy, bluer than the purple of the far faces, and
+ * lighter than the night behind it (#125). */
+async function nightSnow(page: Page, x: number, y: number): Promise<boolean> {
+  const [red = 0, green = 0, blue = 0] = await pixel(page, x, y);
+  return blue - red > 40 && (red + green + blue) / 3 > 45;
+}
+
 /** How many of the points are darker than `below`: a snowflake may be over one of them. */
 async function darkAmong(page: Page, points: readonly [number, number][], below: number) {
   let dark = 0;
@@ -71,7 +78,9 @@ test.describe("on a screen of 630 by 360", () => {
     await expect(page.locator("#fps")).toHaveText(/^\d+ fps$/, { timeout: 15_000 });
   });
 
-  test("the sky is dark above, and the snow bright under the climber's feet", async ({ page }) => {
+  test("the night is dark above, the snow navy under the climber's feet, and their headlamp lights it ahead", async ({
+    page,
+  }) => {
     await openTheGame(page);
     await waitForFrames(page, 1);
 
@@ -81,7 +90,11 @@ test.describe("on a screen of 630 by 360", () => {
       [580, 8],
     ];
     expect(await darkAmong(page, sky, 90)).toBeGreaterThanOrEqual(2);
-    expect(await brightness(page, 210, 260)).toBeGreaterThan(200);
+    expect(await nightSnow(page, 210, 260)).toBe(true);
+    // The beam comes down to the snow about 5 m ahead of the climber: 90 px right of the anchor.
+    expect(await brightness(page, 300, 218)).toBeGreaterThan(
+      (await brightness(page, 210, 260)) + 40,
+    );
   });
 
   test("the picture knows the hour and the weather: night, and clear, as the climb sets off", async ({
@@ -177,7 +190,7 @@ test.describe("the view, 10 to 100 m of slope on a screen of 630 by 360", () => 
       await page.mouse.click(210, 0);
       await page.mouse.click(300, 216);
       await page.mouse.click(201, 234);
-      expect(await brightness(page, 210, 260)).toBeGreaterThan(200);
+      expect(await nightSnow(page, 210, 260)).toBe(true);
       expected.push(
         `view ${change}`,
         `tool ice-axe 10 ${0.6 * metres}`,

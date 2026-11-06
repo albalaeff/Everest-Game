@@ -38,16 +38,16 @@ describe("SectionScale", () => {
   });
 
   it("says what the section is drawn at, from its real rise against its drawn one", () => {
-    expect(scale.compression).toBe(12);
+    expect(scale.ratio).toBe(12);
     expect(
-      new SectionScale(TestMountain.GENTLE.terrain, { start: 6000, end: 6026.8 }).compression,
+      new SectionScale(TestMountain.GENTLE.terrain, { start: 6000, end: 6026.8 }).ratio,
     ).toBeCloseTo(1, 9);
   });
 
   it("can't say it for a section that doesn't rise", () => {
     const flat = new SectionScale(TestMountain.FLAT.terrain, { start: 5000, end: 5000 });
 
-    expect(() => flat.compression).toThrow(RangeError);
+    expect(() => flat.ratio).toThrow(RangeError);
     expect(flat.altitudeAt({ x: 50, y: -2 })).toBe(4998);
   });
 });

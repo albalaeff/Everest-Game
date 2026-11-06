@@ -1,6 +1,6 @@
 # Performance
 
-The targets: 60 frames a second on an average laptop and 30 on a mid-range phone, a download under 20 MB, in Chrome, Firefox, Edge and Safari ([../../spec.md](../../spec.md) → Technical architecture), for an expedition of 5–7 hours. These rules keep the game there ([../guidelines.md](../guidelines.md) has the principles); #90 measures it.
+The targets: 60 frames a second on an average laptop and 30 on a mid-range phone, a download under 20 MB, in Chrome, Firefox, Edge and Safari ([../../spec.md](../../spec.md) → Technical architecture), for an expedition of about 2 hours. These rules keep the game there ([../guidelines.md](../guidelines.md) has the principles); #90 measures it.
 
 ## Budgets
 

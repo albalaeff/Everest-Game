@@ -6,8 +6,9 @@ import type { Rope, Slide } from "./rope";
 import { SectionScale } from "./section-scale";
 import type { SectionAltitude } from "./section-scale";
 import { SteepnessCurve } from "./steepness";
-import type { SteepnessPoint } from "./steepness";
+import type { GradientPoint, SteepnessPoint } from "./steepness";
 import type { Point, Terrain, Way } from "./terrain";
+import { Walking } from "./walking";
 
 /**
  * The numbers the slope physics runs on, handed to it (docs/conventions.md → Data, not
@@ -23,10 +24,16 @@ export interface SlopeSettings {
   readonly friction: number;
   /** How far a cowstail reaches from a climber to their rope, in metres. */
   readonly cowstail: number;
-  /** A climber's walking speed along the ground by its steepness ahead, in m/s: from the
-   * steepest ground they can walk down to the steepest they can walk up. Walking down onto
-   * steeper ground than its first point is a fall, and steeper than its last stops them. */
-  readonly walkingSpeed: readonly SteepnessPoint[];
+  /** The energy a metre of walking takes of each kilogram moved, in J/kg/m, by the gradient
+   * ahead: from the steepest measured down to the steepest measured up. */
+  readonly walkingCost: readonly GradientPoint[];
+  /** The steepest ground a climber walks, up or down, in degrees: steeper up stops them, and
+   * steeper down is a fall. */
+  readonly steepest: number;
+  /** The power a whole stride walks on, in W for each kilogram moved. */
+  readonly walkingPower: number;
+  /** The fastest a climber walks, in m/s, whatever power they have to spare. */
+  readonly fastestWalk: number;
   /** The chance a walking climber slips, per second, by the steepness ahead. */
   readonly slipChance: readonly SteepnessPoint[];
   /** A climber's speed along a ladder by its steepness the way they go, in m/s: across a
@@ -58,7 +65,7 @@ export class Slope {
    * nobody is clipped to, which then waits for someone to move it: the engine's number too. */
   static readonly REST_SPEED = 0.01;
 
-  readonly walkingSpeed: SteepnessCurve;
+  readonly walking: Walking;
   readonly slipChance: SteepnessCurve;
   readonly ladderSpeed: SteepnessCurve;
   readonly ladderSlipChance: SteepnessCurve;
@@ -74,7 +81,8 @@ export class Slope {
     readonly ladders: ReadonlyMap<string, Ladder>,
   ) {
     this.scale = new SectionScale(terrain, altitude);
-    this.walkingSpeed = new SteepnessCurve(settings.walkingSpeed);
+    const { walkingCost, steepest, walkingPower, fastestWalk } = settings;
+    this.walking = new Walking(walkingCost, steepest, walkingPower, fastestWalk);
     this.slipChance = new SteepnessCurve(settings.slipChance);
     this.ladderSpeed = new SteepnessCurve(settings.ladderSpeed);
     this.ladderSlipChance = new SteepnessCurve(settings.ladderSlipChance);

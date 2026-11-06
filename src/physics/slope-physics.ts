@@ -114,7 +114,8 @@ export class SlopePhysics implements Rule, HazardGround, Legs {
     return this.climberFor(id).ropes.length > 0;
   }
 
-  /** Sets how far a climber's strides go from now on, as a share of the walking and ladder speeds. */
+  /** Sets how far a climber's strides go from now on, as a share of the walking power and the
+   * ladder speeds. */
   stride(id: ClimberId, share: number): void {
     this.climberFor(id).setStride(share);
   }
