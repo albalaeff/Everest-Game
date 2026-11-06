@@ -2,9 +2,22 @@ import { describe, expect, it } from "vitest";
 
 import { DayLight } from "./day-light";
 import { Palette } from "./palette";
+import { ThinAir } from "./thin-air";
+import { WeatherLook } from "./weather-look";
 
-const at = (hours: number, minutes = 0): Palette =>
-  new Palette(DayLight.at(hours * 3600 + minutes * 60));
+/** The palette at an hour over Base Camp, in clear weather, unless another altitude or look. */
+const at = (
+  hours: number,
+  minutes = 0,
+  altitude = 5_364,
+  look: WeatherLook = WeatherLook.CLEAR,
+): Palette => new Palette(DayLight.at(hours * 3600 + minutes * 60), ThinAir.at(altitude), look);
+
+/** How far a colour is from a grey: its strongest channel less its weakest. */
+const saturation = (colour: number): number => {
+  const { red, green, blue } = Palette.channels(colour);
+  return Math.max(red, green, blue) - Math.min(red, green, blue);
+};
 
 describe("Palette", () => {
   it("mixes two colours by a share, and holds the ends", () => {
@@ -66,6 +79,16 @@ describe("Palette", () => {
     expect(day.snowTint).toBe(0xffffff);
   });
 
+  it("shades a far face's flank away from the sun darker than the face, and blue by day", () => {
+    for (const hours of [3, 6, 9, 12, 17]) {
+      const { face, faceShade } = at(hours);
+
+      expect(Palette.brightness(faceShade)).toBeLessThan(Palette.brightness(face));
+    }
+    const { red, blue } = Palette.channels(at(12).faceShade);
+    expect(blue - red).toBeGreaterThan(30);
+  });
+
   it("shades the snow darker than itself at every hour, and its crest brighter in the dark", () => {
     for (const [hours, minutes] of [
       [3, 0],
@@ -113,6 +136,53 @@ describe("Palette", () => {
     expect(warmth(night.rim)).toBeLessThan(0);
     expect(warmth(sunrise.rim)).toBeGreaterThan(40);
     expect(Palette.brightness(day.rim)).toBeGreaterThan(230);
+  });
+
+  it("deepens the blue at the top of the sky the higher the climber, and leaves its horizon pale", () => {
+    const baseCamp = at(12);
+    const campOne = at(12, 0, 6_065);
+    const summit = at(12, 0, 8_849);
+
+    // Over Base Camp the noon sky is the blue it was before the altitude counted (#149).
+    expect(
+      Math.abs(Palette.brightness(baseCamp.skyTop) - Palette.brightness(0x1b4a97)),
+    ).toBeLessThan(2);
+    expect(Palette.brightness(campOne.skyTop)).toBeLessThan(Palette.brightness(baseCamp.skyTop));
+    expect(Palette.brightness(summit.skyTop)).toBeLessThan(
+      Palette.brightness(baseCamp.skyTop) * 0.8,
+    );
+    expect(Palette.channels(summit.skyTop).blue).toBeGreaterThan(
+      Palette.channels(summit.skyTop).red * 3,
+    );
+    expect(summit.skyHorizon).toBe(baseCamp.skyHorizon);
+    expect(Palette.brightness(at(2, 0, 8_849).skyTop)).toBeLessThan(20);
+  });
+
+  it("greys the sky under cloud, its top and horizon close, and the far air with it", () => {
+    const clear = at(12);
+    const cloud = at(12, 0, 5_364, WeatherLook.CLOUD);
+    const snow = at(12, 0, 5_364, WeatherLook.SNOW);
+    const spread = (palette: Palette): number =>
+      Math.abs(Palette.brightness(palette.skyHorizon) - Palette.brightness(palette.skyTop));
+
+    expect(saturation(cloud.skyTop)).toBeLessThan(saturation(clear.skyTop) / 2);
+    expect(saturation(snow.skyTop)).toBeLessThan(saturation(cloud.skyTop));
+    expect(spread(cloud)).toBeLessThan(spread(clear) / 2);
+    expect(saturation(cloud.haze)).toBeLessThan(saturation(clear.haze));
+    expect(Palette.brightness(at(2, 0, 5_364, WeatherLook.SNOW).skyTop)).toBeLessThan(60);
+    expect(at(12, 0, 5_364, WeatherLook.WIND).skyTop).not.toBe(cloud.skyTop);
+  });
+
+  it("keeps the glow off the snow and a figure's edge when the sun rises behind cloud", () => {
+    const clear = at(5, 50);
+    const snow = at(5, 50, 5_364, WeatherLook.SNOW);
+    const warmth = (colour: number): number => {
+      const { red, blue } = Palette.channels(colour);
+      return red - blue;
+    };
+
+    expect(warmth(snow.snowCrest)).toBeLessThan(warmth(clear.snowCrest) - 30);
+    expect(warmth(snow.rim)).toBeLessThan(warmth(clear.rim) - 40);
   });
 
   it("reddens the horizon at dawn, and fades a face into the haze by its share", () => {

@@ -32,22 +32,30 @@ export interface ScreenSize {
 /**
  * The window onto the slope: the zoom's metres of it from the top of the screen to the bottom, 20
  * to start with, on a phone as on a PC, with the climber a third from the left and below the
- * middle, so more of the way up is in view. It follows the climber smoothly, glides from one zoom
- * to the next around them, and maps the screen to slope metres and back. It's the input's
- * `SlopeView`: the page hands it to `PlayerInput`, so a click lands in slope metres.
+ * middle, so more of the way up is in view. It looks ahead the way the climber goes: walking down,
+ * the view slides until they stand two thirds across, and back when they walk up again
+ * (docs/guidelines/graphics.md → the camera shows what's ahead). It follows the climber smoothly,
+ * glides from one zoom to the next around them, and maps the screen to slope metres and back. It's
+ * the input's `SlopeView`: the page hands it to `PlayerInput`, so a click lands in slope metres.
  */
 export class Camera {
-  /** Where the climber stands on the screen: shares of its width and its height. */
+  /** Where the climber stands on the screen, walking up: shares of its width and its height. */
   static readonly ANCHOR_X = 1 / 3;
   static readonly ANCHOR_Y = 0.6;
   /** How long the camera takes to close most of the way, 63%, onto the climber. */
   static readonly SETTLE_SECONDS = 0.25;
+  /** How long the view takes to slide most of the way, 63%, to look the other way: slowly, so
+   * the screen stays calm. */
+  static readonly TURN_SECONDS = 0.8;
+  /** How far the climber goes back against the way they were going before the view turns: a
+   * step back to clip an anchor doesn't swing it. */
+  private static readonly TURN_METRES = 0.3;
   private static readonly TOOL_REACH_METRES = 1;
   /** A point of the screen lands on the slope to the centimetre: the actions it makes, kept by
    * every replay and sent to the room, carry no more. */
   private static readonly POINTS_A_METRE = 100;
 
-  /** The slope point under the screen's anchor. */
+  /** The slope point the camera follows onto: the climber, a moment behind. */
   private x: number;
   private y: number;
   private width: number;
@@ -55,6 +63,13 @@ export class Camera {
   /** The level it's on, or gliding to. */
   private level: Zoom;
   private glide: ZoomGlide;
+  /** The way the climber goes, up the slope (1) or down it (-1), and the farthest they've come
+   * that way since it turned. */
+  private heading: 1 | -1 = 1;
+  private mark: number;
+  /** How far the view has slid to look down the slope, as a share of the screen's width: 0
+   * walking up, a third walking down. */
+  private lead = 0;
 
   constructor(
     private readonly watched: WatchedClimber,
@@ -67,6 +82,7 @@ export class Camera {
     const { x, y } = watched.climber;
     this.x = x;
     this.y = y;
+    this.mark = x;
     this.level = zoom;
     this.glide = ZoomGlide.at(zoom.metresHigh);
   }
@@ -85,8 +101,9 @@ export class Camera {
     return this.glide.metresHigh;
   }
 
+  /** The slope point under the screen's anchor: the climber, or ahead of them down the slope. */
   get position(): Point {
-    return { x: this.x, y: this.y };
+    return { x: this.viewX, y: this.y };
   }
 
   get screen(): ScreenSize {
@@ -123,7 +140,7 @@ export class Camera {
     const { x, y } = this.anchor;
     const metres = this.pixelsPerMetre;
     return {
-      x: Camera.rounded(this.x + (screenX - x) / metres),
+      x: Camera.rounded(this.viewX + (screenX - x) / metres),
       y: Camera.rounded(this.y - (screenY - y) / metres),
     };
   }
@@ -132,7 +149,7 @@ export class Camera {
   toScreen(point: Point): ScreenPoint {
     const { x, y } = this.anchor;
     const metres = this.pixelsPerMetre;
-    return { x: x + (point.x - this.x) * metres, y: y - (point.y - this.y) * metres };
+    return { x: x + (point.x - this.viewX) * metres, y: y - (point.y - this.y) * metres };
   }
 
   /** Where a tool goes when the player has nothing to point with: a metre ahead of the climber,
@@ -151,6 +168,7 @@ export class Camera {
     this.x += (on.x - this.x) * share;
     this.y += (on.y - this.y) * share;
     this.glide = this.glide.after(seconds);
+    this.look(on.x, seconds);
   }
 
   /** Straight onto the climber: at the start, and after anything that moves them at once. */
@@ -158,6 +176,26 @@ export class Camera {
     const { x, y } = this.climber;
     this.x = x;
     this.y = y;
+    this.mark = x;
+  }
+
+  /** The slope point under the anchor: the climber's, less the view's slide down the slope. */
+  private get viewX(): number {
+    return this.x - (this.lead * this.width) / this.pixelsPerMetre;
+  }
+
+  /** Turns the view the way the climber at `x` goes, once they've gone far enough back against
+   * it, and slides it on that way for `seconds` more. */
+  private look(x: number, seconds: number): void {
+    const back = (this.mark - x) * this.heading;
+    if (back > Camera.TURN_METRES) {
+      this.heading = this.heading === 1 ? -1 : 1;
+      this.mark = x;
+    } else if (back < 0) {
+      this.mark = x;
+    }
+    const target = this.heading === 1 ? 0 : 1 - 2 * Camera.ANCHOR_X;
+    this.lead += (target - this.lead) * (1 - Math.exp(-Math.max(seconds, 0) / Camera.TURN_SECONDS));
   }
 
   private static rounded(metres: number): number {

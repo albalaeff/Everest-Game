@@ -448,10 +448,10 @@ Tasks marked *Iteration 1–3* are planned into the board's first two-week itera
 ## 7. Graphics, sound, languages
 
 ### Task 72: The final style: layers, peaks, sky and weather ([#86](https://github.com/albalaeff/Everest-Game/issues/86))
-- [ ] 5–7 parallax layers with Lhotse, Nuptse and Pumori
-- [ ] The sky by time of day, deeper blue with altitude
-- [ ] Particle weather: snow, drifting snow, fog, the summit plume
-- [ ] Done gate
+- [x] 5–7 parallax layers with Lhotse, Nuptse and Pumori (#86: seven on High, five on Medium, three on Low, the peaks in every level's; the far layers shrink less than the slope when zoomed out, `Perspective`; the flanks away from the sun in a blue shade)
+- [x] The sky by time of day, deeper blue with altitude (#86: the top of the sky towards indigo as the air thins, `ThinAir`, more stars at night; grey under cloud)
+- [x] Particle weather: snow, drifting snow, fog, the summit plume (#86: the plumes off Nuptse and Lhotse, `Plume`; spindrift in streaks; fog banks under cloud, a mist in snow that clears around the climber; Everest's own summit and plume come with the Western Cwm, #54, where they show)
+- [x] Done gate
 
 ### Task 73: The climber: skeletal 2D animation and visible gear ([#87](https://github.com/albalaeff/Everest-Game/issues/87))
 - [ ] Skeletal animation; the mask, backpack, cowstails and a bright suit visible
