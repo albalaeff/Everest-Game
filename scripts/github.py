@@ -439,6 +439,12 @@ class CiRuns:
         return bool(self.runs) and all(run["status"] == "completed" for run in self.runs)
 
     @property
+    def attempt(self) -> int:
+        """The highest of the runs' attempts: past 1 once one was run again on the commit
+        (#160: #154's agent waited on attempt 2, whose result looked like attempt 1's)."""
+        return max((int(run.get("run_attempt") or 1) for run in self.runs), default=1)
+
+    @property
     def green(self) -> bool:
         """Finished, every run a success: what's left is the merge (#485)."""
         return self.finished and all(run["conclusion"] == "success" for run in self.runs)
@@ -574,8 +580,9 @@ class Task:
     """Something that needs doing, named so `watch` tells it from what needed doing before
     (#314): an issue or PR to start, with a reply waiting or Claude's move next (with how
     many comments it has, so a newer reply or handoff is new too, #449), or a PR whose CI
-    has finished (at its commit, so a run after a new push is new too), until Claude speaks
-    after it (`CiRuns.read`, #456). The labels the manager reads end its name too, so the
+    has finished (at its commit, so a run after a new push is new too, and a rerun's attempt,
+    so is a rerun on the same commit, #160), until Claude speaks after it (`CiRuns.read`,
+    #456). The labels the manager reads end its name too, so the
     manager's next look takes a task whose priority or power changed as a new one (#485).
     `watch --json` says each as JSON for the session manager (#387): `issue` is the issue the
     work is for, a PR's the one it closes (None when it closes none), and `labels` are that
@@ -629,8 +636,9 @@ class Task:
     ) -> Task:
         sha, ci, issue = str(pull["head"]["sha"]), str(runs), cls.issue_of(pull)
         found = cls._labels(labels, issue, item.number)
+        again = f" (attempt {runs.attempt})" if runs.attempt > 1 else ""  # a first's as it was
         return cls(
-            f"PR #{item.number} at {sha}: {ci}{cls._manager_s(found)}",
+            f"PR #{item.number} at {sha}{again}: {ci}{cls._manager_s(found)}",
             "pull",
             item.number,
             "CI finished",

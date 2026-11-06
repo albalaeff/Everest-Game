@@ -4,6 +4,18 @@ import { defineConfig, devices } from "@playwright/test";
  * slope's stories need it drawn. */
 const chromium = { args: ["--enable-unsafe-swiftshader"] };
 
+const BASE_URL = "http://localhost:4173";
+
+/** Without a GPU, each frame of the slope's canvas is drawn in software and read back on the
+ * page's main thread, at a cost that grows with its layers and pixels, and every step of a story
+ * waits for one: on CI's two cores, a PC's frame on High took a third of a second and a tap five
+ * seconds (#154). So the stories draw on Low, as the device keeps it, but for the picture's own
+ * (e2e/slope.spec.ts). */
+const LOW_GRAPHICS = {
+  cookies: [],
+  origins: [{ origin: BASE_URL, localStorage: [{ name: "everest.graphics", value: "low" }] }],
+};
+
 export default defineConfig({
   testDir: "e2e",
   forbidOnly: Boolean(process.env.CI),
@@ -13,14 +25,15 @@ export default defineConfig({
   workers: 2,
   timeout: 60_000,
   use: {
-    baseURL: "http://localhost:4173",
+    baseURL: BASE_URL,
+    storageState: LOW_GRAPHICS,
   },
   // The stories run against the build, as the preview publishes it, and the rooms' against the
   // room server as `wrangler dev` serves it on this machine (e2e/room.spec.ts).
   webServer: [
     {
       command: "npm run build && npm run preview -- --strictPort",
-      url: "http://localhost:4173",
+      url: BASE_URL,
       reuseExistingServer: !process.env.CI,
     },
     {

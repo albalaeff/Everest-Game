@@ -48,7 +48,7 @@ The agent manager gives each task its watcher finds to an **agent**: headless Cl
 
 ## Compacting
 
-When the conversation is compacted, the summary keeps: the issue, branch and PR being worked on, the step reached and the next step, and the link to its latest handoff; decisions and answers from the chat that aren't on GitHub yet; questions waiting for an answer, and where they were asked; the background processes, with the exact command of each; what's been learned about the machine. It can drop tool output that's been acted on, files that were read, and anything git, GitHub or the docs already record.
+When the conversation is compacted, the summary keeps: the issue, branch and PR being worked on, the step reached and the next step, and the link to its latest handoff; decisions and answers from the chat that aren't on GitHub yet; questions waiting for an answer, and where they were asked; the background processes, with the exact command of each; what's been learned about the machine; what was learned from the files read (values, `file:line`, names and signatures), and an agent's notes' path, `.agent-runs/notes.md` (#155). It can drop tool output that's been acted on, the files' text, and anything git, GitHub or the docs already record.
 
 ## Checks
 

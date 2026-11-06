@@ -175,7 +175,9 @@ reads it all again after each compaction, until Claude Code stops it ("Autocompa
 thrashing", #152). The manager then puts `compact:50` on its issue, or `compact:100` after a
 run at 50%, and the watcher's next look brings the issue back for an agent that compacts
 there; at 100% its log says to split the issue. Put one on yourself for an issue you know is
-big.
+big. So that it needn't read it all again, the project's hooks (`scripts/handoff_due.py`,
+#155) have it write `.agent-runs/notes.md` in its worktree past 80% of its share, as a
+session writes its handoff, and put the notes back once Claude Code has compacted it.
 
 **What it leaves.** Each agent's run goes to `.agent-runs/<issue>.log`: its command,
 everything it did, and at the end what it cost, how many tokens its first reply read (what
@@ -233,8 +235,9 @@ npm run e2e -- --project=iphone   # on one of them
   serves the build and the room server (`npm run room`) and runs the stories in `e2e/` on each
   of its projects: `pc` and `android` in Chromium, `iphone` in WebKit. A headless browser draws WebGL in software, so
   the stories run two browsers at once at most (`workers` in `playwright.config.ts`), Chromium
-  with `--enable-unsafe-swiftshader`, and the frame rate they see says nothing about the
-  game's targets. TypeScript stays on 6.0: typescript-eslint refuses 7.
+  with `--enable-unsafe-swiftshader`, on graphics Low but for the picture's own
+  (`e2e/slope.spec.ts`), the rooms' on a small screen, and the frame rate they see says nothing
+  about the game's targets. TypeScript stays on 6.0: typescript-eslint refuses 7.
 - **The database test.** The agent manager's one `db` test, for a project whose agents get
   test databases of their own, is skipped without `TEST_DATABASE_URL`.
 

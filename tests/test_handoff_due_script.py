@@ -1,16 +1,22 @@
-"""scripts/handoff_due.py: the handoff, asked for before the conversation is compacted (#349)."""
+"""scripts/handoff_due.py: the handoff, asked for before the conversation is compacted (#349),
+an agent's notes then (#155), and either put back after."""
 
 import io
 import json
+import os
 import subprocess
 import sys
 from pathlib import Path
 from typing import Any
 
+import httpx
 import pytest
 
-from scripts.agents import AgentPower, CompactShare
-from scripts.handoff_due import Answer, AutoCompact, StopHook
+from scripts.agents import NOTES, AgentPower, CompactShare
+from scripts.github import GitHub
+from scripts.handoff import Git
+from scripts.handoff_due import Answer, AutoCompact, NotesHook, PutBack, StopHook
+from tests.fakes import FakeGit
 
 pytestmark = pytest.mark.unit
 
@@ -120,7 +126,8 @@ def test_it_compacts_at_the_window_or_at_the_share_of_it_the_environment_sets(
 
 
 class Session:
-    """One Claude Code session: its transcript, and the hook run at the end of each turn."""
+    """One Claude Code session: its transcript, and the hooks run at the end of each turn,
+    after each tool, and once it's compacted."""
 
     def __init__(self, tmp_path: Path) -> None:
         self.tmp_path = tmp_path
@@ -130,24 +137,57 @@ class Session:
         for folder in (self.home, self.project, self.asked):
             folder.mkdir()
         self.lines: list[dict[str, Any]] = []
-        self.env: dict[str, str] = {}
+        self.env: dict[str, str] = {"CLAUDE_PROJECT_DIR": str(self.project)}
 
-    def hook(self, continuing: bool = False) -> dict[str, Any]:
+    @classmethod
+    def agent(cls, tmp_path: Path) -> Session:
+        """An agent's: the manager's power and share in its environment (#441), 241K of the
+        window where it compacts, and 80% of that past 193K."""
+        session = cls(tmp_path)
+        session.env.update({**AgentPower("opus", "max").env(), **CompactShare(25).env()})
+        return session
+
+    def hook(self, event: str = "Stop", **more: Any) -> dict[str, Any]:
         """What Claude Code gives the hook on its stdin."""
         return {
             "session_id": "abc123",
             "transcript_path": str(transcript(self.tmp_path, *self.lines)),
             "cwd": str(self.project),
-            "hook_event_name": "Stop",
-            "stop_hook_active": continuing,
+            "hook_event_name": event,
+            **more,
         }
 
     def stop(self, tokens: int, continuing: bool = False) -> dict[str, Any] | None:
         """Claude ends a turn with the conversation this big; what the hook answers."""
         self.lines.append(answer(tokens))
-        hook, out = io.StringIO(json.dumps(self.hook(continuing))), io.StringIO()
+        hook, out = io.StringIO(json.dumps(self.hook(stop_hook_active=continuing))), io.StringIO()
         StopHook(self.env, self.home, self.asked).run(hook, out)
-        return json.loads(out.getvalue()) if out.getvalue() else None
+        return said(out)
+
+    def tool(self, tokens: int) -> dict[str, Any] | None:
+        """Claude used a tool with the conversation this big; what the hook answers."""
+        self.lines.append(answer(tokens))
+        hook = self.hook("PostToolUse", tool_name="Read", tool_input={"file_path": "spec.md"})
+        out = io.StringIO()
+        NotesHook(self.env, self.home, self.asked).answer(hook, out)
+        return said(out)
+
+    def compacted(self, source: str = "compact", put_back: PutBack | None = None) -> str | None:
+        """Claude Code compacted the conversation (or started it: `source`); what the hook
+        puts back."""
+        self.lines.append(answer(40_000))
+        out = io.StringIO()
+        (put_back or PutBack(self.env)).answer(self.hook("SessionStart", source=source), out)
+        found = said(out)
+        if found is None:
+            return None
+        assert found["hookSpecificOutput"]["hookEventName"] == "SessionStart"
+        return str(found["hookSpecificOutput"]["additionalContext"])
+
+
+def said(out: io.StringIO) -> dict[str, Any] | None:
+    """What a hook answered on its stdout; None when it said nothing."""
+    return json.loads(out.getvalue()) if out.getvalue() else None
 
 
 def test_below_80_percent_of_the_window_it_lets_claude_stop(tmp_path: Path) -> None:
@@ -191,9 +231,7 @@ def test_an_agent_is_not_asked(tmp_path: Path) -> None:
     # #441: in an agent's `claude -p` run a turn ends only when the run does, or waits for a
     # background task: never just before Claude Code compacts. Its last comment is its
     # handoff, and the skill would write the memory every worktree shares.
-    session = Session(tmp_path)
-    session.env.update({**AgentPower("opus", "max").env(), **CompactShare(25).env()})
-    assert session.stop(230_000) is None  # past 80% of the 241K where it compacts
+    assert Session.agent(tmp_path).stop(230_000) is None  # past 80% of the 241K where it compacts
 
 
 def test_the_projects_settings_set_its_window(tmp_path: Path) -> None:
@@ -205,24 +243,186 @@ def test_the_projects_settings_set_its_window(tmp_path: Path) -> None:
     assert session.stop(170_000) is not None
 
 
+# --- an agent's notes (#155) ------------------------------------------------------------------
+
+
+def test_past_80_percent_an_agent_is_told_after_a_tool_to_write_its_notes_once(
+    tmp_path: Path,
+) -> None:
+    # #152: #26's agent compacted at 298K, 250K and 270K, and read spec.md and the facts
+    # again each time, until Claude Code stopped it. Its turn never ends before a compaction,
+    # so it's told after a tool.
+    agent = Session.agent(tmp_path)
+    assert agent.tool(193_000) is None
+    told = agent.tool(194_000)
+    assert told is not None
+    output = told["hookSpecificOutput"]
+    assert output["hookEventName"] == "PostToolUse"
+    assert "194K" in output["additionalContext"] and "241K" in output["additionalContext"]
+    assert str(tmp_path / "project" / NOTES) in output["additionalContext"]
+    assert "file:line" in output["additionalContext"]
+    assert agent.tool(200_000) is None  # once per stretch
+
+
+def test_a_session_is_not_told_after_a_tool(tmp_path: Path) -> None:
+    # The Stop hook asks it for the handoff instead.
+    assert Session(tmp_path).tool(900_000) is None
+
+
+def test_the_notes_come_back_after_compaction_and_are_asked_for_again(tmp_path: Path) -> None:
+    agent = Session.agent(tmp_path)
+    assert agent.tool(195_000) is not None
+    notes = tmp_path / "project" / NOTES  # the agent writes them
+    notes.parent.mkdir()
+    notes.write_text(
+        "Plan: two hooks.\n- AutoCompact.at: scripts/handoff_due.py:114\n", encoding="utf-8"
+    )
+
+    put_back = agent.compacted()
+
+    assert put_back is not None
+    assert str(notes) in put_back
+    assert put_back.endswith("Plan: two hooks.\n- AutoCompact.at: scripts/handoff_due.py:114")
+    assert agent.tool(60_000) is None  # the next stretch
+    assert agent.tool(196_000) is not None
+
+
+def test_only_a_compaction_puts_notes_back_and_only_written_ones(tmp_path: Path) -> None:
+    agent = Session.agent(tmp_path)
+    assert agent.compacted() is None  # none written
+    notes = tmp_path / "project" / NOTES
+    notes.parent.mkdir()
+    notes.write_text("\n", encoding="utf-8")
+    assert agent.compacted() is None  # empty
+    notes.write_text("Plan: two hooks.", encoding="utf-8")
+    assert agent.compacted("startup") is None and agent.compacted("resume") is None
+    assert agent.compacted() is not None
+
+
+# --- a session's handoff, put back (#155) -------------------------------------------------------
+
+
+HANDOFF = (
+    "_Claude Code (bateks)_\n\nThe hooks are written.\n\n"
+    "**Next:** the PR (Claude's). **Waiting on:** nothing.\n\n"
+    "<details><summary>For the next session</summary>\n\n"
+    "- Notes: `PutBack` in scripts/handoff_due.py\n\n</details>\n\n"
+    "<!-- handoff host=PC checkout=c--git-everest-game at=2026-11-05T10:00+01:00 closing=no -->"
+)
+
+
+def github(comments: list[dict[str, Any]], asked: list[str]) -> GitHub:
+    """GitHub with an issue's comments, noting what it was asked."""
+
+    def server(request: httpx.Request) -> httpx.Response:
+        asked.append(request.url.path)
+        if request.url.path.endswith("/issues/155/comments"):
+            return httpx.Response(200, json=comments)
+        return httpx.Response(404, json={"message": "Not Found"})
+
+    return GitHub("albalaeff/Everest-Game", "a-token", httpx.MockTransport(server))
+
+
+def comment(body: str, number: int = 1) -> dict[str, Any]:
+    url = f"https://github.com/albalaeff/Everest-Game/issues/155#issuecomment-{number}"
+    return {"user": {"login": "bateks"}, "body": body, "html_url": url}
+
+
+def put_back(branch: str, comments: list[dict[str, Any]], asked: list[str]) -> PutBack:
+    """A session's hook, on `branch`, with GitHub holding the issue's `comments`."""
+    git = FakeGit({"rev-parse --abbrev-ref HEAD": branch})
+    return PutBack({}, git, lambda _: github(comments, asked))
+
+
+def test_a_session_gets_back_the_latest_handoff_on_its_branch_s_issue(tmp_path: Path) -> None:
+    comments = [comment(HANDOFF, 1), comment("_Claude Code (bateks)_\n\nA word.", 2)]
+    asked: list[str] = []
+
+    found = Session(tmp_path).compacted(put_back=put_back("feature/155-notes", comments, asked))
+
+    assert asked == ["/repos/albalaeff/Everest-Game/issues/155/comments"]
+    assert found is not None
+    assert "#155, https://github.com/albalaeff/Everest-Game/issues/155#issuecomment-1" in found
+    assert "**Next:** the PR (Claude's). **Waiting on:** nothing." in found
+    assert "- Notes: `PutBack` in scripts/handoff_due.py" in found
+    assert "The hooks are written." not in found  # for people: Handoff.brief
+
+
+def test_a_session_on_develop_with_no_handoff_or_offline_gets_nothing(tmp_path: Path) -> None:
+    session, asked = Session(tmp_path), []
+    assert session.compacted(put_back=put_back("develop", [comment(HANDOFF)], asked)) is None
+    assert asked == []  # GitHub isn't asked
+    assert (
+        session.compacted(put_back=put_back("feature/155-x", [comment("A word.")], asked)) is None
+    )
+    assert session.compacted(put_back=put_back("feature/156-x", [], asked)) is None  # HTTP 404
+
+    def offline(_: Git) -> GitHub:
+        raise httpx.ConnectError("no network")
+
+    git = FakeGit({"rev-parse --abbrev-ref HEAD": "feature/155-x"})
+    assert session.compacted(put_back=PutBack({}, git, offline)) is None
+
+
+# --- as Claude Code runs it -------------------------------------------------------------------
+
+
 def test_claude_codes_settings_run_it_when_claude_stops() -> None:
     hooks = json.loads((ROOT / ".claude" / "settings.json").read_text(encoding="utf-8"))["hooks"]
     commands = [hook["command"] for group in hooks["Stop"] for hook in group["hooks"]]
     assert any("scripts/handoff_due.py" in command for command in commands)
 
 
-def test_it_runs_as_claude_code_runs_it_by_its_path(tmp_path: Path) -> None:
-    # Not as a module of the checkout's: it finds scripts.agents by itself.
-    session = Session(tmp_path)
-    session.lines.append(answer(1_000))
+def test_claude_codes_settings_run_it_after_an_agent_s_tools_and_after_compaction() -> None:
+    hooks = json.loads((ROOT / ".claude" / "settings.json").read_text(encoding="utf-8"))["hooks"]
+    after_tool = [hook["command"] for group in hooks["PostToolUse"] for hook in group["hooks"]]
+    # a person's session doesn't start uv after each tool, for a hook that tells it nothing
+    assert any(
+        command.startswith('[ -z "$CLAUDE_AGENT_MODEL" ] || ')
+        and "scripts/handoff_due.py" in command
+        for command in after_tool
+    )
+    compacted = [
+        hook["command"]
+        for group in hooks["SessionStart"]
+        if group.get("matcher") == "compact"
+        for hook in group["hooks"]
+    ]
+    assert any("scripts/handoff_due.py" in command for command in compacted)
 
+
+def run_by_path(tmp_path: Path, hook: dict[str, Any], env: dict[str, str]) -> tuple[int, str, str]:
+    """It, as Claude Code runs it: by its path, not as a module of the checkout's."""
     done = subprocess.run(
         [sys.executable, str(ROOT / "scripts" / "handoff_due.py")],
-        input=json.dumps(session.hook(continuing=True)),
+        input=json.dumps(hook),
         capture_output=True,
         text=True,
         check=False,
         cwd=tmp_path,
+        env={**os.environ, **env},
     )
+    return done.returncode, done.stdout, done.stderr
 
-    assert (done.returncode, done.stdout, done.stderr) == (0, "", "")
+
+def test_it_runs_as_claude_code_runs_it_by_its_path(tmp_path: Path) -> None:
+    # It finds scripts.agents by itself.
+    session = Session(tmp_path)
+    session.lines.append(answer(1_000))
+
+    hook = session.hook(stop_hook_active=True)
+    assert run_by_path(tmp_path, hook, session.env) == (0, "", "")
+
+
+def test_by_its_path_it_answers_the_event_claude_code_names(tmp_path: Path) -> None:
+    agent = Session.agent(tmp_path)
+    (tmp_path / "project" / NOTES).parent.mkdir()
+    (tmp_path / "project" / NOTES).write_text("Plan: two hooks.", encoding="utf-8")
+
+    code, out, err = run_by_path(tmp_path, agent.hook("SessionStart", source="compact"), agent.env)
+
+    assert (code, err) == (0, "")
+    output = json.loads(out)["hookSpecificOutput"]
+    assert output["hookEventName"] == "SessionStart"
+    assert output["additionalContext"].endswith("Plan: two hooks.")
+    assert run_by_path(tmp_path, agent.hook("Notification"), agent.env) == (0, "", "")
