@@ -123,6 +123,7 @@ export class ClimberFigure extends Container {
       clipped: [climber.first, climber.second],
       onLadder: climber.ladder !== null,
       rise: ahead,
+      ground: (x) => ahead * x,
       tiredness: body.tiredness,
       pace: body.pace,
     });

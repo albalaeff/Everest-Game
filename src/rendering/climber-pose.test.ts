@@ -1,21 +1,27 @@
 import { describe, expect, it } from "vitest";
 
 import { ClimberPose } from "./climber-pose";
-import type { Joint, Pose, PoseState } from "./climber-pose";
+import type { Foot, Ground, Joint, Pose, PoseState } from "./climber-pose";
 
-const state = (over: Partial<PoseState> = {}): PoseState => ({
-  travelled: 10,
-  moving: false,
-  falling: false,
-  dead: false,
-  onRope: false,
-  clipped: [null, null],
-  onLadder: false,
-  rise: 0,
-  tiredness: "fresh",
-  pace: "steady",
-  ...over,
-});
+/** A climber as the figure shows them: on ground rising `rise` a metre ahead, unless the state
+ * gives the snow's own. */
+const state = (over: Partial<PoseState> = {}): PoseState => {
+  const rise = over.rise ?? 0;
+  return {
+    travelled: 10,
+    moving: false,
+    falling: false,
+    dead: false,
+    onRope: false,
+    clipped: [null, null],
+    onLadder: false,
+    rise,
+    ground: (x) => rise * x,
+    tiredness: "fresh",
+    pace: "steady",
+    ...over,
+  };
+};
 
 const length = (a: Joint, b: Joint): number => Math.hypot(a.x - b.x, a.y - b.y);
 
@@ -31,12 +37,35 @@ function walked(metres: number, over: Partial<PoseState> = {}): { pose: Pose; po
   return { pose, poses };
 }
 
-/** How far a leg reaches from its hip to its foot, as a share of the leg's whole length. */
+/** How far a leg reaches from its hip to its ankle, as a share of the leg's whole length. */
 const stretch = (leg: Pose["legs"][number]): number =>
   length(leg.root, leg.end) / (ClimberPose.THIGH + ClimberPose.SHIN);
 
+/** The point of a boot's sole `along` metres ahead of its ankle: its heel behind, its ball ahead. */
+const sole = (foot: Foot, along = 0): Joint => ({
+  x: foot.ankle.x + along * Math.cos(foot.angle) + ClimberPose.ANKLE * Math.sin(foot.angle),
+  y: foot.ankle.y + along * Math.sin(foot.angle) - ClimberPose.ANKLE * Math.cos(foot.angle),
+});
+
+/** How far a boot's sole is above the snow, on its crampons, at its lowest from the heel to the
+ * ball: none set down, or with the heel peeled up about the ball. */
+const clearance = (foot: Foot, ground: Ground = () => 0): number =>
+  Math.min(
+    ...[-1, -0.5, 0, 0.5, 1].map((share) => {
+      const along = share < 0 ? share * ClimberPose.HEEL : share * ClimberPose.BALL;
+      const point = sole(foot, along);
+      return point.y - ground(point.x) - ClimberPose.CRAMPONS;
+    }),
+  );
+
+/** How far a boot's heel is up off the snow. */
+const heelUp = (foot: Foot, ground: Ground = () => 0): number => {
+  const heel = sole(foot, -ClimberPose.HEEL);
+  return heel.y - ground(heel.x) - ClimberPose.CRAMPONS;
+};
+
 describe("ClimberPose", () => {
-  it("keeps its bones' lengths in every pose", () => {
+  it("keeps its bones' lengths in every pose, the boots on the shins' ends", () => {
     const poses = [
       new ClimberPose().advance(1, state()),
       walked(1).pose,
@@ -50,9 +79,10 @@ describe("ClimberPose", () => {
     for (const pose of poses) {
       expect(length(pose.pelvis, pose.shoulder)).toBeCloseTo(ClimberPose.SPINE, 9);
       expect(length(pose.shoulder, pose.head)).toBeCloseTo(ClimberPose.NECK, 9);
-      for (const leg of pose.legs) {
+      for (const [index, leg] of pose.legs.entries()) {
         expect(length(leg.root, leg.middle)).toBeCloseTo(ClimberPose.THIGH, 9);
         expect(length(leg.middle, leg.end)).toBeCloseTo(ClimberPose.SHIN, 9);
+        expect(pose.feet[index]?.ankle).toEqual(leg.end);
       }
       for (const arm of pose.arms) {
         expect(length(arm.root, arm.middle)).toBeCloseTo(ClimberPose.UPPER_ARM, 9);
@@ -64,8 +94,11 @@ describe("ClimberPose", () => {
   it("stands on both feet, the head over the pelvis, the knees forward and the elbows back", () => {
     const pose = new ClimberPose().advance(1, state());
 
+    for (const foot of pose.feet) {
+      expect(clearance(foot)).toBeCloseTo(0, 9);
+      expect(foot.angle).toBeCloseTo(0, 9);
+    }
     for (const leg of pose.legs) {
-      expect(Math.abs(leg.end.y)).toBeLessThan(1e-6);
       expect(leg.middle.x).toBeGreaterThan(leg.root.x - 1e-9);
     }
     for (const arm of pose.arms) {
@@ -80,7 +113,9 @@ describe("ClimberPose", () => {
 
   it("walks as the physics moves it, a foot lifted and one on the ground, not as time passes", () => {
     const { poses } = walked(1);
-    const lifted = poses.filter((pose) => Math.max(...pose.legs.map((leg) => leg.end.y)) > 0.05);
+    const lifted = poses.filter(
+      (pose) => Math.max(...pose.feet.map((foot) => clearance(foot))) > 0.05,
+    );
     const climber = new ClimberPose();
     for (let travelled = 10; travelled <= 12; travelled += 0.02) {
       climber.advance(1 / 60, state({ moving: true, travelled }));
@@ -90,68 +125,153 @@ describe("ClimberPose", () => {
 
     expect(lifted.length).toBeGreaterThan(poses.length / 4);
     for (const pose of poses) {
-      expect(Math.min(...pose.legs.map((leg) => leg.end.y))).toBeLessThan(0.02);
+      expect(Math.min(...pose.feet.map((foot) => clearance(foot)))).toBeLessThan(0.02);
     }
-    for (const [index, leg] of after.legs.entries()) {
-      expect(leg.end.x).toBeCloseTo(before.legs[index]?.end.x ?? Number.NaN, 3);
-      expect(leg.end.y).toBeCloseTo(before.legs[index]?.end.y ?? Number.NaN, 3);
+    for (const [index, foot] of after.feet.entries()) {
+      expect(foot.ankle.x).toBeCloseTo(before.feet[index]?.ankle.x ?? Number.NaN, 3);
+      expect(foot.ankle.y).toBeCloseTo(before.feet[index]?.ankle.y ?? Number.NaN, 3);
+      expect(foot.angle).toBeCloseTo(before.feet[index]?.angle ?? Number.NaN, 3);
     }
   });
 
-  it("keeps a foot where it was set down as the climber walks on over it", () => {
-    // Each frame the climber comes 2 cm, so a planted foot goes 2 cm back under them, once the
-    // walk has settled out of the stand.
+  it("keeps a boot where it was set down as the climber walks on over it", () => {
+    // Each frame the climber comes 2 cm, so a boot on the snow goes 2 cm back under them, its
+    // ball where it was even as the heel peels up about it, once the walk has settled.
     const { poses } = walked(5);
     let planted = 0;
 
     for (const [index, pose] of poses.entries()) {
       const before = poses[index - 1];
-      if (index < 90 || before === undefined) {
+      if (index < 30 || before === undefined) {
         continue;
       }
-      for (const [leg, { end }] of pose.legs.entries()) {
-        const was = before.legs[leg === 0 ? 0 : 1].end;
-        if (end.y < 1e-6 && was.y < 1e-6) {
+      for (const [leg, foot] of pose.feet.entries()) {
+        const was = before.feet[leg === 0 ? 0 : 1];
+        if (clearance(foot) < 1e-9 && clearance(was) < 1e-9) {
           planted += 1;
-          expect(end.x - was.x).toBeCloseTo(-0.02, 3);
+          expect(sole(foot, ClimberPose.BALL).x - sole(was, ClimberPose.BALL).x).toBeCloseTo(
+            -0.02,
+            9,
+          );
+          expect(sole(foot, ClimberPose.BALL).y).toBeCloseTo(sole(was, ClimberPose.BALL).y, 9);
         }
       }
     }
-    expect(planted).toBeGreaterThan(poses.length - 90);
+    expect(planted).toBeGreaterThan(poses.length - 30);
+  });
+
+  it("sets each boot down flat, peels its heel up as the leg pushes off, and swings it clear", () => {
+    const { poses } = walked(4);
+    let peeled = 0;
+    let landed = 0;
+
+    for (const [index, pose] of poses.entries()) {
+      const before = poses[index - 1];
+      if (index < 30 || before === undefined) {
+        continue;
+      }
+      for (const [leg, foot] of pose.feet.entries()) {
+        const was = before.feet[leg === 0 ? 0 : 1];
+        expect(clearance(foot)).toBeGreaterThan(-1e-9);
+        if (clearance(foot) < 1e-9 && heelUp(foot) > 0.05) {
+          peeled += 1;
+          expect(foot.ankle.x).toBeLessThan(0);
+        }
+        if (clearance(foot) < 1e-9 && clearance(was) > 1e-9) {
+          landed += 1;
+          expect(foot.angle).toBeCloseTo(0, 9);
+          expect(foot.ankle.x).toBeGreaterThan(0.2);
+        }
+      }
+    }
+    expect(peeled).toBeGreaterThan(10);
+    expect(landed).toBeGreaterThan(4);
+  });
+
+  it("sets its boots on the snow however it lies, and keeps them there as it walks over it", () => {
+    // The snow rises and falls under a climber going level; the figure gives the pose the snow's
+    // height ahead of them, above the snow under them.
+    const snow = (x: number): number => 0.12 * Math.sin(2.3 * x) + 0.05 * Math.sin(5.1 * x + 1);
+    const under = (x: number): Ground => (ahead) => snow(x + ahead) - snow(x);
+    const climber = new ClimberPose();
+    climber.advance(1, state({ ground: under(0) }));
+    const frames: { x: number; pose: Pose }[] = [];
+    for (let travelled = 10; travelled <= 16 + 1e-9; travelled += 0.02) {
+      const x = travelled - 10;
+      const pose = climber.advance(1 / 60, state({ moving: true, travelled, ground: under(x) }));
+      frames.push({ x, pose });
+    }
+    let kept = 0;
+
+    for (const [index, { x, pose }] of frames.entries()) {
+      const before = frames[index - 1];
+      if (index < 30 || before === undefined) {
+        continue;
+      }
+      const clear = pose.feet.map((foot) => clearance(foot, under(x)));
+      expect(Math.min(...clear)).toBeLessThan(0.005);
+      for (const [leg, foot] of pose.feet.entries()) {
+        const was = before.pose.feet[leg === 0 ? 0 : 1];
+        expect(clear[leg]).toBeGreaterThan(-0.005);
+        if ((clear[leg] ?? 1) < 0.005 && clearance(was, under(before.x)) < 0.005) {
+          kept += 1;
+          // Its ball stays where it was across, and on the snow: on a hump the boot rocks forward
+          // onto it before it turns about it.
+          const ball = sole(foot, ClimberPose.BALL);
+          const wasBall = sole(was, ClimberPose.BALL);
+          expect(x + ball.x).toBeCloseTo(before.x + wasBall.x, 6);
+        }
+      }
+    }
+    expect(kept).toBeGreaterThan(frames.length - 30);
   });
 
   it("stands its feet on the slope, the lifted one above it, and leans into it going up", () => {
     const rise = 0.5;
+    const ground: Ground = (x) => rise * x;
     const { poses } = walked(2, { rise });
     const standing = new ClimberPose().advance(1, state({ rise }));
 
-    for (const pose of poses.slice(40)) {
-      const [lower, higher] = pose.legs
-        .map((leg) => leg.end.y - rise * leg.end.x)
+    for (const pose of poses.slice(30)) {
+      const [lower, higher] = pose.feet
+        .map((foot) => clearance(foot, ground))
         .sort((a, b) => a - b);
       expect(lower).toBeCloseTo(0, 6);
       expect(higher).toBeGreaterThanOrEqual(-1e-6);
     }
-    for (const leg of standing.legs) {
-      expect(leg.end.y).toBeCloseTo(rise * leg.end.x, 6);
+    for (const foot of standing.feet) {
+      expect(clearance(foot, ground)).toBeCloseTo(0, 9);
+      expect(foot.angle).toBeCloseTo(Math.atan(rise), 9);
     }
     expect(standing.lean).toBeGreaterThan(new ClimberPose().advance(1, state()).lean);
   });
 
-  it("locks the downhill leg straight in each rest step, and keeps the knees bent at a steady pace", () => {
-    const rest = walked(3, { rise: 0.4, pace: "rest-step" }).poses.slice(40);
-    const steady = walked(3, { rise: 0.4 }).poses.slice(40);
-    const locked = rest.filter((pose) =>
-      pose.legs.some((leg) => stretch(leg) > 0.995 && leg.end.x < 0),
-    );
+  it("locks the downhill leg straight in each rest step, its boot flat, and keeps the knees bent at a steady pace", () => {
+    const rise = 0.4;
+    const ground: Ground = (x) => rise * x;
+    const rest = walked(3, { rise, pace: "rest-step" }).poses.slice(40);
+    const steady = walked(3, { rise }).poses.slice(40);
+    let locked = 0;
 
+    for (const pose of rest) {
+      for (const [index, leg] of pose.legs.entries()) {
+        const foot = pose.feet[index === 0 ? 0 : 1];
+        if (stretch(leg) > 0.995 && leg.end.x < 0 && clearance(foot, ground) < 1e-9) {
+          locked += 1;
+          expect(foot.angle).toBeCloseTo(Math.atan(rise), 9);
+        }
+      }
+    }
     // At least once in each stride of 0.42 m / 0.6 = 0.7 m: four or more in 3 m.
-    expect(locked.length).toBeGreaterThan(4);
+    expect(locked).toBeGreaterThan(4);
     for (const pose of steady) {
       for (const leg of pose.legs) {
         expect(stretch(leg)).toBeLessThan(0.99);
       }
     }
+    expect(
+      steady.some((pose) => pose.feet.some((foot) => foot.angle < Math.atan(rise) - 0.3)),
+    ).toBe(true);
   });
 
   it("holds the jumar still on the rope as the climber steps up to it, then slides it on", () => {
@@ -175,6 +295,23 @@ describe("ClimberPose", () => {
     expect(slid).toBeGreaterThan(5);
   });
 
+  it("holds the rope a little above the jumar with the far hand, where it comes up off the snow", () => {
+    const rise = 0.4;
+    const ground: Ground = (x) => rise * x;
+    const { pose } = walked(3, { rise, onRope: true, clipped: ["line", null] });
+    const jumar = pose.arms[0].end;
+    const off = ClimberPose.ropeOff(jumar, ground);
+    const along = length(jumar, off);
+    const held: Joint = {
+      x: jumar.x + ((off.x - jumar.x) / along) * ClimberPose.ROPE_HOLD,
+      y: jumar.y + ((off.y - jumar.y) / along) * ClimberPose.ROPE_HOLD,
+    };
+
+    expect(off.x).toBeCloseTo(jumar.x + ClimberPose.ROPE_AHEAD, 9);
+    expect(off.y).toBeCloseTo(ground(off.x), 9);
+    expect(length(pose.arms[1].end, held)).toBeLessThan(0.01);
+  });
+
   it("bends to the anchor to move the jumar past it, then stands to the rope again", () => {
     const climber = new ClimberPose();
     const onFirst = state({ onRope: true, clipped: ["first", "first"] });
@@ -186,8 +323,27 @@ describe("ClimberPose", () => {
     expect(bent.lean).toBeGreaterThan(holding.lean + 0.3);
     expect(bent.arms[0].end.y).toBeLessThan(holding.arms[0].end.y - 0.15);
     expect(bent.arms[1].end.y).toBeLessThan(holding.arms[1].end.y);
+    expect(bent.gaze).toBeLessThan(holding.gaze - 0.2);
     expect(after.lean).toBeCloseTo(holding.lean, 3);
     expect(length(after.arms[0].end, holding.arms[0].end)).toBeLessThan(1e-3);
+  });
+
+  it("looks down at its feet, and now and then up the slope ahead as it walks", () => {
+    const rise = 0.3;
+    const down = Math.atan(rise) + ClimberPose.GAZE.down;
+    const { poses } = walked(20, { rise });
+    const climber = new ClimberPose();
+    for (let travelled = 10; travelled <= 30; travelled += 0.02) {
+      climber.advance(1 / 60, state({ rise, moving: true, travelled }));
+    }
+    const stopped = climber.advance(2, state({ rise, travelled: 30 }));
+    const ahead = poses.filter((pose) => pose.gaze > down + 0.25);
+    const atTheFeet = poses.filter((pose) => Math.abs(pose.gaze - down) < 1e-9);
+
+    expect(new ClimberPose().advance(1, state({ rise })).gaze).toBeCloseTo(down, 9);
+    expect(ahead.length).toBeGreaterThan(0);
+    expect(atTheFeet.length).toBeGreaterThan(poses.length / 2);
+    expect(stopped.gaze).toBeCloseTo(down, 9);
   });
 
   it("comes to a stand when it stops, the feet together", () => {
@@ -197,9 +353,9 @@ describe("ClimberPose", () => {
     }
     const pose = climber.advance(2, state({ travelled: 10.4 }));
 
-    for (const leg of pose.legs) {
-      expect(Math.abs(leg.end.y)).toBeLessThan(0.002);
-      expect(Math.abs(leg.end.x)).toBeLessThan(0.12);
+    for (const foot of pose.feet) {
+      expect(Math.abs(clearance(foot))).toBeLessThan(0.002);
+      expect(Math.abs(foot.ankle.x)).toBeLessThan(0.12);
     }
   });
 
@@ -237,7 +393,7 @@ describe("ClimberPose", () => {
       expect(arm.end.x).toBeGreaterThan(0.2);
       expect(arm.end.y).toBeGreaterThan(0.9);
     }
-    expect(Math.max(...ladder.legs.map((leg) => leg.end.y))).toBeLessThan(
+    expect(Math.max(...ladder.feet.map((foot) => clearance(foot)))).toBeLessThan(
       ClimberPose.RUNG_LIFT + 1e-9,
     );
   });
