@@ -1,0 +1,41 @@
+{
+  "note": "The questions of the Your climber screen (#145), and the answers a first climb starts from: the typical client, whom the body's and the physics' numbers are fitted to, so that their fitness and their technique are 1. They are 40, the age from which summits grow rarer (body.summits-by-age); 175 cm and 75 kg, the Icefall's stand-in body, a BMI of 24.5; they run, cycle or the like 1–3 hours a week; their sex is undisclosed, halfway in the estimate (body.vo2max-estimate-sex); and they have alpine climbs behind them, crampons, fixed ropes and ladders, as the operators ask. Each training answer is a level of the estimate's activity scale (body.activity-scale), in its words; each experience answer names the share of the speed it goes at on ladders and ropes, or none for the typical client's own, and the height of the highest peak it has summited, which the guide holds to Nepal's (rules.7000-m-peak). The limits are the screen's own, for adults. The guide's words tell fitter than most from a share of 1.1 of the typical client's VO2max, less fit below 0.9 and much less below 0.7: the screen's own bands, which no source gives.",
+  "typical": {
+    "age": 40,
+    "sex": "undisclosed",
+    "height": 175,
+    "weight": 75,
+    "training": "hard-hours",
+    "experience": "alpine",
+    "illness": [],
+    "conditions": []
+  },
+  "limits": {
+    "age": { "min": 18, "max": 80 },
+    "height": { "min": 140, "max": 210 },
+    "weight": { "min": 40, "max": 160 }
+  },
+  "sex": [
+    { "id": "male", "share": 1 },
+    { "id": "female", "share": 0 },
+    { "id": "undisclosed", "share": 0.5 }
+  ],
+  "training": [
+    { "id": "none", "activity": 0 },
+    { "id": "walks", "activity": 1 },
+    { "id": "modest", "activity": 3 },
+    { "id": "hard-hour", "activity": 5 },
+    { "id": "hard-hours", "activity": 6 },
+    { "id": "hard-more", "activity": 7 }
+  ],
+  "experience": [
+    { "id": "none", "technique": "technique.novice-share" },
+    { "id": "treks", "technique": "technique.novice-share" },
+    { "id": "alpine" },
+    { "id": "7000", "technique": "technique.veteran-share", "peak": 7000 },
+    { "id": "8000", "technique": "technique.veteran-share", "peak": 8000 }
+  ],
+  "illness": ["ams", "hape-hace"],
+  "conditions": ["asthma", "copd", "heart", "sleep-apnoea", "diabetes", "heart-attack-or-stroke"],
+  "guide": { "fitter": 1.1, "less-fit": 0.9, "much-less-fit": 0.7 }
+}

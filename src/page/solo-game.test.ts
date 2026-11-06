@@ -111,9 +111,10 @@ describe("SoloGame", () => {
     queue.send({ kind: "walk", climber: "anna", direction: "right" });
     game.advance(1);
     const physics = new SlopePhysics(TestMountain.CALM);
-    const resumed = SoloGame.resumeOrStart(expedition.save(), [physics], () => {
-      throw new Error("No new climb was asked for");
-    });
+    const resumed = SoloGame.resume(expedition.save(), [physics]);
+    if (resumed === null) {
+      throw new Error("The climb didn't go on");
+    }
 
     new SoloGame(resumed, new ActionQueue(), new MemoryStore(), "anna").advance(1);
 
@@ -127,36 +128,21 @@ describe("SoloGame", () => {
     game.advance(1);
     const physics = new SlopePhysics(TestMountain.CALM);
 
-    const resumed = SoloGame.resumeOrStart(expedition.save(), [physics], () => {
-      throw new Error("No new climb was asked for");
-    });
+    const resumed = SoloGame.resume(expedition.save(), [physics]);
 
-    expect(resumed.step).toBe(20);
+    expect(resumed?.step).toBe(20);
     expect(physics.climber("anna").x).toBeCloseTo(11, 6);
   });
 
-  it("starts a new climb when the device has none", () => {
-    const physics = new SlopePhysics(TestMountain.CALM);
-    const layout = TestMountain.FLAT.layout([{ id: "anna", along: 10 }]);
-
-    const started = SoloGame.resumeOrStart(null, [physics], () => TestMountain.scenario(7, layout));
-
-    expect(started.step).toBe(0);
-    expect(started.scenario.seed).toBe(7);
-    expect(physics.climber("anna").x).toBe(10);
+  it("has nothing to go on with when the device has no climb: a new one starts", () => {
+    expect(SoloGame.resume(null, [new SlopePhysics(TestMountain.CALM)])).toBeNull();
   });
 
-  it("starts a new climb over a save this build can't go on with, as one from before a rule changed", () => {
+  it("has nothing to go on with from a save this build can't load, as one from before a rule changed", () => {
     const { expedition } = aGame();
     const physics = new SlopePhysics(TestMountain.CALM);
-    const layout = TestMountain.FLAT.layout([{ id: "anna", along: 10 }]);
 
-    const started = SoloGame.resumeOrStart({ ...expedition.save(), rules: {} }, [physics], () =>
-      TestMountain.scenario(7, layout),
-    );
-
-    expect(started.step).toBe(0);
-    expect(started.scenario.seed).toBe(7);
+    expect(SoloGame.resume({ ...expedition.save(), rules: {} }, [physics])).toBeNull();
   });
 
   it("saves at once when asked, and counts the ten seconds from there", () => {

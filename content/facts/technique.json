@@ -134,6 +134,46 @@
       "fitted": "2026-11-05"
     },
     {
+      "id": "technique.experience-and-summits",
+      "kind": "fact",
+      "claim": "On Everest, climbers who had climbed on another peak of Nepal before summit more often than those who hadn't, and die no less often.",
+      "status": "source only",
+      "versions": [
+        {
+          "note": "67.6% against 61.5% summited in 2006–2019, an advantage that has about halved in 25 years; deaths, the descent's too, independent of experience. The database records earlier Nepalese and border peaks, not other mountains.",
+          "source": {
+            "title": "Huey et al. 2020, Mountaineers on Mount Everest: Effects of age, sex, experience, and crowding on rates of success and death (PLoS One) → Results",
+            "url": "https://pmc.ncbi.nlm.nih.gov/articles/PMC7449495"
+          },
+          "checked": "2026-11-06"
+        }
+      ]
+    },
+    {
+      "id": "technique.novice-share",
+      "kind": "coefficient",
+      "claim": "The share of the speed on a ladder and clipped to a fixed rope of a climber who has never used crampons, a jumar or a ladder, against one with alpine climbs behind them, whom the ladder and walking speeds are fitted to. Fitted so that such a climber, as fit as the typical client, takes the longest the sources give a first crossing of the Icefall, 7 hours against the middle's 5.",
+      "status": "source only",
+      "value": 0.63,
+      "unit": "1",
+      "fitted_to": ["time.base-camp-to-camp-1", "route.icefall-ladders"],
+      "fitted": "2026-11-06"
+    },
+    {
+      "id": "technique.veteran-share",
+      "kind": "coefficient",
+      "claim": "The same share for a climber who has climbed a 7,000 m or an 8,000 m peak. Fitted so that such a climber, as fit as the typical client, crosses the Icefall the first time in 4 hours, the shortest Alan Arnette's routes give it, and summits more often: they take less time on the ropes, not fewer risks (technique.experience-and-summits).",
+      "status": "source only",
+      "value": 1.5,
+      "unit": "1",
+      "fitted_to": [
+        "time.base-camp-to-camp-1",
+        "route.icefall-ladders",
+        "technique.experience-and-summits"
+      ],
+      "fitted": "2026-11-06"
+    },
+    {
       "id": "technique.cowstail-reach",
       "kind": "coefficient",
       "claim": "How far a cowstail reaches from the climber's harness to the fixed rope, in metres: how far from the rope they can clip, and how far past an anchor the rope lets them. Fitted so that a climber beside a ladder can reach the rope fixed along it.",
@@ -244,6 +284,16 @@
       "kind": "question",
       "question": "Up to what speed can a sliding climber stop themselves with the ice axe, on snow and on hard ice, and within how many seconds of the slip? How far from the body does the axe reach, and how hard do snow and hard ice hold a sliding climber without it? The game stops a slide no faster than 5 m/s, with the axe driven in within 1.5 m above the body, and never in the air; without the axe, a slide stops by itself only on ground gentler than about 19°, by the friction measured for ski fabrics on snow.",
       "about": ["technique.arrest-speed", "technique.axe-reach", "technique.snow-friction"]
+    },
+    {
+      "id": "technique.experience",
+      "kind": "question",
+      "question": "How much slower on the Icefall's ladders and fixed ropes is a client who has never used crampons, a jumar or a ladder than one with alpine climbs behind them, and how much faster one who has climbed a 7,000 m or an 8,000 m peak? Do they slip more, or less, for each metre? The game fits their speed there to the spread of the sources' hours for a first crossing, and leaves their slips for each metre as they are: experience brings more summits, not fewer deaths.",
+      "about": [
+        "technique.novice-share",
+        "technique.veteran-share",
+        "technique.experience-and-summits"
+      ]
     }
   ]
 }

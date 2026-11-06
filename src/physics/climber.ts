@@ -55,6 +55,8 @@ type FallingSave = {
 /** A climber as saves keep them. */
 export type ClimberSave = {
   readonly id: ClimberId;
+  /** The share of the speed they go at on a ladder or clipped to a rope. */
+  readonly technique: number;
   /** Where they stand, along the ground, when they're on their feet and not on a ladder. */
   readonly along: number;
   readonly onLadder: OnLadderSave | null;
@@ -210,6 +212,7 @@ export class Climber {
 
   private constructor(
     readonly id: ClimberId,
+    private readonly technique: number,
     private along: number,
     private onLadder: OnLadder | null,
     private walking: Walk["direction"],
@@ -223,9 +226,24 @@ export class Climber {
     private killed: boolean,
   ) {}
 
-  /** A climber standing at `along`, still, clipped to nothing. */
-  static standing(id: ClimberId, along: number): Climber {
-    return new Climber(id, along, null, "stop", 1, false, false, null, null, null, [], false);
+  /** A climber standing at `along`, still, clipped to nothing, going at `technique`'s share of
+   * the speed on ladders and ropes. */
+  static standing(id: ClimberId, along: number, technique: number): Climber {
+    return new Climber(
+      id,
+      technique,
+      along,
+      null,
+      "stop",
+      1,
+      false,
+      false,
+      null,
+      null,
+      null,
+      [],
+      false,
+    );
   }
 
   static load(save: ClimberSave, slope: Slope): Climber {
@@ -233,6 +251,7 @@ export class Climber {
       clip === null ? null : new Carabiner(slope.rope(clip.rope), clip.slide);
     return new Climber(
       save.id,
+      save.technique,
       save.along,
       save.onLadder === null ? null : OnLadder.load(save.onLadder, slope),
       save.walking,
@@ -250,6 +269,7 @@ export class Climber {
   save(): ClimberSave {
     return {
       id: this.id,
+      technique: this.technique,
       along: this.along,
       onLadder: this.onLadder?.save() ?? null,
       walking: this.walking,
@@ -427,9 +447,9 @@ export class Climber {
   }
 
   /**
-   * Along the ground at the speed for its steepness, up to the next corner or ladder's end. Ground
-   * too steep to walk up stops them, and so does the ground under a ladder; ground too steep to
-   * walk down is a fall.
+   * Along the ground at the speed for its steepness, up to the next corner or ladder's end, and
+   * at their technique's share of it clipped to a rope. Ground too steep to walk up stops them,
+   * and so does the ground under a ladder; ground too steep to walk down is a fall.
    */
   private walkGround(slope: Slope, moment: Moment): void {
     const way = Climber.WAYS[this.walking];
@@ -439,7 +459,8 @@ export class Climber {
     const { terrain, walkingSpeed, slipChance } = slope;
     const ahead = terrain.ahead(this.along, way);
     const steepness = Steepness.ofWay(ahead.x, ahead.y);
-    const speed = walkingSpeed.at(steepness) * this.stride;
+    const share = this.carabiners.length > 0 ? this.stride * this.technique : this.stride;
+    const speed = walkingSpeed.at(steepness) * share;
     if (walkingSpeed.steeperUp(steepness)) {
       return;
     }
@@ -452,12 +473,12 @@ export class Climber {
     const along = way > 0 ? Math.min(walked, stop) : Math.max(walked, stop);
     if (this.ropesLet(terrain.point(along), slope)) {
       this.along = along;
-      this.stepped(slope, moment, ahead, speed, slipChance.at(steepness) * this.stride);
+      this.stepped(slope, moment, ahead, speed, slipChance.at(steepness) * share);
     }
   }
 
-  /** Along a ladder at its speed for its steepness the way they go, and off it onto the ground at
-   * its end. */
+  /** Along a ladder at their technique's share of its speed for its steepness the way they go,
+   * and off it onto the ground at its end. */
   private climb(onLadder: OnLadder, slope: Slope, moment: Moment): void {
     const { ladder, rung } = onLadder;
     const way = ladder.way(this.walking);
@@ -465,7 +486,8 @@ export class Climber {
       return;
     }
     const steepness = ladder.steepness(way);
-    const speed = slope.ladderSpeed.at(steepness) * this.stride;
+    const share = this.stride * this.technique;
+    const speed = slope.ladderSpeed.at(steepness) * share;
     const end = ladder.end(way);
     const climbed = rung + way * speed * SimulationClock.STEP_SECONDS;
     const next = way > 0 ? Math.min(climbed, end.rung) : Math.max(climbed, end.rung);
@@ -479,7 +501,7 @@ export class Climber {
       moment,
       ladder.ahead(way),
       speed,
-      slope.ladderSlipChance.at(steepness) * this.stride,
+      slope.ladderSlipChance.at(steepness) * share,
     );
   }
 

@@ -1,4 +1,5 @@
 import type { Build } from "../build";
+import { GuideAdvice } from "../content/guide-advice";
 import { KnowledgeBase } from "../content/knowledge-base";
 import type { KnowledgeFile } from "../content/knowledge-base";
 import { Mountain } from "../content/mountain";
@@ -25,11 +26,14 @@ import type { RenderingTexts } from "../rendering";
 import type { RoomCode } from "../room/room-code";
 import { IndexedDbStore } from "../saves";
 import type { ExpeditionStore } from "../saves";
+import { Expedition } from "../simulation";
 import type { ClimberId, ExpeditionSave, Scenario } from "../simulation";
 import { ActionQueue, EverySink, ZoomSink } from "./action-queue";
 import { BrowserSockets } from "./browser-sockets";
+import { ClimberScreen } from "./climber-screen";
 import { GameLoop } from "./game-loop";
 import type { Played } from "./game-loop";
+import { KeptClimber } from "./kept-climber";
 import { PlayerToken } from "./player-token";
 import { ReloadOnce } from "./reload-once";
 import { RoomClient } from "./room-client";
@@ -48,6 +52,8 @@ export interface PageTexts {
   readonly room: RoomTexts;
   /** The camps' words: each camp's name, each section's line and the arrival's. */
   readonly camps: Texts;
+  /** Your climber's words: its questions, their choices and the guide's lines. */
+  readonly climber: Texts;
 }
 
 /** What the page's stories read that the DOM doesn't show, on `window.everest`. */
@@ -74,13 +80,16 @@ interface Climb {
 /**
  * The page: the start's choice, then the climb, alone or in a room, on the mountain and its
  * rules, run in real time by the game loop, drawn by the scene through the camera, and played
- * through the controls. A link with a room in it skips the choice. Alone, the climb is saved on
- * the device as it goes; in a room, the room keeps it (#28). Without WebGL the page says so and
- * runs the expedition with no picture, so the controls still work.
+ * through the controls. A link with a room in it skips the choice. Alone, a new climb sets off as
+ * the climber the player says they are (#145), and the climb is saved on the device as it goes; in
+ * a room, the room keeps it (#28), and its climbers set off as the route has them until Ready
+ * (#78). Without WebGL the page says so and runs the expedition with no picture, so the controls
+ * still work.
  */
 export class GamePage {
   private readonly elements: PageElements;
   private readonly mountain: Mountain;
+  private readonly guide: GuideAdvice;
 
   constructor(
     private readonly window: Window,
@@ -89,7 +98,9 @@ export class GamePage {
     private readonly build: Build,
   ) {
     this.elements = new PageElements(window.document);
-    this.mountain = new Mountain(new KnowledgeBase(facts));
+    const knowledge = new KnowledgeBase(facts);
+    this.mountain = new Mountain(knowledge);
+    this.guide = new GuideAdvice(knowledge, this.mountain.questionnaire);
   }
 
   async open(): Promise<void> {
@@ -110,12 +121,27 @@ export class GamePage {
     });
   }
 
-  /** The climb alone: the one `saved` on the device, or a new one, which replaces it at once. */
+  /** The climb alone: the one `saved` on the device, or a new one, which replaces it at once, for
+   * the climber the player says they are on Your climber. */
   private alone(store: ExpeditionStore, saved: ExpeditionSave | null): void {
     const rules = this.mountain.rules();
-    const expedition = SoloGame.resumeOrStart(saved, rules.all, () =>
-      this.mountain.scenario(this.newSeed()),
-    );
+    const resumed = SoloGame.resume(saved, rules.all);
+    if (resumed !== null) {
+      this.playAlone(store, resumed, rules);
+      return;
+    }
+    const { questionnaire } = this.mountain;
+    const kept = new KeptClimber(this.storage(), questionnaire);
+    const screen = new ClimberScreen(this.window, this.texts.climber, questionnaire, this.guide);
+    screen.show(kept.answers, (answers) => {
+      kept.keep(answers);
+      const scenario = this.mountain.scenario(this.newSeed(), answers);
+      this.playAlone(store, Expedition.start(scenario, rules.all), rules);
+    });
+  }
+
+  /** Plays `expedition` alone, saved on the device from the start. */
+  private playAlone(store: ExpeditionStore, expedition: Expedition, rules: ExpeditionRules): void {
     const queue = new ActionQueue();
     const player = Section.PLAYER;
     const game = new SoloGame(expedition, queue, store, player);

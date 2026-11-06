@@ -46,10 +46,12 @@ export class TestRidge implements Rule, Legs, Breathing {
   /** An hour of the mountain's time in each second of play, so a test lives through hours in a
    * few steps. */
   static readonly COMPRESSION = 3600;
-  /** A climber fresh, rested, fed and watered, with nothing on their back. */
+  /** A climber as fit as the typical client, fresh, rested, fed and watered, with nothing on
+   * their back. */
   static readonly FRESH: Omit<BodyStart, "id"> = {
     mass: 70,
     load: 0,
+    fitness: 1,
     fatigue: 0,
     awake: 0,
     water: 0,

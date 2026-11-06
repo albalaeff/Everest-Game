@@ -293,7 +293,8 @@ header {
 
 .action-button,
 #disclaimer button,
-#start button {
+#start button,
+#climber button {
   min-width: 48px;
   min-height: 48px;
   padding: 0 0.9rem;
@@ -489,6 +490,7 @@ kbd {
 /* Above the game, upright or sideways; on a small screen it scrolls inside itself, not the page. */
 #disclaimer,
 #start,
+#climber,
 #camp {
   position: fixed;
   inset: 0;
@@ -504,12 +506,15 @@ kbd {
 #disclaimer[hidden],
 #start[hidden],
 #start [hidden],
+#climber[hidden],
+#climber [hidden],
 #camp[hidden] {
   display: none;
 }
 
 #disclaimer > div,
 #start > div,
+#climber > div,
 #camp > div {
   max-width: 36rem;
   margin: auto;
@@ -519,6 +524,7 @@ kbd {
 
 #disclaimer h2,
 #start h2,
+#climber h2,
 #camp h2 {
   margin: 0 0 1rem;
   font-size: 1.25rem;
@@ -582,6 +588,144 @@ kbd {
   text-transform: uppercase;
   user-select: text;
   -webkit-user-select: text;
+}
+
+/* Your climber: the questions one under the other, each choice a row a finger can take, the
+ * guide's words under them, and the buttons under those. */
+#climber p {
+  margin: 0 0 1rem;
+  color: var(--muted);
+  text-align: center;
+}
+
+#climber .numbers {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem 1.5rem;
+}
+
+#climber label {
+  display: flex;
+  gap: 0.6rem;
+  align-items: center;
+  min-height: 48px;
+}
+
+#climber input[type="number"] {
+  box-sizing: border-box;
+  width: 5.5rem;
+  min-height: 48px;
+  padding: 0 0.7rem;
+  border: 1px solid var(--glass-edge);
+  border-radius: 999px;
+  background: rgb(8 20 40 / 50%);
+  color: inherit;
+  font: inherit;
+  font-variant-numeric: tabular-nums;
+  user-select: text;
+  -webkit-user-select: text;
+}
+
+#climber input[type="radio"],
+#climber input[type="checkbox"] {
+  flex: none;
+  width: 1.25rem;
+  height: 1.25rem;
+  margin: 0;
+  accent-color: var(--accent);
+}
+
+#climber fieldset {
+  margin: 1rem 0 0;
+  padding: 0;
+  border: 0;
+}
+
+#climber legend,
+#climber summary,
+#climber dt,
+#climber h3 {
+  font-weight: 600;
+}
+
+#climber legend {
+  margin-bottom: 0.25rem;
+  padding: 0;
+}
+
+/* Under "More about you", the line that says why. */
+#climber details legend {
+  color: var(--muted);
+  font-weight: 400;
+}
+
+/* The sex's three choices share a line where they fit. */
+#climber [data-question="sex"] label {
+  display: inline-flex;
+  margin-right: 1.5rem;
+}
+
+#climber details {
+  margin-top: 1rem;
+}
+
+#climber summary {
+  box-sizing: border-box;
+  min-height: 48px;
+  padding: 0.75rem 0;
+  cursor: pointer;
+}
+
+#climber details fieldset {
+  margin-top: 0;
+}
+
+#climber dl {
+  display: grid;
+  grid-template-columns: max-content 1fr;
+  gap: 0.35rem 1rem;
+  margin: 0;
+}
+
+#climber dt {
+  grid-column: 1;
+}
+
+#climber dd {
+  grid-column: 2;
+  margin: 0;
+}
+
+#climber .guide {
+  margin-top: 1.25rem;
+  padding: 0.75rem 1rem;
+  border: 1px solid var(--glass-edge);
+  border-radius: 1rem;
+  background: var(--glass);
+}
+
+#climber h3 {
+  margin: 0 0 0.35rem;
+  font-size: 1rem;
+}
+
+#climber ul {
+  margin: 0;
+  padding-left: 1.25rem;
+}
+
+#climber button {
+  display: block;
+  width: 100%;
+  max-width: 20rem;
+  margin: 0.75rem auto 0;
+}
+
+/* The way on the screen offers first: [Keep these answers], or [Climb]. */
+#climber [data-text="keep"],
+#climber [data-text="climb"] {
+  border-color: var(--accent);
+  font-weight: 650;
 }
 
 #disclaimer h3 {

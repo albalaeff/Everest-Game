@@ -13,13 +13,23 @@ export interface SeenClimber {
   readonly ladder: string | null;
 }
 
-/** A climb as the device saves it (src/simulation → ExpeditionSave), as far as the stories edit
- * it: the steps played, and where the clock and each climber stand. */
+/** A climber on the slope as the device saves them (src/physics → ClimberSave), as far as the
+ * stories read and edit them: where they stand, and their technique as they set off. */
+export interface SavedClimber {
+  readonly id: string;
+  along: number;
+  readonly technique: number;
+}
+
+/** A climb as the device saves it (src/simulation → ExpeditionSave), as far as the stories read
+ * and edit it: the steps played, where the clock and each climber stand, and each climber's body
+ * and technique as they set off. */
 export interface SavedClimb {
   step: number;
   rules: {
     "mountain-clock": { steps: number };
-    "slope-physics": { climbers: { readonly id: string; along: number }[] };
+    body: { climbers: { readonly id: string; readonly mass: number; readonly fitness: number }[] };
+    "slope-physics": { climbers: SavedClimber[] };
   };
 }
 
@@ -61,8 +71,29 @@ export async function openARoom(page: Page): Promise<string> {
   return code;
 }
 
-/** Opens the game on a climb alone: a new one, or the one the device has saved. */
+/** Your climber, before a new climb alone. */
+export function climberScreen(page: Page): Locator {
+  return page.getByRole("dialog", { name: "Your climber" });
+}
+
+/** The answers Your climber kept on the device, or null for none. */
+export async function keptClimber(page: Page): Promise<Record<string, unknown> | null> {
+  return page.evaluate(
+    () => JSON.parse(localStorage.getItem("everest.climber") ?? "null") as Record<string, unknown>,
+  );
+}
+
+/** Opens the game on a new climb alone, on a device with none saved: the questions open on the
+ * typical client, whom the route's numbers are fitted to, and [Climb] sets them off. */
 export async function openTheGame(page: Page): Promise<void> {
+  await readTheDisclaimer(page);
+  await choice(page, "Alone").click();
+  await climberScreen(page).getByRole("button", { name: "Climb" }).click();
+}
+
+/** Opens the game again on the climb alone the device has saved: [Alone] goes on with it, with
+ * no Your climber. */
+export async function goOnWithTheClimb(page: Page): Promise<void> {
   await readTheDisclaimer(page);
   await choice(page, "Alone").click();
 }
@@ -183,7 +214,7 @@ export async function storeClimb(page: Page, climb: SavedClimb): Promise<void> {
 }
 
 /** The player's climber in a saved climb. */
-export function savedPlayer(climb: SavedClimb): { readonly id: string; along: number } {
+export function savedPlayer(climb: SavedClimb): SavedClimber {
   const player = climb.rules["slope-physics"].climbers.find((climber) => climber.id === "player");
   if (player === undefined) {
     throw new Error("The saved climb has no player");

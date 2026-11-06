@@ -1,7 +1,7 @@
 import { expect, test } from "@playwright/test";
 import type { Locator, Page } from "@playwright/test";
 
-import { openTheGame } from "./climb";
+import { goOnWithTheClimb, openTheGame } from "./climb";
 
 /**
  * The slope as the page draws it. Playwright can't read a WebGL canvas, so the scene writes what
@@ -209,7 +209,7 @@ test.describe("the view, 10 to 100 m of slope on a screen of 630 by 360", () => 
     await page.locator('[data-control="view-closer"]').click();
     await expect(readout).toHaveText("50 m");
     await settledOn(page, 50);
-    await openTheGame(page);
+    await goOnWithTheClimb(page);
 
     await expect(page.locator("#controls .view output")).toHaveText("50 m");
     await waitForFrames(page, 1);
@@ -270,7 +270,7 @@ test.describe("the graphics setting", () => {
     await expect(graphics(page)).toHaveText("Graphics: Medium");
     await expect(page.locator("#slope")).toHaveAttribute("data-layers", "5");
     await expect(page.locator("#slope")).toHaveAttribute("data-flakes", "120");
-    await openTheGame(page);
+    await goOnWithTheClimb(page);
 
     await expect(graphics(page)).toHaveText("Graphics: Medium");
     await waitForFrames(page, 1);

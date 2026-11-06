@@ -84,7 +84,25 @@
     ]
   },
   "bodies": [
-    { "id": "player", "mass": 75, "load": 10, "fatigue": 0, "awake": 1, "water": 0, "food": 0 },
-    { "id": "teammate", "mass": 68, "load": 12, "fatigue": 0, "awake": 1, "water": 0, "food": 0 }
+    {
+      "id": "player",
+      "mass": 75,
+      "load": 10,
+      "fitness": 1,
+      "fatigue": 0,
+      "awake": 1,
+      "water": 0,
+      "food": 0
+    },
+    {
+      "id": "teammate",
+      "mass": 68,
+      "load": 12,
+      "fitness": 1,
+      "fatigue": 0,
+      "awake": 1,
+      "water": 0,
+      "food": 0
+    }
   ]
 }

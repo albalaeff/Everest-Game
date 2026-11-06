@@ -9,6 +9,7 @@ import type {
 } from "../physics";
 import { Body, MountainClock, ObjectiveHazards, OxygenSystem } from "../simulation";
 import type { BodyStart, ClimberId, ClockStart, HazardStart, Scenario } from "../simulation";
+import type { ClimberStart } from "./climber-facts";
 import type { KnowledgeBase, KnowledgeRange } from "./knowledge-base";
 import { SlopeFacts } from "./slope-facts";
 
@@ -134,18 +135,35 @@ export class Section {
   }
 
   /** A scenario on the section: the seed, the climbers in the layout's order, the clock at its
-   * start. */
-  scenario(seed: number): Scenario {
+   * start, and the player as their answers make them (#145), or as the file has them. */
+  scenario(seed: number, player?: ClimberStart): Scenario {
+    const { bodies, layout } = player === undefined ? this : this.withPlayer(player);
     return {
       seed,
-      climbers: this.layout.climbers.map((climber) => climber.id),
+      climbers: layout.climbers.map((climber) => climber.id),
       start: {
         [MountainClock.NAME]: MountainClock.start(this.clock),
-        [OxygenSystem.NAME]: OxygenSystem.start(this.layout.climbers.map(({ id }) => id)),
-        [Body.NAME]: Body.start(this.bodies),
+        [OxygenSystem.NAME]: OxygenSystem.start(layout.climbers.map(({ id }) => id)),
+        [Body.NAME]: Body.start(bodies),
         [ObjectiveHazards.NAME]: ObjectiveHazards.start(this.hazards),
-        [SlopePhysics.NAME]: SlopePhysics.start(this.layout),
+        [SlopePhysics.NAME]: SlopePhysics.start(layout),
       },
+    };
+  }
+
+  /** The bodies and the layout, with the player as their answers make them. */
+  private withPlayer(player: ClimberStart): {
+    readonly bodies: readonly BodyStart[];
+    readonly layout: SlopeLayout;
+  } {
+    const { mass, fitness, technique } = player;
+    const mine = (id: ClimberId): boolean => id === Section.PLAYER;
+    const climbers = this.layout.climbers.map((climber) =>
+      mine(climber.id) ? { ...climber, technique } : climber,
+    );
+    return {
+      bodies: this.bodies.map((body) => (mine(body.id) ? { ...body, mass, fitness } : body)),
+      layout: { ...this.layout, climbers },
     };
   }
 

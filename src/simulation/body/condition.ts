@@ -7,6 +7,9 @@ export interface BodyStart {
   /** Their own mass and their pack's, in kg. */
   readonly mass: number;
   readonly load: number;
+  /** Their VO2max at sea level, as a share of the typical client's, whom the body's numbers are
+   * fitted to: 1 for them. */
+  readonly fitness: number;
   /** The share of their endurance already spent: 0 fresh, 1 exhausted. */
   readonly fatigue: number;
   /** Hours since they last slept. */
@@ -42,6 +45,8 @@ export type ConditionSave = {
   readonly id: ClimberId;
   readonly mass: number;
   readonly load: number;
+  /** Missing from the saves of builds before climbers had one (#145), which can't go on. */
+  readonly fitness?: number;
   readonly chosen: Pace["pace"];
   readonly fatigue: number;
   readonly exhausted: boolean;
@@ -63,6 +68,7 @@ export class Condition {
     readonly id: ClimberId,
     private readonly mass: number,
     private readonly load: number,
+    private readonly fitness: number,
     private chosen: Pace["pace"],
     private fatigue: number,
     private exhausted: boolean,
@@ -73,39 +79,44 @@ export class Condition {
 
   /** A climber as a scenario starts them, at a steady pace. */
   static start(start: BodyStart): Condition {
-    const { id, mass, load, fatigue, awake, water, food } = start;
+    const { id, mass, load, fitness, fatigue, awake, water, food } = start;
     const short = [load, awake, water, food];
-    if (!(mass > 0 && fatigue >= 0 && fatigue <= 1 && short.every((amount) => amount >= 0))) {
+    const whole = mass > 0 && fitness > 0 && fatigue >= 0 && fatigue <= 1;
+    if (!(whole && short.every((amount) => amount >= 0))) {
       throw new RangeError(
-        `${id}'s body needs a mass, a fatigue from 0 to 1, and nothing below nought`,
+        `${id}'s body needs a mass, a fitness, a fatigue from 0 to 1, and nothing below nought`,
       );
     }
-    return new Condition(id, mass, load, "steady", fatigue, fatigue >= 1, awake, water, food);
+    const exhausted = fatigue >= 1;
+    return new Condition(id, mass, load, fitness, "steady", fatigue, exhausted, awake, water, food);
   }
 
   static load(save: ConditionSave): Condition {
-    const { id, mass, load, chosen, fatigue, exhausted, awake, water, food } = save;
-    return new Condition(id, mass, load, chosen, fatigue, exhausted, awake, water, food);
+    const { id, mass, load, fitness, chosen, fatigue, exhausted, awake, water, food } = save;
+    if (fitness === undefined) {
+      throw new RangeError(`${id}'s body was saved before climbers had a fitness (#145)`);
+    }
+    return new Condition(id, mass, load, fitness, chosen, fatigue, exhausted, awake, water, food);
   }
 
   save(): ConditionSave {
-    const { id, mass, load, chosen, fatigue, exhausted, awake, water, food } = this;
-    return { id, mass, load, chosen, fatigue, exhausted, awake, water, food };
+    const { id, mass, load, fitness, chosen, fatigue, exhausted, awake, water, food } = this;
+    return { id, mass, load, fitness, chosen, fatigue, exhausted, awake, water, food };
   }
 
   choose(pace: Pace["pace"]): void {
     this.chosen = pace;
   }
 
-  /** How far their strides go, as a share of a fresh climber's at sea level with nothing to
-   * carry: their pace's, of the `capacity` the altitude leaves them, less what their load takes.
-   * Exhausted, they don't move. */
+  /** How far their strides go, as a share of a fresh typical client's at sea level with nothing
+   * to carry: their pace's, of their fitness and the `capacity` the altitude leaves of it, less
+   * what their load takes. Exhausted, they don't move. */
   stride(numbers: BodyNumbers, capacity: number): number {
     if (this.exhausted) {
       return 0;
     }
     const { speed } = numbers.paces[this.pace(numbers)];
-    return (speed * capacity * this.mass) / (this.mass + this.load);
+    return (speed * capacity * this.fitness * this.mass) / (this.mass + this.load);
   }
 
   /** Lives through `hours` of the mountain's time, on the move or not: they grow short of water,

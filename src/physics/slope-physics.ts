@@ -27,6 +27,9 @@ export interface RopeLayout {
 export interface ClimberLayout {
   readonly id: ClimberId;
   readonly along: number;
+  /** Their skill on ladders and fixed ropes: the share of the speed they go at on a ladder or
+   * clipped to a rope, 1 unless it says otherwise. */
+  readonly technique?: number;
 }
 
 /** A section of the route as a scenario starts it: its ground, the real altitude of its ends, its
@@ -85,9 +88,12 @@ export class SlopePhysics implements Rule, HazardGround, Legs {
       const end = (along: number) => onTheGround(along, `The ladder ${id}`);
       return new Ladder({ id, from: end(from), to: end(to) }, terrain).save();
     });
-    const climbers = layout.climbers.map(({ id, along }) =>
-      Climber.standing(id, onTheGround(along, id)).save(),
-    );
+    const climbers = layout.climbers.map(({ id, along, technique = 1 }) => {
+      if (!(technique > 0)) {
+        throw new RangeError(`${id} needs a technique above nought, not ${technique}`);
+      }
+      return Climber.standing(id, onTheGround(along, id), technique).save();
+    });
     const { terrain: ground, altitude } = layout;
     const save: SlopeSave = { terrain: ground, altitude, ropes, ladders, climbers };
     return save;

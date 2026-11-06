@@ -3,6 +3,9 @@ import { Body, MountainClock, ObjectiveHazards, OxygenSystem } from "../simulati
 import type { HazardKind, HazardOdds, HazardSettings, Rule, Scenario } from "../simulation";
 import type { KnowledgeBase } from "./knowledge-base";
 import { BodyFacts } from "./body-facts";
+import { ClimberFacts } from "./climber-facts";
+import { Questionnaire } from "./questionnaire";
+import type { ClimberAnswers } from "./questionnaire";
 import { Section } from "./section";
 
 /** One expedition's rules, with their numbers: the page draws from the physics and reads the
@@ -26,14 +29,22 @@ export class Mountain {
   /** The record the mountain's clock runs at: how many times faster than play. */
   static readonly COMPRESSION = "time.compression";
 
+  /** What the player's answers make of their climber. */
+  readonly climbers: ClimberFacts;
+
   constructor(
     private readonly knowledge: KnowledgeBase,
     readonly route: Section = new Section(knowledge),
-  ) {}
+    readonly questionnaire: Questionnaire = new Questionnaire(),
+  ) {
+    this.climbers = new ClimberFacts(knowledge, questionnaire);
+  }
 
-  /** A new expedition's scenario on the route, from its seed. */
-  scenario(seed: number): Scenario {
-    const scenario = this.route.scenario(seed);
+  /** A new expedition's scenario on the route, from its seed, with the player as their `answers`
+   * make them (#145), or as the route has them. */
+  scenario(seed: number, answers?: ClimberAnswers): Scenario {
+    const player = answers === undefined ? undefined : this.climbers.climber(answers);
+    const scenario = this.route.scenario(seed, player);
     const bodyFacts = new BodyFacts(this.knowledge);
     return {
       ...scenario,
