@@ -39,6 +39,7 @@ export class TestMountain {
     steepest: 60,
     walkingPower: 1,
     fastestWalk: 1,
+    uphillCostShare: 1,
     slipChance: [
       [-45, 2],
       [-25, 0],

@@ -33,11 +33,11 @@ async function height(page: Page): Promise<number> {
 }
 
 /** The camp's stretch begins 678.25 m along the ground, 270 m across the picture, on the flat; the
- * climb is saved a step short of it, 4 h 35 min of the mountain's time after setting off, a
- * typical crossing's: 9,174 steps at 36 times play. */
+ * climb is saved a step short of it, 3 h 20 min of the mountain's time after setting off, about a
+ * typical crossing's, 3 h 27 (#186): 6,667 steps at 36 times play. */
 const CAMP_1_EDGE = 678.05;
 const CAMP_1_X = 270;
-const STEPS_TO_CAMP_1 = 9_174;
+const STEPS_TO_CAMP_1 = 6_667;
 
 test.describe("on a screen of 630 by 360", () => {
   test.use({ viewport: { width: 630, height: 360 } });
@@ -109,8 +109,8 @@ test.describe("the arrival at Camp 1", () => {
   /** What the notice says, and [Continue] closing it. */
   async function expectTheNotice(page: Page): Promise<void> {
     await expect(notice(page)).toBeVisible();
-    await expect(notice(page)).toContainText(/5,8\d\d m · 07:3\d/);
-    await expect(notice(page)).toContainText(/Base Camp to Camp 1: 4 h 3\d min\./);
+    await expect(notice(page)).toContainText(/5,8\d\d m · 06:2\d/);
+    await expect(notice(page)).toContainText(/Base Camp to Camp 1: 3 h 2\d min\./);
     await expect(notice(page)).toContainText("Climbers take 3 to 7 hours the first time.");
     await notice(page).getByRole("button", { name: "Continue" }).click();
     await expect(notice(page)).toBeHidden();

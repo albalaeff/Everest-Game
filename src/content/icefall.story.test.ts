@@ -79,8 +79,10 @@ function crossed(
 
 /**
  * The Khumbu Icefall (#26): a careful climber at a steady pace, clipped in all the way, takes
- * about the hours the sources give, and the one who sets off in the night runs a fraction of the
- * risk of one who sets off in the morning (route.icefall-lessons).
+ * the hours the sources give, in their faster half, since they never stop at an anchor as a
+ * player does and the game eases the climb up its slopes (technique.uphill-cost-share, #186);
+ * and the one who sets off in the night runs a fraction of the risk of one who sets off in the
+ * morning (route.icefall-lessons).
  */
 describe("Base Camp to Camp 1 at a steady pace, clipped in all the way", () => {
   const mountain = new Mountain(knowledge);
@@ -93,14 +95,13 @@ describe("Base Camp to Camp 1 at a steady pace, clipped in all the way", () => {
   );
   const hours = rules.clock.elapsed / HOUR;
 
-  it("reaches Camp 1 within the hours the sources give a first crossing, about the middle", () => {
+  it("reaches Camp 1 within the hours the sources give a first crossing, in their faster half", () => {
     const sources = mountain.route.hours;
     const middle = knowledge.number("time.base-camp-to-camp-1");
 
     expect(arrived).toBe(true);
-    expect(hours).toBeGreaterThanOrEqual(sources.min);
-    expect(hours).toBeLessThanOrEqual(sources.max);
-    expect(Math.abs(hours - middle)).toBeLessThan(1);
+    expect(hours).toBeGreaterThan(sources.min + 0.25);
+    expect(hours).toBeLessThan(middle - 1);
   });
 
   it("climbs every ladder on the way, and never falls", () => {
@@ -117,9 +118,7 @@ describe("Base Camp to Camp 1 at a steady pace, clipped in all the way", () => {
 });
 
 describe("Experience on the ladders and ropes: a novice and a veteran, as fit as the typical client", () => {
-  /** The shortest a first crossing takes in Alan Arnette's table of the routes, 4–6 hours
-   * (time.base-camp-to-camp-1), which a veteran's share of the speed is fitted to. */
-  const ARNETTE_SHORTEST = 4;
+  const sources = new Mountain(knowledge).route.hours;
 
   /** The hours a careful climber at a steady pace, with this experience, takes to Camp 1. */
   const hours = (experience: string): number => {
@@ -135,16 +134,21 @@ describe("Experience on the ladders and ropes: a novice and a veteran, as fit as
     return rules.clock.elapsed / HOUR;
   };
 
-  it("takes one who has never used crampons, a jumar or a ladder about the longest hours the sources give", () => {
-    const { max } = new Mountain(knowledge).route.hours;
-    const novice = hours("none");
+  it("takes one who has never used crampons, a jumar or a ladder about the middle of the hours the sources give", () => {
+    const middle = knowledge.number("time.base-camp-to-camp-1");
 
-    expect(novice).toBeLessThanOrEqual(max);
-    expect(max - novice).toBeLessThan(0.25);
+    expect(Math.abs(hours("none") - middle)).toBeLessThan(0.5);
   });
 
-  it("takes one who has climbed an 8,000 m peak about the shortest of Arnette's", () => {
-    expect(Math.abs(hours("8000") - ARNETTE_SHORTEST)).toBeLessThan(0.25);
+  it("takes one who has climbed an 8,000 m peak about the shortest the sources give", () => {
+    expect(Math.abs(hours("8000") - sources.min)).toBeLessThan(0.25);
+  });
+
+  it("takes the veteran less than the typical client, and the typical client less than the novice", () => {
+    const [veteran, typical, novice] = ["8000", "alpine", "none"].map(hours);
+
+    expect(veteran).toBeLessThan((typical ?? 0) - 0.25);
+    expect(typical).toBeLessThan((novice ?? 0) - 1);
   });
 });
 

@@ -76,8 +76,9 @@ describe("Walking", () => {
     expect(made(both, 2, 0)).toThrow(RangeError);
   });
 
-  it("walks uphill on the boosted power, no faster than the fastest walk, and leaves flat and downhill alone", () => {
-    const boosted = new Walking(
+  it("pays a share of the climb's extra cost up a slope, as eased, and the level's and the descent's as measured", () => {
+    // Up 45° a metre costs 4, the level's 1 and 3 more: a third of the 3 makes it 2.
+    const eased = new Walking(
       [
         [-1, 2],
         [0, 1],
@@ -86,28 +87,56 @@ describe("Walking", () => {
       60,
       2,
       1,
-      3,
+      1 / 3,
     );
+    const down = Steepness.ofGradient(-1);
 
-    expect(boosted.step(up45, 1)).toEqual({ speed: 1.5, exertion: 1 });
-    expect(boosted.step(level, 1)).toEqual({ speed: 1, exertion: 0.5 });
-    expect(boosted.step(Steepness.ofGradient(-1), 1)).toEqual({ speed: 1, exertion: 1 });
+    expect(eased.step(up45, 1).speed).toBeCloseTo(1, 12);
+    expect(eased.step(up45, 0.5).speed).toBeCloseTo(2 * walking.step(up45, 0.5).speed, 12);
+    expect(eased.step(up45, 0.5).exertion).toBe(1);
+    expect(eased.step(level, 1)).toEqual(walking.step(level, 1));
+    expect(eased.step(down, 1)).toEqual(walking.step(down, 1));
   });
 
-  it("refuses an uphill power boost below one", () => {
-    expect(
-      () =>
-        new Walking(
-          [
-            [-1, 2],
-            [0, 1],
-            [1, 4],
-          ],
-          60,
-          2,
-          1,
-          0.5,
-        ),
-    ).toThrow(RangeError);
+  it("never walks a slope up faster than the level, however much it eases the climb", () => {
+    const eased = new Walking(
+      [
+        [-1, 2],
+        [0, 1],
+        [1, 4],
+      ],
+      60,
+      0.5,
+      1,
+      0.2,
+    );
+    const flat = eased.step(level, 1).speed;
+    let before = flat;
+
+    for (let degrees = 1; degrees <= 60; degrees += 1) {
+      const speed = eased.step(Steepness.ofDegrees(degrees), 1).speed;
+      expect(speed).toBeLessThanOrEqual(before);
+      before = speed;
+    }
+    expect(eased.step(Steepness.ofDegrees(1), 1).speed).toBeGreaterThan(flat * 0.95);
+  });
+
+  it("refuses a share of the climb's cost of nought, or more than all of it", () => {
+    const made = (share: number) => () =>
+      new Walking(
+        [
+          [-1, 2],
+          [0, 1],
+          [1, 4],
+        ],
+        60,
+        2,
+        1,
+        share,
+      );
+
+    expect(made(1)).not.toThrow();
+    expect(made(0)).toThrow(RangeError);
+    expect(made(1.5)).toThrow(RangeError);
   });
 });

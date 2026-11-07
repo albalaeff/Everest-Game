@@ -66,7 +66,7 @@ describe("SlopeFacts: the slope physics' numbers from the knowledge base", () =>
   it("walks on the fitted power, no faster than the fitted fastest walk, both sped up, up to the Icefall's steepest", () => {
     expect(settings.walkingPower).toBe(number("technique.walking-power") * speedUp);
     expect(settings.fastestWalk).toBe(number("technique.fastest-walk") * speedUp);
-    expect(settings.uphillPowerBoost).toBe(number("technique.uphill-power-boost"));
+    expect(settings.uphillCostShare).toBe(number("technique.uphill-cost-share"));
     expect(settings.steepest).toBe(range("route.icefall-steepness").max);
   });
 

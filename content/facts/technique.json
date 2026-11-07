@@ -166,7 +166,7 @@
     {
       "id": "technique.walking-power",
       "kind": "coefficient",
-      "claim": "The power a fresh typical client at sea level, at a steady pace and carrying nothing, walks on, in watts for each kilogram they move: the body scales it by the capacity the altitude leaves, 60% at 5,000 m, and by the pack, and a step goes as fast as it pays for on the ground's gradient (technique.walking-cost-*). Fitted with the fastest walk and the ladder speeds so that a steady first crossing of the Icefall, drawn at 1/12 of its length (route.drawn-scale) with its walls and crevasses at life size, takes about 5 hours, the middle of the 3–7 the sources give: 4.8.",
+      "claim": "The power a fresh typical client at sea level, at a steady pace and carrying nothing, walks on, in watts for each kilogram they move: the body scales it by the capacity the altitude leaves, 60% at 5,000 m, and by the pack, and a step goes as fast as it pays for on the ground's gradient (technique.walking-cost-*). Fitted with the fastest walk and the ladder speeds so that a steady first crossing of the Icefall, drawn at 1/12 of its length (route.drawn-scale) with its walls and crevasses at life size, takes about 3.5 hours with the climb eased (technique.uphill-cost-share), the faster half of the 3–7 the sources give, by a climber who never stops at an anchor: 3.45.",
       "status": "source only",
       "value": 2.2,
       "unit": "W/kg",
@@ -179,12 +179,12 @@
         "technique.walking-cost-steep-up",
         "technique.walking-cost-level"
       ],
-      "fitted": "2026-11-06"
+      "fitted": "2026-11-08"
     },
     {
       "id": "technique.fastest-walk",
       "kind": "coefficient",
-      "claim": "The fastest a climber walks in crampons, in metres a second, whatever power they have to spare: down a slope and on the flat their footing holds them to it, so their steps take less of their power and tire them less. Fitted with the walking power and the ladder speeds so that the way down the Icefall takes about 2.5 hours, the 4 from Camp 2 to Base Camp shared between the Icefall and the Western Cwm as the way up's 5 and 3 are: 2.8.",
+      "claim": "The fastest a climber walks in crampons, in metres a second, whatever power they have to spare: down a slope and on the flat their footing holds them to it, so their steps take less of their power and tire them less. Fitted with the walking power and the ladder speeds so that the way down the Icefall takes about 2.5 hours, the 4 from Camp 2 to Base Camp shared between the Icefall and the Western Cwm as the way up's 5 and 3 are: 2.6, with the climb eased (technique.uphill-cost-share).",
       "status": "source only",
       "value": 0.7,
       "unit": "m/s",
@@ -196,22 +196,21 @@
         "technique.walking-cost-steep-down",
         "technique.walking-cost-least"
       ],
-      "fitted": "2026-11-06"
+      "fitted": "2026-11-08"
     },
     {
-      "id": "technique.uphill-power-boost",
+      "id": "technique.uphill-cost-share",
       "kind": "coefficient",
-      "claim": "How many times more power an uphill stride puts in, a playability tuning that makes climbing the drawn slope faster without changing the flat or downhill walk: the walking power is multiplied by it where the ground rises, before the fastest walk caps the speed. Set to 3 so an uphill stretch takes about a third of the time it did, while the flat and downhill speeds stay as they were.",
+      "claim": "The share of the climb's extra cost, a metre up a slope over a metre on the level (technique.walking-cost-*), that a stride pays in the game: a playability tuning, not a measurement, so that the slopes between the ladders don't crawl (#186). Up a slope a stride pays the level's cost and this share of the rest, so a slope never goes faster than the level, and the steeper it is the more the climb is eased: twice as fast up 20°. Fitted so that a careful typical client who never stops at an anchor crosses the Icefall in about 3.5 hours, the faster half of the 3–7 the sources give: 3.45, with the veteran at the shortest, 3, and the novice at the middle, 5. A player stops at every anchor to clip, so their own crossing is longer.",
       "status": "source only",
-      "value": 3,
+      "value": 0.4,
       "unit": "1",
       "fitted_to": [
-        "technique.walking-power",
-        "technique.fastest-walk",
-        "time.compression",
-        "route.drawn-scale"
+        "time.base-camp-to-camp-1",
+        "technique.walking-cost-level",
+        "technique.walking-cost-steep-up"
       ],
-      "fitted": "2026-11-07"
+      "fitted": "2026-11-08"
     },
     {
       "id": "technique.slip-free-steepness",
@@ -297,17 +296,17 @@
     {
       "id": "technique.novice-share",
       "kind": "coefficient",
-      "claim": "The share of the speed on a ladder and clipped to a fixed rope of a climber who has never used crampons, a jumar or a ladder, against one with alpine climbs behind them, whom the ladder speeds and the walking power are fitted to. Fitted so that such a climber, as fit as the typical client, takes the longest the sources give a first crossing of the Icefall, 7 hours against the middle's 5.",
+      "claim": "The share of the speed on a ladder and clipped to a fixed rope of a climber who has never used crampons, a jumar or a ladder, against one with alpine climbs behind them, whom the ladder speeds and the walking power are fitted to. Fitted so that such a climber, as fit as the typical client, takes about the middle of the hours the sources give a first crossing of the Icefall, 5, where a typical client who never stops at an anchor takes 3.5: 5.3.",
       "status": "source only",
       "value": 0.6,
       "unit": "1",
       "fitted_to": ["time.base-camp-to-camp-1", "route.icefall-ladders"],
-      "fitted": "2026-11-07"
+      "fitted": "2026-11-08"
     },
     {
       "id": "technique.veteran-share",
       "kind": "coefficient",
-      "claim": "The same share for a climber who has climbed a 7,000 m or an 8,000 m peak. Fitted so that such a climber, as fit as the typical client, crosses the Icefall the first time in 4 hours, the shortest Alan Arnette's routes give it, and summits more often: they take less time on the ropes, not fewer risks (technique.experience-and-summits).",
+      "claim": "The same share for a climber who has climbed a 7,000 m or an 8,000 m peak. Fitted so that such a climber, as fit as the typical client, crosses the Icefall the first time in about 3 hours, the shortest the sources give it, and summits more often: they take less time on the ropes, not fewer risks (technique.experience-and-summits).",
       "status": "source only",
       "value": 1.2,
       "unit": "1",
@@ -316,7 +315,7 @@
         "route.icefall-ladders",
         "technique.experience-and-summits"
       ],
-      "fitted": "2026-11-07"
+      "fitted": "2026-11-08"
     },
     {
       "id": "technique.cowstail-reach",
