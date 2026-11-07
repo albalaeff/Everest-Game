@@ -29,6 +29,7 @@ export class Walking {
     steepest: number,
     private readonly power: number,
     private readonly fastest: number,
+    private readonly uphillPowerBoost = 1,
   ) {
     const points = measured.map(([gradient, cost]) => {
       const point: CurvePoint = [Steepness.ofGradient(gradient).sine, cost];
@@ -48,6 +49,9 @@ export class Walking {
     if (!(power > 0 && fastest > 0)) {
       throw new RangeError("Walking needs a power and a fastest walk");
     }
+    if (!(uphillPowerBoost >= 1)) {
+      throw new RangeError("Walking needs an uphill power boost of at least one");
+    }
     this.cost = new Curve([
       ...(first[0] > -this.steepest ? [Walking.byHeight(first, -this.steepest)] : []),
       ...points,
@@ -63,7 +67,9 @@ export class Walking {
   /** How fast a climber walks `steepness` at `stride` of a whole stride's power, and what of it
    * that takes. */
   step(steepness: Steepness, stride: number): WalkingStep {
-    const bought = (stride * this.power) / this.cost.at(steepness.sine);
+    const power =
+      steepness.sine > 0 ? this.power * this.uphillPowerBoost : this.power;
+    const bought = (stride * power) / this.cost.at(steepness.sine);
     if (bought <= this.fastest) {
       return { speed: bought, exertion: 1 };
     }
