@@ -6,8 +6,11 @@ import type { Atmosphere } from "./atmosphere";
 import type { Camera } from "./camera";
 import { CloudSea } from "./cloud-sea";
 import { Drift } from "./drift";
+import type { PartStretch } from "./glacier";
+import { IceTowers } from "./ice-towers";
+import type { TowerSizes } from "./ice-towers";
 import { MountainFaces } from "./mountain-faces";
-import type { Massif } from "./mountain-faces";
+import type { Faces, Massif } from "./mountain-faces";
 import { Palette } from "./palette";
 import type { Depth } from "./parallax-layer";
 import { ParallaxLayer } from "./parallax-layer";
@@ -31,6 +34,12 @@ export interface SkylineStyle {
   readonly haze: number;
   /** Whether the layer is ice, the seracs around the slope, rather than a far snow face. */
   readonly ice: boolean;
+  /** Ice towers in place of a ridge and its massifs (#184): their sizes, standing on the base
+   * `low` metres over the ground's height at the layer's depth; and how big they are by the part
+   * of the route they stand by, at the layer's depth, as a share of their sizes, all of them in a
+   * part it doesn't name. */
+  readonly towers?: TowerSizes;
+  readonly towersIn?: Readonly<Record<string, number>>;
   readonly alpha: number;
   readonly fadesOut?: { readonly from: number; readonly to: number };
   /** The sea of clouds: how high over the ridge's base its nearest row lies, and how many rows. */
@@ -102,30 +111,46 @@ export class SkylineLayer extends ParallaxLayer {
     step: 1.2,
     low: 0.2,
     high: 1.2,
-    massifs: [
-      { name: "serac", summit: 12, halfWidth: 5, height: 2.4, shape: 0.5, bands: [] },
-      { name: "serac", summit: 31, halfWidth: 7, height: 3.4, shape: 0.45, bands: [] },
-      { name: "serac", summit: 53, halfWidth: 6, height: 2.8, shape: 0.5, bands: [] },
-      { name: "serac", summit: 76, halfWidth: 8, height: 3.8, shape: 0.4, bands: [] },
-      { name: "serac", summit: 99, halfWidth: 6, height: 2.9, shape: 0.5, bands: [] },
-      { name: "serac", summit: 123, halfWidth: 7, height: 3.5, shape: 0.45, bands: [] },
-      { name: "serac", summit: 146, halfWidth: 6, height: 2.6, shape: 0.5, bands: [] },
-    ],
+    massifs: [],
     haze: 0.12,
     ice: true,
+    towers: {
+      width: { min: 1.2, max: 4 },
+      height: { min: 2.5, max: 7 },
+      apart: { min: 0, max: 1.4 },
+      saddle: { min: 0.3, max: 2.2 },
+    },
+    // The Icefall's seracs, tallest where it's steepest; the Western Cwm opens out behind Camp 1.
+    towersIn: {
+      moraine: 0.5,
+      popcorn: 0.75,
+      "football-field": 0.85,
+      "upper-icefall": 1.1,
+      "western-cwm": 0,
+    },
     alpha: 1,
   };
-  /** The ice in front, along the bottom of the screen: zoomed out, it would cover half of it. */
+  /** The ice in front, along the bottom of the screen, a block here and there, standing alone:
+   * zoomed out, it would cover half of it. It slides across faster than the slope, but keeps to
+   * the bottom of the screen as the climber goes up and down, never rising over the route ahead
+   * when the ground under it does (#184). */
   static readonly FOREGROUND: SkylineStyle = {
     label: "foreground",
-    depth: { x: 1.5, y: 1.5 },
+    depth: { x: 1.5, y: 0 },
     step: 1.5,
-    low: -7,
+    low: -10,
     high: -4,
     massifs: [],
     haze: 0,
     ice: true,
-    alpha: 0.9,
+    towers: {
+      width: { min: 2.5, max: 7 },
+      height: { min: 3, max: 6 },
+      apart: { min: 7, max: 22 },
+      saddle: { min: -6, max: -4 },
+    },
+    towersIn: { moraine: 0, "football-field": 0.6, "western-cwm": 0 },
+    alpha: 1,
     fadesOut: { from: Zoom.STANDARD.metresHigh, to: Zoom.FAR.metresHigh },
   };
   /** Past the section's ends, so the widest screen never sees the layer's edge, at 100 m too. */
@@ -147,6 +172,8 @@ export class SkylineLayer extends ParallaxLayer {
   private static readonly CREST_DEPTH = 0.3;
   private static readonly CREST_SHARE = 0.5;
   private static readonly CREST_ALPHA = 0.7;
+  /** How deep under an ice tower's top the glow lights it, as a share of the tallest. */
+  private static readonly TOP_DEPTH = 0.1;
   /** The ice's edge: a brighter line along the seracs' tops, and how far towards white it is by
    * day. */
   private static readonly ICE_EDGE_METRES = 0.12;
@@ -168,13 +195,15 @@ export class SkylineLayer extends ParallaxLayer {
   private readonly style: SkylineStyle;
   /** The height the layer's ridge rises from at each x: the ground's, at the layer's depth. */
   private readonly base: (x: number) => number;
-  private readonly faces: MountainFaces;
+  private readonly faces: Faces;
   private readonly fill = new Graphics();
   private readonly leftShade = new Graphics();
   private readonly rightShade = new Graphics();
   private readonly crests = new Graphics();
   private readonly flutings = new Graphics();
   private readonly bands = new Graphics();
+  /** The snow on the ice towers' tops. */
+  private readonly caps = new Graphics();
   private readonly edge = new Graphics();
   private readonly clouds: readonly Graphics[];
   /** The plumes, each puff drawn once and moved, and the fog banks: soft-edged, one gradient. */
@@ -184,8 +213,15 @@ export class SkylineLayer extends ParallaxLayer {
   private readonly fogBanks = new Container();
   private tintedWith: Atmosphere | null = null;
 
-  /** `fogBanks` is how many banks of fog the quality allows, if the style has fog. */
-  constructor(style: SkylineStyle, terrain: Terrain, seed: number, fogBanks = 0) {
+  /** `fogBanks` is how many banks of fog the quality allows, if the style has fog; `parts` the
+   * route's, which a style's towers may be sized by. */
+  constructor(
+    style: SkylineStyle,
+    terrain: Terrain,
+    seed: number,
+    fogBanks = 0,
+    parts: readonly PartStretch[] = [],
+  ) {
     super(style.label, style.depth);
     this.style = style;
     const { depth } = style;
@@ -194,16 +230,32 @@ export class SkylineLayer extends ParallaxLayer {
     const from = first * depth.x - SkylineLayer.MARGIN_METRES;
     const to = last * depth.x + SkylineLayer.MARGIN_METRES;
     this.base = (x: number): number => depth.y * terrain.height(x / depth.x);
-    this.faces = new MountainFaces({
-      from,
-      to,
-      step: style.step,
-      massifs: style.massifs,
-      low: style.low,
-      high: style.high,
-      base: this.base,
-      seed,
-    });
+    const towers =
+      style.towers === undefined
+        ? null
+        : new IceTowers({
+            from,
+            to,
+            sizes: style.towers,
+            base: (x) => this.base(x) + style.low,
+            scale: SkylineLayer.towersBy(style, terrain, parts),
+            seed,
+          });
+    this.faces =
+      towers ??
+      new MountainFaces({
+        from,
+        to,
+        step: style.step,
+        massifs: style.massifs,
+        low: style.low,
+        high: style.high,
+        base: this.base,
+        seed,
+      });
+    for (const cap of towers?.caps ?? []) {
+      this.caps.poly(cap.flatMap(({ x, y }) => [x, y])).fill(0xffffff);
+    }
     this.drawFaces(from, to);
     this.clouds = this.drawClouds(from, to, seed + 2);
     this.soft = SkylineLayer.softFill();
@@ -246,6 +298,7 @@ export class SkylineLayer extends ParallaxLayer {
       this.crests,
       this.flutings,
       this.bands,
+      this.caps,
       this.edge,
       ...this.clouds,
       this.fogBanks,
@@ -288,6 +341,7 @@ export class SkylineLayer extends ParallaxLayer {
       this.rightShade.tint = this.leftShade.tint;
       this.flutings.tint = palette.faded(palette.fluting, haze);
       this.bands.tint = palette.faded(palette.rock, haze);
+      this.caps.tint = palette.faded(palette.face, haze);
       // The seracs' tops catch the light: barely under the stars, brightly by day.
       const edgeLight = SkylineLayer.ICE_EDGE_LIGHT * (0.1 + 0.9 * light.daylight);
       this.edge.tint = palette.faded(Palette.mix(palette.ice, 0xffffff, edgeLight), haze);
@@ -334,7 +388,7 @@ export class SkylineLayer extends ParallaxLayer {
     this.fill
       .poly([from, bottom, ...outline.flatMap(({ x, y }) => [x, y]), to, bottom])
       .fill(0xffffff);
-    if (!this.style.ice) {
+    if (!this.style.ice || this.style.towers !== undefined) {
       for (const [side, shade] of [
         [-1, this.leftShade],
         [1, this.rightShade],
@@ -346,8 +400,14 @@ export class SkylineLayer extends ParallaxLayer {
     }
     // The glow lights a crest from its top down, fading out as it goes: the layer's y is up, so
     // the gradient's first stop is the crest's foot.
-    const tallest = Math.max(0, ...this.style.massifs.map(({ height }) => height));
-    const crests = this.faces.crests(tallest * SkylineLayer.CREST_DEPTH, SkylineLayer.CREST_SHARE);
+    const tallest = Math.max(
+      0,
+      ...this.style.massifs.map(({ height }) => height),
+      this.style.towers?.height.max ?? 0,
+    );
+    const depth =
+      this.style.towers === undefined ? SkylineLayer.CREST_DEPTH : SkylineLayer.TOP_DEPTH;
+    const crests = this.faces.crests(tallest * depth, SkylineLayer.CREST_SHARE);
     for (const crest of crests) {
       this.crests.poly(crest.flatMap(({ x, y }) => [x, y])).fill(
         new FillGradient({
@@ -425,6 +485,30 @@ export class SkylineLayer extends ParallaxLayer {
         new Graphics().ellipse(0, 0, bank.size, bank.size * SkylineLayer.FOG_FLAT).fill(this.soft),
       );
     }
+  }
+
+  /** How big a style's towers are at each x of its layer: by the part of the route they stand
+   * by, at its depth; past the route's ends, by its end's part. */
+  private static towersBy(
+    { depth, towersIn = {} }: SkylineStyle,
+    terrain: Terrain,
+    parts: readonly PartStretch[],
+  ): (x: number) => number {
+    const stretches = parts.map(({ id, from, to }) => ({
+      size: towersIn[id] ?? 1,
+      left: terrain.point(from).x,
+      right: terrain.point(to).x,
+    }));
+    const [first] = stretches;
+    const last = stretches.at(-1);
+    return (x) => {
+      const across = x / depth.x;
+      if (first !== undefined && across < first.left) {
+        return first.size;
+      }
+      const part = stretches.find(({ left, right }) => across >= left && across < right);
+      return part?.size ?? last?.size ?? 1;
+    };
   }
 
   /** White fading out from the middle to the edge of the shape it fills. */

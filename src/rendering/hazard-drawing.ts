@@ -4,6 +4,8 @@ import type { Point, Terrain } from "../physics";
 import { SimulationClock } from "../simulation";
 import type { HazardKind, HazardZone, ObjectiveHazards, Warning } from "../simulation";
 import { HazardSigns } from "./hazard-signs";
+import type { IceSurface } from "./ice-surface";
+import { Palette } from "./palette";
 
 /** A warning as the picture has it: how long it runs, and how long it's been showing, in
  * seconds of play. */
@@ -14,15 +16,21 @@ interface Showing {
 }
 
 /**
- * The hazards on the slope, as `HazardSigns` shapes them: what stands over each zone, drawn once
- * behind the climbers, and what comes down while one goes, drawn in front of them each frame and
- * left on the ground a moment after it lands. It reads the hazards and holds only the picture's
- * own clock of each warning.
+ * The hazards on the slope, as `HazardSigns` shapes them: the seracs towering over a serac's
+ * stretch, drawn once behind the route's ice in the day's colours for the hour to tint, their
+ * faces away from the light in shade, snow on their tops and cracks down them (#184); the loaded
+ * snow along an avalanche slope, drawn once on the ground behind the climbers; and what comes down
+ * while one goes, drawn in front of them each frame and left on the ground a moment after it
+ * lands. It reads the hazards and holds only the picture's own clock of each warning.
  */
 export class HazardDrawing {
   private static readonly ICE = 0xcfe6f5;
   private static readonly ICE_EDGE = 0x8fb7d4;
   private static readonly LOADED = 0xffffff;
+  /** A crack down a serac: its colour, how wide, and how strong. */
+  private static readonly CRACK = 0x1f4f80;
+  private static readonly CRACK_METRES = 0.12;
+  private static readonly CRACK_ALPHA = 0.75;
   private static readonly DEBRIS: Readonly<Record<HazardKind, number>> = {
     serac: 0xbcdcf0,
     avalanche: 0xffffff,
@@ -30,14 +38,13 @@ export class HazardDrawing {
     cornice: 0xffffff,
   };
   private static readonly EDGE_METRES = 0.08;
-  /** A tower's shaded face, how much of its width that is, and where its cracks run. */
+  /** A serac's face away from the light. */
   private static readonly ICE_SHADE = 0x9db8d0;
-  private static readonly SHADED_SHARE = 0.38;
-  private static readonly CRACKS: readonly number[] = [0.55, 0.78];
   /** How long what came down lies on the ground before the picture clears it, in seconds. */
   private static readonly SETTLE_SECONDS = 2;
 
-  /** Behind the climbers. */
+  /** The seracs, behind the route's ice; what lies on the ground, behind the climbers. */
+  readonly seracs = new Graphics();
   readonly standing = new Graphics();
   /** In front of them. */
   readonly falling = new Graphics();
@@ -47,40 +54,39 @@ export class HazardDrawing {
   constructor(
     private readonly hazards: ObjectiveHazards,
     terrain: Terrain,
+    surface: IceSurface,
   ) {
-    this.signs = new HazardSigns(terrain);
+    this.signs = new HazardSigns(terrain, surface);
+    const flat = (points: readonly Point[]): number[] => points.flatMap(({ x, y }) => [x, y]);
     for (const zone of hazards.zones) {
       for (const outline of this.signs.zone(zone)) {
-        const flat = outline.flatMap(({ x, y }) => [x, y]);
-        const ice = zone.kind === "serac";
-        this.standing.poly(flat).fill(ice ? HazardDrawing.ICE : HazardDrawing.LOADED);
-        if (ice) {
-          this.shadeTower(outline);
-          this.standing
-            .poly(flat)
-            .stroke({ width: HazardDrawing.EDGE_METRES, color: HazardDrawing.ICE_EDGE });
+        this.standing.poly(flat(outline)).fill(HazardDrawing.LOADED);
+      }
+      for (const { outline, shade, cap, cracks } of this.signs.seracs(zone)) {
+        this.seracs.poly(flat(outline)).fill(HazardDrawing.ICE);
+        this.seracs.poly(flat(shade)).fill(HazardDrawing.ICE_SHADE);
+        for (const crack of cracks) {
+          const [first, ...rest] = crack;
+          if (first !== undefined) {
+            this.seracs.moveTo(first.x, first.y);
+            for (const { x, y } of rest) {
+              this.seracs.lineTo(x, y);
+            }
+          }
         }
+        this.seracs.stroke({
+          width: HazardDrawing.CRACK_METRES,
+          color: HazardDrawing.CRACK,
+          alpha: HazardDrawing.CRACK_ALPHA,
+          join: "round",
+          cap: "round",
+        });
+        this.seracs.poly(flat(cap)).fill(Palette.SNOW_CREST);
+        this.seracs
+          .poly(flat(outline))
+          .stroke({ width: HazardDrawing.EDGE_METRES, color: HazardDrawing.ICE_EDGE });
       }
     }
-  }
-
-  /** A tower's face away from the light, its left side, and the cracks down its ice. */
-  private shadeTower(outline: readonly Point[]): void {
-    const xs = outline.map(({ x }) => x);
-    const left = Math.min(...xs);
-    const right = Math.max(...xs);
-    const bottom = Math.min(...outline.map(({ y }) => y));
-    const cut = left + (right - left) * HazardDrawing.SHADED_SHARE;
-    // Each point's x held to the cut leaves the part of the tower left of it.
-    this.standing
-      .poly(outline.flatMap(({ x, y }) => [Math.min(x, cut), y]))
-      .fill(HazardDrawing.ICE_SHADE);
-    const height = Math.max(...outline.map(({ y }) => y)) - bottom;
-    for (const share of HazardDrawing.CRACKS) {
-      const x = left + (right - left) * share;
-      this.standing.moveTo(x, bottom + height * 0.15).lineTo(x + 0.15, bottom + height * 0.8);
-    }
-    this.standing.stroke({ width: HazardDrawing.EDGE_METRES, color: HazardDrawing.ICE_EDGE });
   }
 
   /** Whether a zone is going now: the picture shakes. */

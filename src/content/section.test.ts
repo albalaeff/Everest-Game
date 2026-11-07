@@ -94,7 +94,11 @@ describe("Section: the Khumbu Icefall from content/route/icefall.json", () => {
     };
     const longest = (part: string): number =>
       Math.max(...ladders.filter(({ from }) => partAt(from) === part).map(length));
-    const upright = ladders.filter(({ from, to }) => terrain.point(from).x === terrain.point(to).x);
+    // Up a wall or down one: a ladder that rises or falls more than it goes across.
+    const upright = ladders.filter(({ from, to }) => {
+      const [start, end] = [terrain.point(from), terrain.point(to)];
+      return Math.abs(end.y - start.y) > Math.abs(end.x - start.x);
+    });
 
     expect(ladders.filter(({ from }) => partAt(from) !== "popcorn").length).toBeGreaterThan(
       ladders.length / 2,
@@ -232,16 +236,81 @@ describe("Section: the Khumbu Icefall from content/route/icefall.json", () => {
     expect(Math.max(...open.map(Math.abs))).toBeLessThan(0.8);
   });
 
-  it("keeps its snow below the slip-free steepness off the walls, so its hummocks slow a climber and never throw them", () => {
+  it("keeps its snow below the slip-free steepness where the climbers walk, so its hummocks slow a climber and never throw them", () => {
     const physics = new SlopePhysics(section.settings);
     Expedition.start(section.scenario(1), [physics]);
     const { points } = physics.terrain;
+    // The walls and the crevasses are crossed on their ladders, never walked.
+    const crossed = section.layout.ladders.map(({ from, to }) => {
+      const [start, end] = [terrain.point(from).x, terrain.point(to).x];
+      return { left: Math.min(start, end), right: Math.max(start, end) };
+    });
+    const walked = (x: number, nextX: number): boolean =>
+      !crossed.some(({ left, right }) => left <= x && nextX <= right);
     const degrees = points.flatMap(([x, y], index) => {
       const [nextX, nextY] = points[index + 1] ?? [x, y];
-      return nextX > x ? [(Math.atan(Math.abs(nextY - y) / (nextX - x)) * 180) / Math.PI] : [];
+      return nextX > x && walked(x, nextX)
+        ? [(Math.atan(Math.abs(nextY - y) / (nextX - x)) * 180) / Math.PI]
+        : [];
     });
 
+    expect(degrees.length).toBeGreaterThan(500);
     expect(Math.max(...degrees)).toBeLessThan(knowledge.number("technique.slip-free-steepness"));
+  });
+
+  it("opens its crevasses as cracks of the glacier: each narrower as it goes down, none of them alike, none deeper than the sources' deepest", () => {
+    const across = section.layout.ladders.flatMap(({ from, to }) => {
+      const [start, end] = [terrain.point(from), terrain.point(to)];
+      return Math.abs(end.y - start.y) < Math.abs(end.x - start.x) ? [{ from, to }] : [];
+    });
+    const shapes = across.map(({ from, to }) => {
+      const inside = section.layout.terrain.filter((_, index) => {
+        const along = terrain.alongs[index] ?? 0;
+        return along > from && along < to;
+      });
+      const lips = Math.min(terrain.point(from).y, terrain.point(to).y);
+      const foot = Math.min(...inside.map(([, y]) => y));
+      const width = (y: number): number => {
+        const xs = inside.filter(([, depth]) => depth === y).map(([x]) => x);
+        return Math.max(...xs) - Math.min(...xs);
+      };
+      return {
+        top: Math.abs(terrain.point(to).x - terrain.point(from).x),
+        foot: width(foot),
+        depth: lips - foot,
+        corners: inside.length,
+      };
+    });
+
+    expect(across.length).toBeGreaterThanOrEqual(8);
+    for (const { top, foot, depth, corners } of shapes) {
+      expect(foot).toBeLessThan(top / 2);
+      expect(corners).toBeGreaterThan(6);
+      expect(depth).toBeGreaterThan(5);
+    }
+    expect(new Set(shapes.map(({ top, depth }) => `${top} ${depth}`)).size).toBe(shapes.length);
+    // Crevasses over 45 m deep, the sources say: these are among the shallower.
+    expect(Math.max(...shapes.map(({ depth }) => depth))).toBeLessThan(45);
+  });
+
+  it("stands every ladder up a wall or down one clear of the wall's face, which leans back from it", () => {
+    const { ladders } = section.layout;
+    for (const { id, from, to } of ladders) {
+      const [start, end] = [terrain.point(from), terrain.point(to)];
+      if (Math.abs(end.y - start.y) <= Math.abs(end.x - start.x)) {
+        continue;
+      }
+      const up = end.y > start.y;
+      const face = section.layout.terrain.filter((_, index) => {
+        const along = terrain.alongs[index] ?? 0;
+        return along > from && along < to;
+      });
+      for (const [x, y] of face) {
+        const ladder = start.x + ((end.x - start.x) * (y - start.y)) / (end.y - start.y);
+        // Up a wall the ice is to the ladder's right; down one, to its left.
+        expect(`${id}: ${up ? x >= ladder : x <= ladder}`).toBe(`${id}: true`);
+      }
+    }
   });
 
   it("sets off at the sources' hour, on the section's date", () => {

@@ -176,7 +176,7 @@ export class SlopeScene {
     const { width, height } = this.app.screen;
     const { physics, hazards, body, oxygen, camps, parts, climbers, player, seed } = this.world;
     const skyline = (style: typeof SkylineLayer.PEAKS, offset: number): SkylineLayer =>
-      new SkylineLayer(style, physics.terrain, seed + offset, fogBanks);
+      new SkylineLayer(style, physics.terrain, seed + offset, fogBanks, parts);
     this.sky = new SkyLayer(dithered);
     this.skylines = [
       ...(optional.farRanges ? [skyline(SkylineLayer.FAR_RANGES, 1)] : []),
