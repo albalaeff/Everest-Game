@@ -75,4 +75,39 @@ describe("Walking", () => {
     expect(made(both, 0)).toThrow(RangeError);
     expect(made(both, 2, 0)).toThrow(RangeError);
   });
+
+  it("walks uphill on the boosted power, no faster than the fastest walk, and leaves flat and downhill alone", () => {
+    const boosted = new Walking(
+      [
+        [-1, 2],
+        [0, 1],
+        [1, 4],
+      ],
+      60,
+      2,
+      1,
+      3,
+    );
+
+    expect(boosted.step(up45, 1)).toEqual({ speed: 1.5, exertion: 1 });
+    expect(boosted.step(level, 1)).toEqual({ speed: 1, exertion: 0.5 });
+    expect(boosted.step(Steepness.ofGradient(-1), 1)).toEqual({ speed: 1, exertion: 1 });
+  });
+
+  it("refuses an uphill power boost below one", () => {
+    expect(
+      () =>
+        new Walking(
+          [
+            [-1, 2],
+            [0, 1],
+            [1, 4],
+          ],
+          60,
+          2,
+          1,
+          0.5,
+        ),
+    ).toThrow(RangeError);
+  });
 });
