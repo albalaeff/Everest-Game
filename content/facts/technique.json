@@ -199,6 +199,21 @@
       "fitted": "2026-11-06"
     },
     {
+      "id": "technique.uphill-power-boost",
+      "kind": "coefficient",
+      "claim": "How many times more power an uphill stride puts in, a playability tuning that makes climbing the drawn slope faster without changing the flat or downhill walk: the walking power is multiplied by it where the ground rises, before the fastest walk caps the speed. Set to 3 so an uphill stretch takes about a third of the time it did, while the flat and downhill speeds stay as they were.",
+      "status": "source only",
+      "value": 3,
+      "unit": "1",
+      "fitted_to": [
+        "technique.walking-power",
+        "technique.fastest-walk",
+        "time.compression",
+        "route.drawn-scale"
+      ],
+      "fitted": "2026-11-07"
+    },
+    {
       "id": "technique.slip-free-steepness",
       "kind": "coefficient",
       "claim": "Up to this steepness a climber in crampons doesn't slip; steeper, the chance grows in a straight line to technique.slip-chance-steep at the steepest ground walked. Fitted to the Lhotse Face, about 30°, where a slip ends badly, and to the Icefall's 20° slopes, walked without a thought.",
@@ -241,7 +256,7 @@
     {
       "id": "technique.ladder-speed-down",
       "kind": "coefficient",
-      "claim": "How fast that climber comes down a wall a ladder stands against, in metres a second: three times as fast as up it, as down the fixed rope beside it (technique.down-a-fixed-rope asks how climbers go down one). Fitted with the crossing speed and the fastest walk to the Icefall's hours down, which go down 48 m of its walls and up 22.",
+      "claim": "How fast that climber comes down a wall a ladder stands against, in metres a second: three times as fast as up it, as down the fixed rope beside it (technique.down-a-fixed-rope asks how climbers go down one). Fitted with the crossing speed to the Icefall's hours down, which go down 48 m of its walls and up 22.",
       "status": "source only",
       "value": 0.9,
       "unit": "m/s",
