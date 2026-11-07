@@ -130,7 +130,7 @@ describe("Palette", () => {
     expect(Palette.brightness(day.moraine)).toBeLessThan(Palette.brightness(day.snowTint) - 80);
   });
 
-  it("darkens a crevasse's inside under the snow at every hour, and blues the walls' ice by day", () => {
+  it("darkens a crevasse's inside under the snow at every hour, and blues the light through the walls' ice", () => {
     const blueness = (colour: number): number => {
       const { red, blue } = Palette.channels(colour);
       return blue - red;
@@ -148,7 +148,30 @@ describe("Palette", () => {
       );
       expect(blueness(palette.crevasse)).toBeGreaterThan(0);
     }
-    expect(blueness(at(12).iceWall)).toBeGreaterThan(60);
+    for (const [index, [, colour]] of Palette.LIT_ICE.entries()) {
+      expect(blueness(colour)).toBeGreaterThan(30);
+      expect(Palette.brightness(colour)).toBeLessThan(
+        Palette.brightness(Palette.LIT_ICE[index - 1]?.[1] ?? 0xffffff),
+      );
+    }
+  });
+
+  it("darkens the glacier's ice as it goes down under the snow, blue all the way", () => {
+    const depths = [0, 1, 2.5, 4, 6, 9, 12, 16, 20, 24, 40];
+    const colours = depths.map((depth) => Palette.glacier(depth));
+
+    for (const [index, colour] of colours.entries()) {
+      const { red, blue } = Palette.channels(colour);
+      expect(blue - red).toBeGreaterThan(20);
+      expect(Palette.brightness(colour)).toBeLessThanOrEqual(
+        Palette.brightness(colours[index - 1] ?? 0xffffff),
+      );
+    }
+    expect(colours[0]).toBe(Palette.GLACIER[0]?.[1]);
+    expect(colours.at(-1)).toBe(Palette.GLACIER.at(-1)?.[1]);
+    expect(Palette.brightness(Palette.glacier(20))).toBeLessThan(
+      Palette.brightness(Palette.glacier(1)) / 2,
+    );
   });
 
   it("glows pink before the sun is up and orange as it rises, on the crest of the snow too", () => {

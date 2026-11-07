@@ -32,12 +32,12 @@ async function height(page: Page): Promise<number> {
   return (await seen(page, "player"))?.y ?? Number.NaN;
 }
 
-/** The camp's stretch begins 775 m along the ground, 270 m across the picture, on the flat; the
- * climb is saved a step short of it, 4 h 50 min of the mountain's time after setting off, a
- * typical crossing's: 9,667 steps at 36 times play. */
-const CAMP_1_EDGE = 774.8;
+/** The camp's stretch begins 678.25 m along the ground, 270 m across the picture, on the flat; the
+ * climb is saved a step short of it, 4 h 35 min of the mountain's time after setting off, a
+ * typical crossing's: 9,174 steps at 36 times play. */
+const CAMP_1_EDGE = 678.05;
 const CAMP_1_X = 270;
-const STEPS_TO_CAMP_1 = 9_667;
+const STEPS_TO_CAMP_1 = 9_174;
 
 test.describe("on a screen of 630 by 360", () => {
   test.use({ viewport: { width: 630, height: 360 } });
@@ -109,8 +109,8 @@ test.describe("the arrival at Camp 1", () => {
   /** What the notice says, and [Continue] closing it. */
   async function expectTheNotice(page: Page): Promise<void> {
     await expect(notice(page)).toBeVisible();
-    await expect(notice(page)).toContainText(/5,8\d\d m · 07:5\d/);
-    await expect(notice(page)).toContainText(/Base Camp to Camp 1: 4 h 5\d min\./);
+    await expect(notice(page)).toContainText(/5,8\d\d m · 07:3\d/);
+    await expect(notice(page)).toContainText(/Base Camp to Camp 1: 4 h 3\d min\./);
     await expect(notice(page)).toContainText("Climbers take 3 to 7 hours the first time.");
     await notice(page).getByRole("button", { name: "Continue" }).click();
     await expect(notice(page)).toBeHidden();

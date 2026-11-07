@@ -37,13 +37,32 @@ export interface Fluting {
   readonly foot: Point;
 }
 
+/** What a background layer draws over its ridge, in its metres: its skyline, the strokes down its
+ * faces, its bands of rock, the crests the glow lights and the flanks the sun leaves in shade, as
+ * mountains have them (`MountainFaces`) or a line of ice towers (`IceTowers`). */
+export interface Faces {
+  /** The skyline, left to right. */
+  readonly outline: readonly Point[];
+  readonly flutings: readonly Fluting[];
+  /** Closed outlines, one a band. */
+  readonly bands: readonly (readonly Point[])[];
+  /** The skyline's height at `x`. */
+  top(x: number): number;
+  /** The crests the first and last light touches, `depth` deep, where at least `share` as tall
+   * as the tallest, closed. */
+  crests(depth: number, share: number): readonly (readonly Point[])[];
+  /** The flanks on one `side`, 1 the right and -1 the left, down to `below` under the base,
+   * closed: what the layer shades when the sun is on the other side. */
+  shades(side: 1 | -1, below: number): readonly (readonly Point[])[];
+}
+
 /**
  * The faces of a background layer, in its metres: a skyline that rises over named massifs,
  * jagged by a seeded line of its own, with flutings running down each face from its ridge, rock
  * bands across it, and the crests the alpenglow lights. What a layer draws, built once; the
  * colours and the light are the layer's.
  */
-export class MountainFaces {
+export class MountainFaces implements Faces {
   /** Flutings every so many steps across a massif, over this much of its width, down this
    * share of the face, splaying outward this much of their drop. */
   private static readonly FLUTING_STEPS = 1.5;

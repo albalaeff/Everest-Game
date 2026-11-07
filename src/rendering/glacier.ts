@@ -15,16 +15,10 @@ export interface Stone {
   readonly dark: number;
 }
 
-/** The inside of a crevasse, as an outline, and how deep it goes under its higher lip. */
-export interface Crevasse {
-  readonly outline: readonly Point[];
-  readonly depth: number;
-}
-
 /**
- * The glacier where the picture shows more than its snow, in metres: the moraine Base Camp stands
- * on, rubble bare of snow back from the edge of the ice, with stones on it; the inside of each
- * crevasse a ladder crosses, down from its lips; and the small cracks in the snow around a camp.
+ * The glacier where the picture shows more than its snow and ice, in metres: the moraine Base Camp
+ * stands on, rubble bare of snow back from the edge of the ice, with stones on it; and the small
+ * cracks in the snow around a camp. Each crevasse a ladder crosses is a `Crevasse`.
  * Laid out by seeded generators of its own, the picture's, never the simulation's; its sizes are
  * the drawing's numbers, not the mountain's.
  */
@@ -50,8 +44,6 @@ export class Glacier {
   /** A stone's outline has so many corners over its top; a crack leans so far for its depth. */
   private static readonly STONE_CORNERS = 5;
   private static readonly CRACK_LEAN = 0.15;
-  /** How near two lengths along the ground are to be the same point. */
-  private static readonly SAME_ALONG = 1e-9;
 
   constructor(
     private readonly terrain: Terrain,
@@ -113,25 +105,6 @@ export class Glacier {
       stones.push({ outline, dark });
     }
     return stones;
-  }
-
-  /** The inside of the crevasse a ladder crosses from `start` to `finish`: the ground between its
-   * ends, down from one lip and up to the other, closed by the line between them. */
-  inside(start: Point, finish: Point): Crevasse {
-    const { terrain } = this;
-    const [left, right] =
-      terrain.nearest(start).along <= terrain.nearest(finish).along
-        ? [start, finish]
-        : [finish, start];
-    const from = terrain.nearest(left).along + Glacier.SAME_ALONG;
-    const to = terrain.nearest(right).along - Glacier.SAME_ALONG;
-    const between = terrain.points.flatMap(([x, y], index) => {
-      const along = terrain.alongs[index] ?? from;
-      return along > from && along < to ? [{ x, y }] : [];
-    });
-    const outline = [left, ...between, right];
-    const depth = Math.max(left.y, right.y) - Math.min(...outline.map(({ y }) => y));
-    return { outline, depth };
   }
 
   /** Small cracks in the snow along a stretch of the ground: each a thin wedge down from its
