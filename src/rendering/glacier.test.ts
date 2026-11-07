@@ -56,19 +56,6 @@ describe("Glacier", () => {
     }
   });
 
-  it("finds a crevasse's inside: down a wall from the ladder's end, along its foot and up the other", () => {
-    const { outline, depth } = glacier.inside({ x: 34, y: 5 }, { x: 37, y: 5 });
-
-    expect(outline).toEqual([
-      { x: 34, y: 5 },
-      { x: 34, y: -5 },
-      { x: 37, y: -5 },
-      { x: 37, y: 5 },
-    ]);
-    expect(depth).toBe(10);
-    expect(glacier.inside({ x: 37, y: 5 }, { x: 34, y: 5 }).outline).toEqual(outline);
-  });
-
   it("cracks the snow along a stretch: thin wedges down from its surface, none past its ends", () => {
     const cracks = glacier.cracks(60, 78);
     const steps = 18 / Glacier.CRACK_EVERY;

@@ -74,12 +74,35 @@ export class Palette {
   static readonly SNOW_SHADE = 0xc3d2e6;
   static readonly SNOW_DEEP = 0x9fb6d4;
   static readonly TRACK = 0xd3dfed;
-  /** The walls' blue ice, and the inside of a crevasse at its lips, deep blue, going black as it
-   * goes down. */
+  /** Blue ice, and the inside of a crevasse at its lips, deep blue, going black as it goes down. */
   static readonly ICE = 0xa6d4f2;
-  static readonly ICE_EDGE = 0x5f97c8;
-  static readonly ICE_DEEP = 0x7fa9d0;
   static readonly CREVASSE = 0x1f5f9f;
+  /** The glacier seen from the side, by day (#184): pale just under its snow, blue a few metres
+   * down, and darker as the light through the ice fades, at these depths in metres. */
+  static readonly GLACIER: readonly (readonly [depth: number, colour: number])[] = [
+    [1, 0xcfeaf9],
+    [4, 0x9dcbec],
+    [9, 0x5f97cb],
+    [16, 0x33669c],
+    [24, 0x214a78],
+  ];
+  /** The light through the ice by a crevasse's wall or a bare face, by day, at these metres
+   * under its top: bright under the snow, blue, and dark where it fades. */
+  static readonly LIT_ICE: readonly (readonly [depth: number, colour: number])[] = [
+    [0, 0xd8f1fd],
+    [1.5, 0xa9d9f4],
+    [4, 0x67a5d8],
+    [9, 0x25578f],
+    [16, 0x0c2546],
+  ];
+  /** The blocks and towers of ice standing behind the route, by day: a little hazier than the
+   * ice the climbers cross, their faces away from the light in shade. */
+  static readonly BLOCK = 0xb4d6ee;
+  static readonly BLOCK_SHADE = 0x8bb5da;
+  static readonly BLOCK_EDGE = 0xe9f6fe;
+  /** The icicles under a lip of snow, and the streaks down a wall's bare ice. */
+  static readonly ICICLE = 0xe4f5ff;
+  static readonly STREAK = 0x6fa6d4;
   static readonly LOADED = 0xffffff;
   static readonly ROCK = 0x3a3d48;
   /** The moraine Base Camp stands on, rubble bare of snow: navy under the stars, darker than the
@@ -160,8 +183,6 @@ export class Palette {
   readonly snowCrest: number;
   readonly snowShade: number;
   readonly snowDeep: number;
-  readonly iceWall: number;
-  readonly iceEdge: number;
   readonly track: number;
   /** A crevasse's inside at its lips, and the moraine's rubble, in the snow's light. */
   readonly crevasse: number;
@@ -219,11 +240,25 @@ export class Palette {
     );
     this.snowShade = Palette.tinted(this.snowTint, Palette.SNOW_SHADE);
     this.snowDeep = Palette.tinted(this.snowTint, Palette.SNOW_DEEP);
-    this.iceWall = Palette.tinted(this.snowTint, Palette.ICE);
-    this.iceEdge = Palette.tinted(this.snowTint, Palette.ICE_EDGE);
     this.track = Palette.tinted(this.snowTint, Palette.TRACK);
     this.crevasse = Palette.tinted(this.snowTint, Palette.CREVASSE);
     this.moraine = Palette.mix(Palette.NIGHT_MORAINE, Palette.DAY_MORAINE, skylight);
+  }
+
+  /** The glacier's ice `depth` metres under its surface, by day: the slope tints it by the hour. */
+  static glacier(depth: number): number {
+    const { GLACIER } = Palette;
+    const [first] = GLACIER;
+    let colour = first?.[1] ?? Palette.ICE;
+    for (const [index, [deeper, next]] of GLACIER.entries()) {
+      const [shallower, from] = GLACIER[index - 1] ?? [deeper, next];
+      if (depth >= deeper) {
+        colour = next;
+      } else if (depth > shallower) {
+        colour = Palette.mix(from, next, (depth - shallower) / (deeper - shallower));
+      }
+    }
+    return colour;
   }
 
   /** A colour `share` of the way into the haze: a layer's, by how far behind the slope it is. */

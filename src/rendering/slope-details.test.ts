@@ -28,16 +28,18 @@ describe("SlopeDetails", () => {
     }
   });
 
-  it("prints a boot track every stride along the ground, the whole way", () => {
+  it("prints a boot track every stride along the ground, the whole way but the wall", () => {
     const { track } = new SlopeDetails(TERRAIN, 3);
+    const walked = TERRAIN.length - 6;
 
-    expect(track.length).toBe(Math.ceil(TERRAIN.length / SlopeDetails.TRACK_EVERY));
+    expect(Math.abs(track.length - walked / SlopeDetails.TRACK_EVERY)).toBeLessThan(2);
     expect(track[0]).toEqual({ x: 0, y: 0 });
     for (const [index, print] of track.entries()) {
       const before = track[index - 1];
       const surface = TERRAIN.nearest(print);
       expect(Math.hypot(surface.x - print.x, surface.y - print.y)).toBeLessThan(1e-9);
-      if (before !== undefined) {
+      // Up the wall there's none, and so no stride between the last print below and the first above.
+      if (before !== undefined && Math.abs(print.y - before.y) < 1) {
         // A stride along the ground; across a corner, its chord is a little shorter.
         const apart = Math.hypot(print.x - before.x, print.y - before.y);
         expect(apart).toBeLessThanOrEqual(SlopeDetails.TRACK_EVERY + 1e-9);
@@ -46,10 +48,11 @@ describe("SlopeDetails", () => {
     }
   });
 
-  it("finds the walls, each from its top to its foot", () => {
-    const { walls } = new SlopeDetails(TERRAIN, 3);
+  it("marks neither the wall's bare ice with prints nor with sastrugi", () => {
+    const { track, sastrugi } = new SlopeDetails(TERRAIN, 3);
 
-    expect(walls).toEqual([{ from: { x: 40, y: 26 }, to: { x: 40, y: 20 } }]);
+    expect(track.some(({ x, y }) => x === 40 && y > 20 && y < 26)).toBe(false);
+    expect(sastrugi.every(({ from, to }) => to.x > from.x)).toBe(true);
   });
 
   it("is the same snow on the same seed, and another on another", () => {
