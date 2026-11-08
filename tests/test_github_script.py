@@ -205,12 +205,7 @@ def test_only_a_get_asks_again() -> None:
 
 
 def test_a_log_is_read_where_github_keeps_it_without_the_token() -> None:
-<<<<<<< HEAD
     # A job's log answers with a redirect, to storage outside the API (#18).
-=======
-    # template#5, from Everest#18: a job's log answers with a redirect to storage outside the
-    # API, which `api` didn't follow, printing null.
->>>>>>> 6196db6 (github.py logs <job>: a CI job's whole log, and ci names the failed jobs (#11))
     def server(request: httpx.Request) -> httpx.Response:
         if request.url.host == "api.github.com":
             return httpx.Response(302, headers={"Location": "https://logs.example/job.txt"})
