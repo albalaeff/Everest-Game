@@ -4,9 +4,9 @@ import { PaceEffort } from "./pace-effort";
 
 describe("PaceEffort", () => {
   const paces = {
-    "rest-step": { speed: 0.5, effort: 0.5 },
-    steady: { speed: 1, effort: 1 },
-    faster: { speed: 2, effort: 4 },
+    "rest-step": { speed: 0.5, effort: 0.5, footing: 1.5 },
+    steady: { speed: 1, effort: 1, footing: 1 },
+    faster: { speed: 2, effort: 4, footing: 0.5 },
   };
   const effort = new PaceEffort(paces);
 
@@ -24,11 +24,11 @@ describe("PaceEffort", () => {
   });
 
   it("refuses a pace with no speed or no effort", () => {
-    expect(() => new PaceEffort({ ...paces, "rest-step": { speed: 0, effort: 0.5 } })).toThrow(
-      RangeError,
-    );
-    expect(() => new PaceEffort({ ...paces, "rest-step": { speed: 0.5, effort: 0 } })).toThrow(
-      RangeError,
-    );
+    expect(
+      () => new PaceEffort({ ...paces, "rest-step": { speed: 0, effort: 0.5, footing: 1 } }),
+    ).toThrow(RangeError);
+    expect(
+      () => new PaceEffort({ ...paces, "rest-step": { speed: 0.5, effort: 0, footing: 1 } }),
+    ).toThrow(RangeError);
   });
 });

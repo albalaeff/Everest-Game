@@ -11,7 +11,7 @@ export class BodyFacts {
   /** The places of the route SpO2 was measured at, from the foot up, after sea level. */
   private static readonly PLACES = ["base-camp", "camp-2", "south-col", "balcony"];
   /** The pace the others are measured against. */
-  private static readonly STEADY: PaceNumbers = { speed: 1, effort: 1 };
+  private static readonly STEADY: PaceNumbers = { speed: 1, effort: 1, footing: 1 };
 
   readonly numbers: BodyNumbers;
 
@@ -34,15 +34,24 @@ export class BodyFacts {
         "rest-step": {
           speed: number("body.rest-step-speed"),
           effort: number("body.rest-step-effort"),
+          footing: number("body.rest-step-footing"),
         },
         steady: BodyFacts.STEADY,
-        faster: { speed: number("body.faster-speed"), effort: number("body.faster-effort") },
+        faster: {
+          speed: number("body.faster-speed"),
+          effort: number("body.faster-effort"),
+          footing: number("body.faster-footing"),
+        },
       },
       endurance: number("body.steady-endurance"),
       recovery: number("body.recovery-hours"),
       deathZone: number("medicine.death-zone"),
       tired: number("body.tired"),
       profoundlyTired: number("body.profoundly-tired"),
+      footing: {
+        tired: number("body.tired-footing"),
+        profoundlyTired: number("body.profoundly-tired-footing"),
+      },
       water: {
         loss: number("body.water-loss"),
         threshold: number("body.dehydration-threshold"),

@@ -50,6 +50,8 @@ export interface PoseState {
    * most it comes up off where it lies. */
   readonly slack: number;
   readonly ladder: LadderFooting | null;
+  /** How sure their feet are, from 1, steady, to 0, when they slip (#190). */
+  readonly footing: number;
 }
 
 /** The figure's joints this frame, in its metres from where it stands, facing +x: the whole of it
@@ -321,6 +323,16 @@ export class ClimberPose {
    * leaning over the edge to step off: the gaze up the wall and onto its top, how far over the top
    * the head is when it's looking down onto it, and how far the climber leans over it there. */
   private static readonly CREST = { up: -0.3, onto: 0.35, over: 0.45, lean: 0.4 };
+  /** Losing their footing (#190), a climber wobbles, more the less of it they have: from this much
+   * footing, swaying their body this far each way, so many times a second, their arms out for
+   * balance to these hands, from the shoulder, the near one forward and the far one back. */
+  private static readonly WOBBLE = {
+    from: 0.7,
+    lean: 0.16,
+    hz: 1.6,
+    near: { x: 0.42, y: -0.05 },
+    far: { x: -0.38, y: -0.12 },
+  };
   /** A fall: how high off the ground a body is in the air, how fast it tumbles there, and how
    * fast and how far the limbs flail. */
   private static readonly AIR_METRES = 0.4;
@@ -429,6 +441,8 @@ export class ClimberPose {
   private spin = 0;
   /** How far up after a fall, 0 to 1. */
   private rising = 1;
+  /** The pose's own seconds, which the wobble sways on. */
+  private time = 0;
   private mode: Mode | null = null;
   /** Last frame's targets, and the blend from them to the new mode's: its seconds so far. */
   private last: Targets | null = null;
@@ -443,7 +457,8 @@ export class ClimberPose {
     const mode = this.modeOf(state);
     this.keepTime(frame, share, state, mode);
     const gait = this.gait(state, mode, share);
-    const made = this.made(mode, state, gait);
+    this.time += frame;
+    const made = this.wobbling(this.made(mode, state, gait), state, mode);
     if (this.mode !== null && mode !== this.mode && this.last !== null) {
       const tilt = ClimberPose.nearest(this.last.tilt, made.targets.tilt);
       this.blendFrom = { ...this.last, tilt };
@@ -627,6 +642,32 @@ export class ClimberPose {
       return { targets: ClimberPose.mix(this.kneel(state), walk.targets, up), down: walk.down };
     }
     return walk;
+  }
+
+  /** The targets of a climber losing their footing on their feet: their body swaying from side to
+   * side, and their arms out for balance, the hand on the jumar staying on it. Steady, as made. */
+  private wobbling(made: Made, state: PoseState, mode: Mode): Made {
+    const { WOBBLE } = ClimberPose;
+    const unsure = ClimberPose.smooth((WOBBLE.from - state.footing) / WOBBLE.from);
+    const upright = mode === "walk" || mode === "rungs" || mode === "wall";
+    if (!upright || unsure <= 0) {
+      return made;
+    }
+    const { targets } = made;
+    const sway = unsure * WOBBLE.lean * Math.sin(2 * Math.PI * WOBBLE.hz * this.time);
+    const lean = targets.lean + sway;
+    const shoulder = ClimberPose.shoulderOf(targets.pelvis, lean);
+    const out = (hand: Joint, to: { readonly x: number; readonly y: number }): Joint => ({
+      x: hand.x + (shoulder.x + to.x - hand.x) * unsure,
+      y: hand.y + (shoulder.y + to.y - hand.y) * unsure,
+    });
+    // Up a wall the hands keep to the rungs, and on the jumar the near one keeps to it.
+    const [near, far] = targets.hands;
+    const hands: readonly [Joint, Joint] =
+      mode === "wall"
+        ? targets.hands
+        : [state.jumar === null ? out(near, WOBBLE.near) : near, out(far, WOBBLE.far)];
+    return { targets: { ...targets, lean, hands }, down: made.down };
   }
 
   /** Mixes the targets with the last mode's, as the blend into this one goes on. */

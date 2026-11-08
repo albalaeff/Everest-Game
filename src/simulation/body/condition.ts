@@ -164,6 +164,18 @@ export class Condition {
     };
   }
 
+  /** How sure-footed they are: their pace's, as tired as they are (#190). */
+  sureness(numbers: BodyNumbers): number {
+    const { footing } = numbers.paces[this.pace(numbers)];
+    const tiredness = this.tiredness(numbers);
+    if (tiredness === "fresh") {
+      return footing;
+    }
+    return (
+      footing * (tiredness === "tired" ? numbers.footing.tired : numbers.footing.profoundlyTired)
+    );
+  }
+
   /** The pace they go at: the one chosen, or the rest step once they're profoundly tired. */
   private pace(numbers: BodyNumbers): Pace["pace"] {
     return this.fatigue >= numbers.profoundlyTired ? "rest-step" : this.chosen;

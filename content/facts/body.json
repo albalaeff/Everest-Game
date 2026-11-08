@@ -723,6 +723,46 @@
       "fitted": "2026-11-04"
     },
     {
+      "id": "body.rest-step-footing",
+      "kind": "coefficient",
+      "claim": "How sure-footed the rest step leaves a climber, against the steady pace (#190): slow, deliberate steps, each foot placed, get back more of the footing ice and a bouncing ladder take. Fitted so that the rest step crosses blue ice and a long ladder that the steady pace slips on.",
+      "status": "source only",
+      "value": 1.6,
+      "unit": "1",
+      "fitted_to": ["route.icefall-lessons", "route.icefall-ladders-lashed"],
+      "fitted": "2026-11-08"
+    },
+    {
+      "id": "body.faster-footing",
+      "kind": "coefficient",
+      "claim": "How sure-footed the faster pace leaves a climber, against the steady pace (#190): hurried steps get back little of what ice and a bouncing ladder take. Fitted so that hurrying across blue ice or a long ladder slips in a few seconds.",
+      "status": "source only",
+      "value": 0.6,
+      "unit": "1",
+      "fitted_to": ["route.icefall-lessons", "route.icefall-ladders-lashed"],
+      "fitted": "2026-11-08"
+    },
+    {
+      "id": "body.tired-footing",
+      "kind": "coefficient",
+      "claim": "How sure-footed a tired climber is, against a fresh one at the same pace (#190): tiredness makes the steps sloppy, and sloppy steps slip.",
+      "status": "source only",
+      "value": 0.85,
+      "unit": "1",
+      "fitted_to": ["route.icefall-lessons"],
+      "fitted": "2026-11-08"
+    },
+    {
+      "id": "body.profoundly-tired-footing",
+      "kind": "coefficient",
+      "claim": "How sure-footed a profoundly tired climber is, against a fresh one at the same pace (#190).",
+      "status": "source only",
+      "value": 0.7,
+      "unit": "1",
+      "fitted_to": ["route.icefall-lessons"],
+      "fitted": "2026-11-08"
+    },
+    {
       "id": "body.steady-endurance",
       "kind": "coefficient",
       "claim": "The hours on the move a fresh climber, rested, fed and watered, can keep up the steady pace before they're exhausted. Fitted to summit day: away from the South Col at about 22:00 and back by 12:00–14:00, 14–16 hours on the move after a short night, with little food or water, leaves a steady climber tired but able to go on, unless the summit came late.",

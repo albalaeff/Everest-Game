@@ -73,15 +73,16 @@ export class TestRidge implements Rule, Legs, Breathing {
     oxygenGain: { moving: 500, resting: 4000 },
     capacity: { onset: 1000, decline: 10 },
     paces: {
-      "rest-step": { speed: 0.5, effort: 0.5 },
-      steady: { speed: 1, effort: 1 },
-      faster: { speed: 2, effort: 4 },
+      "rest-step": { speed: 0.5, effort: 0.5, footing: 1.5 },
+      steady: { speed: 1, effort: 1, footing: 1 },
+      faster: { speed: 2, effort: 4, footing: 0.5 },
     },
     endurance: 10,
     recovery: 5,
     deathZone: 8000,
     tired: 0.5,
     profoundlyTired: 0.8,
+    footing: { tired: 0.8, profoundlyTired: 0.6 },
     water: { loss: 2.4, threshold: 2, cost: 10 },
     food: { expenditure: 4800, hungryAfter: 0.5, cost: 20 },
     sleep: { sleepyAfter: 16, cost: 1 },
@@ -141,6 +142,11 @@ export class TestRidge implements Rule, Legs, Breathing {
 
   stride(id: ClimberId, share: number): void {
     this.climbers.set(id, { ...this.climber(id), stride: share });
+  }
+
+  /** The ridge has no footing to lose: how sure-footed a climber is goes nowhere. */
+  sureness(id: ClimberId): void {
+    this.climber(id);
   }
 
   flow(id: ClimberId): number {

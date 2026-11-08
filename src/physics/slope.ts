@@ -10,6 +10,35 @@ import type { GradientPoint, SteepnessPoint } from "./steepness";
 import type { Point, Terrain, Way } from "./terrain";
 import { Walking } from "./walking";
 
+/** A stretch of the ground, by how far along it its ends are: plain data, as saves keep it. */
+export type AlongStretch = {
+  readonly from: number;
+  readonly to: number;
+};
+
+/**
+ * How a climber keeps their feet (#190): each second they lose footing to what's under them and
+ * get it back as far as they're sure-footed, and when it runs out they slip. All a second at a
+ * sure-footedness of 1, a careful pace's more and a hurried or tired one's less (`Legs.sureness`).
+ */
+export interface FootingSettings {
+  /** Footing got back a second standing still, and on the move. */
+  readonly still: number;
+  readonly moving: number;
+  /** Footing lost a second walking blue ice on the level, and how much more for each unit of the
+   * sine of its slope, up or down. */
+  readonly ice: number;
+  readonly iceSteep: number;
+  /** How hard blue ice holds what slides on it: snow's `friction` for ice. */
+  readonly iceFriction: number;
+  /** A ladder across a crevasse bounces under the steps on it: how much each metre walked on it
+   * sets it going for each metre of its length, how much of it dies away a second, and how much
+   * footing a second each unit of it takes from a climber on it. */
+  readonly bounce: { readonly excite: number; readonly damp: number; readonly loss: number };
+  /** The footing a climber has back once they're up from a slip. */
+  readonly afterSlip: number;
+}
+
 /**
  * The numbers the slope physics runs on, handed to it (docs/conventions.md → Data, not
  * literals): the page and the room server take them from the knowledge base, and the tests have
@@ -37,13 +66,23 @@ export interface SlopeSettings {
   /** The share of the climb's extra cost, a metre up a slope over a metre on the level, that a
    * stride pays: 1 as measured, less where the game eases the climb. */
   readonly uphillCostShare: number;
-  /** The chance a walking climber slips, per second, by the steepness ahead. */
-  readonly slipChance: readonly SteepnessPoint[];
+  /** The footing a walking climber loses a second, by the steepness ahead, at a whole stride
+   * (#190): on snow, before what ice and their care do to it. */
+  readonly footingLoss: readonly SteepnessPoint[];
   /** A climber's speed along a ladder by its steepness the way they go, in m/s: across a
    * crevasse at 0°, up a wall at 90°, and down it at −90°. */
   readonly ladderSpeed: readonly SteepnessPoint[];
-  /** The chance a climber on a ladder slips, per second, by its steepness the way they go. */
-  readonly ladderSlipChance: readonly SteepnessPoint[];
+  /** The footing a climber on a ladder loses a second, by its steepness the way they go: the
+   * rungs' own, before a crossing's bounce. */
+  readonly ladderFootingLoss: readonly SteepnessPoint[];
+  /** How a climber keeps their feet, gets them back, and loses them. */
+  readonly footing: FootingSettings;
+  /** The speed a falling body hits the ground at, in m/s, past which the fall kills: life size,
+   * as the falls are. */
+  readonly lethalLanding: number;
+  /** How fast a climber hanging on their rope climbs back up it to where they slipped, at a whole
+   * stride, in m/s. */
+  readonly climbBack: number;
   /** How fast a hazard that goes throws a climber down the slope, in m/s. */
   readonly knock: number;
   /** The fastest slide a climber can stop with the ice axe driven into the slope, in m/s:
@@ -69,9 +108,9 @@ export class Slope {
   static readonly REST_SPEED = 0.01;
 
   readonly walking: Walking;
-  readonly slipChance: SteepnessCurve;
+  readonly footingLoss: SteepnessCurve;
   readonly ladderSpeed: SteepnessCurve;
-  readonly ladderSlipChance: SteepnessCurve;
+  readonly ladderFootingLoss: SteepnessCurve;
   readonly substepSeconds = SimulationClock.STEP_SECONDS / Slope.SUBSTEPS;
   /** The section's scale, which reads the altimeter. */
   readonly scale: SectionScale;
@@ -82,13 +121,15 @@ export class Slope {
     altitude: SectionAltitude,
     readonly ropes: ReadonlyMap<string, Rope>,
     readonly ladders: ReadonlyMap<string, Ladder>,
+    /** The stretches of the ground that are bare blue ice, not snow. */
+    private readonly ice: readonly AlongStretch[] = [],
   ) {
     this.scale = new SectionScale(terrain, altitude);
     const { walkingCost, steepest, walkingPower, fastestWalk, uphillCostShare } = settings;
     this.walking = new Walking(walkingCost, steepest, walkingPower, fastestWalk, uphillCostShare);
-    this.slipChance = new SteepnessCurve(settings.slipChance);
+    this.footingLoss = new SteepnessCurve(settings.footingLoss);
     this.ladderSpeed = new SteepnessCurve(settings.ladderSpeed);
-    this.ladderSlipChance = new SteepnessCurve(settings.ladderSlipChance);
+    this.ladderFootingLoss = new SteepnessCurve(settings.ladderFootingLoss);
   }
 
   rope(id: string): Rope {
@@ -117,6 +158,19 @@ export class Slope {
       }
     }
     return null;
+  }
+
+  /** Whether the ground at `along` is bare blue ice. */
+  onIce(along: number): boolean {
+    return this.ice.some(({ from, to }) => along >= from && along <= to);
+  }
+
+  /** How hard the ground at `point` holds what slides on it: snow's friction, or ice's. */
+  frictionAt(point: Point): number {
+    const { friction, footing } = this.settings;
+    return this.ice.length > 0 && this.onIce(this.terrain.nearest(point).along)
+      ? footing.iceFriction
+      : friction;
   }
 
   /** Whether the ground `way` from `along` is under a ladder, which walking crosses on instead. */
@@ -152,14 +206,18 @@ export class Slope {
   }
 
   /** One step for every climber on it, in the scenario's order. A rope that lay still and
-   * nobody is clipped to waits, so the ropes of a whole section cost nothing until used. */
+   * nobody is clipped to waits, so the ropes of a whole section cost nothing until used. The
+   * ladders' bounce dies away after the climbers' steps set it going. */
   advance(climbers: readonly Climber[], moment: Moment): void {
-    const { gravity, friction } = this.settings;
+    const { gravity, friction, footing } = this.settings;
     const clipped = new Set(climbers.flatMap((climber) => climber.ropes));
     const ropes = [...this.ropes.values()].filter((rope) => clipped.has(rope) || !rope.resting);
     for (const climber of climbers) {
       climber.walk(this, moment);
       climber.beginStep();
+    }
+    for (const ladder of this.ladders.values()) {
+      ladder.settle(SimulationClock.STEP_SECONDS, footing.bounce.damp);
     }
     for (let substep = 0; substep < Slope.SUBSTEPS; substep += 1) {
       for (const climber of climbers) {

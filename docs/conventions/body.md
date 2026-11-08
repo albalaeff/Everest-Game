@@ -11,6 +11,7 @@
 ## The pace and the stride
 
 - **Three paces**, from the player's `pace` action: the rest step, the steady pace and the faster one. Each has a speed and an effort, shares of the steady pace's (`body.rest-step-speed`, `body.faster-speed`, `body.rest-step-effort`, `body.faster-effort`).
+- **Sure-footedness** (#190) is the pace's footing, `body.rest-step-footing` at the rest step and `body.faster-footing` at the faster pace against the steady pace's 1, times `body.tired-footing` tired and `body.profoundly-tired-footing` profoundly tired. The body sets it on the slope physics each step (`Legs.sureness`), which gives a climber back their footing by it ([slope-physics.md](slope-physics.md) → Walking and falls): the rest step crosses blue ice and a long ladder that the faster pace slips on.
 - **The stride** is the pace's speed, times the capacity left at the altitude felt while climbing, times the climber's mass over their mass and their pack's. The body sets it on the slope physics each step (`Legs.stride`), which walks on the stride's share of the walking power, as fast as it pays for on the ground's gradient and no faster than the fastest walk, and climbs ladders at their speed by steepness times the stride ([slope-physics.md](slope-physics.md) → Walking and falls). Exhausted, it's 0: the climber stops.
 
 ## Fatigue

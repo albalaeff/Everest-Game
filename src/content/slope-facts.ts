@@ -4,16 +4,17 @@ import type { KnowledgeBase } from "./knowledge-base";
 /**
  * The slope physics' numbers, from the knowledge base (docs/conventions/slope-physics.md →
  * Numbers): gravity, the snow's friction and the cost of walking by gradient, which are facts;
- * and the walking power, the fastest walk, the ladder speeds, the slips, the cowstail's reach, a
- * hazard's knock and self-arrest, coefficients fitted to the Icefall's hours and the chronicle
- * (content/facts/technique.json). The ground walked runs from the steepest down to the steepest
- * up, the Icefall's; a ladder, from down a wall to across to up one.
+ * and the walking power, the fastest walk, the ladder speeds, the footing (#190), the cowstail's
+ * reach, a hazard's knock, self-arrest, the lethal landing and the climb back, coefficients
+ * fitted to the Icefall's hours and the chronicle (content/facts/technique.json). The ground walked
+ * runs from the steepest down to the steepest up, the Icefall's; a ladder, from down a wall to
+ * across to up one.
  *
  * The records are life's numbers. The mountain's clock runs faster than the route is drawn
  * (`time.compression` over `route.drawn-scale`), so the climber walks and climbs that many
- * times faster than in life over the drawn ground, and slips that many times more often a second,
- * as often a metre; a section takes its real hours by the clock. A fall, a knock and the reaches
- * are at life size, as the walls they happen on are drawn.
+ * times faster than in life over the drawn ground, and loses and gets back their footing that many
+ * times faster a second, as fast a metre; a section takes its real hours by the clock. A fall, a
+ * knock, a landing and the reaches are at life size, as the walls they happen on are drawn.
  */
 export class SlopeFacts {
   /** A wall, as a ladder's steepness in degrees: straight up. */
@@ -27,7 +28,7 @@ export class SlopeFacts {
     const fast = (name: string): number => number(name) * speedUp;
     const steepest = knowledge.range("route.icefall-steepness").max;
     const slipFree = number("slip-free-steepness");
-    const slip = fast("slip-chance-steep");
+    const slip = fast("footing-loss-steep");
     this.settings = {
       gravity: number("gravity"),
       friction: number("snow-friction"),
@@ -37,7 +38,7 @@ export class SlopeFacts {
       walkingPower: fast("walking-power"),
       fastestWalk: fast("fastest-walk"),
       uphillCostShare: number("uphill-cost-share"),
-      slipChance: [
+      footingLoss: [
         [-steepest, slip],
         [-slipFree, 0],
         [slipFree, 0],
@@ -48,7 +49,22 @@ export class SlopeFacts {
         [0, fast("ladder-speed-across")],
         [SlopeFacts.WALL, fast("ladder-speed-up")],
       ],
-      ladderSlipChance: [[0, fast("ladder-slip-chance")]],
+      ladderFootingLoss: [[0, fast("ladder-footing-loss")]],
+      footing: {
+        still: fast("footing-back-still"),
+        moving: fast("footing-back-moving"),
+        ice: fast("ice-footing-loss"),
+        iceSteep: number("ice-footing-steep"),
+        iceFriction: number("ice-friction"),
+        bounce: {
+          excite: number("ladder-bounce-excite"),
+          damp: fast("ladder-bounce-damp"),
+          loss: fast("ladder-bounce-loss"),
+        },
+        afterSlip: number("footing-after-slip"),
+      },
+      lethalLanding: number("lethal-landing"),
+      climbBack: fast("climb-back-speed"),
       knock: number("knock-speed"),
       arrestSpeed: number("arrest-speed"),
       axeReach: number("axe-reach"),

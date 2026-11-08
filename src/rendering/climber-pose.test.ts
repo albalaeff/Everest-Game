@@ -21,6 +21,7 @@ const state = (over: Partial<PoseState> = {}): PoseState => ({
   sliding: false,
   slack: 10,
   ladder: null,
+  footing: 1,
   ...over,
 });
 
@@ -462,6 +463,27 @@ describe("ClimberPose", () => {
       }
       expect(pose.pelvis.x).toBeLessThan(-0.2);
     }
+  });
+
+  it("wobbles as the footing goes, its arms out for balance and its body swaying, and stands steady with it (#190)", () => {
+    const leans = (footing: number): number[] => {
+      const climber = new ClimberPose();
+      return Array.from({ length: 60 }, () => climber.advance(FRAME, state({ footing })).lean);
+    };
+    const swing = (footing: number): number => {
+      const all = leans(footing).slice(20);
+      return Math.max(...all) - Math.min(...all);
+    };
+    const reach = (footing: number): number => {
+      const climber = new ClimberPose();
+      const pose = climber.advance(5, state({ footing }));
+      return Math.abs(pose.arms[0].end.x - pose.arms[1].end.x);
+    };
+
+    expect(swing(1)).toBeLessThan(0.01);
+    expect(swing(0.2)).toBeGreaterThan(0.15);
+    expect(swing(0.5)).toBeLessThan(swing(0.2));
+    expect(reach(0.1)).toBeGreaterThan(reach(1) + 0.3);
   });
 
   it("looks up the wall while it's above the head, and down onto its top once the head comes over it", () => {

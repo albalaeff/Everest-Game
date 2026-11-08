@@ -3,11 +3,12 @@ import { Steepness } from "./steepness";
 import type { Pair, Point, Terrain, Way } from "./terrain";
 
 /** A ladder as a level lays it and saves keep it: its ends, by how far along the ground they
- * are, `from` the one further back. */
+ * are, `from` the one further back; and, in a save, how hard it was bouncing, if at all. */
 export type LadderLayout = {
   readonly id: string;
   readonly from: number;
   readonly to: number;
+  readonly bounce?: number;
 };
 
 /**
@@ -15,9 +16,16 @@ export type LadderLayout = {
  * it, not on the ground between its ends. A key moves a climber along it when it points more
  * along it than across: left and right on a ladder across a crevasse, up and down on one up a
  * wall, and a diagonal on either. Its way 1 is toward its end further along the ground, as
- * walking right is, and it's measured in rungs: metres from its `from` end.
+ * walking right is, and it's measured in rungs: metres from its `from` end. One across a
+ * crevasse bounces under the steps on it, the longer the harder, and the bounce dies away when
+ * they stop (#190).
  */
 export class Ladder {
+  /** Steeper than this sine, a ladder is up or down a wall, which doesn't bounce. */
+  private static readonly ACROSS_SINE = 0.5;
+  /** Less bounce than this, it lies still: the engine's number. */
+  private static readonly STILL = 1e-4;
+
   /** Each walking direction as a way on the screen: across, and up. */
   private static readonly KEYS: Readonly<Record<Walk["direction"], Pair>> = {
     right: [1, 0],
@@ -37,6 +45,8 @@ export class Ladder {
   private readonly finish: Point;
   /** Its way 1, a length of 1. */
   private readonly heading: Point;
+  /** How hard it bounces now. */
+  private bouncing: number;
 
   /** A ladder laid on the ground: its ends on it, `from` further back than `to`. */
   constructor(
@@ -53,6 +63,7 @@ export class Ladder {
     const y = this.finish.y - this.start.y;
     this.length = Math.sqrt(x * x + y * y);
     this.heading = { x: x / this.length, y: y / this.length };
+    this.bouncing = layout.bounce ?? 0;
   }
 
   get id(): string {
@@ -61,7 +72,34 @@ export class Ladder {
 
   save(): LadderLayout {
     const { id, from, to } = this.layout;
-    return { id, from, to };
+    return this.bouncing > 0 ? { id, from, to, bounce: this.bouncing } : { id, from, to };
+  }
+
+  /** Whether it lies across a crevasse, rather than up or down a wall. */
+  get across(): boolean {
+    return Math.abs(this.heading.y) < Ladder.ACROSS_SINE;
+  }
+
+  /** How hard it bounces now: nought at rest. */
+  get bounce(): number {
+    return this.bouncing;
+  }
+
+  /** A step of `metres` on it sets it bouncing, by `excite` for each metre of its length; one up
+   * a wall doesn't. */
+  shake(metres: number, excite: number): void {
+    if (this.across) {
+      this.bouncing += excite * this.length * Math.abs(metres);
+    }
+  }
+
+  /** Its bounce dies away by `damp` a second, over `seconds`: in straight steps, which round the
+   * same everywhere, and to nought once it's too little to feel. */
+  settle(seconds: number, damp: number): void {
+    this.bouncing *= Math.max(0, 1 - damp * seconds);
+    if (this.bouncing < Ladder.STILL) {
+      this.bouncing = 0;
+    }
   }
 
   /** The point `rung` metres along it: its very ends where the ground has them. */

@@ -32,6 +32,12 @@ export interface PartData {
   readonly to: number;
 }
 
+/** A stretch of a section's ground, by how far along it its ends are. */
+interface PartStretchData {
+  readonly from: number;
+  readonly to: number;
+}
+
 /** The snow on a section's ground, as its file gives it: level over the camps, and trodden flat
  * `trodden` metres round each, where the climbs set off and arrive. */
 type SnowData = Omit<SnowLayout, "level"> & { readonly trodden: number };
@@ -52,6 +58,9 @@ export interface SectionData {
     readonly terrain: readonly DataPair[];
     /** The snow on the ground, if it has any. */
     readonly snow?: SnowData;
+    /** The stretches of the ground that are bare blue ice, where the snow lies level on the line
+     * and footing goes (#190). */
+    readonly ice?: readonly PartStretchData[];
     readonly ropes: readonly RopeLayout[];
     readonly ladders: readonly LadderLayout[];
     readonly climbers: readonly ClimberLayout[];
@@ -110,11 +119,13 @@ export class Section {
     this.settings = new SlopeFacts(knowledge).settings;
     const terrain = Section.pairs(layout.terrain, data.id);
     const ground = new Terrain(terrain);
+    const ice = Section.iceOf(layout.ice ?? [], ground.length, data.id);
     this.layout = {
       terrain,
       ...(layout.snow === undefined
         ? {}
-        : { snow: Section.snow(layout.snow, data.camps, ground.length) }),
+        : { snow: Section.snow(layout.snow, data.camps, ice, ground.length) }),
+      ...(ice.length === 0 ? {} : { ice }),
       altitude: {
         start: knowledge.number(`route.${data.from}-altitude`),
         end: knowledge.number(`route.${data.to}-altitude`),
@@ -208,17 +219,32 @@ export class Section {
   }
 
   /** The file's snow, level over the camps and `trodden` metres round each, as far as the
-   * ground goes. */
+   * ground goes, and gone from its bare ice, where it lies level on the line. */
   private static snow(
     { trodden, ...snow }: SnowData,
     camps: readonly CampData[],
+    ice: readonly PartStretchData[],
     length: number,
   ): SnowLayout {
     const level = camps.map(({ from, to }) => ({
       from: Math.max(from - trodden, 0),
       to: Math.min(to + trodden, length),
     }));
-    return { ...snow, level };
+    return { ...snow, level: [...level, ...ice] };
+  }
+
+  /** The file's stretches of bare ice, each on the ground. */
+  private static iceOf(
+    ice: readonly PartStretchData[],
+    length: number,
+    id: string,
+  ): readonly PartStretchData[] {
+    for (const { from, to } of ice) {
+      if (!(from >= 0 && from < to && to <= length)) {
+        throw new RangeError(`The ice from ${from} to ${to} m isn't on the ground of ${id}`);
+      }
+    }
+    return ice.map(({ from, to }) => ({ from, to }));
   }
 
   private static pairs(points: readonly DataPair[], id: string): (readonly [number, number])[] {

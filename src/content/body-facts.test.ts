@@ -108,11 +108,24 @@ describe("BodyFacts: blood oxygen", () => {
 });
 
 describe("BodyFacts: the paces", () => {
+  it("leaves a climber surer-footed at the rest step and less at the faster pace, and less tired or not (#190)", () => {
+    expect(numbers.paces["rest-step"].footing).toBe(fact("body.rest-step-footing"));
+    expect(numbers.paces.faster.footing).toBe(fact("body.faster-footing"));
+    expect(numbers.paces["rest-step"].footing).toBeGreaterThan(1);
+    expect(numbers.paces.faster.footing).toBeLessThan(1);
+    expect(numbers.footing).toEqual({
+      tired: fact("body.tired-footing"),
+      profoundlyTired: fact("body.profoundly-tired-footing"),
+    });
+    expect(numbers.footing.profoundlyTired).toBeLessThan(numbers.footing.tired);
+    expect(numbers.footing.tired).toBeLessThan(1);
+  });
+
   it("goes at the rest step and the faster pace the sections' longest and shortest hours ask", () => {
     const restStep = SECTIONS.map((id) => fact(id) / range(id).max);
     const faster = SECTIONS.map((id) => fact(id) / range(id).min);
 
-    expect(numbers.paces.steady).toEqual({ speed: 1, effort: 1 });
+    expect(numbers.paces.steady).toEqual({ speed: 1, effort: 1, footing: 1 });
     expect(numbers.paces["rest-step"].speed).toBeGreaterThanOrEqual(Math.min(...restStep));
     expect(numbers.paces["rest-step"].speed).toBeLessThanOrEqual(Math.max(...restStep));
     expect(numbers.paces.faster.speed).toBeGreaterThanOrEqual(Math.min(...faster));

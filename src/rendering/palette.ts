@@ -100,6 +100,14 @@ export class Palette {
   static readonly BLOCK = 0xb4d6ee;
   static readonly BLOCK_SHADE = 0x8bb5da;
   static readonly BLOCK_EDGE = 0xe9f6fe;
+  /** Bare blue ice under the boots, by day: glossy, with a wet sheen along its top (#190). */
+  static readonly BLUE_ICE = 0x7fc0ea;
+  static readonly ICE_SHEEN = 0xf2fbff;
+  /** The footing bar over the player's head (#190): steady, unsteady and about to slip, the one
+   * warning colour on the slope; on a dark edge, as the mark is. */
+  static readonly STEADY = 0xffffff;
+  static readonly UNSTEADY = 0xffb020;
+  static readonly SLIPPING = 0xff3b30;
   /** The icicles under a lip of snow, and the streaks down a wall's bare ice. */
   static readonly ICICLE = 0xe4f5ff;
   static readonly STREAK = 0x6fa6d4;

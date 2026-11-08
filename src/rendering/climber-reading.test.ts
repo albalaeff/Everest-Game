@@ -56,6 +56,8 @@ const view = (over: Partial<ClimberView> = {}): ClimberView => ({
   jumarHeld: false,
   ladder: null,
   falls: [],
+  footing: 1,
+  hanging: false,
   ...over,
 });
 
