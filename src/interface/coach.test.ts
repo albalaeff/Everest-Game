@@ -22,7 +22,7 @@ const standing = (x: number, over: Partial<ClimberView> = {}): ClimberView => ({
   jumarHeld: false,
   ladder: null,
   falls: [],
-  footing: 1,
+  slipChance: 0,
   hanging: false,
   kit: { crampons: true, lamp: true, water: true },
   cramponLoose: false,
@@ -193,19 +193,26 @@ describe("Coach: the warnings, whenever they matter", () => {
   it("tells a hanging climber how to climb back, before anything else", () => {
     const { coach } = fresh();
     const world = new World();
-    world.view = standing(52, { falling: true, hanging: true, second: "one", footing: 0 });
+    world.view = standing(52, { falling: true, hanging: true, second: "one" });
 
     expect(after(coach, world)).toBe("hanging");
   });
 
-  it("tells a climber losing their footing to steady themselves", () => {
+  it("tells a climber whose steps are careless on blue ice or a ladder to take care, and not on snow (#208)", () => {
     const { coach } = fresh();
     const world = new World();
     world.view = standing(4, { moving: true, walking: "right" });
     after(coach, world);
-    world.view = standing(30, { moving: true, walking: "right", footing: 0.3 });
+    world.view = standing(75, { moving: true, walking: "right", second: "one", slipChance: 0.05 });
+    const onIce = after(coach, world, Coach.LEAST_SECONDS);
+    world.view = standing(30, { moving: true, walking: "right", slipChance: 0.05 });
+    const onSnow = after(coach, world, Coach.LEAST_SECONDS);
+    world.view = standing(75, { moving: true, walking: "right", second: "one", slipChance: 0.01 });
+    const careful = after(coach, world, Coach.LEAST_SECONDS);
 
-    expect(after(coach, world, Coach.LEAST_SECONDS)).toBe("footing");
+    expect(onIce).toBe("careless");
+    expect(onSnow).not.toBe("careless");
+    expect(careful).not.toBe("careless");
   });
 
   it("warns an unclipped climber by a crevasse's ladder, a rope within reach", () => {

@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 
 import icefall from "../../content/route/icefall.json";
 import { SlopePhysics } from "../physics";
+import type { ClimberView, Fall } from "../physics";
 import { Body, Expedition, HazardChance, MountainClock } from "../simulation";
 import type { ClockStart, Scenario } from "../simulation";
 import { KnowledgeBase } from "./knowledge-base";
@@ -14,8 +15,7 @@ const knowledge = new KnowledgeBase(KNOWLEDGE_FILES);
 const HOUR = 3600;
 /** Longer than any crossing the sources give: a walker still short of Camp 1 after it is lost. */
 const LONGEST_HOURS = 8;
-/** The crossings' seed: one on which no ladder slips, with the hazards' draws and without them.
- * A slip off a ladder over a crevasse leaves the climber hanging, and the crossing lost. */
+/** The crossings' seed. A careful crossing slips now and then (#208), and the rope holds it. */
 const SEED = 1;
 
 /** The Icefall from `time`, on the knowledge base's rules, the hazards left out so that the
@@ -104,11 +104,14 @@ describe("Base Camp to Camp 1 at a steady pace, clipped in all the way", () => {
     expect(hours).toBeLessThan(middle - 1);
   });
 
-  it("climbs every ladder on the way, and never falls", () => {
+  it("climbs every ladder on the way, and the rope holds any fall of more than a slide (#208)", () => {
     const player = rules.physics.climber(Section.PLAYER);
 
     expect(crossing.laddersClimbed).toEqual(mountain.route.layout.ladders.map(({ id }) => id));
-    expect(player.falls).toEqual([]);
+    expect(player.falls.length).toBeLessThanOrEqual(3);
+    expect(player.falls.filter(({ drop }) => drop > 2).every(({ held }) => held === true)).toBe(
+      true,
+    );
     expect(player.dead).toBe(false);
   });
 
@@ -183,6 +186,43 @@ describe("The cost of the steps: down from Camp 1, and up with a heavier pack", 
 
     expect(heavier.hours).toBeGreaterThan(up.hours + 0.5);
     expect(heavier.fatigue).toBeGreaterThan(up.fatigue);
+  });
+});
+
+describe("Slips by chance (#208): the rest step's care on the ice and the crossings, against the steady pace", () => {
+  const SEEDS = [1, 2, 3, 4, 5, 6];
+  /** The player at the end of a crossing to Camp 1 on `seed`, the hazards left out, careful or
+   * not. */
+  const crossedOn = (seed: number, careful: boolean): ClimberView => {
+    const mountain = new Mountain(knowledge);
+    const rules = mountain.rules();
+    const expedition = Expedition.start(mountain.scenario(seed), [
+      rules.clock,
+      rules.oxygen,
+      rules.body,
+      rules.physics,
+    ]);
+    const crossing = new Crossing(expedition, rules.physics, Section.PLAYER, "up", careful);
+    const steps = LONGEST_HOURS * HOUR * (1 / rules.clock.secondsAStep);
+    crossing.until(mountain.route.destination.from, steps);
+    return rules.physics.climber(Section.PLAYER);
+  };
+
+  it("slips a careful climber about once in two crossings, the rope holding any real fall, and a steady one more often", () => {
+    const careful = SEEDS.map((seed) => crossedOn(seed, true));
+    const steady = SEEDS.map((seed) => crossedOn(seed, false));
+    const slips = (crossed: readonly ClimberView[]): readonly Fall[] =>
+      crossed.flatMap(({ falls }) => falls);
+
+    expect(slips(careful).length).toBeLessThanOrEqual(SEEDS.length);
+    // Off the ropes, only a slide on the flat: no drop the rope didn't hold.
+    expect(
+      slips(careful)
+        .filter(({ drop }) => drop > 2)
+        .every(({ held }) => held === true),
+    ).toBe(true);
+    expect(careful.every(({ dead }) => !dead)).toBe(true);
+    expect(slips(steady).length).toBeGreaterThan(slips(careful).length);
   });
 });
 

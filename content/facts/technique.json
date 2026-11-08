@@ -215,20 +215,20 @@
     {
       "id": "technique.slip-free-steepness",
       "kind": "coefficient",
-      "claim": "Up to this steepness snow costs a climber in crampons none of their footing (#190); steeper, the footing lost grows in a straight line to technique.footing-loss-steep at the steepest ground walked. Fitted to the Lhotse Face, about 30°, where a slip ends badly, and to the Icefall's 20° slopes, walked without a thought.",
+      "claim": "Up to this steepness, snow never slips under a climber in crampons (#208); steeper, the chance a metre of it slips grows in a straight line to technique.slip-steep at the steepest ground walked. Fitted to the Lhotse Face, about 30°, where a slip ends badly, and to the Icefall's 20° slopes, walked without a thought.",
       "status": "source only",
       "value": 30,
       "unit": "degrees",
       "fitted_to": ["route.lhotse-face-hazards", "route.icefall-steepness"],
-      "fitted": "2026-11-05"
+      "fitted": "2026-11-08"
     },
     {
-      "id": "technique.footing-loss-steep",
+      "id": "technique.slip-steep",
       "kind": "coefficient",
-      "claim": "The footing a climber loses a second walking the steepest ground walked without a ladder, at a whole stride (#190): from technique.slip-free-steepness it grows in a straight line from none to this, and the climber gets it back as far as they're sure-footed (technique.footing-back-moving); with none left, they slip. Fitted so that a long steep stretch walked without a pause costs a slip, held by the rope when the climber is clipped: the lesson is the rope, not the footing.",
+      "claim": "The chance a metre of snow slips under a climber at the steepest ground walked without a ladder (route.icefall-steepness), at a steady pace and rested (#208): from technique.slip-free-steepness it grows in a straight line from none to this. A careful pace divides it and a hurried or tired one multiplies it (body.rest-step-footing). Fitted so that a careful climber slips on the Icefall's steep snow now and then, and the rope, clipped, holds them: the lesson is the rope's.",
       "status": "source only",
-      "value": 0.2,
-      "unit": "1/s",
+      "value": 0.01,
+      "unit": "1/m",
       "fitted_to": ["route.lhotse-face-hazards", "route.icefall-lessons"],
       "fitted": "2026-11-08"
     },
@@ -268,49 +268,29 @@
       "fitted": "2026-11-06"
     },
     {
-      "id": "technique.ladder-footing-loss",
+      "id": "technique.ladder-slip",
       "kind": "coefficient",
-      "claim": "The footing a climber on a ladder loses a second, whatever its angle, at a whole stride (#190): the rungs under crampons, before a crossing's bounce (technique.ladder-bounce-loss). Fitted so that a ladder up or down a wall costs a fresh climber nothing they don't get back, and a tired one hurrying up it little.",
+      "claim": "The chance a metre climbed on a ladder slips, at a steady pace and rested, before a crossing's bounce (#208): a crampon placed carelessly on an aluminium rung skates off it. Fitted so that a careful crossing rarely slips on the rungs alone, and the fall from a ladder in 2012 (route.icefall-lessons) needs carelessness or a bounce.",
       "status": "source only",
-      "value": 0.05,
-      "unit": "1/s",
+      "value": 0.003,
+      "unit": "1/m",
       "fitted_to": ["route.icefall-lessons", "route.icefall-ladders"],
       "fitted": "2026-11-08"
     },
     {
-      "id": "technique.footing-back-still",
+      "id": "technique.ice-slip",
       "kind": "coefficient",
-      "claim": "The footing a climber standing still gets back a second, at a steady pace's sure-footedness (#190): a pause steadies them. Fitted so that a few seconds' stop on blue ice or a bouncing ladder brings them back to steady, as the game's lesson goes: stop, steady yourself, go on.",
+      "claim": "The chance a metre of blue ice on the level slips under a climber at a steady pace, rested (#208): bare ice holds a crampon's points less than snow, and a careless step skates on it. Fitted so that a climber at a steady pace on the Icefall's blue ice slips about once a crossing, and one at the rest step a few times less often.",
       "status": "source only",
-      "value": 0.5,
-      "unit": "1/s",
-      "fitted_to": ["route.icefall-lessons"],
-      "fitted": "2026-11-08"
-    },
-    {
-      "id": "technique.footing-back-moving",
-      "kind": "coefficient",
-      "claim": "The footing a climber gets back a second on the move, at a steady pace's sure-footedness (#190): less than standing, and more at the rest step's care, less at the faster pace's (body.rest-step-footing, body.faster-footing). Fitted so that snow, a ladder up a wall and a short ladder across cost a careful climber nothing, and blue ice and a long ladder across do.",
-      "status": "source only",
-      "value": 0.1,
-      "unit": "1/s",
-      "fitted_to": ["route.icefall-lessons", "route.icefall-ladders-lashed"],
-      "fitted": "2026-11-08"
-    },
-    {
-      "id": "technique.ice-footing-loss",
-      "kind": "coefficient",
-      "claim": "The footing a climber walking bare blue ice on the level loses a second at a whole stride, in crampons (#190), on top of the steepness's: hard, polished glacier ice, which the Icefall shows in its steps and walls. Fitted so that a careful climber at the rest step crosses it, one at a steady pace slips after ten metres or so without a pause, and one hurrying slips in a few seconds.",
-      "status": "source only",
-      "value": 0.25,
-      "unit": "1/s",
+      "value": 0.02,
+      "unit": "1/m",
       "fitted_to": ["route.icefall-hazards", "route.icefall-lessons"],
       "fitted": "2026-11-08"
     },
     {
-      "id": "technique.ice-footing-steep",
+      "id": "technique.ice-slip-steep",
       "kind": "coefficient",
-      "claim": "How much more footing blue ice takes for each unit of the sine of its slope, up or down (#190): a slope of ice is worse than a flat of it. Fitted so that a careful climber has to stop and steady themselves on a slope of ice twenty metres long.",
+      "claim": "How much more likely a metre of blue ice is to slip for each unit of the sine of its slope, up or down (#208): a slope of ice is worse than a flat of it, and a ramp of it down to a crevasse's lip is the worst of the Icefall.",
       "status": "source only",
       "value": 2,
       "unit": "1",
@@ -348,23 +328,13 @@
       "fitted": "2026-11-08"
     },
     {
-      "id": "technique.ladder-bounce-loss",
+      "id": "technique.ladder-bounce-slip",
       "kind": "coefficient",
-      "claim": "The footing a climber on a bouncing ladder loses a second for each unit of its bounce (#190). Fitted with technique.ladder-bounce-excite.",
+      "claim": "How much each unit of a ladder's bounce adds to the chance a metre on it slips (#208). Fitted with technique.ladder-bounce-excite so that a hurried crossing of a long ladder, bouncing hard, slips more often than not, and a careful one rarely.",
       "status": "source only",
-      "value": 0.05,
-      "unit": "1/s",
+      "value": 0.004,
+      "unit": "1/m",
       "fitted_to": ["route.icefall-ladders-lashed", "route.icefall-lessons"],
-      "fitted": "2026-11-08"
-    },
-    {
-      "id": "technique.footing-after-slip",
-      "kind": "coefficient",
-      "claim": "The footing a climber has back as they get up from a slip (#190), shaken: half. They steady themselves as after any loss of it.",
-      "status": "source only",
-      "value": 0.5,
-      "unit": "1",
-      "fitted_to": ["route.icefall-lessons"],
       "fitted": "2026-11-08"
     },
     {
@@ -400,7 +370,7 @@
     {
       "id": "technique.loose-crampon-footing",
       "kind": "coefficient",
-      "claim": "How sure-footed a loose crampon leaves a climber, as a share of what they'd be with it strapped tight (#196): on blue ice and a bouncing ladder they slip within seconds, until they kneel to refit it.",
+      "claim": "How sure-footed a loose crampon leaves a climber, as a share of what they'd be with it strapped tight (#196): their chance of slipping on blue ice, a ladder or steep snow is divided by it, three times as likely, until they kneel to refit it.",
       "status": "source only",
       "value": 0.3,
       "unit": "1",
@@ -430,7 +400,7 @@
     {
       "id": "technique.dark-footing",
       "kind": "coefficient",
-      "claim": "How sure-footed a climber is in the dark without a headlamp, as a share of what they'd be by its light (#196): they can't see where they put their crampons on the ice and the rungs, so they slip at twice the rate, unless they slow down or wait for first light (time.first-light).",
+      "claim": "How sure-footed a climber is in the dark without a headlamp, as a share of what they'd be by its light (#196): they can't see where they put their crampons on the ice and the rungs, so their chance of slipping is twice what it would be, unless they slow down or wait for first light (time.first-light).",
       "status": "source only",
       "value": 0.5,
       "unit": "1",
@@ -532,7 +502,7 @@
       "id": "technique.ladder-across",
       "kind": "question",
       "question": "How does a climber cross a ladder laid over a crevasse in the Icefall: clipped to what, stepping how in crampons, and how fast? The game crosses at 0.6 m/s at sea level, less at altitude, and a long ladder bounces under a hurried step until the climber loses their footing.",
-      "about": ["technique.ladder-speed-across", "technique.ladder-footing-loss"]
+      "about": ["technique.ladder-speed-across", "technique.ladder-slip"]
     },
     {
       "id": "technique.ladder-up",
@@ -577,12 +547,8 @@
     {
       "id": "technique.slips-by-steepness",
       "kind": "question",
-      "question": "How often does a climber slip on snow and ice of each steepness, and on a ladder, and how much does a careful pace help? The game takes no footing on snow up to 30°; at a steady pace a climber loses all of it in about 10 seconds of walking at 60°, and in about 20 seconds on level blue ice, while the rest step crosses both; a long ladder bouncing under a hurried step costs it in a few seconds (#190).",
-      "about": [
-        "technique.slip-free-steepness",
-        "technique.footing-loss-steep",
-        "technique.ladder-footing-loss"
-      ]
+      "question": "How often does a climber slip on snow and ice of each steepness, and on a ladder, and how much does a careful pace help? At a steady pace the game gives snow no chance of a slip up to 30°, rising to 1 in 100 a metre at the Icefall's steepest; level blue ice 1 in 50 a metre, and twice that on a slope of 30°; a ladder's rungs about 1 in 330 a metre, more as it bounces under the steps; the rest step makes each four times less likely, and the faster pace about three times more (#208).",
+      "about": ["technique.slip-free-steepness", "technique.slip-steep", "technique.ladder-slip"]
     },
     {
       "id": "technique.self-arrest",

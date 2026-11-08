@@ -53,7 +53,8 @@ export interface PoseState {
    * most it comes up off where it lies. */
   readonly slack: number;
   readonly ladder: LadderFooting | null;
-  /** How sure their feet are, from 1, steady, to 0, when they slip (#190). */
+  /** How steady their steps look, from 1, steady, to 0, as likely to slip as a step gets
+   * (#208): the climber wobbles below `WOBBLE.from`. */
   readonly footing: number;
 }
 
@@ -326,9 +327,9 @@ export class ClimberPose {
    * leaning over the edge to step off: the gaze up the wall and onto its top, how far over the top
    * the head is when it's looking down onto it, and how far the climber leans over it there. */
   private static readonly CREST = { up: -0.3, onto: 0.35, over: 0.45, lean: 0.4 };
-  /** Losing their footing (#190), a climber wobbles, more the less of it they have: from this much
-   * footing, swaying their body this far each way, so many times a second, their arms out for
-   * balance to these hands, from the shoulder, the near one forward and the far one back. */
+  /** On steps likely to slip (#208), a climber wobbles, more the likelier: below this footing,
+   * swaying their body this far each way, so many times a second, their arms out for balance to
+   * these hands, from the shoulder, the near one forward and the far one back. */
   private static readonly WOBBLE = {
     from: 0.7,
     lean: 0.16,
@@ -647,8 +648,8 @@ export class ClimberPose {
     return walk;
   }
 
-  /** The targets of a climber losing their footing on their feet: their body swaying from side to
-   * side, and their arms out for balance, the hand on the jumar staying on it. Steady, as made. */
+  /** The targets of a climber on steps likely to slip: their body swaying from side to side, and
+   * their arms out for balance, the hand on the jumar staying on it. Steady, as made. */
   private wobbling(made: Made, state: PoseState, mode: Mode): Made {
     const { WOBBLE } = ClimberPose;
     const unsure = ClimberPose.smooth((WOBBLE.from - state.footing) / WOBBLE.from);

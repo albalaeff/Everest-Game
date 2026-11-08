@@ -8,17 +8,14 @@ import type { ClimberId, GameAction, Pace, Walk } from "../../simulation";
  * within reach, the cowstails moved across one at a time where a rope ends at the next one's
  * anchor, and both off where a rope ends and nothing follows. At a ladder down a wall ahead it
  * walks down and right onto it, and on the way down, up and left at its foot; off its other end, it
- * walks flat. On blue ice and on a ladder across a crevasse it takes the rest step, and wherever
- * its footing goes below `UNSTEADY` it stops until it's steady again (#190); hanging on its rope
- * after a slip, it climbs back up. Only tests import it.
+ * walks flat. On blue ice and on a ladder across a crevasse it takes the rest step, where a slip is
+ * likeliest (#208), unless it's told not to; hanging on its rope after a slip, it climbs back up,
+ * and goes on its way. Only tests import it.
  */
 export class Crossing {
   /** How far past where it unclipped the walker goes before it clips again: the old rope's
    * anchor is still within reach there. */
   private static readonly FREE_METRES = 1;
-  /** Below this footing it stops, and goes on once it's back to `STEADY`. */
-  private static readonly UNSTEADY = 0.6;
-  private static readonly STEADY = 0.95;
   private static readonly WAYS: Readonly<Record<"up" | "down", Walk["direction"]>> = {
     up: "up-right",
     down: "down-left",
@@ -39,9 +36,9 @@ export class Crossing {
   /** The ladders climbed, in order. */
   readonly laddersClimbed: string[] = [];
   private started = false;
-  /** The pace it goes at; the key it held before it stopped to steady itself, until it goes on. */
+  /** The pace it goes at; the key it held before it slipped, until it's back on its feet. */
   private pace: Pace["pace"] = "steady";
-  private steadying: Walk["direction"] | null = null;
+  private beforeSlip: Walk["direction"] | null = null;
   /** The key the walker holds. */
   private walking: Walk["direction"];
   /** Which action of the re-clip comes next while the ropes hold the walker: none, or 1 to 4. */
@@ -55,6 +52,8 @@ export class Crossing {
     private readonly physics: SlopePhysics,
     private readonly climber: ClimberId,
     private readonly way: "up" | "down" = "up",
+    /** Whether it takes the rest step on the ice and the crossings, or keeps its steady pace. */
+    private readonly careful = true,
   ) {
     this.walking = Crossing.WAYS[way];
   }
@@ -86,7 +85,12 @@ export class Crossing {
     const { climber } = this;
     const view = this.physics.climber(climber);
     const along = this.physics.along(climber);
-    if (view.ladder !== null && view.ladder !== this.lastLadder) {
+    // A ladder once, however many times a slip off it puts the walker back on it.
+    if (
+      view.ladder !== null &&
+      view.ladder !== this.lastLadder &&
+      this.laddersClimbed.at(-1) !== view.ladder
+    ) {
       this.laddersClimbed.push(view.ladder);
     }
     this.lastLadder = view.ladder;
@@ -104,28 +108,22 @@ export class Crossing {
       // Hanging on the rope, it climbs back up; sliding, it waits.
       const up: Walk["direction"] = "up";
       if (view.hanging && this.walking !== up) {
+        this.beforeSlip ??= this.walking;
         this.walking = up;
         return [{ kind: "walk", climber, direction: up }];
       }
       return [];
     }
+    if (this.beforeSlip !== null) {
+      // Back on its feet, on the ground or a ladder's rung: on the way it was going.
+      this.walking = this.beforeSlip;
+      this.beforeSlip = null;
+      return [{ kind: "walk", climber, direction: this.walking }];
+    }
     const careful = this.carefulPace(view, along);
     if (careful !== this.pace) {
       this.pace = careful;
       return [{ kind: "pace", climber, pace: careful }];
-    }
-    if (this.steadying === null && view.footing < Crossing.UNSTEADY && this.reclipping === 0) {
-      this.steadying = this.walking;
-      this.walking = "stop";
-      return [{ kind: "walk", climber, direction: "stop" }];
-    }
-    if (this.steadying !== null) {
-      if (view.footing < Crossing.STEADY) {
-        return [];
-      }
-      this.walking = this.steadying;
-      this.steadying = null;
-      return [{ kind: "walk", climber, direction: this.walking }];
     }
     const direction = this.direction(view);
     if (direction !== this.walking && this.reclipping === 0) {
@@ -164,7 +162,7 @@ export class Crossing {
           point !== undefined && Math.abs(point.x - view.x) < 1;
         return across(id) && (near(start) || near(end));
       });
-    return onIce || onACrossing ? "rest-step" : "steady";
+    return this.careful && (onIce || onACrossing) ? "rest-step" : "steady";
   }
 
   /** The key for where the walker stands: on a ladder, the one it got on with; at the end of a

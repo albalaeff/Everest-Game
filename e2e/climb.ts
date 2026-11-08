@@ -31,6 +31,8 @@ export interface SavedClimber {
  * and technique as they set off. */
 export interface SavedClimb {
   step: number;
+  /** The expedition's chance: the four words of its generator (src/simulation/seeded-random.ts). */
+  random: number[];
   rules: {
     "mountain-clock": { steps: number };
     body: { climbers: { readonly id: string; readonly mass: number; readonly fitness: number }[] };

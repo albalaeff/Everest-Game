@@ -182,16 +182,6 @@ export class SlopeLayer extends ParallaxLayer {
    * how many times a second, and so many pieces its rails are drawn in while it does. */
   private static readonly BOUNCE_METRES = 0.035;
   private static readonly BOUNCE_HZ = 2.2;
-  /** The footing bar over the player's head (#190): shown below this much footing, so long and
-   * so thick, so far over the head, and amber below this footing, red below that. */
-  private static readonly FOOTING_BAR = {
-    shownBelow: 0.95,
-    length: 0.8,
-    thick: 0.09,
-    over: 0.35,
-    amber: 0.6,
-    red: 0.3,
-  };
   /** The streaks down a wall's bare ice: how wide, and how strong. */
   private static readonly STREAK_METRES = 0.035;
   private static readonly STREAK_ALPHA = 0.55;
@@ -226,9 +216,8 @@ export class SlopeLayer extends ParallaxLayer {
   private readonly bottom: number;
   private readonly cramponPoint: Point | null;
   private readonly veil = new Graphics();
-  /** The bare blue ice under the boots, and the bar of the player's footing over their head. */
+  /** The bare blue ice under the boots. */
   private readonly iceSkin = new Graphics();
-  private readonly footingBar = new Graphics();
   /** The bounce each ladder was last drawn at: a bouncing one is drawn every frame. */
   private readonly bounced = new Map<string, number>();
   /** The picture's seconds, which a ladder bounces on. */
@@ -437,13 +426,7 @@ export class SlopeLayer extends ParallaxLayer {
       return particle;
     });
     this.glints.blendMode = "add";
-    this.addChild(
-      this.driftContainer,
-      this.glints,
-      this.hazards.falling,
-      this.mark,
-      this.footingBar,
-    );
+    this.addChild(this.driftContainer, this.glints, this.hazards.falling, this.mark);
   }
 
   /** How many climbers are drawn. */
@@ -500,7 +483,6 @@ export class SlopeLayer extends ParallaxLayer {
       }
     }
     this.markPlayer(camera, size);
-    this.showFooting(size);
     this.elapsed = atmosphere.elapsed;
     for (const ladder of this.ladders) {
       const bounce = this.physics.ladderBounce(ladder.id);
@@ -564,38 +546,6 @@ export class SlopeLayer extends ParallaxLayer {
       const tall = ClimberFigure.HEIGHT_METRES * size.climber(ClimberFigure.HEIGHT_METRES);
       this.mark.place({ x, y: y + tall }, camera.pixelsPerMetre);
     }
-  }
-
-  /** The bar of the player's footing over their head while it goes, the share of it they have
-   * left, white, then amber, then red as they're about to slip; none while they're steady, off
-   * their feet or dead. */
-  private showFooting(size: LeastSize): void {
-    const player = this.figures.find(({ figure }) => figure === this.playerFigure);
-    const view = player?.view ?? null;
-    const bar = SlopeLayer.FOOTING_BAR;
-    const shown = view !== null && !view.falling && !view.dead && view.footing < bar.shownBelow;
-    this.footingBar.visible = shown;
-    if (!shown || player === undefined) {
-      return;
-    }
-    const grown = size.climber(ClimberFigure.HEIGHT_METRES);
-    const { x, y } = player.figure.at;
-    const over = y + (ClimberFigure.HEIGHT_METRES + bar.over) * grown;
-    const length = bar.length * grown;
-    const thick = bar.thick * grown;
-    const left = x - length / 2;
-    const colour =
-      view.footing < bar.red
-        ? Palette.SLIPPING
-        : view.footing < bar.amber
-          ? Palette.UNSTEADY
-          : Palette.STEADY;
-    this.footingBar
-      .clear()
-      .rect(left - thick / 3, over - thick / 3, length + (thick * 2) / 3, thick * (5 / 3))
-      .fill(Palette.MARK_EDGE)
-      .rect(left, over, length * view.footing, thick)
-      .fill(colour);
   }
 
   /** Where along each ladder across a crevasse each climber on it is drawn, this frame. */

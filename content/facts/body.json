@@ -725,9 +725,9 @@
     {
       "id": "body.rest-step-footing",
       "kind": "coefficient",
-      "claim": "How sure-footed the rest step leaves a climber, against the steady pace (#190): slow, deliberate steps, each foot placed, get back more of the footing ice and a bouncing ladder take. Fitted so that the rest step crosses blue ice and a long ladder that the steady pace slips on.",
+      "claim": "How sure-footed the rest step leaves a climber, against the steady pace (#208): with slow, deliberate steps, each foot placed, their chance of slipping on blue ice, a ladder or steep snow is divided by it. Fitted so that the rest step crosses the Icefall's ice and long ladders slipping a few times less often than the steady pace.",
       "status": "source only",
-      "value": 1.6,
+      "value": 4,
       "unit": "1",
       "fitted_to": ["route.icefall-lessons", "route.icefall-ladders-lashed"],
       "fitted": "2026-11-08"
@@ -735,9 +735,9 @@
     {
       "id": "body.faster-footing",
       "kind": "coefficient",
-      "claim": "How sure-footed the faster pace leaves a climber, against the steady pace (#190): hurried steps get back little of what ice and a bouncing ladder take. Fitted so that hurrying across blue ice or a long ladder slips in a few seconds.",
+      "claim": "How sure-footed the faster pace leaves a climber, against the steady pace (#208): with hurried steps, their chance of slipping on blue ice, a ladder or steep snow is divided by it, several times what it would be.",
       "status": "source only",
-      "value": 0.6,
+      "value": 0.35,
       "unit": "1",
       "fitted_to": ["route.icefall-lessons", "route.icefall-ladders-lashed"],
       "fitted": "2026-11-08"
@@ -745,9 +745,9 @@
     {
       "id": "body.tired-footing",
       "kind": "coefficient",
-      "claim": "How sure-footed a tired climber is, against a fresh one at the same pace (#190): tiredness makes the steps sloppy, and sloppy steps slip.",
+      "claim": "How sure-footed a tired climber is, against a rested one (#208): sloppy steps, their chance of slipping divided by it.",
       "status": "source only",
-      "value": 0.85,
+      "value": 0.7,
       "unit": "1",
       "fitted_to": ["route.icefall-lessons"],
       "fitted": "2026-11-08"
@@ -755,9 +755,9 @@
     {
       "id": "body.profoundly-tired-footing",
       "kind": "coefficient",
-      "claim": "How sure-footed a profoundly tired climber is, against a fresh one at the same pace (#190).",
+      "claim": "How sure-footed a profoundly tired climber is, against a rested one (#208): stumbling, their chance of slipping divided by it.",
       "status": "source only",
-      "value": 0.7,
+      "value": 0.5,
       "unit": "1",
       "fitted_to": ["route.icefall-lessons"],
       "fitted": "2026-11-08"
@@ -794,10 +794,7 @@
       "status": "source only",
       "value": 0.5,
       "unit": "1",
-      "fitted_to": [
-        "time.summit-to-south-col",
-        "time.warning-signs"
-      ],
+      "fitted_to": ["time.summit-to-south-col", "time.warning-signs"],
       "fitted": "2026-11-04"
     },
     {
@@ -822,10 +819,7 @@
       "status": "source only",
       "value": 0.5,
       "unit": "1",
-      "fitted_to": [
-        "time.south-col-departure",
-        "time.summit-hour-survivors"
-      ],
+      "fitted_to": ["time.south-col-departure", "time.summit-hour-survivors"],
       "fitted": "2026-11-04"
     },
     {
@@ -851,11 +845,7 @@
       "status": "source only",
       "value": 10,
       "unit": "h",
-      "fitted_to": [
-        "time.south-col-stay",
-        "route.south-col-altitude",
-        "medicine.death-zone"
-      ],
+      "fitted_to": ["time.south-col-stay", "route.south-col-altitude", "medicine.death-zone"],
       "fitted": "2026-11-04"
     },
     {
@@ -865,10 +855,7 @@
       "status": "source only",
       "value": 10,
       "unit": "%/%",
-      "fitted_to": [
-        "body.dehydration-threshold",
-        "body.dehydration-effect"
-      ],
+      "fitted_to": ["body.dehydration-threshold", "body.dehydration-effect"],
       "fitted": "2026-11-04"
     },
     {
@@ -878,9 +865,7 @@
       "status": "source only",
       "value": 18,
       "unit": "h",
-      "fitted_to": [
-        "body.acute-sleep-loss"
-      ],
+      "fitted_to": ["body.acute-sleep-loss"],
       "fitted": "2026-11-04"
     },
     {
@@ -890,10 +875,7 @@
       "status": "source only",
       "value": 17,
       "unit": "%/day",
-      "fitted_to": [
-        "body.carbohydrate-effect",
-        "body.energy-expenditure"
-      ],
+      "fitted_to": ["body.carbohydrate-effect", "body.energy-expenditure"],
       "fitted": "2026-11-04"
     },
     {
@@ -903,10 +885,7 @@
       "status": "source only",
       "value": 0.4,
       "unit": "day",
-      "fitted_to": [
-        "body.energy-intake-share",
-        "body.energy-expenditure"
-      ],
+      "fitted_to": ["body.energy-intake-share", "body.energy-expenditure"],
       "fitted": "2026-11-04"
     },
     {
@@ -924,9 +903,7 @@
       "id": "body.summit-saturation",
       "kind": "question",
       "question": "What is a climber's SpO2 above the Balcony without oxygen, on the South Summit and the summit? The model holds the Balcony's 50% up to the summit.",
-      "about": [
-        "body.saturation-balcony"
-      ]
+      "about": ["body.saturation-balcony"]
     },
     {
       "id": "body.pace-effort",
@@ -955,10 +932,7 @@
       "id": "body.death-zone-rest",
       "kind": "question",
       "question": "Does a climber resting above 8,000 m without oxygen grow weaker even at rest, and how fast? The model only stops their recovery there.",
-      "about": [
-        "medicine.death-zone",
-        "body.recovery-hours"
-      ]
+      "about": ["medicine.death-zone", "body.recovery-hours"]
     },
     {
       "id": "body.descent-effort",
@@ -975,10 +949,7 @@
       "id": "body.hunger",
       "kind": "question",
       "question": "How much does a day of eating too little at altitude cost a climber's endurance, and when do they feel it? The model's numbers come from one study of carbohydrate.",
-      "about": [
-        "body.hunger-cost",
-        "body.hungry-after"
-      ]
+      "about": ["body.hunger-cost", "body.hungry-after"]
     },
     {
       "id": "body.fitness",

@@ -17,26 +17,22 @@ export type AlongStretch = {
 };
 
 /**
- * How a climber keeps their feet (#190): each second they lose footing to what's under them and
- * get it back as far as they're sure-footed, and when it runs out they slip. All a second at a
- * sure-footedness of 1, a careful pace's more and a hurried or tired one's less (`Legs.sureness`).
+ * How a climber keeps their feet (#208): each metre they walk on blue ice, a ladder or steep snow
+ * has a chance of slipping, by what's under them, divided by how sure-footed they are: a careful
+ * pace's more, a hurried or tired one's less (`Legs.sureness`). Standing still never slips. The
+ * chances are a metre's at a sure-footedness of 1.
  */
 export interface FootingSettings {
-  /** Footing got back a second standing still, and on the move. */
-  readonly still: number;
-  readonly moving: number;
-  /** Footing lost a second walking blue ice on the level, and how much more for each unit of the
-   * sine of its slope, up or down. */
+  /** The chance a metre of blue ice on the level slips, and how much more it is for each unit of
+   * the sine of its slope, up or down. */
   readonly ice: number;
   readonly iceSteep: number;
   /** How hard blue ice holds what slides on it: snow's `friction` for ice. */
   readonly iceFriction: number;
   /** A ladder across a crevasse bounces under the steps on it: how much each metre walked on it
    * sets it going for each metre of its length, how much of it dies away a second, and how much
-   * footing a second each unit of it takes from a climber on it. */
-  readonly bounce: { readonly excite: number; readonly damp: number; readonly loss: number };
-  /** The footing a climber has back once they're up from a slip. */
-  readonly afterSlip: number;
+   * each unit of it adds to the chance a metre on it slips. */
+  readonly bounce: { readonly excite: number; readonly damp: number; readonly slip: number };
   /** A crampon not checked before setting off (#196): the seconds on the move after which it comes
    * loose, on the next ladder; how sure-footed a loose one leaves its climber, a share; and the
    * seconds a refit takes, standing. */
@@ -70,16 +66,16 @@ export interface SlopeSettings {
   /** The share of the climb's extra cost, a metre up a slope over a metre on the level, that a
    * stride pays: 1 as measured, less where the game eases the climb. */
   readonly uphillCostShare: number;
-  /** The footing a walking climber loses a second, by the steepness ahead, at a whole stride
-   * (#190): on snow, before what ice and their care do to it. */
-  readonly footingLoss: readonly SteepnessPoint[];
+  /** The chance a metre walked slips, by the steepness ahead (#208): on snow, before what ice
+   * and their care do to it. */
+  readonly slipChance: readonly SteepnessPoint[];
   /** A climber's speed along a ladder by its steepness the way they go, in m/s: across a
    * crevasse at 0°, up a wall at 90°, and down it at −90°. */
   readonly ladderSpeed: readonly SteepnessPoint[];
-  /** The footing a climber on a ladder loses a second, by its steepness the way they go: the
+  /** The chance a metre climbed on a ladder slips, by its steepness the way they go: the
    * rungs' own, before a crossing's bounce. */
-  readonly ladderFootingLoss: readonly SteepnessPoint[];
-  /** How a climber keeps their feet, gets them back, and loses them. */
+  readonly ladderSlipChance: readonly SteepnessPoint[];
+  /** How a climber keeps their feet, and loses them. */
   readonly footing: FootingSettings;
   /** The speed a falling body hits the ground at, in m/s, past which the fall kills: life size,
    * as the falls are. */
@@ -112,9 +108,9 @@ export class Slope {
   static readonly REST_SPEED = 0.01;
 
   readonly walking: Walking;
-  readonly footingLoss: SteepnessCurve;
+  readonly slipChance: SteepnessCurve;
   readonly ladderSpeed: SteepnessCurve;
-  readonly ladderFootingLoss: SteepnessCurve;
+  readonly ladderSlipChance: SteepnessCurve;
   readonly substepSeconds = SimulationClock.STEP_SECONDS / Slope.SUBSTEPS;
   /** The section's scale, which reads the altimeter. */
   readonly scale: SectionScale;
@@ -131,9 +127,9 @@ export class Slope {
     this.scale = new SectionScale(terrain, altitude);
     const { walkingCost, steepest, walkingPower, fastestWalk, uphillCostShare } = settings;
     this.walking = new Walking(walkingCost, steepest, walkingPower, fastestWalk, uphillCostShare);
-    this.footingLoss = new SteepnessCurve(settings.footingLoss);
+    this.slipChance = new SteepnessCurve(settings.slipChance);
     this.ladderSpeed = new SteepnessCurve(settings.ladderSpeed);
-    this.ladderFootingLoss = new SteepnessCurve(settings.ladderFootingLoss);
+    this.ladderSlipChance = new SteepnessCurve(settings.ladderSlipChance);
   }
 
   rope(id: string): Rope {

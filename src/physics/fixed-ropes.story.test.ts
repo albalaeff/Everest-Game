@@ -44,9 +44,19 @@ class Page {
     private readonly settings: SlopeSettings,
     layout: SlopeLayout,
     seed: number,
+    /** How sure-footed each climber is, where it isn't 1: a care no action sets here, with no
+     * body to set it. */
+    private readonly sureness: Readonly<Record<ClimberId, number>> = {},
   ) {
     this.physics = new SlopePhysics(settings);
     this.expedition = Expedition.start(TestMountain.scenario(seed, layout), [this.physics]);
+    Page.sure(this.physics, sureness);
+  }
+
+  private static sure(physics: SlopePhysics, sureness: Readonly<Record<ClimberId, number>>): void {
+    for (const [id, share] of Object.entries(sureness)) {
+      physics.sureness(id, share);
+    }
   }
 
   /** Plays until `over` says so, or ten minutes, with `watch` looking on after every step. */
@@ -70,6 +80,7 @@ class Page {
     const save = this.expedition.save();
     const physics = new SlopePhysics(this.settings);
     const expedition = Expedition.start(save.scenario, [physics]);
+    Page.sure(physics, this.sureness);
     new HeadlessRunner(expedition, new ActionLog(save.actions)).play(save.step);
     return { physics, expedition };
   }
@@ -174,14 +185,14 @@ describe("Two clients go up a line of fixed ropes on the jumar, one careless at 
     }
   }
 
-  /** The first off the old rope at the anchor, meaning to clip the next a few metres on. */
+  /** The first off the old rope at the anchor, meaning to clip the next five metres on. */
   class Careless extends Jumaring {
     protected past(climber: ClimberView): GameAction[] {
       if (climber.first === lower.id && climber.x > anchor.x) {
         return [unclip(this.id, "first")];
       }
       const onTheNext = climber.first === null && climber.y > anchor.y;
-      return onTheNext && distance(climber, anchor) > 3 ? [clip(this.id, "first")] : [];
+      return onTheNext && distance(climber, anchor) > 5 ? [clip(this.id, "first")] : [];
     }
   }
 
@@ -193,7 +204,18 @@ describe("Two clients go up a line of fixed ropes on the jumar, one careless at 
       ],
       [lower, upper],
     );
-    const page = new Page(TestMountain.FIRM, layout, 2026);
+    // The slope slips 0.15 a metre at a steady pace: Boris hurries, four times as likely to slip,
+    // and Pasang takes care, half as likely (#208).
+    const slope: SlopeSettings = {
+      ...TestMountain.CALM,
+      slipChance: [
+        [-45, 0.2],
+        [-25, 0],
+        [25, 0],
+        [45, 0.2],
+      ],
+    };
+    const page = new Page(slope, layout, 2026, { boris: 0.25, pasang: 2 });
     const players = [new Careful("pasang"), new Careless("boris")];
     const high = TestMountain.SLOPE.terrain.point(up(45));
     let pasangUnclipped = false;

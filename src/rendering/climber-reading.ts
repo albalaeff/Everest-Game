@@ -38,6 +38,9 @@ export class ClimberReading {
   private static readonly STEP_METRES = 0.05;
   /** How far up a wall's ladder from its middle the way that side of it starts. */
   private static readonly WALL_SIDE_METRES = 0.5;
+  /** The chance a metre of slipping at which the figure wobbles its hardest (#208): a hurried step
+   * on blue ice; a steady one wobbles a little, and a careful one hardly. */
+  private static readonly WOBBLY = 0.06;
 
   private facingNow: 1 | -1 = 1;
   private upward = true;
@@ -116,7 +119,7 @@ export class ClimberReading {
           ? 0
           : ClimberReading.toAnchor(this.slope.rope(view.first), drawn.jumar) / grown,
       ladder: along === null || heading === null ? null : this.footing(along, heading, at, wall),
-      footing: view.footing,
+      footing: 1 - Math.min(1, view.slipChance / ClimberReading.WOBBLY),
     };
   }
 
