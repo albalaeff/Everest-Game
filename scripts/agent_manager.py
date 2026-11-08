@@ -817,16 +817,13 @@ class AgentResult:
     thrashed: bool = False  # Claude Code stopped it, compacting again and again (#152)
 
     TYPES: ClassVar[tuple[str, ...]] = ('"type":"result"', '"type":"assistant"')
-<<<<<<< HEAD
     # Claude Code's words for a run it stopped for compacting again and again (#152): what it
     # read to begin filled the context again within 3 turns, 3 times in a row.
     THRASHED: ClassVar[Mapping[str, str]] = {
         "api_error": "autocompact_thrashing",
         "terminal_reason": "rapid_refill_breaker",
     }
-=======
     REFUSAL: ClassVar[int] = 120  # characters of a refused command in the done line
->>>>>>> 88f7ffa (A refused command is one line of the manager's done line (#8))
     READ: ClassVar[tuple[str, ...]] = (
         "input_tokens",
         "cache_creation_input_tokens",
