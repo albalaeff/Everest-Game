@@ -464,6 +464,30 @@ describe("ClimberPose", () => {
     }
   });
 
+  it("looks up the wall while it's above the head, and down onto its top once the head comes over it", () => {
+    const climbAt = (y: number): Pose => {
+      const climber = new ClimberPose();
+      climber.advance(5, state({ ladder: upAWall(y), travelled: y, moving: true }));
+      return climber.advance(FRAME, state({ ladder: upAWall(y), travelled: y, moving: true }));
+    };
+    // The wall is 6 m: low on it, its top is far over the head; near its top, the head is over it.
+    const low = climbAt(1);
+    const cresting = climbAt(5.4);
+    const head = (pose: Pose): number => pose.head.y;
+
+    expect(low.nod).toBeLessThan(-0.2);
+    expect(5.4 + head(cresting)).toBeGreaterThan(6.4);
+    expect(cresting.nod).toBeGreaterThan(0.15);
+    expect(cresting.lean).toBeGreaterThan(low.lean + 0.1);
+    // Going down, the climber looks down the wall, as before.
+    const down: LadderFooting = { ...upAWall(3), way: { x: 0, y: -1 } };
+    const descending = new ClimberPose();
+    descending.advance(5, state({ ladder: down, travelled: 0, moving: true }));
+    expect(descending.advance(FRAME, state({ ladder: down, moving: true })).nod).toBeGreaterThan(
+      0.3,
+    );
+  });
+
   it("holds the jumar in the near hand: on the rope within reach, the rope lifted to it beyond", () => {
     const within = { x: 0.45, y: 1 };
     const held = new ClimberPose().advance(5, state({ jumar: within }));
