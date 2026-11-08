@@ -58,6 +58,32 @@ export class Particle implements Point {
     this.ownY += y;
   }
 
+  /** How fast it's going into the ground it has gone into, over the last sub-step of `seconds`,
+   * in m/s: its speed toward the surface's inside, nought along it, as down a wall's face, and
+   * nought out of the ground. */
+  into(terrain: Terrain, seconds: number): number {
+    if (!terrain.holds(this)) {
+      return 0;
+    }
+    const surface = terrain.nearest(this);
+    const outX = surface.x - this.ownX;
+    const outY = surface.y - this.ownY;
+    const depth = Math.sqrt(outX * outX + outY * outY);
+    if (depth === 0) {
+      return 0;
+    }
+    const along = ((this.ownX - this.oldX) * outX + (this.ownY - this.oldY) * outY) / depth;
+    return Math.max(0, -along / seconds);
+  }
+
+  /** Puts it at a point, still: where a climber holding on has pulled themselves to. */
+  place(x: number, y: number): void {
+    this.ownX = x;
+    this.ownY = y;
+    this.oldX = x;
+    this.oldY = y;
+  }
+
   /**
    * Puts it back on the surface if it's gone into the ground, and lets friction take from its
    * slide over the surface what Coulomb's law gives: up to `friction` times the depth it was

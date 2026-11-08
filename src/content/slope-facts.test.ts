@@ -70,12 +70,12 @@ describe("SlopeFacts: the slope physics' numbers from the knowledge base", () =>
     expect(settings.steepest).toBe(range("route.icefall-steepness").max);
   });
 
-  it("slips nowhere up to the slip-free steepness, and on the steepest at the fitted chance sped up, so each metre slips as often as in life", () => {
+  it("loses no footing on snow up to the slip-free steepness, and on the steepest at the fitted loss sped up, so each metre costs as much as in life", () => {
     const steepest = range("route.icefall-steepness").max;
     const slipFree = number("technique.slip-free-steepness");
-    const chance = number("technique.slip-chance-steep") * speedUp;
+    const chance = number("technique.footing-loss-steep") * speedUp;
 
-    expect(settings.slipChance).toEqual([
+    expect(settings.footingLoss).toEqual([
       [-steepest, chance],
       [-slipFree, 0],
       [slipFree, 0],
@@ -85,15 +85,34 @@ describe("SlopeFacts: the slope physics' numbers from the knowledge base", () =>
     expect(slipFree).toBeLessThan(steepest);
   });
 
-  it("crosses, climbs and comes down a ladder at the fitted speeds, slipping at one chance, all sped up", () => {
+  it("crosses, climbs and comes down a ladder at the fitted speeds, losing footing at one rate, all sped up", () => {
     expect(settings.ladderSpeed).toEqual([
       [-SlopeFacts.WALL, number("technique.ladder-speed-down") * speedUp],
       [0, number("technique.ladder-speed-across") * speedUp],
       [SlopeFacts.WALL, number("technique.ladder-speed-up") * speedUp],
     ]);
-    expect(settings.ladderSlipChance).toEqual([
-      [0, number("technique.ladder-slip-chance") * speedUp],
+    expect(settings.ladderFootingLoss).toEqual([
+      [0, number("technique.ladder-footing-loss") * speedUp],
     ]);
+  });
+
+  it("loses and gets back footing a second sped up, as fast a metre as in life, and lands at life size", () => {
+    const { footing } = settings;
+
+    expect(footing.still).toBe(number("technique.footing-back-still") * speedUp);
+    expect(footing.moving).toBe(number("technique.footing-back-moving") * speedUp);
+    expect(footing.ice).toBe(number("technique.ice-footing-loss") * speedUp);
+    expect(footing.iceSteep).toBe(number("technique.ice-footing-steep"));
+    expect(footing.iceFriction).toBe(number("technique.ice-friction"));
+    expect(footing.iceFriction).toBeLessThan(settings.friction);
+    expect(footing.bounce).toEqual({
+      excite: number("technique.ladder-bounce-excite"),
+      damp: number("technique.ladder-bounce-damp") * speedUp,
+      loss: number("technique.ladder-bounce-loss") * speedUp,
+    });
+    expect(footing.afterSlip).toBe(number("technique.footing-after-slip"));
+    expect(settings.lethalLanding).toBe(number("technique.lethal-landing"));
+    expect(settings.climbBack).toBe(number("technique.climb-back-speed") * speedUp);
   });
 
   it("reaches, knocks and arrests by the records, at life size as the falls are", () => {

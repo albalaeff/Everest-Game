@@ -8,13 +8,18 @@ import { Slope } from "./slope";
 import { Steepness } from "./steepness";
 import type { Point, Way } from "./terrain";
 
-/** A fall, once it's over: the step it began on, how far down it went, and its top speed. */
+/** A fall, once it's over: the step it began on, how far down it went, and its top speed; how
+ * hard it hit the ground, if it fell through the air onto it, and whether a rope held them. */
 export type Fall = {
   readonly step: number;
   /** Metres from where it began down to its lowest point. */
   readonly drop: number;
   /** Metres a second. */
   readonly speed: number;
+  /** Metres a second, landing from the air: missing from the falls of saves before #190. */
+  readonly impact?: number;
+  /** Whether they were clipped to a rope as it ended, which held them. */
+  readonly held?: boolean;
 };
 
 /** A climber as the rest of the game sees them: the rendering, the rules above and the tests. */
@@ -45,11 +50,24 @@ export interface ClimberView {
   readonly ladder: string | null;
   /** Each fall that's over, in order. */
   readonly falls: readonly Fall[];
+  /** How sure their feet are, from 1, steady, to 0, when they slip (#190). */
+  readonly footing: number;
+  /** Hanging on their rope off the ground, where they can climb back up it to where they
+   * slipped. */
+  readonly hanging: boolean;
 }
 
 type CarabinerSave = { readonly rope: string; readonly slide: Slide };
 
 type OnLadderSave = { readonly ladder: string; readonly rung: number };
+
+/** Where a climber slipped from: a ladder's rung, or the ground `along` it where `ladder` is
+ * null. */
+type FromSave = {
+  readonly ladder: string | null;
+  readonly rung: number;
+  readonly along: number;
+};
 
 type FallingSave = {
   readonly step: number;
@@ -58,6 +76,10 @@ type FallingSave = {
   readonly speed: number;
   readonly grounded: boolean;
   readonly body: ParticleSave;
+  /** Missing from the saves of falls before #190, which nobody climbs back from. */
+  readonly from?: FromSave;
+  readonly impact?: number;
+  readonly holding?: boolean;
 };
 
 /** A climber as saves keep them. */
@@ -81,6 +103,9 @@ export type ClimberSave = {
   readonly falling: FallingSave | null;
   readonly falls: readonly Fall[];
   readonly dead: boolean;
+  /** Missing from the saves of builds before footing (#190): steady, and sure. */
+  readonly footing?: number;
+  readonly sureness?: number;
 };
 
 /** A cowstail's carabiner, or its jumar, on a rope: it runs along it, or grips it where it is. */
@@ -145,10 +170,15 @@ class OnLadder {
   }
 }
 
-/** A fall going on: the body, and what the fall's record will say. */
+/** A fall going on: the body, where it began, and what the fall's record will say. */
 class Falling {
   /** Whether the body touched the ground in the last sub-step. */
   grounded = false;
+  /** The hardest it has hit the ground, in m/s into it. */
+  impact = 0;
+  /** Whether the climber holds on where they hang, climbing back up their rope: gravity has
+   * them no more. */
+  holding = false;
   /** Where the body was when the step began. */
   private startX: number;
   private startY: number;
@@ -159,6 +189,7 @@ class Falling {
     private readonly top: number,
     private lowest: number,
     private speed: number,
+    readonly from: FromSave | null,
   ) {
     this.startX = body.x;
     this.startY = body.y;
@@ -171,14 +202,27 @@ class Falling {
       save.top,
       save.lowest,
       save.speed,
+      save.from ?? null,
     );
     falling.grounded = save.grounded;
+    falling.impact = save.impact ?? 0;
+    falling.holding = save.holding ?? false;
     return falling;
   }
 
   save(): FallingSave {
-    const { step, top, lowest, speed, grounded } = this;
-    return { step, top, lowest, speed, grounded, body: this.body.save() };
+    const { step, top, lowest, speed, grounded, impact, holding, from } = this;
+    return {
+      step,
+      top,
+      lowest,
+      speed,
+      grounded,
+      body: this.body.save(),
+      ...(from === null ? {} : { from }),
+      impact,
+      holding,
+    };
   }
 
   beginStep(): void {
@@ -201,8 +245,9 @@ class Falling {
     return this.grounded && moved < speed * step && this.body.speed(substep) < speed;
   }
 
-  record(): Fall {
-    return { step: this.step, drop: this.top - this.lowest, speed: this.speed };
+  record(held: boolean): Fall {
+    const { step, impact } = this;
+    return { step, drop: this.top - this.lowest, speed: this.speed, impact, held };
   }
 }
 
@@ -241,6 +286,10 @@ export class Climber {
     private falling: Falling | null,
     private readonly falls: Fall[],
     private killed: boolean,
+    /** How sure their feet are, from 1 to 0, when they slip; and how sure-footed the body makes
+     * them, at their pace and as tired as they are, a share. */
+    private footing: number,
+    private sureness: number,
   ) {}
 
   /** A climber standing at `along`, still, clipped to nothing, going at `technique`'s share of
@@ -261,6 +310,8 @@ export class Climber {
       null,
       [],
       false,
+      1,
+      1,
     );
   }
 
@@ -282,6 +333,8 @@ export class Climber {
       save.falling === null ? null : Falling.load(save.falling),
       [...save.falls],
       save.dead,
+      save.footing ?? 1,
+      save.sureness ?? 1,
     );
   }
 
@@ -301,6 +354,8 @@ export class Climber {
       falling: this.falling?.save() ?? null,
       falls: [...this.falls],
       dead: this.killed,
+      footing: this.footing,
+      sureness: this.sureness,
     };
   }
 
@@ -326,6 +381,8 @@ export class Climber {
       jumarHeld: this.jumarHeld,
       ladder: this.onLadder?.ladder.id ?? null,
       falls: [...this.falls],
+      footing: this.footing,
+      hanging: this.hangs(slope),
     };
   }
 
@@ -369,6 +426,14 @@ export class Climber {
     this.stride = share;
   }
 
+  /** Sets how sure-footed they are from now on: the share of their footing they get back. */
+  setSureness(share: number): void {
+    if (!(share >= 0)) {
+      throw new RangeError(`${this.id} can't be ${share} times as sure-footed`);
+    }
+    this.sureness = share;
+  }
+
   /**
    * Takes this step's steps, on their feet: on a ladder if they're on one or their way steps onto
    * one, and along the ground otherwise. Each goes as far as their ropes let them, and may slip.
@@ -376,14 +441,28 @@ export class Climber {
   walk(slope: Slope, moment: Moment): void {
     this.moving = false;
     this.exertion = 0;
-    if (this.falling !== null || this.killed || this.stride === 0) {
+    if (this.killed) {
       return;
     }
-    const onLadder = this.onLadder ?? this.ladderAhead(slope);
-    if (onLadder === null) {
-      this.walkGround(slope, moment);
-    } else {
-      this.climb(onLadder, slope, moment);
+    if (this.falling !== null) {
+      this.climbBack(this.falling, slope);
+      return;
+    }
+    if (this.stride > 0) {
+      const onLadder = this.onLadder ?? this.ladderAhead(slope);
+      if (onLadder === null) {
+        this.walkGround(slope, moment);
+      } else {
+        this.climb(onLadder, slope, moment);
+      }
+    }
+    this.steadyIfStill(slope);
+  }
+
+  /** On their feet and still, they steady themselves. */
+  private steadyIfStill(slope: Slope): void {
+    if (!this.moving && this.falling === null) {
+      this.steady(slope.settings.footing.still);
     }
   }
 
@@ -392,7 +471,7 @@ export class Climber {
   }
 
   integrate(slope: Slope): void {
-    if (this.falling !== null) {
+    if (this.falling !== null && !this.falling.holding) {
       this.falling.grounded = false;
       this.falling.body.integrate(slope.settings.gravity, slope.substepSeconds);
     }
@@ -415,9 +494,25 @@ export class Climber {
     }
   }
 
+  /** A falling body meets the ground, on snow or ice: it hits it at its speed into it, nought
+   * sliding along a slope or down a wall's face, and past the lethal landing, the fall kills them.
+   * Holding on as they climb back up, they're on their rope, not the ground. */
   land(slope: Slope): void {
-    if (this.falling?.body.land(slope.terrain, slope.settings.friction) === true) {
-      this.falling.grounded = true;
+    const { falling } = this;
+    if (falling === null || falling.holding) {
+      return;
+    }
+    const { body } = falling;
+    const impact = body.into(slope.terrain, slope.substepSeconds);
+    if (impact > falling.impact) {
+      falling.impact = impact;
+      if (impact >= slope.settings.lethalLanding) {
+        this.killed = true;
+        this.walking = "stop";
+      }
+    }
+    if (body.land(slope.terrain, slope.frictionAt(body))) {
+      falling.grounded = true;
     }
   }
 
@@ -441,9 +536,90 @@ export class Climber {
     const { falling } = this;
     const step = SimulationClock.STEP_SECONDS;
     if (falling?.resting(Slope.REST_SPEED, step, slope.substepSeconds) === true) {
-      this.falls.push(falling.record());
-      this.along = slope.terrain.nearest(falling.body).along;
-      this.falling = null;
+      const along = slope.terrain.nearest(falling.body).along;
+      if (this.standable(along, slope)) {
+        this.stand(falling, along, slope);
+      }
+    }
+  }
+
+  /** Whether a climber at rest at `along` could stand there: on ground no steeper than they
+   * walk, not against a wall's face, where only their rope holds them. */
+  private standable(along: number, slope: Slope): boolean {
+    const { terrain, walking } = slope;
+    const steepness = (way: Way): Steepness => {
+      const { x, y } = terrain.ahead(along, way);
+      return Steepness.ofWay(x, y);
+    };
+    const forward = steepness(1);
+    const back = steepness(-1);
+    const wall = (it: Steepness): boolean => walking.steeperUp(it) || walking.steeperDown(it);
+    return !(wall(forward) && wall(back));
+  }
+
+  /** Back on their feet after a fall, at `along`: shaken, their footing what it is after a slip. */
+  private stand(falling: Falling, along: number, slope: Slope): void {
+    this.falls.push(falling.record(this.carabiners.length > 0));
+    this.along = along;
+    this.falling = null;
+    this.footing = slope.settings.footing.afterSlip;
+  }
+
+  /** Whether they hang on their rope off the ground, to climb back up it to where they slipped:
+   * alive, clipped, and their body in the air, against a wall's face, or held where they've
+   * climbed to. */
+  private hangs(slope: Slope): boolean {
+    const { falling } = this;
+    if (falling === null || falling.from === null || this.killed || this.carabiners.length === 0) {
+      return false;
+    }
+    if (falling.holding || !falling.grounded) {
+      return true;
+    }
+    return !this.standable(slope.terrain.nearest(falling.body).along, slope);
+  }
+
+  /** Hanging on their rope, a key that points up climbs them back up it toward where they
+   * slipped, at the climb's speed: up a wall's face and over its lip, never through the ice, holding
+   * on where they are as they go. Back on that rung, or on ground they can stand on, they're on
+   * their feet, shaken. */
+  private climbBack(falling: Falling, slope: Slope): void {
+    const up = this.walking === "up" || this.walking.startsWith("up-");
+    const { from } = falling;
+    if (!up || !this.hangs(slope) || from === null || this.stride === 0) {
+      return;
+    }
+    const target =
+      from.ladder === null
+        ? slope.terrain.point(from.along)
+        : slope.ladder(from.ladder).point(from.rung);
+    const { body } = falling;
+    const x = target.x - body.x;
+    const y = target.y - body.y;
+    const away = Math.sqrt(x * x + y * y);
+    const step =
+      slope.settings.climbBack * this.stride * this.technique * SimulationClock.STEP_SECONDS;
+    falling.holding = true;
+    this.moving = true;
+    this.exertion = 1;
+    if (away <= step) {
+      if (from.ladder !== null) {
+        this.onLadder = new OnLadder(slope.ladder(from.ladder), from.rung);
+      }
+      this.stand(falling, from.along, slope);
+      return;
+    }
+    const next = { x: body.x + (x / away) * step, y: body.y + (y / away) * step };
+    const { terrain } = slope;
+    if (!terrain.holds(next)) {
+      body.place(next.x, next.y);
+      return;
+    }
+    // The ice is in the way: along its surface, up a wall's face, and on the ground at its top.
+    const surface = terrain.nearest(next);
+    body.place(surface.x, surface.y);
+    if (from.ladder === null && this.standable(surface.along, slope)) {
+      this.stand(falling, surface.along, slope);
     }
   }
 
@@ -484,7 +660,7 @@ export class Climber {
     if (way === 0 || slope.underLadder(this.along, way)) {
       return;
     }
-    const { terrain, walking, slipChance } = slope;
+    const { terrain, walking, footingLoss } = slope;
     const ahead = terrain.ahead(this.along, way);
     const steepness = Steepness.ofWay(ahead.x, ahead.y);
     const step = walking.step(steepness, this.stride);
@@ -502,8 +678,12 @@ export class Climber {
     if (this.ropesLet(terrain.point(along), slope)) {
       this.along = along;
       this.exertion = step.exertion;
-      const chance = (slipChance.at(steepness) * speed) / walking.step(steepness, 1).speed;
-      this.stepped(slope, moment, ahead, speed, chance);
+      const { footing } = slope.settings;
+      const ice = slope.onIce(along)
+        ? footing.ice * (1 + footing.iceSteep * Math.abs(steepness.sine))
+        : 0;
+      const loss = ((footingLoss.at(steepness) + ice) * speed) / walking.step(steepness, 1).speed;
+      this.stepped(slope, moment, ahead, speed, loss);
     }
   }
 
@@ -524,16 +704,17 @@ export class Climber {
     if (!this.ropesLet(ladder.point(next), slope)) {
       return;
     }
+    const { bounce } = slope.settings.footing;
+    ladder.shake(next - rung, bounce.excite);
+    const loss = slope.ladderFootingLoss.at(steepness) * share + bounce.loss * ladder.bounce;
     this.onLadder = next === end.rung ? null : new OnLadder(ladder, next);
     this.along = next === end.rung ? end.along : this.along;
     this.exertion = 1;
-    this.stepped(
-      slope,
-      moment,
-      ladder.ahead(way),
-      speed,
-      slope.ladderSlipChance.at(steepness) * share,
-    );
+    this.stepped(slope, moment, ladder.ahead(way), speed, loss, {
+      ladder: ladder.id,
+      rung: next,
+      along: this.along,
+    });
   }
 
   /** The ladder their way steps onto from where they stand, at its end there. */
@@ -550,15 +731,35 @@ export class Climber {
     );
   }
 
-  /** After a step `ahead` at `speed`: the carabiners follow, and the step may slip, at `chance`
-   * a second. */
-  private stepped(slope: Slope, moment: Moment, ahead: Point, speed: number, chance: number): void {
+  /** After a step `ahead` at `speed`, from `on` the rung it ended on, if any: the carabiners
+   * follow, and the step costs footing at `loss` a second and gives it back as far as they're
+   * sure-footed; with none left, it's a slip. */
+  private stepped(
+    slope: Slope,
+    moment: Moment,
+    ahead: Point,
+    speed: number,
+    loss: number,
+    on: FromSave | null = null,
+  ): void {
     this.moving = true;
     this.slide(slope);
-    const draw = chance * SimulationClock.STEP_SECONDS;
-    if (draw > 0 && moment.random.chance(draw)) {
-      this.fall(slope, ahead, speed, moment.step);
+    const { moving } = slope.settings.footing;
+    this.footing = Math.min(
+      1,
+      this.footing + (moving * this.sureness - loss) * SimulationClock.STEP_SECONDS,
+    );
+    // Only a step that costs footing can slip: one on safe ground never does.
+    if (this.footing <= 0 && loss > 0) {
+      this.footing = 0;
+      this.fall(slope, ahead, speed, moment.step, on);
     }
+    this.footing = Math.max(this.footing, 0);
+  }
+
+  /** Standing, their footing comes back at `rate` a second, as far as they're sure-footed. */
+  private steady(rate: number): void {
+    this.footing = Math.min(1, this.footing + rate * this.sureness * SimulationClock.STEP_SECONDS);
   }
 
   /** Whether a carabiner of theirs grips its rope: the jumar does, unless they're on their feet
@@ -603,14 +804,20 @@ export class Climber {
     const y = axe.y - body.y;
     const reached = y >= 0 && Math.sqrt(x * x + y * y) <= axeReach;
     if (reached && body.speed(slope.substepSeconds) <= arrestSpeed) {
-      this.falls.push(falling.record());
-      this.along = slope.terrain.nearest(body).along;
-      this.falling = null;
+      this.stand(falling, slope.terrain.nearest(body).along, slope);
     }
   }
 
-  /** Off their feet from where they stand, going `ahead` at `speed`: off a ladder, past it. */
-  private fall(slope: Slope, ahead: Point, speed: number, step: number): void {
+  /** Off their feet from where they stand, going `ahead` at `speed`: off a ladder, past it,
+   * from the rung `on` it they stood on, or from the ground; in the air if their feet weren't on
+   * it. */
+  private fall(
+    slope: Slope,
+    ahead: Point,
+    speed: number,
+    step: number,
+    on: FromSave | null = null,
+  ): void {
     const foot = this.where(slope);
     const seconds = slope.substepSeconds;
     const body = new Particle(
@@ -619,7 +826,12 @@ export class Climber {
       foot.x - ahead.x * speed * seconds,
       foot.y - ahead.y * speed * seconds,
     );
+    const from: FromSave =
+      on ??
+      (this.onLadder === null
+        ? { ladder: null, rung: 0, along: this.along }
+        : { ladder: this.onLadder.ladder.id, rung: this.onLadder.rung, along: this.along });
     this.onLadder = null;
-    this.falling = new Falling(body, step, foot.y, foot.y, speed);
+    this.falling = new Falling(body, step, foot.y, foot.y, speed, from);
   }
 }

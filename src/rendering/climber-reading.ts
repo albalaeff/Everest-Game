@@ -111,6 +111,7 @@ export class ClimberReading {
           ? 0
           : ClimberReading.toAnchor(this.slope.rope(view.first), drawn.jumar) / grown,
       ladder: along === null || heading === null ? null : this.footing(along, heading, at, wall),
+      footing: view.footing,
     };
   }
 

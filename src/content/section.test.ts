@@ -213,17 +213,22 @@ describe("Section: the Khumbu Icefall from content/route/icefall.json", () => {
     Expedition.start(section.scenario(1), [physics]);
     const snow = physics.terrain;
     const { trodden, ...file } = icefall.layout.snow;
-    const level = section.camps.map(({ from, to }) => ({
-      from: Math.max(from - trodden, 0),
-      to: Math.min(to + trodden, terrain.length),
-    }));
+    const level = [
+      ...section.camps.map(({ from, to }) => ({
+        from: Math.max(from - trodden, 0),
+        to: Math.min(to + trodden, terrain.length),
+      })),
+      ...icefall.layout.ice,
+    ];
     const lift = (x: number): number => snow.height(x) - terrain.height(x);
 
     expect(trodden).toBeGreaterThan(0);
     expect(section.layout.snow).toEqual({ ...file, level });
     for (const { from, to } of [...level, ...section.layout.ladders]) {
       for (const along of [from, (from + to) / 2, to]) {
-        expect(snow.point(along)).toEqual(terrain.point(along));
+        const [onSnow, onLine] = [snow.point(along), terrain.point(along)];
+        expect(onSnow.x).toBeCloseTo(onLine.x, 9);
+        expect(onSnow.y).toBeCloseTo(onLine.y, 9);
       }
     }
     // The climbers set off on it, as the line has them.
@@ -234,6 +239,30 @@ describe("Section: the Khumbu Icefall from content/route/icefall.json", () => {
     const open = Array.from({ length: 200 }, (_, index) => lift(64 + index * 0.12));
     expect(Math.max(...open) - Math.min(...open)).toBeGreaterThan(0.2);
     expect(Math.max(...open.map(Math.abs))).toBeLessThan(0.8);
+  });
+
+  it("bares blue ice where the file says, on walked ground, and down to the big crevasse's lip in the maze, where the rope runs (#190)", () => {
+    const { ice = [], ladders, ropes } = section.layout;
+    const big = ladders.find(({ id }) => id === "big-crevasse");
+
+    expect(ice).toEqual(icefall.layout.ice);
+    expect(ice.length).toBeGreaterThanOrEqual(3);
+    for (const { from, to } of ice) {
+      expect(partAt(from)).not.toBe("moraine");
+      expect(ladders.every((ladder) => to <= ladder.from || from >= ladder.to)).toBe(true);
+    }
+    // A slip there slides into the crevasse: the rope runs over all of it.
+    expect(ice.some(({ to }) => to === big?.from)).toBe(true);
+    const ramp = ice.find(({ to }) => to === big?.from) ?? { from: 0, to: 0 };
+    for (let along = ramp.from; along <= ramp.to; along += 0.5) {
+      expect(ropes.some((rope) => rope.from <= along && along <= rope.to)).toBe(true);
+    }
+  });
+
+  it("refuses ice off the ground", () => {
+    const layout = { ...icefall.layout, ice: [{ from: 680, to: 700 }] };
+
+    expect(() => new Section(knowledge, { ...icefall, layout })).toThrow("ice");
   });
 
   it("keeps its snow below the slip-free steepness where the climbers walk, so its hummocks slow a climber and never throw them", () => {

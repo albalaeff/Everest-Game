@@ -166,7 +166,7 @@
     {
       "id": "technique.walking-power",
       "kind": "coefficient",
-      "claim": "The power a fresh typical client at sea level, at a steady pace and carrying nothing, walks on, in watts for each kilogram they move: the body scales it by the capacity the altitude leaves, 60% at 5,000 m, and by the pack, and a step goes as fast as it pays for on the ground's gradient (technique.walking-cost-*). Fitted with the fastest walk and the ladder speeds so that a steady first crossing of the Icefall, drawn at 1/12 of its length (route.drawn-scale) with its walls and crevasses at life size, takes about 3.5 hours with the climb eased (technique.uphill-cost-share), the faster half of the 3–7 the sources give, by a climber who never stops at an anchor: 3.45.",
+      "claim": "The power a fresh typical client at sea level, at a steady pace and carrying nothing, walks on, in watts for each kilogram they move: the body scales it by the capacity the altitude leaves, 60% at 5,000 m, and by the pack, and a step goes as fast as it pays for on the ground's gradient (technique.walking-cost-*). Fitted with the fastest walk and the ladder speeds so that a steady first crossing of the Icefall, drawn at 1/12 of its length (route.drawn-scale) with its walls and crevasses at life size, takes about 3.8 hours with the climb eased (technique.uphill-cost-share), the faster half of the 3–7 the sources give, by a climber who never stops at an anchor but steadies themselves on blue ice and the long ladders (#190): 3.78.",
       "status": "source only",
       "value": 2.2,
       "unit": "W/kg",
@@ -184,7 +184,7 @@
     {
       "id": "technique.fastest-walk",
       "kind": "coefficient",
-      "claim": "The fastest a climber walks in crampons, in metres a second, whatever power they have to spare: down a slope and on the flat their footing holds them to it, so their steps take less of their power and tire them less. Fitted with the walking power and the ladder speeds so that the way down the Icefall takes about 2.5 hours, the 4 from Camp 2 to Base Camp shared between the Icefall and the Western Cwm as the way up's 5 and 3 are: 2.6, with the climb eased (technique.uphill-cost-share).",
+      "claim": "The fastest a climber walks in crampons, in metres a second, whatever power they have to spare: down a slope and on the flat their footing holds them to it, so their steps take less of their power and tire them less. Fitted with the walking power and the ladder speeds so that the way down the Icefall takes about 2.5 hours, the 4 from Camp 2 to Base Camp shared between the Icefall and the Western Cwm as the way up's 5 and 3 are: 2.9, with the climb eased (technique.uphill-cost-share) and the careful steps on ice and ladders (#190).",
       "status": "source only",
       "value": 0.7,
       "unit": "m/s",
@@ -201,7 +201,7 @@
     {
       "id": "technique.uphill-cost-share",
       "kind": "coefficient",
-      "claim": "The share of the climb's extra cost, a metre up a slope over a metre on the level (technique.walking-cost-*), that a stride pays in the game: a playability tuning, not a measurement, so that the slopes between the ladders don't crawl (#186). Up a slope a stride pays the level's cost and this share of the rest, so a slope never goes faster than the level, and the steeper it is the more the climb is eased: twice as fast up 20°. Fitted so that a careful typical client who never stops at an anchor crosses the Icefall in about 3.5 hours, the faster half of the 3–7 the sources give: 3.45, with the veteran at the shortest, 3, and the novice at the middle, 5. A player stops at every anchor to clip, so their own crossing is longer.",
+      "claim": "The share of the climb's extra cost, a metre up a slope over a metre on the level (technique.walking-cost-*), that a stride pays in the game: a playability tuning, not a measurement, so that the slopes between the ladders don't crawl (#186). Up a slope a stride pays the level's cost and this share of the rest, so a slope never goes faster than the level, and the steeper it is the more the climb is eased: twice as fast up 20°. Fitted so that a careful typical client who never stops at an anchor crosses the Icefall in about 3.8 hours, the faster half of the 3–7 the sources give: 3.78, with the veteran at the shortest, 3, and the novice at the middle, 5. A player stops at every anchor to clip, so their own crossing is longer.",
       "status": "source only",
       "value": 0.4,
       "unit": "1",
@@ -215,7 +215,7 @@
     {
       "id": "technique.slip-free-steepness",
       "kind": "coefficient",
-      "claim": "Up to this steepness a climber in crampons doesn't slip; steeper, the chance grows in a straight line to technique.slip-chance-steep at the steepest ground walked. Fitted to the Lhotse Face, about 30°, where a slip ends badly, and to the Icefall's 20° slopes, walked without a thought.",
+      "claim": "Up to this steepness snow costs a climber in crampons none of their footing (#190); steeper, the footing lost grows in a straight line to technique.footing-loss-steep at the steepest ground walked. Fitted to the Lhotse Face, about 30°, where a slip ends badly, and to the Icefall's 20° slopes, walked without a thought.",
       "status": "source only",
       "value": 30,
       "unit": "degrees",
@@ -223,14 +223,14 @@
       "fitted": "2026-11-05"
     },
     {
-      "id": "technique.slip-chance-steep",
+      "id": "technique.footing-loss-steep",
       "kind": "coefficient",
-      "claim": "The chance a climber slips in a second of walking the steepest ground walked without a ladder at a whole stride, scaled by their speed against that so that a slow climber slips as often for each metre. Fitted so that a few slips come on a long steep stretch, each held by the rope when the climber is clipped: the lesson is the rope, not the footing.",
+      "claim": "The footing a climber loses a second walking the steepest ground walked without a ladder, at a whole stride (#190): from technique.slip-free-steepness it grows in a straight line from none to this, and the climber gets it back as far as they're sure-footed (technique.footing-back-moving); with none left, they slip. Fitted so that a long steep stretch walked without a pause costs a slip, held by the rope when the climber is clipped: the lesson is the rope, not the footing.",
       "status": "source only",
-      "value": 0.02,
+      "value": 0.2,
       "unit": "1/s",
       "fitted_to": ["route.lhotse-face-hazards", "route.icefall-lessons"],
-      "fitted": "2026-11-05"
+      "fitted": "2026-11-08"
     },
     {
       "id": "technique.ladder-speed-across",
@@ -268,14 +268,124 @@
       "fitted": "2026-11-06"
     },
     {
-      "id": "technique.ladder-slip-chance",
+      "id": "technique.ladder-footing-loss",
       "kind": "coefficient",
-      "claim": "The chance a climber slips in a second on a ladder, whatever its angle, scaled by their stride. Fitted so that a slip comes on about one crossing of the Icefall in five: a scare on the rope for a climber clipped in, and the 2012 fall for one who isn't.",
+      "claim": "The footing a climber on a ladder loses a second, whatever its angle, at a whole stride (#190): the rungs under crampons, before a crossing's bounce (technique.ladder-bounce-loss). Fitted so that a ladder up or down a wall costs a fresh climber nothing they don't get back, and a tired one hurrying up it little.",
       "status": "source only",
-      "value": 0.004,
+      "value": 0.05,
       "unit": "1/s",
       "fitted_to": ["route.icefall-lessons", "route.icefall-ladders"],
-      "fitted": "2026-11-05"
+      "fitted": "2026-11-08"
+    },
+    {
+      "id": "technique.footing-back-still",
+      "kind": "coefficient",
+      "claim": "The footing a climber standing still gets back a second, at a steady pace's sure-footedness (#190): a pause steadies them. Fitted so that a few seconds' stop on blue ice or a bouncing ladder brings them back to steady, as the game's lesson goes: stop, steady yourself, go on.",
+      "status": "source only",
+      "value": 0.5,
+      "unit": "1/s",
+      "fitted_to": ["route.icefall-lessons"],
+      "fitted": "2026-11-08"
+    },
+    {
+      "id": "technique.footing-back-moving",
+      "kind": "coefficient",
+      "claim": "The footing a climber gets back a second on the move, at a steady pace's sure-footedness (#190): less than standing, and more at the rest step's care, less at the faster pace's (body.rest-step-footing, body.faster-footing). Fitted so that snow, a ladder up a wall and a short ladder across cost a careful climber nothing, and blue ice and a long ladder across do.",
+      "status": "source only",
+      "value": 0.1,
+      "unit": "1/s",
+      "fitted_to": ["route.icefall-lessons", "route.icefall-ladders-lashed"],
+      "fitted": "2026-11-08"
+    },
+    {
+      "id": "technique.ice-footing-loss",
+      "kind": "coefficient",
+      "claim": "The footing a climber walking bare blue ice on the level loses a second at a whole stride, in crampons (#190), on top of the steepness's: hard, polished glacier ice, which the Icefall shows in its steps and walls. Fitted so that a careful climber at the rest step crosses it, one at a steady pace slips after ten metres or so without a pause, and one hurrying slips in a few seconds.",
+      "status": "source only",
+      "value": 0.25,
+      "unit": "1/s",
+      "fitted_to": ["route.icefall-hazards", "route.icefall-lessons"],
+      "fitted": "2026-11-08"
+    },
+    {
+      "id": "technique.ice-footing-steep",
+      "kind": "coefficient",
+      "claim": "How much more footing blue ice takes for each unit of the sine of its slope, up or down (#190): a slope of ice is worse than a flat of it. Fitted so that a careful climber has to stop and steady themselves on a slope of ice twenty metres long.",
+      "status": "source only",
+      "value": 2,
+      "unit": "1",
+      "fitted_to": ["route.icefall-hazards", "route.icefall-steepness"],
+      "fitted": "2026-11-08"
+    },
+    {
+      "id": "technique.ice-friction",
+      "kind": "coefficient",
+      "claim": "How hard bare blue ice holds a body sliding on it, as technique.snow-friction is snow's (#190): a slip on ice slides on where one on snow would stop. Fitted so that a slip on a gentle slope of ice ends in the crevasse below it unless a rope holds the climber.",
+      "status": "source only",
+      "value": 0.1,
+      "unit": "1",
+      "fitted_to": ["technique.snow-friction", "route.icefall-hazards"],
+      "fitted": "2026-11-08"
+    },
+    {
+      "id": "technique.ladder-bounce-excite",
+      "kind": "coefficient",
+      "claim": "How much a ladder across a crevasse bounces for each metre walked on it and each metre of its length (#190): a long one, lashed from three or four, sinks in the middle and bounces. It dies away (technique.ladder-bounce-damp), and takes footing from whoever is on it (technique.ladder-bounce-loss). Fitted so that a steady pace across a ladder of three sections, about 8 m, slips halfway over, the rest step crosses it, and two on it at once bounce it twice as hard.",
+      "status": "source only",
+      "value": 0.5,
+      "unit": "1/m²",
+      "fitted_to": ["route.icefall-ladders-lashed", "route.icefall-lessons"],
+      "fitted": "2026-11-08"
+    },
+    {
+      "id": "technique.ladder-bounce-damp",
+      "kind": "coefficient",
+      "claim": "The share of a ladder's bounce that dies away a second once nobody steps on it (#190): a ladder settles in about three seconds. Fitted with technique.ladder-bounce-excite.",
+      "status": "source only",
+      "value": 0.33,
+      "unit": "1/s",
+      "fitted_to": ["route.icefall-ladders-lashed"],
+      "fitted": "2026-11-08"
+    },
+    {
+      "id": "technique.ladder-bounce-loss",
+      "kind": "coefficient",
+      "claim": "The footing a climber on a bouncing ladder loses a second for each unit of its bounce (#190). Fitted with technique.ladder-bounce-excite.",
+      "status": "source only",
+      "value": 0.05,
+      "unit": "1/s",
+      "fitted_to": ["route.icefall-ladders-lashed", "route.icefall-lessons"],
+      "fitted": "2026-11-08"
+    },
+    {
+      "id": "technique.footing-after-slip",
+      "kind": "coefficient",
+      "claim": "The footing a climber has back as they get up from a slip (#190), shaken: half. They steady themselves as after any loss of it.",
+      "status": "source only",
+      "value": 0.5,
+      "unit": "1",
+      "fitted_to": ["route.icefall-lessons"],
+      "fitted": "2026-11-08"
+    },
+    {
+      "id": "technique.lethal-landing",
+      "kind": "coefficient",
+      "claim": "The speed a falling climber hits the ice at, in metres a second, past which the fall kills them (#190): a drop of about 7 m through the air onto ice. Fitted so that a fall into one of the Icefall's crevasses, over 45 m deep in places (route.icefall-hazards), kills, as the fifteen-storey fall from a ladder near Camp 1 did in 2012 (accidents.2012-ladder-fall), and a slip down a few metres of a wall's foot doesn't.",
+      "status": "source only",
+      "value": 12,
+      "unit": "m/s",
+      "fitted_to": ["route.icefall-hazards", "route.icefall-lessons"],
+      "fitted": "2026-11-08"
+    },
+    {
+      "id": "technique.climb-back-speed",
+      "kind": "coefficient",
+      "claim": "How fast a fresh climber at sea level, hanging on a fixed rope after a slip off a ladder or over a lip, climbs back up to where they slipped, in metres a second, at a whole stride (#190): hand over hand on the rope and the ladder's rails, crampons on the ice. Fitted so that climbing back the metre or two a clipped slip leaves them below takes a minute or two of the mountain's time, and tires them.",
+      "status": "source only",
+      "value": 0.15,
+      "unit": "m/s",
+      "fitted_to": ["route.icefall-lessons", "route.icefall-ladders"],
+      "fitted": "2026-11-08"
     },
     {
       "id": "technique.experience-and-summits",
@@ -296,9 +406,9 @@
     {
       "id": "technique.novice-share",
       "kind": "coefficient",
-      "claim": "The share of the speed on a ladder and clipped to a fixed rope of a climber who has never used crampons, a jumar or a ladder, against one with alpine climbs behind them, whom the ladder speeds and the walking power are fitted to. Fitted so that such a climber, as fit as the typical client, takes about the middle of the hours the sources give a first crossing of the Icefall, 5, where a typical client who never stops at an anchor takes 3.5: 5.3.",
+      "claim": "The share of the speed on a ladder and clipped to a fixed rope of a climber who has never used crampons, a jumar or a ladder, against one with alpine climbs behind them, whom the ladder speeds and the walking power are fitted to. Fitted so that such a climber, as fit as the typical client, takes about the middle of the hours the sources give a first crossing of the Icefall, 5, where a typical client who never stops at an anchor takes 3.8: 5.0.",
       "status": "source only",
-      "value": 0.6,
+      "value": 0.7,
       "unit": "1",
       "fitted_to": ["time.base-camp-to-camp-1", "route.icefall-ladders"],
       "fitted": "2026-11-08"
@@ -308,7 +418,7 @@
       "kind": "coefficient",
       "claim": "The same share for a climber who has climbed a 7,000 m or an 8,000 m peak. Fitted so that such a climber, as fit as the typical client, crosses the Icefall the first time in about 3 hours, the shortest the sources give it, and summits more often: they take less time on the ropes, not fewer risks (technique.experience-and-summits).",
       "status": "source only",
-      "value": 1.2,
+      "value": 1.35,
       "unit": "1",
       "fitted_to": [
         "time.base-camp-to-camp-1",
@@ -371,8 +481,8 @@
     {
       "id": "technique.ladder-across",
       "kind": "question",
-      "question": "How does a climber cross a ladder laid over a crevasse in the Icefall: clipped to what, stepping how in crampons, and how fast? The game crosses at 0.6 m/s at sea level, less at altitude, and slips once in about 250 seconds on a ladder.",
-      "about": ["technique.ladder-speed-across", "technique.ladder-slip-chance"]
+      "question": "How does a climber cross a ladder laid over a crevasse in the Icefall: clipped to what, stepping how in crampons, and how fast? The game crosses at 0.6 m/s at sea level, less at altitude, and a long ladder bounces under a hurried step until the climber loses their footing.",
+      "about": ["technique.ladder-speed-across", "technique.ladder-footing-loss"]
     },
     {
       "id": "technique.ladder-up",
@@ -417,11 +527,11 @@
     {
       "id": "technique.slips-by-steepness",
       "kind": "question",
-      "question": "How often does a climber slip on snow and ice of each steepness, and on a ladder? The game has no slips up to 30°, and a chance rising to once in about 50 seconds of walking at 60°.",
+      "question": "How often does a climber slip on snow and ice of each steepness, and on a ladder, and how much does a careful pace help? The game takes no footing on snow up to 30°; at a steady pace a climber loses all of it in about 10 seconds of walking at 60°, and in about 20 seconds on level blue ice, while the rest step crosses both; a long ladder bouncing under a hurried step costs it in a few seconds (#190).",
       "about": [
         "technique.slip-free-steepness",
-        "technique.slip-chance-steep",
-        "technique.ladder-slip-chance"
+        "technique.footing-loss-steep",
+        "technique.ladder-footing-loss"
       ]
     },
     {

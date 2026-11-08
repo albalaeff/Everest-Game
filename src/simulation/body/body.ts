@@ -26,6 +26,9 @@ export interface Legs {
   /** Sets how far their strides go from now on, as a share of a fresh climber's at sea level with
    * nothing to carry: 0 stops them. */
   stride(id: ClimberId, share: number): void;
+  /** Sets how sure-footed they are from now on, as a share of a fresh climber's at a steady pace
+   * (#190). */
+  sureness(id: ClimberId, share: number): void;
 }
 
 /** The supplemental oxygen the climbers breathe: the oxygen system's (#23). */
@@ -123,6 +126,7 @@ export class Body implements Rule {
       condition.live(hours, moving, exertion, recovers, this.numbers, this.effort);
       const capacity = this.oxygen.capacity(this.oxygen.felt(altitude, flow, true));
       this.legs.stride(id, condition.stride(this.numbers, capacity));
+      this.legs.sureness(id, condition.sureness(this.numbers));
     }
   }
 

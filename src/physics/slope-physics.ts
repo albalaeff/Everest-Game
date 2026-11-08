@@ -7,14 +7,14 @@ import { Rope } from "./rope";
 import type { RopeSave } from "./rope";
 import type { SectionAltitude } from "./section-scale";
 import { Slope } from "./slope";
-import type { SlopeSettings } from "./slope";
+import type { AlongStretch, SlopeSettings } from "./slope";
 import { Snow } from "./snow";
 import type { SnowLayout } from "./snow";
 import { Terrain } from "./terrain";
 import type { Pair, Point } from "./terrain";
 
 export type { LadderLayout } from "./ladder";
-export type { SlopeSettings } from "./slope";
+export type { AlongStretch, FootingSettings, SlopeSettings } from "./slope";
 export type { SnowLayout } from "./snow";
 
 /** A rope as a level lays it: its anchors on the ground, by how far along it they are. */
@@ -36,10 +36,12 @@ export interface ClimberLayout {
 }
 
 /** A section of the route as a scenario starts it: its ground and the snow on it, if any, the
- * real altitude of its ends, its ropes and ladders, and who's on it. */
+ * stretches of it that are bare blue ice (#190), the real altitude of its ends, its ropes and
+ * ladders, and who's on it. */
 export interface SlopeLayout {
   readonly terrain: readonly Pair[];
   readonly snow?: SnowLayout;
+  readonly ice?: readonly AlongStretch[];
   readonly altitude: SectionAltitude;
   readonly ropes: readonly RopeLayout[];
   readonly ladders: readonly LadderLayout[];
@@ -51,6 +53,7 @@ export interface SlopeLayout {
 type SlopeSave = {
   readonly terrain: readonly Pair[];
   readonly snow?: SnowLayout;
+  readonly ice?: readonly AlongStretch[];
   readonly altitude: SectionAltitude;
   readonly ropes: readonly RopeSave[];
   readonly ladders: readonly LadderLayout[];
@@ -73,8 +76,8 @@ export class SlopePhysics implements Rule, HazardGround, Legs {
   readonly name = SlopePhysics.NAME;
 
   private slope: Slope | null = null;
-  /** The ground as the save has it, once loaded: its line, and the snow on it. */
-  private ground: Pick<SlopeSave, "terrain" | "snow"> = { terrain: [] };
+  /** The ground as the save has it, once loaded: its line, the snow on it, and its ice. */
+  private ground: Pick<SlopeSave, "terrain" | "snow" | "ice"> = { terrain: [] };
   private readonly onSlope = new Map<ClimberId, Climber>();
 
   constructor(private readonly settings: SlopeSettings) {}
@@ -103,10 +106,11 @@ export class SlopePhysics implements Rule, HazardGround, Legs {
       }
       return Climber.standing(id, onTheGround(along, id), technique).save();
     });
-    const { terrain: line, snow, altitude } = layout;
+    const { terrain: line, snow, ice, altitude } = layout;
     const save: SlopeSave = {
       terrain: line,
       ...(snow === undefined ? {} : { snow }),
+      ...(ice === undefined ? {} : { ice }),
       altitude,
       ropes,
       ladders,
@@ -147,6 +151,11 @@ export class SlopePhysics implements Rule, HazardGround, Legs {
     this.climberFor(id).setStride(share);
   }
 
+  /** Sets how sure-footed a climber is from now on: the share of their footing they get back. */
+  sureness(id: ClimberId, share: number): void {
+    this.climberFor(id).setSureness(share);
+  }
+
   /** How far along the ground a climber is: their feet, or the ground nearest their body. */
   along(id: ClimberId): number {
     return this.climberFor(id).alongNow(this.loaded);
@@ -184,6 +193,16 @@ export class SlopePhysics implements Rule, HazardGround, Legs {
     return [...this.loaded.ladders.keys()];
   }
 
+  /** How hard a ladder bounces now: nought at rest, and on one up a wall. */
+  ladderBounce(id: string): number {
+    return this.loaded.ladder(id).bounce;
+  }
+
+  /** The stretches of the ground that are bare blue ice, along it. */
+  get ice(): readonly AlongStretch[] {
+    return this.ground.ice ?? [];
+  }
+
   get terrain(): Terrain {
     return this.loaded.terrain;
   }
@@ -199,11 +218,13 @@ export class SlopePhysics implements Rule, HazardGround, Legs {
       save.altitude,
       new Map(ropes),
       new Map(ladders),
+      save.ice ?? [],
     );
     this.slope = slope;
     this.ground = {
       terrain: save.terrain,
       ...(save.snow === undefined ? {} : { snow: save.snow }),
+      ...(save.ice === undefined ? {} : { ice: save.ice }),
     };
     this.onSlope.clear();
     for (const climber of save.climbers) {

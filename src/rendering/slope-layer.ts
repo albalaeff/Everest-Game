@@ -171,6 +171,27 @@ export class SlopeLayer extends ParallaxLayer {
   };
   /** The streaks down the blocks: how wide, and how strong. */
   private static readonly BLOCK_STREAK = { width: 0.06, alpha: 0.7 };
+  /** Bare blue ice under the boots (#190): how deep its glossy skin is drawn, how wide its sheen
+   * along the top, and a glint every so many metres along it, so long. */
+  private static readonly ICE_SKIN = 0.35;
+  /** How finely the ice's skin follows the ground. */
+  private static readonly ICE_STEP = 0.25;
+  private static readonly ICE_SHEEN_METRES = 0.05;
+  private static readonly ICE_GLINT = { every: 0.9, length: 0.28, under: 0.09 };
+  /** A ladder across a crevasse bounces (#190): metres of it for each unit of the physics' bounce,
+   * how many times a second, and so many pieces its rails are drawn in while it does. */
+  private static readonly BOUNCE_METRES = 0.035;
+  private static readonly BOUNCE_HZ = 2.2;
+  /** The footing bar over the player's head (#190): shown below this much footing, so long and
+   * so thick, so far over the head, and amber below this footing, red below that. */
+  private static readonly FOOTING_BAR = {
+    shownBelow: 0.95,
+    length: 0.8,
+    thick: 0.09,
+    over: 0.35,
+    amber: 0.6,
+    red: 0.3,
+  };
   /** The streaks down a wall's bare ice: how wide, and how strong. */
   private static readonly STREAK_METRES = 0.035;
   private static readonly STREAK_ALPHA = 0.55;
@@ -205,6 +226,13 @@ export class SlopeLayer extends ParallaxLayer {
   private readonly bottom: number;
   private readonly cramponPoint: Point | null;
   private readonly veil = new Graphics();
+  /** The bare blue ice under the boots, and the bar of the player's footing over their head. */
+  private readonly iceSkin = new Graphics();
+  private readonly footingBar = new Graphics();
+  /** The bounce each ladder was last drawn at: a bouncing one is drawn every frame. */
+  private readonly bounced = new Map<string, number>();
+  /** The picture's seconds, which a ladder bounces on. */
+  private elapsed = 0;
   /** The blocks and towers of ice behind the route. */
   private readonly blocks = new Graphics();
   private readonly snow = new Graphics();
@@ -315,6 +343,7 @@ export class SlopeLayer extends ParallaxLayer {
     this.drawDetails(new SlopeDetails(terrain, seed));
     this.drawGlacier(new Glacier(terrain, seed + 4), bare, camps);
     this.drawIce(terrain, seed + 6);
+    this.drawIceSkin(terrain);
     // A crevasse's inside goes over the marks on its walls and its foot, so it's dark all the way
     // down, and a crack breaks the snow's crest.
     this.addChild(
@@ -327,6 +356,7 @@ export class SlopeLayer extends ParallaxLayer {
       this.wallEdges,
       this.track,
       this.moraine,
+      this.iceSkin,
       this.surface,
       this.crevasses,
       this.rims,
@@ -406,7 +436,13 @@ export class SlopeLayer extends ParallaxLayer {
       return particle;
     });
     this.glints.blendMode = "add";
-    this.addChild(this.driftContainer, this.glints, this.hazards.falling, this.mark);
+    this.addChild(
+      this.driftContainer,
+      this.glints,
+      this.hazards.falling,
+      this.mark,
+      this.footingBar,
+    );
   }
 
   /** How many climbers are drawn. */
@@ -462,8 +498,13 @@ export class SlopeLayer extends ParallaxLayer {
       }
     }
     this.markPlayer(camera, size);
+    this.showFooting(size);
+    this.elapsed = atmosphere.elapsed;
     for (const ladder of this.ladders) {
-      if (rescaled || ladder.bowed || ladder.loads.length > 0) {
+      const bounce = this.physics.ladderBounce(ladder.id);
+      const bouncing = bounce > 0 || (this.bounced.get(ladder.id) ?? 0) > 0;
+      if (rescaled || ladder.bowed || ladder.loads.length > 0 || bouncing) {
+        this.bounced.set(ladder.id, bounce);
         this.drawLadder(ladder, size);
       }
     }
@@ -490,6 +531,7 @@ export class SlopeLayer extends ParallaxLayer {
       this.track.tint = palette.track;
       this.walls.tint = palette.snowTint;
       this.wallEdges.tint = palette.snowTint;
+      this.iceSkin.tint = palette.snowTint;
       this.crevasses.tint = palette.crevasse;
       this.rims.tint = palette.snowTint;
       this.lips.tint = palette.snowTint;
@@ -522,6 +564,38 @@ export class SlopeLayer extends ParallaxLayer {
     }
   }
 
+  /** The bar of the player's footing over their head while it goes, the share of it they have
+   * left, white, then amber, then red as they're about to slip; none while they're steady, off
+   * their feet or dead. */
+  private showFooting(size: LeastSize): void {
+    const player = this.figures.find(({ figure }) => figure === this.playerFigure);
+    const view = player?.view ?? null;
+    const bar = SlopeLayer.FOOTING_BAR;
+    const shown = view !== null && !view.falling && !view.dead && view.footing < bar.shownBelow;
+    this.footingBar.visible = shown;
+    if (!shown || player === undefined) {
+      return;
+    }
+    const grown = size.climber(ClimberFigure.HEIGHT_METRES);
+    const { x, y } = player.figure.at;
+    const over = y + (ClimberFigure.HEIGHT_METRES + bar.over) * grown;
+    const length = bar.length * grown;
+    const thick = bar.thick * grown;
+    const left = x - length / 2;
+    const colour =
+      view.footing < bar.red
+        ? Palette.SLIPPING
+        : view.footing < bar.amber
+          ? Palette.UNSTEADY
+          : Palette.STEADY;
+    this.footingBar
+      .clear()
+      .rect(left - thick / 3, over - thick / 3, length + (thick * 2) / 3, thick * (5 / 3))
+      .fill(Palette.MARK_EDGE)
+      .rect(left, over, length * view.footing, thick)
+      .fill(colour);
+  }
+
   /** Where along each ladder across a crevasse each climber on it is drawn, this frame. */
   private load(): void {
     for (const ladder of this.ladders) {
@@ -552,7 +626,20 @@ export class SlopeLayer extends ParallaxLayer {
     if (ladder === null) {
       return 0;
     }
-    return ladder.bow.sag(ladder.loads, SlopeLayer.alongLadder(ladder, at));
+    const along = SlopeLayer.alongLadder(ladder, at);
+    return ladder.bow.sag(ladder.loads, along) + this.bouncing(ladder, along);
+  }
+
+  /** How far a ladder across a crevasse bounces down at `along` this frame, up and down with the
+   * physics' bounce, most in its middle and none at its ends (#190). */
+  private bouncing({ id, length, across }: DrawnLadder, along: number): number {
+    if (!across) {
+      return 0;
+    }
+    const bounce = this.physics.ladderBounce(id);
+    const wave = Math.sin(2 * Math.PI * SlopeLayer.BOUNCE_HZ * this.elapsed);
+    const shape = Math.sin((Math.PI * Math.min(Math.max(along, 0), length)) / (length || 1));
+    return bounce * SlopeLayer.BOUNCE_METRES * wave * shape;
   }
 
   private static alongLadder({ start, finish, length }: DrawnLadder, at: Point): number {
@@ -571,8 +658,10 @@ export class SlopeLayer extends ParallaxLayer {
     const railX = -alongY * SlopeLayer.LADDER_HALF_WIDTH;
     const railY = alongX * SlopeLayer.LADDER_HALF_WIDTH;
     const width = size.line(SlopeLayer.RAIL_METRES);
-    const bowed = across && loads.length > 0;
-    const sag = (along: number): number => (bowed ? bow.sag(loads, along) : 0);
+    const bounce = this.physics.ladderBounce(ladder.id);
+    const bowed = across && (loads.length > 0 || bounce > 0);
+    const sag = (along: number): number =>
+      bowed ? bow.sag(loads, along) + this.bouncing(ladder, along) : 0;
     const pieces = bowed ? SlopeLayer.BOW_PIECES : 1;
     graphics.clear();
     const rails = (): void => {
@@ -858,7 +947,8 @@ export class SlopeLayer extends ParallaxLayer {
       .fill({ color: atmosphere.palette.haze, alpha: veil });
   }
 
-  /** The snow's crest along the ground, from Crampon Point on: the moraine's rubble has none. */
+  /** The snow's crest along the ground, from Crampon Point on: the moraine's rubble has none,
+   * nor a wall's bare ice, nor the blue ice under the boots. */
   private drawSurface(size: LeastSize): void {
     const edge = this.cramponPoint;
     const [first, ...rest] =
@@ -867,12 +957,19 @@ export class SlopeLayer extends ParallaxLayer {
     if (first === undefined) {
       return;
     }
+    const { terrain } = this.physics;
+    const iceAcross = this.physics.ice.map(({ from, to }) => ({
+      left: terrain.point(from).x,
+      right: terrain.point(to).x,
+    }));
+    const onIce = (x: number): boolean =>
+      iceAcross.some(({ left, right }) => x > left && x < right);
     this.surface.moveTo(first.x, first.y);
     let before = first;
     for (const point of rest) {
       const steep =
         Math.abs(point.y - before.y) > SlopeLayer.CREST_STEEPEST * Math.abs(point.x - before.x);
-      if (steep) {
+      if (steep || onIce((point.x + before.x) / 2)) {
         this.surface.moveTo(point.x, point.y);
       } else {
         this.surface.lineTo(point.x, point.y);
@@ -947,6 +1044,48 @@ export class SlopeLayer extends ParallaxLayer {
     const { length, width } = SlopeLayer.PRINT;
     for (const { x, y } of details.track) {
       this.track.ellipse(x, y - width / 2, length / 2, width / 2).fill(0xffffff);
+    }
+  }
+
+  /** The bare blue ice under the boots (#190), in the day's colours for the hour to tint: a
+   * glossy skin over each stretch of it, a wet sheen along its top and glints along it, so the
+   * player reads it from afar as the ice that takes their footing. */
+  private drawIceSkin(terrain: Terrain): void {
+    const { flat, ICE_SKIN, ICE_GLINT } = SlopeLayer;
+    for (const { from, to } of this.physics.ice) {
+      const top: Point[] = [];
+      for (let along = from; along < to; along += SlopeLayer.ICE_STEP) {
+        top.push(terrain.point(along));
+      }
+      top.push(terrain.point(to));
+      const under = [...top].reverse().map(({ x, y }) => ({ x, y: y - ICE_SKIN }));
+      this.iceSkin.poly(flat([...top, ...under])).fill(Palette.BLUE_ICE);
+      const [first, ...rest] = top;
+      if (first !== undefined) {
+        this.iceSkin.moveTo(first.x, first.y);
+        for (const { x, y } of rest) {
+          this.iceSkin.lineTo(x, y);
+        }
+        this.iceSkin.stroke({
+          width: SlopeLayer.ICE_SHEEN_METRES,
+          color: Palette.ICE_SHEEN,
+          cap: "round",
+          join: "round",
+        });
+      }
+      for (let along = from + ICE_GLINT.every / 2; along < to; along += ICE_GLINT.every) {
+        const start = terrain.point(along);
+        const end = terrain.point(Math.min(along + ICE_GLINT.length, to));
+        this.iceSkin
+          .moveTo(start.x, start.y - ICE_GLINT.under)
+          .lineTo(end.x, end.y - ICE_GLINT.under * 1.6);
+      }
+      this.iceSkin.stroke({
+        width: SlopeLayer.ICE_SHEEN_METRES * 0.7,
+        color: Palette.ICE_SHEEN,
+        alpha: 0.7,
+        cap: "round",
+      });
     }
   }
 

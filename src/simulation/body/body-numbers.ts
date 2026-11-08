@@ -1,10 +1,12 @@
 import type { CurvePoint } from "../curve";
 import type { Pace } from "../game-action";
 
-/** What a pace asks of a climber, against the steady pace: its speed, and how fast it tires them. */
+/** What a pace asks of a climber, against the steady pace: its speed, how fast it tires them, and
+ * how sure-footed it leaves them (#190). */
 export interface PaceNumbers {
   readonly speed: number;
   readonly effort: number;
+  readonly footing: number;
 }
 
 /**
@@ -32,6 +34,8 @@ export interface BodyNumbers {
   /** The shares of their endurance spent at which a climber is tired, and profoundly tired. */
   readonly tired: number;
   readonly profoundlyTired: number;
+  /** How sure-footed a tired climber is, and a profoundly tired one, against a fresh one (#190). */
+  readonly footing: { readonly tired: number; readonly profoundlyTired: number };
   /** The litres of water a climber loses a day; the % of their body mass lost past which it costs
    * them; and the % of their endurance each further % costs. */
   readonly water: { readonly loss: number; readonly threshold: number; readonly cost: number };
