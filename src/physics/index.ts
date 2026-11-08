@@ -1,5 +1,7 @@
 // The slope physics, as the modules above it see it (docs/conventions/slope-physics.md).
 export type { ClimberView, Fall } from "./climber";
+export { Logbook } from "./logbook";
+export type { LogPage, LoggedStretch } from "./logbook";
 export { SectionScale } from "./section-scale";
 export type { SectionAltitude } from "./section-scale";
 export { SlopePhysics } from "./slope-physics";

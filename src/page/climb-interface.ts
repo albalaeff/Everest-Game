@@ -1,4 +1,5 @@
 import { Readings } from "../interface/readings";
+import type { SunClock } from "../interface/sun-clock";
 import type { BodyView, ClimberId, MountainClock, OxygenSystem, OxygenView } from "../simulation";
 import type { Body } from "../simulation/body/body";
 import type { SlopePhysics } from "../physics";
@@ -11,6 +12,9 @@ export class ClimbInterface {
   private readonly altitude: HTMLElement;
   private readonly pressure: HTMLElement;
   private readonly flow: HTMLElement;
+  /** The sun clock's readout, and its box, which its state colours (#194). */
+  private readonly sun: HTMLElement;
+  private readonly sunBox: HTMLElement;
   private readonly panel: HTMLElement;
   private readonly checkButton: HTMLElement;
   private readonly symptoms: HTMLElement;
@@ -24,6 +28,7 @@ export class ClimbInterface {
     private readonly oxygen: OxygenSystem,
     private readonly physics: SlopePhysics,
     private readonly player: ClimberId,
+    private readonly sunClock: SunClock,
   ) {
     const document = window.document;
     this.readouts = this.required(document, "#readouts");
@@ -31,6 +36,8 @@ export class ClimbInterface {
     this.altitude = this.required(document, "#readout-altitude");
     this.pressure = this.required(document, "#readout-pressure");
     this.flow = this.required(document, "#oxygen-flow");
+    this.sun = this.required(document, "#readout-sun");
+    this.sunBox = this.required(document, "#readout-sun-box");
     this.panel = this.required(document, "#self-check");
     this.checkButton = this.required(document, "[data-control='check-self']");
     this.symptoms = this.required(document, "#self-check-symptoms");
@@ -57,6 +64,27 @@ export class ClimbInterface {
     this.altitude.textContent = this.readings.altitude(altitude);
     this.updateOxygen(oxygen);
     this.updateSelfCheck(view);
+    this.updateSun();
+  }
+
+  /** When the sun comes onto the ice, or that it's on it: the HUD's own words, as its labels'. */
+  private updateSun(): void {
+    const reading = this.sunClock.at(this.mountainClock.timeOfDay);
+    const minutes = reading.state === "cold" ? String(reading.minutes).padStart(2, "0") : "";
+    const [text, short] =
+      reading.state === "cold"
+        ? [`in ${reading.hours} h ${minutes} min`, `${reading.hours} h ${minutes}`]
+        : reading.state === "warming"
+          ? ["Now · warming", "warming"]
+          : ["Now · warm", "warm"];
+    if (this.sun.textContent !== text) {
+      this.sun.textContent = text;
+      this.clock.dataset.sun = `Sun ${short}`;
+      this.clock.dataset.sunState = reading.state;
+    }
+    if (this.sunBox.dataset.state !== reading.state) {
+      this.sunBox.dataset.state = reading.state;
+    }
   }
 
   private updateOxygen(oxygen: OxygenView): void {

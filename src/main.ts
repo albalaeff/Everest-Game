@@ -1,6 +1,7 @@
 import campTexts from "../content/camps.json";
 import climberTexts from "../content/climber.json";
 import coachTexts from "../content/coach.json";
+import debriefTexts from "../content/debrief.json";
 import controlTexts from "../content/controls.json";
 import disclaimerTexts from "../content/disclaimer.json";
 import renderingTexts from "../content/rendering.json";
@@ -24,6 +25,7 @@ new Disclaimer(document, disclaimerTexts.en, new ExpertReview(facts)).show(() =>
     camps: new Texts(campTexts.en),
     climber: new Texts(climberTexts.en),
     coach: new Texts(coachTexts.en),
+    debrief: new Texts(debriefTexts.en),
   };
   void new GamePage(window, texts, facts, build).open();
 });

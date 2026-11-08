@@ -160,6 +160,13 @@ export class Section {
     this.length = knowledge.number(`route.${data.id}-length`);
   }
 
+  /** Where the logbook counts (#194): from the moraine's end, where the route first needs a
+   * rope, to the camp the section ends at. */
+  get logged(): { readonly from: number; readonly to: number } {
+    const [first] = this.parts;
+    return { from: first?.id === "moraine" ? first.to : 0, to: this.destination.from };
+  }
+
   /** The camp the section ends at: reaching its stretch is the arrival. */
   get destination(): Camp {
     const camp = this.camps.at(-1);

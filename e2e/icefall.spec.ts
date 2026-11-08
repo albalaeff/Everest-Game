@@ -112,6 +112,9 @@ test.describe("the arrival at Camp 1", () => {
     await expect(notice(page)).toContainText(/5,8\d\d m · 06:2\d/);
     await expect(notice(page)).toContainText(/Base Camp to Camp 1: 3 h 2\d min\./);
     await expect(notice(page)).toContainText("Climbers take 3 to 7 hours the first time.");
+    // The debrief (#194): out after the sun, its verdict, and a line for each thing it counts.
+    await expect(notice(page).locator('[data-text="verdict"]')).toContainText("late");
+    await expect(notice(page).locator("dl dt")).toHaveCount(8);
     await notice(page).getByRole("button", { name: "Continue" }).click();
     await expect(notice(page)).toBeHidden();
   }
