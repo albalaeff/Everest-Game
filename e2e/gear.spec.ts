@@ -115,7 +115,11 @@ for (const [held, viewport] of [
       await expect(
         screen.getByRole("checkbox", { name: "Both water bottles filled" }),
       ).toBeChecked();
-      await screen.getByRole("button", { name: "Set off" }).scrollIntoViewIfNeeded();
+      // Scrolled to its end, as a thumb does: Playwright leaves a button barely cut by the screen's
+      // edge where it is, and upright the screen is about a phone's height (PR #201).
+      await screen.evaluate((dialog) => {
+        dialog.scrollTop = dialog.scrollHeight;
+      });
       await expect(screen.getByRole("button", { name: "Set off" })).toBeInViewport({ ratio: 1 });
     });
   });
