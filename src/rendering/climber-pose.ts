@@ -317,6 +317,10 @@ export class ClimberPose {
     lift: 0.12,
     lean: 0.15,
   };
+  /** Up a wall, the head looks up it, and once it comes over the wall's top, down onto it, the body
+   * leaning over the edge to step off: the gaze up the wall and onto its top, how far over the top
+   * the head is when it's looking down onto it, and how far the climber leans over it there. */
+  private static readonly CREST = { up: -0.3, onto: 0.35, over: 0.45, lean: 0.4 };
   /** A fall: how high off the ground a body is in the air, how fast it tumbles there, and how
    * fast and how far the limbs flail. */
   private static readonly AIR_METRES = 0.4;
@@ -889,7 +893,12 @@ export class ClimberPose {
       up = Math.min(up, ClimberPose.reachAlong(hip, rise, farAnkle));
     }
     const pelvis = at(up, wall.pelvis.off);
-    const shoulder = ClimberPose.shoulderOf(pelvis, wall.lean);
+    const crest = ClimberPose.CREST;
+    // How far over the wall's top the head has come, going up: none going down.
+    const headUp = up + ClimberPose.SPINE * Math.cos(wall.lean) + ClimberPose.NECK;
+    const over = sign > 0 ? ClimberPose.smooth((headUp - top) / crest.over) : 0;
+    const lean = wall.lean + (crest.lean - wall.lean) * over;
+    const shoulder = ClimberPose.shoulderOf(pelvis, lean);
     const hands = this.holdingHands(
       state,
       shoulder,
@@ -901,8 +910,8 @@ export class ClimberPose {
     return {
       targets: {
         pelvis,
-        lean: wall.lean,
-        nod: sign > 0 ? -0.3 : 0.4,
+        lean,
+        nod: sign > 0 ? crest.up + (crest.onto - crest.up) * over : 0.4,
         ankles: [nearAnkle, farAnkle],
         soles: [0, 0],
         pivots: [ClimberPose.ON_A_WALL, ClimberPose.ON_A_WALL],
