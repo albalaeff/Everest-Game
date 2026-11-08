@@ -484,6 +484,8 @@ describe("ClimberPose", () => {
     expect(swing(0.2)).toBeGreaterThan(0.15);
     expect(swing(0.5)).toBeLessThan(swing(0.2));
     expect(reach(0.1)).toBeGreaterThan(reach(1) + 0.3);
+  });
+
   it("looks up the wall while it's above the head, and down onto its top once the head comes over it", () => {
     const climbAt = (y: number): Pose => {
       const climber = new ClimberPose();
