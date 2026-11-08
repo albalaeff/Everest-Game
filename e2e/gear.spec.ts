@@ -3,6 +3,7 @@ import type { Page } from "@playwright/test";
 
 import {
   SAVING,
+  SURE_FOOTED,
   choice,
   climbFrom,
   climberScreen,
@@ -60,6 +61,7 @@ test("a crampon not checked comes loose on the first ladder an hour out, and the
     player.along = 33;
     player.kit = { crampons: false, lamp: true, water: true };
     player.onTheMove = 120;
+    climb.random = [...SURE_FOOTED];
   });
 
   await expect

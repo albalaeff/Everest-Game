@@ -1,7 +1,7 @@
 import { expect, test } from "@playwright/test";
 import type { Page } from "@playwright/test";
 
-import { climberScreen, climbFrom, openTheGame, savedPlayer, seen } from "./climb";
+import { climberScreen, climbFrom, openTheGame, savedPlayer, seen, stage } from "./climb";
 
 /**
  * The end of the climb (#194): the sun clock on the HUD counts down to the sun on the ice from the
@@ -36,10 +36,12 @@ test.describe("on a screen of 630 by 360", () => {
   }) => {
     test.skip(hasTouch, "a PC's story");
     // On the ramp of blue ice down to the big crevasse's lip at 340 m along, unclipped, past the
-    // seracs that end at 338 m, whose chance would take the draw first.
+    // seracs that end at 338 m, whose chance would take the draw first; with no training event
+    // (#209), whose collapse among those seracs would add its line to the debrief.
     await climbFrom(page, (climb) => {
       savedPlayer(climb).along = 338.1;
       climb.random = [...SLIPS_NEXT];
+      stage(climb, null, null);
     });
     await expect.poll(async () => (await seen(page, "player"))?.x ?? 0).toBeGreaterThan(150.5);
 

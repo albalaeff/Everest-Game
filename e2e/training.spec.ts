@@ -1,8 +1,7 @@
 import { expect, test } from "@playwright/test";
 import type { Page } from "@playwright/test";
 
-import { SAVING, climbFrom, savedClimb, savedPlayer, seen } from "./climb";
-import type { SavedClimb } from "./climb";
+import { SAVING, SURE_FOOTED, climbFrom, savedClimb, savedPlayer, seen, stage } from "./climb";
 
 /**
  * The training events (#209), as a player meets them: a serac cracks just ahead and comes down
@@ -13,24 +12,6 @@ import type { SavedClimb } from "./climb";
 
 /** The coach's card on the page. */
 const coach = (page: Page) => page.locator("#coach");
-
-/** Stages the climb's events: a serac collapse on `from` to `to` metres along, cracking 3 m short
- * of it, and no ladder breaking but `ladder`, at `breaks` metres out from its near end. */
-function stage(
-  climb: SavedClimb,
-  collapse: { readonly from: number; readonly to: number } | null,
-  ladder: { readonly id: string; readonly breaks: number } | null,
-): void {
-  const hazards = climb.rules["objective-hazards"];
-  hazards.events =
-    collapse === null ? [] : [{ id: "serac-collapse", kind: "serac", ...collapse, lead: 3 }];
-  for (const laid of climb.rules["slope-physics"].ladders) {
-    delete laid.breaks;
-    if (ladder !== null && laid.id === ladder.id) {
-      laid.breaks = ladder.breaks;
-    }
-  }
-}
 
 test.describe("on a screen of 630 by 360", () => {
   test.use({ viewport: { width: 630, height: 360 } });
@@ -73,10 +54,12 @@ test.describe("on a screen of 630 by 360", () => {
     hasTouch,
   }) => {
     test.skip(hasTouch, "a PC's story");
-    // At the near lip of the big crevasse, its 8 m ladder staged to break a metre out.
+    // At the near lip of the big crevasse, its 8 m ladder staged to break a metre out, and no step
+    // on it slipping before it does.
     await climbFrom(page, (climb) => {
       savedPlayer(climb).along = 340;
       stage(climb, null, { id: "big-crevasse", breaks: 1 });
+      climb.random = [...SURE_FOOTED];
     });
     await expect.poll(async () => (await seen(page, "player"))?.x ?? 0).toBeGreaterThan(155);
     await expect
