@@ -57,6 +57,7 @@ This template was taken from [bateks/PersonalExchangeBot](https://github.com/bat
 - [PEB#440](https://github.com/bateks/PersonalExchangeBot/issues/440): tests in parallel, each worker on a database of its own, as many workers as cores and memory allow.
 - [PEB#564](https://github.com/bateks/PersonalExchangeBot/issues/564): a line in `.env` pins its setting, so `.env.example` is commented lines at the defaults, and the machine check says what a `.env` pins.
 - [PEB#556](https://github.com/bateks/PersonalExchangeBot/issues/556): CLAUDE.md keeps what agents and sessions both obey; a session's start and close live in the skills.
+- [template#5](https://github.com/bateks/claude-workflow-template/issues/5), from [Everest#18](https://github.com/albalaeff/Everest-Game/issues/18): a job's log is a redirect `api` doesn't follow; `logs <job>` follows it, and `ci` names the failed jobs.
 
 ## The machine and the OS
 

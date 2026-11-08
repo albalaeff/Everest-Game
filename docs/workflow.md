@@ -72,7 +72,8 @@ An issue whose work builds on another's says so, and nobody starts it before tha
 `scripts/github.py` prints little on purpose (PEB#442): an agent reads every character again on each later reply. `api` answers in brief (an issue or PR as a headline, its link and labels; `--full` for the whole JSON, 22K characters for a PR), `pr`, `merge` and `close` say what they did in a line or a few, and `show <n> --new` prints only the comments since Claude's last. So:
 
 - a `POST` or `PATCH` that prints nothing through a filter for JSON keys has still gone through: read the command's raw output, and before repeating any POST list the latest issues (`api GET "issues?state=open&per_page=5&sort=created&direction=desc"`). A duplicate is closed with `api PATCH issues/<n>` and `{"state": "closed", "state_reason": "not_planned", "labels": ["duplicate"], "title": "Duplicate of #<m>"}`: dropping the `model:`/`effort:`/`priority:` labels stops the manager;
-- a script that posts several issues at once is the kind of batch an automatic permission mode refuses: one issue per call, each from a JSON file.
+- a script that posts several issues at once is the kind of batch an automatic permission mode refuses: one issue per call, each from a JSON file;
+- a red CI run is read with `ci <branch>`, which names each failed job with the command for its log, `logs <job>`: the whole log, to filter with `grep`. `api GET actions/jobs/<id>/logs` prints null, since GitHub answers it with a redirect `api` doesn't follow (template#5, from Everest#18).
 
 ### A review's findings as issues
 

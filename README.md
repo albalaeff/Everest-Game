@@ -263,7 +263,8 @@ CI also scans for what mustn't be in the repository:
 
 ### When CI fails
 
-`scripts/github.py logs <job>` prints a job's whole log, to filter with `grep`: the job's id is in `scripts/github.py api GET actions/runs/<run>/jobs`.
+`scripts/github.py ci <branch>` names each failed job with the command that prints its whole
+log, `scripts/github.py logs <job>`: filter it with `grep` (template#5).
 
 One failure isn't the change's:
 

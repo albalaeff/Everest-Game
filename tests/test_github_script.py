@@ -1197,6 +1197,30 @@ def test_ci_is_green_when_every_run_has_succeeded() -> None:
     assert not CiRuns(()).green
 
 
+def test_a_failed_run_names_its_failed_jobs_for_logs() -> None:
+    # template#5: a red run's log is `logs <job>`, and `ci` is where its job's id is found.
+    class JobsGitHub:
+        def __init__(self) -> None:
+            self.asked: list[str] = []
+
+        def call(self, method: str, path: str) -> object:
+            self.asked.append(path)
+            jobs = [
+                {"id": 1252, "name": "audit", "conclusion": "success"},
+                {"id": 1253, "name": "checks", "conclusion": "failure"},
+            ]
+            return {"jobs": jobs}
+
+    github = JobsGitHub()
+    failed = {**run("CI", "completed", "failure"), "id": 88}
+    green = {**run("Deploy", "completed", "success"), "id": 89}
+
+    lines = CiRuns((failed, green)).failed_jobs(github)  # type: ignore[arg-type]
+
+    assert lines == ["checks failed: scripts/github.py logs 1253"]
+    assert github.asked == ["actions/runs/88/jobs"]  # a green run's jobs aren't asked for
+
+
 @pytest.mark.parametrize(
     ("body", "ref", "issue_number", "labels"),
     [
