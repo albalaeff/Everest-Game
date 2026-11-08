@@ -35,22 +35,36 @@ async function height(page: Page, climber: string): Promise<number> {
 }
 
 /** The wait for a press to come back from the room: its step, and a frame of a browser starved of
- * them on CI, beside the other worker's (PR #158). */
-const PRESSING = { intervals: [3_000], timeout: 60_000 };
+ * them on CI, beside the other worker's (PR #158); and how many presses a clip may take. */
+const PRESSING = { timeout: 20_000 };
+const PRESSES = 3;
 
 /** Clips the second cowstail to the block's rope, by `clip`, pressed again while it hasn't held.
- * A press unclips a cowstail the page shows clipped, so each waits for the last to come back, and
- * none goes while the climber is off their feet. What the climber was doing says why it failed. */
+ * A press unclips a cowstail the page shows clipped, and on CI a press can take seconds to go
+ * through, so each press waits its whole wait for the last to come back before another goes:
+ * one read as unclipped while the last was still on its way would unclip it (#187). None goes
+ * while the climber is off their feet. What the climber was doing says why it failed. */
 async function clipToTheBlock(page: Page, climber: string, clip: () => Promise<void>) {
-  await expect
-    .poll(async () => {
-      const seenNow = await seen(page, climber);
-      if (seenNow?.second === null && !seenNow.falling) {
-        await clip();
-      }
-      return seenNow;
-    }, PRESSING)
-    .toMatchObject({ second: "block" });
+  for (let press = 0; press < PRESSES; press += 1) {
+    const before = await seen(page, climber);
+    if (before?.second === "block") {
+      return;
+    }
+    if (before?.second === null && !before.falling) {
+      await clip();
+    }
+    const clipped = await expect
+      .poll(async () => (await seen(page, climber))?.second, PRESSING)
+      .toBe("block")
+      .then(
+        () => true,
+        () => false,
+      );
+    if (clipped) {
+      return;
+    }
+  }
+  expect(await seen(page, climber)).toMatchObject({ second: "block" });
 }
 
 /** The PC's player: by the keys, Shift held for the faster pace the phone's full push gives, to

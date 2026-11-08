@@ -34,6 +34,9 @@ export interface SlopeSettings {
   readonly walkingPower: number;
   /** The fastest a climber walks, in m/s, whatever power they have to spare. */
   readonly fastestWalk: number;
+  /** The share of the climb's extra cost, a metre up a slope over a metre on the level, that a
+   * stride pays: 1 as measured, less where the game eases the climb. */
+  readonly uphillCostShare: number;
   /** The chance a walking climber slips, per second, by the steepness ahead. */
   readonly slipChance: readonly SteepnessPoint[];
   /** A climber's speed along a ladder by its steepness the way they go, in m/s: across a
@@ -81,8 +84,8 @@ export class Slope {
     readonly ladders: ReadonlyMap<string, Ladder>,
   ) {
     this.scale = new SectionScale(terrain, altitude);
-    const { walkingCost, steepest, walkingPower, fastestWalk } = settings;
-    this.walking = new Walking(walkingCost, steepest, walkingPower, fastestWalk);
+    const { walkingCost, steepest, walkingPower, fastestWalk, uphillCostShare } = settings;
+    this.walking = new Walking(walkingCost, steepest, walkingPower, fastestWalk, uphillCostShare);
     this.slipChance = new SteepnessCurve(settings.slipChance);
     this.ladderSpeed = new SteepnessCurve(settings.ladderSpeed);
     this.ladderSlipChance = new SteepnessCurve(settings.ladderSlipChance);

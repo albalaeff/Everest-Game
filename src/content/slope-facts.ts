@@ -10,7 +10,7 @@ import type { KnowledgeBase } from "./knowledge-base";
  * up, the Icefall's; a ladder, from down a wall to across to up one.
  *
  * The records are life's numbers. The mountain's clock runs faster than the route is drawn
- * (`time.compression` over `route.drawn-scale`, #167), so the climber walks and climbs that many
+ * (`time.compression` over `route.drawn-scale`), so the climber walks and climbs that many
  * times faster than in life over the drawn ground, and slips that many times more often a second,
  * as often a metre; a section takes its real hours by the clock. A fall, a knock and the reaches
  * are at life size, as the walls they happen on are drawn.
@@ -36,6 +36,7 @@ export class SlopeFacts {
       steepest,
       walkingPower: fast("walking-power"),
       fastestWalk: fast("fastest-walk"),
+      uphillCostShare: number("uphill-cost-share"),
       slipChance: [
         [-steepest, slip],
         [-slipFree, 0],
@@ -56,7 +57,7 @@ export class SlopeFacts {
 
   /** The cost of walking by gradient, as Minetti et al. measured it: down the steepest gradient
    * measured, down the least costly, on the level and up the steepest; and up the gradient past
-   * which the muscles work at their efficiency, where a metre of height costs what it does up the
+   * which the muscles work at their efficiency, where a metre of height costs what it costs up the
    * steepest. Walking derives the steeper ground's, up and down, from the steepest measured. */
   private static walkingCost(knowledge: KnowledgeBase): readonly GradientPoint[] {
     const number = (name: string): number => knowledge.number(`technique.walking-cost-${name}`);

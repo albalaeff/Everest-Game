@@ -19,16 +19,21 @@ export interface WalkingStep {
  * each metre of height costs what it costs there, up to the steepest ground walked, up and down.
  * A climber goes as fast as their stride's share of the walking power pays for, but no faster than
  * the fastest walk: up a slope the power holds them back, down one and on the flat their footing.
+ * Up a slope a stride pays the level's cost and a share of the climb's extra over it: all of it
+ * as measured, less where the game eases the climb, so a slope never goes faster than the level.
  */
 export class Walking {
   private readonly cost: Curve;
   private readonly steepest: number;
+  /** What a metre costs on the level. */
+  private readonly level: number;
 
   constructor(
     measured: readonly GradientPoint[],
     steepest: number,
     private readonly power: number,
     private readonly fastest: number,
+    private readonly uphillCostShare = 1,
   ) {
     const points = measured.map(([gradient, cost]) => {
       const point: CurvePoint = [Steepness.ofGradient(gradient).sine, cost];
@@ -48,11 +53,17 @@ export class Walking {
     if (!(power > 0 && fastest > 0)) {
       throw new RangeError("Walking needs a power and a fastest walk");
     }
+    if (!(uphillCostShare > 0 && uphillCostShare <= 1)) {
+      throw new RangeError(
+        "Walking pays a share of the climb's extra cost, above nought and up to all of it",
+      );
+    }
     this.cost = new Curve([
       ...(first[0] > -this.steepest ? [Walking.byHeight(first, -this.steepest)] : []),
       ...points,
       ...(last[0] < this.steepest ? [Walking.byHeight(last, this.steepest)] : []),
     ]);
+    this.level = this.cost.at(0);
   }
 
   /** The cost at `sine` of a metre of height costing what it does at `point`. */
@@ -63,11 +74,18 @@ export class Walking {
   /** How fast a climber walks `steepness` at `stride` of a whole stride's power, and what of it
    * that takes. */
   step(steepness: Steepness, stride: number): WalkingStep {
-    const bought = (stride * this.power) / this.cost.at(steepness.sine);
+    const bought = (stride * this.power) / this.costAt(steepness.sine);
     if (bought <= this.fastest) {
       return { speed: bought, exertion: 1 };
     }
     return { speed: this.fastest, exertion: this.fastest / bought };
+  }
+
+  /** What a metre costs at `sine`: up a slope, the level's and the share paid of the climb's extra
+   * over it; as measured on the level and down. */
+  private costAt(sine: number): number {
+    const cost = this.cost.at(sine);
+    return sine > 0 ? this.level + (cost - this.level) * this.uphillCostShare : cost;
   }
 
   /** Whether it's steeper up than anyone walks. */

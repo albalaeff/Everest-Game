@@ -156,6 +156,10 @@ export class SlopeLayer extends ParallaxLayer {
     saddle: { min: -1.5, max: 0.4 },
   };
   private static readonly BLOCK_REACH = 2.5;
+  /** How far under the route's surface the blocks behind it, and their shaded faces, go: the
+   * glacier in front hides the rest, which a phone would fill for nothing each frame. */
+  private static readonly BLOCK_FOOT = 2;
+  private static readonly BLOCK_SHADE_FOOT = 14;
   /** How far into the air's haze the blocks behind the route stand: the route reads first. */
   private static readonly BLOCK_HAZE = 0.35;
   private static readonly BLOCKS_IN: Readonly<Record<string, number>> = {
@@ -900,10 +904,14 @@ export class SlopeLayer extends ParallaxLayer {
    * shade just under its surface. */
   private drawSnow(body: IceBody): void {
     const { ground, bottom } = this;
-    const left = ground[0]?.x ?? 0;
-    const right = ground.at(-1)?.x ?? 0;
-    const outline = ground.flatMap(({ x, y }) => [x, y]);
-    this.snow.poly([left, bottom, ...outline, right, bottom]).fill(Palette.glacier(Infinity));
+    // Under the deepest layer, the darkest ice down to the fill's foot: each pixel of the ground
+    // is filled once, by its cap, its layer or this.
+    const deepest = body.edges.at(-1) ?? [];
+    const left = deepest[0]?.x ?? 0;
+    const right = deepest.at(-1)?.x ?? 0;
+    this.snow
+      .poly([...SlopeLayer.flat(deepest), right, bottom, left, bottom])
+      .fill(Palette.glacier(Infinity));
     for (const band of body.bands) {
       this.snow.poly(SlopeLayer.flat(band.outline)).fill(Palette.glacier(band.depth));
     }
@@ -964,12 +972,16 @@ export class SlopeLayer extends ParallaxLayer {
       scale: (x) => stretches.find((part) => x >= part.left && x < part.right)?.size ?? 0,
       seed,
     });
-    const { bottom } = this;
-    const outline = towers.outline;
+    const { outline } = towers;
     const first = outline[0]?.x ?? left;
     const last = outline.at(-1)?.x ?? right;
-    this.blocks.poly([first, bottom, ...flat(outline), last, bottom]).fill(Palette.BLOCK);
-    for (const face of towers.shades(-1, surface.highest(left, right) - bottom)) {
+    const foot = (x: number): Point => ({ x, y: surface.height(x) - SlopeLayer.BLOCK_FOOT });
+    const under = surface.points
+      .filter(({ x }) => x > first && x < last)
+      .map(({ x }) => foot(x))
+      .reverse();
+    this.blocks.poly(flat([...outline, foot(last), ...under, foot(first)])).fill(Palette.BLOCK);
+    for (const face of towers.shades(-1, SlopeLayer.BLOCK_SHADE_FOOT)) {
       this.blocks.poly(flat(face)).fill(Palette.BLOCK_SHADE);
     }
     for (const { top, foot } of towers.flutings) {
