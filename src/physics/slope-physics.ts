@@ -193,6 +193,13 @@ export class SlopePhysics implements Rule, HazardGround, Legs {
     return [...this.loaded.ladders.keys()];
   }
 
+  /** The rope nearest a climber's feet within a cowstail's reach, or none: what a clip would
+   * take. */
+  ropeWithin(id: ClimberId): string | null {
+    const { x, y } = this.climber(id);
+    return this.loaded.ropeWithin({ x, y })?.rope.id ?? null;
+  }
+
   /** How hard a ladder bounces now: nought at rest, and on one up a wall. */
   ladderBounce(id: string): number {
     return this.loaded.ladder(id).bounce;
