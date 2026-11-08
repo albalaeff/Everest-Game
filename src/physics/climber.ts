@@ -22,6 +22,14 @@ export type Fall = {
   readonly held?: boolean;
 };
 
+/** What a climber checked of their kit before setting off (#196): their crampons fitted and
+ * strapped, fresh batteries in their headlamp, their water bottles filled. */
+export type Kit = {
+  readonly crampons: boolean;
+  readonly lamp: boolean;
+  readonly water: boolean;
+};
+
 /** A climber as the rest of the game sees them: the rendering, the rules above and the tests. */
 export interface ClimberView {
   readonly x: number;
@@ -55,6 +63,11 @@ export interface ClimberView {
   /** Hanging on their rope off the ground, where they can climb back up it to where they
    * slipped. */
   readonly hanging: boolean;
+  /** What they checked of their kit; whether a crampon has come loose, and whether they're
+   * refitting it (#196). */
+  readonly kit: Kit;
+  readonly cramponLoose: boolean;
+  readonly refitting: boolean;
 }
 
 type CarabinerSave = { readonly rope: string; readonly slide: Slide };
@@ -106,6 +119,12 @@ export type ClimberSave = {
   /** Missing from the saves of builds before footing (#190): steady, and sure. */
   readonly footing?: number;
   readonly sureness?: number;
+  /** Missing from the saves of builds before the gear check (#196): all of it checked, and
+   * nothing loose. */
+  readonly kit?: Kit;
+  readonly cramponLoose?: boolean;
+  readonly refitting?: number;
+  readonly onTheMove?: number;
 };
 
 /** A cowstail's carabiner, or its jumar, on a rope: it runs along it, or grips it where it is. */
@@ -290,11 +309,25 @@ export class Climber {
      * them, at their pace and as tired as they are, a share. */
     private footing: number,
     private sureness: number,
+    private readonly kit: Kit,
+    /** Whether a crampon has come loose; the seconds of a refit left; and the seconds they've
+     * been on the move. */
+    private cramponLoose: boolean,
+    private refitting: number,
+    private onTheMove: number,
   ) {}
 
+  /** Everything checked. */
+  static readonly CHECKED: Kit = { crampons: true, lamp: true, water: true };
+
   /** A climber standing at `along`, still, clipped to nothing, going at `technique`'s share of
-   * the speed on ladders and ropes. */
-  static standing(id: ClimberId, along: number, technique: number): Climber {
+   * the speed on ladders and ropes, with what they checked of their `kit`. */
+  static standing(
+    id: ClimberId,
+    along: number,
+    technique: number,
+    kit: Kit = Climber.CHECKED,
+  ): Climber {
     return new Climber(
       id,
       technique,
@@ -312,6 +345,10 @@ export class Climber {
       false,
       1,
       1,
+      kit,
+      false,
+      0,
+      0,
     );
   }
 
@@ -335,6 +372,10 @@ export class Climber {
       save.dead,
       save.footing ?? 1,
       save.sureness ?? 1,
+      save.kit ?? Climber.CHECKED,
+      save.cramponLoose ?? false,
+      save.refitting ?? 0,
+      save.onTheMove ?? 0,
     );
   }
 
@@ -356,6 +397,10 @@ export class Climber {
       dead: this.killed,
       footing: this.footing,
       sureness: this.sureness,
+      kit: this.kit,
+      cramponLoose: this.cramponLoose,
+      refitting: this.refitting,
+      onTheMove: this.onTheMove,
     };
   }
 
@@ -383,6 +428,9 @@ export class Climber {
       falls: [...this.falls],
       footing: this.footing,
       hanging: this.hangs(slope),
+      kit: this.kit,
+      cramponLoose: this.cramponLoose,
+      refitting: this.refitting > 0,
     };
   }
 
@@ -414,6 +462,17 @@ export class Climber {
     }
     if (action.kind === "tool" && action.tool === "ice-axe") {
       this.arrest(action, slope);
+    }
+    // Their crampons, on their feet on the ground with one loose: they kneel to refit it.
+    if (
+      action.kind === "tool" &&
+      action.tool === "crampons" &&
+      this.cramponLoose &&
+      this.falling === null &&
+      this.onLadder === null &&
+      this.refitting <= 0
+    ) {
+      this.refitting = slope.settings.footing.crampon.refit;
     }
   }
 
@@ -448,6 +507,15 @@ export class Climber {
       this.climbBack(this.falling, slope);
       return;
     }
+    if (this.refitting > 0) {
+      // Kneeling to refit a crampon: no step till it's on, and steady while they're down.
+      this.refitting = Math.max(0, this.refitting - SimulationClock.STEP_SECONDS);
+      if (this.refitting === 0) {
+        this.cramponLoose = false;
+      }
+      this.steadyIfStill(slope);
+      return;
+    }
     if (this.stride > 0) {
       const onLadder = this.onLadder ?? this.ladderAhead(slope);
       if (onLadder === null) {
@@ -462,7 +530,7 @@ export class Climber {
   /** On their feet and still, they steady themselves. */
   private steadyIfStill(slope: Slope): void {
     if (!this.moving && this.falling === null) {
-      this.steady(slope.settings.footing.still);
+      this.steady(slope.settings.footing.still, slope);
     }
   }
 
@@ -704,7 +772,11 @@ export class Climber {
     if (!this.ropesLet(ladder.point(next), slope)) {
       return;
     }
-    const { bounce } = slope.settings.footing;
+    const { bounce, crampon } = slope.settings.footing;
+    // A crampon not checked comes loose on a ladder, once they've been on the move long enough.
+    if (!this.kit.crampons && !this.cramponLoose && this.onTheMove >= crampon.looseAfter) {
+      this.cramponLoose = true;
+    }
     ladder.shake(next - rung, bounce.excite);
     const loss = slope.ladderFootingLoss.at(steepness) * share + bounce.loss * ladder.bounce;
     this.onLadder = next === end.rung ? null : new OnLadder(ladder, next);
@@ -743,11 +815,12 @@ export class Climber {
     on: FromSave | null = null,
   ): void {
     this.moving = true;
+    this.onTheMove += SimulationClock.STEP_SECONDS;
     this.slide(slope);
     const { moving } = slope.settings.footing;
     this.footing = Math.min(
       1,
-      this.footing + (moving * this.sureness - loss) * SimulationClock.STEP_SECONDS,
+      this.footing + (moving * this.sure(slope) - loss) * SimulationClock.STEP_SECONDS,
     );
     // Only a step that costs footing can slip: one on safe ground never does.
     if (this.footing <= 0 && loss > 0) {
@@ -758,8 +831,16 @@ export class Climber {
   }
 
   /** Standing, their footing comes back at `rate` a second, as far as they're sure-footed. */
-  private steady(rate: number): void {
-    this.footing = Math.min(1, this.footing + rate * this.sureness * SimulationClock.STEP_SECONDS);
+  private steady(rate: number, slope: Slope): void {
+    this.footing = Math.min(
+      1,
+      this.footing + rate * this.sure(slope) * SimulationClock.STEP_SECONDS,
+    );
+  }
+
+  /** How sure-footed they are now: as the body makes them, and less on a loose crampon. */
+  private sure(slope: Slope): number {
+    return this.sureness * (this.cramponLoose ? slope.settings.footing.crampon.loose : 1);
   }
 
   /** Whether a carabiner of theirs grips its rope: the jumar does, unless they're on their feet

@@ -802,6 +802,13 @@
       ]
     },
     {
+      "id": "route.icefall-kit",
+      "kind": "fact",
+      "claim": "A climber's own kit for the Icefall includes steel 12-point crampons, a harness that fits over all their clothing, a headlamp with freshly installed batteries and spares, and two one-litre water bottles in insulated covers.",
+      "status": "source only",
+      "versions": [{"note": "Modern steel 12-point crampons with anti-balling plates; a harness that fits over all clothing with adjustable leg loops; a headlamp with freshly installed batteries plus spare batteries, rental headlamps including no spares; two one-litre hard-sided water bottles, with insulated parkas that fully enclose them.", "source": {"title": "Alpine Ascents: Mount Everest Expedition Gear List", "url": "https://www.alpineascents.com/climbs/mount-everest/gear-list/"}, "checked": "2026-11-08"}]
+    },
+    {
       "id": "route.icefall-parts",
       "kind": "fact",
       "claim": "From Base Camp the route crosses to Crampon Point, then climbs the lower Icefall, the Popcorn, the flat Football Field about halfway up and the steeper Upper Icefall, to the flat snow at its top that leads into the Western Cwm and on to Camp 1.",

@@ -24,6 +24,9 @@ const standing = (x: number, over: Partial<ClimberView> = {}): ClimberView => ({
   falls: [],
   footing: 1,
   hanging: false,
+  kit: { crampons: true, lamp: true, water: true },
+  cramponLoose: false,
+  refitting: false,
   ...over,
 });
 

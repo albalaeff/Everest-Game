@@ -763,6 +763,16 @@
       "fitted": "2026-11-08"
     },
     {
+      "id": "body.unchecked-water",
+      "kind": "coefficient",
+      "claim": "The litres of water a climber who didn't fill their bottles before setting off is short of from the start (#196): what two one-litre bottles would have given them on the way, less what they drank at Base Camp. Thirst comes sooner, and it tires them faster (body.dehydration-threshold).",
+      "status": "source only",
+      "value": 1,
+      "unit": "L",
+      "fitted_to": ["route.icefall-kit", "body.water-loss", "body.dehydration-threshold"],
+      "fitted": "2026-11-08"
+    },
+    {
       "id": "body.steady-endurance",
       "kind": "coefficient",
       "claim": "The hours on the move a fresh climber, rested, fed and watered, can keep up the steady pace before they're exhausted. Fitted to summit day: away from the South Col at about 22:00 and back by 12:00–14:00, 14–16 hours on the move after a short night, with little food or water, leaves a steady climber tired but able to go on, unless the summit came late.",

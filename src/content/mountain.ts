@@ -1,4 +1,5 @@
 import { Logbook, SlopePhysics } from "../physics";
+import type { Kit } from "../physics";
 import { Body, MountainClock, ObjectiveHazards, OxygenSystem } from "../simulation";
 import type { HazardKind, HazardOdds, HazardSettings, Rule, Scenario } from "../simulation";
 import type { KnowledgeBase } from "./knowledge-base";
@@ -43,10 +44,15 @@ export class Mountain {
   }
 
   /** A new expedition's scenario on the route, from its seed, with the player as their `answers`
-   * make them (#145), or as the route has them. */
-  scenario(seed: number, answers?: ClimberAnswers): Scenario {
+   * make them (#145), or as the route has them, and with what they checked of their `kit` before
+   * setting off (#196), or all of it. */
+  scenario(seed: number, answers?: ClimberAnswers, kit?: Kit): Scenario {
     const player = answers === undefined ? undefined : this.climbers.climber(answers);
-    const scenario = this.route.scenario(seed, player);
+    const scenario = this.route.scenario(
+      seed,
+      player,
+      kit === undefined ? undefined : { kit, unchecked: this.knowledge.number("body.unchecked-water") },
+    );
     const bodyFacts = new BodyFacts(this.knowledge);
     return {
       ...scenario,

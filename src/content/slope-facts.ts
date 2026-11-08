@@ -26,6 +26,9 @@ export class SlopeFacts {
     const number = (name: string): number => knowledge.number(`technique.${name}`);
     const speedUp = knowledge.number("time.compression") / knowledge.number("route.drawn-scale");
     const fast = (name: string): number => number(name) * speedUp;
+    // The mountain's minutes as seconds of play: the clock runs `time.compression` times faster.
+    const minutes = (name: string): number =>
+      (number(name) * 60) / knowledge.number("time.compression");
     const steepest = knowledge.range("route.icefall-steepness").max;
     const slipFree = number("slip-free-steepness");
     const slip = fast("footing-loss-steep");
@@ -62,6 +65,11 @@ export class SlopeFacts {
           loss: fast("ladder-bounce-loss"),
         },
         afterSlip: number("footing-after-slip"),
+        crampon: {
+          looseAfter: minutes("loose-crampon-after"),
+          loose: number("loose-crampon-footing"),
+          refit: minutes("crampon-refit"),
+        },
       },
       lethalLanding: number("lethal-landing"),
       climbBack: fast("climb-back-speed"),
