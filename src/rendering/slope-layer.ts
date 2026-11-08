@@ -765,8 +765,8 @@ export class SlopeLayer extends ParallaxLayer {
   }
 
   /** Each rope in view that moved, or is held, or hangs free while the wind blows: through the
-   * jumars in the climbers' hands, swaying on the gust. A rope out of view that would have been
-   * drawn is drawn once it's back in it. */
+   * jumars in the climbers' hands and the carabiners on their slings (#202), swaying on the gust. A
+   * rope out of view that would have been drawn is drawn once it's back in it. */
   private drawRopes(
     size: LeastSize,
     rescaled: boolean,
@@ -777,9 +777,12 @@ export class SlopeLayer extends ParallaxLayer {
     for (const rope of this.ropes) {
       rope.held.length = 0;
       for (const { figure } of this.figures) {
-        const { held } = figure;
+        const { held, carried } = figure;
         if (held !== null && figure.rope === rope.id) {
           rope.held.push(held);
+        }
+        if (carried !== null && figure.secondRope === rope.id) {
+          rope.held.push(carried);
         }
       }
       const due =

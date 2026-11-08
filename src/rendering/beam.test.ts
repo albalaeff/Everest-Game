@@ -50,4 +50,27 @@ describe("Beam", () => {
     expect(tipped.meets(steep)?.x).toBeLessThan(onFlat?.x ?? 0);
     expect(level.meets(flat)).toBeNull();
   });
+
+  it("lights a fan that stops at the ground: a wall ahead cuts it, open snow doesn't (#202)", () => {
+    const flat = (x: number): number => x * 0;
+    // A wall of ice 2 m ahead, 10 m high.
+    const wall = (x: number): number => (x >= 2 ? 10 : 0);
+
+    const open = level.fan(flat, 8);
+    const cut = level.fan(wall, 8);
+
+    expect(open).toHaveLength(10);
+    expect(open[0]).toEqual({ x: 0, y: 1.6 });
+    // The rays that don't meet the snow reach the cone's far end.
+    expect(Math.max(...open.map(({ x }) => x))).toBeCloseTo(6, 6);
+    for (const { x } of cut.slice(1)) {
+      expect(x).toBeCloseTo(2, 2);
+    }
+  });
+
+  it("lights no fan from a lamp under the ground", () => {
+    const over = (x: number): number => 2 + x * 0;
+
+    expect(level.fan(over, 8)).toEqual([]);
+  });
 });
