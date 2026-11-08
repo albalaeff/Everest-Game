@@ -49,6 +49,11 @@ the one `origin` points to.
                                                             what came of it goes there, and
                                                             the issue is closed
     uv run python scripts/github.py close 180               closes an issue or PR
+    uv run python scripts/github.py blocked 18 --by 17      #18 builds on #17:
+                                                            GitHub's own "blocked by", which
+                                                            `status` reads; nothing starts on
+                                                            #18 until #17 is closed
+                                                            (template#1)
     uv run python scripts/github.py cost 180                what the issue's work cost, in $
     uv run python scripts/github.py title 180 --estimate 40 [~$40] before its title (#390);
     uv run python scripts/github.py title 180 --done        [$62] [~$40] once it's done
@@ -544,8 +549,21 @@ class Dependencies:
         return replace(item, state=state, woken=woken, stale=False)
 
     def blockers(self, entry: Mapping[str, Any]) -> tuple[int, ...]:
-        """What `entry` builds on that's still open."""
-        return tuple(number for number in builds_on(entry) if self._open(number))
+        """What `entry` builds on that's still open: what its body and labels name, and what
+        GitHub's own "blocked by" does."""
+        named = {number for number in builds_on(entry) if self._open(number)}
+        related = {int(each["number"]) for each in self.related(entry) if each["state"] == "open"}
+        return tuple(sorted(named | related))
+
+    def related(self, entry: Mapping[str, Any]) -> list[Mapping[str, Any]]:
+        """The issues GitHub's own "blocked by" relates to `entry`, as its sidebar sets them,
+        or `blocked` does (template#1). Only an issue that has had one is asked: every issue
+        says how many in `issue_dependencies_summary`."""
+        summary = entry.get("issue_dependencies_summary") or {}
+        if "pull_request" in entry or not summary.get("total_blocked_by"):
+            return []
+        path = f"issues/{entry['number']}/dependencies/blocked_by?per_page=100"
+        return list(self.github.call("GET", path))
 
     def _open(self, number: int) -> bool:
         if self.open_now is not None:
@@ -559,15 +577,23 @@ class Dependencies:
         """What `entry` builds on that closed after Claude's last word on it. One that isn't
         there (a typo) is passed by."""
         last = next((c.get("created_at") for c in reversed(comments) if claude_s(c, me)), None)
-        woken = []
+        closed = {int(each["number"]): each.get("closed_at") for each in self.related(entry)}
         for number in builds_on(entry):
             found = self.github.call("GET", f"issues/{number}", missing_ok=True)
-            closed = (found or {}).get("closed_at")
-            if closed and (
-                not last or datetime.fromisoformat(str(closed)) > datetime.fromisoformat(str(last))
-            ):
-                woken.append(number)
-        return tuple(woken)
+            closed[number] = (found or {}).get("closed_at")
+        after = datetime.fromisoformat(str(last)) if last else None
+        return tuple(
+            number
+            for number, at in sorted(closed.items())
+            if at and (after is None or datetime.fromisoformat(str(at)) > after)
+        )
+
+
+def block(github: GitHub, number: int, by: int) -> str:
+    """Marks #`number` blocked by #`by`, as the sidebar does: GitHub takes the blocker's id."""
+    blocker = github.call("GET", f"issues/{by}")
+    github.call("POST", f"issues/{number}/dependencies/blocked_by", {"issue_id": blocker["id"]})
+    return f"#{number} waits on #{by}: no agent starts on it until #{by} is closed."
 
 
 KEYWORDS = r"\b(?:close[sd]?|fix(?:e[sd])?|resolve[sd]?)\s+#"  # GitHub's, before an issue
@@ -1785,6 +1811,11 @@ def main(argv: Sequence[str] | None = None) -> None:
     closing.add_argument(
         "--read", action="store_true", help="the replies since Claude's last comment are read"
     )
+    blocking = commands.add_parser(
+        "blocked", help="mark an issue blocked by another: nothing starts on it until it's closed"
+    )
+    blocking.add_argument("number", type=int)
+    blocking.add_argument("--by", type=int, required=True, help="the issue it builds on")
     costing = commands.add_parser("cost", help="what an issue's work cost, in dollars (#390)")
     costing.add_argument("number", type=int)
     titling = commands.add_parser("title", help="the cost prefixes on an issue's title (#390)")
@@ -1873,6 +1904,8 @@ def main(argv: Sequence[str] | None = None) -> None:
         print(ReleaseCut(github).cut())
     elif args.command == "close":
         print(IssueThread(github, args.number).close(read=args.read))
+    elif args.command == "blocked":
+        print(block(github, args.number, args.by))
     elif args.command == "cost":
         print(IssueWork(github, args.number).summary())
     elif args.command == "title":
