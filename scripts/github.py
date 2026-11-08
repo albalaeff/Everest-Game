@@ -49,6 +49,9 @@ the one `origin` points to.
                                                             what came of it goes there, and
                                                             the issue is closed
     uv run python scripts/github.py close 180               closes an issue or PR
+    uv run python scripts/github.py postpone 180 note.md    parks it (template#4): the note as
+                                                            a closing handoff, then the label
+                                                            postponed; a person takes it off
     uv run python scripts/github.py cost 180                what the issue's work cost, in $
     uv run python scripts/github.py title 180 --estimate 40 [~$40] before its title (#390);
     uv run python scripts/github.py title 180 --done        [$62] [~$40] once it's done
@@ -67,8 +70,8 @@ an agent of the session manager's with its power too, "_Claude Code agent (batek
 opus/xhigh)_" (#387), and the manager, merging a green PR itself, "_Claude Code agent
 manager (bateks)_" (#550); `status` tells them from the owner's by it, and from the other
 person's Claude's by the account.
-`comment` and `close` refuse while there's a reply since
-Claude's last comment, and show it: read it, act on it, then run it again with --read.
+`comment`, `postpone` and `close` refuse while there's a reply
+since Claude's last comment, and show it: read it, act on it, then run it again with --read.
 
 An issue is its author's, unless a `claude:<login>` label hands it to that login's Claude.
 One that waits for a person's answer or review carries `waiting:<login>` (#449). One that
@@ -1332,6 +1335,18 @@ class IssueThread:
         closed = self.github.call("PATCH", f"issues/{self.number}", {"state": "closed"})
         return Entry(closed).headline
 
+    def postpone(self, text: str, read: bool = False) -> str:
+        """Parks it (template#4: Everest#8's agent, with nothing to do, had no way to): `text`,
+        a closing handoff saying why, posted as `comment --handoff` posts one, then the label
+        `postponed`, so `status`, `handoffs` and the manager pass it by (`left_out`) until a
+        person takes it off. Refused while a reply waits unread, unless `read`. The comment's
+        link, and its headline."""
+        link = post_comment(self.github, self.number, text, read=read)
+        WaitingLabels(self.github).follow(self.number, text)
+        self.github.call("POST", f"issues/{self.number}/labels", {"labels": [POSTPONED]})
+        issue = self.github.call("GET", f"issues/{self.number}")
+        return f"{link}\n{Entry(issue).headline}: postponed"
+
     def _comments(self) -> list[Mapping[str, Any]]:
         return list(self.github.call("GET", f"issues/{self.number}/comments?per_page=100"))
 
@@ -1713,6 +1728,11 @@ def utf8_output(stream: object = sys.stdout) -> None:
         stream.reconfigure(encoding="utf-8", errors="replace")
 
 
+def comment_text(file: str) -> str:
+    """What a comment's file says, for `comment` and `postpone`; `-` is stdin."""
+    return sys.stdin.read() if file == "-" else Path(file).read_text(encoding="utf-8")
+
+
 def main(argv: Sequence[str] | None = None) -> None:
     utf8_output()
     parser = argparse.ArgumentParser(prog="scripts/github.py", description=__doc__.split("\n")[0])
@@ -1785,6 +1805,14 @@ def main(argv: Sequence[str] | None = None) -> None:
     closing.add_argument(
         "--read", action="store_true", help="the replies since Claude's last comment are read"
     )
+    parking = commands.add_parser(
+        "postpone", help="park an issue: a closing handoff, then the postponed label"
+    )
+    parking.add_argument("number", type=int)
+    parking.add_argument("file", help="why, as a handoff in Markdown; - reads it from stdin")
+    parking.add_argument(
+        "--read", action="store_true", help="the replies since Claude's last comment are read"
+    )
     costing = commands.add_parser("cost", help="what an issue's work cost, in dollars (#390)")
     costing.add_argument("number", type=int)
     titling = commands.add_parser("title", help="the cost prefixes on an issue's title (#390)")
@@ -1842,7 +1870,7 @@ def main(argv: Sequence[str] | None = None) -> None:
     elif args.command == "comment":
         if args.closing and not args.handoff:
             parser.error("--closing goes with --handoff")
-        text = sys.stdin.read() if args.file == "-" else Path(args.file).read_text(encoding="utf-8")
+        text = comment_text(args.file)
         if args.handoff:
             text = IssueWork(github, args.number).handoff(text, closing=args.closing)
         print(post_comment(github, args.number, text, read=args.read))
@@ -1873,6 +1901,9 @@ def main(argv: Sequence[str] | None = None) -> None:
         print(ReleaseCut(github).cut())
     elif args.command == "close":
         print(IssueThread(github, args.number).close(read=args.read))
+    elif args.command == "postpone":
+        text = IssueWork(github, args.number).handoff(comment_text(args.file), closing=True)
+        print(IssueThread(github, args.number).postpone(text, read=args.read))
     elif args.command == "cost":
         print(IssueWork(github, args.number).summary())
     elif args.command == "title":

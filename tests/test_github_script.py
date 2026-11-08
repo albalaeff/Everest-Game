@@ -1758,12 +1758,16 @@ class ThreadGitHub:
         self.issue, self.comments = issue, comments
         self.asked: list[tuple[str, str, object]] = []
 
-    def call(self, method: str, path: str, body: object | None = None) -> object:
+    def call(
+        self, method: str, path: str, body: object | None = None, missing_ok: bool = False
+    ) -> object:
         if path == "/user":
             return {"login": ME}
         if method != "GET":
             self.asked.append((method, path, body))
             return self.issue | (body if isinstance(body, dict) else {})
+        if path.startswith("labels?"):
+            return []
         return self.comments if path.endswith("/comments?per_page=100") else self.issue
 
 
@@ -1867,6 +1871,48 @@ def test_closing_over_an_unread_reply_is_refused_and_shows_it() -> None:
     assert github.asked == []
     IssueThread(github, 402).close(read=True)  # type: ignore[arg-type]
     assert github.asked == [("PATCH", "issues/402", {"state": "closed"})]
+
+
+# --- postponing an issue (template#4) --------------------------------------------------------
+
+PARKED = "Nothing to do until #401 merges.\n\n**Next:** #401 (bateks's). **Waiting on:** nothing."
+
+
+def test_postpone_comments_then_labels_it_postponed() -> None:
+    # Everest#8: an agent that found nothing to do had no way to put `postponed` on, so the
+    # issue sat in progress and went stale instead. The label's mine to take off.
+    issue = thread_issue(html_url="https://github.com/o/r/issues/402#c1")
+    issue["labels"] = [{"name": "model:haiku"}, {"name": "waiting:bateks"}]
+    github = ThreadGitHub(issue, [said_at("05:10", "Plan: ...")])
+
+    said = IssueThread(github, 402).postpone(PARKED)  # type: ignore[arg-type]
+
+    method, path, body = github.asked[0]
+    assert (method, path) == ("POST", "issues/402/comments")
+    assert isinstance(body, dict) and PARKED in body["body"]
+    assert github.asked[1:] == [
+        ("DELETE", "issues/402/labels/waiting%3Abateks", None),  # it waits on nobody now
+        ("POST", "issues/402/labels", {"labels": ["postponed"]}),
+    ]
+    assert said == "\n".join(
+        [
+            "https://github.com/o/r/issues/402#c1",
+            "issue #402 [open] README → Agents: the manager's --once: postponed",
+        ]
+    )
+
+
+def test_postponing_over_an_unread_reply_is_refused_and_shows_it() -> None:
+    comments = [said_at("05:10", "Plan: ..."), said_at("05:20", "Do it now", signed=False)]
+    github = ThreadGitHub(thread_issue(html_url="https://github.com/o/r/issues/402#c1"), comments)
+
+    with pytest.raises(SystemExit) as refused:
+        IssueThread(github, 402).postpone(PARKED)  # type: ignore[arg-type]
+
+    assert "Do it now" in str(refused.value)
+    assert github.asked == []
+    IssueThread(github, 402).postpone(PARKED, read=True)  # type: ignore[arg-type]
+    assert github.asked[-1] == ("POST", "issues/402/labels", {"labels": ["postponed"]})
 
 
 # --- what `api` prints: GitHub's answer in brief (#442) --------------------------------------

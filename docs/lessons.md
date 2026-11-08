@@ -49,6 +49,7 @@ This template was taken from [bateks/PersonalExchangeBot](https://github.com/bat
 - [PEB#522](https://github.com/bateks/PersonalExchangeBot/issues/522): the manager's console stamps every line with the time.
 - [PEB#545](https://github.com/bateks/PersonalExchangeBot/issues/545): the allow list holds the read-only commands the logs showed agents refused.
 - [PEB#550](https://github.com/bateks/PersonalExchangeBot/issues/550): the manager merges a green PR itself, from the closing comment the agent left in its handoff: no agent for the most common run.
+- [template#4](https://github.com/bateks/claude-workflow-template/issues/4), from [Everest#8](https://github.com/albalaeff/Everest-Game/issues/8): an agent with nothing to do parks its issue (`github.py postpone`) instead of leaving it to go stale.
 
 ## CI and the repository
 
