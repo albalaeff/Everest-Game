@@ -14,6 +14,9 @@ import { CampNotice } from "../interface/camp-notice";
 import { Coach } from "../interface/coach";
 import { CoachCard } from "../interface/coach-card";
 import type { CoachTextName } from "../interface/coach-card";
+import { Debrief } from "../interface/debrief";
+import type { DebriefTextName } from "../interface/debrief";
+import { SunClock } from "../interface/sun-clock";
 import type { Texts } from "../interface/texts";
 import type { ClimberView } from "../physics";
 import {
@@ -60,6 +63,8 @@ export interface PageTexts {
   readonly climber: Texts;
   /** The coach's tips, for a keyboard and for touch (#192). */
   readonly coach: Texts<CoachTextName>;
+  /** The debrief's words, and the death's (#194). */
+  readonly debrief: Texts<DebriefTextName>;
 }
 
 /** What the page's stories read that the DOM doesn't show, on `window.everest`. */
@@ -81,6 +86,8 @@ interface Climb {
   readonly played: Played;
   /** Where the player's actions go. */
   readonly sink: ActionSink;
+  /** How to set off a new climb after the player's death, alone; none in a room. */
+  readonly startOver: (() => void) | null;
 }
 
 /**
@@ -93,6 +100,10 @@ interface Climb {
  * still work.
  */
 export class GamePage {
+  /** The tab's mark that the player chose to start over after a death: the page reloads to a new
+   * climb alone, past the start's choice (#194). */
+  private static readonly START_OVER = "everest.start-over";
+
   private readonly elements: PageElements;
   private readonly mountain: Mountain;
   private readonly guide: GuideAdvice;
@@ -118,6 +129,11 @@ export class GamePage {
     }
     const store = new IndexedDbStore(window.indexedDB);
     const saved = await store.load();
+    if (this.tabStorage()?.getItem(GamePage.START_OVER) !== null && this.tabStorage() !== null) {
+      this.tabStorage()?.removeItem(GamePage.START_OVER);
+      this.alone(store, null);
+      return;
+    }
     new StartMenu(window.document, this.texts.room).show(saved !== null, (choice) => {
       if (choice.kind === "alone") {
         this.alone(store, choice.fresh ? null : saved);
@@ -153,7 +169,14 @@ export class GamePage {
     const game = new SoloGame(expedition, queue, store, player);
     game.save();
     this.saveWhenHidden(game);
-    void this.play({ scenario: expedition.scenario, player, played: game, sink: queue }, rules);
+    const startOver = (): void => {
+      this.tabStorage()?.setItem(GamePage.START_OVER, "1");
+      this.window.location.reload();
+    };
+    void this.play(
+      { scenario: expedition.scenario, player, played: game, sink: queue, startOver },
+      rules,
+    );
   }
 
   /** A room: the one with `code`, or a new one when it's null. The climb is drawn once the room
@@ -167,7 +190,10 @@ export class GamePage {
     const rules = this.mountain.rules();
     const play = new RoomPlay(window, notice, reloads, code, (welcome) => {
       const { scenario } = welcome.save;
-      void this.play({ scenario, player: welcome.climber, played: client, sink: client }, rules);
+      void this.play(
+        { scenario, player: welcome.climber, played: client, sink: client, startOver: null },
+        rules,
+      );
     });
     const client = new RoomClient(
       RoomServer.from(import.meta.env.VITE_ROOM_SERVER, window.location.hostname),
@@ -228,6 +254,7 @@ export class GamePage {
     );
     const sink = new EverySink([climb.sink, new ZoomSink(zoom), received]);
     new ControlsPage(window, texts.controls, player, camera, sink);
+    const { warmth } = this.mountain.hazardSettings();
     const climbInterface = new ClimbInterface(
       window,
       rules.clock,
@@ -235,6 +262,7 @@ export class GamePage {
       rules.oxygen,
       physics,
       player,
+      new SunClock(warmth),
     );
     const arrival = new CampNotice(
       window,
@@ -243,6 +271,15 @@ export class GamePage {
       physics,
       player,
       this.mountain.route,
+      new Debrief(texts.debrief, warmth),
+      {
+        page: (climber) => rules.logbook.page(climber),
+        get strikes() {
+          return rules.hazards.strikes;
+        },
+      },
+      texts.debrief,
+      climb.startOver,
     );
     const coach = new CoachCard(
       window.document,
@@ -258,7 +295,7 @@ export class GamePage {
     const fps = new FpsReadout(this.elements.find("#fps"), texts.rendering.fps);
     const afterFrame = (seconds: number): void => {
       climbInterface.update();
-      arrival.update();
+      arrival.update(seconds);
       coach.update(seconds);
     };
     this.expose({

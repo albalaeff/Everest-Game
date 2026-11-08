@@ -22,6 +22,7 @@ How the game is learnt, and played for two hours by everyone, on every device ([
   - *In Everest:* the climber's animation (#87); each camp says how long the next section takes ([../../spec.md](../../spec.md) → Phone and PC → Long sessions, #53).
 - **What matters can always be found** ([Pinelle et al.](https://course.ccs.neu.edu/is4300f15/ssl/pinelle-chi08.pdf), heuristic 8: status): the readouts on the screen, the body on Tab, the group on the radio.
 - **A consequence that comes late is traced back.** Consequences often come hours after the decision ([../../spec.md](../../spec.md) → Gameplay), so the debrief shows the decision, and the point where it could still have been fixed (#46).
+  - *In Everest:* at Camp 1 and on a death, the debrief (#194) gives the climb's verdict, a death's cause with what would have prevented it, and the time unclipped, unclipped where a slip was a fall, the falls the rope caught and those it didn't, the time under the seracs and standing still there, what came down nearby, and the hour out of the Icefall against the sun's.
 
 ## Mistakes
 

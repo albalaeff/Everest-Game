@@ -49,6 +49,10 @@
 - **The engine's numbers are in the code**, as the core's step is: `Slope.SUBSTEPS`, `Slope.ITERATIONS`, `Slope.REST_SPEED`, `Rope.LINK_METRES` and `Snow.STEP`. No source states them; they're how finely the physics works the mountain out.
 - **Steepness is a sine** (`Steepness`): `ofWay` and `ofGradient` divide, and `ofDegrees` sums a series of its own, since `Math.sin` rounds differently in each browser. A `SteepnessCurve` interpolates over the sine and holds its end values past its ends, and so does the walking cost.
 
+## The logbook
+
+`Logbook` (#194) is a rule of its own, run after the physics in each step: for each climber, the mountain's seconds unclipped on the route (from the moraine's end to the camp the section ends at), and of them where a slip was a fall (on blue ice, on or by a ladder across a crevasse); under the seracs, and of that standing still; and the hours they arrived at the camp and died at. It reads the physics and the hazards and keeps its own numbers, which a save keeps; a save made before it can't be resumed, and starts the climb over. The debrief reads it ([rendering.md](rendering.md)).
+
 ## The same result everywhere
 
 The physics uses the core's maths alone, and imports only itself and the core. `physics-purity.test.ts` checks both, with the core's checks (`src/simulation/testing/module-code.ts`), and `npm run typecheck` checks it with no DOM in scope, as it does the core. A save is plain JSON: the tests save, go through `JSON.stringify` and back, and resume exactly.

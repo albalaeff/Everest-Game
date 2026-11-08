@@ -1,4 +1,4 @@
-import { SlopePhysics } from "../physics";
+import { Logbook, SlopePhysics } from "../physics";
 import { Body, MountainClock, ObjectiveHazards, OxygenSystem } from "../simulation";
 import type { HazardKind, HazardOdds, HazardSettings, Rule, Scenario } from "../simulation";
 import type { KnowledgeBase } from "./knowledge-base";
@@ -16,6 +16,8 @@ export interface ExpeditionRules {
   readonly oxygen: OxygenSystem;
   readonly hazards: ObjectiveHazards;
   readonly physics: SlopePhysics;
+  /** The climb's logbook, which the debrief reads (#194). */
+  readonly logbook: Logbook;
   readonly all: readonly Rule[];
 }
 
@@ -54,6 +56,7 @@ export class Mountain {
           scenario.climbers,
           bodyFacts.oxygenNumbers().bottles,
         ),
+        [Logbook.NAME]: Logbook.start(scenario.climbers),
       },
     };
   }
@@ -68,7 +71,16 @@ export class Mountain {
     const oxygen = new OxygenSystem(bodyFacts.oxygenNumbers(), clock);
     const body = new Body(bodyFacts.numbers, clock, physics, oxygen);
     const hazards = new ObjectiveHazards(this.hazardSettings(), clock, physics);
-    return { clock, oxygen, body, hazards, physics, all: [clock, oxygen, body, hazards, physics] };
+    const logbook = new Logbook(physics, hazards, clock, this.route.logged);
+    return {
+      clock,
+      oxygen,
+      body,
+      hazards,
+      physics,
+      logbook,
+      all: [clock, oxygen, body, hazards, physics, logbook],
+    };
   }
 
   /** The hazards' numbers, from their records in content/facts/hazards.json: each kind's

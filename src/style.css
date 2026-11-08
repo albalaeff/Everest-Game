@@ -154,6 +154,7 @@ header {
 
 .touch #hint-tap {
   display: block;
+  top: 6.75rem;
 }
 
 /* The coach (#192): a tip at a time over the slope, under the readouts, in the player's own
@@ -183,6 +184,12 @@ header {
   display: none;
 }
 
+/* While a tip is up, the slope's standing hint steps aside for it. */
+main:has(#coach:not([hidden])) #hint-click,
+main:has(#coach:not([hidden])) #hint-tap {
+  visibility: hidden;
+}
+
 .touch #coach [data-device="touch"] {
   display: inline;
 }
@@ -197,9 +204,14 @@ header {
     var(--glass-shadow);
 }
 
+/* On a phone, left of the thumb's buttons and under the hint, so it covers none of them. */
 .touch #coach {
-  top: 4.25rem;
+  top: 6.75rem;
+  left: var(--edge-left);
+  max-width: calc(100vw - var(--edge-left) - var(--edge-right) - 15rem);
   font-size: 0.8125rem;
+  text-align: left;
+  transform: none;
 }
 
 /* The actions the game received, for the stories and a check by hand: a short list out of the
@@ -575,6 +587,85 @@ kbd {
   margin: 0 0 1rem;
   font-size: 1.25rem;
   text-align: center;
+}
+
+/* The debrief (#194): its verdict in its tone, and its lines, a label and a value to a row, the
+ * value coloured by how it went: well, a warning, or a mistake. */
+#camp [data-text="verdict"] {
+  padding: 0.6rem 0.8rem;
+  border: 1px solid var(--glass-edge);
+  border-radius: 0.75rem;
+  background: var(--glass);
+}
+
+#camp [data-text="verdict"][data-tone="bad"] {
+  border-color: var(--danger);
+}
+
+#camp [data-text="verdict"][data-tone="warn"] {
+  border-color: #ffb020;
+}
+
+#camp [data-text="verdict"][data-tone="good"] {
+  border-color: #5fd38a;
+}
+
+#camp dl {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 0.35rem 1rem;
+  margin: 1rem 0 0;
+  font-size: 0.9375rem;
+}
+
+#camp dt {
+  color: var(--muted);
+}
+
+#camp dd {
+  margin: 0;
+  font-weight: 600;
+  text-align: right;
+}
+
+#camp dd[data-tone="bad"] {
+  color: var(--danger);
+}
+
+#camp dd[data-tone="warn"] {
+  color: #ffc04a;
+}
+
+#camp dd[data-tone="good"] {
+  color: #7fe0a2;
+}
+
+#camp button[hidden] {
+  display: none;
+}
+
+/* The sun clock (#194): red once the sun is on the ice. On a phone, where the top is full, it's
+ * a line under the mountain's time in the clock's own box. */
+.touch #readout-sun-box {
+  display: none;
+}
+
+.touch #readout-clock::after {
+  display: block;
+  margin-top: 0.15rem;
+  color: var(--muted);
+  font-size: 0.75rem;
+  font-weight: 600;
+  content: attr(data-sun);
+}
+
+.touch #readout-clock[data-sun-state="warming"]::after,
+.touch #readout-clock[data-sun-state="cooling"]::after {
+  color: var(--danger);
+}
+#readout-sun-box[data-state="warming"] strong,
+#readout-sun-box[data-state="cooling"] strong {
+  color: var(--danger);
 }
 
 /* The arrival's lines, under the camp's name, and [Continue] under them. */

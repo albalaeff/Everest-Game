@@ -1,4 +1,6 @@
-import type { ClimberId, MountainClock } from "../simulation";
+import type { Fall, LogPage } from "../physics";
+import type { ClimberId, MountainClock, Strike } from "../simulation";
+import type { Debrief, DebriefTextName } from "./debrief";
 import { Readings } from "./readings";
 import type { Texts } from "./texts";
 
@@ -10,29 +12,53 @@ export interface SectionEnd {
   readonly hours: { readonly min: number; readonly max: number };
 }
 
-/** The climbers as the arrival reads them: how far along the ground one is, and their altimeter.
- * The slope physics is this. */
+/** The climbers as the arrival reads them: how far along the ground one is, their altimeter,
+ * and whether they're dead, still falling, and their falls. The slope physics is this. */
 export interface Arriving {
   along(climber: ClimberId): number;
-  climber(climber: ClimberId): { readonly altitude: number };
+  climber(climber: ClimberId): {
+    readonly altitude: number;
+    readonly dead: boolean;
+    readonly falling: boolean;
+    readonly falls: readonly Fall[];
+  };
+}
+
+/** What the debrief reads of the climb besides the climbers: each one's page of the logbook, and
+ * what came down on the route (#194). The logbook and the hazards are this. */
+export interface ClimbRecord {
+  page(climber: ClimberId): LogPage;
+  readonly strikes: readonly Strike[];
 }
 
 /**
- * The arrival at the camp a section ends at (#26): once the player's climber reaches its stretch,
- * a notice over the slope names the camp, reads the altimeter and the clock, says how long the
- * section took and the hours the sources give it, and [Continue], or Esc, closes it. It shows once
- * each time the camp is reached; the climb goes on behind it, and the camp itself, with its rest
- * and its choices, comes with #53.
+ * The end of the climb, over the slope: the arrival at the camp a section ends at (#26), and the
+ * player's death on the way (#194). Once the player's climber reaches the camp's stretch, the
+ * notice names the camp, reads the altimeter and the clock, says how long the section took and
+ * the hours the sources give it; once they die, and their body has come to rest, it says so. Both
+ * then give the debrief: its verdict and its lines, what the climb was (`Debrief`). [Continue], or
+ * Esc, closes it, and the climb goes on behind it; after a death, [Start over] sets off a new one,
+ * where there's one to set off. It shows once each time the camp is reached, and once on a death;
+ * the camp itself, with its rest and its choices, comes with #53.
  */
 export class CampNotice {
+  /** How long after a death the notice waits for the body to come to rest, at the most. */
+  static readonly SETTLE_SECONDS = 3;
+
   private readonly notice: HTMLElement;
   private readonly title: HTMLElement;
   private readonly where: HTMLElement;
   private readonly took: HTMLElement;
+  private readonly verdict: HTMLElement;
+  private readonly lines: HTMLElement;
   private readonly button: HTMLElement;
+  private readonly startOverButton: HTMLElement;
   private readonly readings = new Readings();
-  /** Whether the climber was in the camp's stretch at the last look. */
+  /** Whether the climber was in the camp's stretch at the last look; how long they've been dead,
+   * and whether the notice has said so. */
   private inside = false;
+  private deadFor = 0;
+  private mourned = false;
 
   constructor(
     window: Window,
@@ -41,16 +67,27 @@ export class CampNotice {
     private readonly climbers: Arriving,
     private readonly player: ClimberId,
     private readonly section: SectionEnd,
+    private readonly debrief: Debrief,
+    private readonly record: ClimbRecord,
+    private readonly debriefTexts: Texts<DebriefTextName>,
+    private readonly startOver: (() => void) | null,
   ) {
     const { document } = window;
     this.notice = CampNotice.element(document, "");
     this.title = CampNotice.element(document, "#camp-title");
     this.where = CampNotice.element(document, '[data-text="where"]');
     this.took = CampNotice.element(document, '[data-text="took"]');
-    this.button = CampNotice.element(document, "button");
+    this.verdict = CampNotice.element(document, '[data-text="verdict"]');
+    this.lines = CampNotice.element(document, '[data-text="debrief"]');
+    this.button = CampNotice.element(document, '[data-text="continue"]');
+    this.startOverButton = CampNotice.element(document, '[data-text="start-over"]');
     this.button.textContent = texts.say("continue");
+    this.startOverButton.textContent = debriefTexts.say("start-over");
     this.button.addEventListener("click", () => {
       this.close();
+    });
+    this.startOverButton.addEventListener("click", () => {
+      this.startOver?.();
     });
     window.addEventListener("keydown", (event) => {
       if (event.code === "Escape" && !this.notice.hidden) {
@@ -59,8 +96,19 @@ export class CampNotice {
     });
   }
 
-  /** Each frame: the notice shows as the climber comes into the camp. */
-  update(): void {
+  /** Each frame, `seconds` after the last: the notice shows as the climber comes into the camp,
+   * and once they die, when their body has come to rest. */
+  update(seconds = 0): void {
+    const view = this.climbers.climber(this.player);
+    if (view.dead) {
+      this.deadFor += seconds;
+      const settled = !view.falling || this.deadFor >= CampNotice.SETTLE_SECONDS;
+      if (!this.mourned && settled) {
+        this.mourned = true;
+        this.showDeath();
+      }
+      return;
+    }
     const arrived = this.climbers.along(this.player) >= this.section.destination.from;
     if (arrived && !this.inside) {
       this.show();
@@ -75,8 +123,47 @@ export class CampNotice {
     this.title.textContent = texts.say(section.destination.id);
     this.where.textContent = `${readings.altitude(altitude)} · ${readings.clock(clock.timeOfDay)}`;
     this.took.textContent = `${texts.say(section.id, { time })} ${texts.say("first-time", section.hours)}`;
+    this.took.hidden = false;
+    this.startOverButton.hidden = true;
+    this.say();
     this.notice.hidden = false;
     this.button.focus();
+  }
+
+  /** The player's death: where and when, and the debrief, with [Start over] where there is one. */
+  private showDeath(): void {
+    const { readings, clock } = this;
+    const { altitude } = this.climbers.climber(this.player);
+    this.title.textContent = this.debriefTexts.say("you-died");
+    this.where.textContent = `${readings.altitude(altitude)} · ${readings.clock(clock.timeOfDay)}`;
+    this.took.hidden = true;
+    this.startOverButton.hidden = this.startOver === null;
+    this.say();
+    this.notice.hidden = false;
+    (this.startOver === null ? this.button : this.startOverButton).focus();
+  }
+
+  /** The debrief: its verdict, and a line for each thing it counts, each with its tone. */
+  private say(): void {
+    const { player, record } = this;
+    const said = this.debrief.of({
+      page: record.page(player),
+      falls: this.climbers.climber(player).falls,
+      strikes: record.strikes,
+      player,
+    });
+    this.verdict.textContent = said.verdict.text;
+    this.verdict.dataset.tone = said.verdict.tone;
+    this.lines.replaceChildren(
+      ...said.lines.flatMap(({ label, value, tone }) => {
+        const term = this.lines.ownerDocument.createElement("dt");
+        const detail = this.lines.ownerDocument.createElement("dd");
+        term.textContent = label;
+        detail.textContent = value;
+        detail.dataset.tone = tone;
+        return [term, detail];
+      }),
+    );
   }
 
   private close(): void {
