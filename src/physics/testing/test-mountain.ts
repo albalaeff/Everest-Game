@@ -64,6 +64,7 @@ export class TestMountain {
       iceFriction: 0.1,
       bounce: { excite: 0, damp: 1, loss: 0 },
       afterSlip: 0.5,
+      crampon: { looseAfter: 2, loose: 0.3, refit: 1 },
     },
     lethalLanding: 1000,
     climbBack: 0.5,
@@ -113,6 +114,7 @@ export class TestMountain {
       iceFriction: 0.05,
       bounce: { excite: 0.5, damp: 1, loss: 0.15 },
       afterSlip: 0.5,
+      crampon: { looseAfter: 2, loose: 0.3, refit: 1 },
     },
     lethalLanding: 12,
   };

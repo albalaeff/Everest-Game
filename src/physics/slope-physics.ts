@@ -1,6 +1,6 @@
 import type { ClimberId, HazardGround, Json, Legs, Moment, Rule } from "../simulation";
 import { Climber } from "./climber";
-import type { ClimberSave, ClimberView } from "./climber";
+import type { ClimberSave, ClimberView, Kit } from "./climber";
 import { Ladder } from "./ladder";
 import type { LadderLayout } from "./ladder";
 import { Rope } from "./rope";
@@ -33,6 +33,9 @@ export interface ClimberLayout {
   /** Their skill on ladders and fixed ropes: the share of the speed they go at on a ladder or
    * clipped to a rope, 1 unless it says otherwise. */
   readonly technique?: number;
+  /** What they checked of their kit before setting off (#196): all of it unless it says
+   * otherwise. */
+  readonly kit?: Kit;
 }
 
 /** A section of the route as a scenario starts it: its ground and the snow on it, if any, the
@@ -100,11 +103,11 @@ export class SlopePhysics implements Rule, HazardGround, Legs {
       const end = (along: number) => onTheGround(along, `The ladder ${id}`);
       return new Ladder({ id, from: end(from), to: end(to) }, terrain).save();
     });
-    const climbers = layout.climbers.map(({ id, along, technique = 1 }) => {
+    const climbers = layout.climbers.map(({ id, along, technique = 1, kit }) => {
       if (!(technique > 0)) {
         throw new RangeError(`${id} needs a technique above nought, not ${technique}`);
       }
-      return Climber.standing(id, onTheGround(along, id), technique).save();
+      return Climber.standing(id, onTheGround(along, id), technique, kit).save();
     });
     const { terrain: line, snow, ice, altitude } = layout;
     const save: SlopeSave = {

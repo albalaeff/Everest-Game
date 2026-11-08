@@ -1,7 +1,7 @@
 import { FillGradient, Graphics, Particle, ParticleContainer, Texture } from "pixi.js";
 
 import { Terrain } from "../physics";
-import type { ClimberView, Point, SlopePhysics } from "../physics";
+import type { ClimberView, Lamps, Point, SlopePhysics } from "../physics";
 import { SeededRandom } from "../simulation";
 import type { Body, Breathing, ClimberId, ObjectiveHazards } from "../simulation";
 import type { Atmosphere } from "./atmosphere";
@@ -307,6 +307,7 @@ export class SlopeLayer extends ParallaxLayer {
     hazards: ObjectiveHazards,
     private readonly body: Body,
     private readonly oxygen: Breathing,
+    private readonly lamps: Lamps,
     camps: readonly CampStretch[],
     parts: readonly PartStretch[],
     climbers: readonly ClimberId[],
@@ -492,7 +493,8 @@ export class SlopeLayer extends ParallaxLayer {
     for (const { id, figure, view: climber } of this.figures) {
       const sag = this.sagUnder(climber, figure.at);
       const masked = this.oxygen.flow(id) > 0;
-      figure.show(this.body.climber(id), masked, atmosphere, seconds, size, sag);
+      const lit = this.lamps.lit(id);
+      figure.show(this.body.climber(id), masked, atmosphere, seconds, size, sag, lit);
       if (figure.beam !== null) {
         this.beams.push(figure.beam);
       }

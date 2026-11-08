@@ -1,18 +1,24 @@
 import type { CoachWorld } from "../interface/coach";
-import type { ClimberView, Point, SlopePhysics } from "../physics";
+import type { ClimberView, Lamps, Point, SlopePhysics } from "../physics";
 import type { ClimberId, HazardZone, ObjectiveHazards } from "../simulation";
 
 /** The climb as the coach reads it (#192): the player's climber and the route's ropes, ladders,
- * blue ice and hazard zones, from the physics and the hazards, which it only reads. */
+ * blue ice and hazard zones, and the player's lamp (#196), from the physics, the hazards and the
+ * lamps, which it only reads. */
 export class CoachedClimb implements CoachWorld {
   constructor(
     private readonly physics: SlopePhysics,
     private readonly hazards: ObjectiveHazards,
+    private readonly lamps: Lamps,
     private readonly climberId: ClimberId,
   ) {}
 
   player(): ClimberView {
     return this.physics.climber(this.climberId);
+  }
+
+  inTheDark(): boolean {
+    return this.lamps.inTheDark(this.climberId);
   }
 
   along(): number {

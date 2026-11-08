@@ -388,6 +388,56 @@
       "fitted": "2026-11-08"
     },
     {
+      "id": "technique.loose-crampon-after",
+      "kind": "coefficient",
+      "claim": "The minutes on the move after which a crampon not checked before setting off comes loose, on the next ladder (#196): a skipped check catches up with the climber about an hour out of Base Camp, not at once, as the fall from a ladder near Camp 1 in 2012 began with a crampon caught on a rung (accidents.2012-ladder-fall).",
+      "status": "source only",
+      "value": 60,
+      "unit": "min",
+      "fitted_to": ["route.icefall-kit", "route.icefall-lessons"],
+      "fitted": "2026-11-08"
+    },
+    {
+      "id": "technique.loose-crampon-footing",
+      "kind": "coefficient",
+      "claim": "How sure-footed a loose crampon leaves a climber, as a share of what they'd be with it strapped tight (#196): on blue ice and a bouncing ladder they slip within seconds, until they kneel to refit it.",
+      "status": "source only",
+      "value": 0.3,
+      "unit": "1",
+      "fitted_to": ["route.icefall-kit", "route.icefall-lessons"],
+      "fitted": "2026-11-08"
+    },
+    {
+      "id": "technique.crampon-refit",
+      "kind": "coefficient",
+      "claim": "The minutes a climber takes to kneel and refit a loose crampon, its straps tightened again, standing on the ground (#196).",
+      "status": "source only",
+      "value": 2,
+      "unit": "min",
+      "fitted_to": ["route.icefall-kit"],
+      "fitted": "2026-11-08"
+    },
+    {
+      "id": "technique.dead-lamp-hours",
+      "kind": "coefficient",
+      "claim": "The hours after setting off at which a headlamp without fresh batteries dies (#196): from the 3 a.m. start (time.base-camp-departure), the climber goes on by starlight until dawn, the ice and the crevasses' lips unlit.",
+      "status": "source only",
+      "value": 1,
+      "unit": "h",
+      "fitted_to": ["route.icefall-kit", "time.base-camp-departure"],
+      "fitted": "2026-11-08"
+    },
+    {
+      "id": "technique.dark-footing",
+      "kind": "coefficient",
+      "claim": "How sure-footed a climber is in the dark without a headlamp, as a share of what they'd be by its light (#196): they can't see where they put their crampons on the ice and the rungs, so they slip at twice the rate, unless they slow down or wait for first light (time.first-light).",
+      "status": "source only",
+      "value": 0.5,
+      "unit": "1",
+      "fitted_to": ["route.icefall-kit", "time.first-light"],
+      "fitted": "2026-11-08"
+    },
+    {
       "id": "technique.experience-and-summits",
       "kind": "fact",
       "claim": "On Everest, climbers who had climbed on another peak of Nepal before summit more often than those who hadn't, and die no less often.",

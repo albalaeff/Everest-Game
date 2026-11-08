@@ -1,4 +1,4 @@
-import type { Fall, LogPage } from "../physics";
+import type { Fall, Kit, LogPage } from "../physics";
 import type { ClimberId, MountainClock, Strike } from "../simulation";
 import type { Debrief, DebriefTextName } from "./debrief";
 import { Readings } from "./readings";
@@ -21,6 +21,8 @@ export interface Arriving {
     readonly dead: boolean;
     readonly falling: boolean;
     readonly falls: readonly Fall[];
+    /** What they checked before setting off (#196). */
+    readonly kit: Kit;
   };
 }
 
@@ -151,6 +153,7 @@ export class CampNotice {
       falls: this.climbers.climber(player).falls,
       strikes: record.strikes,
       player,
+      kit: this.climbers.climber(player).kit,
     });
     this.verdict.textContent = said.verdict.text;
     this.verdict.dataset.tone = said.verdict.tone;

@@ -1,6 +1,6 @@
 import { Application, Rectangle } from "pixi.js";
 
-import type { SlopePhysics } from "../physics";
+import type { Lamps, SlopePhysics } from "../physics";
 import type { Body, Breathing, ClimberId, MountainClock, ObjectiveHazards } from "../simulation";
 import { Atmosphere } from "./atmosphere";
 import type { Camera } from "./camera";
@@ -23,6 +23,8 @@ export interface SceneWorld {
   readonly body: Body;
   /** The supplemental oxygen: a climber's mask is on while it flows. */
   readonly oxygen: Breathing;
+  /** Whose headlamps are lit (#196): a dead one throws no light. */
+  readonly lamps: Lamps;
   readonly camps: readonly CampStretch[];
   readonly parts: readonly PartStretch[];
   readonly climbers: readonly ClimberId[];
@@ -174,7 +176,8 @@ export class SlopeScene {
     }
     const { layers: optional, flakes, motes, fogBanks, dithered } = this.quality;
     const { width, height } = this.app.screen;
-    const { physics, hazards, body, oxygen, camps, parts, climbers, player, seed } = this.world;
+    const { physics, hazards, body, oxygen, lamps, camps, parts, climbers, player, seed } =
+      this.world;
     const skyline = (style: typeof SkylineLayer.PEAKS, offset: number): SkylineLayer =>
       new SkylineLayer(style, physics.terrain, seed + offset, fogBanks, parts);
     this.sky = new SkyLayer(dithered);
@@ -189,6 +192,7 @@ export class SlopeScene {
       hazards,
       body,
       oxygen,
+      lamps,
       camps,
       parts,
       climbers,

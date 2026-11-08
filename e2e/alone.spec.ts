@@ -12,6 +12,7 @@ import {
   openTheGame,
   readTheDisclaimer,
   savedClimb,
+  setOffChecked,
 } from "./climb";
 
 /**
@@ -44,6 +45,7 @@ test("a climb alone goes on after a reload where the climber was, and [Start ove
   await readTheDisclaimer(page);
   await choice(page, "Start over").click();
   await climberScreen(page).getByRole("button", { name: "Keep these answers" }).click();
+  await setOffChecked(page);
   await expect.poll(() => along(page, "player")).toBeCloseTo(10, 2);
 });
 

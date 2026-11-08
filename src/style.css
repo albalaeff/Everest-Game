@@ -352,7 +352,8 @@ main:has(#coach:not([hidden])) #hint-tap {
 .action-button,
 #disclaimer button,
 #start button,
-#climber button {
+#climber button,
+#gear button {
   min-width: 48px;
   min-height: 48px;
   padding: 0 0.9rem;
@@ -549,6 +550,7 @@ kbd {
 #disclaimer,
 #start,
 #climber,
+#gear,
 #camp {
   position: fixed;
   inset: 0;
@@ -566,6 +568,7 @@ kbd {
 #start [hidden],
 #climber[hidden],
 #climber [hidden],
+#gear[hidden],
 #camp[hidden] {
   display: none;
 }
@@ -573,6 +576,7 @@ kbd {
 #disclaimer > div,
 #start > div,
 #climber > div,
+#gear > div,
 #camp > div {
   max-width: 36rem;
   margin: auto;
@@ -583,6 +587,7 @@ kbd {
 #disclaimer h2,
 #start h2,
 #climber h2,
+#gear h2,
 #camp h2 {
   margin: 0 0 1rem;
   font-size: 1.25rem;
@@ -861,6 +866,72 @@ kbd {
 /* The way on the screen offers first: [Keep these answers], or [Climb]. */
 #climber [data-text="keep"],
 #climber [data-text="climb"] {
+  border-color: var(--accent);
+  font-weight: 650;
+}
+
+/* The gear check (#196): the game model's note, then each part of the kit a row a finger can take,
+ * its box, its name and why it matters, edged in the accent once ticked, and [Set off] under
+ * them. */
+#gear p {
+  margin: 0 0 1rem;
+  color: var(--muted);
+  text-align: center;
+}
+
+#gear .model {
+  padding: 0.5rem 0.8rem;
+  border: 1px solid var(--glass-edge);
+  border-radius: 0.75rem;
+  color: inherit;
+  font-weight: 600;
+}
+
+#gear label {
+  display: flex;
+  gap: 0.8rem;
+  align-items: flex-start;
+  box-sizing: border-box;
+  min-height: 48px;
+  margin-top: 0.5rem;
+  padding: 0.6rem 0.8rem;
+  border: 1px solid var(--glass-edge);
+  border-radius: 1rem;
+  background: var(--glass);
+  cursor: pointer;
+}
+
+#gear label:has(input:checked) {
+  border-color: var(--accent);
+}
+
+#gear input[type="checkbox"] {
+  flex: none;
+  width: 1.25rem;
+  height: 1.25rem;
+  margin: 0.1rem 0 0;
+  accent-color: var(--accent);
+}
+
+#gear label > span {
+  display: grid;
+  gap: 0.15rem;
+}
+
+#gear label > span > span {
+  font-weight: 600;
+}
+
+#gear small {
+  color: var(--muted);
+  font-size: 0.875rem;
+}
+
+#gear button {
+  display: block;
+  width: 100%;
+  max-width: 20rem;
+  margin: 1rem auto 0;
   border-color: var(--accent);
   font-weight: 650;
 }

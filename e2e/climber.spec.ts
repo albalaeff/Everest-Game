@@ -9,6 +9,7 @@ import {
   readTheDisclaimer,
   savedClimb,
   savedPlayer,
+  setOffChecked,
 } from "./climb";
 
 /**
@@ -54,6 +55,7 @@ test("a heavy, untrained climber new to the mountains hears what it means, and s
   await expect(guide(page)).not.toContainText(/\d\.\d/);
   await screen.getByRole("button", { name: "Climb" }).click();
   await expect(screen).toBeHidden();
+  await setOffChecked(page);
   await expect.poll(() => setOff(page), SAVING).not.toBeNull();
   const body = await setOff(page);
   expect(body?.mass).toBe(110);
@@ -70,6 +72,7 @@ test("the next new climb opens on the answers kept, to keep as they are or to ed
   await climberScreen(page).getByText("More about you").click();
   await climberScreen(page).getByLabel("Asthma").check();
   await climberScreen(page).getByRole("button", { name: "Climb" }).click();
+  await setOffChecked(page);
   await expect.poll(async () => (await savedClimb(page)) !== null, SAVING).toBe(true);
 
   await readTheDisclaimer(page);

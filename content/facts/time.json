@@ -8,9 +8,7 @@
       "status": "source only",
       "value": 36,
       "unit": "1",
-      "fitted_to": [
-        "crowds.south-col-to-summit-2026"
-      ],
+      "fitted_to": ["crowds.south-col-to-summit-2026"],
       "fitted": "2026-11-06"
     },
     {
@@ -349,6 +347,24 @@
             "url": "https://www.alanarnette.com/2021/04/10/everest-2021-everests-gatekeeper-the-khumbu-icefall/"
           },
           "checked": "2026-11-05"
+        }
+      ]
+    },
+    {
+      "id": "time.first-light",
+      "kind": "fact",
+      "claim": "The hour of the morning in the climbing season when there's first light on the Khumbu Icefall: civil twilight, from when the ice shows without a lamp.",
+      "status": "source only",
+      "versions": [
+        {
+          "value": 5,
+          "unit": "hour of day",
+          "note": "At 27.99° N, 86.86° E on 20 April 2026, Nepal time: civil twilight begins at 5:03 am, and the sun rises at 5:28 am over a level horizon; by 15 May, civil twilight begins at 4:42 am.",
+          "source": {
+            "title": "Sunrise Sunset API: the Khumbu Icefall, 20 April 2026",
+            "url": "https://api.sunrise-sunset.org/json?lat=27.99&lng=86.86&date=2026-04-20&tzid=Asia/Kathmandu"
+          },
+          "checked": "2026-11-08"
         }
       ]
     },
@@ -738,10 +754,7 @@
       "id": "time.turnaround-today",
       "kind": "question",
       "question": "What turnaround times do teams on the South side set today, and who decides and enforces them on summit day?",
-      "about": [
-        "time.turnaround",
-        "time.summit-arrival"
-      ]
+      "about": ["time.turnaround", "time.summit-arrival"]
     },
     {
       "id": "time.expedition-days",

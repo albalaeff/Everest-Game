@@ -37,6 +37,10 @@ export interface FootingSettings {
   readonly bounce: { readonly excite: number; readonly damp: number; readonly loss: number };
   /** The footing a climber has back once they're up from a slip. */
   readonly afterSlip: number;
+  /** A crampon not checked before setting off (#196): the seconds on the move after which it comes
+   * loose, on the next ladder; how sure-footed a loose one leaves its climber, a share; and the
+   * seconds a refit takes, standing. */
+  readonly crampon: { readonly looseAfter: number; readonly loose: number; readonly refit: number };
 }
 
 /**

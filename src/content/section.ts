@@ -2,6 +2,7 @@ import icefall from "../../content/route/icefall.json";
 import { SlopePhysics, Terrain } from "../physics";
 import type {
   ClimberLayout,
+  Kit,
   LadderLayout,
   RopeLayout,
   SlopeLayout,
@@ -177,9 +178,15 @@ export class Section {
   }
 
   /** A scenario on the section: the seed, the climbers in the layout's order, the clock at its
-   * start, and the player as their answers make them (#145), or as the file has them. */
-  scenario(seed: number, player?: ClimberStart): Scenario {
-    const { bodies, layout } = player === undefined ? this : this.withPlayer(player);
+   * start, the player as their answers make them (#145), or as the file has them, and with what
+   * they checked of their kit (#196): a skipped water check leaves them `unchecked` litres short. */
+  scenario(
+    seed: number,
+    player?: ClimberStart,
+    gear?: { readonly kit: Kit; readonly unchecked: number },
+  ): Scenario {
+    const made = player === undefined ? this : this.withPlayer(player);
+    const { bodies, layout } = gear === undefined ? made : Section.withKit(made, gear);
     return {
       seed,
       climbers: layout.climbers.map((climber) => climber.id),
@@ -206,6 +213,26 @@ export class Section {
     return {
       bodies: this.bodies.map((body) => (mine(body.id) ? { ...body, mass, fitness } : body)),
       layout: { ...this.layout, climbers },
+    };
+  }
+
+  /** The bodies and the layout with the player's kit: on their climber, and their water short by
+   * `unchecked` litres if they didn't fill their bottles. */
+  private static withKit(
+    { bodies, layout }: { readonly bodies: readonly BodyStart[]; readonly layout: SlopeLayout },
+    { kit, unchecked }: { readonly kit: Kit; readonly unchecked: number },
+  ): { readonly bodies: readonly BodyStart[]; readonly layout: SlopeLayout } {
+    const mine = (id: ClimberId): boolean => id === Section.PLAYER;
+    return {
+      bodies: bodies.map((body) =>
+        mine(body.id) && !kit.water ? { ...body, water: body.water + unchecked } : body,
+      ),
+      layout: {
+        ...layout,
+        climbers: layout.climbers.map((climber) =>
+          mine(climber.id) ? { ...climber, kit } : climber,
+        ),
+      },
     };
   }
 
