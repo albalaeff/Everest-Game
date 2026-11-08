@@ -1,4 +1,4 @@
-import { Logbook, SlopePhysics } from "../physics";
+import { Lamplight, Logbook, SlopePhysics } from "../physics";
 import type { Kit } from "../physics";
 import { Body, MountainClock, ObjectiveHazards, OxygenSystem } from "../simulation";
 import type { HazardKind, HazardOdds, HazardSettings, Rule, Scenario } from "../simulation";
@@ -19,6 +19,8 @@ export interface ExpeditionRules {
   readonly physics: SlopePhysics;
   /** The climb's logbook, which the debrief reads (#194). */
   readonly logbook: Logbook;
+  /** Whose headlamps are lit, and who's in the dark (#196). */
+  readonly lamps: Lamplight;
   readonly all: readonly Rule[];
 }
 
@@ -31,6 +33,7 @@ export interface ExpeditionRules {
 export class Mountain {
   /** The record the mountain's clock runs at: how many times faster than play. */
   static readonly COMPRESSION = "time.compression";
+  private static readonly SECONDS_AN_HOUR = 60 * 60;
 
   /** What the player's answers make of their climber. */
   readonly climbers: ClimberFacts;
@@ -51,7 +54,9 @@ export class Mountain {
     const scenario = this.route.scenario(
       seed,
       player,
-      kit === undefined ? undefined : { kit, unchecked: this.knowledge.number("body.unchecked-water") },
+      kit === undefined
+        ? undefined
+        : { kit, unchecked: this.knowledge.number("body.unchecked-water") },
     );
     const bodyFacts = new BodyFacts(this.knowledge);
     return {
@@ -75,7 +80,13 @@ export class Mountain {
     const physics = new SlopePhysics(this.route.settings);
     const bodyFacts = new BodyFacts(this.knowledge);
     const oxygen = new OxygenSystem(bodyFacts.oxygenNumbers(), clock);
-    const body = new Body(bodyFacts.numbers, clock, physics, oxygen);
+    // The body moves the climbers through the light they see their feet by (#196).
+    const lamps = new Lamplight(physics, clock, {
+      lasts: this.knowledge.number("technique.dead-lamp-hours") * Mountain.SECONDS_AN_HOUR,
+      firstLight: this.knowledge.number("time.first-light") * Mountain.SECONDS_AN_HOUR,
+      dark: this.knowledge.number("technique.dark-footing"),
+    });
+    const body = new Body(bodyFacts.numbers, clock, lamps, oxygen);
     const hazards = new ObjectiveHazards(this.hazardSettings(), clock, physics);
     const logbook = new Logbook(physics, hazards, clock, this.route.logged);
     return {
@@ -85,6 +96,7 @@ export class Mountain {
       hazards,
       physics,
       logbook,
+      lamps,
       all: [clock, oxygen, body, hazards, physics, logbook],
     };
   }

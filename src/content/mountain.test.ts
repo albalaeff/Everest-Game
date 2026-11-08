@@ -1,6 +1,8 @@
 import { describe, expect, it } from "vitest";
 
-import { Expedition, HazardChance, SimulationClock } from "../simulation";
+import { Climber } from "../physics";
+import { Body, Expedition, HazardChance, SimulationClock } from "../simulation";
+import type { Scenario } from "../simulation";
 import { KnowledgeBase } from "./knowledge-base";
 import { KNOWLEDGE_FILES } from "./knowledge-files";
 import { Mountain } from "./mountain";
@@ -51,6 +53,50 @@ describe("Mountain", () => {
     expect(walked({ ...typical, weight: 110, training: "none" })).toBeLessThan(
       walked(typical) - 0.5,
     );
+  });
+
+  it("sets the player off with what they checked of their kit, a litre short if not their water (#196)", () => {
+    const mountain = new Mountain(knowledge);
+    const { typical } = mountain.questionnaire;
+    const skipped = { crampons: false, lamp: false, water: false };
+    const shortOf = (scenario: Scenario): Readonly<Record<string, number>> => {
+      const { climbers } = scenario.start[Body.NAME] as unknown as {
+        readonly climbers: readonly { readonly id: string; readonly water: number }[];
+      };
+      return Object.fromEntries(climbers.map(({ id, water }) => [id, water]));
+    };
+    const rules = mountain.rules();
+    const unchecked = mountain.scenario(7, typical, skipped);
+    Expedition.start(unchecked, rules.all);
+    const checked = shortOf(mountain.scenario(7, typical, Climber.CHECKED));
+
+    expect(rules.physics.climber(Section.PLAYER).kit).toEqual(skipped);
+    for (const id of unchecked.climbers.filter((climber) => climber !== Section.PLAYER)) {
+      expect(rules.physics.climber(id).kit).toEqual(Climber.CHECKED);
+      expect(shortOf(unchecked)[id]).toBe(checked[id]);
+    }
+    expect(shortOf(unchecked)[Section.PLAYER]).toBe(
+      (checked[Section.PLAYER] ?? 0) + knowledge.number("body.unchecked-water"),
+    );
+    expect(shortOf(mountain.scenario(7, typical))).toEqual(checked);
+  });
+
+  it("puts out the lamp of a player who didn't check it an hour out, and lights the rest (#196)", () => {
+    const mountain = new Mountain(knowledge);
+    const { typical } = mountain.questionnaire;
+    const rules = mountain.rules();
+    const scenario = mountain.scenario(7, typical, { ...Climber.CHECKED, lamp: false });
+    const expedition = Expedition.start(scenario, rules.all);
+    const hour = HOUR / knowledge.number(Mountain.COMPRESSION);
+    for (let step = 0; step < 1.1 * hour * SimulationClock.STEPS_PER_SECOND; step += 1) {
+      expedition.advance();
+    }
+
+    expect(rules.lamps.lit(Section.PLAYER)).toBe(false);
+    expect(rules.lamps.inTheDark(Section.PLAYER)).toBe(true);
+    for (const id of scenario.climbers.filter((climber) => climber !== Section.PLAYER)) {
+      expect(rules.lamps.lit(id)).toBe(true);
+    }
   });
 
   it("runs the mountain's clock at the knowledge base's ratio", () => {

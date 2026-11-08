@@ -166,7 +166,7 @@ export class ClimberFigure extends Container {
 
   /** Draws them as they are this frame, `seconds` after the last, as the body shows them, the mask
    * on while their oxygen flows (`masked`), in the frame's light, no smaller than `size` allows,
-   * and `sag` lower where a ladder gives under them. */
+   * `sag` lower where a ladder gives under them, and their headlamp shining if it's `lit`. */
   show(
     body: BodyView,
     masked: boolean,
@@ -174,6 +174,7 @@ export class ClimberFigure extends Container {
     seconds: number,
     size: LeastSize,
     sag = 0,
+    lit = true,
   ): void {
     const { climber, drawn } = this;
     if (climber === null) {
@@ -207,8 +208,8 @@ export class ClimberFigure extends Container {
     this.alpha = climber.dead ? ClimberFigure.DEAD_ALPHA : 1;
     this.draw(pose, masked, atmosphere, climber.dead, grown, size);
     const upright = !climber.dead && !climber.falling;
-    this.drawLamp(pose, atmosphere, upright ? state.ground : null);
-    this.drawBreath(atmosphere, climber.dead, atmosphere.gust * facing);
+    this.drawLamp(pose, atmosphere, upright && lit ? state.ground : null);
+    this.drawBreath(atmosphere, climber.dead, atmosphere.gust * facing, lit);
     this.holds = climber.first !== null && pose.jumar !== null;
     if (pose.jumar !== null) {
       this.holding.on.x = this.first.x;
@@ -433,13 +434,14 @@ export class ClimberFigure extends Container {
 
   /** The breath cloud out of the mouth, through the mask's valve while it's on, on each breath
    * out, drifting ahead, blown on the gust the way the wind blows, `downwind` of 1 the way they
-   * face, and thinning; warm in the lamp's light at night. */
-  private drawBreath(atmosphere: Atmosphere, dead: boolean, downwind: number): void {
+   * face, and thinning; warm in the lamp's light at night, while it's `lit`. */
+  private drawBreath(atmosphere: Atmosphere, dead: boolean, downwind: number, lit: boolean): void {
     this.breath.clear();
     if (dead || !this.breathing.exhaling) {
       return;
     }
-    const colour = Palette.mix(Palette.BREATH, Palette.LAMP, atmosphere.light.lamps * 0.6);
+    const glow = lit ? atmosphere.light.lamps * 0.6 : 0;
+    const colour = Palette.mix(Palette.BREATH, Palette.LAMP, glow);
     const { from, to } = Breathing.EXHALE;
     const share = (this.breathing.where - from) / (to - from);
     const size = ClimberFigure.BREATH_RADIUS * (0.4 + 0.6 * share);

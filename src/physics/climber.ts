@@ -20,6 +20,9 @@ export type Fall = {
   readonly impact?: number;
   /** Whether they were clipped to a rope as it ended, which held them. */
   readonly held?: boolean;
+  /** Whether a crampon of theirs was loose, which the check they skipped left them (#196):
+   * missing where none was. */
+  readonly looseCrampon?: boolean;
 };
 
 /** What a climber checked of their kit before setting off (#196): their crampons fitted and
@@ -264,9 +267,17 @@ class Falling {
     return this.grounded && moved < speed * step && this.body.speed(substep) < speed;
   }
 
-  record(held: boolean): Fall {
+  record(held: boolean, looseCrampon: boolean): Fall {
     const { step, impact } = this;
-    return { step, drop: this.top - this.lowest, speed: this.speed, impact, held };
+    const drop = this.top - this.lowest;
+    return {
+      step,
+      drop,
+      speed: this.speed,
+      impact,
+      held,
+      ...(looseCrampon ? { looseCrampon } : {}),
+    };
   }
 }
 
@@ -627,7 +638,7 @@ export class Climber {
 
   /** Back on their feet after a fall, at `along`: shaken, their footing what it is after a slip. */
   private stand(falling: Falling, along: number, slope: Slope): void {
-    this.falls.push(falling.record(this.carabiners.length > 0));
+    this.falls.push(falling.record(this.carabiners.length > 0, this.cramponLoose));
     this.along = along;
     this.falling = null;
     this.footing = slope.settings.footing.afterSlip;

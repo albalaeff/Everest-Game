@@ -37,6 +37,7 @@ import type { ClimberId, ExpeditionSave, Scenario } from "../simulation";
 import { ActionQueue, EverySink, ZoomSink } from "./action-queue";
 import { BrowserSockets } from "./browser-sockets";
 import { ClimberScreen } from "./climber-screen";
+import { GearCheck } from "./gear-check";
 import { GameLoop } from "./game-loop";
 import type { Played } from "./game-loop";
 import { KeptClimber } from "./kept-climber";
@@ -65,6 +66,8 @@ export interface PageTexts {
   readonly coach: Texts<CoachTextName>;
   /** The debrief's words, and the death's (#194). */
   readonly debrief: Texts<DebriefTextName>;
+  /** The gear check's words (#196). */
+  readonly gear: Texts;
 }
 
 /** What the page's stories read that the DOM doesn't show, on `window.everest`. */
@@ -144,7 +147,8 @@ export class GamePage {
   }
 
   /** The climb alone: the one `saved` on the device, or a new one, which replaces it at once, for
-   * the climber the player says they are on Your climber. */
+   * the climber the player says they are on Your climber, with the kit they check at Base Camp
+   * (#196). */
   private alone(store: ExpeditionStore, saved: ExpeditionSave | null): void {
     const rules = this.mountain.rules();
     const resumed = SoloGame.resume(saved, rules.all);
@@ -157,8 +161,10 @@ export class GamePage {
     const screen = new ClimberScreen(this.window, this.texts.climber, questionnaire, this.guide);
     screen.show(kept.answers, (answers) => {
       kept.keep(answers);
-      const scenario = this.mountain.scenario(this.newSeed(), answers);
-      this.playAlone(store, Expedition.start(scenario, rules.all), rules);
+      new GearCheck(this.window, this.texts.gear).show((kit) => {
+        const scenario = this.mountain.scenario(this.newSeed(), answers, kit);
+        this.playAlone(store, Expedition.start(scenario, rules.all), rules);
+      });
     });
   }
 
@@ -237,6 +243,7 @@ export class GamePage {
         clock: rules.clock,
         body: rules.body,
         oxygen: rules.oxygen,
+        lamps: rules.lamps,
         camps: this.mountain.route.camps,
         parts: this.mountain.route.parts,
         climbers: scenario.climbers,
@@ -285,7 +292,7 @@ export class GamePage {
       window.document,
       texts.coach,
       new Coach(this.storage()),
-      new CoachedClimb(physics, rules.hazards, player),
+      new CoachedClimb(physics, rules.hazards, rules.lamps, player),
     );
     const loop = new GameLoop(climb.played, scene);
     const button = new QualityButton(choice, texts.rendering, (quality) => {

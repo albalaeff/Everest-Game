@@ -69,6 +69,17 @@ describe("A crampon not checked before setting off", () => {
     );
   });
 
+  it("writes a fall on it into the climber's record, for the debrief to trace back", () => {
+    const loose = new Climb(TestMountain.SLIPPERY, toTheLadder(UNCHECKED));
+    const tight = new Climb(TestMountain.SLIPPERY, toTheLadder(CHECKED));
+    loose.play(steps(60), [walk("anna", "right")]);
+    tight.play(steps(60), [walk("anna", "right")]);
+
+    const [fall] = loose.physics.climber("anna").falls;
+    expect(fall).toMatchObject({ looseCrampon: true, held: false });
+    expect(tight.physics.climber("anna").falls.every((it) => it.looseCrampon !== true)).toBe(true);
+  });
+
   it("refits with the crampons tool on the ground, the climber kneeling a while, and not on a ladder", () => {
     const climb = new Climb(TestMountain.SLIPPERY, toTheLadder(UNCHECKED));
     climb.play(steps(16), [walk("anna", "right")]);

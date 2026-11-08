@@ -229,7 +229,9 @@ export class Section {
       ),
       layout: {
         ...layout,
-        climbers: layout.climbers.map((climber) => (mine(climber.id) ? { ...climber, kit } : climber)),
+        climbers: layout.climbers.map((climber) =>
+          mine(climber.id) ? { ...climber, kit } : climber,
+        ),
       },
     };
   }

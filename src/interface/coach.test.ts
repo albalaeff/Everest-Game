@@ -34,6 +34,7 @@ const standing = (x: number, over: Partial<ClimberView> = {}): ClimberView => ({
  * 40 m, one across a crevasse from 50 to 56, blue ice from 70 to 80, and seracs from 90 to 100. */
 class World implements CoachWorld {
   view: ClimberView = standing(0);
+  dark = false;
   ice = [{ from: 70, to: 80 }];
   zones: readonly HazardZone[] = [{ id: "seracs", kind: "serac", from: 90, to: 100 }];
   ropes = ["one", "two"];
@@ -59,6 +60,10 @@ class World implements CoachWorld {
 
   player(): ClimberView {
     return this.view;
+  }
+
+  inTheDark(): boolean {
+    return this.dark;
   }
 
   along(): number {
@@ -222,6 +227,33 @@ describe("Coach: the warnings, whenever they matter", () => {
     world.view = standing(95);
 
     expect(after(coach, world, Coach.STOPPED_SECONDS + 0.1)).toBe("stopped-under-seracs");
+  });
+
+  it("tells a climber whose crampon came loose to refit it, until they kneel to (#196)", () => {
+    const { coach } = fresh();
+    const world = new World();
+    world.view = standing(4, { moving: true, walking: "right" });
+    after(coach, world);
+    world.view = standing(30, { cramponLoose: true });
+    const loose = after(coach, world, Coach.LEAST_SECONDS);
+    world.view = standing(30, { cramponLoose: true, refitting: true });
+
+    expect(loose).toBe("crampon-loose");
+    expect(after(coach, world, Coach.LEAST_SECONDS)).not.toBe("crampon-loose");
+  });
+
+  it("says the headlamp has died as the dark comes, for a while, not all the way to dawn (#196)", () => {
+    const { coach } = fresh();
+    const world = new World();
+    world.view = standing(4, { moving: true, walking: "right" });
+    after(coach, world);
+    world.view = standing(30, { moving: true, walking: "right" });
+    world.dark = true;
+    const died = after(coach, world, Coach.LEAST_SECONDS);
+    const later = after(coach, world, Coach.DARK_SECONDS);
+
+    expect(died).toBe("lamp");
+    expect(later).not.toBe("lamp");
   });
 
   it("says nothing to the dead", () => {

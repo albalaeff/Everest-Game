@@ -16,12 +16,17 @@ export type CoachTip =
   | "hanging"
   | "footing"
   | "unclipped"
-  | "stopped-under-seracs";
+  | "stopped-under-seracs"
+  | "crampon-loose"
+  | "lamp";
 
 /** What the coach reads of the climb: the player's climber, the route's ropes, ladders, blue ice
- * and hazards. The page hands it the physics' and the hazards' views of them. */
+ * and hazards, and whether the player is in the dark. The page hands it the physics', the
+ * hazards' and the lamps' views of them. */
 export interface CoachWorld {
   player(): ClimberView;
+  /** Whether the player's headlamp has died before first light (#196). */
+  inTheDark(): boolean;
   /** How far along the ground the player is. */
   along(): number;
   /** The rope a clip of the player's would take now, or none. */
@@ -47,8 +52,10 @@ export interface CoachStorage {
  * it, the walk at the start, the clip at the first rope, the changeover at the first anchor, the
  * ladders, the crossings and the ice, and lets it go once the player has done it, which the
  * device keeps. The warnings come whenever they matter: hanging on the rope, losing the footing,
- * unclipped where a slip is a fall, stopped under the seracs. It holds the screen's own state
- * alone, as the rendering does: what's been learnt, and what it shows.
+ * unclipped where a slip is a fall, stopped under the seracs, a crampon come loose and the
+ * headlamp dead in the dark, a check skipped before setting off catching up with the player
+ * (#196). It holds the screen's own state alone, as the rendering does: what's been learnt, and
+ * what it shows.
  */
 export class Coach {
   /** Where the device keeps what's been learnt. */
@@ -57,6 +64,8 @@ export class Coach {
   static readonly LEAST_SECONDS = 3;
   /** How long a climber may stand still under the seracs before the coach says so. */
   static readonly STOPPED_SECONDS = 4;
+  /** How long the coach says the headlamp has died, once the dark comes. */
+  static readonly DARK_SECONDS = 6;
   /** How far a climber walks before the walk is learnt; how near a ladder's end, an anchor and
    * the ice ahead have to be for their tips; how far from a crevasse's ladder an unclipped
    * climber is warned; and how little footing is losing it. */
@@ -72,6 +81,8 @@ export class Coach {
     "stopped-under-seracs",
     "unclipped",
     "footing",
+    "crampon-loose",
+    "lamp",
     "anchor",
     "clip",
     "jumar",
@@ -87,6 +98,8 @@ export class Coach {
     "stopped-under-seracs",
     "unclipped",
     "footing",
+    "crampon-loose",
+    "lamp",
   ]);
 
   private readonly done: Set<CoachTip>;
@@ -97,8 +110,9 @@ export class Coach {
   /** The rope whose end the changeover was shown at; the ice the player has been on. */
   private anchorRope: string | null = null;
   private onIce = false;
-  /** How long the player has stood still under the seracs. */
+  /** How long the player has stood still under the seracs, and been in the dark. */
   private still = 0;
+  private dark = 0;
 
   constructor(private readonly storage: CoachStorage | null) {
     this.done = new Set(Coach.kept(storage));
@@ -163,6 +177,7 @@ export class Coach {
     this.onIce = iceNow;
     const underSeracs = this.inZone(world, along, "serac");
     this.still = underSeracs && !view.moving && !view.falling ? this.still + seconds : 0;
+    this.dark = world.inTheDark() ? this.dark + seconds : 0;
   }
 
   /** Whether a tip is wanted where the player is now. */
@@ -185,6 +200,10 @@ export class Coach {
         );
       case "footing":
         return !view.falling && view.footing < Coach.UNSURE;
+      case "crampon-loose":
+        return view.cramponLoose && !view.refitting && !view.falling;
+      case "lamp":
+        return world.inTheDark() && this.dark < Coach.DARK_SECONDS;
       case "anchor":
         return !view.falling && this.atAnAnchor(world, view);
       case "clip":

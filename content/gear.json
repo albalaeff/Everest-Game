@@ -1,0 +1,26 @@
+{
+  "en": {
+    "title": "Gear check at Base Camp",
+    "model": "A game model of the Icefall, not instructions for climbing it yourself.",
+    "intro": "Tick what you check before you set off. A check you skip catches up with you on the route.",
+    "crampons": "Crampons fitted and strapped tight",
+    "crampons-why": "A climber's fall from a ladder near Camp 1 in 2012 began with a crampon caught on a rung.",
+    "lamp": "Fresh batteries in your headlamp",
+    "lamp-why": "You set off in the dark, hours before first light.",
+    "water": "Both water bottles filled",
+    "water-why": "In their insulated covers, so they don't freeze: thirst tires you faster.",
+    "set-off": "Set off"
+  },
+  "ru": {
+    "title": "Проверка снаряжения в базовом лагере",
+    "model": "Это игровая модель ледопада, а не инструкция для самостоятельного восхождения.",
+    "intro": "Отметь, что ты проверил перед выходом. Пропущенная проверка настигнет тебя на маршруте.",
+    "crampons": "Кошки подогнаны и туго затянуты",
+    "crampons-why": "В 2012 году падение альпиниста с лестницы у Лагеря 1 началось с кошки, зацепившейся за перекладину.",
+    "lamp": "Свежие батарейки в налобном фонаре",
+    "lamp-why": "Ты выходишь в темноте, за несколько часов до рассвета.",
+    "water": "Обе бутылки с водой наполнены",
+    "water-why": "В утеплённых чехлах, чтобы не замёрзли: жажда утомляет быстрее.",
+    "set-off": "Выйти"
+  }
+}

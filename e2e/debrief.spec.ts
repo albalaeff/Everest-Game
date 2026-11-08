@@ -47,7 +47,7 @@ test.describe("on a screen of 630 by 360", () => {
     await expect(notice(page).locator('[data-text="verdict"]')).toContainText(
       "no rope to hold you",
     );
-    await expect(notice(page).locator("dl dt")).toHaveCount(8);
+    await expect(notice(page).locator("dl dt")).toHaveCount(9);
     await notice(page).getByRole("button", { name: "Start over" }).click();
     // The page opens anew on its disclaimer, and past it straight on Your climber: no start menu.
     await page.getByRole("button", { name: "I understand" }).click({ timeout: 20_000 });

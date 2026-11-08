@@ -11,6 +11,8 @@ export interface SeenClimber {
   readonly first: string | null;
   readonly second: string | null;
   readonly ladder: string | null;
+  /** Whether a crampon they didn't check has come loose (#196). */
+  readonly cramponLoose: boolean;
 }
 
 /** A climber on the slope as the device saves them (src/physics → ClimberSave), as far as the
@@ -19,6 +21,9 @@ export interface SavedClimber {
   readonly id: string;
   along: number;
   readonly technique: number;
+  /** What they checked at Base Camp, and the play's seconds they've been on the move (#196). */
+  kit?: { crampons: boolean; lamp: boolean; water: boolean };
+  onTheMove?: number;
 }
 
 /** A climb as the device saves it (src/simulation → ExpeditionSave), as far as the stories read
@@ -76,6 +81,27 @@ export function climberScreen(page: Page): Locator {
   return page.getByRole("dialog", { name: "Your climber" });
 }
 
+/** The gear check at Base Camp, after Your climber (#196). */
+export function gearCheck(page: Page): Locator {
+  return page.getByRole("dialog", { name: "Gear check at Base Camp" });
+}
+
+/** The gear check's boxes, by their names: everything a climber checks before setting off. */
+export const KIT = [
+  "Crampons fitted and strapped tight",
+  "Fresh batteries in your headlamp",
+  "Both water bottles filled",
+] as const;
+
+/** Ticks every box of the gear check, and sets off: the climb as the route has it. */
+export async function setOffChecked(page: Page): Promise<void> {
+  const screen = gearCheck(page);
+  for (const item of KIT) {
+    await screen.getByRole("checkbox", { name: item }).check();
+  }
+  await screen.getByRole("button", { name: "Set off" }).click();
+}
+
 /** The answers Your climber kept on the device, or null for none. */
 export async function keptClimber(page: Page): Promise<Record<string, unknown> | null> {
   return page.evaluate(
@@ -84,11 +110,13 @@ export async function keptClimber(page: Page): Promise<Record<string, unknown> |
 }
 
 /** Opens the game on a new climb alone, on a device with none saved: the questions open on the
- * typical client, whom the route's numbers are fitted to, and [Climb] sets them off. */
+ * typical client, whom the route's numbers are fitted to, [Climb] takes them to the gear check,
+ * and with everything checked they set off. */
 export async function openTheGame(page: Page): Promise<void> {
   await readTheDisclaimer(page);
   await choice(page, "Alone").click();
   await climberScreen(page).getByRole("button", { name: "Climb" }).click();
+  await setOffChecked(page);
 }
 
 /** Opens the game again on the climb alone the device has saved: [Alone] goes on with it, with

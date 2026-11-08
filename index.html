@@ -158,6 +158,52 @@
         <button type="submit" form="climber-answers" data-text="climb" hidden></button>
       </div>
     </section>
+    <section id="gear" role="dialog" aria-modal="true" aria-labelledby="gear-title" hidden>
+      <div>
+        <h2 id="gear-title" data-text="title"></h2>
+        <p class="model" data-text="model"></p>
+        <p data-text="intro"></p>
+        <form id="gear-check">
+          <label>
+            <input
+              type="checkbox"
+              name="crampons"
+              aria-labelledby="gear-crampons"
+              aria-describedby="gear-crampons-why"
+            />
+            <span>
+              <span id="gear-crampons" data-text="crampons"></span>
+              <small id="gear-crampons-why" data-text="crampons-why"></small>
+            </span>
+          </label>
+          <label>
+            <input
+              type="checkbox"
+              name="lamp"
+              aria-labelledby="gear-lamp"
+              aria-describedby="gear-lamp-why"
+            />
+            <span>
+              <span id="gear-lamp" data-text="lamp"></span>
+              <small id="gear-lamp-why" data-text="lamp-why"></small>
+            </span>
+          </label>
+          <label>
+            <input
+              type="checkbox"
+              name="water"
+              aria-labelledby="gear-water"
+              aria-describedby="gear-water-why"
+            />
+            <span>
+              <span id="gear-water" data-text="water"></span>
+              <small id="gear-water-why" data-text="water-why"></small>
+            </span>
+          </label>
+        </form>
+        <button type="submit" form="gear-check" data-text="set-off"></button>
+      </div>
+    </section>
     <section id="disclaimer" role="dialog" aria-modal="true" aria-labelledby="disclaimer-title">
       <div>
         <h2 id="disclaimer-title" data-text="title"></h2>

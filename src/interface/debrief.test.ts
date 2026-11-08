@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import debriefTexts from "../../content/debrief.json";
+import { Climber } from "../physics";
 import type { Fall, LogPage } from "../physics";
 import type { Strike } from "../simulation";
 import { Debrief } from "./debrief";
@@ -27,6 +28,7 @@ const facts = (over: Partial<DebriefFacts> = {}): DebriefFacts => ({
   falls: [],
   strikes: [],
   player: "player",
+  kit: Climber.CHECKED,
   ...over,
 });
 
@@ -117,6 +119,34 @@ describe("Debrief: what the climb was, after it (#194)", () => {
     expect(said.verdict.tone).toBe("bad");
     expect(said.verdict.text).toContain("26 m");
     expect(value(said, "Falls with no rope to hold you")).toBe("1");
+  });
+
+  it("lists the checks skipped at Base Camp, and says everything was checked when it was (#196)", () => {
+    const checked = debrief.of(facts());
+    const skipped = debrief.of(facts({ kit: { crampons: false, lamp: false, water: true } }));
+
+    expect(checked.lines.find(({ label }) => label === "Gear check at Base Camp")).toMatchObject({
+      value: "everything checked",
+      tone: "good",
+    });
+    expect(skipped.lines.find(({ label }) => label === "Gear check at Base Camp")).toMatchObject({
+      value: "skipped: crampons, headlamp",
+      tone: "bad",
+    });
+  });
+
+  it("traces a fatal fall on a loose crampon back to the check skipped at Base Camp (#196)", () => {
+    const said = debrief.of(
+      facts({
+        page: page({ arrived: null, died: 5 * HOUR, exposed: 30 }),
+        falls: [{ ...unheld(18.2, 20), looseCrampon: true }],
+        kit: { ...Climber.CHECKED, crampons: false },
+      }),
+    );
+
+    expect(said.verdict.text).toContain("18 m");
+    expect(said.verdict.text).toContain("crampon");
+    expect(said.verdict.text).toContain("Base Camp");
   });
 
   it("writes hours as hours and minutes", () => {

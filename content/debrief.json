@@ -13,6 +13,12 @@
     "under-seracs": "Under the seracs",
     "stopped": "Of it, standing still",
     "near": "Ice and snow that came down near you",
+    "gear": "Gear check at Base Camp",
+    "gear.checked": "everything checked",
+    "gear.skipped": "skipped: {items}",
+    "gear.crampons": "crampons",
+    "gear.lamp": "headlamp",
+    "gear.water": "water",
     "count": "{count}",
     "hours": "{hours} h {minutes} min",
     "minutes": "{minutes} min",
@@ -26,7 +32,8 @@
     "died.avalanche": "An avalanche swept you away. Cross its slope early and without stopping.",
     "died.crevasse": "A snow bridge gave way under you. Stay clipped to the fixed rope where crevasses hide.",
     "died.cornice": "A cornice broke under you.",
-    "died.fall": "You fell {drop} m, with no rope to hold you. Clip in before the ice and the ladders: the rope turns a fall into a scare."
+    "died.fall": "You fell {drop} m, with no rope to hold you. Clip in before the ice and the ladders: the rope turns a fall into a scare.",
+    "died.fall-crampon": "You fell {drop} m, with no rope to hold you, on a crampon that had come loose. It began at Base Camp: check your crampons before you set off, and clip in before the ice and the ladders."
   },
   "ru": {
     "you-died": "Ты погиб",
@@ -42,6 +49,12 @@
     "under-seracs": "Под сераками",
     "stopped": "Из них стоя на месте",
     "near": "Лёд и снег, что сошли рядом",
+    "gear": "Проверка снаряжения в базовом лагере",
+    "gear.checked": "всё проверено",
+    "gear.skipped": "пропущено: {items}",
+    "gear.crampons": "кошки",
+    "gear.lamp": "налобный фонарь",
+    "gear.water": "вода",
     "count": "{count}",
     "hours": "{hours} ч {minutes} мин",
     "minutes": "{minutes} мин",
@@ -55,6 +68,7 @@
     "died.avalanche": "Тебя унесла лавина. Пересекай её склон рано и без остановок.",
     "died.crevasse": "Под тобой провалился снежный мост. Будь пристёгнут к перилам там, где прячутся трещины.",
     "died.cornice": "Под тобой обломился карниз.",
-    "died.fall": "Ты упал с высоты {drop} м, и никакая верёвка тебя не удержала. Пристёгивайся до льда и лестниц: верёвка превращает падение в испуг."
+    "died.fall": "Ты упал с высоты {drop} м, и никакая верёвка тебя не удержала. Пристёгивайся до льда и лестниц: верёвка превращает падение в испуг.",
+    "died.fall-crampon": "Ты упал с высоты {drop} м на расстегнувшейся кошке, и никакая верёвка тебя не удержала. Всё началось в базовом лагере: проверяй кошки перед выходом и пристёгивайся до льда и лестниц."
   }
 }

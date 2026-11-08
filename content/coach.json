@@ -25,7 +25,11 @@
     "unclipped.pc": "You're not clipped in: a slip here is a fall into the crevasse. Press R to clip to the rope.",
     "unclipped.touch": "You're not clipped in: a slip here is a fall into the crevasse. Tap [Clip 2] to clip to the rope.",
     "stopped-under-seracs.pc": "You've stopped under the seracs: the longer you stand here, the likelier they fall on you. Move on to safer ground.",
-    "stopped-under-seracs.touch": "You've stopped under the seracs: the longer you stand here, the likelier they fall on you. Move on to safer ground."
+    "stopped-under-seracs.touch": "You've stopped under the seracs: the longer you stand here, the likelier they fall on you. Move on to safer ground.",
+    "crampon-loose.pc": "Your crampon has come loose: your feet slip at every step. Off the ladder, stop and click just below your feet to kneel and refit it.",
+    "crampon-loose.touch": "Your crampon has come loose: your feet slip at every step. Off the ladder, stop and tap just below your feet to kneel and refit it.",
+    "lamp.pc": "Your headlamp has died: you can't see where you put your feet until first light. Hold C for careful steps.",
+    "lamp.touch": "Your headlamp has died: you can't see where you put your feet until first light. Push gently for careful steps."
   },
   "ru": {
     "walk.pc": "Держи D, чтобы идти. C — осторожный шаг, Shift — быстрее.",
@@ -53,6 +57,10 @@
     "unclipped.pc": "Ты не пристёгнут: срыв здесь — падение в трещину. Нажми R, чтобы пристегнуться.",
     "unclipped.touch": "Ты не пристёгнут: срыв здесь — падение в трещину. Нажми [Ус 2], чтобы пристегнуться.",
     "stopped-under-seracs.pc": "Ты остановился под сераками: чем дольше стоишь, тем вероятнее они рухнут на тебя. Уходи в безопасное место.",
-    "stopped-under-seracs.touch": "Ты остановился под сераками: чем дольше стоишь, тем вероятнее они рухнут на тебя. Уходи в безопасное место."
+    "stopped-under-seracs.touch": "Ты остановился под сераками: чем дольше стоишь, тем вероятнее они рухнут на тебя. Уходи в безопасное место.",
+    "crampon-loose.pc": "Кошка расстегнулась: ноги скользят на каждом шагу. Сойди с лестницы, остановись и щёлкни чуть ниже ног, чтобы встать на колено и затянуть её.",
+    "crampon-loose.touch": "Кошка расстегнулась: ноги скользят на каждом шагу. Сойди с лестницы, остановись и коснись чуть ниже ног, чтобы встать на колено и затянуть её.",
+    "lamp.pc": "Налобный фонарь погас: до рассвета ты не видишь, куда ставишь ноги. Держи C, чтобы идти осторожно.",
+    "lamp.touch": "Налобный фонарь погас: до рассвета ты не видишь, куда ставишь ноги. Веди палец мягко, чтобы идти осторожно."
   }
 }

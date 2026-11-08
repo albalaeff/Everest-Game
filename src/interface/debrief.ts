@@ -1,4 +1,4 @@
-import type { Fall, LogPage } from "../physics";
+import type { Fall, Kit, LogPage } from "../physics";
 import type { ClimberId, Strike } from "../simulation";
 import { Readings } from "./readings";
 import type { DayWarmth } from "./sun-clock";
@@ -10,13 +10,14 @@ export type Tone = "good" | "warn" | "bad" | "plain";
 /** The debrief's words in content/debrief.json. */
 export type DebriefTextName = keyof (typeof import("../../content/debrief.json"))["en"];
 
-/** What the debrief reads of a climb: the player's page of the logbook, their falls, and what came
- * down on the route. */
+/** What the debrief reads of a climb: the player's page of the logbook, their falls, what came
+ * down on the route, and what they checked of their kit before setting off (#196). */
 export interface DebriefFacts {
   readonly page: LogPage;
   readonly falls: readonly Fall[];
   readonly strikes: readonly Strike[];
   readonly player: ClimberId;
+  readonly kit: Kit;
 }
 
 /** The debrief said: whether the climber died, a verdict, and its lines. */
@@ -35,9 +36,10 @@ export interface DebriefSaid {
  * long where a slip was a fall; how many times the rope caught them, and how many falls had no rope
  * to hold them; how long they were under the seracs and how long they stood still there; what came
  * down near them; and when they got out of the Icefall, before the sun or after it, or when and how
- * they died. Even a climber who made it sees how lucky they were, and a death is traced back to the
- * mistake it came from (docs/guidelines/usability.md → A consequence that comes late is traced
- * back). Its words are content/debrief.json's.
+ * they died; and the checks they skipped at Base Camp (#196). Even a climber who made it sees how
+ * lucky they were, and a death is traced back to the mistake it came from, a crampon they didn't
+ * check too (docs/guidelines/usability.md → A consequence that comes late is traced back). Its
+ * words are content/debrief.json's.
  */
 export class Debrief {
   private static readonly HOUR = 3600;
@@ -48,8 +50,18 @@ export class Debrief {
     private readonly warmth: DayWarmth,
   ) {}
 
+  /** The kit a climber checks, in the gear check's order, and its name in the debrief. */
+  private static readonly KIT: readonly {
+    readonly item: keyof Kit;
+    readonly name: DebriefTextName;
+  }[] = [
+    { item: "crampons", name: "gear.crampons" },
+    { item: "lamp", name: "gear.lamp" },
+    { item: "water", name: "gear.water" },
+  ];
+
   /** The debrief of a climb. */
-  of({ page, falls, strikes, player }: DebriefFacts): DebriefSaid {
+  of({ page, falls, strikes, player, kit }: DebriefFacts): DebriefSaid {
     const caught = falls.filter((fall) => fall.held === true).length;
     const unroped = falls.filter((fall) => fall.held === false);
     const near = strikes.filter((strike) => strike.climbers.includes(player));
@@ -84,6 +96,16 @@ export class Debrief {
       this.texts.say("count", { count: near.length }),
       near.length > 0 ? "warn" : "plain",
     );
+    const skipped = Debrief.KIT.filter(({ item }) => !kit[item]).map(({ name }) =>
+      this.texts.say(name),
+    );
+    line(
+      "gear",
+      skipped.length === 0
+        ? this.texts.say("gear.checked")
+        : this.texts.say("gear.skipped", { items: skipped.join(", ") }),
+      skipped.length === 0 ? "good" : "bad",
+    );
     return { dead, verdict: this.verdict(page, caught, unroped, strikes, player), lines };
   }
 
@@ -105,8 +127,9 @@ export class Debrief {
         (most, fall) => (most === null || fall.drop > most.drop ? fall : most),
         null,
       );
+      const drop = Math.round(worst?.drop ?? 0);
       return {
-        text: texts.say("died.fall", { drop: Math.round(worst?.drop ?? 0) }),
+        text: texts.say(worst?.looseCrampon === true ? "died.fall-crampon" : "died.fall", { drop }),
         tone: "bad",
       };
     }
