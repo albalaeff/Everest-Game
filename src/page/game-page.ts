@@ -11,6 +11,9 @@ import { PageElements } from "../input/page-elements";
 import type { ActionSink } from "../input/player-action";
 import { ReceivedActions } from "../input/received-actions";
 import { CampNotice } from "../interface/camp-notice";
+import { Coach } from "../interface/coach";
+import { CoachCard } from "../interface/coach-card";
+import type { CoachTextName } from "../interface/coach-card";
 import type { Texts } from "../interface/texts";
 import type { ClimberView } from "../physics";
 import {
@@ -45,6 +48,7 @@ import type { RoomTexts } from "./room-texts";
 import { SoloGame } from "./solo-game";
 import { StartMenu } from "./start-menu";
 import { ClimbInterface } from "./climb-interface";
+import { CoachedClimb } from "./coached-climb";
 
 export interface PageTexts {
   readonly controls: ControlTexts;
@@ -54,6 +58,8 @@ export interface PageTexts {
   readonly camps: Texts;
   /** Your climber's words: its questions, their choices and the guide's lines. */
   readonly climber: Texts;
+  /** The coach's tips, for a keyboard and for touch (#192). */
+  readonly coach: Texts<CoachTextName>;
 }
 
 /** What the page's stories read that the DOM doesn't show, on `window.everest`. */
@@ -238,15 +244,22 @@ export class GamePage {
       player,
       this.mountain.route,
     );
+    const coach = new CoachCard(
+      window.document,
+      texts.coach,
+      new Coach(this.storage()),
+      new CoachedClimb(physics, rules.hazards, player),
+    );
     const loop = new GameLoop(climb.played, scene);
     const button = new QualityButton(choice, texts.rendering, (quality) => {
       scene.setQuality(quality, window.devicePixelRatio);
     });
     button.appendTo(this.elements.find("header"));
     const fps = new FpsReadout(this.elements.find("#fps"), texts.rendering.fps);
-    const afterFrame = (): void => {
+    const afterFrame = (seconds: number): void => {
       climbInterface.update();
       arrival.update();
+      coach.update(seconds);
     };
     this.expose({
       pixelAt: (x, y) => scene.pixelAt(x, y),
@@ -259,7 +272,7 @@ export class GamePage {
     if (await scene.open(window)) {
       scene.eachFrame((seconds, now) => {
         loop.frame(seconds);
-        afterFrame();
+        afterFrame(seconds);
         fps.frame(now);
       });
     } else {
@@ -319,11 +332,12 @@ export class GamePage {
   }
 
   /** The loop on the browser's frames alone, when there's no scene to drive it. */
-  private runWithoutPicture(loop: GameLoop, afterFrame: () => void): void {
+  private runWithoutPicture(loop: GameLoop, afterFrame: (seconds: number) => void): void {
     let last: number | null = null;
     const frame = (now: number): void => {
-      loop.frame(last === null ? 0 : (now - last) / 1000);
-      afterFrame();
+      const seconds = last === null ? 0 : (now - last) / 1000;
+      loop.frame(seconds);
+      afterFrame(seconds);
       last = now;
       this.window.requestAnimationFrame(frame);
     };

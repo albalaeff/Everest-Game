@@ -156,6 +156,52 @@ header {
   display: block;
 }
 
+/* The coach (#192): a tip at a time over the slope, under the readouts, in the player's own
+ * controls; a warning edged in the warning's colour. It never takes a click from the slope. */
+#coach {
+  position: absolute;
+  top: 5.5rem;
+  left: 50%;
+  max-width: min(34rem, calc(100vw - 2rem));
+  margin: 0;
+  padding: 0.55rem 0.95rem;
+  border: 1px solid var(--glass-edge);
+  border-radius: 0.9rem;
+  background: var(--glass-deep);
+  box-shadow: var(--glass-shadow);
+  color: var(--ink);
+  font-size: 0.9375rem;
+  line-height: 1.35;
+  text-align: center;
+  pointer-events: none;
+  transform: translateX(-50%);
+}
+
+#coach[hidden],
+#coach [data-device="touch"],
+.touch #coach [data-device="pc"] {
+  display: none;
+}
+
+.touch #coach [data-device="touch"] {
+  display: inline;
+}
+
+#coach[data-tip="hanging"],
+#coach[data-tip="footing"],
+#coach[data-tip="unclipped"],
+#coach[data-tip="stopped-under-seracs"] {
+  border-color: var(--danger);
+  box-shadow:
+    0 0 0 1px var(--danger),
+    var(--glass-shadow);
+}
+
+.touch #coach {
+  top: 4.25rem;
+  font-size: 0.8125rem;
+}
+
 /* The actions the game received, for the stories and a check by hand: a short list out of the
  * slope's way. */
 #received {
