@@ -149,6 +149,40 @@ describe("Debrief: what the climb was, after it (#194)", () => {
     expect(said.verdict.text).toContain("Base Camp");
   });
 
+  it("says how the training events went: clear of the collapse, held by the rope and pulled out (#209)", () => {
+    const collapse: Strike = {
+      zone: "serac-collapse",
+      kind: "serac",
+      step: 9,
+      timeOfDay: 4 * HOUR,
+      climbers: [],
+      killed: [],
+      training: true,
+    };
+    const said = debrief.of(
+      facts({ strikes: [collapse], falls: [{ ...held(4), broke: true, pulled: true }] }),
+    );
+
+    expect(value(said, "Serac collapse ahead (training)")).toBe("you were clear of it");
+    expect(value(said, "Ladder broke under you (training)")).toBe(
+      "the rope held you, and your partner pulled you out",
+    );
+    expect(value(debrief.of(facts()), "Ladder broke under you (training)")).toBeUndefined();
+  });
+
+  it("traces a death off a ladder that broke back to the rope that wasn't clipped (#209)", () => {
+    const said = debrief.of(
+      facts({
+        page: page({ arrived: null, died: 5 * HOUR }),
+        falls: [{ ...unheld(30, 24), broke: true }],
+      }),
+    );
+
+    expect(said.verdict.text).toContain("The ladder broke under you");
+    expect(said.verdict.text).toContain("30 m");
+    expect(value(said, "Ladder broke under you (training)")).toBe("no rope held you");
+  });
+
   it("writes hours as hours and minutes", () => {
     const said = debrief.of(facts({ page: page({ unclipped: 2 * HOUR + 5 * 60 }) }));
 

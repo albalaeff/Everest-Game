@@ -11,6 +11,11 @@ export interface SeenClimber {
   readonly first: string | null;
   readonly second: string | null;
   readonly ladder: string | null;
+  /** Whether they hang on their rope after a fall, to climb back up it (#190). */
+  readonly hanging: boolean;
+  /** Each fall that's over (#190), and how it went. */
+  readonly falls: readonly { readonly held?: boolean; readonly broke?: boolean }[];
+  readonly dead: boolean;
   /** Whether a crampon they didn't check has come loose (#196). */
   readonly cramponLoose: boolean;
 }
@@ -36,7 +41,22 @@ export interface SavedClimb {
   rules: {
     "mountain-clock": { steps: number };
     body: { climbers: { readonly id: string; readonly mass: number; readonly fitness: number }[] };
-    "slope-physics": { climbers: SavedClimber[] };
+    "slope-physics": {
+      climbers: SavedClimber[];
+      /** Each ladder, and where one staged to break for training breaks (#209). */
+      ladders: { readonly id: string; breaks?: number }[];
+    };
+    /** The training events staged on the route (#209), and what has come down. */
+    "objective-hazards": {
+      events?: {
+        readonly id: string;
+        readonly kind: string;
+        readonly from: number;
+        readonly to: number;
+        readonly lead: number;
+      }[];
+      strikes: { readonly zone: string; readonly climbers: readonly string[] }[];
+    };
   };
 }
 

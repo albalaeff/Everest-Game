@@ -11,6 +11,7 @@ const EVERY_ACTION: Readonly<Record<GameAction["kind"], GameAction>> = {
   clip: { kind: "clip", climber: "anna", cowstail: "first" },
   unclip: { kind: "unclip", climber: "anna", cowstail: "second" },
   jumar: { kind: "jumar", climber: "anna", held: true },
+  haul: { kind: "haul", climber: "anna", held: true },
   tool: { kind: "tool", climber: "anna", tool: "ice-axe", x: 12.5, y: 3 },
   oxygen: { kind: "oxygen", climber: "anna", change: "up" },
   "check-self": { kind: "check-self", climber: "anna" },
@@ -31,11 +32,12 @@ describe("GameAction", () => {
 });
 
 describe("LetGo", () => {
-  it("leaves a climber holding nothing: stopped, at a steady pace, the jumar let go", () => {
+  it("leaves a climber holding nothing: stopped, at a steady pace, the jumar and the haul let go", () => {
     expect(new LetGo("anna").actions()).toEqual([
       { kind: "walk", climber: "anna", direction: "stop" },
       { kind: "pace", climber: "anna", pace: "steady" },
       { kind: "jumar", climber: "anna", held: false },
+      { kind: "haul", climber: "anna", held: false },
     ]);
   });
 });

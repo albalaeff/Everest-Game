@@ -23,6 +23,7 @@ const state = (over: Partial<PoseState> = {}): PoseState => ({
   slack: 10,
   ladder: null,
   footing: 1,
+  hauling: false,
   ...over,
 });
 
@@ -718,5 +719,25 @@ describe("ClimberPose", () => {
     }
     const standing = through([{ frames: 60, over: {} }]);
     expect(standing.some(({ pose }) => pose.landed.some(Boolean))).toBe(false);
+  });
+
+  it("hauls a partner up braced: leaning back, sunk in the knees, both hands ahead pulling in turn (#209)", () => {
+    const standing = new ClimberPose();
+    const hauling = new ClimberPose();
+    let still: Pose = standing.advance(FRAME, state());
+    let pulled: Pose = hauling.advance(FRAME, state({ hauling: true }));
+    const nearHands: number[] = [];
+    for (let frame = 0; frame < 120; frame += 1) {
+      still = standing.advance(FRAME, state());
+      pulled = hauling.advance(FRAME, state({ hauling: true }));
+      nearHands.push(pulled.arms[0].end.x);
+    }
+
+    expect(pulled.lean).toBeLessThan(still.lean - 0.2);
+    expect(pulled.pelvis.y).toBeLessThan(still.pelvis.y - 0.05);
+    for (const arm of pulled.arms) {
+      expect(arm.end.x).toBeGreaterThan(pulled.pelvis.x + 0.15);
+    }
+    expect(Math.max(...nearHands) - Math.min(...nearHands)).toBeGreaterThan(0.1);
   });
 });

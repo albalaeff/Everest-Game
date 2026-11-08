@@ -45,6 +45,20 @@ export class HazardSigns {
   /** How high above the ground what comes down starts, and how many pieces of it there are. */
   static readonly FALL_METRES = 14;
   static readonly PIECES = 9;
+  /** A staged collapse's crack (#209): how high over the route it starts, on the serac's face just
+   * above the climbers' heads where the view shows it, how far down it runs when it's whole, how
+   * many pieces it's drawn in and how far each kinks aside; the chips off it, how many, how big,
+   * and how many times each falls as the crack runs. */
+  private static readonly CRACK_TOP = 8;
+  private static readonly CRACK_DOWN = 5;
+  private static readonly CRACK_PIECES = 7;
+  private static readonly CRACK_KINK = 0.35;
+  private static readonly CHIPS = 5;
+  private static readonly CHIP_METRES = 0.12;
+  private static readonly CHIP_FALLS = 3;
+  /** The rubble a staged collapse leaves: a block about every so many metres, of these sizes. */
+  private static readonly RUBBLE_EVERY = 1.1;
+  private static readonly RUBBLE_SIZES: readonly number[] = [1.1, 0.6, 1.5, 0.8, 1.2, 0.5];
   /** The pieces start at a few heights, so they don't come down in a line. */
   private static readonly STAGGER_METRES = 2;
   private static readonly PIECE_METRES: Readonly<Record<HazardKind, number>> = {
@@ -124,6 +138,67 @@ export class HazardSigns {
       pieces.push({ x: ground.x, y: ground.y + high * left, size });
     }
     return pieces;
+  }
+
+  /** The crack a staged collapse opens down the ice above its stretch (#209), `share` of the way
+   * through its crack: a jagged line from high on the serac's face, longer as it goes, and the
+   * chips that come off it, falling. */
+  crack(
+    zone: HazardZone,
+    share: number,
+  ): {
+    readonly line: readonly Point[];
+    readonly chips: readonly DebrisPiece[];
+  } {
+    const grown = Math.min(Math.max(share, 0), 1);
+    const middle = this.terrain.point((zone.from + zone.to) / 2);
+    const top = middle.y + HazardSigns.CRACK_TOP;
+    const down = HazardSigns.CRACK_DOWN * grown;
+    const line: Point[] = [];
+    for (let piece = 0; piece <= HazardSigns.CRACK_PIECES; piece += 1) {
+      const along = piece / HazardSigns.CRACK_PIECES;
+      // Jagged: each piece kinks one way, then the other.
+      const kink = (piece % 2 === 0 ? 1 : -1) * HazardSigns.CRACK_KINK * (0.5 + along / 2);
+      line.push({ x: middle.x + kink, y: top - down * along });
+    }
+    const chips: DebrisPiece[] = [];
+    for (let chip = 0; chip < HazardSigns.CHIPS; chip += 1) {
+      // Each chip falls from the crack in turn, over and over, faster as the crack grows.
+      const cycle = (grown * HazardSigns.CHIP_FALLS + chip / HazardSigns.CHIPS) % 1;
+      const from = top - down * ((chip + 1) / (HazardSigns.CHIPS + 1));
+      chips.push({
+        x: middle.x + HazardSigns.CRACK_KINK * ((chip % 3) - 1),
+        y: from - (from - middle.y) * cycle * cycle,
+        size: HazardSigns.CHIP_METRES * (1 + (chip % 2)),
+      });
+    }
+    return { line, chips };
+  }
+
+  /** The blocks of ice a staged collapse leaves lying over its stretch (#209), as outlines: big
+   * and small, tipped this way and that, sunk a little into the snow. */
+  rubble(zone: HazardZone): readonly (readonly Point[])[] {
+    const blocks: (readonly Point[])[] = [];
+    const count = Math.max(2, Math.round((zone.to - zone.from) / HazardSigns.RUBBLE_EVERY));
+    for (let block = 0; block < count; block += 1) {
+      const at = this.terrain.point(HazardSigns.across(zone, (block + 0.5) / count));
+      const size = HazardSigns.RUBBLE_SIZES[block % HazardSigns.RUBBLE_SIZES.length] ?? 1;
+      const tip = ((block * 7) % 5) / 5 - 0.4;
+      const corners: readonly (readonly [number, number])[] = [
+        [-0.55, -0.15],
+        [0.5, -0.2],
+        [0.6, 0.55],
+        [0.1, 0.8],
+        [-0.5, 0.6],
+      ];
+      blocks.push(
+        corners.map(([x, y]) => ({
+          x: at.x + size * (x * Math.cos(tip) - y * Math.sin(tip)),
+          y: at.y + size * (x * Math.sin(tip) + y * Math.cos(tip)),
+        })),
+      );
+    }
+    return blocks;
   }
 
   /** A point `share` of the way along a zone, in metres along the ground. */

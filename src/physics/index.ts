@@ -10,6 +10,7 @@ export type { SectionAltitude } from "./section-scale";
 export { SlopePhysics } from "./slope-physics";
 export type {
   ClimberLayout,
+  LadderCondition,
   LadderLayout,
   RopeLayout,
   SlopeLayout,

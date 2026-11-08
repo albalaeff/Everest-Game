@@ -15,13 +15,15 @@ const knowledge = new KnowledgeBase(KNOWLEDGE_FILES);
 const HOUR = 3600;
 /** Longer than any crossing the sources give: a walker still short of Camp 1 after it is lost. */
 const LONGEST_HOURS = 8;
-/** The crossings' seed. A careful crossing slips now and then (#208), and the rope holds it. */
+/** The crossings' seed. A careful crossing slips now and then (#208), and the rope holds it. The
+ * crossings here are the route's, without the training events a seed stages (#209), which have
+ * stories of their own. */
 const SEED = 1;
 
 /** The Icefall from `time`, on the knowledge base's rules, the hazards left out so that the
  * climber walks the same steps whatever the hour. */
 function scenarioAt(mountain: Mountain, seed: number, time: string): Scenario {
-  const scenario = mountain.scenario(seed);
+  const scenario = mountain.scenario(seed, undefined, undefined, false);
   const start: ClockStart = { date: icefall.date, time };
   return {
     ...scenario,
@@ -31,7 +33,7 @@ function scenarioAt(mountain: Mountain, seed: number, time: string): Scenario {
 
 /** The Icefall with its climbers at Camp 1, the player where the way up arrives, to go down. */
 function atCampOne(mountain: Mountain, seed: number): Scenario {
-  const scenario = mountain.scenario(seed);
+  const scenario = mountain.scenario(seed, undefined, undefined, false);
   const { layout, destination } = mountain.route;
   const climbers = layout.climbers.map((climber, index) => ({
     ...climber,
@@ -43,7 +45,7 @@ function atCampOne(mountain: Mountain, seed: number): Scenario {
 
 /** The Icefall with `more` kilograms in the player's pack than the route gives them. */
 function carrying(mountain: Mountain, seed: number, more: number): Scenario {
-  const scenario = mountain.scenario(seed);
+  const scenario = mountain.scenario(seed, undefined, undefined, false);
   const bodies = mountain.route.bodies.map((body) =>
     body.id === Section.PLAYER ? { ...body, load: body.load + more } : body,
   );
@@ -87,7 +89,10 @@ function crossed(
 describe("Base Camp to Camp 1 at a steady pace, clipped in all the way", () => {
   const mountain = new Mountain(knowledge);
   const rules = mountain.rules();
-  const expedition = Expedition.start(mountain.scenario(SEED), rules.all);
+  const expedition = Expedition.start(
+    mountain.scenario(SEED, undefined, undefined, false),
+    rules.all,
+  );
   const crossing = new Crossing(expedition, rules.physics, Section.PLAYER);
   const arrived = crossing.until(
     mountain.route.destination.from,
@@ -128,7 +133,10 @@ describe("Experience on the ladders and ropes: a novice and a veteran, as fit as
     const mountain = new Mountain(knowledge);
     const rules = mountain.rules();
     const answers = { ...mountain.questionnaire.typical, experience };
-    const expedition = Expedition.start(mountain.scenario(SEED, answers), rules.all);
+    const expedition = Expedition.start(
+      mountain.scenario(SEED, answers, undefined, false),
+      rules.all,
+    );
     const crossing = new Crossing(expedition, rules.physics, Section.PLAYER);
     const steps = LONGEST_HOURS * HOUR * (1 / rules.clock.secondsAStep);
     if (!crossing.until(mountain.route.destination.from, steps)) {
@@ -162,7 +170,7 @@ describe("Experience on the ladders and ropes: a novice and a veteran, as fit as
  */
 describe("The cost of the steps: down from Camp 1, and up with a heavier pack", () => {
   const mountain = new Mountain(knowledge);
-  const up = crossed(mountain, mountain.scenario(SEED), "up");
+  const up = crossed(mountain, mountain.scenario(SEED, undefined, undefined, false), "up");
 
   it("comes down in about the hours of the way down from Camp 2, shared as the way up's are", () => {
     const { hours } = crossed(mountain, atCampOne(mountain, SEED), "down");
@@ -196,7 +204,7 @@ describe("Slips by chance (#208): the rest step's care on the ice and the crossi
   const crossedOn = (seed: number, careful: boolean): ClimberView => {
     const mountain = new Mountain(knowledge);
     const rules = mountain.rules();
-    const expedition = Expedition.start(mountain.scenario(seed), [
+    const expedition = Expedition.start(mountain.scenario(seed, undefined, undefined, false), [
       rules.clock,
       rules.oxygen,
       rules.body,
@@ -223,6 +231,31 @@ describe("Slips by chance (#208): the rest step's care on the ice and the crossi
     ).toBe(true);
     expect(careful.every(({ dead }) => !dead)).toBe(true);
     expect(slips(steady).length).toBeGreaterThan(slips(careful).length);
+  });
+});
+
+describe("The training events on a careful crossing (#209)", () => {
+  /** A crossing to Camp 1 on `seed` with every rule, the hazards and the training events too. */
+  const trained = (seed: number) => {
+    const mountain = new Mountain(knowledge);
+    const rules = mountain.rules();
+    const expedition = Expedition.start(mountain.scenario(seed), rules.all);
+    const crossing = new Crossing(expedition, rules.physics, Section.PLAYER);
+    const steps = LONGEST_HOURS * HOUR * (1 / rules.clock.secondsAStep);
+    const arrived = crossing.until(mountain.route.destination.from, steps);
+    return { arrived, rules, staged: mountain.route.staged(seed) };
+  };
+
+  it("brings down the serac collapse it stages, and breaks its ladder under the climber, whom the rope holds", () => {
+    const { arrived, rules, staged } = trained(SEED);
+    const player = rules.physics.climber(Section.PLAYER);
+    const collapse = rules.hazards.strikes.filter(({ training }) => training === true);
+
+    expect(arrived).toBe(true);
+    expect(collapse).toMatchObject([{ zone: staged.collapse?.id, kind: "serac" }]);
+    expect(player.falls.filter(({ broke }) => broke === true)).toMatchObject([{ held: true }]);
+    expect(rules.physics.ladderCondition(staged.ladder?.id ?? "")).toBe("whole");
+    expect(player.dead).toBe(false);
   });
 });
 

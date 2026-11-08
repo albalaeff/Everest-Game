@@ -29,6 +29,7 @@ export class SlopeFacts {
     // The mountain's minutes as seconds of play: the clock runs `time.compression` times faster.
     const minutes = (name: string): number =>
       (number(name) * 60) / knowledge.number("time.compression");
+    const seconds = (name: string): number => number(name) / knowledge.number("time.compression");
     const steepest = knowledge.range("route.icefall-steepness").max;
     const slipFree = number("slip-free-steepness");
     const slip = number("slip-steep");
@@ -70,6 +71,8 @@ export class SlopeFacts {
       },
       lethalLanding: number("lethal-landing"),
       climbBack: fast("climb-back-speed"),
+      ladderBreak: { creak: seconds("ladder-creak"), relash: minutes("ladder-relash") },
+      haul: { speed: fast("haul-speed"), reach: number("haul-reach") },
       knock: number("knock-speed"),
       arrestSpeed: number("arrest-speed"),
       axeReach: number("axe-reach"),

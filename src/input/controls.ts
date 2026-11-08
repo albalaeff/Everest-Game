@@ -12,6 +12,7 @@ export type ControlName =
   | "clip-first"
   | "clip-second"
   | "jumar"
+  | "haul"
   | "view-farther"
   | "view-closer";
 
@@ -113,6 +114,16 @@ export const CONTROLS: readonly Control[] = [
     group: "thumb",
     press: (climber) => ({ kind: "jumar", climber, held: true }),
     release: (climber) => ({ kind: "jumar", climber, held: false }),
+  },
+  {
+    // Pulling a partner who hangs on the rope out, held (#209).
+    name: "haul",
+    keys: ["KeyF"],
+    keyName: "F",
+    gamepadButton: 4,
+    group: "thumb",
+    press: (climber) => ({ kind: "haul", climber, held: true }),
+    release: (climber) => ({ kind: "haul", climber, held: false }),
   },
   {
     name: "view-farther",

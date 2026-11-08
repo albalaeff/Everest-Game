@@ -336,6 +336,46 @@
       "fitted": "2026-11-04"
     },
     {
+      "id": "hazards.training-crack",
+      "kind": "coefficient",
+      "claim": "How many of the mountain's seconds a serac collapse staged for training cracks and groans before it comes down (#209), as a flight simulator stages an engine failure: long enough for a player who reads the crack to stop or back off, a few seconds of play, where a real serac gives little warning (hazards.serac-warning).",
+      "status": "source only",
+      "value": 120,
+      "unit": "s",
+      "fitted_to": ["route.icefall-hazards"],
+      "fitted": "2026-11-08"
+    },
+    {
+      "id": "hazards.training-serac-lead",
+      "kind": "coefficient",
+      "claim": "How far short of the stretch a staged serac collapse comes down on the first climber has to be to set it cracking (#209): close enough that one who walks on into the crack is under it as it falls, and far enough that one who stops at once is spared.",
+      "status": "source only",
+      "value": 3,
+      "unit": "m",
+      "fitted_to": ["route.icefall-hazards", "route.icefall-lessons"],
+      "fitted": "2026-11-08"
+    },
+    {
+      "id": "hazards.training-serac-length",
+      "kind": "coefficient",
+      "claim": "How long a stretch of the route a staged serac collapse buries in blocks of ice (#209): a serac's fall across the route, a few of the Icefall's towers wide (route.icefall-hazards).",
+      "status": "source only",
+      "value": 8,
+      "unit": "m",
+      "fitted_to": ["route.icefall-hazards"],
+      "fitted": "2026-11-08"
+    },
+    {
+      "id": "hazards.training-ladder-length",
+      "kind": "coefficient",
+      "claim": "The shortest crossing a ladder staged to break for training is laid across (#209): a long crossing, where a fall into the crevasse is the rope's to hold (route.icefall-ladders-lashed).",
+      "status": "source only",
+      "value": 4,
+      "unit": "m",
+      "fitted_to": ["route.icefall-ladders-lashed", "route.icefall-hazards"],
+      "fitted": "2026-11-08"
+    },
+    {
       "id": "hazards.how-often",
       "kind": "question",
       "question": "How often do seracs fall, avalanches come down, snow bridges give way and cornices break on a climber under them, and how much likelier is each in the afternoon sun than before dawn? The game uses rates fitted to the advice to cross early and fast; no source read gives a number.",

@@ -1,6 +1,6 @@
 import type { CoachWorld } from "../interface/coach";
-import type { ClimberView, Lamps, Point, SlopePhysics } from "../physics";
-import type { ClimberId, HazardZone, ObjectiveHazards } from "../simulation";
+import type { ClimberView, LadderCondition, Lamps, Point, SlopePhysics } from "../physics";
+import type { ClimberId, HazardKind, HazardZone, ObjectiveHazards } from "../simulation";
 
 /** The climb as the coach reads it (#192): the player's climber and the route's ropes, ladders,
  * blue ice and hazard zones, and the player's lamp (#196), from the physics, the hazards and the
@@ -19,6 +19,20 @@ export class CoachedClimb implements CoachWorld {
 
   inTheDark(): boolean {
     return this.lamps.inTheDark(this.climberId);
+  }
+
+  warning(): HazardKind | null {
+    return this.hazards.warningAt(this.physics.along(this.climberId));
+  }
+
+  ladderCondition(id: string): LadderCondition {
+    return this.physics.ladderCondition(id);
+  }
+
+  partnerHangs(): boolean {
+    return this.physics.climbers.some(
+      (id) => id !== this.climberId && this.physics.climber(id).hanging,
+    );
   }
 
   along(): number {

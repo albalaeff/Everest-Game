@@ -470,6 +470,11 @@ kbd {
   border-radius: 50%;
 }
 
+/* Beside the jumar, under the second clip: the haul's button (#209). */
+[data-control="haul"] {
+  grid-column: 3;
+}
+
 /* 60 px from its middle to its edge, as `Thumb` counts. */
 #joystick {
   position: absolute;

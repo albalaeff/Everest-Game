@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 
-import type { ClimberView, Point } from "../physics";
-import type { HazardZone } from "../simulation";
+import type { ClimberView, LadderCondition, Point } from "../physics";
+import type { HazardKind, HazardZone } from "../simulation";
 import { Coach } from "./coach";
 import type { CoachWorld } from "./coach";
 
@@ -27,6 +27,8 @@ const standing = (x: number, over: Partial<ClimberView> = {}): ClimberView => ({
   kit: { crampons: true, lamp: true, water: true },
   cramponLoose: false,
   refitting: false,
+  hauling: false,
+  haulHeld: false,
   ...over,
 });
 
@@ -35,6 +37,9 @@ const standing = (x: number, over: Partial<ClimberView> = {}): ClimberView => ({
 class World implements CoachWorld {
   view: ClimberView = standing(0);
   dark = false;
+  going: HazardKind | null = null;
+  conditions: Record<string, LadderCondition> = {};
+  partner = false;
   ice = [{ from: 70, to: 80 }];
   zones: readonly HazardZone[] = [{ id: "seracs", kind: "serac", from: 90, to: 100 }];
   ropes = ["one", "two"];
@@ -64,6 +69,18 @@ class World implements CoachWorld {
 
   inTheDark(): boolean {
     return this.dark;
+  }
+
+  warning(): HazardKind | null {
+    return this.going;
+  }
+
+  ladderCondition(id: string): LadderCondition {
+    return this.conditions[id] ?? "whole";
+  }
+
+  partnerHangs(): boolean {
+    return this.partner;
   }
 
   along(): number {
@@ -261,6 +278,54 @@ describe("Coach: the warnings, whenever they matter", () => {
 
     expect(died).toBe("lamp");
     expect(later).not.toBe("lamp");
+  });
+
+  it("says the serac is cracking at once, whatever else it was saying (#209)", () => {
+    const { coach } = fresh();
+    const world = new World();
+    world.view = standing(12);
+    after(coach, world);
+    world.view = standing(86, { moving: true, walking: "right" });
+    world.going = "serac";
+
+    expect(after(coach, world)).toBe("serac-crack");
+    world.going = null;
+    expect(after(coach, world, Coach.LEAST_SECONDS)).not.toBe("serac-crack");
+  });
+
+  it("says the ladder under the player creaks, and to hold on (#209)", () => {
+    const { coach } = fresh();
+    const world = new World();
+    world.view = standing(53, { ladder: "crevasse", moving: true, walking: "right" });
+    world.conditions = { crevasse: "creaking" };
+
+    expect(after(coach, world)).toBe("ladder-creak");
+  });
+
+  it("says a broken ladder is being lashed back to one waiting at its end (#209)", () => {
+    const { coach } = fresh();
+    const world = new World();
+    world.view = standing(4, { moving: true, walking: "right" });
+    after(coach, world);
+    world.view = standing(50.5);
+    world.conditions = { crevasse: "broken" };
+
+    expect(after(coach, world, Coach.LEAST_SECONDS)).toBe("ladder-broken");
+    world.conditions = {};
+    expect(after(coach, world, Coach.LEAST_SECONDS)).not.toBe("ladder-broken");
+  });
+
+  it("tells the player a partner hangs on the rope, to pull them out, until they are hauling (#209)", () => {
+    const { coach } = fresh();
+    const world = new World();
+    world.view = standing(4, { moving: true, walking: "right" });
+    after(coach, world);
+    world.partner = true;
+    world.view = standing(49);
+
+    expect(after(coach, world)).toBe("haul");
+    world.view = standing(49, { hauling: true, haulHeld: true });
+    expect(after(coach, world, Coach.LEAST_SECONDS)).not.toBe("haul");
   });
 
   it("says nothing to the dead", () => {

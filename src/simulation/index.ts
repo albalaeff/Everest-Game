@@ -33,6 +33,7 @@ export { OxygenSystem } from "./oxygen";
 export type { OxygenNumbers, OxygenView } from "./oxygen";
 export { HazardChance, ObjectiveHazards } from "./objective-hazards";
 export type {
+  HazardEvent,
   HazardGround,
   HazardKind,
   HazardOdds,

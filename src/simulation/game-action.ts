@@ -41,6 +41,12 @@ export interface Jumar extends ClimberAction {
   readonly held: boolean;
 }
 
+/** Hauls a partner who hangs on the rope below up to the edge, while held, or lets go (#209). */
+export interface Haul extends ClimberAction {
+  readonly kind: "haul";
+  readonly held: boolean;
+}
+
 /** Places the ice axe or the crampons at a point on the slope, in metres. */
 export interface Tool extends ClimberAction {
   readonly kind: "tool";
@@ -78,10 +84,11 @@ export interface SetUpTent extends ClimberAction {
  * agent sends the same. Plain data, because replays and the room server keep and send them.
  */
 export type GameAction =
-  Walk | Pace | Clip | Unclip | Jumar | Tool | Oxygen | CheckSelf | Radio | SetUpTent;
+  Walk | Pace | Clip | Unclip | Jumar | Haul | Tool | Oxygen | CheckSelf | Radio | SetUpTent;
 
 /**
- * A climber let go: stopped where they stand, at a steady pace, the jumar's slide let go. What a
+ * A climber let go: stopped where they stand, at a steady pace, the jumar's slide and any haul let
+ * go. What a
  * climber does when the releases of whoever steered them will never come: a room's player who
  * left, a climb alone resumed from a save made mid-stride (docs/conventions/room-server.md).
  */
@@ -94,6 +101,7 @@ export class LetGo {
       { kind: "walk", climber, direction: "stop" },
       { kind: "pace", climber, pace: "steady" },
       { kind: "jumar", climber, held: false },
+      { kind: "haul", climber, held: false },
     ];
   }
 }

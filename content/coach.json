@@ -29,7 +29,15 @@
     "crampon-loose.pc": "Your crampon has come loose: every step is three times likelier to slip. Off the ladder, stop and click just below your feet to kneel and refit it.",
     "crampon-loose.touch": "Your crampon has come loose: every step is three times likelier to slip. Off the ladder, stop and tap just below your feet to kneel and refit it.",
     "lamp.pc": "Your headlamp has died: you can't see where you put your feet until first light. Hold C for careful steps.",
-    "lamp.touch": "Your headlamp has died: you can't see where you put your feet until first light. Push gently for careful steps."
+    "lamp.touch": "Your headlamp has died: you can't see where you put your feet until first light. Push gently for careful steps.",
+    "serac-crack.pc": "The serac is cracking: stop, and back off out from under it. Don't walk on into it.",
+    "serac-crack.touch": "The serac is cracking: stop, and back off out from under it. Don't walk on into it.",
+    "ladder-creak.pc": "The ladder creaks and shifts under you: if you're not clipped in, press R now, and hold on.",
+    "ladder-creak.touch": "The ladder creaks and shifts under you: if you're not clipped in, tap [Clip 2] now, and hold on.",
+    "ladder-broken.pc": "The ladder broke. The Icefall Doctors are lashing it back: wait here at the edge, as the morning goes.",
+    "ladder-broken.touch": "The ladder broke. The Icefall Doctors are lashing it back: wait here at the edge, as the morning goes.",
+    "haul.pc": "Your partner hangs on the rope: stand at the edge above them and hold F to pull them out.",
+    "haul.touch": "Your partner hangs on the rope: stand at the edge above them and hold [Pull out] to pull them out."
   },
   "ru": {
     "walk.pc": "Держи D, чтобы идти. C — осторожный шаг, Shift — быстрее.",
@@ -61,6 +69,14 @@
     "crampon-loose.pc": "Кошка расстегнулась: каждый шаг срывается втрое чаще. Сойди с лестницы, остановись и щёлкни чуть ниже ног, чтобы встать на колено и затянуть её.",
     "crampon-loose.touch": "Кошка расстегнулась: каждый шаг срывается втрое чаще. Сойди с лестницы, остановись и коснись чуть ниже ног, чтобы встать на колено и затянуть её.",
     "lamp.pc": "Налобный фонарь погас: до рассвета ты не видишь, куда ставишь ноги. Держи C, чтобы идти осторожно.",
-    "lamp.touch": "Налобный фонарь погас: до рассвета ты не видишь, куда ставишь ноги. Веди палец мягко, чтобы идти осторожно."
+    "lamp.touch": "Налобный фонарь погас: до рассвета ты не видишь, куда ставишь ноги. Веди палец мягко, чтобы идти осторожно.",
+    "serac-crack.pc": "Серак трещит: остановись и отступи из-под него. Не иди дальше под него.",
+    "serac-crack.touch": "Серак трещит: остановись и отступи из-под него. Не иди дальше под него.",
+    "ladder-creak.pc": "Лестница скрипит и сдвигается под тобой: если не пристёгнут, жми R сейчас и держись.",
+    "ladder-creak.touch": "Лестница скрипит и сдвигается под тобой: если не пристёгнут, нажми [Clip 2] сейчас и держись.",
+    "ladder-broken.pc": "Лестница сорвалась. Ледопадные доктора закрепляют её заново: жди здесь, у края, а утро уходит.",
+    "ladder-broken.touch": "Лестница сорвалась. Ледопадные доктора закрепляют её заново: жди здесь, у края, а утро уходит.",
+    "haul.pc": "Твой напарник висит на верёвке: встань на краю над ним и держи F, чтобы вытащить его.",
+    "haul.touch": "Твой напарник висит на верёвке: встань на краю над ним и держи [Вытащить], чтобы вытащить его."
   }
 }

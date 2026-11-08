@@ -8,10 +8,11 @@ import type { IceSurface } from "./ice-surface";
 import { Palette } from "./palette";
 
 /** A warning as the picture has it: how long it runs, and how long it's been showing, in
- * seconds of play. */
+ * seconds of play; and whether it's a staged collapse's crack (#209). */
 interface Showing {
   readonly zone: HazardZone;
   readonly length: number;
+  readonly staged: boolean;
   shown: number;
 }
 
@@ -42,6 +43,12 @@ export class HazardDrawing {
   private static readonly ICE_SHADE = 0x9db8d0;
   /** How long what came down lies on the ground before the picture clears it, in seconds. */
   private static readonly SETTLE_SECONDS = 2;
+  /** A staged collapse (#209): its crack's colour, how wide it grows, and the seconds its blocks
+   * take to fall at the end of the crack; its rubble's edge. */
+  private static readonly CRACK_OPEN = 0x0b2f55;
+  private static readonly CRACK_WIDE = 0.3;
+  private static readonly STAGED_FALL_SECONDS = 0.6;
+  private static readonly RUBBLE_EDGE = 0x7fa8c8;
 
   /** The seracs, behind the route's ice; what lies on the ground, behind the climbers. */
   readonly seracs = new Graphics();
@@ -50,6 +57,8 @@ export class HazardDrawing {
   readonly falling = new Graphics();
   private readonly signs: HazardSigns;
   private readonly showing = new Map<string, Showing>();
+  /** How many strikes the picture has seen: a staged collapse's leaves rubble (#209). */
+  private struck = 0;
 
   constructor(
     private readonly hazards: ObjectiveHazards,
@@ -97,9 +106,14 @@ export class HazardDrawing {
   /** A frame, `seconds` after the last: each warning a little further on. */
   draw(seconds: number): void {
     this.follow(this.hazards.warnings, seconds);
+    this.leaveRubble();
     this.falling.clear();
-    for (const { zone, length, shown } of this.showing.values()) {
+    for (const { zone, length, shown, staged } of this.showing.values()) {
       const colour = HazardDrawing.DEBRIS[zone.kind];
+      if (staged) {
+        this.drawCrack(zone, length, shown);
+        continue;
+      }
       for (const piece of this.signs.debris(zone, shown / length)) {
         if (zone.kind === "serac") {
           const half = piece.size / 2;
@@ -111,15 +125,69 @@ export class HazardDrawing {
     }
   }
 
+  /** A staged collapse's crack, `shown` seconds into its `length` (#209): the crack opening down
+   * the serac and its chips falling, then, in its last moments, its blocks coming down. */
+  private drawCrack(zone: HazardZone, length: number, shown: number): void {
+    const fall = HazardDrawing.STAGED_FALL_SECONDS;
+    const { line, chips } = this.signs.crack(zone, shown / Math.max(length - fall, fall));
+    const [first, ...rest] = line;
+    if (first !== undefined) {
+      this.falling.moveTo(first.x, first.y);
+      for (const { x, y } of rest) {
+        this.falling.lineTo(x, y);
+      }
+      const open = Math.min(1, shown / Math.max(length - fall, fall));
+      this.falling.stroke({
+        width: HazardDrawing.CRACK_WIDE * (0.3 + 0.7 * open),
+        color: HazardDrawing.CRACK_OPEN,
+        join: "miter",
+        cap: "butt",
+      });
+    }
+    const colour = HazardDrawing.DEBRIS[zone.kind];
+    for (const chip of chips) {
+      this.falling.rect(chip.x - chip.size / 2, chip.y, chip.size, chip.size).fill(colour);
+    }
+    const landing = (shown - (length - fall)) / fall;
+    if (landing > 0) {
+      for (const piece of this.signs.debris(zone, landing)) {
+        const half = piece.size / 2;
+        this.falling.rect(piece.x - half, piece.y, piece.size, piece.size).fill(colour);
+      }
+    }
+  }
+
+  /** Each staged collapse that has come down leaves its blocks lying on the route, for the rest
+   * of the climb (#209). */
+  private leaveRubble(): void {
+    const { strikes, events } = this.hazards;
+    const flat = (points: readonly Point[]): number[] => points.flatMap(({ x, y }) => [x, y]);
+    for (const strike of strikes.slice(this.struck)) {
+      const event = events.find(({ id }) => id === strike.zone);
+      if (strike.training !== true || event === undefined) {
+        continue;
+      }
+      for (const block of this.signs.rubble(event)) {
+        this.standing.poly(flat(block)).fill(HazardDrawing.DEBRIS[event.kind]);
+        this.standing
+          .poly(flat(block))
+          .stroke({ width: HazardDrawing.EDGE_METRES, color: HazardDrawing.RUBBLE_EDGE });
+      }
+    }
+    this.struck = strikes.length;
+  }
+
   /** Starts the picture's clock of each new warning, moves each on, and drops those that have
    * lain on the ground long enough. */
   private follow(warnings: readonly Warning[], seconds: number): void {
     for (const warning of warnings) {
       const key = `${warning.zone}@${warning.began}`;
       const zone = this.hazards.zones.find(({ id }) => id === warning.zone);
-      if (!this.showing.has(key) && zone !== undefined) {
+      const event = this.hazards.events.find(({ id }) => id === warning.zone);
+      const going = zone ?? event;
+      if (!this.showing.has(key) && going !== undefined) {
         const length = (warning.comes - warning.began) * SimulationClock.STEP_SECONDS;
-        this.showing.set(key, { zone, length, shown: 0 });
+        this.showing.set(key, { zone: going, length, staged: event !== undefined, shown: 0 });
       }
     }
     for (const [key, showing] of this.showing) {

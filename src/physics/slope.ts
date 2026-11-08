@@ -1,6 +1,6 @@
 import { SimulationClock } from "../simulation";
 import type { Moment, Walk } from "../simulation";
-import type { Climber } from "./climber";
+import type { Climber, Hauls } from "./climber";
 import type { Ladder } from "./ladder";
 import type { Rope, Slide } from "./rope";
 import { SectionScale } from "./section-scale";
@@ -83,6 +83,12 @@ export interface SlopeSettings {
   /** How fast a climber hanging on their rope climbs back up it to where they slipped, at a whole
    * stride, in m/s. */
   readonly climbBack: number;
+  /** A ladder staged to break (#209): the seconds it creaks before it breaks, and the seconds the
+   * Icefall Doctors take to lash it back. */
+  readonly ladderBreak: { readonly creak: number; readonly relash: number };
+  /** Hauling a partner who hangs on the rope (#209): how fast a whole stride hauls them up it, in
+   * m/s, and how near the point they're hauled to the hauler has to stand, in metres. */
+  readonly haul: { readonly speed: number; readonly reach: number };
   /** How fast a hazard that goes throws a climber down the slope, in m/s. */
   readonly knock: number;
   /** The fastest slide a climber can stop with the ice axe driven into the slope, in m/s:
@@ -154,10 +160,53 @@ export class Slope {
     for (const ladder of this.ladders.values()) {
       const way = ladder.way(direction);
       if (way !== 0 && ladder.into(along) === way) {
-        return ladder;
+        // A broken one isn't there to step onto until it's lashed back (#209).
+        return ladder.condition === "broken" ? null : ladder;
       }
     }
     return null;
+  }
+
+  /** The steps in `seconds` of play. */
+  private static steps(seconds: number): number {
+    return Math.ceil(seconds / SimulationClock.STEP_SECONDS);
+  }
+
+  /** Who hauls whom this step (#209): each climber holding the haul hauls the one hanging whose
+   * way up is nearest them, within the haul's reach; each one hauled comes up at the haul's speed
+   * times each hauler's stride. */
+  private hauls(climbers: readonly Climber[]): Hauls {
+    const { reach, speed } = this.settings.haul;
+    const hauled = new Map<Climber, number>();
+    const hauling = new Set<Climber>();
+    for (const hauler of climbers) {
+      const at = hauler.hauler(this);
+      if (at === null) {
+        continue;
+      }
+      let nearest: { readonly climber: Climber; readonly away: number } | null = null;
+      for (const other of climbers) {
+        const lift = other === hauler ? null : other.liftPoint(this);
+        if (lift === null) {
+          continue;
+        }
+        const x = lift.x - at.x;
+        const y = lift.y - at.y;
+        const away = Math.sqrt(x * x + y * y);
+        if (away <= reach && away < (nearest?.away ?? Infinity)) {
+          nearest = { climber: other, away };
+        }
+      }
+      if (nearest !== null) {
+        hauling.add(hauler);
+        const before = hauled.get(nearest.climber) ?? 0;
+        hauled.set(nearest.climber, before + speed * hauler.haulStride);
+      }
+    }
+    return {
+      of: (climber) => hauled.get(climber) ?? 0,
+      by: (climber) => hauling.has(climber),
+    };
   }
 
   /** Whether the ground at `along` is bare blue ice. */
@@ -207,17 +256,26 @@ export class Slope {
 
   /** One step for every climber on it, in the scenario's order. A rope that lay still and
    * nobody is clipped to waits, so the ropes of a whole section cost nothing until used. The
-   * ladders' bounce dies away after the climbers' steps set it going. */
+   * ladders' bounce dies away after the climbers' steps set it going; one that has creaked long
+   * enough breaks, and its climbers fall, and one broken long enough is lashed back (#209). A
+   * climber holding the haul by someone hanging hauls them up instead of stepping. */
   advance(climbers: readonly Climber[], moment: Moment): void {
-    const { gravity, friction, footing } = this.settings;
+    const { gravity, friction, footing, ladderBreak } = this.settings;
     const clipped = new Set(climbers.flatMap((climber) => climber.ropes));
     const ropes = [...this.ropes.values()].filter((rope) => clipped.has(rope) || !rope.resting);
+    const hauls = this.hauls(climbers);
     for (const climber of climbers) {
-      climber.walk(this, moment);
+      climber.walk(this, moment, hauls);
       climber.beginStep();
     }
     for (const ladder of this.ladders.values()) {
       ladder.settle(SimulationClock.STEP_SECONDS, footing.bounce.damp);
+      if (ladder.snap(moment.step, Slope.steps(ladderBreak.creak))) {
+        for (const climber of climbers) {
+          climber.offBroken(ladder, this, moment.step);
+        }
+      }
+      ladder.mend(moment.step, Slope.steps(ladderBreak.relash));
     }
     for (let substep = 0; substep < Slope.SUBSTEPS; substep += 1) {
       for (const climber of climbers) {

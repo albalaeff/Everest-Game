@@ -61,6 +61,8 @@ const view = (over: Partial<ClimberView> = {}): ClimberView => ({
   kit: { crampons: true, lamp: true, water: true },
   cramponLoose: false,
   refitting: false,
+  hauling: false,
+  haulHeld: false,
   ...over,
 });
 

@@ -9,8 +9,15 @@ import type {
   SlopeSettings,
   SnowLayout,
 } from "../physics";
-import { Body, MountainClock, ObjectiveHazards, OxygenSystem } from "../simulation";
-import type { BodyStart, ClimberId, ClockStart, HazardStart, Scenario } from "../simulation";
+import { Body, MountainClock, ObjectiveHazards, OxygenSystem, SeededRandom } from "../simulation";
+import type {
+  BodyStart,
+  ClimberId,
+  ClockStart,
+  HazardEvent,
+  HazardStart,
+  Scenario,
+} from "../simulation";
 import type { ClimberStart } from "./climber-facts";
 import type { KnowledgeBase, KnowledgeRange } from "./knowledge-base";
 import { SlopeFacts } from "./slope-facts";
@@ -94,6 +101,10 @@ export interface Camp extends CampData {
  * the picture, and the camp it ends at for the arrival.
  */
 export class Section {
+  /** The training events' chance, apart from the expedition's: a seed's events are its own. */
+  private static readonly TRAINING = 0x7a17;
+  /** The staged serac collapse's id, among the hazards' zones and strikes. */
+  static readonly COLLAPSE = "serac-collapse";
   /** The player's climber in the layout. */
   static readonly PLAYER: ClimberId = "player";
 
@@ -113,6 +124,13 @@ export class Section {
   readonly hours: KnowledgeRange;
   /** Its real length, in metres. */
   readonly length: number;
+  /** What the training events (#209) are staged on: how far short of its stretch a serac collapse
+   * cracks, how long that stretch is, and the ladders long enough to break. */
+  private readonly training: {
+    readonly lead: number;
+    readonly length: number;
+    readonly crossings: readonly { readonly id: string; readonly length: number }[];
+  };
 
   constructor(knowledge: KnowledgeBase, data: SectionData = icefall) {
     const { layout, hazards, bodies } = data;
@@ -159,6 +177,21 @@ export class Section {
     };
     this.hours = knowledge.range(`time.${data.from}-to-${data.to}`);
     this.length = knowledge.number(`route.${data.id}-length`);
+    const shortest = knowledge.number("hazards.training-ladder-length");
+    this.training = {
+      lead: knowledge.number("hazards.training-serac-lead"),
+      length: knowledge.number("hazards.training-serac-length"),
+      crossings: layout.ladders
+        .map(({ id, from, to }) => {
+          const start = ground.point(from);
+          const end = ground.point(to);
+          const x = end.x - start.x;
+          const y = end.y - start.y;
+          return { id, length: Math.sqrt(x * x + y * y), across: Math.abs(y) < Math.abs(x) };
+        })
+        .filter(({ across, length }) => across && length >= shortest)
+        .map(({ id, length }) => ({ id, length })),
+    };
   }
 
   /** Where the logbook counts (#194): from the moraine's end, where the route first needs a
@@ -179,14 +212,26 @@ export class Section {
 
   /** A scenario on the section: the seed, the climbers in the layout's order, the clock at its
    * start, the player as their answers make them (#145), or as the file has them, and with what
-   * they checked of their kit (#196): a skipped water check leaves them `unchecked` litres short. */
+   * they checked of their kit (#196): a skipped water check leaves them `unchecked` litres short.
+   * Unless `training` is off, it stages the training events from the seed (#209). */
   scenario(
     seed: number,
     player?: ClimberStart,
     gear?: { readonly kit: Kit; readonly unchecked: number },
+    training = true,
   ): Scenario {
     const made = player === undefined ? this : this.withPlayer(player);
     const { bodies, layout } = gear === undefined ? made : Section.withKit(made, gear);
+    const staged = training ? this.staged(seed) : { collapse: null, ladder: null };
+    const hazards: HazardStart =
+      staged.collapse === null ? this.hazards : { ...this.hazards, events: [staged.collapse] };
+    const breaking = staged.ladder;
+    const ladders =
+      breaking === null
+        ? layout.ladders
+        : layout.ladders.map((ladder) =>
+            ladder.id === breaking.id ? { ...ladder, breaks: breaking.breaks } : ladder,
+          );
     return {
       seed,
       climbers: layout.climbers.map((climber) => climber.id),
@@ -194,10 +239,36 @@ export class Section {
         [MountainClock.NAME]: MountainClock.start(this.clock),
         [OxygenSystem.NAME]: OxygenSystem.start(layout.climbers.map(({ id }) => id)),
         [Body.NAME]: Body.start(bodies),
-        [ObjectiveHazards.NAME]: ObjectiveHazards.start(this.hazards),
-        [SlopePhysics.NAME]: SlopePhysics.start(layout),
+        [ObjectiveHazards.NAME]: ObjectiveHazards.start(hazards),
+        [SlopePhysics.NAME]: SlopePhysics.start({ ...layout, ladders }),
       },
     };
+  }
+
+  /** The training events a seed stages (#209), once a climb each, from a chance of their own so
+   * the expedition's draws aren't touched: a serac collapse on a stretch of one of the serac
+   * zones, and a break in the middle third of one of the ladders long enough to break. */
+  staged(seed: number): {
+    readonly collapse: HazardEvent | null;
+    readonly ladder: { readonly id: string; readonly breaks: number } | null;
+  } {
+    const random = SeededRandom.fromSeed(seed ^ Section.TRAINING);
+    const seracs = this.hazards.zones.filter(({ kind }) => kind === "serac");
+    const zone = seracs[random.between(0, seracs.length - 1)];
+    const { lead, length, crossings } = this.training;
+    let collapse: HazardEvent | null = null;
+    if (zone !== undefined) {
+      const room = Math.max(0, zone.to - zone.from - length);
+      const from = zone.from + random.fraction() * room;
+      const to = Math.min(zone.to, from + length);
+      collapse = { id: Section.COLLAPSE, kind: "serac", from, to, lead };
+    }
+    const crossing = crossings[random.between(0, crossings.length - 1)];
+    const ladder =
+      crossing === undefined
+        ? null
+        : { id: crossing.id, breaks: (crossing.length * (1 + random.fraction())) / 3 };
+    return { collapse, ladder };
   }
 
   /** The bodies and the layout, with the player as their answers make them. */

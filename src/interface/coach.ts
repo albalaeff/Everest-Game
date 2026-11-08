@@ -1,5 +1,5 @@
-import type { ClimberView, Point } from "../physics";
-import type { HazardZone } from "../simulation";
+import type { ClimberView, LadderCondition, Point } from "../physics";
+import type { HazardKind, HazardZone } from "../simulation";
 
 /** What the coach can say: the tutorial's tips, each said once where the route first needs it,
  * and the warnings, said whenever they matter. */
@@ -18,7 +18,11 @@ export type CoachTip =
   | "unclipped"
   | "stopped-under-seracs"
   | "crampon-loose"
-  | "lamp";
+  | "lamp"
+  | "serac-crack"
+  | "ladder-creak"
+  | "ladder-broken"
+  | "haul";
 
 /** What the coach reads of the climb: the player's climber, the route's ropes, ladders, blue ice
  * and hazards, and whether the player is in the dark. The page hands it the physics', the
@@ -27,6 +31,12 @@ export interface CoachWorld {
   player(): ClimberView;
   /** Whether the player's headlamp has died before first light (#196). */
   inTheDark(): boolean;
+  /** The hazard going over where the player stands, a crack or a roar, or none (#209). */
+  warning(): HazardKind | null;
+  /** Whether a ladder is whole, creaking or broken (#209). */
+  ladderCondition(id: string): LadderCondition;
+  /** Whether someone else hangs on the rope (#209), for the player to pull out. */
+  partnerHangs(): boolean;
   /** How far along the ground the player is. */
   along(): number;
   /** The rope a clip of the player's would take now, or none. */
@@ -54,8 +64,9 @@ export interface CoachStorage {
  * device keeps. The warnings come whenever they matter: hanging on the rope, careless steps on
  * blue ice or a ladder (#208), unclipped where a slip is a fall, stopped under the seracs, a crampon come loose and the
  * headlamp dead in the dark, a check skipped before setting off catching up with the player
- * (#196). It holds the screen's own state alone, as the rendering does: what's been learnt, and
- * what it shows.
+ * (#196), and the training events (#209): a serac cracking ahead, the ladder creaking under them,
+ * a partner hanging to pull out; and a broken ladder's wait. It holds the screen's own state
+ * alone, as the rendering does: what's been learnt, and what it shows.
  */
 export class Coach {
   /** Where the device keeps what's been learnt. */
@@ -78,11 +89,15 @@ export class Coach {
   /** The tips, most pressing first: the warnings, then the tutorial in the route's order. */
   private static readonly ORDER: readonly CoachTip[] = [
     "hanging",
+    "serac-crack",
+    "ladder-creak",
+    "haul",
     "stopped-under-seracs",
     "unclipped",
     "careless",
     "crampon-loose",
     "lamp",
+    "ladder-broken",
     "anchor",
     "clip",
     "jumar",
@@ -95,6 +110,9 @@ export class Coach {
   ];
   private static readonly WARNINGS: ReadonlySet<CoachTip> = new Set([
     "hanging",
+    "serac-crack",
+    "ladder-creak",
+    "haul",
     "stopped-under-seracs",
     "unclipped",
     "careless",
@@ -209,6 +227,14 @@ export class Coach {
         return view.cramponLoose && !view.refitting && !view.falling;
       case "lamp":
         return world.inTheDark() && this.dark < Coach.DARK_SECONDS;
+      case "serac-crack":
+        return !view.falling && world.warning() === "serac";
+      case "ladder-creak":
+        return view.ladder !== null && world.ladderCondition(view.ladder) === "creaking";
+      case "haul":
+        return !view.falling && !view.hauling && world.partnerHangs();
+      case "ladder-broken":
+        return !view.falling && this.byABrokenLadder(world, view);
       case "anchor":
         return !view.falling && this.atAnAnchor(world, view);
       case "clip":
@@ -288,6 +314,19 @@ export class Coach {
       const near = (point: Point): boolean =>
         Math.hypot(point.x - view.x, point.y - view.y) <= Coach.BY_A_CREVASSE;
       return view.ladder === id || near(start) || near(end);
+    });
+  }
+
+  /** Whether the player stands at an end of a ladder that's broken, waiting for it. */
+  private byABrokenLadder(world: CoachWorld, view: ClimberView): boolean {
+    return world.ladders.some((id) => {
+      if (world.ladderCondition(id) !== "broken") {
+        return false;
+      }
+      const near = (point: Point | undefined): boolean =>
+        point !== undefined && Math.hypot(point.x - view.x, point.y - view.y) <= Coach.NEAR_LADDER;
+      const [start, end] = world.ladder(id);
+      return near(start) || near(end);
     });
   }
 

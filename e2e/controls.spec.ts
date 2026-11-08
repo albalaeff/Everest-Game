@@ -213,7 +213,7 @@ test.describe("on a screen of 640 by 360", () => {
 
     const buttons = await page.locator(".action-button").all();
 
-    expect(buttons).toHaveLength(11);
+    expect(buttons).toHaveLength(12);
     // All in one go: each check waits for a frame, and CI's frames are seconds apart.
     await Promise.all(buttons.map((found) => expect(found).toBeInViewport({ ratio: 1 })));
     for (const box of await boxesOf(page, ".action-button")) {
@@ -231,6 +231,7 @@ test.describe("on a screen of 640 by 360", () => {
       "clip-first",
       "clip-second",
       "jumar",
+      "haul",
       "oxygen-up",
       "oxygen-down",
       "view-farther",
@@ -268,8 +269,15 @@ test("a click on a PC's button does what its key does", async ({ page, hasTouch 
 
   await button(page, "radio").click();
   await page.keyboard.press("Space");
+  await page.keyboard.press("KeyF");
 
-  await expectReceived(page, ["panel radio", "jumar true", "jumar false"]);
+  await expectReceived(page, [
+    "panel radio",
+    "jumar true",
+    "jumar false",
+    "haul true",
+    "haul false",
+  ]);
 });
 
 test("a laptop with a touch screen shows the thumb buttons after its first touch", async ({

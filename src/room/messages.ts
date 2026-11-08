@@ -119,6 +119,7 @@ export class Protocol {
     clip: { cowstail: ["first", "second"] },
     unclip: { cowstail: ["first", "second"] },
     jumar: { held: "boolean" },
+    haul: { held: "boolean" },
     tool: { tool: ["ice-axe", "crampons"], x: "number", y: "number" },
     oxygen: { change: ["up", "down"] },
     "check-self": {},

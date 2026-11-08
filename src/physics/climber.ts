@@ -23,6 +23,10 @@ export type Fall = {
   /** Whether a crampon of theirs was loose, which the check they skipped left them (#196):
    * missing where none was. */
   readonly looseCrampon?: boolean;
+  /** Whether the ladder they stood on broke under them, and whether a partner pulled them out
+   * (#209): missing where not. */
+  readonly broke?: boolean;
+  readonly pulled?: boolean;
 };
 
 /** What a climber checked of their kit before setting off (#196): their crampons fitted and
@@ -73,6 +77,9 @@ export interface ClimberView {
   readonly kit: Kit;
   readonly cramponLoose: boolean;
   readonly refitting: boolean;
+  /** Whether they're hauling a partner up the rope now, and holding the haul at all (#209). */
+  readonly hauling: boolean;
+  readonly haulHeld: boolean;
 }
 
 type CarabinerSave = { readonly rope: string; readonly slide: Slide };
@@ -98,7 +105,19 @@ type FallingSave = {
   readonly from?: FromSave;
   readonly impact?: number;
   readonly holding?: boolean;
+  /** Missing from the saves of falls before #209: off a ladder that broke, pulled out, and the
+   * lip they climb back to, where they came from. */
+  readonly broke?: boolean;
+  readonly pulled?: boolean;
+  readonly lip?: number;
 };
+
+/** Who hauls whom this step (#209): the speed a hanging climber is hauled up at, in m/s, and
+ * whether a climber is hauling. */
+export interface Hauls {
+  of(climber: Climber): number;
+  by(climber: Climber): boolean;
+}
 
 /** A climber as saves keep them. */
 export type ClimberSave = {
@@ -130,6 +149,8 @@ export type ClimberSave = {
   readonly cramponLoose?: boolean;
   readonly refitting?: number;
   readonly onTheMove?: number;
+  /** Missing from the saves of builds before the haul (#209): not held. */
+  readonly haulHeld?: boolean;
 };
 
 /** A cowstail's carabiner, or its jumar, on a rope: it runs along it, or grips it where it is. */
@@ -203,6 +224,12 @@ class Falling {
   /** Whether the climber holds on where they hang, climbing back up their rope: gravity has
    * them no more. */
   holding = false;
+  /** Whether the ladder they stood on broke under them, and whether a partner has pulled them up
+   * (#209). */
+  broke = false;
+  pulled = false;
+  /** Where along the ground the lip they climb back to is, off a ladder that broke. */
+  lip: number | null = null;
   /** Where the body was when the step began. */
   private startX: number;
   private startY: number;
@@ -231,11 +258,14 @@ class Falling {
     falling.grounded = save.grounded;
     falling.impact = save.impact ?? 0;
     falling.holding = save.holding ?? false;
+    falling.broke = save.broke ?? false;
+    falling.pulled = save.pulled ?? false;
+    falling.lip = save.lip ?? null;
     return falling;
   }
 
   save(): FallingSave {
-    const { step, top, lowest, speed, grounded, impact, holding, from } = this;
+    const { step, top, lowest, speed, grounded, impact, holding, from, broke, pulled } = this;
     return {
       step,
       top,
@@ -246,6 +276,9 @@ class Falling {
       ...(from === null ? {} : { from }),
       impact,
       holding,
+      ...(broke ? { broke } : {}),
+      ...(pulled ? { pulled } : {}),
+      ...(this.lip === null ? {} : { lip: this.lip }),
     };
   }
 
@@ -279,6 +312,8 @@ class Falling {
       impact,
       held,
       ...(looseCrampon ? { looseCrampon } : {}),
+      ...(this.broke ? { broke: true } : {}),
+      ...(this.pulled ? { pulled: true } : {}),
     };
   }
 }
@@ -328,10 +363,17 @@ export class Climber {
     private cramponLoose: boolean,
     private refitting: number,
     private onTheMove: number,
+    /** Whether the haul is held, and whether they hauled someone in the last step (#209). */
+    private haulHeld: boolean,
   ) {}
+
+  /** Whether they hauled a partner in the last step. */
+  private pulling = false;
 
   /** Everything checked. */
   static readonly CHECKED: Kit = { crampons: true, lamp: true, water: true };
+  /** Nobody hauls anybody. */
+  static readonly NO_HAULS: Hauls = { of: () => 0, by: () => false };
 
   /** A climber standing at `along`, still, clipped to nothing, going at `technique`'s share of
    * the speed on ladders and ropes, with what they checked of their `kit`. */
@@ -362,6 +404,7 @@ export class Climber {
       false,
       0,
       0,
+      false,
     );
   }
 
@@ -389,6 +432,7 @@ export class Climber {
       save.cramponLoose ?? false,
       save.refitting ?? 0,
       save.onTheMove ?? 0,
+      save.haulHeld ?? false,
     );
   }
 
@@ -414,6 +458,7 @@ export class Climber {
       cramponLoose: this.cramponLoose,
       refitting: this.refitting,
       onTheMove: this.onTheMove,
+      ...(this.haulHeld ? { haulHeld: true } : {}),
     };
   }
 
@@ -444,6 +489,8 @@ export class Climber {
       kit: this.kit,
       cramponLoose: this.cramponLoose,
       refitting: this.refitting > 0,
+      hauling: this.pulling,
+      haulHeld: this.haulHeld,
     };
   }
 
@@ -459,6 +506,9 @@ export class Climber {
     }
     if (action.kind === "jumar") {
       this.jumarHeld = action.held;
+    }
+    if (action.kind === "haul") {
+      this.haulHeld = action.held;
     }
     if (
       action.kind === "clip" &&
@@ -510,15 +560,23 @@ export class Climber {
    * Takes this step's steps, on their feet: on a ladder if they're on one or their way steps onto
    * one, and along the ground otherwise. Each goes as far as their ropes let them, and may slip.
    */
-  walk(slope: Slope, moment: Moment): void {
+  walk(slope: Slope, moment: Moment, hauls: Hauls = Climber.NO_HAULS): void {
     this.moving = false;
     this.exertion = 0;
     this.slipChance = 0;
+    this.pulling = false;
     if (this.killed) {
       return;
     }
     if (this.falling !== null) {
-      this.climbBack(this.falling, slope);
+      this.climbBack(this.falling, slope, hauls.of(this));
+      return;
+    }
+    if (hauls.by(this)) {
+      // Braced at the edge, hand over hand on the rope: all their power, and no step.
+      this.pulling = true;
+      this.moving = true;
+      this.exertion = 1;
       return;
     }
     if (this.refitting > 0) {
@@ -655,26 +713,33 @@ export class Climber {
    * slipped, at the climb's speed: up a wall's face and over its lip, never through the ice, holding
    * on where they are as they go. Back on that rung, or on ground they can stand on, they're on
    * their feet, shaken. */
-  private climbBack(falling: Falling, slope: Slope): void {
+  private climbBack(falling: Falling, slope: Slope, hauled: number): void {
     const up = this.walking === "up" || this.walking.startsWith("up-");
     const { from } = falling;
-    if (!up || !this.hangs(slope) || from === null || this.stride === 0) {
+    const own = up && this.stride > 0 ? slope.settings.climbBack * this.stride * this.technique : 0;
+    if (own + hauled <= 0 || !this.hangs(slope) || from === null) {
       return;
     }
+    const lip = this.lipOf(falling, slope);
     const target =
-      from.ladder === null
+      lip?.point ??
+      (from.ladder === null
         ? slope.terrain.point(from.along)
-        : slope.ladder(from.ladder).point(from.rung);
+        : slope.ladder(from.ladder).point(from.rung));
     const { body } = falling;
     const x = target.x - body.x;
     const y = target.y - body.y;
     const away = Math.sqrt(x * x + y * y);
-    const step =
-      slope.settings.climbBack * this.stride * this.technique * SimulationClock.STEP_SECONDS;
+    const step = (own + hauled) * SimulationClock.STEP_SECONDS;
     falling.holding = true;
-    this.moving = true;
-    this.exertion = 1;
+    falling.pulled ||= hauled > 0;
+    this.moving = own > 0;
+    this.exertion = own > 0 ? 1 : 0;
     if (away <= step) {
+      if (lip !== null) {
+        this.stand(falling, lip.along);
+        return;
+      }
       if (from.ladder !== null) {
         this.onLadder = new OnLadder(slope.ladder(from.ladder), from.rung);
       }
@@ -694,6 +759,81 @@ export class Climber {
       this.stand(falling, surface.along);
     }
   }
+
+  /** Where a climber who hangs climbs back to: the lip nearer where they stood on a ladder that
+   * broke under them, or the nearer end of one that's broken now, there being no rung to go back
+   * to; none otherwise. */
+  private lipOf(
+    falling: Falling,
+    slope: Slope,
+  ): { readonly along: number; readonly point: Point } | null {
+    if (falling.lip !== null) {
+      return { along: falling.lip, point: slope.terrain.point(falling.lip) };
+    }
+    const { from } = falling;
+    if (from?.ladder == null) {
+      return null;
+    }
+    const ladder = slope.ladder(from.ladder);
+    return ladder.condition === "broken" ? ladder.nearerEnd(falling.body) : null;
+  }
+
+  /** Where a hanging climber would be pulled up to: their way back up the rope; none for one on
+   * their feet, or not hanging (#209). */
+  liftPoint(slope: Slope): Point | null {
+    const { falling } = this;
+    if (falling === null || falling.from === null || !this.hangs(slope)) {
+      return null;
+    }
+    const lip = this.lipOf(falling, slope);
+    if (lip !== null) {
+      return lip.point;
+    }
+    const { from } = falling;
+    return from.ladder === null
+      ? slope.terrain.point(from.along)
+      : slope.ladder(from.ladder).point(from.rung);
+  }
+
+  /** Whether they can haul someone now: holding the haul, on their feet on the ground, alive and
+   * with a stride to brace on; and where they stand. */
+  hauler(slope: Slope): Point | null {
+    const able =
+      this.haulHeld &&
+      !this.killed &&
+      this.falling === null &&
+      this.onLadder === null &&
+      this.refitting <= 0 &&
+      this.stride > 0;
+    return able ? slope.terrain.point(this.along) : null;
+  }
+
+  /** How hard they haul: their stride's share of the haul's speed. */
+  get haulStride(): number {
+    return this.stride;
+  }
+
+  /** The ladder under them broke: off it they fall, straight down, from the rung they stood on;
+   * their rope holds them if they're clipped (#209). */
+  offBroken(ladder: Ladder, slope: Slope, step: number): void {
+    const on = this.onLadder;
+    if (on?.ladder !== ladder || this.killed) {
+      return;
+    }
+    this.fall(slope, Climber.DOWN, 0, step, {
+      ladder: ladder.id,
+      rung: on.rung,
+      along: this.along,
+    });
+    if (this.falling !== null) {
+      // Out to the nearer lip, along the rope.
+      this.falling.broke = true;
+      this.falling.lip = ladder.end(on.rung <= ladder.length / 2 ? -1 : 1).along;
+    }
+  }
+
+  /** Straight down. */
+  private static readonly DOWN: Point = { x: 0, y: -1 };
 
   /** Off their feet, thrown down the section, toward its start, at the knock's speed: what a
    * hazard does when it goes. One already falling falls on. */
@@ -782,6 +922,7 @@ export class Climber {
       this.cramponLoose = true;
     }
     ladder.shake(next - rung, bounce.excite);
+    ladder.passed(rung, next, moment.step);
     const chance = slope.ladderSlipChance.at(steepness) + bounce.slip * ladder.bounce;
     this.onLadder = next === end.rung ? null : new OnLadder(ladder, next);
     this.along = next === end.rung ? end.along : this.along;
@@ -837,9 +978,11 @@ export class Climber {
   }
 
   /** Whether a carabiner of theirs grips its rope: the jumar does, unless they're on their feet
-   * with their hand sliding it. */
+   * with their hand sliding it, or climbing back up the rope on it, where it holds them only as
+   * they let go (#209). */
   private grips(carabiner: Carabiner): boolean {
-    return carabiner === this.first && !(this.jumarHeld && this.falling === null);
+    const sliding = this.jumarHeld && this.falling === null;
+    return carabiner === this.first && !sliding && this.falling?.holding !== true;
   }
 
   /** Their feet, on the ground or on a ladder, or their body in a fall. */
