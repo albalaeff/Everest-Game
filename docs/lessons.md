@@ -32,6 +32,7 @@ This template was taken from [bateks/PersonalExchangeBot](https://github.com/bat
 - [PEB#566](https://github.com/bateks/PersonalExchangeBot/issues/566): `api POST` prints a summary, not JSON; a filtered-away output isn't a failure, and a repeated POST made a duplicate issue an agent then started on.
 - [PEB#520](https://github.com/bateks/PersonalExchangeBot/pull/520): a chore PR that says "closes #n" becomes n's PR: an agent started on the closed issue when CI finished.
 - [PEB#468](https://github.com/bateks/PersonalExchangeBot/issues/468) to [PEB#471](https://github.com/bateks/PersonalExchangeBot/issues/471): a review's findings become a few issues grouped by the piece they touch, one agent each, every finding kept.
+- [template#1](https://github.com/bateks/claude-workflow-template/issues/1), from #17 and #18: what an issue builds on is declared with GitHub's own "blocked by" too, the relation GitHub shows on both issues, beside a `Depends on` line and an `after:` label (#107).
 
 ## Agents
 

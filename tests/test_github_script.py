@@ -34,6 +34,7 @@ from scripts.github import (
     WaitingLabels,
     another_watching,
     api_path,
+    block,
     builds_on,
     by_claude,
     follow_develop,
@@ -624,6 +625,43 @@ def test_a_woken_issue_with_its_move_already_claude_s_says_what_merged() -> None
     assert seen.text.splitlines()[-1] == "  issue #18 Something to do [#17 closed]"
 
 
+def relating(number: int, blockers: int) -> dict[str, object]:
+    """#`number`, which GitHub's own "blocked by" has related to `blockers` issues: every issue
+    says how many in `issue_dependencies_summary` (template#1)."""
+    return {**issue(number=number), "issue_dependencies_summary": {"total_blocked_by": blockers}}
+
+
+def test_github_s_own_blocked_by_holds_an_issue_as_a_depends_on_line_does() -> None:
+    # template#1: the sidebar's relation, which GitHub shows on both issues, holds it too.
+    github = ChangingGitHub([issue(number=17), relating(18, 2)])
+    github.blocked_by[18] = [{**issue(number=17), "state": "open"}, closed(16, "12:00")]
+
+    seen = look(github, lambda: LATER)  # type: ignore[arg-type]
+
+    assert [(task.number, task.state) for task in seen.tasks] == [(17, "to start")]
+    assert seen.text.splitlines()[-1] == "  issue #18 Something to do [waits on #17]"
+
+
+def test_the_close_of_a_github_blocker_wakes_it() -> None:
+    github = ChangingGitHub([relating(18, 1)])
+    github.comments[18] = [handing_off(GOES_ON, created_at="2026-10-13T14:30:00Z")]
+    github.blocked_by[18] = [closed(17, "16:00")]
+
+    seen = look(github, lambda: LATER)  # type: ignore[arg-type]
+
+    assert [(task.state, task.woken) for task in seen.tasks] == [("Claude's move", (17,))]
+
+
+def test_blocked_relates_them_as_the_sidebar_does() -> None:
+    github = ChangingGitHub([{**issue(number=17), "id": 3017}])
+
+    said = block(github, 18, 17)  # type: ignore[arg-type]
+
+    assert github.asked == [("POST", "issues/18/dependencies/blocked_by")]
+    assert github.sent == [{"issue_id": 3017}]  # GitHub takes the blocker's id, not its number
+    assert said == "#18 waits on #17: no agent starts on it until #17 is closed."
+
+
 # --- watch: waits for something new to do (#314) ---------------------------------------------
 
 
@@ -641,12 +679,15 @@ class ChangingGitHub:
         self.runs: dict[str, list[dict[str, object]]] = {}
         self.later: list[object] = []
         self.asked: list[tuple[str, str]] = []
+        self.sent: list[object] = []  # the bodies of what it's asked to change
+        self.blocked_by: dict[int, list[dict[str, object]]] = {}  # GitHub's own relation
 
     def call(
         self, method: str, path: str, body: object | None = None, missing_ok: bool = False
     ) -> object:
         if method != "GET":
             self.asked.append((method, path))
+            self.sent.append(body)
             return {}
         if path == "/user":
             return {"login": ME}
@@ -654,6 +695,8 @@ class ChangingGitHub:
             return self.issues
         if path.startswith("issues/"):
             number = int(path.split("/")[1])
+            if "/dependencies/blocked_by?" in path:  # asked only of one that has had any
+                return self.blocked_by[number]
             if path == f"issues/{number}":  # the issue itself; None for one not there
                 listed = [entry for entry in self.issues if entry["number"] == number]
                 return listed[0] if listed else self.closed.get(number)

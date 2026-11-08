@@ -127,8 +127,9 @@ waits behind code work. The rest start in turn: by the issue's `priority:high`,
 or an agent left its worktree) before new, then first come first served. A label changed while
 a task waits counts at the next look; a running agent is never stopped for a higher one.
 
-**What an issue builds on.** An issue with a `Depends on #16` line or an `after:16` label is
-blocked while #16 is open: no agent starts on it or its PR, and the console says what it waits
+**What an issue builds on.** An issue blocked by #16 in GitHub's own relation
+(`scripts/github.py blocked 18 --by 16`), or with a `Depends on #16` line or an `after:16`
+label, is blocked while #16 is open: no agent starts on it or its PR, and the console says what it waits
 on. When #16 closes, the next look wakes it, and its agent merges `develop` in first
 (docs/workflow.md → What an issue builds on).
 
