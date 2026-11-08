@@ -76,6 +76,8 @@ export class SuitRig extends FigureRig<SuitParts> {
 
   private readonly far = new Container();
   private readonly lines = new Graphics();
+  /** Where the second carabiner was drawn, on its sling, or none while it's off the rope. */
+  private carabinerAt: Joint | null = null;
 
   constructor(suit: number) {
     super(SuitRig.drawParts(suit));
@@ -109,6 +111,12 @@ export class SuitRig extends FigureRig<SuitParts> {
     return SuitRig.at(this.parts.head, SuitRig.LAMP);
   }
 
+  /** Where the second carabiner was last drawn, at its sling's end, or none while it's off the
+   * rope: the rope runs through it (#202). */
+  get carabiner(): Joint | null {
+    return this.carabinerAt;
+  }
+
   /** Where the breath comes out, as the head was last placed: through the mask's valve while
    * it's on. */
   get mouth(): Joint {
@@ -126,11 +134,17 @@ export class SuitRig extends FigureRig<SuitParts> {
     this.parts.lens.tint = palette.skyHorizon;
   }
 
-  /** The oxygen's hose to the mask's valve, wherever the mask is; and the cowstails, `length` long
-   * and `width` wide, from the harness to the jumar in the near hand and the second carabiner
-   * where they're on the rope, slack or taut, and hanging where they're off. Drawn each frame,
+  /** The oxygen's hose to the mask's valve, wherever the mask is; and the cowstails, as long as
+   * `lengths` says and `width` wide, from the harness to the jumar in the near hand and the second carabiner,
+   * slack or taut, and hanging where they're off. The carabiner hangs where it's on the rope as
+   * far as its sling reaches, and no farther: where the rope lies on the snow out of its reach, the
+   * sling holds the carabiner up off it, and the rope is lifted to it (#202). Drawn each frame,
    * once the parts are placed. */
-  hold(pose: Pose, length: number, width: number): void {
+  hold(
+    pose: Pose,
+    lengths: { readonly jumar: number; readonly carabiner: number },
+    width: number,
+  ): void {
     const { parts, lines } = this;
     const { torso, mask, jumar } = parts;
     lines.clear();
@@ -150,9 +164,17 @@ export class SuitRig extends FigureRig<SuitParts> {
       y: tie.y + down.y * HANGING.down,
     });
     const first = pose.jumar ?? off(HANGING.ahead);
-    const second = pose.carabiner ?? off(-HANGING.ahead);
-    SuitRig.cowstail(lines, tie, first, pose.jumar === null ? HANGING.down * 2 : length, down);
-    SuitRig.cowstail(lines, tie, second, pose.carabiner === null ? HANGING.down * 2 : length, down);
+    const sling = lengths.carabiner;
+    this.carabinerAt = pose.carabiner === null ? null : SuitRig.within(tie, pose.carabiner, sling);
+    const second = this.carabinerAt ?? off(-HANGING.ahead);
+    SuitRig.cowstail(
+      lines,
+      tie,
+      first,
+      pose.jumar === null ? HANGING.down * 2 : lengths.jumar,
+      down,
+    );
+    SuitRig.cowstail(lines, tie, second, pose.carabiner === null ? HANGING.down * 2 : sling, down);
     lines.stroke({ width, color: Palette.SLING, cap: "round", join: "round" });
     lines
       .circle(second.x, second.y, SuitRig.CARABINER)
@@ -160,6 +182,16 @@ export class SuitRig extends FigureRig<SuitParts> {
     // The jumar along its cowstail, where the hand holds it.
     jumar.position.set(first.x, first.y);
     jumar.rotation = Math.atan2(first.y - tie.y, first.x - tie.x);
+  }
+
+  /** `to`, or the point `length` from `from` towards it where it's farther. */
+  private static within(from: Joint, to: Joint, length: number): Joint {
+    const apart = Math.hypot(to.x - from.x, to.y - from.y);
+    if (apart <= length) {
+      return to;
+    }
+    const share = length / apart;
+    return { x: from.x + (to.x - from.x) * share, y: from.y + (to.y - from.y) * share };
   }
 
   /** A cowstail `length` long from the harness to `to`: a curve that sags `down` between them as

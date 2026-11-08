@@ -40,6 +40,9 @@ export interface PoseState {
    * metres from the point: the snow the boots stand on. Under them, it's how far below their
    * point the ground is: in a fall, how high they are off it. */
   readonly ground: (ahead: number) => number;
+  /** The ground's own height `ahead`, a wall's face and a crevasse's edge as they are, in the
+   * figure's metres from the point: what the headlamp lights, and stops at (#202). */
+  readonly terrain: (ahead: number) => number;
   /** Where each cowstail's carabiner is, from the climber's point in the figure's metres, or null
    * when it's off: the first, the jumar, and the second. */
   readonly jumar: Joint | null;

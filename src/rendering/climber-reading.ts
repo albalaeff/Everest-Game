@@ -57,6 +57,10 @@ export class ClimberReading {
       Math.abs(rise) > ClimberReading.STEEPEST * Math.abs(across) + ClimberReading.STEP_METRES;
     return (this.from + (steep ? 0 : rise) - this.y) / this.grown;
   };
+  private readonly terrain = (ahead: number): number => {
+    const across = this.facingNow * this.grown * ahead;
+    return (this.slope.terrain.height(this.x + across) - this.y) / this.grown;
+  };
 
   constructor(private readonly slope: ReadSlope) {}
 
@@ -103,6 +107,7 @@ export class ClimberReading {
       tiredness: body.tiredness,
       pace: body.pace,
       ground: this.ground,
+      terrain: this.terrain,
       jumar: this.local(drawn.jumar, at),
       carabiner: this.local(drawn.carabiner, at),
       sliding: view.jumarHeld,

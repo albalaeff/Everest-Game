@@ -16,6 +16,7 @@ const state = (over: Partial<PoseState> = {}): PoseState => ({
   tiredness: "fresh",
   pace: "steady",
   ground: flat,
+  terrain: flat,
   jumar: null,
   carabiner: null,
   sliding: false,

@@ -6,7 +6,7 @@ import type { Atmosphere } from "./atmosphere";
 import { Beam } from "./beam";
 import { Breathing } from "./breathing";
 import { ClimberPose } from "./climber-pose";
-import type { Joint, Pose } from "./climber-pose";
+import type { Joint, Pose, PoseState } from "./climber-pose";
 import { ClimberReading } from "./climber-reading";
 import type { ReadSlope } from "./climber-reading";
 import type { LeastSize } from "./least-size";
@@ -47,8 +47,10 @@ export class ClimberFigure extends Container {
   private static readonly TURN_SECONDS = 0.16;
   /** How far the chest swells with a breath, as a share of the torso's width. */
   private static readonly CHEST_SWELL = 0.07;
-  /** The cowstails: how long they are at life size, and how wide. */
+  /** The cowstails: how long they are at life size, the jumar's an arm's length and the second
+   * carabiner's a short sling, which holds it up off the snow (#202); and how wide. */
   private static readonly COWSTAIL_METRES = 0.8;
+  private static readonly SLING_METRES = 0.5;
   private static readonly COWSTAIL_WIDTH = 0.025;
   /** The breath cloud: how far ahead of the mask's valve it forms, how big it gets, how far it
    * drifts ahead in a calm and downwind on the full gust. */
@@ -62,6 +64,8 @@ export class ClimberFigure extends Container {
   private static readonly LAMP_SPREAD = 0.26;
   private static readonly LAMP_DOWN = 0.3;
   private static readonly LAMP_ALPHA = 0.32;
+  /** How many rays across the cone find where the ground cuts it. */
+  private static readonly LAMP_RAYS = 12;
   /** The pool the beam throws on the snow where it comes down, its length and depth, in metres,
    * and its brightness; and the halo round the lamp itself. */
   private static readonly POOL = { length: 3.4, depth: 0.7, alpha: 0.55 };
@@ -79,6 +83,8 @@ export class ClimberFigure extends Container {
   private readonly breathing = new Breathing();
   private readonly reading: ClimberReading;
   private readonly cone = ClimberFigure.drawCone();
+  /** What of the cone shows: the fan the lamp lights, stopping at the ground (#202). */
+  private readonly lit = new Graphics();
   private readonly pool = ClimberFigure.drawPool();
   private readonly halo = ClimberFigure.drawHalo();
   private readonly rim = new RimRig(ClimberFigure.RIM_METRES);
@@ -102,6 +108,13 @@ export class ClimberFigure extends Container {
     on: { x: 0, y: 0 },
     drawn: { x: 0, y: 0 },
   };
+  /** The second carabiner, where the physics has it on the rope and where its sling holds it,
+   * this frame (#202). */
+  private readonly hanging: { readonly on: Spot; readonly drawn: Spot } = {
+    on: { x: 0, y: 0 },
+    drawn: { x: 0, y: 0 },
+  };
+  private hangs = false;
   private readonly ball: Spot = { x: 0, y: 0 };
   private readonly lamp: Spot = { x: 0, y: 0 };
   private climber: ClimberView | null = null;
@@ -119,7 +132,8 @@ export class ClimberFigure extends Container {
     super();
     this.reading = new ClimberReading(slope);
     this.figure = new SuitRig(suit);
-    this.addChild(this.pool, this.cone, this.rim, this.figure, this.halo, this.breath);
+    this.addChild(this.pool, this.cone, this.lit, this.rim, this.figure, this.halo, this.breath);
+    this.cone.mask = this.lit;
   }
 
   /** The headlamp's beam as last drawn, in the layer's metres: none by day, or off their feet. */
@@ -140,6 +154,17 @@ export class ClimberFigure extends Container {
   /** The jumar on its rope this frame, for the rope to run through it: none when it's off. */
   get held(): Held | null {
     return this.holds ? this.holding : null;
+  }
+
+  /** The rope their second carabiner is on, or none. */
+  get secondRope(): string | null {
+    return this.climber?.second ?? null;
+  }
+
+  /** The second carabiner on its rope this frame, at its sling's end, for the rope to run through
+   * it: none when it's off (#202). */
+  get carried(): Held | null {
+    return this.hangs ? this.hanging : null;
   }
 
   /** The climber as the physics shows them after the frame's steps, `between` them. */
@@ -208,13 +233,20 @@ export class ClimberFigure extends Container {
     this.alpha = climber.dead ? ClimberFigure.DEAD_ALPHA : 1;
     this.draw(pose, masked, atmosphere, climber.dead, grown, size);
     const upright = !climber.dead && !climber.falling;
-    this.drawLamp(pose, atmosphere, upright && lit ? state.ground : null);
+    this.drawLamp(pose, atmosphere, upright && lit ? state : null);
     this.drawBreath(atmosphere, climber.dead, atmosphere.gust * facing, lit);
     this.holds = climber.first !== null && pose.jumar !== null;
     if (pose.jumar !== null) {
       this.holding.on.x = this.first.x;
       this.holding.on.y = this.first.y;
       this.inLayer(pose.jumar, this.holding.drawn);
+    }
+    const carabiner = this.figure.carabiner;
+    this.hangs = climber.second !== null && carabiner !== null;
+    if (carabiner !== null) {
+      this.hanging.on.x = this.second.x;
+      this.hanging.on.y = this.second.y;
+      this.inLayer(carabiner, this.hanging.drawn);
     }
     if (state.ladder === null && !climber.falling && !climber.dead) {
       this.kick(pose, grown);
@@ -265,7 +297,14 @@ export class ClimberFigure extends Container {
     figure.recolour(atmosphere.palette);
     figure.place(pose, swell, masked);
     const thin = size.line(ClimberFigure.COWSTAIL_WIDTH * grown) / grown;
-    figure.hold(pose, ClimberFigure.COWSTAIL_METRES / grown, thin);
+    figure.hold(
+      pose,
+      {
+        jumar: ClimberFigure.COWSTAIL_METRES / grown,
+        carabiner: ClimberFigure.SLING_METRES / grown,
+      },
+      thin,
+    );
     this.drawRim(pose, swell, masked, atmosphere, dead);
   }
 
@@ -296,17 +335,14 @@ export class ClimberFigure extends Container {
     rim.place(pose, swell, masked);
   }
 
-  /** The headlamp's light, as bright as the hour asks, while the climber is on their feet: the
-   * halo round the lamp, the beam from the forehead along the slope and a little below it, and
-   * the pool it throws where it comes down to the snow, the `ground` the pose stands on, ahead of
-   * the climber's point. Drawn once, and only placed each frame. */
-  private drawLamp(
-    pose: Pose,
-    atmosphere: Atmosphere,
-    ground: ((ahead: number) => number) | null,
-  ): void {
+  /** The headlamp's light, as bright as the hour asks, while the climber is on their feet, from
+   * the pose's `state`: the halo round the lamp, the beam from the forehead along the slope the
+   * boots stand on and a little below it, as far as the ground lets it, a wall's face or the snow
+   * (#202), and the pool it throws where it comes down to them, ahead of the climber's point. Drawn
+   * once, and only placed each frame. */
+  private drawLamp(pose: Pose, atmosphere: Atmosphere, state: PoseState | null): void {
     const { lamps } = atmosphere.light;
-    const on = lamps > 0.01 && ground !== null;
+    const on = lamps > 0.01 && state !== null;
     this.cone.visible = on;
     this.halo.visible = on;
     this.pool.visible = on;
@@ -314,9 +350,11 @@ export class ClimberFigure extends Container {
     if (!on) {
       return;
     }
-    // The ground from where the figure stands, in its metres.
+    // The ground from where the figure stands, in its metres: the boots', which the beam tips
+    // along, and as it is, walls and all, which it lights.
     const { offset } = pose;
-    const under = (x: number): number => ground(x + offset.x) - offset.y;
+    const under = (x: number): number => state.ground(x + offset.x) - offset.y;
+    const lights = (x: number): number => state.terrain(x + offset.x) - offset.y;
     const slope = Math.atan(ClimberFigure.rise(under));
     const from = this.figure.lamp;
     const angle = slope - ClimberFigure.LAMP_DOWN;
@@ -328,12 +366,21 @@ export class ClimberFigure extends Container {
     this.halo.position.set(from.x, from.y);
     this.halo.alpha = ClimberFigure.HALO.alpha * lamps;
     const beam = new Beam(from, angle, reach, ClimberFigure.LAMP_SPREAD, lamps);
-    const pool = beam.meets(under);
+    // The cone as far as the ground lets it: none into the ice of a wall, or under the snow.
+    const fan = beam.fan(lights, ClimberFigure.LAMP_RAYS);
+    this.lit.clear();
+    this.cone.visible = fan.length > 0;
+    if (fan.length > 0) {
+      this.lit.poly(fan.flatMap(({ x, y }) => [x, y])).fill(0xffffff);
+    }
+    const pool = beam.meets(lights);
     this.pool.visible = pool !== null;
     if (pool !== null) {
       const along = Math.hypot(pool.x - from.x, pool.y - from.y);
       this.pool.position.set(pool.x, pool.y);
-      this.pool.rotation = slope;
+      // Along what it lights: the snow's slope, or a wall's face standing up.
+      const near = ClimberFigure.RISE_METRES / 4;
+      this.pool.rotation = Math.atan2(lights(pool.x + near) - lights(pool.x - near), 2 * near);
       this.pool.alpha = ClimberFigure.POOL.alpha * lamps * (1 - along / (2 * reach));
     }
     // The same beam in the layer's metres, for the snow's grains to glint in: the figure's x is
