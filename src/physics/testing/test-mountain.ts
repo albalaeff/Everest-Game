@@ -1,4 +1,3 @@
-import { SimulationClock } from "../../simulation";
 import type { Scenario } from "../../simulation";
 import type { SectionAltitude } from "../section-scale";
 import { SlopePhysics } from "../slope-physics";
@@ -20,15 +19,16 @@ import type { Pair } from "../terrain";
  * knowledge base (docs/conventions/slope-physics.md). Only tests import it.
  */
 export class TestMountain {
+  /** A chance a metre that makes every step slip, however short. */
+  static readonly SURE = 1e9;
   /** The altitude of every test mountain's foot. A layout is drawn at life size unless it says
    * otherwise: a climber's altitude is this and their height on the picture. */
   static readonly FOOT = 5000;
-  /** Friction 0.4 holds a slide on ground up to about 22°, and footing goes past 25°: two whole
-   * footings a second on 45°, so a slip comes at once there. A whole stride walks the flat at the
-   * fastest walk, 1 m/s, on all its power; down a gentle slope at it on less, and up one slower;
-   * past 45°, each metre of height costs the same. Footing comes back only standing still, a
-   * whole of it a second; there's no ice, and no ladder bounces, unless a test lays them; and no
-   * landing kills, unless a test says so. */
+  /** Friction 0.4 holds a slide on ground up to about 22°, and slips come past 25°: on 45° every
+   * step slips. A whole stride walks the flat at the fastest walk, 1 m/s, on all its power; down a
+   * gentle slope at it on less, and up one slower; past 45°, each metre of height costs the same.
+   * A ladder's rungs slip a twentieth of the time a metre; there's no ice, and no ladder bounces,
+   * unless a test lays them; and no landing kills, unless a test says so. */
   static readonly SETTINGS: SlopeSettings = {
     gravity: 9.8,
     friction: 0.4,
@@ -44,26 +44,23 @@ export class TestMountain {
     walkingPower: 1,
     fastestWalk: 1,
     uphillCostShare: 1,
-    footingLoss: [
-      [-45, 2],
+    slipChance: [
+      [-45, TestMountain.SURE],
       [-25, 0],
       [25, 0],
-      [45, 2],
+      [45, TestMountain.SURE],
     ],
     ladderSpeed: [
       [-90, 0.4],
       [0, 0.5],
       [90, 0.3],
     ],
-    ladderFootingLoss: [[0, 0.05]],
+    ladderSlipChance: [[0, 0.05]],
     footing: {
-      still: 1,
-      moving: 0,
       ice: 0,
       iceSteep: 0,
       iceFriction: 0.1,
-      bounce: { excite: 0, damp: 1, loss: 0 },
-      afterSlip: 0.5,
+      bounce: { excite: 0, damp: 1, slip: 0 },
       crampon: { looseAfter: 2, loose: 0.3, refit: 1 },
     },
     lethalLanding: 1000,
@@ -75,45 +72,42 @@ export class TestMountain {
   /** Nobody ever slips. */
   static readonly CALM: SlopeSettings = {
     ...TestMountain.SETTINGS,
-    footingLoss: [[0, 0]],
-    ladderFootingLoss: [[0, 0]],
+    slipChance: [[0, 0]],
+    ladderSlipChance: [[0, 0]],
   };
-  /** Every step taken on any ground, or on a ladder, takes all of a climber's footing: a slip. */
+  /** Every step taken on any ground, or on a ladder, slips. */
   static readonly HARSH: SlopeSettings = {
     ...TestMountain.SETTINGS,
-    footingLoss: [[0, SimulationClock.STEPS_PER_SECOND]],
-    ladderFootingLoss: [[0, SimulationClock.STEPS_PER_SECOND]],
+    slipChance: [[0, TestMountain.SURE]],
+    ladderSlipChance: [[0, TestMountain.SURE]],
   };
-  /** A slip now and then on steep ground: after about 13 seconds of walking a 40° slope. */
+  /** A slip now and then on steep ground: about one in 13 m of a 40° slope. */
   static readonly FIRM: SlopeSettings = {
     ...TestMountain.CALM,
-    footingLoss: [
+    slipChance: [
       [-45, 0.1],
       [-25, 0],
       [25, 0],
       [45, 0.1],
     ],
   };
-  /** Nobody slips but on a ladder, where a second on it takes all of a climber's footing. */
+  /** Nobody slips but on a ladder, where every step slips. */
   static readonly ICY_LADDERS: SlopeSettings = {
     ...TestMountain.CALM,
-    ladderFootingLoss: [[0, 1]],
+    ladderSlipChance: [[0, TestMountain.SURE]],
   };
-  /** Snow costs nothing, but each second on blue ice takes half of a climber's footing on the
-   * level at a whole stride, and a moving climber gets back a fifth of it at a steady pace's
-   * sureness: on ice, a steady climber slips after a few seconds and one at three times the
-   * sureness doesn't. A ladder across bounces as it's walked; and a landing faster than 12 m/s,
-   * a drop of about 7 m, kills. */
+  /** Snow never slips, but a metre of blue ice on the level does one time in five at a steady
+   * pace, and one in two on a slope of 30°: a steady climber slips within a few metres of it,
+   * and one twenty times as sure-footed seldom does. A ladder across bounces as it's walked, each
+   * unit of it adding a tenth to a metre's chance; and a landing faster than 12 m/s, a drop of
+   * about 7 m, kills. */
   static readonly SLIPPERY: SlopeSettings = {
     ...TestMountain.CALM,
     footing: {
-      still: 1,
-      moving: 0.2,
-      ice: 0.5,
-      iceSteep: 2,
+      ice: 0.2,
+      iceSteep: 3,
       iceFriction: 0.05,
-      bounce: { excite: 0.5, damp: 1, loss: 0.15 },
-      afterSlip: 0.5,
+      bounce: { excite: 0.5, damp: 1, slip: 0.1 },
       crampon: { looseAfter: 2, loose: 0.3, refit: 1 },
     },
     lethalLanding: 12,

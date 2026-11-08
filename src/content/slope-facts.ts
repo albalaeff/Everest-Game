@@ -4,7 +4,7 @@ import type { KnowledgeBase } from "./knowledge-base";
 /**
  * The slope physics' numbers, from the knowledge base (docs/conventions/slope-physics.md →
  * Numbers): gravity, the snow's friction and the cost of walking by gradient, which are facts;
- * and the walking power, the fastest walk, the ladder speeds, the footing (#190), the cowstail's
+ * and the walking power, the fastest walk, the ladder speeds, the slips' chances (#208), the cowstail's
  * reach, a hazard's knock, self-arrest, the lethal landing and the climb back, coefficients
  * fitted to the Icefall's hours and the chronicle (content/facts/technique.json). The ground walked
  * runs from the steepest down to the steepest up, the Icefall's; a ladder, from down a wall to
@@ -12,8 +12,8 @@ import type { KnowledgeBase } from "./knowledge-base";
  *
  * The records are life's numbers. The mountain's clock runs faster than the route is drawn
  * (`time.compression` over `route.drawn-scale`), so the climber walks and climbs that many
- * times faster than in life over the drawn ground, and loses and gets back their footing that many
- * times faster a second, as fast a metre; a section takes its real hours by the clock. A fall, a
+ * times faster than in life over the drawn ground, and slips at a metre's chance as in life, and a
+ * ladder's bounce dies away that many times faster; a section takes its real hours by the clock. A fall, a
  * knock, a landing and the reaches are at life size, as the walls they happen on are drawn.
  */
 export class SlopeFacts {
@@ -31,7 +31,7 @@ export class SlopeFacts {
       (number(name) * 60) / knowledge.number("time.compression");
     const steepest = knowledge.range("route.icefall-steepness").max;
     const slipFree = number("slip-free-steepness");
-    const slip = fast("footing-loss-steep");
+    const slip = number("slip-steep");
     this.settings = {
       gravity: number("gravity"),
       friction: number("snow-friction"),
@@ -41,7 +41,7 @@ export class SlopeFacts {
       walkingPower: fast("walking-power"),
       fastestWalk: fast("fastest-walk"),
       uphillCostShare: number("uphill-cost-share"),
-      footingLoss: [
+      slipChance: [
         [-steepest, slip],
         [-slipFree, 0],
         [slipFree, 0],
@@ -52,19 +52,16 @@ export class SlopeFacts {
         [0, fast("ladder-speed-across")],
         [SlopeFacts.WALL, fast("ladder-speed-up")],
       ],
-      ladderFootingLoss: [[0, fast("ladder-footing-loss")]],
+      ladderSlipChance: [[0, number("ladder-slip")]],
       footing: {
-        still: fast("footing-back-still"),
-        moving: fast("footing-back-moving"),
-        ice: fast("ice-footing-loss"),
-        iceSteep: number("ice-footing-steep"),
+        ice: number("ice-slip"),
+        iceSteep: number("ice-slip-steep"),
         iceFriction: number("ice-friction"),
         bounce: {
           excite: number("ladder-bounce-excite"),
           damp: fast("ladder-bounce-damp"),
-          loss: fast("ladder-bounce-loss"),
+          slip: number("ladder-bounce-slip"),
         },
-        afterSlip: number("footing-after-slip"),
         crampon: {
           looseAfter: minutes("loose-crampon-after"),
           loose: number("loose-crampon-footing"),

@@ -14,7 +14,7 @@ export type CoachTip =
   | "ice"
   | "seracs"
   | "hanging"
-  | "footing"
+  | "careless"
   | "unclipped"
   | "stopped-under-seracs"
   | "crampon-loose"
@@ -51,8 +51,8 @@ export interface CoachStorage {
  * where it's needed, then watched). The tutorial teaches each control where the route first needs
  * it, the walk at the start, the clip at the first rope, the changeover at the first anchor, the
  * ladders, the crossings and the ice, and lets it go once the player has done it, which the
- * device keeps. The warnings come whenever they matter: hanging on the rope, losing the footing,
- * unclipped where a slip is a fall, stopped under the seracs, a crampon come loose and the
+ * device keeps. The warnings come whenever they matter: hanging on the rope, careless steps on
+ * blue ice or a ladder (#208), unclipped where a slip is a fall, stopped under the seracs, a crampon come loose and the
  * headlamp dead in the dark, a check skipped before setting off catching up with the player
  * (#196). It holds the screen's own state alone, as the rendering does: what's been learnt, and
  * what it shows.
@@ -68,19 +68,19 @@ export class Coach {
   static readonly DARK_SECONDS = 6;
   /** How far a climber walks before the walk is learnt; how near a ladder's end, an anchor and
    * the ice ahead have to be for their tips; how far from a crevasse's ladder an unclipped
-   * climber is warned; and how little footing is losing it. */
+   * climber is warned; and the chance a metre of slipping past which their steps are careless. */
   private static readonly WALKED = 3;
   private static readonly NEAR_LADDER = 1.5;
   private static readonly NEAR_ANCHOR = 1.2;
   private static readonly ICE_AHEAD = 5;
   private static readonly BY_A_CREVASSE = 3;
-  private static readonly UNSURE = 0.45;
+  private static readonly CARELESS = 0.025;
   /** The tips, most pressing first: the warnings, then the tutorial in the route's order. */
   private static readonly ORDER: readonly CoachTip[] = [
     "hanging",
     "stopped-under-seracs",
     "unclipped",
-    "footing",
+    "careless",
     "crampon-loose",
     "lamp",
     "anchor",
@@ -97,7 +97,7 @@ export class Coach {
     "hanging",
     "stopped-under-seracs",
     "unclipped",
-    "footing",
+    "careless",
     "crampon-loose",
     "lamp",
   ]);
@@ -198,8 +198,13 @@ export class Coach {
           world.ropeWithin() !== null &&
           this.byACrevasse(world, view, along)
         );
-      case "footing":
-        return !view.falling && view.footing < Coach.UNSURE;
+      case "careless":
+        return (
+          view.moving &&
+          !view.falling &&
+          view.slipChance >= Coach.CARELESS &&
+          (view.ladder !== null || world.ice.some(({ from, to }) => along >= from && along <= to))
+        );
       case "crampon-loose":
         return view.cramponLoose && !view.refitting && !view.falling;
       case "lamp":

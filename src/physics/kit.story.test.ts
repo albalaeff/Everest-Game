@@ -3,7 +3,7 @@ import { describe, expect, it } from "vitest";
 import { SimulationClock } from "../simulation";
 import type { GameAction } from "../simulation";
 import type { Kit } from "./climber";
-import type { SlopeLayout } from "./slope-physics";
+import type { SlopeLayout, SlopeSettings } from "./slope-physics";
 import { Climb } from "./testing/climb";
 import { TestMountain } from "./testing/test-mountain";
 
@@ -41,15 +41,21 @@ const toTheLadder = (kit: Kit): SlopeLayout => ({
 const UNCHECKED: Kit = { crampons: false, lamp: true, water: true };
 const CHECKED: Kit = { crampons: true, lamp: true, water: true };
 
+/** Nothing slips but a ladder's rungs, at `chance` a metre. */
+const rungs = (chance: number): SlopeSettings => ({
+  ...TestMountain.CALM,
+  ladderSlipChance: [[0, chance]],
+});
+
 /**
  * The kit (#196): a crampon not checked before setting off comes loose on the first ladder once
- * the climber has been on the move long enough, and leaves them unsure on their feet until they
+ * the climber has been on the move long enough, and makes every step likelier to slip until they
  * kneel on the ground and refit it with the crampons tool; a checked one never does.
  */
 describe("A crampon not checked before setting off", () => {
   it("comes loose on the first ladder after the climber has been on the move, and never if checked", () => {
-    const loose = new Climb(TestMountain.SLIPPERY, toTheLadder(UNCHECKED));
-    const tight = new Climb(TestMountain.SLIPPERY, toTheLadder(CHECKED));
+    const loose = new Climb(TestMountain.CALM, toTheLadder(UNCHECKED));
+    const tight = new Climb(TestMountain.CALM, toTheLadder(CHECKED));
     loose.play(steps(16), [walk("anna", "right")]);
     tight.play(steps(16), [walk("anna", "right")]);
 
@@ -58,20 +64,19 @@ describe("A crampon not checked before setting off", () => {
     expect(tight.physics.climber("anna")).toMatchObject({ ladder: "long", cramponLoose: false });
   });
 
-  it("leaves the climber less sure-footed: their footing goes faster on the ladder", () => {
-    const loose = new Climb(TestMountain.SLIPPERY, toTheLadder(UNCHECKED));
-    const tight = new Climb(TestMountain.SLIPPERY, toTheLadder(CHECKED));
-    loose.play(steps(18), [walk("anna", "right")]);
-    tight.play(steps(18), [walk("anna", "right")]);
+  it("leaves the climber less sure-footed: each step on the ladder is likelier to slip (#208)", () => {
+    const loose = new Climb(rungs(0.01), toTheLadder(UNCHECKED));
+    const tight = new Climb(rungs(0.01), toTheLadder(CHECKED));
+    loose.play(steps(16), [walk("anna", "right")]);
+    tight.play(steps(16), [walk("anna", "right")]);
 
-    expect(loose.physics.climber("anna").footing).toBeLessThan(
-      tight.physics.climber("anna").footing,
-    );
+    expect(tight.physics.climber("anna").slipChance).toBeCloseTo(0.01, 9);
+    expect(loose.physics.climber("anna").slipChance).toBeCloseTo(0.01 / 0.3, 9);
   });
 
   it("writes a fall on it into the climber's record, for the debrief to trace back", () => {
-    const loose = new Climb(TestMountain.SLIPPERY, toTheLadder(UNCHECKED));
-    const tight = new Climb(TestMountain.SLIPPERY, toTheLadder(CHECKED));
+    const loose = new Climb(rungs(0.3), toTheLadder(UNCHECKED));
+    const tight = new Climb(rungs(0.3), toTheLadder(CHECKED));
     loose.play(steps(60), [walk("anna", "right")]);
     tight.play(steps(60), [walk("anna", "right")]);
 
@@ -81,7 +86,7 @@ describe("A crampon not checked before setting off", () => {
   });
 
   it("refits with the crampons tool on the ground, the climber kneeling a while, and not on a ladder", () => {
-    const climb = new Climb(TestMountain.SLIPPERY, toTheLadder(UNCHECKED));
+    const climb = new Climb(TestMountain.CALM, toTheLadder(UNCHECKED));
     climb.play(steps(16), [walk("anna", "right")]);
     climb.play(1, [crampons("anna")]);
     const onTheLadder = climb.physics.climber("anna");

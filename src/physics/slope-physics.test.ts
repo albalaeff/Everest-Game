@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { ActionLog, Expedition, HeadlessRunner, SimulationClock } from "../simulation";
+import { ActionLog, Expedition, HeadlessRunner } from "../simulation";
 import type { ClimberId, ExpeditionSave, GameAction } from "../simulation";
 import { SlopePhysics } from "./slope-physics";
 import type { RopeLayout, SlopeLayout, SlopeSettings } from "./slope-physics";
@@ -158,24 +158,32 @@ describe("SlopePhysics: the stride", () => {
     expect(atTheWall).toMatchObject({ x: 20, moving: false });
   });
 
-  it("loses footing as fast for each metre at a shorter stride: slips twice as late at half", () => {
-    // A second's walk at a whole stride takes all of a climber's footing, on any ground.
-    const footless: SlopeSettings = { ...TestMountain.CALM, footingLoss: [[0, 1]] };
-    const firstSlip = (stride: number): number => {
-      const climb = new Climb(footless, alone(TestMountain.GENTLE, 50));
-      climb.physics.stride("anna", stride);
-      climb.play(1, [walk("anna", "right")]);
-      for (let step = 1; step < 200; step += 1) {
-        if (climb.physics.climber("anna").falling) {
-          return step;
+  it("slips as often a metre at a shorter stride: a step's chance is its metres' (#208)", () => {
+    // One slip in twenty metres; on this gentle slope, a slip is over at once.
+    const slippery: SlopeSettings = { ...TestMountain.CALM, slipChance: [[0, 0.05]] };
+    /** The slips of 30 climbers, each on a seed of their own, over 20 m at `stride`. */
+    const slips = (stride: number): number => {
+      let count = 0;
+      for (let seed = 1; seed <= 30; seed += 1) {
+        const climb = new Climb(slippery, alone(TestMountain.GENTLE, 50), seed);
+        climb.physics.stride("anna", stride);
+        climb.play(1, [walk("anna", "right")]);
+        for (let step = 0; step < 4000 && climb.physics.along("anna") < 70; step += 1) {
+          climb.play(1);
         }
-        climb.play(1);
+        expect(climb.physics.climber("anna").slipChance).toBeCloseTo(0.05, 9);
+        count += climb.physics.climber("anna").falls.length;
       }
-      return Infinity;
+      return count;
     };
 
-    expect(firstSlip(1)).toBe(SimulationClock.STEPS_PER_SECOND);
-    expect(firstSlip(0.5)).toBe(2 * SimulationClock.STEPS_PER_SECOND);
+    const whole = slips(1);
+    const half = slips(0.5);
+    // About one each, at either speed.
+    expect(whole).toBeGreaterThan(15);
+    expect(whole).toBeLessThan(50);
+    expect(half).toBeGreaterThan(whole * 0.6);
+    expect(half).toBeLessThan(whole / 0.6);
   });
 
   it("draws nothing for a climber who can't move", () => {
@@ -348,22 +356,16 @@ describe("SlopePhysics: technique", () => {
     expect(unclipped).toBeCloseTo(usual, 6);
   });
 
-  it("loses footing as fast for each metre at a lesser technique: slips twice as late on a ladder at half", () => {
-    // A second on the icy ladder at a whole technique takes all of a climber's footing.
-    const firstSlip = (technique: number): number => {
-      const climb = new Climb(TestMountain.ICY_LADDERS, atTheLadder(technique));
-      climb.play(1, [walk("anna", "right")]);
-      for (let step = 1; step < 200; step += 1) {
-        if (climb.physics.climber("anna").falling) {
-          return step;
-        }
-        climb.play(1);
-      }
-      return Infinity;
+  it("slips at the same chance a metre at a lesser technique: slower on a ladder, no surer (#208)", () => {
+    const rungs: SlopeSettings = { ...TestMountain.CALM, ladderSlipChance: [[0, 0.002]] };
+    const chance = (technique: number): number => {
+      const climb = new Climb(rungs, atTheLadder(technique));
+      climb.play(10, [walk("anna", "right")]);
+      return climb.physics.climber("anna").slipChance;
     };
 
-    expect(firstSlip(1)).toBe(SimulationClock.STEPS_PER_SECOND);
-    expect(firstSlip(0.5)).toBe(2 * SimulationClock.STEPS_PER_SECOND);
+    expect(chance(1)).toBeCloseTo(0.002, 9);
+    expect(chance(0.5)).toBeCloseTo(0.002, 9);
   });
 
   it("keeps the technique in a save, and refuses one of nought or less", () => {
@@ -586,8 +588,8 @@ describe("SlopePhysics: self-arrest", () => {
     expect(arrested.falling).toBe(false);
     expect(arrested.falls).toHaveLength(1);
     expect(climb.physics.along("anna")).toBeGreaterThan(before - 1);
-    // Standing there, they steady themselves: all else stays as it was.
-    expect(climb.physics.climber("anna")).toEqual({ ...arrested, footing: 1 });
+    // Standing there, all stays as it was.
+    expect(climb.physics.climber("anna")).toEqual(arrested);
   });
 
   it("can't hold a slide grown too fast: it goes on to the foot of the slope", () => {
@@ -884,15 +886,27 @@ describe("SlopePhysics: the same climb everywhere", () => {
     expect(resumed.save()).toEqual(played(7, 600));
   });
 
-  it("slips at the same times on any seed: a slip is the footing's, never chance's (#190)", () => {
+  it("slips by the seed's chance (#208): the same seed slips at the same steps, another at others", () => {
     const falls = (seed: number) => {
-      const physics = new SlopePhysics(TestMountain.SETTINGS);
+      const physics = new SlopePhysics(TestMountain.FIRM);
       const expedition = Expedition.start(TestMountain.scenario(seed, layout), [physics]);
       new HeadlessRunner(expedition, script).play(600);
       return physics.climber("boris").falls.map((fall) => fall.step);
     };
 
     expect(falls(7).length).toBeGreaterThan(0);
-    expect(falls(8)).toEqual(falls(7));
+    expect(falls(7)).toEqual(falls(7));
+    expect(falls(8)).not.toEqual(falls(7));
+  });
+
+  it("draws nothing for steps on ground that can't slip: the rest of the expedition's chance goes on the same (#208)", () => {
+    const walked = new Climb(TestMountain.CALM, alone(TestMountain.FLAT, 10));
+    const stood = new Climb(TestMountain.CALM, alone(TestMountain.FLAT, 10));
+
+    walked.play(200, [walk("anna", "right")]);
+    stood.play(200);
+
+    expect(walked.physics.along("anna")).toBeGreaterThan(stood.physics.along("anna") + 5);
+    expect(walked.expedition.save().random).toEqual(stood.expedition.save().random);
   });
 });

@@ -56,7 +56,7 @@ const view = (over: Partial<ClimberView> = {}): ClimberView => ({
   jumarHeld: false,
   ladder: null,
   falls: [],
-  footing: 1,
+  slipChance: 0,
   hanging: false,
   kit: { crampons: true, lamp: true, water: true },
   cramponLoose: false,
@@ -99,6 +99,18 @@ describe("ClimberReading", () => {
     expect(right.ground(0.5)).toBeCloseTo(0.25, 9);
     const left = reading.read(view({ walking: "left" }), BODY, drawn(12, 1, 2));
     expect(left.ground(0.5)).toBeCloseTo(-0.25, 9);
+  });
+
+  it("reads steps likelier to slip as less steady: a careful one steady, a hurried one on blue ice not at all (#208)", () => {
+    const reading = new ClimberReading(slope);
+    const footing = (slipChance: number): number =>
+      reading.read(view({ moving: true, slipChance }), BODY, drawn(5, 0)).footing;
+
+    expect(footing(0)).toBe(1);
+    expect(footing(0.005)).toBeGreaterThan(0.9);
+    expect(footing(0.03)).toBeCloseTo(0.5, 9);
+    expect(footing(0.06)).toBe(0);
+    expect(footing(0.5)).toBe(0);
   });
 
   it("stands a boot level beside a wall's face, at its foot too", () => {
