@@ -63,7 +63,7 @@ Two people work on a repository, each with their own Claude, and each Claude pos
 
 An issue whose work builds on another's says so, and nobody starts it before that one merges (#107: #18 built on #16 and #17 with nothing to hold it, so its PR carried their commits and couldn't merge, and nothing woke its agent when they merged):
 
-- **Declare it** with a line of the issue's body that starts `Depends on #16` (several: `Depends on #16, #17`), or a label `after:16`. A line that only mentions the words, in a sentence, doesn't count. Either developer, or Claude writing the issue up, adds it; a label works on an issue already started.
+- **Declare it** with GitHub's own "blocked by" (the issue's sidebar → Relationships, or `scripts/github.py blocked 18 --by 16`; template#1), a line of the issue's body that starts `Depends on #16` (several: `Depends on #16, #17`), or a label `after:16`. A line that only mentions the words, in a sentence, doesn't count. Either developer, or Claude writing the issue up, adds it; a label works on an issue already started.
 - **While #16 is open** the issue is **blocked**: `status` lists it so (`[waits on #16]`), the agent manager starts no agent on it or its PRs, and its log says `Issue #18 is blocked: it waits on #16, …` once, and again when it's newly so. A chain holds by itself: #18 waits on #17, which waits on #16.
 - **When #16 closes** (its PR merged), the next look wakes the issue, with no person's word: one never started is to start, and its branch comes from `develop`; one in progress since before the merge is **unblocked**, Claude's move. Its agent's prompt names what merged, and the agent begins by merging `origin/develop` into the branch ([conventions.md](conventions.md) → Git workflow); the squash folds the merge away. What closed before Claude's last word wakes nothing.
 
@@ -72,7 +72,8 @@ An issue whose work builds on another's says so, and nobody starts it before tha
 `scripts/github.py` prints little on purpose (PEB#442): an agent reads every character again on each later reply. `api` answers in brief (an issue or PR as a headline, its link and labels; `--full` for the whole JSON, 22K characters for a PR), `pr`, `merge` and `close` say what they did in a line or a few, and `show <n> --new` prints only the comments since Claude's last. So:
 
 - a `POST` or `PATCH` that prints nothing through a filter for JSON keys has still gone through: read the command's raw output, and before repeating any POST list the latest issues (`api GET "issues?state=open&per_page=5&sort=created&direction=desc"`). A duplicate is closed with `api PATCH issues/<n>` and `{"state": "closed", "state_reason": "not_planned", "labels": ["duplicate"], "title": "Duplicate of #<m>"}`: dropping the `model:`/`effort:`/`priority:` labels stops the manager;
-- a script that posts several issues at once is the kind of batch an automatic permission mode refuses: one issue per call, each from a JSON file.
+- a script that posts several issues at once is the kind of batch an automatic permission mode refuses: one issue per call, each from a JSON file;
+- a red CI run is read with `ci <branch>`, which names each failed job with the command for its log, `logs <job>`: the whole log, to filter with `grep`. `api GET actions/jobs/<id>/logs` prints null, since GitHub answers it with a redirect `api` doesn't follow (template#5, from Everest#18).
 
 ### A review's findings as issues
 
