@@ -88,11 +88,13 @@ jobs:
 
       - name: Install gitleaks
         working-directory: ${{ runner.temp }}
+        # GitHub's release downloads answer 504 now and then: a few tries before the job fails.
         run: |
           release=https://github.com/gitleaks/gitleaks/releases/download/v$GITLEAKS_VERSION
           archive=gitleaks_${GITLEAKS_VERSION}_linux_x64.tar.gz
-          curl -sSfLO "$release/$archive"
-          curl -sSfLO "$release/gitleaks_${GITLEAKS_VERSION}_checksums.txt"
+          fetch() { curl -sSfLO --retry 6 --retry-delay 10 --retry-all-errors "$1"; }
+          fetch "$release/$archive"
+          fetch "$release/gitleaks_${GITLEAKS_VERSION}_checksums.txt"
           sha256sum --check --ignore-missing "gitleaks_${GITLEAKS_VERSION}_checksums.txt"
           tar -xzf "$archive" gitleaks
           echo "$PWD" >> "$GITHUB_PATH"
