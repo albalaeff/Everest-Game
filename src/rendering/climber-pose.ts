@@ -56,6 +56,8 @@ export interface PoseState {
   /** How steady their steps look, from 1, steady, to 0, as likely to slip as a step gets
    * (#208): the climber wobbles below `WOBBLE.from`. */
   readonly footing: number;
+  /** Whether they're hauling a partner up the rope, braced at the edge (#209). */
+  readonly hauling: boolean;
 }
 
 /** The figure's joints this frame, in its metres from where it stands, facing +x: the whole of it
@@ -330,6 +332,10 @@ export class ClimberPose {
   /** On steps likely to slip (#208), a climber wobbles, more the likelier: below this footing,
    * swaying their body this far each way, so many times a second, their arms out for balance to
    * these hands, from the shoulder, the near one forward and the far one back. */
+  /** Hauling a partner up the rope (#209): leaning back this far, sunk this far into the knees,
+   * the hands reaching this far ahead at hip height, hand over hand so many times a second, this
+   * far each pull. */
+  private static readonly HAUL = { lean: -0.38, sink: 0.1, ahead: 0.42, hz: 1.1, pull: 0.16 };
   private static readonly WOBBLE = {
     from: 0.7,
     lean: 0.16,
@@ -462,7 +468,11 @@ export class ClimberPose {
     this.keepTime(frame, share, state, mode);
     const gait = this.gait(state, mode, share);
     this.time += frame;
-    const made = this.wobbling(this.made(mode, state, gait), state, mode);
+    const made = this.hauling(
+      this.wobbling(this.made(mode, state, gait), state, mode),
+      state,
+      mode,
+    );
     if (this.mode !== null && mode !== this.mode && this.last !== null) {
       const tilt = ClimberPose.nearest(this.last.tilt, made.targets.tilt);
       this.blendFrom = { ...this.last, tilt };
@@ -672,6 +682,26 @@ export class ClimberPose {
         ? targets.hands
         : [state.jumar === null ? out(near, WOBBLE.near) : near, out(far, WOBBLE.far)];
     return { targets: { ...targets, lean, hands }, down: made.down };
+  }
+
+  /** The targets of a climber hauling a partner up the rope, on their feet (#209): leaning back
+   * on their heels, sunk into their knees, both hands on the rope ahead of them pulling it in,
+   * hand over hand. Not hauling, as made. */
+  private hauling(made: Made, state: PoseState, mode: Mode): Made {
+    if (!state.hauling || mode !== "walk") {
+      return made;
+    }
+    const { HAUL } = ClimberPose;
+    const { targets } = made;
+    const lean = HAUL.lean;
+    const pelvis = { x: targets.pelvis.x, y: targets.pelvis.y - HAUL.sink };
+    const cycle = 2 * Math.PI * HAUL.hz * this.time;
+    const hand = (phase: number): Joint => ({
+      x: pelvis.x + HAUL.ahead - HAUL.pull * (0.5 + 0.5 * Math.sin(cycle + phase)),
+      y: pelvis.y + 0.12 + 0.05 * Math.cos(cycle + phase),
+    });
+    const hands: readonly [Joint, Joint] = [hand(0), hand(Math.PI)];
+    return { targets: { ...targets, pelvis, lean, hands }, down: made.down };
   }
 
   /** Mixes the targets with the last mode's, as the blend into this one goes on. */

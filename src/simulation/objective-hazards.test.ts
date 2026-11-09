@@ -3,7 +3,13 @@ import { describe, expect, it } from "vitest";
 import { Expedition } from "./expedition";
 import { MountainClock } from "./mountain-clock";
 import { HazardChance, ObjectiveHazards } from "./objective-hazards";
-import type { HazardSettings, HazardStart, HazardWeather, HazardZone } from "./objective-hazards";
+import type {
+  HazardEvent,
+  HazardSettings,
+  HazardStart,
+  HazardWeather,
+  HazardZone,
+} from "./objective-hazards";
 import type { Scenario } from "./scenario";
 import { TestGround } from "./testing/test-ground";
 
@@ -22,6 +28,7 @@ const SETTINGS: HazardSettings = {
   },
   warmth: { from: 6, peak: 14, until: 20 },
   sun: { cloud: 0.5, snow: 0 },
+  training: { crack: 5 },
 };
 /** Every step a climber spends under a serac, it goes, and comes down at once. */
 const CERTAIN: HazardSettings = {
@@ -279,5 +286,110 @@ describe("ObjectiveHazards", () => {
     expect(() => ObjectiveHazards.start(under(backwards))).toThrow(RangeError);
     const fog = { weather: "fog", zones: [] } as unknown as HazardStart;
     expect(() => ObjectiveHazards.start(fog)).toThrow(RangeError);
+  });
+});
+
+describe("ObjectiveHazards: a collapse staged for training (#209)", () => {
+  /** A serac staged to come down on 40 to 48 m along, cracking once a climber comes within 3 m. */
+  const STAGED: HazardEvent = { id: "collapse", kind: "serac", from: 40, to: 48, lead: 3 };
+  /** Its crack runs five mountain seconds: ten steps at 10. */
+  const staged = (zones: readonly HazardZone[] = []): HazardStart => ({
+    weather: "clear",
+    zones,
+    events: [STAGED],
+  });
+
+  it("cracks as the first climber comes within its lead, and comes down on its stretch when the crack runs out", () => {
+    const ground = new TestGround({ first: 30, second: 0 });
+    const exposure = new Exposure(ground, "04:00", staged());
+
+    exposure.play(5);
+    const quiet = exposure.hazards.warnings;
+    ground.put("first", 37.5);
+    exposure.play(1);
+    const cracking = { warnings: exposure.hazards.warnings, at: exposure.hazards.warningAt(38) };
+    ground.put("first", 42);
+    exposure.play(10);
+
+    expect(quiet).toEqual([]);
+    expect(cracking.warnings).toEqual([{ zone: "collapse", kind: "serac", began: 5, comes: 15 }]);
+    expect(cracking.at).toBe("serac");
+    expect(ground.knocks).toEqual([{ climber: "first", step: 15 }]);
+    expect(exposure.hazards.strikes).toEqual([
+      {
+        zone: "collapse",
+        kind: "serac",
+        step: 15,
+        timeOfDay: 4 * HOUR + 8,
+        climbers: ["first"],
+        killed: [],
+        training: true,
+      },
+    ]);
+  });
+
+  it("spares a climber who stops short of it, or backs off, and comes down all the same", () => {
+    const ground = new TestGround({ first: 38, second: 0 });
+    const exposure = new Exposure(ground, "04:00", staged());
+
+    exposure.play(1);
+    ground.put("first", 35);
+    exposure.play(10);
+
+    expect(ground.knocks).toEqual([]);
+    expect(exposure.hazards.strikes).toMatchObject([{ zone: "collapse", climbers: [] }]);
+  });
+
+  it("goes once: a climber coming back past it later sets nothing off", () => {
+    const ground = new TestGround({ first: 38, second: 0 });
+    const exposure = new Exposure(ground, "04:00", staged());
+
+    exposure.play(20);
+    ground.put("first", 44);
+    exposure.play(40);
+
+    expect(exposure.hazards.strikes).toHaveLength(1);
+    expect(exposure.hazards.warnings).toEqual([]);
+  });
+
+  it("draws nothing to go: the zones' chances come out as they would without it", () => {
+    const ground = () => new TestGround({ first: 25, second: 39 });
+    const without = new Exposure(ground(), "13:00", under(SERAC)).play(400);
+    const withIt = new Exposure(ground(), "13:00", staged([SERAC])).play(400);
+
+    const zones = (exposure: Exposure) =>
+      exposure.hazards.strikes.filter(({ zone }) => zone === "serac");
+    expect(zones(withIt)).toEqual(zones(without));
+    expect(withIt.hazards.strikes.some(({ zone }) => zone === "collapse")).toBe(true);
+  });
+
+  it("goes on from a save as it would have, its crack and its strike kept", () => {
+    const ground = () => new TestGround({ first: 38, second: 0 });
+    const unbroken = new Exposure(ground(), "04:00", staged()).play(30);
+    const broken = new Exposure(ground(), "04:00", staged()).play(5);
+    const clock = new MountainClock(COMPRESSION);
+    const hazards = new ObjectiveHazards(SETTINGS, clock, ground());
+    const resumed = Expedition.resume(broken.expedition.save(), [clock, hazards]);
+    for (let step = 5; step < 30; step += 1) {
+      resumed.advance();
+    }
+
+    expect(hazards.events).toEqual([STAGED]);
+    expect(resumed.save()).toEqual(unbroken.expedition.save());
+  });
+
+  it("goes on from a save of a build before training events, with none", () => {
+    const exposure = new Exposure(new TestGround({ first: 38 }), "04:00", under(SERAC));
+    const save = exposure.expedition.save();
+
+    expect(save.rules[ObjectiveHazards.NAME]).not.toHaveProperty("events");
+    expect(exposure.hazards.events).toEqual([]);
+  });
+
+  it("refuses an event that isn't a stretch, or a hazard it doesn't know", () => {
+    const backwards = { ...STAGED, from: 48, to: 40 };
+    expect(() => ObjectiveHazards.start({ ...staged(), events: [backwards] })).toThrow(RangeError);
+    const flood = { ...STAGED, kind: "flood" } as unknown as HazardEvent;
+    expect(() => ObjectiveHazards.start({ ...staged(), events: [flood] })).toThrow(RangeError);
   });
 });

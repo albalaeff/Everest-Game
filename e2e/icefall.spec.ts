@@ -1,7 +1,7 @@
 import { expect, test } from "@playwright/test";
 import type { Locator, Page } from "@playwright/test";
 
-import { WALKING, along, climbFrom, openTheGame, savedPlayer, seen } from "./climb";
+import { SURE_FOOTED, WALKING, along, climbFrom, openTheGame, savedPlayer, seen } from "./climb";
 
 /**
  * The Khumbu Icefall (#26), Base Camp to Camp 1: the climb sets off from Base Camp's tents at
@@ -65,6 +65,7 @@ test.describe("on a screen of 630 by 360", () => {
     // At the foot of the ladder up the first block, 33 m along the ground: 5 m up the slope.
     await climbFrom(page, (climb) => {
       savedPlayer(climb).along = 33;
+      climb.random = [...SURE_FOOTED];
     });
     await expect.poll(() => height(page)).toBeCloseTo(5, 1);
 

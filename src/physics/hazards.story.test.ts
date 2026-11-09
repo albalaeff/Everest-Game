@@ -36,6 +36,7 @@ const SETTINGS: HazardSettings = {
   },
   warmth: { from: 6, peak: 14, until: 20 },
   sun: { cloud: 0.5, snow: 0 },
+  training: { crack: 5 },
 };
 /** A serac that cracks on the first step anyone is under it, and comes down ten mountain seconds
  * later: a second of play, half a metre up a 40° slope. */

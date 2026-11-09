@@ -11,6 +11,11 @@ export interface SeenClimber {
   readonly first: string | null;
   readonly second: string | null;
   readonly ladder: string | null;
+  /** Whether they hang on their rope after a fall, to climb back up it (#190). */
+  readonly hanging: boolean;
+  /** Each fall that's over (#190), and how it went. */
+  readonly falls: readonly { readonly held?: boolean; readonly broke?: boolean }[];
+  readonly dead: boolean;
   /** Whether a crampon they didn't check has come loose (#196). */
   readonly cramponLoose: boolean;
 }
@@ -36,7 +41,22 @@ export interface SavedClimb {
   rules: {
     "mountain-clock": { steps: number };
     body: { climbers: { readonly id: string; readonly mass: number; readonly fitness: number }[] };
-    "slope-physics": { climbers: SavedClimber[] };
+    "slope-physics": {
+      climbers: SavedClimber[];
+      /** Each ladder, and where one staged to break for training breaks (#209). */
+      ladders: { readonly id: string; breaks?: number }[];
+    };
+    /** The training events staged on the route (#209), and what has come down. */
+    "objective-hazards": {
+      events?: {
+        readonly id: string;
+        readonly kind: string;
+        readonly from: number;
+        readonly to: number;
+        readonly lead: number;
+      }[];
+      strikes: { readonly zone: string; readonly climbers: readonly string[] }[];
+    };
   };
 }
 
@@ -145,6 +165,12 @@ export const SECOND_BROWSER = { timeout: 45_000 };
  * another story's browsers. */
 export const SAVING = { timeout: 20_000 };
 
+/** The expedition's chance set so that none of its next 5,000 draws comes up below a thousandth
+ * (src/simulation/seeded-random.ts): a step on a ladder, whose chance of slipping is a few in ten
+ * thousand at most (#211), never slips, and a story on a ladder goes as it's told rather than end
+ * in a fall one climb in a hundred. */
+export const SURE_FOOTED = [0x13579bdf, 0xb12327d4, 0x2468ace0, 0x0badf00d];
+
 /** How far across the slope a climber of the expedition is, in metres, or NaN before the climb:
  * on the flat, how far along it. */
 export async function along(page: Page, climber: string): Promise<number> {
@@ -250,6 +276,26 @@ export function savedPlayer(climb: SavedClimb): SavedClimber {
     throw new Error("The saved climb has no player");
   }
   return player;
+}
+
+/** Stages the climb's training events (#209) in place of those its seed staged: a serac collapse
+ * on `from` to `to` metres along, cracking 3 m short of it, and no ladder breaking but `ladder`,
+ * at `breaks` metres out from its near end. A story about something else stages none, as the seed
+ * would put them anywhere: a collapse right behind its climber, one climb in three. */
+export function stage(
+  climb: SavedClimb,
+  collapse: { readonly from: number; readonly to: number } | null,
+  ladder: { readonly id: string; readonly breaks: number } | null,
+): void {
+  const hazards = climb.rules["objective-hazards"];
+  hazards.events =
+    collapse === null ? [] : [{ id: "serac-collapse", kind: "serac", ...collapse, lead: 3 }];
+  for (const laid of climb.rules["slope-physics"].ladders) {
+    delete laid.breaks;
+    if (ladder !== null && laid.id === ladder.id) {
+      laid.breaks = ladder.breaks;
+    }
+  }
 }
 
 /**

@@ -3,13 +3,23 @@ import { Steepness } from "./steepness";
 import type { Pair, Point, Terrain, Way } from "./terrain";
 
 /** A ladder as a level lays it and saves keep it: its ends, by how far along the ground they
- * are, `from` the one further back; and, in a save, how hard it was bouncing, if at all. */
+ * are, `from` the one further back; and, in a save, how hard it was bouncing, if at all. A ladder
+ * staged to break for training (#209) has the rung it `breaks` at, in metres from `from`; a save
+ * keeps the step it began `creaking` on, the step it `broke` on and the end that tore `free`: its
+ * start, at `from`, or its finish. */
 export type LadderLayout = {
   readonly id: string;
   readonly from: number;
   readonly to: number;
   readonly bounce?: number;
+  readonly breaks?: number;
+  readonly creaking?: number;
+  readonly broke?: number;
+  readonly free?: "start" | "finish";
 };
+
+/** A ladder's condition: whole, creaking before it breaks, or broken, until it's lashed back. */
+export type LadderCondition = "whole" | "creaking" | "broken";
 
 /**
  * A ladder between two points of the ground, across a crevasse or up a wall: walking crosses on
@@ -18,7 +28,9 @@ export type LadderLayout = {
  * wall, and a diagonal on either. Its way 1 is toward its end further along the ground, as
  * walking right is, and it's measured in rungs: metres from its `from` end. One across a
  * crevasse bounces under the steps on it, the longer the harder, and the bounce dies away when
- * they stop (#190).
+ * they stop (#190). One staged to break (#209) creaks once a climber steps past the rung it breaks
+ * at, then breaks: the end behind them tears free and it swings down into the crevasse, and
+ * nobody walks onto it until the Icefall Doctors lash it back. It breaks once.
  */
 export class Ladder {
   /** Steeper than this sine, a ladder is up or down a wall, which doesn't bounce. */
@@ -47,6 +59,12 @@ export class Ladder {
   private readonly heading: Point;
   /** How hard it bounces now. */
   private bouncing: number;
+  /** The rung it breaks at, if it's staged to; the steps it began creaking and broke on; the end
+   * that tore free. */
+  private breaks: number | null;
+  private creaking: number | null;
+  private broke: number | null;
+  private free: "start" | "finish" | null;
 
   /** A ladder laid on the ground: its ends on it, `from` further back than `to`. */
   constructor(
@@ -64,6 +82,10 @@ export class Ladder {
     this.length = Math.sqrt(x * x + y * y);
     this.heading = { x: x / this.length, y: y / this.length };
     this.bouncing = layout.bounce ?? 0;
+    this.breaks = layout.breaks ?? null;
+    this.creaking = layout.creaking ?? null;
+    this.broke = layout.broke ?? null;
+    this.free = layout.free ?? null;
   }
 
   get id(): string {
@@ -72,7 +94,73 @@ export class Ladder {
 
   save(): LadderLayout {
     const { id, from, to } = this.layout;
-    return this.bouncing > 0 ? { id, from, to, bounce: this.bouncing } : { id, from, to };
+    return {
+      id,
+      from,
+      to,
+      ...(this.bouncing > 0 ? { bounce: this.bouncing } : {}),
+      ...(this.breaks === null ? {} : { breaks: this.breaks }),
+      ...(this.creaking === null ? {} : { creaking: this.creaking }),
+      ...(this.broke === null ? {} : { broke: this.broke }),
+      ...(this.free === null ? {} : { free: this.free }),
+    };
+  }
+
+  /** Whether it's whole, creaking or broken. */
+  get condition(): LadderCondition {
+    return this.broke !== null ? "broken" : this.creaking !== null ? "creaking" : "whole";
+  }
+
+  /** The end that tore free when it broke: the other still holds it. */
+  get torn(): "start" | "finish" | null {
+    return this.free;
+  }
+
+  /** Where along the ground the lip it tore free of is: behind the climber who set it creaking,
+   * where they came from; none while it's whole. */
+  get tornLip(): number | null {
+    return this.free === null ? null : this.free === "start" ? this.layout.from : this.layout.to;
+  }
+
+  /** A step from `rung` to `next` on `step`: past the rung it breaks at, it starts creaking, and
+   * the end behind the climber is the one that will tear free. */
+  passed(rung: number, next: number, step: number): void {
+    const { breaks } = this;
+    if (breaks === null || this.creaking !== null || this.broke !== null || next === rung) {
+      return;
+    }
+    if ((rung - breaks) * (next - breaks) <= 0) {
+      this.creaking = step;
+      this.free = next > rung ? "start" : "finish";
+    }
+  }
+
+  /** On `step`, a ladder that has creaked `creak` steps breaks: whether it broke just now. */
+  snap(step: number, creak: number): boolean {
+    if (this.creaking === null || step - this.creaking < creak) {
+      return false;
+    }
+    this.creaking = null;
+    this.broke = step;
+    return true;
+  }
+
+  /** On `step`, a ladder broken `relash` steps ago is lashed back, whole, and holds from now on. */
+  mend(step: number, relash: number): void {
+    if (this.broke !== null && step - this.broke >= relash) {
+      this.broke = null;
+      this.breaks = null;
+      this.free = null;
+    }
+  }
+
+  /** Its end on the ground nearer `point`: where along it, and the point. */
+  nearerEnd(point: Point): { readonly along: number; readonly point: Point } {
+    const away = (end: Point): number =>
+      (end.x - point.x) * (end.x - point.x) + (end.y - point.y) * (end.y - point.y);
+    return away(this.start) <= away(this.finish)
+      ? { along: this.layout.from, point: this.start }
+      : { along: this.layout.to, point: this.finish };
   }
 
   /** Whether it lies across a crevasse, rather than up or down a wall. */

@@ -104,10 +104,12 @@ export class ClimberReading {
     this.grown = grown;
     return {
       travelled: this.travelled,
-      moving: view.moving,
+      // Hauling, they stand braced: the body tires, the legs don't stride (#209).
+      moving: view.moving && !view.hauling,
       falling: view.falling,
       dead: view.dead,
       tiredness: body.tiredness,
+      hauling: view.hauling,
       pace: body.pace,
       ground: this.ground,
       terrain: this.terrain,

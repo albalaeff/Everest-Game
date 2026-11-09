@@ -358,6 +358,46 @@
       "fitted": "2026-11-08"
     },
     {
+      "id": "technique.ladder-creak",
+      "kind": "coefficient",
+      "claim": "How many of the mountain's seconds a ladder staged to break creaks and shifts under a climber before it breaks (#209): long enough to clip in, a couple of seconds of play. The moving glacier shifts and drops ladders (route.icefall-hazards).",
+      "status": "source only",
+      "value": 90,
+      "unit": "s",
+      "fitted_to": ["route.icefall-hazards", "route.icefall-lessons"],
+      "fitted": "2026-11-08"
+    },
+    {
+      "id": "technique.ladder-relash",
+      "kind": "coefficient",
+      "claim": "The minutes the Icefall Doctors take to lash a broken ladder back across its crevasse (#209), while the climbers wait at the lip and the morning goes: the route's ladders are theirs to fix (route.icefall-ladders).",
+      "status": "source only",
+      "value": 20,
+      "unit": "min",
+      "fitted_to": ["route.icefall-ladders", "route.icefall-ladders-lashed"],
+      "fitted": "2026-11-08"
+    },
+    {
+      "id": "technique.haul-speed",
+      "kind": "coefficient",
+      "claim": "How fast a partner at the lip hauls a climber hanging on the rope back up it, at a whole stride (#209): as fast as the climber climbs back alone (technique.climb-back-speed), so the two of them together come up twice as fast, and one who can't climb still comes out.",
+      "status": "source only",
+      "value": 0.15,
+      "unit": "m/s",
+      "fitted_to": ["route.icefall-ladders-lashed", "route.icefall-lessons"],
+      "fitted": "2026-11-08"
+    },
+    {
+      "id": "technique.haul-reach",
+      "kind": "coefficient",
+      "claim": "How near the point a hanging climber is hauled up to their partner has to stand to haul them (#209): at the lip above them, on the safety line (route.icefall-ladders-lashed).",
+      "status": "source only",
+      "value": 3,
+      "unit": "m",
+      "fitted_to": ["route.icefall-ladders-lashed"],
+      "fitted": "2026-11-08"
+    },
+    {
       "id": "technique.loose-crampon-after",
       "kind": "coefficient",
       "claim": "The minutes on the move after which a crampon not checked before setting off comes loose, on the next ladder (#196): a skipped check catches up with the climber about an hour out of Base Camp, not at once, as the fall from a ladder near Camp 1 in 2012 began with a crampon caught on a rung (accidents.2012-ladder-fall).",

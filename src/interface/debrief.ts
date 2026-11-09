@@ -36,7 +36,8 @@ export interface DebriefSaid {
  * long where a slip was a fall; how many times the rope caught them, and how many falls had no rope
  * to hold them; how long they were under the seracs and how long they stood still there; what came
  * down near them; and when they got out of the Icefall, before the sun or after it, or when and how
- * they died; and the checks they skipped at Base Camp (#196). Even a climber who made it sees how
+ * they died; the checks they skipped at Base Camp (#196); and how the training events went, a
+ * serac collapse ahead and a ladder breaking under them (#209). Even a climber who made it sees how
  * lucky they were, and a death is traced back to the mistake it came from, a crampon they didn't
  * check too (docs/guidelines/usability.md → A consequence that comes late is traced back). Its
  * words are content/debrief.json's.
@@ -106,6 +107,26 @@ export class Debrief {
         : this.texts.say("gear.skipped", { items: skipped.join(", ") }),
       skipped.length === 0 ? "good" : "bad",
     );
+    // The training events (#209), once they've happened to the player.
+    const collapse = strikes.find(({ training }) => training === true);
+    if (collapse !== undefined) {
+      const caughtBy = collapse.climbers.includes(player);
+      line(
+        "training-serac",
+        this.texts.say(caughtBy ? "training-serac.caught" : "training-serac.clear"),
+        caughtBy ? "bad" : "good",
+      );
+    }
+    const broke = falls.find(({ broke }) => broke === true);
+    if (broke !== undefined) {
+      const said =
+        broke.held !== true
+          ? "training-ladder.fell"
+          : broke.pulled === true
+            ? "training-ladder.pulled"
+            : "training-ladder.held";
+      line("training-ladder", this.texts.say(said), broke.held === true ? "good" : "bad");
+    }
     return { dead, verdict: this.verdict(page, caught, unroped, strikes, player), lines };
   }
 
@@ -128,10 +149,13 @@ export class Debrief {
         null,
       );
       const drop = Math.round(worst?.drop ?? 0);
-      return {
-        text: texts.say(worst?.looseCrampon === true ? "died.fall-crampon" : "died.fall", { drop }),
-        tone: "bad",
-      };
+      const cause =
+        worst?.broke === true
+          ? "died.ladder"
+          : worst?.looseCrampon === true
+            ? "died.fall-crampon"
+            : "died.fall";
+      return { text: texts.say(cause, { drop }), tone: "bad" };
     }
     if (page.exposed > 0) {
       return {

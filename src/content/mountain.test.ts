@@ -1,8 +1,9 @@
 import { describe, expect, it } from "vitest";
 
-import { Climber } from "../physics";
-import { Body, Expedition, HazardChance, SimulationClock } from "../simulation";
-import type { Scenario } from "../simulation";
+import { Climber, SlopePhysics } from "../physics";
+import type { LadderLayout } from "../physics";
+import { Body, Expedition, HazardChance, ObjectiveHazards, SimulationClock } from "../simulation";
+import type { HazardStart, Scenario } from "../simulation";
 import { KnowledgeBase } from "./knowledge-base";
 import { KNOWLEDGE_FILES } from "./knowledge-files";
 import { Mountain } from "./mountain";
@@ -97,6 +98,44 @@ describe("Mountain", () => {
     for (const id of scenario.climbers.filter((climber) => climber !== Section.PLAYER)) {
       expect(rules.lamps.lit(id)).toBe(true);
     }
+  });
+
+  it("stages the training events from the seed: a serac collapse in a serac zone, and a long crossing's ladder to break (#209)", () => {
+    const mountain = new Mountain(knowledge);
+    type Staged = ReturnType<Section["staged"]>;
+    const plans: Staged[] = [1, 2, 3, 4, 5, 6, 7, 8].map((seed) => mountain.route.staged(seed));
+    const seracs = mountain.route.hazards.zones.filter(({ kind }) => kind === "serac");
+    const { ladders } = mountain.route.layout;
+    const scenario = mountain.scenario(7);
+    const hazards = scenario.start[ObjectiveHazards.NAME] as unknown as HazardStart;
+    const physics = scenario.start[SlopePhysics.NAME] as unknown as {
+      readonly ladders: readonly LadderLayout[];
+    };
+
+    expect(mountain.route.staged(7)).toEqual(mountain.route.staged(7));
+    expect(new Set(plans.map((plan) => JSON.stringify(plan))).size).toBeGreaterThan(4);
+    for (const { collapse, ladder } of plans) {
+      expect(collapse).not.toBeNull();
+      expect(
+        seracs.some(
+          (zone) => (collapse?.from ?? -1) >= zone.from && (collapse?.to ?? -1) <= zone.to,
+        ),
+      ).toBe(true);
+      expect(collapse?.lead).toBe(knowledge.number("hazards.training-serac-lead"));
+      const id = ladder?.id ?? "";
+      expect([
+        "popcorn-crevasse",
+        "wide-crevasse",
+        "big-crevasse",
+        "upper-crevasse",
+        "top-crevasse",
+      ]).toContain(id);
+      expect(ladders.some((laid) => laid.id === id)).toBe(true);
+    }
+    expect(hazards.events).toEqual([mountain.route.staged(7).collapse]);
+    expect(physics.ladders.filter(({ breaks }) => breaks !== undefined)).toHaveLength(1);
+    const untrained = mountain.scenario(7, undefined, undefined, false);
+    expect(untrained.start[ObjectiveHazards.NAME]).not.toHaveProperty("events");
   });
 
   it("runs the mountain's clock at the knowledge base's ratio", () => {

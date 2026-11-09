@@ -36,6 +36,9 @@ export interface HazardSettings {
   readonly warmth: { readonly from: number; readonly peak: number; readonly until: number };
   /** How much of the sun's warmth reaches the ice under cloud, and while snow falls: a share. */
   readonly sun: { readonly cloud: number; readonly snow: number };
+  /** The training events (#209): how many of the mountain's seconds a staged collapse cracks and
+   * groans before it comes down, long enough to stop or back off. */
+  readonly training: { readonly crack: number };
 }
 
 /** A stretch of the ground under a hazard, in metres along it, both ends in: a type, not an
@@ -47,10 +50,18 @@ export type HazardZone = {
   readonly to: number;
 };
 
-/** What a scenario sets: the weather, and the zones of its section. */
+/** A collapse staged for training (#209), as a flight simulator stages an engine failure: a
+ * stretch of the ground a hazard comes down on once, cracking first when the first climber comes
+ * within `lead` metres of it, from either side, or onto it. Not the real odds: the zones' are. */
+export type HazardEvent = HazardZone & {
+  readonly lead: number;
+};
+
+/** What a scenario sets: the weather, the zones of its section, and its training events. */
 export interface HazardStart {
   readonly weather: HazardWeather;
   readonly zones: readonly HazardZone[];
+  readonly events?: readonly HazardEvent[];
 }
 
 /** A zone that's going: it began to on the step `began`, and comes down on the step `comes`. */
@@ -62,7 +73,7 @@ export type Warning = {
 };
 
 /** A zone that came down: when, on the mountain's clock too, who was under it then, if anyone,
- * and who of them it killed. */
+ * and who of them it killed; and whether it was a training event's (#209). */
 export type Strike = {
   readonly zone: string;
   readonly kind: HazardKind;
@@ -71,6 +82,7 @@ export type Strike = {
   readonly timeOfDay: number;
   readonly climbers: readonly ClimberId[];
   readonly killed: readonly ClimberId[];
+  readonly training?: boolean;
 };
 
 /**
@@ -91,10 +103,12 @@ export interface HazardGround {
   kill(climber: ClimberId, step: number): void;
 }
 
-/** The hazards' whole state, as saves keep it. */
+/** The hazards' whole state, as saves keep it: the training events are missing from the saves
+ * of builds before them (#209). */
 type HazardSave = {
   readonly weather: HazardWeather;
   readonly zones: readonly HazardZone[];
+  readonly events?: readonly HazardEvent[];
   readonly warnings: readonly Warning[];
   readonly strikes: readonly Strike[];
 };
@@ -155,6 +169,11 @@ export class HazardChance {
     return Math.ceil(this.settings.kinds[kind].warning / seconds);
   }
 
+  /** How many steps of `seconds` a training event cracks for before it comes down. */
+  crackSteps(seconds: number): number {
+    return Math.ceil(this.settings.training.crack / seconds);
+  }
+
   /** The day's warmth at a time of day: 0 in the night, 1 at its peak. */
   private warmthAt(timeOfDay: number): number {
     const hour = timeOfDay / HazardChance.HOUR;
@@ -180,7 +199,9 @@ export class HazardChance {
  * it comes down and knocks everyone still in it off their feet, so whoever gets clear is spared,
  * and kills some outright, at its kind's odds for those on a rope and those off it. A snow
  * bridge or a cornice gives way at once. A zone nobody is in draws nothing, so a quick
- * crossing is a safer one, and a section with no zones draws as before.
+ * crossing is a safer one, and a section with no zones draws as before. A training event (#209)
+ * draws nothing to go: it cracks as the first climber comes near, for the training's crack, and
+ * comes down on its stretch as a zone does, once.
  */
 export class ObjectiveHazards implements Rule {
   /** Its key in scenarios and saves: never change it once saves exist. */
@@ -221,9 +242,15 @@ export class ObjectiveHazards implements Rule {
         );
       }
     }
+    for (const { id, kind, from, to, lead } of start.events ?? []) {
+      if (!ObjectiveHazards.KINDS.has(kind) || !(from >= 0 && from < to && lead >= 0)) {
+        throw new RangeError(`The training event ${id} is no stretch a hazard comes down on`);
+      }
+    }
     const save: HazardSave = {
       weather: start.weather,
       zones: start.zones,
+      ...(start.events === undefined ? {} : { events: start.events }),
       warnings: [],
       strikes: [],
     };
@@ -236,6 +263,11 @@ export class ObjectiveHazards implements Rule {
 
   get zones(): readonly HazardZone[] {
     return this.loaded.zones;
+  }
+
+  /** The training events staged on the section (#209), gone or not. */
+  get events(): readonly HazardEvent[] {
+    return this.loaded.events ?? [];
   }
 
   /** The zones going now, which haven't come down yet. */
@@ -252,10 +284,12 @@ export class ObjectiveHazards implements Rule {
    * there, or none. */
   warningAt(along: number): HazardKind | null {
     const { zones, warnings } = this.loaded;
-    const going = zones.find(
-      (zone) => ObjectiveHazards.holds(zone, along) && warnings.some((w) => w.zone === zone.id),
+    const goes = (id: string): boolean => warnings.some((w) => w.zone === id);
+    const going = zones.find((zone) => ObjectiveHazards.holds(zone, along) && goes(zone.id));
+    const staged = this.events.find(
+      (event) => ObjectiveHazards.nears(event, along) && goes(event.id),
     );
-    return going?.kind ?? null;
+    return going?.kind ?? staged?.kind ?? null;
   }
 
   load(state: Json): void {
@@ -296,6 +330,40 @@ export class ObjectiveHazards implements Rule {
         }
       }
     }
+    this.stage(moment, timeOfDay);
+  }
+
+  /** The training events: each cracks once a climber comes near it, and comes down when its crack
+   * runs out, once. They draw nothing to go, so the zones draw as they would without them. */
+  private stage(moment: Moment, timeOfDay: number): void {
+    const { step } = moment;
+    for (const event of this.events) {
+      const { warnings, strikes } = this.loaded;
+      const warning = warnings.find((going) => going.zone === event.id);
+      if (warning !== undefined) {
+        if (step >= warning.comes) {
+          this.comeDown(event, moment, timeOfDay, true);
+        }
+        continue;
+      }
+      const near = this.ground.climbers.some((climber) =>
+        ObjectiveHazards.nears(event, this.ground.along(climber)),
+      );
+      if (near && !strikes.some((strike) => strike.zone === event.id)) {
+        const cracking: Warning = {
+          zone: event.id,
+          kind: event.kind,
+          began: step,
+          comes: step + this.chance.crackSteps(this.clock.secondsAStep),
+        };
+        this.state = { ...this.loaded, warnings: [...warnings, cracking] };
+      }
+    }
+  }
+
+  /** Whether `along` is within a training event's lead of its stretch, or on it. */
+  private static nears(event: HazardEvent, along: number): boolean {
+    return along >= event.from - event.lead && along <= event.to + event.lead;
   }
 
   private static holds(zone: HazardZone, along: number): boolean {
@@ -310,8 +378,9 @@ export class ObjectiveHazards implements Rule {
   }
 
   /** The zone comes down on whoever is in it now, and stops warning. Each it catches is killed
-   * at its odds, drawn only where they aren't nought, or knocked off their feet. */
-  private comeDown(zone: HazardZone, moment: Moment, timeOfDay: number): void {
+   * at its odds, drawn only where they aren't nought, or knocked off their feet. A training event's
+   * strike says so. */
+  private comeDown(zone: HazardZone, moment: Moment, timeOfDay: number, training = false): void {
     const { step, random } = moment;
     const under = this.under(zone);
     const killed: ClimberId[] = [];
@@ -331,6 +400,7 @@ export class ObjectiveHazards implements Rule {
       timeOfDay,
       climbers: under,
       killed,
+      ...(training ? { training } : {}),
     };
     const { warnings, strikes } = this.loaded;
     this.state = {

@@ -47,9 +47,10 @@ export class Mountain {
   }
 
   /** A new expedition's scenario on the route, from its seed, with the player as their `answers`
-   * make them (#145), or as the route has them, and with what they checked of their `kit` before
-   * setting off (#196), or all of it. */
-  scenario(seed: number, answers?: ClimberAnswers, kit?: Kit): Scenario {
+   * make them (#145), or as the route has them, with what they checked of their `kit` before
+   * setting off (#196), or all of it, and the training events the seed stages (#209), unless
+   * `training` is off. */
+  scenario(seed: number, answers?: ClimberAnswers, kit?: Kit, training = true): Scenario {
     const player = answers === undefined ? undefined : this.climbers.climber(answers);
     const scenario = this.route.scenario(
       seed,
@@ -57,6 +58,7 @@ export class Mountain {
       kit === undefined
         ? undefined
         : { kit, unchecked: this.knowledge.number("body.unchecked-water") },
+      training,
     );
     const bodyFacts = new BodyFacts(this.knowledge);
     return {
@@ -128,6 +130,7 @@ export class Mountain {
         until: number("warmth-until"),
       },
       sun: { cloud: number("sun-under-cloud"), snow: number("sun-in-snow") },
+      training: { crack: number("training-crack") },
     };
   }
 }

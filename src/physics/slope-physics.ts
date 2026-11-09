@@ -2,7 +2,7 @@ import type { ClimberId, HazardGround, Json, Legs, Moment, Rule } from "../simul
 import { Climber } from "./climber";
 import type { ClimberSave, ClimberView, Kit } from "./climber";
 import { Ladder } from "./ladder";
-import type { LadderLayout } from "./ladder";
+import type { LadderCondition, LadderLayout } from "./ladder";
 import { Rope } from "./rope";
 import type { RopeSave } from "./rope";
 import type { SectionAltitude } from "./section-scale";
@@ -13,7 +13,7 @@ import type { SnowLayout } from "./snow";
 import { Terrain } from "./terrain";
 import type { Pair, Point } from "./terrain";
 
-export type { LadderLayout } from "./ladder";
+export type { LadderCondition, LadderLayout } from "./ladder";
 export type { AlongStretch, FootingSettings, SlopeSettings } from "./slope";
 export type { SnowLayout } from "./snow";
 
@@ -99,9 +99,10 @@ export class SlopePhysics implements Rule, HazardGround, Legs {
       const anchor = (along: number) => terrain.point(onTheGround(along, `The rope ${id}`));
       return Rope.laid(id, anchor(from), anchor(to), length, terrain).save();
     });
-    const ladders = layout.ladders.map(({ id, from, to }) => {
+    const ladders = layout.ladders.map(({ id, from, to, breaks }) => {
       const end = (along: number) => onTheGround(along, `The ladder ${id}`);
-      return new Ladder({ id, from: end(from), to: end(to) }, terrain).save();
+      const staged = breaks === undefined ? {} : { breaks };
+      return new Ladder({ id, from: end(from), to: end(to), ...staged }, terrain).save();
     });
     const climbers = layout.climbers.map(({ id, along, technique = 1, kit }) => {
       if (!(technique > 0)) {
@@ -206,6 +207,16 @@ export class SlopePhysics implements Rule, HazardGround, Legs {
   /** How hard a ladder bounces now: nought at rest, and on one up a wall. */
   ladderBounce(id: string): number {
     return this.loaded.ladder(id).bounce;
+  }
+
+  /** Whether a ladder is whole, creaking before it breaks, or broken until it's lashed back
+   * (#209); and the end that tore free, while it's broken. */
+  ladderCondition(id: string): LadderCondition {
+    return this.loaded.ladder(id).condition;
+  }
+
+  ladderTorn(id: string): "start" | "finish" | null {
+    return this.loaded.ladder(id).torn;
   }
 
   /** The stretches of the ground that are bare blue ice, along it. */

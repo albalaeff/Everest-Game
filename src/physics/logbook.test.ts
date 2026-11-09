@@ -25,6 +25,7 @@ const SETTINGS: HazardSettings = {
   kinds: { serac: STILL_ODDS, avalanche: STILL_ODDS, crevasse: STILL_ODDS, cornice: STILL_ODDS },
   warmth: { from: 6, peak: 14, until: 20 },
   sun: { cloud: 0.5, snow: 0 },
+  training: { crack: 5 },
 };
 
 /** A hundred metres of flat ground: the logbook counts from 10 m to 90, a rope runs from 30 m to
