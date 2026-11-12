@@ -26,7 +26,10 @@
       "status": "source only",
       "versions": [
         {
-          "range": { "min": 0.19, "max": 0.48 },
+          "range": {
+            "min": 0.19,
+            "max": 0.48
+          },
           "unit": "1",
           "note": "Three fabrics on snow, a ski overall and two race suits, on a linear tribometer: dry friction, highest on the roughest fabric.",
           "source": {
@@ -44,7 +47,10 @@
       "status": "source only",
       "versions": [
         {
-          "range": { "min": -0.45, "max": 0.45 },
+          "range": {
+            "min": -0.45,
+            "max": 0.45
+          },
           "unit": "1",
           "note": "Ten runners on a treadmill, walking and running at gradients from −0.45 to +0.45.",
           "source": {
@@ -604,6 +610,170 @@
         "technique.novice-share",
         "technique.veteran-share",
         "technique.experience-and-summits"
+      ]
+    },
+    {
+      "id": "technique.front-pointing",
+      "kind": "fact",
+      "claim": "How ice is climbed on crampons and tools: flat-footed, all points but the front ones in the ice, on low-angle to moderately steep ice; on steep ice by front pointing, on the front points of the crampons and the picks of the ice tools, each tool placement tested before it's trusted.",
+      "status": "source only",
+      "versions": [
+        {
+          "value": 40,
+          "unit": "degrees",
+          "note": "French technique, flat-footing, is the preferred technique for slopes up to about 40°.",
+          "source": {
+            "title": "REI Expert Advice: How to Climb Ice",
+            "url": "https://www.rei.com/learn/expert-advice/ice-climbing-waterfalls-alpine-walls.html"
+          },
+          "checked": "2026-11-12"
+        },
+        {
+          "note": "The core technique for climbing steep ice is front pointing.",
+          "source": {
+            "title": "UKClimbing: Ice Climbing Technique",
+            "url": "https://www.ukclimbing.com/articles/page.php?id=4316"
+          },
+          "checked": "2026-11-12"
+        },
+        {
+          "note": "A placement is tested by pulling down on it, slowly adding weight, and isn't trusted until then; the aim on fat ice is that every placement is solid.",
+          "source": {
+            "title": "Gripped: Tips for Safer and Warmer Ice Climbing This Winter",
+            "url": "https://gripped.com/?p=642"
+          },
+          "checked": "2026-11-12"
+        }
+      ]
+    },
+    {
+      "id": "technique.ice-climb-speed",
+      "kind": "coefficient",
+      "claim": "How fast a fresh climber at sea level climbs ice too steep to walk on two ice tools and their front points, in metres a second, at a whole stride: a pick swung in, the feet walked up under it. Fitted so that a wall of the Icefall a few metres high takes some minutes of the mountain's time, longer than its ladder would.",
+      "status": "source only",
+      "value": 0.08,
+      "unit": "m/s",
+      "fitted_to": ["technique.front-pointing", "route.icefall-lessons"],
+      "fitted": "2026-11-12"
+    },
+    {
+      "id": "technique.ice-climb-one-tool",
+      "kind": "coefficient",
+      "claim": "The share of that speed a climber makes on the ice axe alone, with no second tool: each move waits for the one pick to come out and go in again.",
+      "status": "source only",
+      "value": 0.6,
+      "unit": "1",
+      "fitted_to": ["technique.front-pointing", "route.icefall-lessons"],
+      "fitted": "2026-11-12"
+    },
+    {
+      "id": "technique.pick-reach",
+      "kind": "coefficient",
+      "claim": "How high above their feet a climber's pick goes into the ice at full stretch, in metres up: an arm, the tool's shaft and their height. Their feet go no lower under a pick than this.",
+      "status": "source only",
+      "value": 2.2,
+      "unit": "m",
+      "fitted_to": ["technique.front-pointing", "route.icefall-lessons"],
+      "fitted": "2026-11-12"
+    },
+    {
+      "id": "technique.pick-lock-off",
+      "kind": "coefficient",
+      "claim": "How far below a pick a climber's feet stop on the way up, in metres: locked off, the pick at their shoulder. To go higher they swing the next one in.",
+      "status": "source only",
+      "value": 1.4,
+      "unit": "m",
+      "fitted_to": ["technique.front-pointing", "route.icefall-lessons"],
+      "fitted": "2026-11-12"
+    },
+    {
+      "id": "technique.pick-stretch",
+      "kind": "coefficient",
+      "claim": "Above this height over their feet, in metres, a pick is swung at full stretch and bites poorly: the climber who over-reaches can't put their weight behind the swing.",
+      "status": "source only",
+      "value": 2.0,
+      "unit": "m",
+      "fitted_to": ["technique.front-pointing", "route.icefall-lessons"],
+      "fitted": "2026-11-12"
+    },
+    {
+      "id": "technique.pick-snap",
+      "kind": "coefficient",
+      "claim": "How near the ice the player has to point for a pick to go in there, in metres: the aim the game asks of the hand.",
+      "status": "source only",
+      "value": 0.7,
+      "unit": "m",
+      "fitted_to": ["technique.front-pointing", "route.icefall-lessons"],
+      "fitted": "2026-11-12"
+    },
+    {
+      "id": "technique.pick-over-lip",
+      "kind": "coefficient",
+      "claim": "How far past the lip of a face a pick is planted on the ground above it to top out, and how far past it the axe goes in when a climber steps down onto the face, in metres.",
+      "status": "source only",
+      "value": 0.5,
+      "unit": "m",
+      "fitted_to": ["technique.front-pointing", "route.icefall-lessons"],
+      "fitted": "2026-11-12"
+    },
+    {
+      "id": "technique.ice-climb-slip",
+      "kind": "coefficient",
+      "claim": "The chance that a metre climbed on steep ice slips, for a climber on two tools whose picks bite well: about one slip in 250 m. Fitted so that a careful climber rarely comes off a wall of the Icefall, and a careless one does.",
+      "status": "source only",
+      "value": 0.004,
+      "unit": "1/m",
+      "fitted_to": ["technique.front-pointing", "route.icefall-lessons"],
+      "fitted": "2026-11-12"
+    },
+    {
+      "id": "technique.ice-climb-one-tool-slip",
+      "kind": "coefficient",
+      "claim": "How many times likelier a metre of steep ice slips on the ice axe alone than on two tools.",
+      "status": "source only",
+      "value": 4,
+      "unit": "1",
+      "fitted_to": ["technique.front-pointing", "route.icefall-lessons"],
+      "fitted": "2026-11-12"
+    },
+    {
+      "id": "technique.poor-pick-slip",
+      "kind": "coefficient",
+      "claim": "How many times likelier a metre of steep ice slips for a climber who hangs from a pick that bites poorly: swung at full stretch, or into brittle ice.",
+      "status": "source only",
+      "value": 12,
+      "unit": "1",
+      "fitted_to": ["technique.front-pointing", "route.icefall-lessons"],
+      "fitted": "2026-11-12"
+    },
+    {
+      "id": "technique.axe-swing-slip",
+      "kind": "coefficient",
+      "claim": "The chance that a swing comes off for a climber on the ice axe alone, who stands on their front points with no pick in the ice while it swings: about one swing in a hundred, more for one who is spent.",
+      "status": "source only",
+      "value": 0.01,
+      "unit": "1",
+      "fitted_to": ["technique.front-pointing", "route.icefall-lessons"],
+      "fitted": "2026-11-12"
+    },
+    {
+      "id": "technique.ice-hang-effort",
+      "kind": "coefficient",
+      "claim": "The share of a stride's power that hanging still on the ice tools takes: there's no rest on steep ice, only a slower way to tire.",
+      "status": "source only",
+      "value": 0.5,
+      "unit": "1",
+      "fitted_to": ["technique.front-pointing", "route.icefall-lessons"],
+      "fitted": "2026-11-12"
+    },
+    {
+      "id": "technique.ice-pitches",
+      "kind": "question",
+      "question": "On the steep ice of the Icefall where there's a fixed rope and no ladder: how fast does a client climb it on the jumar, the axe and their front points, how often do they come off, and how much does a second ice tool change it? Do clients carry one there at all?",
+      "about": [
+        "technique.ice-climb-speed",
+        "technique.ice-climb-slip",
+        "technique.ice-climb-one-tool"
       ]
     }
   ]

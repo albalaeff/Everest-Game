@@ -290,10 +290,7 @@
       "id": "crowds.queue-places",
       "kind": "question",
       "question": "Where do queues form on a busy summit night (the Balcony, the slabs below the South Summit, the Hillary Step), and how long does a climber wait at each?",
-      "about": [
-        "crowds.queue-2019",
-        "crowds.window-squeeze"
-      ]
+      "about": ["crowds.queue-2019", "crowds.window-squeeze"]
     }
   ]
 }

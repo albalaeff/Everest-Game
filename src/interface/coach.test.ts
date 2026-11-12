@@ -29,6 +29,10 @@ const standing = (x: number, over: Partial<ClimberView> = {}): ClimberView => ({
   refitting: false,
   hauling: false,
   haulHeld: false,
+  onIce: false,
+  picks: [],
+  pickPoor: false,
+  gear: { jumar: true, tools: 1 },
   ...over,
 });
 

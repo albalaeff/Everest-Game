@@ -96,11 +96,7 @@
       "id": "oxygen.bottle-swap",
       "kind": "question",
       "question": "How is a bottle swapped on the move above 8,000 m: who does it, how long is the climber without oxygen, and what goes wrong?",
-      "about": [
-        "oxygen.usual-flow",
-        "oxygen.bottle-swaps",
-        "oxygen.regulator-seals"
-      ]
+      "about": ["oxygen.usual-flow", "oxygen.bottle-swaps", "oxygen.regulator-seals"]
     },
     {
       "id": "oxygen.descent-flow",
@@ -681,20 +677,13 @@
       "id": "oxygen.flow-by-section",
       "kind": "question",
       "question": "What flow does a client breathe on each part of the climb today, asleep and climbing, from Camp 2 to the summit and back, now that 4–8 L/min is common?",
-      "about": [
-        "oxygen.usual-flow",
-        "oxygen.peak-flow",
-        "oxygen.start-altitude"
-      ]
+      "about": ["oxygen.usual-flow", "oxygen.peak-flow", "oxygen.start-altitude"]
     },
     {
       "id": "oxygen.bottles-per-push",
       "kind": "question",
       "question": "How many bottles does a client use on the summit push itself, from Camp 3 to the summit and back to the South Col, at today's flows, and how many does their Sherpa use?",
-      "about": [
-        "oxygen.bottles-per-climb",
-        "oxygen.bottle-hours"
-      ]
+      "about": ["oxygen.bottles-per-climb", "oxygen.bottle-hours"]
     }
   ]
 }

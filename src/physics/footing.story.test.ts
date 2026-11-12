@@ -168,11 +168,11 @@ describe("A slip on a ramp of ice down to a crevasse's lip", () => {
     expect(anna.falls[0]?.held).toBe(false);
   });
 
-  it("holds the clipped one on the rope under the lip, and up they climb on W, back where they slipped", () => {
+  it("holds the clipped one on the rope under the lip, and up they climb on the jumar, back where they slipped", () => {
     const climb = toTheLip(true);
     climb.play(steps(8));
     const hanging = climb.physics.climber("anna");
-    climb.play(1, [walk("anna", "up")]);
+    climb.play(1, [clip("anna", "first"), walk("anna", "up")]);
     climb.play(steps(40));
     const back = climb.physics.climber("anna");
 
@@ -259,19 +259,20 @@ describe("A long ladder across a crevasse bounces under the steps on it", () => 
     expect(climb.physics.ladderBounce("long")).toBe(0);
   });
 
-  it("kills the climber who slips off it unclipped, and hangs the clipped one under it, to climb back onto it", () => {
+  it("kills the climber who slips off it unclipped, and hangs the clipped one under it, to climb back to its end", () => {
     const unclipped = new Climb(ICY_RUNGS, overTheWideCrevasse([{ id: "anna", along: 20 }]));
     unclipped.play(steps(20), [walk("anna", "right")]);
     const clipped = onTheLadder(ICY_RUNGS, 1, 1);
     clipped.play(steps(8));
     const hanging = clipped.physics.climber("climber-0");
-    clipped.play(1, [walk("climber-0", "up")]);
+    clipped.play(1, [clip("climber-0", "first"), walk("climber-0", "up")]);
     clipped.play(steps(30));
     const back = clipped.physics.climber("climber-0");
 
     expect(unclipped.physics.climber("anna")).toMatchObject({ dead: true, y: -30 });
     expect(hanging).toMatchObject({ falling: true, hanging: true, dead: false });
-    expect(back).toMatchObject({ falling: false, ladder: "long", dead: false });
+    // Against the crevasse's wall under the ladder's end, they go up the ice to the lip it stands on.
+    expect(back).toMatchObject({ falling: false, ladder: null, dead: false, x: 20, y: 0 });
     expect(back.falls[0]?.held).toBe(true);
   });
 });
@@ -324,9 +325,9 @@ describe("The same seed slips the same, and a save keeps the hang and the bounce
     const saved = JSON.parse(JSON.stringify(climb.expedition.save())) as ExpeditionSave;
     const resumed = new Climb(ICY_RUNGS, saved);
 
-    climb.play(1, [walk("anna", "up")]);
+    climb.play(1, [clip("anna", "first"), walk("anna", "up")]);
     climb.play(steps(5));
-    resumed.play(1, [walk("anna", "up")]);
+    resumed.play(1, [clip("anna", "first"), walk("anna", "up")]);
     resumed.play(steps(5));
 
     expect(hanging).toMatchObject({ falling: true, hanging: true });

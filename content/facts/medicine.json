@@ -3595,36 +3595,25 @@
       "id": "medicine.lake-louise-rate",
       "kind": "question",
       "question": "How fast does a climber's Lake Louise score climb, hour by hour, above the altitude they're acclimatized to, and how fast does it fall on descent? No source gives a rate.",
-      "about": [
-        "medicine.lake-louise-threshold",
-        "medicine.ams-resolution"
-      ]
+      "about": ["medicine.lake-louise-threshold", "medicine.ams-resolution"]
     },
     {
       "id": "medicine.hace-walk-down",
       "kind": "question",
       "question": "For how long can a climber with cerebral edema at 8,000 m still walk down with help, with and without dexamethasone and oxygen?",
-      "about": [
-        "medicine.hace-descent",
-        "medicine.dexamethasone"
-      ]
+      "about": ["medicine.hace-descent", "medicine.dexamethasone"]
     },
     {
       "id": "medicine.hyperbaric-south-col",
       "kind": "question",
       "question": "Is a hyperbaric chamber used at all at the South Col (about 7,900 m), above the practical limit the UIAA gives?",
-      "about": [
-        "medicine.hyperbaric-ceiling"
-      ]
+      "about": ["medicine.hyperbaric-ceiling"]
     },
     {
       "id": "medicine.frostbite-time",
       "kind": "question",
       "question": "How long do bare or gloved fingers take to freeze at −30 °C in a 50 km/h wind, at 8,000 m?",
-      "about": [
-        "medicine.frostbite-temperature",
-        "medicine.frostbite-risk"
-      ]
+      "about": ["medicine.frostbite-temperature", "medicine.frostbite-risk"]
     }
   ]
 }
