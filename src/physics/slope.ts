@@ -293,6 +293,13 @@ export class Slope {
     return [...this.ladders.values()].some((ladder) => ladder.into(along) === way);
   }
 
+  /** Whether a ladder's end is within `reach` metres along the ground of `along`. */
+  ladderEndBy(along: number, reach: number): boolean {
+    return [...this.ladders.values()].some((ladder) =>
+      ladder.ends.some((end) => Math.abs(end - along) <= reach),
+    );
+  }
+
   /** Whether the ground at `along` is under a ladder, between its ends: nobody stands there. */
   underALadder(along: number): boolean {
     return [...this.ladders.values()].some((ladder) => {

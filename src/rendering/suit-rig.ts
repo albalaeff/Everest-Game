@@ -59,6 +59,19 @@ export class SuitRig extends FigureRig<SuitParts> {
   private static readonly COLLAR = 0.03;
   /** The harness's belt: the slant it runs across the torso at, and its edges along it. */
   private static readonly BELT = { normal: { x: -0.055, y: 1 }, from: 0.005, to: 0.055 };
+  /** An ice tool, in metres: how thick its shaft, its pick and its grip are drawn; how long the
+   * pick is from the shaft to its point in the ice, and the adze behind it; how far the pick
+   * droops to its point; how far the shaft bows out; and the share of the shaft the grip covers. */
+  private static readonly TOOL = {
+    shaft: 0.03,
+    blade: 0.024,
+    handle: 0.045,
+    pick: 0.14,
+    adze: 0.06,
+    droop: 0.05,
+    bow: 0.04,
+    grip: 0.3,
+  };
   /** Where the cowstails tie in at the harness, in the torso's frame; how far below the tie one
    * off the rope hangs, and either side of it; and the carabiner's ring. */
   private static readonly TIE: Joint = { x: 0.2, y: 0.035 };
@@ -179,6 +192,23 @@ export class SuitRig extends FigureRig<SuitParts> {
     lines
       .circle(second.x, second.y, SuitRig.CARABINER)
       .stroke({ width: width * 0.8, color: Palette.STEEL });
+    // The ice tools in the ice: the pick, the shaft down to the hand, and its grip.
+    for (const { head, grip } of pose.tools) {
+      const { TOOL } = SuitRig;
+      lines
+        .moveTo(grip.x, grip.y)
+        .quadraticCurveTo(grip.x - TOOL.bow, (grip.y + head.y) / 2, head.x - TOOL.pick, head.y)
+        .stroke({ width: TOOL.shaft, color: Palette.STEEL, cap: "round" });
+      lines
+        .moveTo(head.x - TOOL.pick - TOOL.adze, head.y + TOOL.droop)
+        .lineTo(head.x - TOOL.pick, head.y + TOOL.droop)
+        .lineTo(head.x, head.y)
+        .stroke({ width: TOOL.blade, color: Palette.STEEL, cap: "round", join: "round" });
+      lines
+        .moveTo(grip.x, grip.y)
+        .lineTo(grip.x + (head.x - grip.x) * TOOL.grip, grip.y + (head.y - grip.y) * TOOL.grip)
+        .stroke({ width: TOOL.handle, color: Palette.SLING, cap: "round" });
+    }
     // The jumar along its cowstail, where the hand holds it.
     jumar.position.set(first.x, first.y);
     jumar.rotation = Math.atan2(first.y - tie.y, first.x - tie.x);

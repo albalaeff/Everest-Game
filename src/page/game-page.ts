@@ -74,6 +74,8 @@ export interface PageTexts {
 export interface PageHooks {
   /** A pixel of the canvas, once the scene draws. */
   pixelAt(x: number, y: number): readonly number[];
+  /** Where a point of the slope, in its metres, is on the screen, in pixels. */
+  screenAt(x: number, y: number): readonly number[];
   /** Where a climber of the expedition is: metres along and up the slope. */
   climberAt(climber: ClimberId): readonly number[];
   /** A climber of the expedition as the physics shows them: on a ladder, on a rope, falling. */
@@ -307,6 +309,7 @@ export class GamePage {
     };
     this.expose({
       pixelAt: (x, y) => scene.pixelAt(x, y),
+      screenAt: (x, y) => scene.screenAt(x, y),
       climberAt: (climber) => {
         const { x, y } = physics.climber(climber);
         return [x, y];

@@ -651,7 +651,7 @@
       "kind": "coefficient",
       "claim": "How fast a fresh climber at sea level climbs ice too steep to walk on two ice tools and their front points, in metres a second, at a whole stride: a pick swung in, the feet walked up under it. Fitted so that a wall of the Icefall a few metres high takes some minutes of the mountain's time, longer than its ladder would.",
       "status": "source only",
-      "value": 0.08,
+      "value": 0.1,
       "unit": "m/s",
       "fitted_to": ["technique.front-pointing", "route.icefall-lessons"],
       "fitted": "2026-11-12"

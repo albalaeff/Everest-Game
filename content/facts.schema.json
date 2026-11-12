@@ -139,7 +139,15 @@
     },
     "phase": {
       "description": "Where on the climb, in the Himalayan Database's own classes: on the way to base camp, at base camp, fixing the route, on the way up or down on a summit bid, in the expedition's evacuation, or other.",
-      "enum": ["approach", "base-camp", "route-preparation", "ascent", "descent", "evacuation", "other"]
+      "enum": [
+        "approach",
+        "base-camp",
+        "route-preparation",
+        "ascent",
+        "descent",
+        "evacuation",
+        "other"
+      ]
     },
     "accident": {
       "description": "An accident the chronicle tells in full: its dates, weather and crowd, the chain of decisions and conditions, and its dead.",
@@ -162,7 +170,10 @@
           "items": { "$ref": "#/$defs/id" }
         },
         "lesson": { "$ref": "#/$defs/text" },
-        "scenario": { "description": "The scenario it seeds, as the spec names it.", "$ref": "#/$defs/text" }
+        "scenario": {
+          "description": "The scenario it seeds, as the spec names it.",
+          "$ref": "#/$defs/text"
+        }
       },
       "required": [
         "id",

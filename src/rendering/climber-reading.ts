@@ -42,6 +42,11 @@ export class ClimberReading {
    * on blue ice; a steady one wobbles a little, and a careful one hardly. */
   private static readonly WOBBLY = 0.06;
 
+  /** What a face of ice goes by as the ladder a climber is on, and how far each way along it the
+   * pose reads it, in metres. */
+  private static readonly ICE = "the ice";
+  private static readonly FACE_METRES = 6;
+
   private facingNow: 1 | -1 = 1;
   private upward = true;
   private travelled = 0;
@@ -77,20 +82,26 @@ export class ClimberReading {
   read(view: ClimberView, body: BodyView, drawn: DrawnAt): PoseState {
     const { at, grown } = drawn;
     const upright = !view.falling && !view.dead;
-    const [start, finish] = upright && view.ladder !== null ? this.slope.ladder(view.ladder) : [];
+    const onIce = upright && view.onIce;
+    const [start, finish] = onIce
+      ? this.face(at)
+      : upright && view.ladder !== null
+        ? this.slope.ladder(view.ladder)
+        : [];
     const along = start === undefined || finish === undefined ? null : { start, finish };
     const heading = along === null ? null : ClimberReading.heading(along.start, along.finish);
     const wall = heading !== null && Math.abs(heading.y) >= ClimberReading.ACROSS;
-    if (along !== null && view.ladder !== this.onLadder) {
+    const ladder = onIce ? ClimberReading.ICE : view.ladder;
+    if (along !== null && ladder !== this.onLadder) {
       // Onto a wall's ladder at its foot, the way is up it; at its top, down.
       const bottom = along.start.y < along.finish.y ? along.start : along.finish;
       const top = bottom === along.start ? along.finish : along.start;
       const toBottom = Math.hypot(at.x - bottom.x, at.y - bottom.y);
       this.upward = toBottom <= Math.hypot(at.x - top.x, at.y - top.y);
     }
-    this.onLadder = along === null ? null : view.ladder;
+    this.onLadder = along === null ? null : ladder;
     if (upright) {
-      this.face(view, at, heading, wall);
+      this.turnTo(view, at, heading, wall);
       if (this.started) {
         const dx = at.x - this.x;
         const dy = at.y - this.y;
@@ -122,11 +133,29 @@ export class ClimberReading {
           : ClimberReading.toAnchor(this.slope.rope(view.first), drawn.jumar) / grown,
       ladder: along === null || heading === null ? null : this.footing(along, heading, at, wall),
       footing: 1 - Math.min(1, view.slipChance / ClimberReading.WOBBLY),
+      picks: onIce
+        ? view.picks.flatMap((pick) => {
+            const local = this.local(pick, at);
+            return local === null ? [] : [local];
+          })
+        : [],
     };
   }
 
+  /** The face of ice a climber on their tools is on, as a ladder up it for the pose: its line
+   * along the ice through where they're drawn, a few metres each way. */
+  private face(at: Point): readonly Point[] {
+    const { terrain } = this.slope;
+    const ahead = terrain.ahead(terrain.nearest(at).along, 1);
+    const reach = ClimberReading.FACE_METRES;
+    return [
+      { x: at.x - ahead.x * reach, y: at.y - ahead.y * reach },
+      { x: at.x + ahead.x * reach, y: at.y + ahead.y * reach },
+    ];
+  }
+
   /** Faces the way they walk on the ground or across a ladder, and the wall up one. */
-  private face(view: ClimberView, at: Point, heading: Point | null, wall: boolean): void {
+  private turnTo(view: ClimberView, at: Point, heading: Point | null, wall: boolean): void {
     const { walking } = view;
     if (wall && heading !== null) {
       const up = heading.y >= 0 ? heading : { x: -heading.x, y: -heading.y };

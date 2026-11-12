@@ -46,6 +46,8 @@ class World implements CoachWorld {
   partner = false;
   ice = [{ from: 70, to: 80 }];
   zones: readonly HazardZone[] = [{ id: "seracs", kind: "serac", from: 90, to: 100 }];
+  wall: "foot" | "lip" | null = null;
+  deadEnd = false;
   ropes = ["one", "two"];
   ladders = ["wall", "crevasse"];
   private readonly shapes: Readonly<Record<string, readonly Point[]>> = {
@@ -89,6 +91,14 @@ class World implements CoachWorld {
 
   along(): number {
     return this.view.x;
+  }
+
+  iceWall(): "foot" | "lip" | null {
+    return this.wall;
+  }
+
+  inADeadEnd(): boolean {
+    return this.deadEnd;
   }
 
   ropeWithin(): string | null {
@@ -214,7 +224,7 @@ describe("Coach: the warnings, whenever they matter", () => {
   it("tells a hanging climber how to climb back, before anything else", () => {
     const { coach } = fresh();
     const world = new World();
-    world.view = standing(52, { falling: true, hanging: true, second: "one" });
+    world.view = standing(52, { falling: true, hanging: true, first: "one", second: "one" });
 
     expect(after(coach, world)).toBe("hanging");
   });
@@ -338,5 +348,79 @@ describe("Coach: the warnings, whenever they matter", () => {
     world.view = standing(52, { dead: true, falling: true });
 
     expect(after(coach, world)).toBeNull();
+  });
+});
+
+describe("Coach: the ice tools and the ways out of a crevasse", () => {
+  /** A coach that has learnt the walk, past the route's first rope. */
+  const walked = (): { coach: Coach; world: World } => {
+    const { coach } = fresh();
+    const world = new World();
+    world.view = standing(4, { moving: true, walking: "right" });
+    after(coach, world);
+    return { coach, world };
+  };
+
+  it("teaches the first pick at a wall of ice with no ladder, the next ones on it, and lets both go once it's climbed", () => {
+    const { coach, world } = walked();
+    world.view = standing(60);
+    world.wall = "foot";
+    const atTheFoot = after(coach, world, Coach.LEAST_SECONDS);
+    world.wall = null;
+    world.view = standing(60, { onIce: true, picks: [{ x: 60, y: 2 }] });
+    const onIt = after(coach, world, Coach.LEAST_SECONDS);
+    world.view = standing(60);
+    after(coach, world, Coach.LEAST_SECONDS);
+    world.wall = "foot";
+    const atTheNext = after(coach, world, Coach.LEAST_SECONDS);
+    world.wall = null;
+    world.view = standing(60, { onIce: true });
+
+    expect(atTheFoot).toBe("ice-wall");
+    expect(onIt).toBe("on-ice");
+    expect(atTheNext).not.toBe("ice-wall");
+    expect(after(coach, world, Coach.LEAST_SECONDS)).not.toBe("on-ice");
+  });
+
+  it("teaches the step down onto the ice at a lip with no ladder", () => {
+    const { coach, world } = walked();
+    world.view = standing(60);
+    world.wall = "lip";
+
+    expect(after(coach, world, Coach.LEAST_SECONDS)).toBe("ice-down");
+  });
+
+  it("warns of a pick that bites poorly, every time", () => {
+    const { coach, world } = walked();
+    world.view = standing(60, { onIce: true, pickPoor: true });
+    const first = after(coach, world);
+    world.view = standing(60, { onIce: true });
+    after(coach, world, Coach.LEAST_SECONDS);
+    world.view = standing(60, { onIce: true, pickPoor: true });
+
+    expect(first).toBe("pick-poor");
+    expect(after(coach, world)).toBe("pick-poor");
+  });
+
+  it("tells one who hangs what gets them out: the jumar on the rope, the jumar to clip on, or the tools", () => {
+    const { coach, world } = walked();
+    const hanging = { falling: true, hanging: true, second: "one" };
+    world.view = standing(52, { ...hanging, first: "one" });
+    const onTheJumar = after(coach, world);
+    world.view = standing(52, hanging);
+    const onACarabiner = after(coach, world);
+    world.view = standing(52, { ...hanging, gear: { jumar: false, tools: 1 } });
+
+    expect(onTheJumar).toBe("hanging");
+    expect(onACarabiner).toBe("hanging-carabiner");
+    expect(after(coach, world)).toBe("hanging-no-jumar");
+  });
+
+  it("tells one alive down a crevasse, off the rope, to climb out on their tools", () => {
+    const { coach, world } = walked();
+    world.view = standing(52);
+    world.deadEnd = true;
+
+    expect(after(coach, world)).toBe("crevasse-floor");
   });
 });

@@ -58,6 +58,16 @@ export interface PoseState {
   readonly footing: number;
   /** Whether they're hauling a partner up the rope, braced at the edge (#209). */
   readonly hauling: boolean;
+  /** On the ice, where each pick they swung in is, from the climber's point in the figure's
+   * metres, the one they hang from first: none anywhere else. The face is their ladder, its
+   * line the ice. */
+  readonly picks?: readonly Joint[];
+}
+
+/** An ice tool as it's drawn: its pick in the ice, and its grip in the hand. */
+export interface DrawnTool {
+  readonly head: Joint;
+  readonly grip: Joint;
 }
 
 /** The figure's joints this frame, in its metres from where it stands, facing +x: the whole of it
@@ -87,6 +97,8 @@ export interface Pose {
   readonly carabiner: Joint | null;
   /** Which boots came down on the snow this frame, for the puff they kick up. */
   readonly landed: readonly [boolean, boolean];
+  /** The ice tools in the ice, the near hand's first: none off it. */
+  readonly tools: readonly DrawnTool[];
 }
 
 /** What the figure is doing, as the pose draws it: from one to the next, it blends. */
@@ -396,6 +408,8 @@ export class ClimberPose {
     lean: 0.45,
     toes: -1.1,
   };
+  /** An ice tool's grip from its pick: down its shaft, and out from the ice. */
+  private static readonly TOOL_GRIP: Joint = { x: -0.16, y: -0.44 };
   private static readonly ORIGIN: Joint = { x: 0, y: 0 };
   private static readonly UP: Joint = { x: 0, y: 1 };
   private static readonly NONE_DOWN: readonly [boolean, boolean] = [false, false];
@@ -1150,8 +1164,16 @@ export class ClimberPose {
     const far = ClimberPose.stiff(farHip, { ankle: ankles[1], sole: soles[1] }, pivots[1]);
     const nearRoot = ClimberPose.armRoot(shoulder, 0);
     const farRoot = ClimberPose.armRoot(shoulder, 1);
-    const nearArm = ClimberPose.bend(nearRoot, hands[0], UPPER_ARM, FOREARM, -1);
-    const farArm = ClimberPose.bend(farRoot, hands[1], UPPER_ARM, FOREARM, -1);
+    // On the ice each hand is on its tool's grip, under the pick it swung in.
+    const tools: readonly DrawnTool[] = (state.falling || state.dead ? [] : (state.picks ?? []))
+      .slice(0, 2)
+      .map((pick) => {
+        const head = ClimberPose.inside(pick, offset, tilt);
+        const { x, y } = ClimberPose.TOOL_GRIP;
+        return { head, grip: { x: head.x + x, y: head.y + y } };
+      });
+    const nearArm = ClimberPose.bend(nearRoot, tools[0]?.grip ?? hands[0], UPPER_ARM, FOREARM, -1);
+    const farArm = ClimberPose.bend(farRoot, tools[1]?.grip ?? hands[1], UPPER_ARM, FOREARM, -1);
     const { jumar, carabiner } = state;
     const onTheRope = jumar === null ? null : ClimberPose.inside(jumar, offset, tilt);
     return {
@@ -1171,6 +1193,7 @@ export class ClimberPose {
       jumar: onTheRope === null ? null : ClimberPose.between(onTheRope, nearArm.end, this.holding),
       carabiner: carabiner === null ? null : ClimberPose.inside(carabiner, offset, tilt),
       landed,
+      tools,
     };
   }
 
