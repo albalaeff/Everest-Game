@@ -3,7 +3,8 @@
   --edge-right: max(0.5rem, env(safe-area-inset-right));
   --edge-bottom: max(0.5rem, env(safe-area-inset-bottom));
   --edge-left: max(0.5rem, env(safe-area-inset-left));
-  /* The interface's own colours: glass panels over the slope, one accent, red for danger alone. */
+  /* The interface's own colours: dark glass and metal over the slope, the rope's orange for the
+   * way on and what's in hand, and red for danger alone (docs/guidelines/interface.md → Colour). */
   --ink: #f2f5f9;
   --muted: #b7c8dc;
   --accent: #7fc4ff;
@@ -13,6 +14,26 @@
   --glass-deep: rgb(8 20 40 / 86%);
   --glass-edge: rgb(255 255 255 / 20%);
   --glass-shadow: 0 0.5rem 1.5rem rgb(0 0 0 / 22%);
+  /* The mountain's own: the orange of the fixed rope for what the player does next, the pale
+   * blue of the ice for what's lit, and anodized metal for the buttons, a climber's hardware. */
+  --rope: #ff8f45;
+  --rope-deep: #e8651c;
+  --rope-ink: #2a1203;
+  --ice: #a9dcff;
+  --metal: linear-gradient(180deg, rgb(48 70 108 / 92%), rgb(16 30 56 / 94%));
+  --metal-lit: linear-gradient(180deg, rgb(66 94 140 / 94%), rgb(24 44 80 / 96%));
+  --metal-edge: rgb(190 222 255 / 30%);
+  --metal-shadow:
+    inset 0 1px 0 rgb(255 255 255 / 20%), inset 0 -2px 0 rgb(0 0 0 / 32%),
+    0 0.35rem 0.9rem rgb(0 0 0 / 32%);
+  --card: linear-gradient(180deg, rgb(26 42 74 / 96%), rgb(10 20 42 / 96%));
+  /* The marks drawn on the buttons and the coach's card, each a line drawing used as a mask. */
+  --icon-pulse: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23000' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M2 13h4l2.5-6 4 11 2.5-5H22'/%3E%3C/svg%3E");
+  --icon-radio: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23000' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M8 8h8a1 1 0 0 1 1 1v11a1 1 0 0 1-1 1H8a1 1 0 0 1-1-1V9a1 1 0 0 1 1-1zM10 8V3M10 12h4M10 16h4'/%3E%3C/svg%3E");
+  --icon-pack: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23000' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M7 9a5 5 0 0 1 10 0v10a2 2 0 0 1-2 2H9a2 2 0 0 1-2-2zM10 5V4a2 2 0 0 1 4 0v1M9 14h6v3H9z'/%3E%3C/svg%3E");
+  --icon-tent: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23000' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M2 20 12 4l10 16zM12 4v6M9 20l3-6 3 6'/%3E%3C/svg%3E");
+  --icon-peak: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23000' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M2 20 9 7l4 6 2.5-3.5L22 20zM9 7l1.5 4.5'/%3E%3C/svg%3E");
+  --icon-warning: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23000' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M12 3 22 20H2zM12 10v4.5M12 17.5v.5'/%3E%3C/svg%3E");
   color-scheme: dark;
   font-family: system-ui, sans-serif;
 }
@@ -135,15 +156,20 @@ header {
   touch-action: none;
 }
 
+/* The slope's standing hint, under the instruments and the [Graphics] button, over the list of
+ * what the game received. */
 #hint-click,
 #hint-tap {
   position: absolute;
-  top: 5.75rem;
+  top: 6.9rem;
+  z-index: 2;
   left: var(--edge-left);
-  padding: 0.35rem 0.75rem;
-  border-radius: 999px;
-  background: var(--glass);
-  color: var(--muted);
+  padding: 0.35rem 0.8rem;
+  border: 1px solid rgb(255 255 255 / 14%);
+  border-left: 0.2rem solid var(--ice);
+  border-radius: 0.3rem 0.6rem 0.6rem 0.3rem;
+  background: var(--glass-deep);
+  color: var(--ink);
   font-size: 0.8125rem;
 }
 
@@ -154,28 +180,68 @@ header {
 
 .touch #hint-tap {
   display: block;
-  top: 6.75rem;
+  top: 7.5rem;
 }
 
 /* The coach (#192): a tip at a time over the slope, under the readouts, in the player's own
- * controls; a warning edged in the warning's colour. It never takes a click from the slope. */
+ * controls. A card edged in the rope's orange with a peak for a tip of the tutorial, in red with a
+ * triangle for a warning, so the shape tells them apart too; the keys and buttons it names are key
+ * caps. It never takes a click from the slope. */
 #coach {
   position: absolute;
   top: 5.5rem;
   left: 50%;
-  max-width: min(34rem, calc(100vw - 2rem));
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 0.75rem;
+  align-items: center;
+  max-width: min(38rem, calc(100vw - 2rem));
   margin: 0;
-  padding: 0.55rem 0.95rem;
-  border: 1px solid var(--glass-edge);
-  border-radius: 0.9rem;
-  background: var(--glass-deep);
-  box-shadow: var(--glass-shadow);
+  padding: 0.7rem 1.1rem 0.7rem 0.85rem;
+  border: 1px solid rgb(255 255 255 / 18%);
+  border-left: 0.3rem solid var(--rope);
+  border-radius: 0.45rem 0.9rem 0.9rem 0.45rem;
+  background: var(--card);
+  box-shadow:
+    inset 0 1px 0 rgb(255 255 255 / 12%),
+    0 0.6rem 1.6rem rgb(0 0 0 / 38%);
   color: var(--ink);
-  font-size: 0.9375rem;
-  line-height: 1.35;
-  text-align: center;
+  font-size: 1rem;
+  line-height: 1.45;
+  text-align: left;
+  text-wrap: pretty;
   pointer-events: none;
   transform: translateX(-50%);
+  z-index: 2;
+}
+
+#coach::before {
+  width: 1.6rem;
+  height: 1.6rem;
+  background: var(--rope);
+  content: "";
+  -webkit-mask: var(--icon-peak) center / contain no-repeat;
+  mask: var(--icon-peak) center / contain no-repeat;
+}
+
+/* A key cap: a key's name, or a button's in a pill like the thumb's buttons. */
+#coach kbd {
+  margin: 0 0.1em;
+  padding: 0.08em 0.45em;
+  border: 1px solid rgb(255 255 255 / 34%);
+  border-bottom-width: 2px;
+  border-radius: 0.4em;
+  background: rgb(255 255 255 / 12%);
+  color: #fff;
+  font-size: 0.875em;
+  font-weight: 700;
+  white-space: nowrap;
+  opacity: 1;
+}
+
+#coach kbd[data-button] {
+  padding: 0.08em 0.6em;
+  border-radius: 999px;
 }
 
 #coach[hidden],
@@ -191,34 +257,45 @@ main:has(#coach:not([hidden])) #hint-tap {
 }
 
 .touch #coach [data-device="touch"] {
-  display: inline;
+  display: block;
 }
 
-#coach[data-tip="hanging"],
-#coach[data-tip="footing"],
-#coach[data-tip="unclipped"],
-#coach[data-tip="stopped-under-seracs"] {
-  border-color: var(--danger);
+#coach[data-kind="warning"] {
+  border-color: rgb(255 90 79 / 55%);
+  border-left-color: var(--danger);
   box-shadow:
-    0 0 0 1px var(--danger),
-    var(--glass-shadow);
+    inset 0 1px 0 rgb(255 255 255 / 12%),
+    0 0 0 1px rgb(255 90 79 / 35%),
+    0 0.6rem 1.6rem rgb(0 0 0 / 38%);
+}
+
+#coach[data-kind="warning"]::before {
+  background: var(--danger);
+  -webkit-mask-image: var(--icon-warning);
+  mask-image: var(--icon-warning);
 }
 
 /* On a phone, left of the thumb's buttons and under the hint, so it covers none of them. */
 .touch #coach {
-  top: 6.75rem;
+  top: 7.5rem;
   left: var(--edge-left);
+  gap: 0.5rem;
   max-width: calc(100vw - var(--edge-left) - var(--edge-right) - 15rem);
+  padding: 0.5rem 0.75rem 0.5rem 0.6rem;
   font-size: 0.8125rem;
-  text-align: left;
   transform: none;
+}
+
+.touch #coach::before {
+  width: 1.2rem;
+  height: 1.2rem;
 }
 
 /* The actions the game received, for the stories and a check by hand: a short list out of the
  * slope's way. */
 #received {
   position: absolute;
-  top: 8.25rem;
+  top: 9.5rem;
   bottom: 4.5rem;
   left: var(--edge-left);
   max-width: 12rem;
@@ -243,7 +320,8 @@ main:has(#coach:not([hidden])) #hint-tap {
   align-items: center;
 }
 
-/* The self-check: a card of glass under the instruments, with the body's words. */
+/* The self-check: a card under the instruments, edged in the rope's orange like the pack's, with
+ * the body's words. */
 #self-check {
   position: absolute;
   top: calc(var(--edge-top) + 6.25rem);
@@ -253,10 +331,10 @@ main:has(#coach:not([hidden])) #hint-tap {
   box-sizing: border-box;
   padding: 1rem 1.1rem;
   border: 1px solid var(--glass-edge);
-  border-radius: 1.25rem;
-  background: var(--glass-deep);
-  box-shadow: 0 1rem 2.5rem rgb(0 0 0 / 30%);
-  backdrop-filter: blur(1.25rem);
+  border-top: 0.25rem solid var(--rope);
+  border-radius: 0.5rem 0.5rem 1.1rem 1.1rem;
+  background: var(--card);
+  box-shadow: 0 1rem 2.5rem rgb(0 0 0 / 38%);
   pointer-events: auto;
 }
 
@@ -280,12 +358,6 @@ main:has(#coach:not([hidden])) #hint-tap {
   min-width: 44px;
   min-height: 44px;
   padding: 0.5rem 0.9rem;
-  border: 1px solid var(--glass-edge);
-  border-radius: 999px;
-  background: transparent;
-  color: inherit;
-  font: inherit;
-  pointer-events: auto;
 }
 
 #self-check dl {
@@ -337,10 +409,11 @@ main:has(#coach:not([hidden])) #hint-tap {
 
 /* The readouts between the buttons, legible on the bright snow close in. */
 #controls output {
-  padding: 0.35rem 0.7rem;
+  padding: 0.4rem 0.75rem;
   border: 1px solid var(--glass-edge);
-  border-radius: 999px;
-  background: var(--glass);
+  border-radius: 0.6rem;
+  background: var(--glass-deep);
+  font-weight: 600;
   white-space: nowrap;
   font-variant-numeric: tabular-nums;
 }
@@ -349,42 +422,155 @@ main:has(#coach:not([hidden])) #hint-tap {
   display: none;
 }
 
+/* The buttons: a climber's hardware, anodized metal with a lit top edge, that sinks under the
+ * finger and takes the rope's orange while it's held, or while its panel is open. */
 .action-button,
 #disclaimer button,
 #start button,
 #climber button,
 #pack button,
 #inventory button,
+#self-check button,
 #gear button {
+  display: inline-flex;
+  gap: 0.5rem;
+  align-items: center;
+  justify-content: center;
+  box-sizing: border-box;
   min-width: 48px;
   min-height: 48px;
-  padding: 0 0.9rem;
-  border: 1px solid var(--glass-edge);
-  border-radius: 999px;
-  background: var(--glass);
-  box-shadow: var(--glass-shadow);
-  color: inherit;
+  padding: 0 0.95rem;
+  border: 1px solid var(--metal-edge);
+  border-radius: 0.75rem;
+  background: var(--metal);
+  box-shadow: var(--metal-shadow);
+  color: var(--ink);
   font: inherit;
-  font-weight: 500;
+  font-weight: 600;
   white-space: nowrap;
   pointer-events: auto;
   touch-action: none;
+  transition:
+    border-color 0.12s,
+    translate 0.08s;
 }
 
-.action-button--pressed {
-  border-color: var(--accent);
-  background: var(--accent);
-  color: var(--accent-ink);
+.action-button:hover,
+#disclaimer button:hover,
+#start button:hover,
+#climber button:hover,
+#pack button:hover:not(:disabled),
+#inventory button:hover:not(:disabled),
+#self-check button:hover,
+#gear button:hover,
+#camp button:hover {
+  border-color: var(--ice);
+  background: var(--metal-lit);
 }
 
-/* The key beside each button's word, on a PC. */
+.action-button:active,
+#disclaimer button:active,
+#start button:active,
+#climber button:active,
+#pack button:active:not(:disabled),
+#inventory button:active:not(:disabled),
+#gear button:active,
+#camp button:active {
+  translate: 0 1px;
+}
+
+/* The focus in the ice's blue, so it's never taken for a button held or a panel open. */
+.action-button:focus-visible,
+main button:focus-visible,
+[role="dialog"] button:focus-visible {
+  outline: 2px solid var(--ice);
+  outline-offset: 2px;
+}
+
+.action-button--pressed,
+.action-button[aria-expanded="true"] {
+  border-color: var(--rope);
+  background: linear-gradient(180deg, var(--rope), var(--rope-deep));
+  color: var(--rope-ink);
+  translate: 0 1px;
+}
+
+/* What each of the menu's buttons is, at a glance: its mark before its word. A phone's menu is
+ * tight along the top, so there it keeps its words alone. */
+.menu .action-button::before {
+  flex: none;
+  width: 1.15rem;
+  height: 1.15rem;
+  background: currentcolor;
+  content: "";
+  -webkit-mask: var(--icon) center / contain no-repeat;
+  mask: var(--icon) center / contain no-repeat;
+  opacity: 0.9;
+}
+
+.touch .menu .action-button::before {
+  display: none;
+}
+
+[data-control="check-self"] {
+  --icon: var(--icon-pulse);
+}
+
+[data-control="radio"] {
+  --icon: var(--icon-radio);
+}
+
+[data-control="inventory"] {
+  --icon: var(--icon-pack);
+}
+
+[data-control="set-up-tent"] {
+  --icon: var(--icon-tent);
+}
+
+/* The way on, on every screen before the climb and at a camp: the rope's orange, the one thing
+ * to press. */
+#disclaimer button,
+#start [data-text="alone"],
+#climber [data-text="keep"],
+#climber [data-text="climb"],
+#pack [data-text="next"],
+#gear button,
+#camp [data-text="continue"] {
+  border-color: var(--rope);
+  background: linear-gradient(180deg, var(--rope), var(--rope-deep));
+  color: var(--rope-ink);
+  font-weight: 700;
+}
+
+#disclaimer button:hover,
+#start [data-text="alone"]:hover,
+#climber [data-text="keep"]:hover,
+#climber [data-text="climb"]:hover,
+#pack [data-text="next"]:hover,
+#gear button:hover,
+#camp [data-text="continue"]:hover {
+  border-color: #ffd0a8;
+  background: linear-gradient(180deg, #ffa566, var(--rope));
+}
+
+/* The key beside each button's word, on a PC: a key cap. */
 kbd {
-  padding: 0.05em 0.4em;
-  border: 1px solid rgb(255 255 255 / 25%);
-  border-radius: 0.35em;
+  padding: 0.1em 0.45em;
+  border: 1px solid rgb(255 255 255 / 30%);
+  border-bottom-width: 2px;
+  border-radius: 0.4em;
+  background: rgb(255 255 255 / 10%);
   font: inherit;
-  font-size: 0.75em;
-  opacity: 0.75;
+  font-size: 0.72em;
+  font-weight: 700;
+  opacity: 0.9;
+}
+
+.action-button--pressed kbd,
+.action-button[aria-expanded="true"] kbd {
+  border-color: rgb(42 18 3 / 45%);
+  background: rgb(42 18 3 / 12%);
 }
 
 /* The oxygen buttons' labels end with their keys already. */
@@ -428,6 +614,22 @@ kbd {
 .touch .menu .action-button {
   padding: 0 0.6rem;
   font-size: 0.8125rem;
+}
+
+/* On the narrowest phones the words don't fit beside the instruments: each of the menu's buttons
+ * keeps its mark alone, and its word for a screen reader. */
+@media (max-width: 700px) {
+  .touch .menu .action-button {
+    width: 48px;
+    padding: 0;
+    font-size: 0;
+  }
+
+  .touch .menu .action-button::before {
+    display: block;
+    width: 1.4rem;
+    height: 1.4rem;
+  }
 }
 
 .touch #self-check {
@@ -698,18 +900,20 @@ kbd {
   min-height: 48px;
   margin: 1.5rem auto 0;
   padding: 0 0.9rem;
-  border: 1px solid var(--glass-edge);
-  border-radius: 999px;
-  background: var(--glass);
+  border: 1px solid var(--metal-edge);
+  border-radius: 0.75rem;
+  background: var(--metal);
+  box-shadow: var(--metal-shadow);
   color: inherit;
   font: inherit;
+  font-weight: 600;
   pointer-events: auto;
   touch-action: none;
 }
 
 /* The start's choices, one under the other: the code and its [Join] share a line. */
 #start > div > button {
-  display: block;
+  display: flex;
   width: 100%;
   max-width: 20rem;
   margin: 0.75rem auto 0;
@@ -731,7 +935,7 @@ kbd {
   min-height: 48px;
   padding: 0 0.7rem;
   border: 1px solid var(--glass-edge);
-  border-radius: 999px;
+  border-radius: 0.75rem;
   background: rgb(8 20 40 / 50%);
   color: inherit;
   font: inherit;
@@ -769,7 +973,7 @@ kbd {
   min-height: 48px;
   padding: 0 0.7rem;
   border: 1px solid var(--glass-edge);
-  border-radius: 999px;
+  border-radius: 0.75rem;
   background: rgb(8 20 40 / 50%);
   color: inherit;
   font: inherit;
@@ -784,7 +988,7 @@ kbd {
   width: 1.25rem;
   height: 1.25rem;
   margin: 0;
-  accent-color: var(--accent);
+  accent-color: var(--rope);
 }
 
 #climber fieldset {
@@ -867,7 +1071,7 @@ kbd {
 }
 
 #climber button {
-  display: block;
+  display: flex;
   width: 100%;
   max-width: 20rem;
   margin: 0.75rem auto 0;
@@ -876,13 +1080,12 @@ kbd {
 /* The way on the screen offers first: [Keep these answers], or [Climb]. */
 #climber [data-text="keep"],
 #climber [data-text="climb"] {
-  border-color: var(--accent);
-  font-weight: 650;
+  font-weight: 700;
 }
 
 /* The gear check (#196): the game model's note, then each part of the kit a row a finger can take,
- * its box, its name and why it matters, edged in the accent once ticked, and [Set off] under
- * them. */
+ * its box, its name and why it matters, edged in the rope's orange once ticked, and [Set off]
+ * under them. */
 #gear p {
   margin: 0 0 1rem;
   color: var(--muted);
@@ -912,7 +1115,8 @@ kbd {
 }
 
 #gear label:has(input:checked) {
-  border-color: var(--accent);
+  border-color: var(--rope);
+  background: rgb(255 143 69 / 10%);
 }
 
 #gear input[type="checkbox"] {
@@ -920,7 +1124,7 @@ kbd {
   width: 1.25rem;
   height: 1.25rem;
   margin: 0.1rem 0 0;
-  accent-color: var(--accent);
+  accent-color: var(--rope);
 }
 
 #gear label > span {
@@ -938,12 +1142,10 @@ kbd {
 }
 
 #gear button {
-  display: block;
+  display: flex;
   width: 100%;
   max-width: 20rem;
   margin: 1rem auto 0;
-  border-color: var(--accent);
-  font-weight: 650;
 }
 
 #disclaimer h3 {
@@ -956,7 +1158,7 @@ kbd {
 }
 
 #disclaimer button {
-  display: block;
+  display: flex;
   width: 100%;
   max-width: 20rem;
   margin: 1.5rem auto 0;
@@ -979,7 +1181,7 @@ kbd {
  * colours are the gear's: the orange of the rope and the bottles for what's packed. */
 #pack,
 #inventory {
-  --packed: #ff8f45;
+  --packed: var(--rope);
   --packed-soft: rgb(255 143 69 / 14%);
 }
 
@@ -1125,7 +1327,6 @@ kbd {
   min-height: 44px;
   margin: 0;
   padding: 0 0.7rem;
-  box-shadow: none;
   touch-action: manipulation;
 }
 
@@ -1234,12 +1435,10 @@ kbd {
 }
 
 #pack [data-text="next"] {
-  display: block;
+  display: flex;
   width: 100%;
   max-width: 20rem;
   margin: 1rem auto 0;
-  border-color: var(--accent);
-  font-weight: 650;
 }
 
 /* On the climb: the same tiles, smaller, in a card on the right under the coach's tip, clear
@@ -1249,17 +1448,18 @@ kbd {
   top: calc(var(--edge-top) + 9.5rem);
   right: var(--edge-right);
   z-index: 3;
-  width: min(28rem, calc(100vw - var(--edge-left) - var(--edge-right)));
+  width: min(30rem, calc(100vw - var(--edge-left) - var(--edge-right)));
   max-height: calc(100vh - var(--edge-top) - var(--edge-bottom) - 13.5rem);
+  container: pack / inline-size;
   box-sizing: border-box;
   padding: 1rem 1.1rem;
   overflow-y: auto;
   overscroll-behavior: contain;
   border: 1px solid var(--glass-edge);
-  border-radius: 1.25rem;
-  background: var(--glass-deep);
-  box-shadow: 0 1rem 2.5rem rgb(0 0 0 / 30%);
-  backdrop-filter: blur(1.25rem);
+  border-top: 0.25rem solid var(--rope);
+  border-radius: 0.5rem 0.5rem 1.1rem 1.1rem;
+  background: var(--card);
+  box-shadow: 0 1rem 2.5rem rgb(0 0 0 / 38%);
   pointer-events: auto;
   touch-action: pan-y;
 }
@@ -1286,7 +1486,7 @@ kbd {
 }
 
 #inventory .pack-items li {
-  grid-template: auto / 5.5rem 1fr auto;
+  grid-template: auto / 4.75rem 1fr auto;
   gap: 0.6rem;
   align-items: center;
   padding: 0.4rem 0.55rem;
@@ -1333,17 +1533,19 @@ kbd {
   right: auto;
   left: var(--edge-left);
   z-index: 4;
-  width: min(28rem, calc(100vw - var(--edge-left) - var(--edge-right) - 15rem));
+  width: min(30rem, calc(100vw - var(--edge-left) - var(--edge-right) - 15rem));
   max-height: calc(100vh - var(--edge-top) - var(--edge-bottom) - 3.75rem);
   padding: 0.7rem 0.8rem;
 }
 
-.touch #inventory .pack-items li {
-  grid-template: auto auto / 4.5rem 1fr;
-  gap: 0.3rem 0.6rem;
-}
+@container pack (max-width: 26rem) {
+  #inventory .pack-items li {
+    grid-template: auto auto / 4.5rem 1fr;
+    gap: 0.3rem 0.6rem;
+  }
 
-.touch #inventory .pack-items .foot {
-  grid-column: 1 / -1;
-  justify-content: end;
+  #inventory .pack-items .foot {
+    grid-column: 1 / -1;
+    justify-content: end;
+  }
 }

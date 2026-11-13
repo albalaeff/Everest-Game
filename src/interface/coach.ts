@@ -164,6 +164,11 @@ export class Coach {
     this.done = new Set(Coach.kept(storage));
   }
 
+  /** Whether a tip is a warning, said whenever it matters, and not one of the tutorial's. */
+  static isWarning(tip: CoachTip): boolean {
+    return Coach.WARNINGS.has(tip);
+  }
+
   /** The tip to show after `seconds` more of the climb, or none. */
   tip(world: CoachWorld, seconds: number): CoachTip | null {
     this.shownFor += seconds;

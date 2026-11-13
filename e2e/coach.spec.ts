@@ -25,6 +25,10 @@ test.describe("on a screen of 630 by 360", () => {
     await expect(coach(page)).toBeVisible({ timeout: 15_000 });
     await expect(coach(page)).toHaveAttribute("data-tip", "walk");
     await expect(coach(page)).toContainText(hasTouch ? "Drag your left thumb" : "Hold D to walk");
+    // A tip of the tutorial, its keys as key caps; the thumb's words name none.
+    await expect(coach(page)).toHaveAttribute("data-kind", "tip");
+    await expect(coach(page).locator("[data-device='pc'] kbd")).toHaveText(["D", "C", "Shift"]);
+    await expect(coach(page).locator("[data-device='touch'] kbd")).toHaveCount(0);
     if (hasTouch) {
       return;
     }

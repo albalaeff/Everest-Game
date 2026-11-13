@@ -81,10 +81,12 @@ test.describe("on a screen of 630 by 360", () => {
       .poll(async () => (await seen(page, "player"))?.hanging, { timeout: 30_000 })
       .toBe(true);
     await page.keyboard.up("KeyD");
-    // On the carabiner alone, which climbs no rope: the coach says to clip the jumar on.
+    // On the carabiner alone, which climbs no rope: the coach warns, and says to clip the jumar on.
     await expect(coach(page)).toHaveAttribute("data-tip", "hanging-carabiner", {
       timeout: 20_000,
     });
+    await expect(coach(page)).toHaveAttribute("data-kind", "warning");
+    await expect(coach(page).locator("[data-device='pc'] kbd")).toHaveText(["E", "W"]);
     await page.keyboard.press("KeyE");
     await expect(coach(page)).toHaveAttribute("data-tip", "hanging", { timeout: 20_000 });
 
