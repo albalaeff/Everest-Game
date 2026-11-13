@@ -353,6 +353,8 @@ main:has(#coach:not([hidden])) #hint-tap {
 #disclaimer button,
 #start button,
 #climber button,
+#pack button,
+#inventory button,
 #gear button {
   min-width: 48px;
   min-height: 48px;
@@ -555,6 +557,7 @@ kbd {
 #disclaimer,
 #start,
 #climber,
+#pack,
 #gear,
 #camp {
   position: fixed;
@@ -573,6 +576,7 @@ kbd {
 #start [hidden],
 #climber[hidden],
 #climber [hidden],
+#pack[hidden],
 #gear[hidden],
 #camp[hidden] {
   display: none;
@@ -592,6 +596,7 @@ kbd {
 #disclaimer h2,
 #start h2,
 #climber h2,
+#pack h2,
 #gear h2,
 #camp h2 {
   margin: 0 0 1rem;
@@ -968,4 +973,377 @@ kbd {
   display: inline;
   margin: 0 0.25rem;
   font-size: inherit;
+}
+
+/* The pack: at Base Camp a screen of its own, on the climb a card under the instruments. Its
+ * colours are the gear's: the orange of the rope and the bottles for what's packed. */
+#pack,
+#inventory {
+  --packed: #ff8f45;
+  --packed-soft: rgb(255 143 69 / 14%);
+}
+
+#art {
+  position: absolute;
+  width: 0;
+  height: 0;
+}
+
+#pack > div {
+  max-width: 66rem;
+  margin: auto;
+  padding: 1rem 0;
+  line-height: 1.4;
+}
+
+#pack p {
+  margin: 0 0 0.75rem;
+  color: var(--muted);
+  text-align: center;
+}
+
+/* The tiles: the thing itself drawn as many times as it can be carried, the ones packed in
+ * colour, the ones left in the tent as ghosts. */
+.pack-items {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(11.5rem, 1fr));
+  gap: 0.6rem;
+  margin: 1rem 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.pack-items li {
+  display: grid;
+  grid-template-rows: auto 1fr auto;
+  gap: 0.5rem;
+  min-width: 0;
+  padding: 0.7rem 0.8rem;
+  border: 1px solid var(--glass-edge);
+  border-radius: 1rem;
+  background: var(--glass);
+}
+
+.pack-items li[data-packed="yes"] {
+  border-color: var(--packed);
+  background: linear-gradient(180deg, var(--packed-soft), transparent 60%), var(--glass);
+}
+
+.pack-items .art {
+  display: flex;
+  gap: 0.15rem;
+  align-items: end;
+  justify-content: center;
+  min-width: 0;
+  height: 5.5rem;
+  padding: 0 0.3rem;
+  overflow: hidden;
+  border-radius: 0.6rem;
+  background: rgb(255 255 255 / 5%);
+}
+
+.pack-items .art svg {
+  flex: 1 1 0;
+  min-width: 0;
+  max-width: 5rem;
+  height: 5rem;
+}
+
+/* The bars, six of them: two rows of three. */
+.pack-items [data-item="food"] .art {
+  flex-wrap: wrap;
+  align-content: center;
+}
+
+.pack-items [data-item="food"] .art svg {
+  flex: 0 0 30%;
+  height: 2.6rem;
+}
+
+/* Left in the tent: a ghost of the thing. An opened litre keeps its colour. */
+.pack-items use[data-state="left"],
+.pack-items svg:has(use[data-state="left"]) {
+  filter: grayscale(1);
+  opacity: 0.22;
+}
+
+.pack-items .words {
+  display: grid;
+  gap: 0.15rem;
+  align-content: start;
+}
+
+.pack-items small {
+  color: var(--muted);
+  font-size: 0.8125rem;
+  line-height: 1.3;
+}
+
+.pack-items small[hidden] {
+  display: none;
+}
+
+.pack-items .store {
+  color: var(--accent);
+  font-weight: 600;
+}
+
+/* What it weighs, and how many: the stepper drops under the weight on a narrow tile. */
+.pack-items .foot {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem 0.5rem;
+  align-items: center;
+  justify-content: space-between;
+  min-width: 0;
+}
+
+.pack-items .kilograms {
+  flex: 1;
+  color: var(--muted);
+  font-size: 0.8125rem;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.pack-items li[data-packed="yes"] .kilograms {
+  color: var(--packed);
+  font-weight: 700;
+}
+
+.pack-items .stepper {
+  display: flex;
+  flex: none;
+  margin-left: auto;
+  gap: 0.3rem;
+  align-items: center;
+}
+
+#pack .pack-items button,
+#inventory .pack-items button {
+  min-width: 44px;
+  min-height: 44px;
+  margin: 0;
+  padding: 0 0.7rem;
+  box-shadow: none;
+  touch-action: manipulation;
+}
+
+#pack .stepper button,
+#inventory .stepper button {
+  width: 44px;
+  padding: 0;
+  font-size: 1.25rem;
+  line-height: 1;
+}
+
+.pack-items button:disabled {
+  opacity: 0.35;
+}
+
+.pack-items output {
+  min-width: 2.8rem;
+  font-size: 1.05rem;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  text-align: center;
+}
+
+.pack-items .use {
+  flex: none;
+  border-color: var(--packed);
+  color: var(--packed);
+}
+
+/* What every climber has on them anyway: each thing drawn, small, with its name. */
+#pack .always {
+  margin: 1.1rem 0 0.4rem;
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.worn {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  justify-content: center;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.worn li {
+  display: flex;
+  gap: 0.35rem;
+  align-items: center;
+  padding: 0.25rem 0.7rem 0.25rem 0.35rem;
+  border: 1px solid var(--glass-edge);
+  border-radius: 999px;
+  background: var(--glass);
+  color: var(--muted);
+  font-size: 0.8125rem;
+}
+
+.worn svg {
+  width: 2rem;
+  height: 2rem;
+}
+
+/* The pack's weight, and how much of a full load it is: the bar turns the danger's colour as
+ * the load gets heavy. */
+.pack-load {
+  margin-top: 0.9rem;
+  padding: 0.6rem 0.8rem 0.7rem;
+  border: 1px solid var(--glass-edge);
+  border-radius: 0.9rem;
+  background: var(--glass);
+}
+
+#pack .pack-weight,
+.pack-weight {
+  margin: 0 0 0.45rem;
+  color: var(--ink);
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  text-align: center;
+}
+
+.pack-meter {
+  height: 0.5rem;
+  overflow: hidden;
+  border-radius: 999px;
+  background: rgb(255 255 255 / 12%);
+}
+
+.pack-meter i {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: #5fd38a;
+  transition: width 0.2s;
+}
+
+.pack-meter i[data-load="loaded"] {
+  background: #ffc04a;
+}
+
+.pack-meter i[data-load="heavy"] {
+  background: var(--danger);
+}
+
+#pack [data-text="next"] {
+  display: block;
+  width: 100%;
+  max-width: 20rem;
+  margin: 1rem auto 0;
+  border-color: var(--accent);
+  font-weight: 650;
+}
+
+/* On the climb: the same tiles, smaller, in a card on the right under the coach's tip, clear
+ * of the buttons along the bottom. Why each thing matters was said at Base Camp. */
+#inventory {
+  position: absolute;
+  top: calc(var(--edge-top) + 9.5rem);
+  right: var(--edge-right);
+  z-index: 3;
+  width: min(28rem, calc(100vw - var(--edge-left) - var(--edge-right)));
+  max-height: calc(100vh - var(--edge-top) - var(--edge-bottom) - 13.5rem);
+  box-sizing: border-box;
+  padding: 1rem 1.1rem;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  border: 1px solid var(--glass-edge);
+  border-radius: 1.25rem;
+  background: var(--glass-deep);
+  box-shadow: 0 1rem 2.5rem rgb(0 0 0 / 30%);
+  backdrop-filter: blur(1.25rem);
+  pointer-events: auto;
+  touch-action: pan-y;
+}
+
+#inventory[hidden] {
+  display: none;
+}
+
+#inventory h2 {
+  margin: 0.15rem 0 0;
+  font-size: 1.35rem;
+}
+
+#inventory-where {
+  margin: 0.8rem 0 0;
+  color: var(--muted);
+  line-height: 1.35;
+}
+
+#inventory .pack-items {
+  grid-template-columns: 1fr;
+  gap: 0.4rem;
+  margin-top: 0.8rem;
+}
+
+#inventory .pack-items li {
+  grid-template: auto / 5.5rem 1fr auto;
+  gap: 0.6rem;
+  align-items: center;
+  padding: 0.4rem 0.55rem;
+}
+
+#inventory .pack-items .art {
+  height: 3.4rem;
+  padding: 0 0.15rem;
+}
+
+#inventory .pack-items .art svg {
+  max-width: 3rem;
+  height: 3rem;
+}
+
+#inventory .pack-items [data-item="food"] .art svg {
+  height: 1.6rem;
+}
+
+#inventory .pack-items .kilograms {
+  display: none;
+}
+
+#inventory .pack-items .why {
+  display: none;
+}
+
+#inventory .worn {
+  margin-top: 0.7rem;
+}
+
+#inventory .worn span {
+  display: none;
+}
+
+#inventory .worn li {
+  padding: 0.2rem;
+}
+
+/* On a phone, the pack is on the left under the instruments, clear of the menu along the top
+ * and of the right thumb's buttons, and its tiles are two lines each. */
+.touch #inventory {
+  top: calc(var(--edge-top) + 3.75rem);
+  right: auto;
+  left: var(--edge-left);
+  z-index: 4;
+  width: min(28rem, calc(100vw - var(--edge-left) - var(--edge-right) - 15rem));
+  max-height: calc(100vh - var(--edge-top) - var(--edge-bottom) - 3.75rem);
+  padding: 0.7rem 0.8rem;
+}
+
+.touch #inventory .pack-items li {
+  grid-template: auto auto / 4.5rem 1fr;
+  gap: 0.3rem 0.6rem;
+}
+
+.touch #inventory .pack-items .foot {
+  grid-column: 1 / -1;
+  justify-content: end;
 }

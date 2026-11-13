@@ -73,6 +73,28 @@
           </div>
         </dl>
       </section>
+      <section
+        id="inventory"
+        role="dialog"
+        aria-modal="false"
+        aria-labelledby="inventory-title"
+        hidden
+      >
+        <div class="self-check__header">
+          <div>
+            <p class="eyebrow" data-text="eyebrow"></p>
+            <h2 id="inventory-title" data-text="panel-title"></h2>
+          </div>
+          <button type="button" data-text="close"></button>
+        </div>
+        <p id="inventory-where"></p>
+        <ul id="inventory-items" class="pack-items"></ul>
+        <ul id="inventory-worn" class="worn"></ul>
+        <div class="pack-load">
+          <p id="inventory-weight" class="pack-weight"></p>
+          <div class="pack-meter"><i id="inventory-meter"></i></div>
+        </div>
+      </section>
       <div id="joystick" hidden>
         <div id="knob"></div>
       </div>
@@ -156,6 +178,286 @@
         <button type="button" data-text="keep" hidden></button>
         <button type="button" data-text="edit" hidden></button>
         <button type="submit" form="climber-answers" data-text="climb" hidden></button>
+      </div>
+    </section>
+    <!-- The gear as the pack draws it: each a symbol the pack's screens use. -->
+    <svg id="art" aria-hidden="true">
+      <symbol id="art-jumar" viewBox="0 0 64 64">
+        <path d="M41 2v60" fill="none" stroke="#ff8f45" stroke-width="4" stroke-linecap="round" />
+        <path
+          d="M36 30h-3a9 9 0 0 0-9 9v13a6 6 0 0 0 6 6h8a4 4 0 0 0 4-4V34"
+          fill="none"
+          stroke="#f6c445"
+          stroke-width="5.5"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+        />
+        <rect x="19.5" y="37" width="9" height="16" rx="4" fill="#1b2a44" />
+        <path d="M33 6h12a4 4 0 0 1 4 4v20a4 4 0 0 1-4 4H33z" fill="#f6c445" />
+        <path d="M41 9v22" fill="none" stroke="#ff8f45" stroke-width="4" />
+        <path
+          d="M33 13l7 3-1 10-6 2z"
+          fill="#c9d6e6"
+          stroke="#0b1830"
+          stroke-width="1.2"
+          stroke-linejoin="round"
+        />
+        <path d="M37.8 18.5h2.4M37.5 21h2.4M37.2 23.5h2.4" stroke="#0b1830" stroke-width="1" />
+        <circle cx="34" cy="58" r="1.8" fill="#0b1830" />
+      </symbol>
+      <symbol id="art-ice-tool" viewBox="0 0 64 64">
+        <path
+          d="M46 61C46 46 42 28 31 11"
+          fill="none"
+          stroke="#c9d6e6"
+          stroke-width="5"
+          stroke-linecap="round"
+        />
+        <path
+          d="M46 61c0-6-.6-11-1.6-16"
+          fill="none"
+          stroke="#ff8f45"
+          stroke-width="8"
+          stroke-linecap="round"
+        />
+        <path
+          d="M34 8 13 16l-5 9 11-6 13-2z"
+          fill="#8fa3bd"
+          stroke="#0b1830"
+          stroke-width="1.2"
+          stroke-linejoin="round"
+        />
+        <path
+          d="M30 9l7-5 4 5-7 5z"
+          fill="#8fa3bd"
+          stroke="#0b1830"
+          stroke-width="1.2"
+          stroke-linejoin="round"
+        />
+        <path
+          d="M11.5 21l2.2.8M14.5 19.3l2.2.8M17.5 17.8l2.2.8"
+          stroke="#0b1830"
+          stroke-width="1"
+        />
+      </symbol>
+      <symbol id="art-ice-axe" viewBox="0 0 64 64">
+        <path
+          d="M21 58 40 11"
+          fill="none"
+          stroke="#c9d6e6"
+          stroke-width="4.5"
+          stroke-linecap="round"
+        />
+        <path d="M21 58l-3 5 5-2z" fill="#8fa3bd" />
+        <path
+          d="M41 9 17 13l-5 8 10-5 17-1z"
+          fill="#8fa3bd"
+          stroke="#0b1830"
+          stroke-width="1.2"
+          stroke-linejoin="round"
+        />
+        <path
+          d="M39 9l11-2 5 7-13 1z"
+          fill="#8fa3bd"
+          stroke="#0b1830"
+          stroke-width="1.2"
+          stroke-linejoin="round"
+        />
+        <path
+          d="M27 43l-4 10"
+          fill="none"
+          stroke="#ff8f45"
+          stroke-width="6.5"
+          stroke-linecap="round"
+        />
+      </symbol>
+      <symbol id="art-water" viewBox="0 0 64 64">
+        <rect x="25" y="5" width="14" height="9" rx="2" fill="#2f6fd0" />
+        <path
+          d="M22 21a7 7 0 0 1 7-7h6a7 7 0 0 1 7 7v33a5 5 0 0 1-5 5H27a5 5 0 0 1-5-5z"
+          fill="#cfeaff"
+          fill-opacity="0.22"
+          stroke="#cfeaff"
+          stroke-width="2"
+        />
+        <path d="M24 25h16v29a3 3 0 0 1-3 3H27a3 3 0 0 1-3-3z" fill="#5fb4ff" />
+        <path
+          d="M28 29v9M28 42v4"
+          stroke="#fff"
+          stroke-opacity="0.65"
+          stroke-width="2"
+          stroke-linecap="round"
+        />
+      </symbol>
+      <symbol id="art-water-half" viewBox="0 0 64 64">
+        <rect x="25" y="5" width="14" height="9" rx="2" fill="#2f6fd0" />
+        <path
+          d="M22 21a7 7 0 0 1 7-7h6a7 7 0 0 1 7 7v33a5 5 0 0 1-5 5H27a5 5 0 0 1-5-5z"
+          fill="#cfeaff"
+          fill-opacity="0.22"
+          stroke="#cfeaff"
+          stroke-width="2"
+        />
+        <path d="M24 41h16v13a3 3 0 0 1-3 3H27a3 3 0 0 1-3-3z" fill="#5fb4ff" />
+        <path
+          d="M28 45v6"
+          stroke="#fff"
+          stroke-opacity="0.65"
+          stroke-width="2"
+          stroke-linecap="round"
+        />
+      </symbol>
+      <symbol id="art-food" viewBox="0 0 64 64">
+        <g transform="rotate(-24 32 32)">
+          <path d="M8 23l4-2 4 2h32l4-2 4 2v18l-4 2-4-2H16l-4 2-4-2z" fill="#b8501a" />
+          <rect x="17" y="23" width="30" height="18" fill="#ff8f45" />
+          <path d="M22 29h20" stroke="#fff" stroke-width="3" stroke-linecap="round" />
+          <path
+            d="M22 35h12"
+            stroke="#fff"
+            stroke-opacity="0.6"
+            stroke-width="2.5"
+            stroke-linecap="round"
+          />
+        </g>
+      </symbol>
+      <symbol id="art-oxygen" viewBox="0 0 64 64">
+        <rect x="29" y="3" width="6" height="8" rx="1.5" fill="#8fa3bd" />
+        <rect x="24" y="9" width="16" height="5" rx="2" fill="#c9d6e6" />
+        <path d="M21 25a11 11 0 0 1 22 0v27a8 8 0 0 1-8 8h-6a8 8 0 0 1-8-8z" fill="#ff8f45" />
+        <path d="M21 31h22v10H21z" fill="#fff" fill-opacity="0.9" />
+        <path
+          d="M26 34.5h6M26 37.8h11"
+          stroke="#0b1830"
+          stroke-width="1.5"
+          stroke-linecap="round"
+        />
+        <path
+          d="M26 22v5M26 45v9"
+          stroke="#fff"
+          stroke-opacity="0.4"
+          stroke-width="2.5"
+          stroke-linecap="round"
+        />
+      </symbol>
+      <symbol id="art-crampons" viewBox="0 0 64 64">
+        <path
+          d="M14 30c1-9 8-13 14-13M48 30c-1-7-5-12-11-13"
+          fill="none"
+          stroke="#ff8f45"
+          stroke-width="3.5"
+          stroke-linecap="round"
+        />
+        <path d="M7 32h46" fill="none" stroke="#c9d6e6" stroke-width="5.5" stroke-linecap="round" />
+        <path
+          d="M9 34l3 13 4-13zM22 34l3 11 4-11zM35 34l3 11 4-11zM46 34l3 13 4-13z"
+          fill="#8fa3bd"
+          stroke="#0b1830"
+          stroke-width="1"
+          stroke-linejoin="round"
+        />
+        <path
+          d="M53 29l9 9-11-2z"
+          fill="#8fa3bd"
+          stroke="#0b1830"
+          stroke-width="1"
+          stroke-linejoin="round"
+        />
+      </symbol>
+      <symbol id="art-harness" viewBox="0 0 64 64">
+        <ellipse cx="32" cy="15" rx="21" ry="8" fill="none" stroke="#e5484d" stroke-width="5.5" />
+        <rect x="28.5" y="20" width="7" height="13" rx="3.5" fill="#f6c445" />
+        <path
+          d="M30 32c-3 9-14 8-16 17"
+          fill="none"
+          stroke="#ff8f45"
+          stroke-width="3.5"
+          stroke-linecap="round"
+        />
+        <path
+          d="M34 32c3 9 13 7 16 15"
+          fill="none"
+          stroke="#4aa3ff"
+          stroke-width="3.5"
+          stroke-linecap="round"
+        />
+        <rect
+          x="9"
+          y="48"
+          width="9.5"
+          height="13"
+          rx="4.75"
+          fill="none"
+          stroke="#c9d6e6"
+          stroke-width="2.6"
+        />
+        <rect
+          x="45.5"
+          y="46"
+          width="9.5"
+          height="13"
+          rx="4.75"
+          fill="none"
+          stroke="#c9d6e6"
+          stroke-width="2.6"
+        />
+      </symbol>
+      <symbol id="art-helmet" viewBox="0 0 64 64">
+        <path d="M9 38a23 23 0 0 1 46 0z" fill="#e5484d" />
+        <path d="M7 38h50v4a2.5 2.5 0 0 1-2.5 2.5h-45A2.5 2.5 0 0 1 7 42z" fill="#b8323a" />
+        <path
+          d="M23 24l2 8M32 21v11M41 24l-2 8"
+          stroke="#0b1830"
+          stroke-opacity="0.45"
+          stroke-width="3"
+          stroke-linecap="round"
+        />
+        <path
+          d="M15 45c2 8 8 12 17 12s15-4 17-12"
+          fill="none"
+          stroke="#c9d6e6"
+          stroke-width="2.2"
+        />
+      </symbol>
+      <symbol id="art-headlamp" viewBox="0 0 64 64">
+        <path
+          d="M5 30c9-9 45-9 54 0"
+          fill="none"
+          stroke="#4aa3ff"
+          stroke-width="6"
+          stroke-linecap="round"
+        />
+        <rect
+          x="21"
+          y="20"
+          width="22"
+          height="17"
+          rx="5"
+          fill="#1b2a44"
+          stroke="#c9d6e6"
+          stroke-width="2"
+        />
+        <circle cx="32" cy="28.5" r="5.5" fill="#fff3b0" />
+        <path
+          d="M32 43v10M21 41l-5 9M43 41l5 9"
+          stroke="#f6c445"
+          stroke-width="2.6"
+          stroke-linecap="round"
+        />
+      </symbol>
+    </svg>
+    <section id="pack" role="dialog" aria-modal="true" aria-labelledby="pack-title" hidden>
+      <div>
+        <h2 id="pack-title" data-text="title"></h2>
+        <p data-text="intro"></p>
+        <ul id="pack-items" class="pack-items"></ul>
+        <p class="always" data-text="always"></p>
+        <ul id="pack-worn" class="worn"></ul>
+        <div class="pack-load">
+          <p id="pack-weight" class="pack-weight" role="status"></p>
+          <div class="pack-meter"><i id="pack-meter"></i></div>
+        </div>
+        <button type="button" data-text="next"></button>
       </div>
     </section>
     <section id="gear" role="dialog" aria-modal="true" aria-labelledby="gear-title" hidden>

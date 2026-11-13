@@ -68,7 +68,7 @@ export class Condition {
   private constructor(
     readonly id: ClimberId,
     private readonly mass: number,
-    private readonly load: number,
+    private load: number,
     private readonly fitness: number,
     private chosen: Pace["pace"],
     private fatigue: number,
@@ -107,6 +107,25 @@ export class Condition {
 
   choose(pace: Pace["pace"]): void {
     this.chosen = pace;
+  }
+
+  /** What they carry from now on, in kilograms: their pack's weight changes as they drink, eat
+   * and repack at a camp (`Packs`). */
+  carry(kilograms: number): void {
+    if (!(kilograms >= 0)) {
+      throw new RangeError(`${this.id} can't carry ${kilograms} kg`);
+    }
+    this.load = kilograms;
+  }
+
+  /** Drinks `litres`: that much less short of water, and never ahead of it. */
+  drink(litres: number): void {
+    this.water = Math.max(0, this.water - litres);
+  }
+
+  /** Eats `kcal`: that much less short of food, and never ahead of it. */
+  eat(kcal: number): void {
+    this.food = Math.max(0, this.food - kcal);
   }
 
   /** How far their strides go, as a share of a fresh typical client's at sea level with nothing

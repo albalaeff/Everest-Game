@@ -1,0 +1,141 @@
+{
+  "$schema": "../facts.schema.json",
+  "facts": [
+    {
+      "id": "gear.jumar-weight",
+      "kind": "fact",
+      "claim": "A handled ascender, the jumar a climber slides up a fixed rope, weighs about this much.",
+      "status": "source only",
+      "versions": [
+        {
+          "value": 0.165,
+          "unit": "kg",
+          "note": "Petzl's ASCENSION handled ascender, by its specifications.",
+          "source": {
+            "title": "Petzl: ASCENSION → Specifications",
+            "url": "https://www.petzl.com/us/en/sport/ascenders/ascension"
+          },
+          "checked": "2026-11-12"
+        }
+      ]
+    },
+    {
+      "id": "gear.ice-tool-weight",
+      "kind": "fact",
+      "claim": "A technical ice tool, the second tool a climber carries beside their ice axe to climb steep ice, weighs about this much.",
+      "status": "source only",
+      "versions": [
+        {
+          "value": 0.55,
+          "unit": "kg",
+          "note": "Petzl's QUARK, with its adze or its hammer, its shaft 50 cm long.",
+          "source": {
+            "title": "Petzl: QUARK → References",
+            "url": "https://www.petzl.com/LU/en/Sport/Ice-Axes/QUARK"
+          },
+          "checked": "2026-11-12"
+        }
+      ]
+    },
+    {
+      "id": "gear.water-weight",
+      "kind": "fact",
+      "claim": "A litre of water weighs a kilogram.",
+      "status": "source only",
+      "versions": [
+        {
+          "value": 1,
+          "unit": "kg",
+          "note": "A litre of liquid water has a mass of almost exactly one kilogram; the bottle is the climber's own load.",
+          "source": {
+            "title": "Wikipedia: Litre",
+            "url": "https://en.wikipedia.org/wiki/Litre"
+          },
+          "checked": "2026-11-12"
+        }
+      ]
+    },
+    {
+      "id": "gear.food-bar-weight",
+      "kind": "fact",
+      "claim": "An energy bar, the food a climber eats on the move, weighs about this much.",
+      "status": "source only",
+      "versions": [
+        {
+          "value": 0.068,
+          "unit": "kg",
+          "note": "A Clif Bar, by its label.",
+          "source": {
+            "title": "Open Food Facts: Chocolate Chip – CLIF Bar",
+            "url": "https://world.openfoodfacts.org/product/0722252100900/chocolate-chip-clif-bar"
+          },
+          "checked": "2026-11-12"
+        }
+      ]
+    },
+    {
+      "id": "gear.food-bar-energy",
+      "kind": "fact",
+      "claim": "An energy bar gives about this much energy.",
+      "status": "source only",
+      "versions": [
+        {
+          "value": 250,
+          "unit": "kcal",
+          "note": "A Clif Bar, a serving of one bar: 1,046 kJ.",
+          "source": {
+            "title": "Open Food Facts: Chocolate Chip – CLIF Bar",
+            "url": "https://world.openfoodfacts.org/product/0722252100900/chocolate-chip-clif-bar"
+          },
+          "checked": "2026-11-12"
+        }
+      ]
+    },
+    {
+      "id": "gear.most-water",
+      "kind": "coefficient",
+      "claim": "The most water a climber packs, in litres: two bottles in their insulated covers and a flask. A day on Everest takes more than that (body.water-loss), so the rest is drunk at the camps.",
+      "status": "source only",
+      "value": 3,
+      "unit": "L",
+      "fitted_to": ["body.water-loss", "gear.water-weight"],
+      "fitted": "2026-11-12"
+    },
+    {
+      "id": "gear.most-food",
+      "kind": "coefficient",
+      "claim": "The most bars of food a climber packs for a day between two camps.",
+      "status": "source only",
+      "value": 6,
+      "unit": "1",
+      "fitted_to": ["gear.food-bar-energy", "gear.food-bar-weight"],
+      "fitted": "2026-11-12"
+    },
+    {
+      "id": "gear.most-oxygen",
+      "kind": "coefficient",
+      "claim": "The most bottles of oxygen a climber carries themselves: each weighs as much as everything else in the pack together (oxygen.bottle-weight).",
+      "status": "source only",
+      "value": 3,
+      "unit": "1",
+      "fitted_to": ["oxygen.bottle-weight"],
+      "fitted": "2026-11-12"
+    },
+    {
+      "id": "gear.drink",
+      "kind": "coefficient",
+      "claim": "How much water a climber drinks when they stop for a drink, in litres: half a bottle.",
+      "status": "source only",
+      "value": 0.5,
+      "unit": "L",
+      "fitted_to": ["body.water-loss"],
+      "fitted": "2026-11-12"
+    },
+    {
+      "id": "gear.packing",
+      "kind": "question",
+      "question": "What does a client carry through the Icefall on a rotation to Camp 1, and what do they leave at Base Camp or have carried for them: how much water and food, a second ice tool, oxygen? What's cached at Camp 1?",
+      "about": ["gear.most-water", "gear.most-food", "gear.most-oxygen"]
+    }
+  ]
+}

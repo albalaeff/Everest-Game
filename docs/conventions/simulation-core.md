@@ -39,6 +39,16 @@ The game's rules are classes behind the `Rule` interface: `load`, `save` and `ad
 - **A training event** (`HazardEvent`, #209) is a collapse staged on a stretch of the ground, as a flight simulator stages an engine failure, not the real odds: it draws nothing to go. It cracks once the first climber comes within its `lead` metres of the stretch, from either side or onto it, for the training's `crack` mountain seconds, long enough to stop or back off, then comes down on the stretch as a zone does, once; its strike says `training`. The section stages one a climb from the seed (`Section.staged`), on a stretch of one of its serac zones, unless the scenario is made without training; a save keeps its events, and one from before them has none.
 - **In the rules' order** it comes after the clock, which it reads, and before the physics, so a knock falls in the same step (`Mountain.rules`). Its numbers are the knowledge base's `hazards.*` coefficients.
 
+## Packs
+
+What a climber chooses to carry is a rule, `Packs` (`src/simulation/packs.ts`): the jumar, a second ice tool, litres of water, bars of food and bottles of oxygen. What everyone wears and carries anyway is the body's own load.
+
+- **A pack changes at a camp only.** `pack` (an item, `take` or `leave`) moves one of an item between the pack and the store of the camp the climber stands in, on their feet, up to the most of it one climber carries (`PackNumbers.most`). A camp's store keeps what's left there for whoever comes back, and never runs out of its `endless` items: everything at Base Camp, the water melted from the snow higher up. Anywhere else the action does nothing.
+- **`use` drinks and eats anywhere**: `water` takes `PackNumbers.sip` litres off what the body is short of, `food` a bar's kcal, and the pack is that much lighter.
+- **The rule runs first after the clock**, and each step tells the body its load (`Shoulders.carry`: what they carry besides, plus the pack's weight) and the slope physics its gear (`Harness.equip`), so the body's stride and the physics' techniques read this step what the pack holds. The bottles are the oxygen system's to count (`Bottles.stock`): the pack shows and weighs what it has.
+- **The numbers are the knowledge base's** (`content/facts/gear.json`, read by `PackFacts`): each item's weight with its source, the most of each, the drink and the bar. A section's file has each climber's pack as they set off (`packs`) and its camps' `endless` stores; the player's own choice at Base Camp replaces theirs (`Mountain.scenario`'s `pack`).
+- **The pack's screens** are the page's: `PackScreen` at Base Camp, between Your climber and the gear check, and `InventoryPanel` on the climb, both drawing `PackList`'s tiles with index.html's `#art-…` symbols. Their words are `content/pack.json`'s.
+
 ## Scenarios, saves and replays
 
 - **A scenario** is a seed, the climbers and each rule's start state, in the form of that rule's save. Conditions set in advance, such as harsh weather, are in the start state, and hold on every seed.

@@ -13,6 +13,8 @@ const EVERY_ACTION: Readonly<Record<GameAction["kind"], GameAction>> = {
   jumar: { kind: "jumar", climber: "anna", held: true },
   haul: { kind: "haul", climber: "anna", held: true },
   tool: { kind: "tool", climber: "anna", tool: "ice-axe", x: 12.5, y: 3 },
+  pack: { kind: "pack", climber: "anna", item: "ice-tool", change: "take" },
+  use: { kind: "use", climber: "anna", item: "water" },
   oxygen: { kind: "oxygen", climber: "anna", change: "up" },
   "check-self": { kind: "check-self", climber: "anna" },
   radio: { kind: "radio", climber: "anna", channel: "base-camp", phrase: "at-camp" },

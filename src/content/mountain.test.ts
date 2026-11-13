@@ -162,7 +162,9 @@ describe("Mountain", () => {
     expect(first.body).not.toBe(second.body);
     expect(first.hazards).not.toBe(second.hazards);
     expect(first.logbook).not.toBe(second.logbook);
-    expect(first.all).toEqual([
+    expect(first.packs).not.toBe(second.packs);
+    expect(first.all[1]).toBe(first.packs);
+    expect([...first.all.slice(0, 1), ...first.all.slice(2)]).toEqual([
       first.clock,
       first.oxygen,
       first.body,

@@ -49,16 +49,48 @@ export class OxygenSystem implements Rule {
     private readonly clock: MountainClock,
   ) {}
 
-  static start(climbers: readonly ClimberId[], bottles = OxygenSystem.DEFAULT_BOTTLES): Json {
+  /** The state a scenario starts the oxygen in: each climber with `bottles`, or as many as
+   * `bottles` says each carries, the first of them full on the regulator; none, and there's
+   * nothing to breathe. */
+  static start(
+    climbers: readonly ClimberId[],
+    bottles: number | ((id: ClimberId) => number) = OxygenSystem.DEFAULT_BOTTLES,
+  ): Json {
     return {
       seen: 0,
-      climbers: climbers.map((id) => ({
-        id,
-        bottles: bottles - 1,
-        remaining: null,
-        flow: 0,
-      })),
+      climbers: climbers.map((id) => {
+        const carried = typeof bottles === "number" ? bottles : bottles(id);
+        if (!(carried >= 0)) {
+          throw new RangeError(`${id} can't carry ${carried} bottles of oxygen`);
+        }
+        return {
+          id,
+          bottles: Math.max(0, carried - 1),
+          remaining: carried > 0 ? null : 0,
+          flow: 0,
+        };
+      }),
     };
+  }
+
+  /** Sets how many bottles a climber carries from now on, as their pack changes at a camp
+   * (`Packs`): the one on the regulator stays as full as it is, a first one goes on full, and
+   * with none left there's nothing to breathe. */
+  stock(id: ClimberId, bottles: number): void {
+    const climber = this.state(id);
+    if (!(bottles >= 0)) {
+      throw new RangeError(`${id} can't carry ${bottles} bottles of oxygen`);
+    }
+    if (bottles === 0) {
+      climber.bottles = 0;
+      climber.remaining = 0;
+      climber.flow = 0;
+      return;
+    }
+    if (climber.remaining <= 0) {
+      climber.remaining = this.numbers.bottleLitres;
+    }
+    climber.bottles = bottles - 1;
   }
 
   flow(id: ClimberId): number {

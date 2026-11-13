@@ -1,5 +1,5 @@
 {
-  "note": "The Khumbu Icefall, Base Camp to Camp 1, in the parts the sources name (route.icefall-parts, #172), on the ground its photos show (#184): Base Camp's tents on the moraine of the Khumbu Glacier (route.base-camp-ground), Crampon Point where it ends and the first rope is fixed; the Popcorn's hummocks of small jumbled blocks, short walls and a drop with a ladder each, narrow crevasses and one crossed at an angle, its far lip higher, with snow bridges between them; the maze of towers, its walls of 6 to 8 m, twin crevasses with a fin of ice between them, a wide crevasse and a corridor between the towers, where the ladders are lashed end to end (route.icefall-ladders-lashed) and the first seracs stand over the route; the Football Field, a flat at route.football-field-altitude under the seracs; the Upper Icefall's tallest walls, 9 and 11 m, and its deepest crevasse, under the West Shoulder's hanging glacier; and the open snow of the Western Cwm, its last crevasses and its slope under Nuptse's wall, to Camp 1. Drawn at 1/route.drawn-scale of its length and its rise (docs/conventions/slope-physics.md → The slope), with every wall, crevasse and ladder at life size: 280 m of ground rising 45 m stand for the Icefall's length and the camps' altitudes, which the knowledge base gives (route.icefall-length, route.base-camp-altitude, route.camp-1-altitude), so the walls' metres up are paid back by drops behind the blocks and towers, each with its ladder, as the sources' ladders go down as well as up. A crevasse is a crack that narrows as it goes down, its walls stepped and ledged, no two alike: under 2 m to 8 m across at its lips and 8 to 35 m deep, under the 45 m the sources give (route.icefall-hazards), to a foot plugged with snow at most a metre and a half wide. A wall's face leans back from its ladder in steps, up a wall to the ladder's right and down one to its left, so the ladder stands clear of the ice; the ground's line never goes back on itself, so an overhang, a lip of snow or an icicle is the picture's alone. Every sloping segment is a Pythagorean triple in eighths of a metre, so every corner, where the ladders' ends and the ropes' anchors go, is at an exact length along the ground, in a few digits. Each wall's and each crevasse's ladder has a rope of its own from end to end, and from the maze up the ropes run in a line and share their anchors, as the fixed line does; below it they leave the easy ground between the Popcorn's ladders free. Here and there the snow is gone and the route walks bare blue ice (layout.ice, route.icefall-hazards, #190), which takes a climber's footing as snow doesn't: an icy hummock in the Popcorn, where a slip costs a metre; the ice down to the Popcorn's drop, which a slip slides over; the ramp of ice down to the big crevasse's lip in the maze, which kills a climber who isn't clipped; and the icy step under the Upper Icefall's highest wall. The snow on the ground (layout.snow) is the game's, not the sources': it rises and falls by a few tens of centimetres over a few metres and rounds the breaks of slope, and the climbers walk on it, slower over its hummocks (#168); it lies level by the walls, at the ladders' ends, and over the camps and trodden flat for layout.snow.trodden metres round them, where the climbs set off and arrive, so they stand where the line has them. The camps are the flat at each end: the tents stand on them, and reaching Camp 1's is the arrival. The expedition sets off on the sources' hour (time.base-camp-departure) and the bodies are made up, as the stand-in's were, until the camp screen (#53) and the acclimatization (#51) set them.",
+  "note": "The Khumbu Icefall, Base Camp to Camp 1, in the parts the sources name (route.icefall-parts, #172), on the ground its photos show (#184): Base Camp's tents on the moraine of the Khumbu Glacier (route.base-camp-ground), Crampon Point where it ends and the first rope is fixed; the Popcorn's hummocks of small jumbled blocks, short walls and a drop with a ladder each, narrow crevasses and one crossed at an angle, its far lip higher, with snow bridges between them; the maze of towers, its walls of 6 to 8 m, twin crevasses with a fin of ice between them, a wide crevasse and a corridor between the towers, where the ladders are lashed end to end (route.icefall-ladders-lashed) and the first seracs stand over the route; the Football Field, a flat at route.football-field-altitude under the seracs; the Upper Icefall's tallest walls, 9 and 11 m, and its deepest crevasse, under the West Shoulder's hanging glacier; and the open snow of the Western Cwm, its last crevasses and its slope under Nuptse's wall, to Camp 1. Drawn at 1/route.drawn-scale of its length and its rise (docs/conventions/slope-physics.md → The slope), with every wall, crevasse and ladder at life size: 280 m of ground rising 45 m stand for the Icefall's length and the camps' altitudes, which the knowledge base gives (route.icefall-length, route.base-camp-altitude, route.camp-1-altitude), so the walls' metres up are paid back by drops behind the blocks and towers, each with its ladder, as the sources' ladders go down as well as up. A crevasse is a crack that narrows as it goes down, its walls stepped and ledged, no two alike: under 2 m to 8 m across at its lips and 8 to 35 m deep, under the 45 m the sources give (route.icefall-hazards), to a foot plugged with snow at most a metre and a half wide. A wall's face leans back from its ladder in steps, up a wall to the ladder's right and down one to its left, so the ladder stands clear of the ice; the ground's line never goes back on itself, so an overhang, a lip of snow or an icicle is the picture's alone. Every sloping segment is a Pythagorean triple in eighths of a metre, so every corner, where the ladders' ends and the ropes' anchors go, is at an exact length along the ground, in a few digits. Each wall's and each crevasse's ladder has a rope of its own from end to end, and from the maze up the ropes run in a line and share their anchors, as the fixed line does; below it they leave the easy ground between the Popcorn's ladders free. Here and there the snow is gone and the route walks bare blue ice (layout.ice, route.icefall-hazards, #190), which takes a climber's footing as snow doesn't: an icy hummock in the Popcorn, where a slip costs a metre; the ice down to the Popcorn's drop, which a slip slides over; the ramp of ice down to the big crevasse's lip in the maze, which kills a climber who isn't clipped; and the icy step under the Upper Icefall's highest wall. The snow on the ground (layout.snow) is the game's, not the sources': it rises and falls by a few tens of centimetres over a few metres and rounds the breaks of slope, and the climbers walk on it, slower over its hummocks (#168); it lies level by the walls, at the ladders' ends, and over the camps and trodden flat for layout.snow.trodden metres round them, where the climbs set off and arrive, so they stand where the line has them. The camps are the flat at each end: the tents stand on them, and reaching Camp 1's is the arrival. The expedition sets off on the sources' hour (time.base-camp-departure) and the bodies are made up, as the stand-in's were, until the camp screen (#53) and the acclimatization (#51) set them. Each body's load is what the climber wears and carries besides their pack, and `packs` is what the pack holds unless the player packs their own at Base Camp: the jumar, two litres of water and two bars, 2.301 kg (content/facts/gear.json), so the player sets off with 10 kg and the teammate with 12, as before the packs. Base Camp's store never runs out of anything; Camp 1's has its water, melted from the snow, and whatever a climber leaves there.",
   "id": "icefall",
   "from": "base-camp",
   "to": "camp-1",
@@ -309,8 +309,13 @@
     { "id": "western-cwm", "from": 587.25, "to": 688.25 }
   ],
   "camps": [
-    { "id": "base-camp", "from": 0, "to": 8 },
-    { "id": "camp-1", "from": 678.25, "to": 688.25 }
+    {
+      "id": "base-camp",
+      "from": 0,
+      "to": 8,
+      "endless": ["jumar", "ice-tool", "water", "food", "oxygen"]
+    },
+    { "id": "camp-1", "from": 678.25, "to": 688.25, "endless": ["water"] }
   ],
   "hazards": {
     "weather": "clear",
@@ -328,7 +333,7 @@
     {
       "id": "player",
       "mass": 75,
-      "load": 10,
+      "load": 7.699,
       "fitness": 1,
       "fatigue": 0,
       "awake": 1,
@@ -338,12 +343,16 @@
     {
       "id": "teammate",
       "mass": 68,
-      "load": 12,
+      "load": 9.699,
       "fitness": 1,
       "fatigue": 0,
       "awake": 1,
       "water": 0,
       "food": 0
     }
+  ],
+  "packs": [
+    { "id": "player", "jumar": 1, "ice-tool": 0, "water": 2, "food": 2, "oxygen": 0 },
+    { "id": "teammate", "jumar": 1, "ice-tool": 0, "water": 2, "food": 2, "oxygen": 0 }
   ]
 }

@@ -55,6 +55,20 @@ export interface Tool extends ClimberAction {
   readonly y: number;
 }
 
+/** In a camp: takes one of an item from its store into the pack, or leaves one there: a jumar, a
+ * second ice tool, a litre of water, a bar of food or a bottle of oxygen (`Packs`). */
+export interface PackChange extends ClimberAction {
+  readonly kind: "pack";
+  readonly item: "jumar" | "ice-tool" | "water" | "food" | "oxygen";
+  readonly change: "take" | "leave";
+}
+
+/** Drinks from the water in the pack, or eats a bar of its food. */
+export interface UseItem extends ClimberAction {
+  readonly kind: "use";
+  readonly item: "water" | "food";
+}
+
 /** Turns the oxygen flow up or down a notch. */
 export interface Oxygen extends ClimberAction {
   readonly kind: "oxygen";
@@ -84,7 +98,19 @@ export interface SetUpTent extends ClimberAction {
  * agent sends the same. Plain data, because replays and the room server keep and send them.
  */
 export type GameAction =
-  Walk | Pace | Clip | Unclip | Jumar | Haul | Tool | Oxygen | CheckSelf | Radio | SetUpTent;
+  | Walk
+  | Pace
+  | Clip
+  | Unclip
+  | Jumar
+  | Haul
+  | Tool
+  | PackChange
+  | UseItem
+  | Oxygen
+  | CheckSelf
+  | Radio
+  | SetUpTent;
 
 /**
  * A climber let go: stopped where they stand, at a steady pace, the jumar's slide and any haul let
