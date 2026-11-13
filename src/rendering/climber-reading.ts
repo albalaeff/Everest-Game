@@ -82,7 +82,8 @@ export class ClimberReading {
   read(view: ClimberView, body: BodyView, drawn: DrawnAt): PoseState {
     const { at, grown } = drawn;
     const upright = !view.falling && !view.dead;
-    const onIce = upright && view.onIce;
+    // On the tools, or lowering down a face on its rope: the face is their ladder.
+    const onIce = upright && (view.onIce || view.lowering);
     const [start, finish] = onIce
       ? this.face(at)
       : upright && view.ladder !== null

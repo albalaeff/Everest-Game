@@ -39,7 +39,7 @@ export class CoachedClimb implements CoachWorld {
     return this.physics.along(this.climberId);
   }
 
-  iceWall(): "foot" | "lip" | null {
+  iceWall(): "foot" | "lip" | "rope" | null {
     return this.physics.iceWall(this.climberId);
   }
 

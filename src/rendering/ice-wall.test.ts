@@ -62,4 +62,32 @@ describe("IceWall", () => {
   it("is the same wall on the same seed", () => {
     expect(new IceWall(TERRAIN, { x: 10, y: 0 }, { x: 10.375, y: 6 }, 2)).toEqual(UP);
   });
+
+  it("marks a band of brittle ice across the face between two heights, within its ice, its edges ragged and cracked", () => {
+    const band = UP.brittle(3, 3.5);
+    const outline = band?.outline ?? [];
+    const ys = outline.map(({ y }) => y);
+    const faceRight = Math.max(...xs(UP.face));
+
+    expect(outline.length).toBeGreaterThan(6);
+    // From the face's bare ice, at 10.375, into the ice to its right, no further than the face.
+    expect(Math.min(...xs(outline))).toBe(10.375);
+    expect(Math.max(...xs(outline))).toBeLessThanOrEqual(faceRight);
+    // Its edges across wander a few centimetres off the heights it's laid between.
+    expect(Math.min(...ys)).toBeGreaterThan(2.9);
+    expect(Math.max(...ys)).toBeLessThan(3.6);
+    expect(new Set(ys).size).toBeGreaterThan(2);
+    // Its cracks run out of it into the sound ice above and below.
+    expect(band?.cracks).toHaveLength(2);
+    for (const crack of band?.cracks ?? []) {
+      const end = crack.at(-1)?.y ?? 3.25;
+      expect(end > 3.5 || end < 3).toBe(true);
+    }
+  });
+
+  it("marks only what of the band the face reaches, and none off it", () => {
+    expect(UP.brittle(5.5, 7)?.outline.every(({ y }) => y <= 6.05)).toBe(true);
+    expect(UP.brittle(7, 8)).toBeNull();
+    expect(DOWN.brittle(-3, 1)).toBeNull();
+  });
 });

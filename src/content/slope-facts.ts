@@ -71,6 +71,7 @@ export class SlopeFacts {
       },
       lethalLanding: number("lethal-landing"),
       climbBack: fast("climb-back-speed"),
+      rappel: fast("rappel-speed"),
       ladderBreak: { creak: seconds("ladder-creak"), relash: minutes("ladder-relash") },
       haul: { speed: fast("haul-speed"), reach: number("haul-reach") },
       knock: number("knock-speed"),

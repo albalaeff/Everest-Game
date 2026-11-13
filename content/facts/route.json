@@ -802,6 +802,30 @@
       ]
     },
     {
+      "id": "route.icefall-ice-steps",
+      "kind": "fact",
+      "claim": "Not every wall of the Icefall has a ladder: some are climbed on the fixed rope that hangs down them, on the jumar and the crampons' front points, and abseiled on the way down.",
+      "status": "source only",
+      "versions": [
+        {
+          "note": "A vertical wall of blue ice rises in front of them; the Icefall Doctors have fixed a rope down it from above, and they pull themselves up it on the jumar; the crossing is walls, ladders, jumar climbs and abseiling.",
+          "source": {
+            "title": "Expeditions Unlimited: Climbing Everest South Face (Nepal): Icefall traverse (2021)",
+            "url": "https://www.expeditions-unlimited.com/en/blog/himalayas/climbing-everest-south-face-nepal-icefall-traverse"
+          },
+          "checked": "2026-11-13"
+        },
+        {
+          "note": "Teams at Base Camp practise clipping on and off a fixed rope, using the jumar and front-pointing on steep ice with crampons before going into the Icefall.",
+          "source": {
+            "title": "Alan Arnette: Everest 2017: Why is the Khumbu Icefall so Dangerous?",
+            "url": "https://www.alanarnette.com/2017/03/15/everest-2017-why-is-the-khumbu-icefall-so-dangerous/"
+          },
+          "checked": "2026-11-13"
+        }
+      ]
+    },
+    {
       "id": "route.icefall-kit",
       "kind": "fact",
       "claim": "A climber's own kit for the Icefall includes steel 12-point crampons, a harness that fits over all their clothing, a headlamp with freshly installed batteries and spares, and two one-litre water bottles in insulated covers.",

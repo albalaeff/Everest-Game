@@ -193,6 +193,9 @@ export class SlopeLayer extends ParallaxLayer {
   /** The streaks down a wall's bare ice: how wide, and how strong. */
   private static readonly STREAK_METRES = 0.035;
   private static readonly STREAK_ALPHA = 0.55;
+  /** How far the seeds of the steps of ice with no ladder are from the ladders' walls', so no two
+   * are drawn alike. */
+  private static readonly BARE_SEEDS = 1000;
   /** The steepest the snow's crest runs, as a rise over its run: a wall's ice is bare. */
   private static readonly CREST_STEEPEST = 1.2;
   /** How far below its lowest point the ground is filled. */
@@ -1169,13 +1172,37 @@ export class SlopeLayer extends ParallaxLayer {
     }
   }
 
-  /** The ice where the ladders cross it, in the day's colours for the hour to tint (#184): each
-   * crevasse's inside going black as it goes down, the light through the ice along its walls, the
-   * snow at its foot and on its steps; each wall's bare face and its streaks; and the lips of snow
-   * on them all, with their icicles. */
+  /** The ice where the ladders cross it, and the steps of it the route climbs with none, in the
+   * day's colours for the hour to tint (#184): each crevasse's inside going black as it goes down,
+   * the light through the ice along its walls, the snow at its foot and on its steps; each wall's
+   * bare face and its streaks, and on a step with no ladder its bands of brittle ice, pale and
+   * edged; and the lips of snow on them all, with their icicles. */
   private drawIce(terrain: Terrain, seed: number): void {
     const { flat } = SlopeLayer;
     const cornices = [];
+    const brittle = this.physics.brittle;
+    for (const [index, { foot, top }] of this.physics.bareFaces.entries()) {
+      const [start, finish] = [Math.min(foot, top), Math.max(foot, top)].map((along) =>
+        terrain.point(along),
+      );
+      if (start === undefined || finish === undefined) {
+        continue;
+      }
+      const wall = new IceWall(terrain, start, finish, seed + SlopeLayer.BARE_SEEDS + index);
+      this.walls.poly(flat(wall.face)).fill(SlopeLayer.litIce(wall.face));
+      this.streak(wall.streaks);
+      for (const stretch of brittle) {
+        const [low, high] = [stretch.from, stretch.to]
+          .map((along) => terrain.point(along).y)
+          .sort((one, other) => one - other);
+        const band = wall.brittle(low ?? 0, high ?? 0);
+        if (band !== null) {
+          this.walls.poly(flat(band.outline)).fill(Palette.BRITTLE);
+          this.streak(band.cracks);
+        }
+      }
+      cornices.push(wall.cornice);
+    }
     for (const [index, { start, finish, across }] of this.ladders.entries()) {
       if (across) {
         const crevasse = new Crevasse(terrain, start, finish, seed + index);
@@ -1190,15 +1217,7 @@ export class SlopeLayer extends ParallaxLayer {
       } else {
         const wall = new IceWall(terrain, start, finish, seed + index);
         this.walls.poly(flat(wall.face)).fill(SlopeLayer.litIce(wall.face));
-        for (const streak of wall.streaks) {
-          const [first, ...rest] = streak;
-          if (first !== undefined) {
-            this.wallEdges.moveTo(first.x, first.y);
-            for (const { x, y } of rest) {
-              this.wallEdges.lineTo(x, y);
-            }
-          }
-        }
+        this.streak(wall.streaks);
         cornices.push(wall.cornice);
       }
     }
@@ -1213,6 +1232,19 @@ export class SlopeLayer extends ParallaxLayer {
         this.lips.poly(flat(icicle)).fill(Palette.ICICLE);
       }
       this.lips.poly(flat(outline)).fill(0xffffff);
+    }
+  }
+
+  /** A wall's streaks, each a line down its face, for the stroke that draws them all. */
+  private streak(streaks: readonly (readonly Point[])[]): void {
+    for (const streak of streaks) {
+      const [first, ...rest] = streak;
+      if (first !== undefined) {
+        this.wallEdges.moveTo(first.x, first.y);
+        for (const { x, y } of rest) {
+          this.wallEdges.lineTo(x, y);
+        }
+      }
     }
   }
 

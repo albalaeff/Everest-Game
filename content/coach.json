@@ -51,7 +51,9 @@
     "on-ice.pc": "Your feet stop with the pick at your shoulder. Click higher to swing the next one in: within reach, not at full stretch, and not into pale, brittle ice. At the top, plant it over the lip.",
     "on-ice.touch": "Your feet stop with the pick at your shoulder. Tap higher to swing the next one in: within reach, not at full stretch, and not into pale, brittle ice. At the top, plant it over the lip.",
     "ice-down.pc": "No ladder down this ice. Right-click the face below your feet to step down onto your front points, then hold S, and click to swing the axe in lower as you go.",
-    "ice-down.touch": "No ladder down this ice. Tap the face below your feet to step down onto your front points, then pull your thumb down, and tap to swing the axe in lower as you go."
+    "ice-down.touch": "No ladder down this ice. Tap the face below your feet to step down onto your front points, then pull your thumb down, and tap to swing the axe in lower as you go.",
+    "rappel.pc": "No ladder down this ice, and the fixed rope runs down it. Clipped to the rope, hold S to lower yourself down it, your front points on the ice.",
+    "rappel.touch": "No ladder down this ice, and the fixed rope runs down it. Clipped to the rope, pull your thumb down to lower yourself down it, your front points on the ice."
   },
   "ru": {
     "walk.pc": "Держи D, чтобы идти. C — осторожный шаг, Shift — быстрее.",
@@ -105,6 +107,8 @@
     "on-ice.pc": "Ноги останавливаются, когда клюв на уровне плеча. Щёлкни выше, чтобы вбить следующий: в пределах досягаемости, не на вытянутой руке и не в бледный хрупкий лёд. Наверху вбей его за край.",
     "on-ice.touch": "Ноги останавливаются, когда клюв на уровне плеча. Коснись выше, чтобы вбить следующий: в пределах досягаемости, не на вытянутой руке и не в бледный хрупкий лёд. Наверху вбей его за край.",
     "ice-down.pc": "Лестницы вниз по этому льду нет. Щёлкни правой кнопкой по стене ниже ног, чтобы встать на передние зубья, потом держи S и щёлкай, чтобы перебивать ледоруб ниже.",
-    "ice-down.touch": "Лестницы вниз по этому льду нет. Коснись стены ниже ног, чтобы встать на передние зубья, потом веди палец вниз и касайся, чтобы перебивать ледоруб ниже."
+    "ice-down.touch": "Лестницы вниз по этому льду нет. Коснись стены ниже ног, чтобы встать на передние зубья, потом веди палец вниз и касайся, чтобы перебивать ледоруб ниже.",
+    "rappel.pc": "Лестницы вниз по этому льду нет, но по нему идут перила. Пристёгнутым к верёвке держи S, чтобы спуститься по ней, упираясь передними зубьями в лёд.",
+    "rappel.touch": "Лестницы вниз по этому льду нет, но по нему идут перила. Пристёгнутым к верёвке веди палец вниз, чтобы спуститься по ней, упираясь передними зубьями в лёд."
   }
 }

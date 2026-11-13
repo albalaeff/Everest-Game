@@ -32,6 +32,7 @@ const standing = (x: number, over: Partial<ClimberView> = {}): ClimberView => ({
   onIce: false,
   picks: [],
   pickPoor: false,
+  lowering: false,
   gear: { jumar: true, tools: 1 },
   ...over,
 });
@@ -46,7 +47,7 @@ class World implements CoachWorld {
   partner = false;
   ice = [{ from: 70, to: 80 }];
   zones: readonly HazardZone[] = [{ id: "seracs", kind: "serac", from: 90, to: 100 }];
-  wall: "foot" | "lip" | null = null;
+  wall: "foot" | "lip" | "rope" | null = null;
   deadEnd = false;
   ropes = ["one", "two"];
   ladders = ["wall", "crevasse"];
@@ -93,7 +94,7 @@ class World implements CoachWorld {
     return this.view.x;
   }
 
-  iceWall(): "foot" | "lip" | null {
+  iceWall(): "foot" | "lip" | "rope" | null {
     return this.wall;
   }
 
@@ -388,6 +389,45 @@ describe("Coach: the ice tools and the ways out of a crevasse", () => {
     world.wall = "lip";
 
     expect(after(coach, world, Coach.LEAST_SECONDS)).toBe("ice-down");
+  });
+
+  it("still teaches the step down at a lip after a wall climbed up, and lets it go once they've stepped down", () => {
+    const { coach, world } = walked();
+    world.view = standing(60);
+    world.wall = "foot";
+    after(coach, world, Coach.LEAST_SECONDS);
+    world.wall = null;
+    world.view = standing(60, { onIce: true });
+    after(coach, world, Coach.LEAST_SECONDS);
+    world.view = standing(64);
+    after(coach, world, Coach.LEAST_SECONDS);
+    world.wall = "lip";
+    const atALip = after(coach, world, Coach.LEAST_SECONDS);
+    world.wall = null;
+    world.view = standing(64, { onIce: true });
+    after(coach, world, Coach.LEAST_SECONDS);
+    world.view = standing(64);
+    after(coach, world, Coach.LEAST_SECONDS);
+    world.wall = "lip";
+
+    expect(atALip).toBe("ice-down");
+    expect(after(coach, world, Coach.LEAST_SECONDS)).not.toBe("ice-down");
+  });
+
+  it("teaches the rope down a step of ice where the fixed rope runs down it, and lets it go once they've lowered themselves", () => {
+    const { coach, world } = walked();
+    world.view = standing(60);
+    world.wall = "rope";
+    const atTheLip = after(coach, world, Coach.LEAST_SECONDS);
+    world.wall = null;
+    world.view = standing(60, { lowering: true });
+    after(coach, world, Coach.LEAST_SECONDS);
+    world.view = standing(64);
+    after(coach, world, Coach.LEAST_SECONDS);
+    world.wall = "rope";
+
+    expect(atTheLip).toBe("rappel");
+    expect(after(coach, world, Coach.LEAST_SECONDS)).not.toBe("rappel");
   });
 
   it("warns of a pick that bites poorly, every time", () => {

@@ -35,11 +35,11 @@ test.describe("on a screen of 630 by 360", () => {
     hasTouch,
   }) => {
     test.skip(hasTouch, "a PC's story");
-    // On the ramp of blue ice down to the big crevasse's lip at 340 m along, unclipped, past the
-    // seracs that end at 338 m, whose chance would take the draw first; with no training event
+    // On the ramp of blue ice down to the big crevasse's lip at 319.75 m along, unclipped, past the
+    // seracs that end at 317.75 m, whose chance would take the draw first; with no training event
     // (#209), whose collapse among those seracs would add its line to the debrief.
     await climbFrom(page, (climb) => {
-      savedPlayer(climb).along = 338.1;
+      savedPlayer(climb).along = 317.85;
       climb.random = [...SLIPS_NEXT];
       stage(climb, null, null);
     });

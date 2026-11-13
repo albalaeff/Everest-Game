@@ -23,8 +23,8 @@ test.describe("on a screen of 630 by 360", () => {
     test.skip(hasTouch, "a PC's story");
     // On the Football Field, among the seracs, a collapse staged 4 m ahead.
     await climbFrom(page, (climb) => {
-      savedPlayer(climb).along = 405;
-      stage(climb, { from: 409, to: 417 }, null);
+      savedPlayer(climb).along = 384.75;
+      stage(climb, { from: 388.75, to: 396.75 }, null);
     });
     await expect.poll(async () => (await seen(page, "player"))?.x ?? 0).toBeGreaterThan(168);
 
@@ -57,7 +57,7 @@ test.describe("on a screen of 630 by 360", () => {
     // At the near lip of the big crevasse, its 8 m ladder staged to break a metre out, and no step
     // on it slipping before it does.
     await climbFrom(page, (climb) => {
-      savedPlayer(climb).along = 340;
+      savedPlayer(climb).along = 319.75;
       stage(climb, null, { id: "big-crevasse", breaks: 1 });
       climb.random = [...SURE_FOOTED];
     });
