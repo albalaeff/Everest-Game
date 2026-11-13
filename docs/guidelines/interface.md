@@ -34,11 +34,13 @@ The screen around the slope: where things go, the HUD, the buttons, the text, co
   - *In Everest:* `.action-button` and the disclaimer's button are at least 48, the thumb's (`.touch .oxygen`, `.touch .thumb`) 64. The `[Graphics]` button (`.setting-button`) is a target too, with no size of its own yet: 48 on touch, at least 24 with a mouse. No issue yet.
   - *Check:* a story on each project measures every `button`'s box and the gaps between them.
 - **A press answers within a tenth of a second,** the limit for feeling that the game reacted at once ([Nielsen](https://www.nngroup.com/articles/response-times-3-important-limits/)): the button looks pressed, and clicks once there's sound. A vibration is never the only answer: Safari has none ([the Vibration API's implementations](https://w3c.github.io/vibration/reports/implementation.html)).
-  - *In Everest:* `ActionButton` marks the press (`action-button--pressed`) and vibrates 10 ms where it can; the click comes with #88.
+  - *In Everest:* `ActionButton` marks the press (`action-button--pressed`): the button takes the rope's orange and sinks a pixel. It vibrates 10 ms where it can; the click comes with #88.
   - *Check:* `e2e/controls.spec.ts` reads the pressed mark on the press.
 - **A touch belongs to what it started on.** A finger that lands on a button stays that button's until it lifts, even when it slides off, and the joystick's finger presses nothing on its way. A held button lets go only when its finger lifts or the page loses it ([../conventions/input.md](../conventions/input.md) → Everything held can be let go).
   - *In Everest:* `PointerSource` and `ActionButton`, by `pointerId`.
   - *Check:* a story slides a finger holding [Jumar] off the button, and reads the jumar held until the finger lifts.
+- **A button looks like a climber's hardware, and the way on stands out.** Every button has the same shape and the same metal, so the eye knows what can be pressed. The one button that goes on stands out on each screen.
+  - *In Everest:* `.action-button` and the screens' buttons are anodized metal with a lit top edge (`--metal`, `--metal-shadow`). The one that goes on, on each screen before the climb and at a camp, is the rope's orange (`--rope`), and so is a button held, or a panel's button while its panel is open (`aria-expanded`). The focus is the ice's blue (`--ice`), so it's never taken for either. The menu's buttons have a mark before their word (`--icon-…`); on the narrowest phones, 700 px wide and under, they keep the mark alone, and their word for a screen reader.
 - **One control, one place, one meaning.** A control is where it was last time, does the same on every screen of the climb, and has the same name everywhere ([Pinelle et al.](https://course.ccs.neu.edu/is4300f15/ssl/pinelle-chi08.pdf), heuristic 1: consistent responses).
   - *In Everest:* a control's row in `CONTROLS` gives its place and its name ([../conventions/input.md](../conventions/input.md) → An action more is a row more).
 
@@ -53,14 +55,17 @@ The screen around the slope: where things go, the HUD, the buttons, the text, co
 - **Text stands out from whatever passes behind it:** 4.5:1, or 3:1 for large text (24 px, or 19 px bold) ([WCAG 2.2, 1.4.3](https://www.w3.org/TR/WCAG22/#contrast-minimum)), against the worst part of the picture that can be behind it ([XAG 102](https://learn.microsoft.com/en-us/gaming/accessibility/xbox-accessibility-guidelines/102)). Text over the slope gets a backing whose opacity the player can raise, or a dark outline (XAG 102).
   - *In Everest:* the readouts and the hints sit over the sky, but a ridge, the snow or a whiteout can come behind them; they get a backing with #25.
   - *Check:* on a section that puts the slope behind the HUD, a story reads the picture behind each text with `window.everest.pixelAt` and computes the contrast.
+- **A tip names what to press, and the eye finds it.** The coach's card draws each key (D, Shift) and each button ([Clip 1]) its words name as a key cap. A tip of the tutorial is edged in the rope's orange with a peak, and a warning in red with a triangle.
+  - *In Everest:* `CoachCard` writes the keys and the bracketed buttons as `kbd`, a button's without its brackets, and marks the card `data-kind="tip"` or `"warning"` (`Coach.isWarning`).
+  - *Check:* `e2e/coach.spec.ts` reads the walk's keys as key caps, and `e2e/training.spec.ts` a warning's mark.
 - **The font is the system's** (`system-ui`): it downloads nothing, has every Cyrillic letter, and reads as the device's own. Figures that change are tabular.
 
 ## Colour
 
 - **Colour is never the only cue** ([WCAG 2.2, 1.4.1](https://www.w3.org/TR/WCAG22/#use-of-color); the [Game Accessibility Guidelines](https://gameaccessibilityguidelines.com/), basic). About one man in 12 and one woman in 200 see colours differently ([Colour Blind Awareness](https://www.colourblindawareness.org/colour-blindness/)), so a colour that means something comes with a shape, a place or a word.
-  - *In Everest:* the turnaround mark is red and a notch (#36); the fingers' colour on the self-check comes with its words (#25, #38); the player's climber stands out by more than the suit ([graphics.md](graphics.md) → Readable first).
+  - *In Everest:* the turnaround mark is red and a notch (#36); the fingers' colour on the self-check comes with its words (#25, #38); a coach's warning has a triangle and a tip a peak; the player's climber stands out by more than the suit ([graphics.md](graphics.md) → Readable first).
   - *Check:* Chrome DevTools → Rendering → Emulate vision deficiencies, each of protanopia, deuteranopia, tritanopia and achromatopsia: every cue still reads.
-- **The interface's own colours stay quiet.** Its blues (`#16335c`, `#9db4d0`) frame and recede; in the HTML, red means danger and the turnaround, and nothing else ([graphics.md](graphics.md) → Colour and light).
+- **The interface's own colours stay quiet, but for the rope's.** Its blues (`#16335c`, `#9db4d0`) and its dark metal frame and recede. The rope's orange (`--rope`) marks the way on and what's in hand: the one button that goes on, a button held or a panel open, what's packed, the coach's tip. In the HTML, red means danger and the turnaround, and nothing else ([graphics.md](graphics.md) → Colour and light).
 
 ## Panels and dialogs
 

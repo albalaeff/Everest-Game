@@ -14,6 +14,13 @@ export type CoachTip =
   | "ice"
   | "seracs"
   | "hanging"
+  | "hanging-carabiner"
+  | "hanging-no-jumar"
+  | "crevasse-floor"
+  | "pick-poor"
+  | "ice-wall"
+  | "on-ice"
+  | "ice-down"
   | "careless"
   | "unclipped"
   | "stopped-under-seracs"
@@ -39,6 +46,11 @@ export interface CoachWorld {
   partnerHangs(): boolean;
   /** How far along the ground the player is. */
   along(): number;
+  /** The wall of ice with no ladder the player stands at: at its foot, to climb on their tools,
+   * or at its lip, to climb down; or none. */
+  iceWall(): "foot" | "lip" | null;
+  /** Whether the player is on ground nobody walks out of: a ledge down a crevasse, or its foot. */
+  inADeadEnd(): boolean;
   /** The rope a clip of the player's would take now, or none. */
   ropeWithin(): string | null;
   readonly ropes: readonly string[];
@@ -61,7 +73,10 @@ export interface CoachStorage {
  * where it's needed, then watched). The tutorial teaches each control where the route first needs
  * it, the walk at the start, the clip at the first rope, the changeover at the first anchor, the
  * ladders, the crossings and the ice, and lets it go once the player has done it, which the
- * device keeps. The warnings come whenever they matter: hanging on the rope, careless steps on
+ * device keeps, and the same for the ice tools: the first pick at a wall of ice with no ladder,
+ * the next ones on it, and the step down onto one from its lip. The warnings come whenever they
+ * matter: hanging on the rope, with what gets them out of it (the jumar on the rope, the jumar
+ * to clip on, or the tools), down in a crevasse off the rope, a pick that bites poorly, careless steps on
  * blue ice or a ladder (#208), unclipped where a slip is a fall, stopped under the seracs, a crampon come loose and the
  * headlamp dead in the dark, a check skipped before setting off catching up with the player
  * (#196), and the training events (#209): a serac cracking ahead, the ladder creaking under them,
@@ -89,6 +104,10 @@ export class Coach {
   /** The tips, most pressing first: the warnings, then the tutorial in the route's order. */
   private static readonly ORDER: readonly CoachTip[] = [
     "hanging",
+    "hanging-carabiner",
+    "hanging-no-jumar",
+    "crevasse-floor",
+    "pick-poor",
     "serac-crack",
     "ladder-creak",
     "haul",
@@ -98,6 +117,9 @@ export class Coach {
     "crampon-loose",
     "lamp",
     "ladder-broken",
+    "on-ice",
+    "ice-wall",
+    "ice-down",
     "anchor",
     "clip",
     "jumar",
@@ -110,6 +132,10 @@ export class Coach {
   ];
   private static readonly WARNINGS: ReadonlySet<CoachTip> = new Set([
     "hanging",
+    "hanging-carabiner",
+    "hanging-no-jumar",
+    "crevasse-floor",
+    "pick-poor",
     "serac-crack",
     "ladder-creak",
     "haul",
@@ -128,12 +154,19 @@ export class Coach {
   /** The rope whose end the changeover was shown at; the ice the player has been on. */
   private anchorRope: string | null = null;
   private onIce = false;
+  /** Whether the player was on their tools last frame, and at a face's lip. */
+  private onTools = false;
   /** How long the player has stood still under the seracs, and been in the dark. */
   private still = 0;
   private dark = 0;
 
   constructor(private readonly storage: CoachStorage | null) {
     this.done = new Set(Coach.kept(storage));
+  }
+
+  /** Whether a tip is a warning, said whenever it matters, and not one of the tutorial's. */
+  static isWarning(tip: CoachTip): boolean {
+    return Coach.WARNINGS.has(tip);
   }
 
   /** The tip to show after `seconds` more of the climb, or none. */
@@ -188,6 +221,15 @@ export class Coach {
       const kind = this.kindOf(world, view.ladder);
       this.learn(kind === "across" ? "crossing" : kind === "up" ? "ladder-up" : "ladder-down");
     }
+    if (view.onIce) {
+      this.learn("ice-wall");
+      this.learn("ice-down");
+    }
+    // Off the ice on their feet, not in a fall: they've climbed it.
+    if (this.onTools && !view.onIce && !view.falling) {
+      this.learn("on-ice");
+    }
+    this.onTools = view.onIce;
     const iceNow = world.ice.some(({ from, to }) => along >= from && along <= to);
     if (this.onIce && !iceNow) {
       this.learn("ice");
@@ -206,7 +248,21 @@ export class Coach {
     const clipped = view.first !== null || view.second !== null;
     switch (tip) {
       case "hanging":
-        return view.hanging;
+        return view.hanging && view.first !== null && view.gear.jumar;
+      case "hanging-carabiner":
+        return view.hanging && view.first === null && view.gear.jumar;
+      case "hanging-no-jumar":
+        return view.hanging && !view.gear.jumar;
+      case "crevasse-floor":
+        return !view.falling && !view.onIce && world.inADeadEnd();
+      case "pick-poor":
+        return view.onIce && view.pickPoor;
+      case "on-ice":
+        return view.onIce;
+      case "ice-wall":
+        return !view.falling && !view.onIce && world.iceWall() === "foot";
+      case "ice-down":
+        return !view.falling && !view.onIce && world.iceWall() === "lip";
       case "stopped-under-seracs":
         return this.still >= Coach.STOPPED_SECONDS;
       case "unclipped":

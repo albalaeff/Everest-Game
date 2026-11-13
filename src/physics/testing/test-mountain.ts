@@ -70,6 +70,20 @@ export class TestMountain {
     knock: 3,
     arrestSpeed: 5,
     axeReach: 1.5,
+    iceClimb: {
+      speed: 0.5,
+      oneTool: 0.5,
+      reach: 2.2,
+      lockOff: 1.4,
+      stretch: 2,
+      snap: 0.6,
+      overLip: 0.5,
+      slip: 0,
+      oneToolSlip: 4,
+      poor: 5,
+      swingSlip: 0,
+      hang: 0.5,
+    },
   };
   /** Nobody ever slips. */
   static readonly CALM: SlopeSettings = {

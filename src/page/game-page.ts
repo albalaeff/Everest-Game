@@ -33,11 +33,14 @@ import type { RoomCode } from "../room/room-code";
 import { IndexedDbStore } from "../saves";
 import type { ExpeditionStore } from "../saves";
 import { Expedition } from "../simulation";
-import type { ClimberId, ExpeditionSave, Scenario } from "../simulation";
+import type { ClimberId, ExpeditionSave, PackOf, Scenario } from "../simulation";
 import { ActionQueue, EverySink, ZoomSink } from "./action-queue";
 import { BrowserSockets } from "./browser-sockets";
 import { ClimberScreen } from "./climber-screen";
 import { GearCheck } from "./gear-check";
+import { InventoryPanel } from "./inventory-panel";
+import type { PackTextName } from "./pack-list";
+import { PackScreen } from "./pack-screen";
 import { GameLoop } from "./game-loop";
 import type { Played } from "./game-loop";
 import { KeptClimber } from "./kept-climber";
@@ -68,12 +71,16 @@ export interface PageTexts {
   readonly debrief: Texts<DebriefTextName>;
   /** The gear check's words (#196). */
   readonly gear: Texts;
+  /** The pack's words: the screen at Base Camp and the card on the climb. */
+  readonly pack: Texts<PackTextName>;
 }
 
 /** What the page's stories read that the DOM doesn't show, on `window.everest`. */
 export interface PageHooks {
   /** A pixel of the canvas, once the scene draws. */
   pixelAt(x: number, y: number): readonly number[];
+  /** Where a point of the slope, in its metres, is on the screen, in pixels. */
+  screenAt(x: number, y: number): readonly number[];
   /** Where a climber of the expedition is: metres along and up the slope. */
   climberAt(climber: ClimberId): readonly number[];
   /** A climber of the expedition as the physics shows them: on a ladder, on a rope, falling. */
@@ -161,11 +168,31 @@ export class GamePage {
     const screen = new ClimberScreen(this.window, this.texts.climber, questionnaire, this.guide);
     screen.show(kept.answers, (answers) => {
       kept.keep(answers);
-      new GearCheck(this.window, this.texts.gear).show((kit) => {
-        const scenario = this.mountain.scenario(this.newSeed(), answers, kit);
-        this.playAlone(store, Expedition.start(scenario, rules.all), rules);
+      const { route } = this.mountain;
+      const packed = this.playersPack();
+      const packing = new PackScreen(
+        this.window,
+        this.texts.pack,
+        route.packNumbers,
+        packed.items,
+        packed.base,
+      );
+      packing.show((pack) => {
+        new GearCheck(this.window, this.texts.gear).show((kit) => {
+          const scenario = this.mountain.scenario(this.newSeed(), answers, kit, true, pack);
+          this.playAlone(store, Expedition.start(scenario, rules.all), rules);
+        });
       });
     });
+  }
+
+  /** The player's pack as the route has it, and what they carry besides. */
+  private playersPack(): PackOf {
+    const packed = this.mountain.route.packs.find(({ id }) => id === Section.PLAYER);
+    if (packed === undefined) {
+      throw new RangeError("The route has no pack for the player");
+    }
+    return packed;
   }
 
   /** Plays `expedition` alone, saved on the device from the start. */
@@ -271,6 +298,15 @@ export class GamePage {
       player,
       new SunClock(warmth),
     );
+    const inventory = new InventoryPanel(
+      window,
+      texts.pack,
+      rules.packs,
+      this.mountain.route.packNumbers,
+      sink,
+      player,
+      this.playersPack().base,
+    );
     const arrival = new CampNotice(
       window,
       texts.camps,
@@ -302,11 +338,13 @@ export class GamePage {
     const fps = new FpsReadout(this.elements.find("#fps"), texts.rendering.fps);
     const afterFrame = (seconds: number): void => {
       climbInterface.update();
+      inventory.update();
       arrival.update(seconds);
       coach.update(seconds);
     };
     this.expose({
       pixelAt: (x, y) => scene.pixelAt(x, y),
+      screenAt: (x, y) => scene.screenAt(x, y),
       climberAt: (climber) => {
         const { x, y } = physics.climber(climber);
         return [x, y];

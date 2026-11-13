@@ -103,7 +103,7 @@ describe("A ladder staged to break", () => {
   it("brings the one hanging back up the rope to the lip behind them, not onto the broken ladder", () => {
     const climb = crossing();
     climb.play(steps(10));
-    climb.play(1, [walk("anna", "up")]);
+    climb.play(1, [clip("anna", "first"), walk("anna", "up")]);
     climb.play(steps(20));
     const anna = climb.physics.climber("anna");
 
@@ -115,9 +115,9 @@ describe("A ladder staged to break", () => {
   it("lets nobody onto it until it's lashed back, and then it holds", () => {
     const climb = crossing();
     climb.play(steps(10));
-    climb.play(1, [walk("anna", "up")]);
+    climb.play(1, [clip("anna", "first"), walk("anna", "up")]);
     climb.play(steps(16));
-    climb.play(1, [walk("anna", "right")]);
+    climb.play(1, [Climb.jumar("anna", true), walk("anna", "right")]);
     climb.play(steps(5));
     const waiting = climb.physics.climber("anna");
     climb.play(steps(30));
@@ -172,8 +172,9 @@ describe("Hauling a partner out", () => {
 
   it("brings them out twice as fast with their own climb as with either alone", () => {
     const hauled = outIn(hanging(), [haul("boris", true)]);
-    const climbed = outIn(hanging(), [walk("anna", "up")]);
-    const both = outIn(hanging(), [haul("boris", true), walk("anna", "up")]);
+    const jumar = clip("anna", "first");
+    const climbed = outIn(hanging(), [jumar, walk("anna", "up")]);
+    const both = outIn(hanging(), [haul("boris", true), jumar, walk("anna", "up")]);
 
     expect(hauled).toBeCloseTo(climbed, 0);
     expect(both).toBeLessThan(climbed * 0.6);

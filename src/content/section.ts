@@ -9,27 +9,43 @@ import type {
   SlopeSettings,
   SnowLayout,
 } from "../physics";
-import { Body, MountainClock, ObjectiveHazards, OxygenSystem, SeededRandom } from "../simulation";
+import {
+  Body,
+  MountainClock,
+  ObjectiveHazards,
+  OxygenSystem,
+  PACK_ITEMS,
+  Packs,
+  SeededRandom,
+} from "../simulation";
 import type {
   BodyStart,
+  CampStore,
   ClimberId,
   ClockStart,
   HazardEvent,
   HazardStart,
+  PackCounts,
+  PackItem,
+  PackNumbers,
+  PackOf,
   Scenario,
 } from "../simulation";
 import type { ClimberStart } from "./climber-facts";
 import type { KnowledgeBase, KnowledgeRange } from "./knowledge-base";
+import { PackFacts } from "./pack-facts";
 import { SlopeFacts } from "./slope-facts";
 
 /** A point as the data file keeps it: two numbers. */
 type DataPair = readonly number[];
 
-/** A camp's stretch of the ground, as the data file keeps it: where its tents stand. */
+/** A camp's stretch of the ground, as the data file keeps it: where its tents stand, and what
+ * its store never runs out of: everything at Base Camp, the water melted from its snow higher. */
 export interface CampData {
   readonly id: string;
   readonly from: number;
   readonly to: number;
+  readonly endless?: readonly string[];
 }
 
 /** A part of the section, by the name the sources give it, and its stretch of the ground: the
@@ -69,6 +85,8 @@ export interface SectionData {
     /** The stretches of the ground that are bare blue ice, where the snow lies level on the line
      * and footing goes (#190). */
     readonly ice?: readonly PartStretchData[];
+    /** The stretches of its faces of ice whose ice is brittle: a pick bites poorly there. */
+    readonly brittle?: readonly PartStretchData[];
     readonly ropes: readonly RopeLayout[];
     readonly ladders: readonly LadderLayout[];
     readonly climbers: readonly ClimberLayout[];
@@ -85,7 +103,11 @@ export interface SectionData {
       readonly to: number;
     }[];
   };
+  /** Each climber's body as they set off: its `load` is what they wear and carry besides what
+   * their pack holds. */
   readonly bodies: readonly BodyStart[];
+  /** What each climber's pack holds as they set off, unless the player packs their own. */
+  readonly packs?: readonly ({ readonly id: string } & Readonly<Record<string, number | string>>)[];
 }
 
 /** A camp on the section: its stretch of the ground, and its altitude from the knowledge base. */
@@ -115,8 +137,14 @@ export class Section {
   readonly parts: readonly PartData[];
   /** Its camps, in the layout's order: the first at its foot, the last at its top. */
   readonly camps: readonly Camp[];
-  /** Each climber's body as they set off, in the layout's order. */
+  /** Each climber's body as they set off, in the layout's order: its load is what they carry
+   * besides their pack. */
   readonly bodies: readonly BodyStart[];
+  /** Each climber's pack as the file has it, in the layout's order; the packs' numbers; and the
+   * camps' stores. */
+  readonly packs: readonly PackOf[];
+  readonly packNumbers: PackNumbers;
+  readonly stores: readonly CampStore[];
   /** Its weather and the stretches of it under a hazard, which `ObjectiveHazards.start` checks. */
   readonly hazards: HazardStart;
   readonly clock: ClockStart;
@@ -145,6 +173,7 @@ export class Section {
         ? {}
         : { snow: Section.snow(layout.snow, data.camps, ice, ground.length) }),
       ...(ice.length === 0 ? {} : { ice }),
+      ...(layout.brittle === undefined ? {} : { brittle: layout.brittle }),
       altitude: {
         start: knowledge.number(`route.${data.from}-altitude`),
         end: knowledge.number(`route.${data.to}-altitude`),
@@ -171,6 +200,25 @@ export class Section {
       }
       return body;
     });
+    this.packNumbers = new PackFacts(knowledge).numbers;
+    this.packs = this.bodies.map(({ id, load }) => {
+      const packed = data.packs?.find((pack) => pack.id === id);
+      const items = Object.fromEntries(
+        PACK_ITEMS.map((item) => [item, Number(packed?.[item] ?? 0)]),
+      ) as Record<PackItem, number>;
+      return { id, base: load, items };
+    });
+    const nothing = Object.fromEntries(PACK_ITEMS.map((item) => [item, 0])) as PackCounts;
+    // A camp's store is in reach of its tents and the trodden snow round them, where the climbs
+    // set off and arrive.
+    const round = layout.snow?.trodden ?? 0;
+    this.stores = data.camps.map(({ id, from, to, endless = [] }) => ({
+      id,
+      from: Math.max(0, from - round),
+      to: Math.min(ground.length, to + round),
+      stock: nothing,
+      endless: PACK_ITEMS.filter((item) => endless.includes(item)),
+    }));
     this.clock = {
       date: data.date,
       time: MountainClock.text(knowledge.number(`time.${data.from}-departure`) * 3600),
@@ -213,15 +261,39 @@ export class Section {
   /** A scenario on the section: the seed, the climbers in the layout's order, the clock at its
    * start, the player as their answers make them (#145), or as the file has them, and with what
    * they checked of their kit (#196): a skipped water check leaves them `unchecked` litres short.
-   * Unless `training` is off, it stages the training events from the seed (#209). */
+   * Unless `training` is off, it stages the training events from the seed (#209). The player
+   * carries the `pack` they chose at Base Camp, or the file's: its weight on their body with
+   * what they carry besides, its jumar and its tools on their harness, its bottles their oxygen. */
   scenario(
     seed: number,
     player?: ClimberStart,
     gear?: { readonly kit: Kit; readonly unchecked: number },
     training = true,
+    pack?: PackCounts,
   ): Scenario {
     const made = player === undefined ? this : this.withPlayer(player);
-    const { bodies, layout } = gear === undefined ? made : Section.withKit(made, gear);
+    const checked = gear === undefined ? made : Section.withKit(made, gear);
+    const packs = this.packs.map((packed) =>
+      packed.id === Section.PLAYER && pack !== undefined ? { ...packed, items: pack } : packed,
+    );
+    const packOf = (id: ClimberId): PackOf => {
+      const packed = packs.find((one) => one.id === id);
+      if (packed === undefined) {
+        throw new RangeError(`${id} has no pack on ${this.id}`);
+      }
+      return packed;
+    };
+    const bodies = checked.bodies.map((body) => {
+      const { base, items } = packOf(body.id);
+      return { ...body, load: base + Packs.weight(items, this.packNumbers) };
+    });
+    const layout = {
+      ...checked.layout,
+      climbers: checked.layout.climbers.map((climber) => {
+        const { items } = packOf(climber.id);
+        return { ...climber, gear: { jumar: items.jumar > 0, tools: 1 + items["ice-tool"] } };
+      }),
+    };
     const staged = training ? this.staged(seed) : { collapse: null, ladder: null };
     const hazards: HazardStart =
       staged.collapse === null ? this.hazards : { ...this.hazards, events: [staged.collapse] };
@@ -237,8 +309,12 @@ export class Section {
       climbers: layout.climbers.map((climber) => climber.id),
       start: {
         [MountainClock.NAME]: MountainClock.start(this.clock),
-        [OxygenSystem.NAME]: OxygenSystem.start(layout.climbers.map(({ id }) => id)),
+        [OxygenSystem.NAME]: OxygenSystem.start(
+          layout.climbers.map(({ id }) => id),
+          (id) => packOf(id).items.oxygen,
+        ),
         [Body.NAME]: Body.start(bodies),
+        [Packs.NAME]: Packs.start({ climbers: packs, camps: this.stores }, this.packNumbers),
         [ObjectiveHazards.NAME]: ObjectiveHazards.start(hazards),
         [SlopePhysics.NAME]: SlopePhysics.start({ ...layout, ladders }),
       },

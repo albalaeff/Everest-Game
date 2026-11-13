@@ -8,6 +8,7 @@ import {
   climbFrom,
   climberScreen,
   gearCheck,
+  keepThePack,
   readTheDisclaimer,
   savedClimb,
   savedPlayer,
@@ -30,6 +31,7 @@ test("the gear check says it's a game model, and the climber sets off with what 
   await readTheDisclaimer(page);
   await choice(page, "Alone").click();
   await climberScreen(page).getByRole("button", { name: "Climb" }).click();
+  await keepThePack(page);
   const screen = gearCheck(page);
 
   await expect(screen).toBeVisible();
@@ -101,6 +103,7 @@ for (const [held, viewport] of [
       await readTheDisclaimer(page);
       await choice(page, "Alone").tap();
       await climberScreen(page).getByRole("button", { name: "Climb" }).tap();
+      await keepThePack(page);
       const screen = gearCheck(page);
       await expect(screen).toBeVisible();
 

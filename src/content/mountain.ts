@@ -1,7 +1,14 @@
 import { Lamplight, Logbook, SlopePhysics } from "../physics";
 import type { Kit } from "../physics";
-import { Body, MountainClock, ObjectiveHazards, OxygenSystem } from "../simulation";
-import type { HazardKind, HazardOdds, HazardSettings, Rule, Scenario } from "../simulation";
+import { Body, MountainClock, ObjectiveHazards, OxygenSystem, Packs } from "../simulation";
+import type {
+  HazardKind,
+  HazardOdds,
+  HazardSettings,
+  PackCounts,
+  Rule,
+  Scenario,
+} from "../simulation";
 import type { KnowledgeBase } from "./knowledge-base";
 import { BodyFacts } from "./body-facts";
 import { ClimberFacts } from "./climber-facts";
@@ -21,6 +28,8 @@ export interface ExpeditionRules {
   readonly logbook: Logbook;
   /** Whose headlamps are lit, and who's in the dark (#196). */
   readonly lamps: Lamplight;
+  /** What each climber carries, and what the camps hold. */
+  readonly packs: Packs;
   readonly all: readonly Rule[];
 }
 
@@ -50,7 +59,13 @@ export class Mountain {
    * make them (#145), or as the route has them, with what they checked of their `kit` before
    * setting off (#196), or all of it, and the training events the seed stages (#209), unless
    * `training` is off. */
-  scenario(seed: number, answers?: ClimberAnswers, kit?: Kit, training = true): Scenario {
+  scenario(
+    seed: number,
+    answers?: ClimberAnswers,
+    kit?: Kit,
+    training = true,
+    pack?: PackCounts,
+  ): Scenario {
     const player = answers === undefined ? undefined : this.climbers.climber(answers);
     const scenario = this.route.scenario(
       seed,
@@ -59,16 +74,12 @@ export class Mountain {
         ? undefined
         : { kit, unchecked: this.knowledge.number("body.unchecked-water") },
       training,
+      pack,
     );
-    const bodyFacts = new BodyFacts(this.knowledge);
     return {
       ...scenario,
       start: {
         ...scenario.start,
-        [OxygenSystem.NAME]: OxygenSystem.start(
-          scenario.climbers,
-          bodyFacts.oxygenNumbers().bottles,
-        ),
         [Logbook.NAME]: Logbook.start(scenario.climbers),
       },
     };
@@ -89,6 +100,9 @@ export class Mountain {
       dark: this.knowledge.number("technique.dark-footing"),
     });
     const body = new Body(bodyFacts.numbers, clock, lamps, oxygen);
+    // The packs first: the body carries this step what they weigh, and the physics climbs on
+    // what's on the harness.
+    const packs = new Packs(this.route.packNumbers, body, physics, oxygen);
     const hazards = new ObjectiveHazards(this.hazardSettings(), clock, physics);
     const logbook = new Logbook(physics, hazards, clock, this.route.logged);
     return {
@@ -99,7 +113,8 @@ export class Mountain {
       physics,
       logbook,
       lamps,
-      all: [clock, oxygen, body, hazards, physics, logbook],
+      packs,
+      all: [clock, packs, oxygen, body, hazards, physics, logbook],
     };
   }
 

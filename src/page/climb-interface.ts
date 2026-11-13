@@ -89,7 +89,7 @@ export class ClimbInterface {
 
   private updateOxygen(oxygen: OxygenView): void {
     this.pressure.textContent =
-      oxygen.bottles === 0 ? "Empty" : `${oxygen.pressure} bar · ${oxygen.bottles} bottles`;
+      oxygen.bottles === 0 ? "None" : `${oxygen.pressure} bar · ${oxygen.bottles} bottles`;
     this.flow.textContent = `${oxygen.flow} L/min`;
   }
 

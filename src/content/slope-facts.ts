@@ -76,6 +76,20 @@ export class SlopeFacts {
       knock: number("knock-speed"),
       arrestSpeed: number("arrest-speed"),
       axeReach: number("axe-reach"),
+      iceClimb: {
+        speed: fast("ice-climb-speed"),
+        oneTool: number("ice-climb-one-tool"),
+        reach: number("pick-reach"),
+        lockOff: number("pick-lock-off"),
+        stretch: number("pick-stretch"),
+        snap: number("pick-snap"),
+        overLip: number("pick-over-lip"),
+        slip: number("ice-climb-slip"),
+        oneToolSlip: number("ice-climb-one-tool-slip"),
+        poor: number("poor-pick-slip"),
+        swingSlip: number("axe-swing-slip"),
+        hang: number("ice-hang-effort"),
+      },
     };
   }
 

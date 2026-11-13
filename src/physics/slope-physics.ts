@@ -1,6 +1,6 @@
 import type { ClimberId, HazardGround, Json, Legs, Moment, Rule } from "../simulation";
 import { Climber } from "./climber";
-import type { ClimberSave, ClimberView, Kit } from "./climber";
+import type { ClimberSave, ClimberView, Gear, Kit } from "./climber";
 import { Ladder } from "./ladder";
 import type { LadderCondition, LadderLayout } from "./ladder";
 import { Rope } from "./rope";
@@ -14,7 +14,7 @@ import { Terrain } from "./terrain";
 import type { Pair, Point } from "./terrain";
 
 export type { LadderCondition, LadderLayout } from "./ladder";
-export type { AlongStretch, FootingSettings, SlopeSettings } from "./slope";
+export type { AlongStretch, FootingSettings, IceClimbSettings, SlopeSettings } from "./slope";
 export type { SnowLayout } from "./snow";
 
 /** A rope as a level lays it: its anchors on the ground, by how far along it they are. */
@@ -36,15 +36,19 @@ export interface ClimberLayout {
   /** What they checked of their kit before setting off (#196): all of it unless it says
    * otherwise. */
   readonly kit?: Kit;
+  /** What they carry of the gear the slope's techniques need: the jumar and the ice axe unless
+   * it says otherwise. */
+  readonly gear?: Gear;
 }
 
 /** A section of the route as a scenario starts it: its ground and the snow on it, if any, the
- * stretches of it that are bare blue ice (#190), the real altitude of its ends, its ropes and
- * ladders, and who's on it. */
+ * stretches of it that are bare blue ice (#190), the stretches of its faces whose ice is brittle,
+ * the real altitude of its ends, its ropes and ladders, and who's on it. */
 export interface SlopeLayout {
   readonly terrain: readonly Pair[];
   readonly snow?: SnowLayout;
   readonly ice?: readonly AlongStretch[];
+  readonly brittle?: readonly AlongStretch[];
   readonly altitude: SectionAltitude;
   readonly ropes: readonly RopeLayout[];
   readonly ladders: readonly LadderLayout[];
@@ -57,6 +61,7 @@ type SlopeSave = {
   readonly terrain: readonly Pair[];
   readonly snow?: SnowLayout;
   readonly ice?: readonly AlongStretch[];
+  readonly brittle?: readonly AlongStretch[];
   readonly altitude: SectionAltitude;
   readonly ropes: readonly RopeSave[];
   readonly ladders: readonly LadderLayout[];
@@ -76,11 +81,18 @@ export class SlopePhysics implements Rule, HazardGround, Legs {
   /** Its key in scenarios and saves: never change it once saves exist. */
   static readonly NAME = "slope-physics";
 
+  /** How near a face's foot a climber stands to be at it, in metres: the engine's number. */
+  private static readonly AT_FACE = 0.3;
+  /** How near a face's lip a climber stands to be at it, and how near a ladder's end a face's
+   * foot or lip is to be the ladder's, in metres along the ground. */
+  private static readonly AT_LIP = 0.6;
+  private static readonly BY_A_LADDER = 1.5;
+
   readonly name = SlopePhysics.NAME;
 
   private slope: Slope | null = null;
   /** The ground as the save has it, once loaded: its line, the snow on it, and its ice. */
-  private ground: Pick<SlopeSave, "terrain" | "snow" | "ice"> = { terrain: [] };
+  private ground: Pick<SlopeSave, "terrain" | "snow" | "ice" | "brittle"> = { terrain: [] };
   private readonly onSlope = new Map<ClimberId, Climber>();
 
   constructor(private readonly settings: SlopeSettings) {}
@@ -104,17 +116,18 @@ export class SlopePhysics implements Rule, HazardGround, Legs {
       const staged = breaks === undefined ? {} : { breaks };
       return new Ladder({ id, from: end(from), to: end(to), ...staged }, terrain).save();
     });
-    const climbers = layout.climbers.map(({ id, along, technique = 1, kit }) => {
+    const climbers = layout.climbers.map(({ id, along, technique = 1, kit, gear }) => {
       if (!(technique > 0)) {
         throw new RangeError(`${id} needs a technique above nought, not ${technique}`);
       }
-      return Climber.standing(id, onTheGround(along, id), technique, kit).save();
+      return Climber.standing(id, onTheGround(along, id), technique, kit, gear).save();
     });
-    const { terrain: line, snow, ice, altitude } = layout;
+    const { terrain: line, snow, ice, brittle, altitude } = layout;
     const save: SlopeSave = {
       terrain: line,
       ...(snow === undefined ? {} : { snow }),
       ...(ice === undefined ? {} : { ice }),
+      ...(brittle === undefined ? {} : { brittle }),
       altitude,
       ropes,
       ladders,
@@ -158,6 +171,17 @@ export class SlopePhysics implements Rule, HazardGround, Legs {
   /** Sets how sure-footed a climber is from now on: the share of their footing they get back. */
   sureness(id: ClimberId, share: number): void {
     this.climberFor(id).setSureness(share);
+  }
+
+  /** Sets what a climber carries of the gear the slope's techniques need, from now on: their
+   * pack's (`Packs`). */
+  equip(id: ClimberId, gear: Gear): void {
+    this.climberFor(id).equip(gear);
+  }
+
+  /** Puts fresh batteries in a climber's headlamp: it's checked from now on. */
+  relamp(id: ClimberId): void {
+    this.climberFor(id).relamp();
   }
 
   /** How far along the ground a climber is: their feet, or the ground nearest their body. */
@@ -224,6 +248,44 @@ export class SlopePhysics implements Rule, HazardGround, Legs {
     return this.ground.ice ?? [];
   }
 
+  /** The stretches of the ground's faces whose ice is brittle, along it. */
+  get brittle(): readonly AlongStretch[] {
+    return this.ground.brittle ?? [];
+  }
+
+  /** The faces of ice a climber stands at or hangs on: each one's ends along the ground, its
+   * foot first, for the coach and the walkers of the tests. */
+  face(along: number): { readonly foot: number; readonly top: number } | null {
+    const { faces } = this.loaded;
+    const face = faces.at(along) ?? faces.above(along, SlopePhysics.AT_FACE);
+    return face === null ? null : { foot: face.foot, top: face.top };
+  }
+
+  /** The wall of ice with no ladder a climber on their feet stands at: at its foot, to climb on
+   * their tools, or at its lip, to climb down it; or none. */
+  iceWall(id: ClimberId): "foot" | "lip" | null {
+    const view = this.climber(id);
+    if (view.falling || view.dead || view.onIce || view.ladder !== null) {
+      return null;
+    }
+    const slope = this.loaded;
+    const along = this.along(id);
+    const foot = slope.faces.above(along, SlopePhysics.AT_FACE);
+    if (foot !== null && !slope.ladderEndBy(foot.foot, SlopePhysics.BY_A_LADDER)) {
+      return "foot";
+    }
+    const lip = slope.faces.below(along, SlopePhysics.AT_LIP);
+    if (lip !== null && !slope.ladderEndBy(lip.top, SlopePhysics.BY_A_LADDER)) {
+      return "lip";
+    }
+    return null;
+  }
+
+  /** Whether the ground at `along` is a dead end, which nobody walks out of. */
+  deadEnd(along: number): boolean {
+    return this.loaded.faces.deadEnd(along);
+  }
+
   get terrain(): Terrain {
     return this.loaded.terrain;
   }
@@ -240,12 +302,14 @@ export class SlopePhysics implements Rule, HazardGround, Legs {
       new Map(ropes),
       new Map(ladders),
       save.ice ?? [],
+      save.brittle ?? [],
     );
     this.slope = slope;
     this.ground = {
       terrain: save.terrain,
       ...(save.snow === undefined ? {} : { snow: save.snow }),
       ...(save.ice === undefined ? {} : { ice: save.ice }),
+      ...(save.brittle === undefined ? {} : { brittle: save.brittle }),
     };
     this.onSlope.clear();
     for (const climber of save.climbers) {

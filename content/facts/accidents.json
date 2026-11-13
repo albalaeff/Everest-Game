@@ -266,9 +266,7 @@
           ]
         }
       ],
-      "deaths": [
-        "deaths.2012-04-21-namgyal-tshering-namgyal-chhiri-sherpa"
-      ],
+      "deaths": ["deaths.2012-04-21-namgyal-tshering-namgyal-chhiri-sherpa"],
       "lesson": "Clip in even on “easy” sections.",
       "scenario": "Training camp: ladders"
     },
@@ -946,10 +944,7 @@
           ]
         }
       ],
-      "deaths": [
-        "deaths.2024-05-21-daniel-paul-paterson",
-        "deaths.2024-05-21-pas-tenji-sherpa"
-      ],
+      "deaths": ["deaths.2024-05-21-daniel-paul-paterson", "deaths.2024-05-21-pas-tenji-sherpa"],
       "lesson": "Always stay clipped in; a crowd on the ridge is a hazard in itself.",
       "scenario": "Descending the ridge in a crowd"
     },
@@ -1043,9 +1038,7 @@
           ]
         }
       ],
-      "deaths": [
-        "deaths.2025-05-15-subrata-ghosh"
-      ],
+      "deaths": ["deaths.2025-05-15-subrata-ghosh"],
       "lesson": "Exhaustion and a late summit; a Sherpa cannot bring down someone who will not walk.",
       "scenario": "Leader: a client refuses to descend"
     },
@@ -1183,10 +1176,7 @@
           ]
         }
       ],
-      "deaths": [
-        "deaths.2026-05-22-arun-kumar-tiwari",
-        "deaths.2026-05-22-sandeep-are"
-      ],
+      "deaths": ["deaths.2026-05-22-arun-kumar-tiwari", "deaths.2026-05-22-sandeep-are"],
       "lesson": "Recognize illness and turn around before the summit.",
       "scenario": "“I feel bad, but the summit is close”"
     }

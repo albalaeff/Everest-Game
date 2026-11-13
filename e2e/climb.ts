@@ -16,6 +16,8 @@ export interface SeenClimber {
   /** Each fall that's over (#190), and how it went. */
   readonly falls: readonly { readonly held?: boolean; readonly broke?: boolean }[];
   readonly dead: boolean;
+  /** What they carry of the gear the slope's techniques need: their pack's. */
+  readonly gear: { readonly jumar: boolean; readonly tools: number };
   /** Whether a crampon they didn't check has come loose (#196). */
   readonly cramponLoose: boolean;
 }
@@ -103,6 +105,16 @@ export function climberScreen(page: Page): Locator {
   return page.getByRole("dialog", { name: "Your climber" });
 }
 
+/** The pack at Base Camp, after Your climber: what the player carries up the route. */
+export function packScreen(page: Page): Locator {
+  return page.getByRole("dialog", { name: "Your pack at Base Camp" });
+}
+
+/** Keeps the route's pack, and goes on to the gear check. */
+export async function keepThePack(page: Page): Promise<void> {
+  await packScreen(page).getByRole("button", { name: "Next: the gear check" }).click();
+}
+
 /** The gear check at Base Camp, after Your climber (#196). */
 export function gearCheck(page: Page): Locator {
   return page.getByRole("dialog", { name: "Gear check at Base Camp" });
@@ -117,6 +129,7 @@ export const KIT = [
 
 /** Ticks every box of the gear check, and sets off: the climb as the route has it. */
 export async function setOffChecked(page: Page): Promise<void> {
+  await keepThePack(page);
   const screen = gearCheck(page);
   for (const item of KIT) {
     await screen.getByRole("checkbox", { name: item }).check();

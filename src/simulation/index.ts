@@ -18,10 +18,12 @@ export type {
   Jumar,
   Oxygen,
   Pace,
+  PackChange,
   Radio,
   SetUpTent,
   Tool,
   Unclip,
+  UseItem,
   Walk,
 } from "./game-action";
 export { HeadlessRunner } from "./headless-runner";
@@ -44,6 +46,19 @@ export type {
   Strike,
   Warning,
 } from "./objective-hazards";
+export { PACK_ITEMS, Packs } from "./packs";
+export type {
+  Bottles,
+  CampStore,
+  Harness,
+  PackCounts,
+  PackItem,
+  PackNumbers,
+  PackOf,
+  PackStart,
+  PackView,
+  Shoulders,
+} from "./packs";
 export type { Moment, Rule, RuleStates } from "./rule";
 export type { Scenario } from "./scenario";
 export { SeededRandom } from "./seeded-random";

@@ -1,5 +1,6 @@
 import { SimulationClock } from "../simulation";
-import type { ClimberId, GameAction, Moment, Walk } from "../simulation";
+import type { ClimberId, GameAction, Moment, Tool, Walk } from "../simulation";
+import type { Face } from "./faces";
 import type { Ladder } from "./ladder";
 import { Particle } from "./particle";
 import type { ParticleSave } from "./particle";
@@ -35,6 +36,14 @@ export type Kit = {
   readonly crampons: boolean;
   readonly lamp: boolean;
   readonly water: boolean;
+};
+
+/** What a climber carries that the slope's techniques need: the jumar on their first cowstail,
+ * without which that cowstail is a plain carabiner and no rope is climbed; and how many ice tools,
+ * the ice axe the first of them, a second technical tool the other. */
+export type Gear = {
+  readonly jumar: boolean;
+  readonly tools: number;
 };
 
 /** A climber as the rest of the game sees them: the rendering, the rules above and the tests. */
@@ -80,6 +89,13 @@ export interface ClimberView {
   /** Whether they're hauling a partner up the rope now, and holding the haul at all (#209). */
   readonly hauling: boolean;
   readonly haulHeld: boolean;
+  /** Whether they're on the ice, on their tools and front points; where each pick in the ice
+   * is, the highest first; and whether the highest bites poorly. */
+  readonly onIce: boolean;
+  readonly picks: readonly Point[];
+  readonly pickPoor: boolean;
+  /** What they carry of the gear the slope's techniques need. */
+  readonly gear: Gear;
 }
 
 type CarabinerSave = { readonly rope: string; readonly slide: Slide };
@@ -92,6 +108,14 @@ type FromSave = {
   readonly ladder: string | null;
   readonly rung: number;
   readonly along: number;
+};
+
+/** A climber on the ice, as saves keep them: a length along the ground on their face, where each
+ * pick is along it, and whether the highest bites poorly. */
+type OnIceSave = {
+  readonly at: number;
+  readonly picks: readonly number[];
+  readonly poor: boolean;
 };
 
 type FallingSave = {
@@ -151,6 +175,10 @@ export type ClimberSave = {
   readonly onTheMove?: number;
   /** Missing from the saves of builds before the haul (#209): not held. */
   readonly haulHeld?: boolean;
+  /** Missing from the saves of builds before the ice tools: the jumar and the ice axe, and on
+   * their feet. */
+  readonly gear?: Gear;
+  readonly onIce?: OnIceSave;
 };
 
 /** A cowstail's carabiner, or its jumar, on a rope: it runs along it, or grips it where it is. */
@@ -167,6 +195,11 @@ class Carabiner {
   /** Where it is on its rope. */
   get at(): Point {
     return this.rope.at(this.slide);
+  }
+
+  /** Another carabiner on the same rope, at the same place. */
+  beside(): Carabiner {
+    return new Carabiner(this.rope, this.slide);
   }
 
   /** Slides along the rope to where it's nearest the climber. */
@@ -212,6 +245,37 @@ class OnLadder {
 
   get point(): Point {
     return this.ladder.point(this.rung);
+  }
+}
+
+/**
+ * A climber on the ice: on a face too steep to walk, on their front points, hanging from the pick
+ * they swung in last. Their feet go up until that pick is at their shoulder and down until their
+ * arm is straight; to go further they swing the next one in. With two tools the pick before stays
+ * in the ice while the next goes in; on the axe alone, there's a moment with none.
+ */
+class OnIce {
+  constructor(
+    readonly face: Face,
+    /** Where each pick in the ice is, along the ground: the one they hang from first. */
+    public picks: readonly number[],
+    /** Whether the pick they hang from bites poorly: swung at full stretch, or into brittle ice. */
+    public poor: boolean,
+  ) {}
+
+  static load(save: OnIceSave, slope: Slope): OnIce | null {
+    const face = slope.faces.at(save.at);
+    return face === null ? null : new OnIce(face, save.picks, save.poor);
+  }
+
+  save(): OnIceSave {
+    const { face, picks, poor } = this;
+    return { at: (face.from + face.to) / 2, picks, poor };
+  }
+
+  /** The pick they hang from, along the ground. */
+  get hold(): number {
+    return this.picks[0] ?? this.face.top;
   }
 }
 
@@ -357,7 +421,7 @@ export class Climber {
      * them, at their pace and as tired as they are, a share that divides it. */
     private slipChance: number,
     private sureness: number,
-    private readonly kit: Kit,
+    private kit: Kit,
     /** Whether a crampon has come loose; the seconds of a refit left; and the seconds they've
      * been on the move. */
     private cramponLoose: boolean,
@@ -365,13 +429,26 @@ export class Climber {
     private onTheMove: number,
     /** Whether the haul is held, and whether they hauled someone in the last step (#209). */
     private haulHeld: boolean,
+    private gear: Gear,
+    /** On the ice, on their tools, or not. */
+    private onIce: OnIce | null,
   ) {}
 
   /** Whether they hauled a partner in the last step. */
   private pulling = false;
+  /** Where the player pointed a tool in this step, until the step takes it. */
+  private swing: Pick<Tool, "tool" | "x" | "y"> | null = null;
 
   /** Everything checked. */
   static readonly CHECKED: Kit = { crampons: true, lamp: true, water: true };
+  /** The jumar on the first cowstail, and the ice axe. */
+  static readonly EQUIPPED: Gear = { jumar: true, tools: 1 };
+  /** How near the ice a hanging body is to be on it, and how near a face's foot or its lip a
+   * climber stands to start up or down it, in metres: the engine's numbers. */
+  private static readonly TOUCH = 0.05;
+  private static readonly AT_FACE = 0.3;
+  private static readonly AT_LIP = 0.6;
+  private static readonly EXACT = 1e-9;
   /** Nobody hauls anybody. */
   static readonly NO_HAULS: Hauls = { of: () => 0, by: () => false };
 
@@ -382,6 +459,7 @@ export class Climber {
     along: number,
     technique: number,
     kit: Kit = Climber.CHECKED,
+    gear: Gear = Climber.EQUIPPED,
   ): Climber {
     return new Climber(
       id,
@@ -405,6 +483,8 @@ export class Climber {
       0,
       0,
       false,
+      gear,
+      null,
     );
   }
 
@@ -433,6 +513,8 @@ export class Climber {
       save.refitting ?? 0,
       save.onTheMove ?? 0,
       save.haulHeld ?? false,
+      save.gear ?? Climber.EQUIPPED,
+      save.onIce === undefined ? null : OnIce.load(save.onIce, slope),
     );
   }
 
@@ -459,6 +541,8 @@ export class Climber {
       refitting: this.refitting,
       onTheMove: this.onTheMove,
       ...(this.haulHeld ? { haulHeld: true } : {}),
+      gear: this.gear,
+      ...(this.onIce === null ? {} : { onIce: this.onIce.save() }),
     };
   }
 
@@ -491,6 +575,10 @@ export class Climber {
       refitting: this.refitting > 0,
       hauling: this.pulling,
       haulHeld: this.haulHeld,
+      onIce: this.onIce !== null,
+      picks: this.onIce?.picks.map((along) => slope.terrain.point(along)) ?? [],
+      pickPoor: this.onIce?.poor ?? false,
+      gear: this.gear,
     };
   }
 
@@ -510,33 +598,56 @@ export class Climber {
     if (action.kind === "haul") {
       this.haulHeld = action.held;
     }
-    if (
-      action.kind === "clip" &&
-      this.falling === null &&
-      this.cowstail(action.cowstail) === null
-    ) {
-      const nearest = slope.ropeWithin(this.where(slope));
-      if (nearest !== null) {
-        this.clip(action.cowstail, new Carabiner(nearest.rope, nearest.slide));
+    if (action.kind === "clip" && this.cowstail(action.cowstail) === null) {
+      if (this.falling === null) {
+        const nearest = slope.ropeWithin(this.where(slope));
+        if (nearest !== null) {
+          this.clip(action.cowstail, new Carabiner(nearest.rope, nearest.slide));
+        }
+      } else if (this.hangs(slope)) {
+        // Hanging on a rope by one cowstail: the other goes onto the same rope, beside it.
+        const [held] = this.carabiners;
+        if (held !== undefined) {
+          this.clip(action.cowstail, held.beside());
+        }
       }
     }
     if (action.kind === "unclip") {
       this.clip(action.cowstail, null);
     }
-    if (action.kind === "tool" && action.tool === "ice-axe") {
-      this.arrest(action, slope);
+    if (action.kind !== "tool") {
+      return;
     }
+    const sliding = this.falling !== null && this.falling.grounded && !this.hangs(slope);
     // Their crampons, on their feet on the ground with one loose: they kneel to refit it.
-    if (
-      action.kind === "tool" &&
+    const refits =
       action.tool === "crampons" &&
       this.cramponLoose &&
       this.falling === null &&
       this.onLadder === null &&
-      this.refitting <= 0
-    ) {
+      this.onIce === null &&
+      this.refitting <= 0;
+    if (action.tool === "ice-axe" && sliding) {
+      this.arrest(action, slope);
+    } else if (refits) {
       this.refitting = slope.settings.footing.crampon.refit;
+    } else {
+      // A pick swung into the ice, or the front points kicked into it: the step takes it.
+      this.swing = { tool: action.tool, x: action.x, y: action.y };
     }
+  }
+
+  /** What they carry of the gear from now on: what their pack holds (`Packs`). */
+  equip(gear: Gear): void {
+    if (!(gear.tools >= 0)) {
+      throw new RangeError(`${this.id} can't carry ${gear.tools} ice tools`);
+    }
+    this.gear = gear;
+  }
+
+  /** Fresh batteries in their headlamp: it's checked from now on. */
+  relamp(): void {
+    this.kit = { ...this.kit, lamp: true };
   }
 
   /** Sets how far their strides go from now on, as a share of the walking power and the ladder
@@ -565,8 +676,13 @@ export class Climber {
     this.exertion = 0;
     this.slipChance = 0;
     this.pulling = false;
+    const { swing } = this;
+    this.swing = null;
     if (this.killed) {
       return;
+    }
+    if (swing !== null) {
+      this.place(swing, slope, moment);
     }
     if (this.falling !== null) {
       this.climbBack(this.falling, slope, hauls.of(this));
@@ -585,6 +701,10 @@ export class Climber {
       if (this.refitting === 0) {
         this.cramponLoose = false;
       }
+      return;
+    }
+    if (this.onIce !== null) {
+      this.climbIce(this.onIce, slope, moment);
       return;
     }
     if (this.stride > 0) {
@@ -668,10 +788,18 @@ export class Climber {
     const step = SimulationClock.STEP_SECONDS;
     if (falling?.resting(Slope.REST_SPEED, step, slope.substepSeconds) === true) {
       const along = slope.terrain.nearest(falling.body).along;
-      if (this.standable(along, slope)) {
+      if (this.standsAt(along, slope)) {
         this.stand(falling, along);
       }
     }
+  }
+
+  /** Whether a fall that comes to rest at `along` is over there: on ground they could stand on,
+   * and, for a climber their rope holds, not a dead end, a ledge down a crevasse's wall or the
+   * snow at its foot, where they still hang on the rope to climb back up it. */
+  private standsAt(along: number, slope: Slope): boolean {
+    const held = this.carabiners.length > 0 && slope.faces.deadEnd(along);
+    return this.standable(along, slope) && !held;
   }
 
   /** Whether a climber at rest at `along` could stand there: on ground no steeper than they
@@ -696,8 +824,8 @@ export class Climber {
   }
 
   /** Whether they hang on their rope off the ground, to climb back up it to where they slipped:
-   * alive, clipped, and their body in the air, against a wall's face, or held where they've
-   * climbed to. */
+   * alive, clipped, and their body in the air, against a wall's face, on a ledge or a crevasse's
+   * foot nobody walks out of, or held where they've climbed to. */
   private hangs(slope: Slope): boolean {
     const { falling } = this;
     if (falling === null || falling.from === null || this.killed || this.carabiners.length === 0) {
@@ -706,35 +834,61 @@ export class Climber {
     if (falling.holding || !falling.grounded) {
       return true;
     }
-    return !this.standable(slope.terrain.nearest(falling.body).along, slope);
+    return !this.standsAt(slope.terrain.nearest(falling.body).along, slope);
   }
 
   /** Hanging on their rope, a key that points up climbs them back up it toward where they
-   * slipped, at the climb's speed: up a wall's face and over its lip, never through the ice, holding
-   * on where they are as they go. Back on that rung, or on ground they can stand on, they're on
-   * their feet, shaken. */
+   * slipped, at the climb's speed, on the jumar: with the first cowstail on the rope and a jumar
+   * on it. A carabiner alone climbs no rope: they clip the jumar on first, climb the ice on
+   * their tools, or wait for a partner's haul. Free on the rope they go straight to where they
+   * slipped; against the ice they go along it, up a wall's face and over its lip, never through
+   * it, holding on where they are as they go. Back on that rung, or on ground they can walk off,
+   * they're on their feet, shaken. */
   private climbBack(falling: Falling, slope: Slope, hauled: number): void {
     const up = this.walking === "up" || this.walking.startsWith("up-");
     const { from } = falling;
-    const own = up && this.stride > 0 ? slope.settings.climbBack * this.stride * this.technique : 0;
+    const jumar = this.first !== null && this.gear.jumar;
+    const own =
+      up && jumar && this.stride > 0 ? slope.settings.climbBack * this.stride * this.technique : 0;
     if (own + hauled <= 0 || !this.hangs(slope) || from === null) {
       return;
     }
-    const lip = this.lipOf(falling, slope);
-    const target =
-      lip?.point ??
-      (from.ladder === null
-        ? slope.terrain.point(from.along)
-        : slope.ladder(from.ladder).point(from.rung));
+    const { terrain } = slope;
     const { body } = falling;
-    const x = target.x - body.x;
-    const y = target.y - body.y;
-    const away = Math.sqrt(x * x + y * y);
     const step = (own + hauled) * SimulationClock.STEP_SECONDS;
     falling.holding = true;
     falling.pulled ||= hauled > 0;
     this.moving = own > 0;
     this.exertion = own > 0 ? 1 : 0;
+    const lip = this.lipOf(falling, slope);
+    const surface = terrain.nearest(body);
+    if (Climber.distance(surface, body) <= Climber.TOUCH) {
+      // Against the ice: along it to the ground they came off, or the lip their ladder stands on.
+      const exit =
+        lip?.along ??
+        (from.ladder === null
+          ? Climber.offTheFace(from.along, slope)
+          : slope.ladder(from.ladder).nearerEnd(body).along);
+      const away = exit - surface.along;
+      if (Math.abs(away) <= step) {
+        this.stand(falling, exit);
+        return;
+      }
+      const next = surface.along + (away > 0 ? step : -step);
+      const point = terrain.point(next);
+      body.place(point.x, point.y);
+      if (this.standsAt(next, slope) && !slope.underALadder(next)) {
+        this.stand(falling, next);
+      }
+      return;
+    }
+    const back = from.ladder === null ? Climber.offTheFace(from.along, slope) : from.along;
+    const target =
+      lip?.point ??
+      (from.ladder === null ? terrain.point(back) : slope.ladder(from.ladder).point(from.rung));
+    const x = target.x - body.x;
+    const y = target.y - body.y;
+    const away = Math.sqrt(x * x + y * y);
     if (away <= step) {
       if (lip !== null) {
         this.stand(falling, lip.along);
@@ -743,21 +897,13 @@ export class Climber {
       if (from.ladder !== null) {
         this.onLadder = new OnLadder(slope.ladder(from.ladder), from.rung);
       }
-      this.stand(falling, from.along);
+      this.stand(falling, back);
       return;
     }
     const next = { x: body.x + (x / away) * step, y: body.y + (y / away) * step };
-    const { terrain } = slope;
-    if (!terrain.holds(next)) {
-      body.place(next.x, next.y);
-      return;
-    }
-    // The ice is in the way: along its surface, up a wall's face, and on the ground at its top.
-    const surface = terrain.nearest(next);
-    body.place(surface.x, surface.y);
-    if (from.ladder === null && this.standable(surface.along, slope)) {
-      this.stand(falling, surface.along);
-    }
+    // The ice in the way stops them at its surface, and they go on along it.
+    const placed = terrain.holds(next) ? terrain.nearest(next) : next;
+    body.place(placed.x, placed.y);
   }
 
   /** Where a climber who hangs climbs back to: the lip nearer where they stood on a ladder that
@@ -803,6 +949,7 @@ export class Climber {
       !this.killed &&
       this.falling === null &&
       this.onLadder === null &&
+      this.onIce === null &&
       this.refitting <= 0 &&
       this.stride > 0;
     return able ? slope.terrain.point(this.along) : null;
@@ -977,12 +1124,13 @@ export class Climber {
     return this.sureness * (this.cramponLoose ? slope.settings.footing.crampon.loose : 1);
   }
 
-  /** Whether a carabiner of theirs grips its rope: the jumar does, unless they're on their feet
-   * with their hand sliding it, or climbing back up the rope on it, where it holds them only as
+  /** Whether a carabiner of theirs grips its rope: the jumar does, if they carry one, unless
+   * they're on their feet with their hand sliding it, or climbing back up the rope on it, where it holds them only as
    * they let go (#209). */
   private grips(carabiner: Carabiner): boolean {
     const sliding = this.jumarHeld && this.falling === null;
-    return carabiner === this.first && !sliding && this.falling?.holding !== true;
+    const jumar = carabiner === this.first && this.gear.jumar;
+    return jumar && !sliding && this.falling?.holding !== true;
   }
 
   /** Their feet, on the ground or on a ladder, or their body in a fall. */
@@ -1049,6 +1197,181 @@ export class Climber {
         ? { ladder: null, rung: 0, along: this.along }
         : { ladder: this.onLadder.ladder.id, rung: this.onLadder.rung, along: this.along });
     this.onLadder = null;
+    this.onIce = null;
     this.falling = new Falling(body, step, foot.y, foot.y, speed, from);
+  }
+
+  /**
+   * A tool pointed at the ice. The ice axe: on the ice already, the next pick, swung in where it
+   * was pointed if their arm reaches it, between the height of their shoulder and full stretch
+   * above their feet, or over the lip of their face; standing at a face's foot, on a ledge of it,
+   * or hanging against it on their rope, the first pick, and they're on the ice. The crampons,
+   * pointed down a face from its lip: they turn to face the ice, the axe planted over the lip, and
+   * step down onto it. A pick swung at full stretch, or into brittle ice, bites poorly. On the axe
+   * alone there's a moment with no pick in the ice as it swings, and now and then that's a fall.
+   */
+  private place(swing: Pick<Tool, "tool" | "x" | "y">, slope: Slope, moment: Moment): void {
+    if (this.gear.tools <= 0 || this.onLadder !== null || this.refitting > 0) {
+      return;
+    }
+    const { terrain, settings } = slope;
+    const ice = settings.iceClimb;
+    const surface = terrain.nearest(swing);
+    if (Climber.distance(surface, swing) > ice.snap) {
+      return;
+    }
+    if (swing.tool === "crampons") {
+      this.stepDown(surface.along, slope);
+      return;
+    }
+    const found = slope.faceFor(surface.along);
+    if (found === null) {
+      return;
+    }
+    const { falling, onIce } = this;
+    if (falling !== null) {
+      // Hanging against the ice, or lying at its foot: near enough to swing a pick into it.
+      const body = terrain.nearest(falling.body);
+      const near = Climber.distance(body, falling.body) <= settings.axeReach;
+      const still = this.hangs(slope) || falling.grounded;
+      if (!near || !still || !this.reaches(found, surface, body, body.y, slope)) {
+        return;
+      }
+      this.stand(falling, body.along);
+      this.onIce = new OnIce(found.face, [surface.along], this.bitesPoorly(surface, body.y, slope));
+      return;
+    }
+    const feet = terrain.point(this.along);
+    if (!this.reaches(found, surface, { along: this.along }, feet.y, slope)) {
+      return;
+    }
+    if (onIce === null) {
+      this.onIce = new OnIce(found.face, [surface.along], this.bitesPoorly(surface, feet.y, slope));
+      return;
+    }
+    if (found.face !== onIce.face) {
+      return;
+    }
+    if (this.gear.tools < 2) {
+      // The axe alone: out of the ice as it swings, on the front points.
+      const sure = this.sure(slope);
+      const chance = sure > 0 ? ice.swingSlip / sure : 1;
+      if (moment.random.chance(Math.min(1, chance))) {
+        this.fall(slope, Climber.DOWN, 0, moment.step);
+        return;
+      }
+    }
+    onIce.picks = this.gear.tools < 2 ? [surface.along] : [surface.along, onIce.hold];
+    onIce.poor = this.bitesPoorly(surface, feet.y, slope);
+  }
+
+  /** Whether a climber whose feet are at `feet`, `height` high, reaches a pick's place on a
+   * face: their feet on that face or at its foot, and the place between their shoulder and their
+   * full stretch above them, or over its lip within their stretch. */
+  private reaches(
+    { face, over }: { readonly face: Face; readonly over: boolean },
+    place: Point,
+    feet: { readonly along: number },
+    height: number,
+    slope: Slope,
+  ): boolean {
+    const { reach, lockOff } = slope.settings.iceClimb;
+    const atFace = face.holds(feet.along) || Math.abs(feet.along - face.foot) <= Climber.AT_FACE;
+    const rise = place.y - height;
+    const low = over ? 0 : lockOff;
+    return atFace && rise >= low - Climber.EXACT && rise <= reach + Climber.EXACT;
+  }
+
+  /** Whether a pick swung in at `place` by a climber whose feet are `height` high bites poorly:
+   * at full stretch, or into brittle ice. */
+  private bitesPoorly(
+    place: { readonly along: number; readonly y: number },
+    height: number,
+    slope: Slope,
+  ): boolean {
+    return place.y - height > slope.settings.iceClimb.stretch || slope.onBrittle(place.along);
+  }
+
+  /** From a face's lip, down onto it: pointed at the face below their feet, they turn to face the
+   * ice, plant the axe over the lip and step down onto their front points. */
+  private stepDown(pointed: number, slope: Slope): void {
+    if (this.falling !== null || this.onIce !== null) {
+      return;
+    }
+    const face = slope.faces.below(this.along, Climber.AT_LIP);
+    if (face === null || slope.faces.at(pointed) !== face) {
+      return;
+    }
+    const { terrain, settings } = slope;
+    const planted = face.top + face.up * settings.iceClimb.overLip;
+    const lip = Math.min(Math.max(planted, 0), terrain.length);
+    if (!this.ropesLet(terrain.point(face.top), slope)) {
+      return;
+    }
+    this.along = face.top;
+    this.onIce = new OnIce(face, [lip], false);
+  }
+
+  /**
+   * On the ice: a key that points up walks their feet up the face until the pick they hang from
+   * is at their shoulder, and one that points down, down it until their arm is straight; the next
+   * pick, swung in, takes them further. A pick planted over the lip takes them up onto the ground
+   * at the top, and the face's foot puts them back on their feet. They go at the ice's speed, a
+   * share of it on the axe alone, as far as their ropes let them, and each metre slips at the
+   * ice's chance: more on the axe alone, and more on a pick that bites poorly. Hanging still on
+   * the tools is work too.
+   */
+  private climbIce(onIce: OnIce, slope: Slope, moment: Moment): void {
+    const { terrain, settings } = slope;
+    const ice = settings.iceClimb;
+    const { face } = onIce;
+    this.moving = true;
+    this.exertion = ice.hang;
+    const up = this.walking === "up" || this.walking.startsWith("up-");
+    const down = this.walking === "down" || this.walking.startsWith("down-");
+    if ((!up && !down) || this.stride <= 0) {
+      return;
+    }
+    const hold = terrain.point(onIce.hold).y;
+    const over = !face.holds(onIce.hold);
+    const limit = up
+      ? face.alongAt(over ? face.topHeight : hold - ice.lockOff)
+      : face.alongAt(hold - ice.reach);
+    const way: Way = up ? face.up : face.up > 0 ? -1 : 1;
+    const room = (limit - this.along) * way;
+    if (room <= Climber.EXACT) {
+      return;
+    }
+    const twoTools = this.gear.tools >= 2;
+    const speed = ice.speed * this.stride * this.technique * (twoTools ? 1 : ice.oneTool);
+    const metres = Math.min(speed * SimulationClock.STEP_SECONDS, room);
+    const next = this.along + way * metres;
+    if (!this.ropesLet(terrain.point(next), slope)) {
+      return;
+    }
+    const ahead = terrain.ahead(this.along, way);
+    this.along = next;
+    this.exertion = 1;
+    const off = up ? face.top : face.foot;
+    if (Math.abs(next - off) <= Climber.EXACT) {
+      // Over the lip, or down at the foot: on their feet.
+      this.along = off;
+      this.onIce = null;
+    }
+    const chance = ice.slip * (twoTools ? 1 : ice.oneToolSlip) * (onIce.poor ? ice.poor : 1);
+    this.stepped(slope, moment, ahead, speed, metres, chance);
+  }
+
+  /** Where a climber who slipped at `along` gets back on their feet: there, or, off a face of
+   * ice, where nobody stands, at its top, up the rope they hang on. */
+  private static offTheFace(along: number, slope: Slope): number {
+    const face = slope.faces.at(along);
+    return face === null || along === face.foot || along === face.top ? along : face.top;
+  }
+
+  private static distance(from: Point, to: Point): number {
+    const x = to.x - from.x;
+    const y = to.y - from.y;
+    return Math.sqrt(x * x + y * y);
   }
 }

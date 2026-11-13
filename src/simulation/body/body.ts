@@ -130,6 +130,20 @@ export class Body implements Rule {
     }
   }
 
+  /** What a climber carries from now on, in kilograms; a drink of their water; a bar of their
+   * food: their pack's (`Packs`), which runs before the body. */
+  carry(id: ClimberId, kilograms: number): void {
+    this.conditionOf(id).carry(kilograms);
+  }
+
+  drink(id: ClimberId, litres: number): void {
+    this.conditionOf(id).drink(litres);
+  }
+
+  eat(id: ClimberId, kcal: number): void {
+    this.conditionOf(id).eat(kcal);
+  }
+
   private conditionOf(id: ClimberId): Condition {
     const condition = this.climbers.get(id);
     if (condition === undefined) {

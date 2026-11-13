@@ -1,6 +1,8 @@
 import { SimulationClock } from "../simulation";
 import type { Moment, Walk } from "../simulation";
 import type { Climber, Hauls } from "./climber";
+import { Faces } from "./faces";
+import type { Face } from "./faces";
 import type { Ladder } from "./ladder";
 import type { Rope, Slide } from "./rope";
 import { SectionScale } from "./section-scale";
@@ -37,6 +39,39 @@ export interface FootingSettings {
    * loose, on the next ladder; how sure-footed a loose one leaves its climber, a share; and the
    * seconds a refit takes, standing. */
   readonly crampon: { readonly looseAfter: number; readonly loose: number; readonly refit: number };
+}
+
+/**
+ * How a climber goes up and down ice too steep to walk, on their ice tools and the front points
+ * of their crampons (`OnIce`): a pick swung in above them, the feet walked up under it, the next
+ * pick swung in higher. The ice axe alone climbs it, slower and less surely; a second tool makes
+ * it a climb of two picks, one always in the ice.
+ */
+export interface IceClimbSettings {
+  /** How fast a whole stride climbs on two tools, in m/s, and the share of it on the axe alone. */
+  readonly speed: number;
+  readonly oneTool: number;
+  /** How high above their feet a pick goes in at full stretch, and how far below a pick their
+   * feet stop, locked off with the pick at their shoulder: in metres up. Between the two, a
+   * climber moves; past either, they swing the next pick in first. */
+  readonly reach: number;
+  readonly lockOff: number;
+  /** Above this height over their feet a pick is swung at full stretch, and bites poorly. */
+  readonly stretch: number;
+  /** How near the ice the player has to point for a pick to go in, and how far past a face's lip
+   * a pick is planted to top out over it, in metres. */
+  readonly snap: number;
+  readonly overLip: number;
+  /** The chance a metre climbed slips on two sound picks; how many times likelier it is on the
+   * axe alone, and on a pick that bites poorly: over-reached, or in brittle ice. */
+  readonly slip: number;
+  readonly oneToolSlip: number;
+  readonly poor: number;
+  /** The chance a swing comes off for a climber on the axe alone, who hangs on their front
+   * points while it's out of the ice. */
+  readonly swingSlip: number;
+  /** The share of a stride's power that hanging still on the tools takes. */
+  readonly hang: number;
 }
 
 /**
@@ -96,6 +131,8 @@ export interface SlopeSettings {
   readonly arrestSpeed: number;
   /** How far from their body a sliding climber can drive the ice axe in, in metres. */
   readonly axeReach: number;
+  /** Climbing ice too steep to walk, on the tools. */
+  readonly iceClimb: IceClimbSettings;
 }
 
 /**
@@ -120,6 +157,8 @@ export class Slope {
   readonly substepSeconds = SimulationClock.STEP_SECONDS / Slope.SUBSTEPS;
   /** The section's scale, which reads the altimeter. */
   readonly scale: SectionScale;
+  /** The ground's faces, too steep to walk, and its dead ends. */
+  readonly faces: Faces;
 
   constructor(
     readonly settings: SlopeSettings,
@@ -129,6 +168,8 @@ export class Slope {
     readonly ladders: ReadonlyMap<string, Ladder>,
     /** The stretches of the ground that are bare blue ice, not snow. */
     private readonly ice: readonly AlongStretch[] = [],
+    /** The stretches of its faces whose ice is brittle: a pick swung into it bites poorly. */
+    private readonly brittle: readonly AlongStretch[] = [],
   ) {
     this.scale = new SectionScale(terrain, altitude);
     const { walkingCost, steepest, walkingPower, fastestWalk, uphillCostShare } = settings;
@@ -136,6 +177,31 @@ export class Slope {
     this.slipChance = new SteepnessCurve(settings.slipChance);
     this.ladderSpeed = new SteepnessCurve(settings.ladderSpeed);
     this.ladderSlipChance = new SteepnessCurve(settings.ladderSlipChance);
+    const anchors = [...ropes.values()].flatMap((rope) => {
+      const { shape } = rope;
+      const [first, last] = [shape[0], shape.at(-1)];
+      return [first, last].flatMap((anchor) =>
+        anchor === undefined ? [] : [terrain.nearest(anchor).along],
+      );
+    });
+    const ends = [...ladders.values()].flatMap((ladder) => ladder.ends);
+    this.faces = new Faces(terrain, this.walking, [...anchors, ...ends]);
+  }
+
+  /** The face a pick swung at `along` the ground bites, and whether it's planted over the face's
+   * lip, on the ground at its top: none where the ground there is no face's. */
+  faceFor(along: number): { readonly face: Face; readonly over: boolean } | null {
+    const on = this.faces.at(along);
+    if (on !== null) {
+      return { face: on, over: false };
+    }
+    const under = this.faces.below(along, this.settings.iceClimb.overLip);
+    return under === null ? null : { face: under, over: true };
+  }
+
+  /** Whether the ice at `along` is brittle. */
+  onBrittle(along: number): boolean {
+    return this.brittle.some(({ from, to }) => along >= from && along <= to);
   }
 
   rope(id: string): Rope {
@@ -225,6 +291,21 @@ export class Slope {
   /** Whether the ground `way` from `along` is under a ladder, which walking crosses on instead. */
   underLadder(along: number, way: Way): boolean {
     return [...this.ladders.values()].some((ladder) => ladder.into(along) === way);
+  }
+
+  /** Whether a ladder's end is within `reach` metres along the ground of `along`. */
+  ladderEndBy(along: number, reach: number): boolean {
+    return [...this.ladders.values()].some((ladder) =>
+      ladder.ends.some((end) => Math.abs(end - along) <= reach),
+    );
+  }
+
+  /** Whether the ground at `along` is under a ladder, between its ends: nobody stands there. */
+  underALadder(along: number): boolean {
+    return [...this.ladders.values()].some((ladder) => {
+      const [from, to] = ladder.ends;
+      return from !== undefined && to !== undefined && along > from && along < to;
+    });
   }
 
   /** Where a step `way` from `along` stops: at the next corner of the ground or end of a ladder. */

@@ -1,8 +1,6 @@
 {
   "$schema": "library.schema.json",
-  "areas": [
-    "medicine"
-  ],
+  "areas": ["medicine"],
   "sources": [
     {
       "title": "CDC Yellow Book 2026: High-Altitude Travel and Altitude Illness",

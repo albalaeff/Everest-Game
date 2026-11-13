@@ -1,7 +1,7 @@
 import { expect, test } from "@playwright/test";
 import type { Locator, Page } from "@playwright/test";
 
-import { choice, climberScreen, gearCheck, setOffChecked } from "./climb";
+import { choice, climberScreen, gearCheck, keepThePack, packScreen, setOffChecked } from "./climb";
 
 function disclaimer(page: Page): Locator {
   return page.getByRole("dialog", { name: "Before you climb" });
@@ -63,6 +63,10 @@ test("Enter on a PC is [I understand], then [Alone], then [Climb], then [Set off
   await expect(climberScreen(page).getByLabel("Age")).toBeFocused();
   await page.keyboard.press("Enter");
   await expect(
+    packScreen(page).getByRole("button", { name: "Next: the gear check" }),
+  ).toBeFocused();
+  await page.keyboard.press("Enter");
+  await expect(
     gearCheck(page).getByRole("checkbox", { name: "Crampons fitted and strapped tight" }),
   ).toBeFocused();
   await page.keyboard.press("Space");
@@ -83,6 +87,7 @@ test("a player's taps do nothing until they've read it", async ({ page, hasTouch
   await understand(page).tap();
   await choice(page, "Alone").tap();
   await climb(page).tap();
+  await keepThePack(page);
   await gearCheck(page).getByRole("button", { name: "Set off" }).tap();
   await page.locator("#slope").tap({ position: { x: 400, y: 130 } });
 
@@ -122,6 +127,7 @@ test.describe("held upright", () => {
     await expect(page.getByText("Turn your phone sideways to climb")).toBeHidden();
     await climb(page).tap();
     await expect(page.getByText("Turn your phone sideways to climb")).toBeHidden();
+    await keepThePack(page);
     await gearCheck(page).getByRole("button", { name: "Set off" }).tap();
 
     await expect(page.getByText("Turn your phone sideways to climb")).toBeVisible();

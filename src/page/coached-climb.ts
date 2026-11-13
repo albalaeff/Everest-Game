@@ -39,6 +39,19 @@ export class CoachedClimb implements CoachWorld {
     return this.physics.along(this.climberId);
   }
 
+  iceWall(): "foot" | "lip" | null {
+    return this.physics.iceWall(this.climberId);
+  }
+
+  inADeadEnd(): boolean {
+    const view = this.physics.climber(this.climberId);
+    return (
+      !view.falling &&
+      view.ladder === null &&
+      this.physics.deadEnd(this.physics.along(this.climberId))
+    );
+  }
+
   ropeWithin(): string | null {
     return this.physics.ropeWithin(this.climberId);
   }

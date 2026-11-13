@@ -121,6 +121,8 @@ export class Protocol {
     jumar: { held: "boolean" },
     haul: { held: "boolean" },
     tool: { tool: ["ice-axe", "crampons"], x: "number", y: "number" },
+    pack: { item: ["jumar", "ice-tool", "water", "food", "oxygen"], change: ["take", "leave"] },
+    use: { item: ["water", "food"] },
     oxygen: { change: ["up", "down"] },
     "check-self": {},
     radio: { channel: ["guide", "base-camp", "group"], phrase: "string" },

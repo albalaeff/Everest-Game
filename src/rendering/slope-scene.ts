@@ -159,6 +159,13 @@ export class SlopeScene {
     this.app.stage.position.set(x * pixels, y * pixels);
   }
 
+  /** Where a point of the slope is on the screen, in its pixels: for the stories, which point at
+   * the slope as a player does. */
+  screenAt(x: number, y: number): readonly number[] {
+    const at = this.camera.toScreen({ x, y });
+    return [at.x, at.y];
+  }
+
   /** The colour drawn at a point of the screen, red, green, blue and alpha, 0 to 255. */
   pixelAt(x: number, y: number): readonly number[] {
     const { pixels } = this.app.renderer.extract.pixels({
