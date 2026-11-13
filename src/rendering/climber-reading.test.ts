@@ -66,6 +66,7 @@ const view = (over: Partial<ClimberView> = {}): ClimberView => ({
   onIce: false,
   picks: [],
   pickPoor: false,
+  lowering: false,
   gear: { jumar: true, tools: 1 },
   ...over,
 });

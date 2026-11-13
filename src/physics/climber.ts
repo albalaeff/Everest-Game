@@ -94,6 +94,8 @@ export interface ClimberView {
   readonly onIce: boolean;
   readonly picks: readonly Point[];
   readonly pickPoor: boolean;
+  /** Whether they're lowering themselves down a face of ice on the fixed rope that runs down it. */
+  readonly lowering: boolean;
   /** What they carry of the gear the slope's techniques need. */
   readonly gear: Gear;
 }
@@ -116,6 +118,12 @@ type OnIceSave = {
   readonly at: number;
   readonly picks: readonly number[];
   readonly poor: boolean;
+};
+
+/** A climber lowering themselves down a face on its rope, as saves keep them: a length along the
+ * ground on their face. */
+type LoweringSave = {
+  readonly at: number;
 };
 
 type FallingSave = {
@@ -179,6 +187,8 @@ export type ClimberSave = {
    * their feet. */
   readonly gear?: Gear;
   readonly onIce?: OnIceSave;
+  /** Missing from the saves of builds before the rappel, and where they're not lowering. */
+  readonly lowering?: LoweringSave;
 };
 
 /** A cowstail's carabiner, or its jumar, on a rope: it runs along it, or grips it where it is. */
@@ -276,6 +286,25 @@ class OnIce {
   /** The pick they hang from, along the ground. */
   get hold(): number {
     return this.picks[0] ?? this.face.top;
+  }
+}
+
+/**
+ * A climber lowering themselves down a face of ice on the fixed rope that runs down it, as on the
+ * mountain's fixed lines: the rope through their descender, their front points on the ice, their
+ * cowstails on the rope. Their feet go down the face, or back up it on the jumar.
+ */
+class Lowering {
+  constructor(readonly face: Face) {}
+
+  static load(save: LoweringSave, slope: Slope): Lowering | null {
+    const face = slope.faces.at(save.at);
+    return face === null ? null : new Lowering(face);
+  }
+
+  save(): LoweringSave {
+    const { face } = this;
+    return { at: (face.from + face.to) / 2 };
   }
 }
 
@@ -430,8 +459,9 @@ export class Climber {
     /** Whether the haul is held, and whether they hauled someone in the last step (#209). */
     private haulHeld: boolean,
     private gear: Gear,
-    /** On the ice, on their tools, or not. */
+    /** On the ice, on their tools, or not; lowering down a face on its rope, or not. */
     private onIce: OnIce | null,
+    private lowering: Lowering | null,
   ) {}
 
   /** Whether they hauled a partner in the last step. */
@@ -485,6 +515,7 @@ export class Climber {
       false,
       gear,
       null,
+      null,
     );
   }
 
@@ -515,6 +546,7 @@ export class Climber {
       save.haulHeld ?? false,
       save.gear ?? Climber.EQUIPPED,
       save.onIce === undefined ? null : OnIce.load(save.onIce, slope),
+      save.lowering === undefined ? null : Lowering.load(save.lowering, slope),
     );
   }
 
@@ -543,6 +575,7 @@ export class Climber {
       ...(this.haulHeld ? { haulHeld: true } : {}),
       gear: this.gear,
       ...(this.onIce === null ? {} : { onIce: this.onIce.save() }),
+      ...(this.lowering === null ? {} : { lowering: this.lowering.save() }),
     };
   }
 
@@ -578,6 +611,7 @@ export class Climber {
       onIce: this.onIce !== null,
       picks: this.onIce?.picks.map((along) => slope.terrain.point(along)) ?? [],
       pickPoor: this.onIce?.poor ?? false,
+      lowering: this.lowering !== null,
       gear: this.gear,
     };
   }
@@ -626,6 +660,7 @@ export class Climber {
       this.falling === null &&
       this.onLadder === null &&
       this.onIce === null &&
+      this.lowering === null &&
       this.refitting <= 0;
     if (action.tool === "ice-axe" && sliding) {
       this.arrest(action, slope);
@@ -705,6 +740,10 @@ export class Climber {
     }
     if (this.onIce !== null) {
       this.climbIce(this.onIce, slope, moment);
+      return;
+    }
+    if (this.lowering !== null) {
+      this.lower(this.lowering, slope, moment);
       return;
     }
     if (this.stride > 0) {
@@ -950,6 +989,7 @@ export class Climber {
       this.falling === null &&
       this.onLadder === null &&
       this.onIce === null &&
+      this.lowering === null &&
       this.refitting <= 0 &&
       this.stride > 0;
     return able ? slope.terrain.point(this.along) : null;
@@ -1016,6 +1056,12 @@ export class Climber {
    */
   private walkGround(slope: Slope, moment: Moment): void {
     const way = Climber.WAYS[this.walking];
+    const roped = this.down ? this.ropedDown(slope, way) : null;
+    if (roped !== null) {
+      this.lowering = new Lowering(roped);
+      this.lower(this.lowering, slope, moment);
+      return;
+    }
     if (way === 0 || slope.underLadder(this.along, way)) {
       return;
     }
@@ -1028,7 +1074,10 @@ export class Climber {
       return;
     }
     if (walking.steeperDown(steepness)) {
-      this.fall(slope, ahead, speed, moment.step);
+      // On the rope that runs down it, they stop at the edge, to lower themselves down it.
+      if (this.ropedDown(slope, way) === null) {
+        this.fall(slope, ahead, speed, moment.step);
+      }
       return;
     }
     const stop = slope.stopAhead(this.along, way);
@@ -1043,6 +1092,68 @@ export class Climber {
         ? footing.ice * (1 + footing.iceSteep * Math.abs(steepness.sine))
         : 0;
       this.stepped(slope, moment, ahead, speed, metres, slope.slipChance.at(steepness) + ice);
+    }
+  }
+
+  /** Whether their key points down: straight down, or down and to a side. */
+  private get down(): boolean {
+    return this.walking === "down" || this.walking.startsWith("down-");
+  }
+
+  /** The face of ice that drops from the lip they stand at, the way along the ground `way` points
+   * (either way, for straight down), with a rope they're clipped to running down it (`Rope.
+   * runsDown`). None where a ladder stands at the lip, which is the way down there, or where no
+   * rope of theirs runs down it. */
+  private ropedDown(slope: Slope, way: Way | 0): Face | null {
+    const face = slope.faces.below(this.along, Climber.AT_LIP);
+    if (face === null || slope.ladderEndBy(face.top, Slope.BY_A_LADDER)) {
+      return null;
+    }
+    const downward: Way = face.up > 0 ? -1 : 1;
+    if (way !== 0 && way !== downward) {
+      return null;
+    }
+    const { cowstail } = slope.settings;
+    return this.carabiners.some(({ rope }) => rope.runsDown(face, cowstail)) ? face : null;
+  }
+
+  /**
+   * Lowering down a face on its rope: a key that points down takes their feet down the face's
+   * line at the rappel's speed, their technique's share of it, to its foot, where they're on their
+   * feet; one that points up takes them back up it on the jumar, at the climb back's, to its lip.
+   * Their ropes hold them as they go, and the rope through their descender holds a slip: there's
+   * none. Off the rope down it, nothing holds them, and they fall. On their front points against
+   * the ice, it takes the share of their power hanging on the tools does, and all of it going
+   * back up.
+   */
+  private lower(lowering: Lowering, slope: Slope, moment: Moment): void {
+    const { face } = lowering;
+    const { terrain, settings } = slope;
+    if (!this.carabiners.some(({ rope }) => rope.runsDown(face, settings.cowstail))) {
+      this.fall(slope, Climber.DOWN, 0, moment.step);
+      return;
+    }
+    const up = this.walking === "up" || this.walking.startsWith("up-");
+    const jumar = this.first !== null && this.gear.jumar;
+    this.exertion = settings.iceClimb.hang;
+    if ((!this.down && !(up && jumar)) || this.stride <= 0) {
+      return;
+    }
+    const speed = (this.down ? settings.rappel : settings.climbBack) * this.stride * this.technique;
+    const end = this.down ? face.foot : face.top;
+    const way: Way = end > this.along ? 1 : -1;
+    const room = Math.abs(end - this.along);
+    const metres = Math.min(speed * SimulationClock.STEP_SECONDS, room);
+    const next = this.along + way * metres;
+    if (!this.ropesLet(terrain.point(next), slope)) {
+      return;
+    }
+    this.along = metres >= room - Climber.EXACT ? end : next;
+    this.moving = true;
+    this.exertion = up ? 1 : settings.iceClimb.hang;
+    if (this.along === end) {
+      // At the foot, or back at the lip: on their feet.
+      this.lowering = null;
     }
   }
 
@@ -1128,7 +1239,7 @@ export class Climber {
    * they're on their feet with their hand sliding it, or climbing back up the rope on it, where it holds them only as
    * they let go (#209). */
   private grips(carabiner: Carabiner): boolean {
-    const sliding = this.jumarHeld && this.falling === null;
+    const sliding = (this.jumarHeld || this.lowering !== null) && this.falling === null;
     const jumar = carabiner === this.first && this.gear.jumar;
     return jumar && !sliding && this.falling?.holding !== true;
   }
@@ -1198,6 +1309,7 @@ export class Climber {
         : { ladder: this.onLadder.ladder.id, rung: this.onLadder.rung, along: this.along });
     this.onLadder = null;
     this.onIce = null;
+    this.lowering = null;
     this.falling = new Falling(body, step, foot.y, foot.y, speed, from);
   }
 
@@ -1211,7 +1323,12 @@ export class Climber {
    * alone there's a moment with no pick in the ice as it swings, and now and then that's a fall.
    */
   private place(swing: Pick<Tool, "tool" | "x" | "y">, slope: Slope, moment: Moment): void {
-    if (this.gear.tools <= 0 || this.onLadder !== null || this.refitting > 0) {
+    if (
+      this.gear.tools <= 0 ||
+      this.onLadder !== null ||
+      this.lowering !== null ||
+      this.refitting > 0
+    ) {
       return;
     }
     const { terrain, settings } = slope;
@@ -1295,7 +1412,7 @@ export class Climber {
   /** From a face's lip, down onto it: pointed at the face below their feet, they turn to face the
    * ice, plant the axe over the lip and step down onto their front points. */
   private stepDown(pointed: number, slope: Slope): void {
-    if (this.falling !== null || this.onIce !== null) {
+    if (this.falling !== null || this.onIce !== null || this.lowering !== null) {
       return;
     }
     const face = slope.faces.below(this.along, Climber.AT_LIP);

@@ -170,6 +170,11 @@ export class Faces {
     );
   }
 
+  /** Every face, in order along the ground. */
+  get all(): readonly Face[] {
+    return this.faces;
+  }
+
   /** The face a point of the ground `along` it is on, or none: at a corner two faces share, the
    * one further along. */
   at(along: number): Face | null {

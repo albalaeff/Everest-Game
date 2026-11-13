@@ -105,6 +105,8 @@ export class Palette {
   static readonly ICE_SHEEN = 0xf2fbff;
   /** The icicles under a lip of snow, and the streaks down a wall's bare ice. */
   static readonly ICICLE = 0xe4f5ff;
+  /** Brittle ice on a face: chalky and pale, where a pick bites poorly. */
+  static readonly BRITTLE = 0xe9f0f4;
   static readonly STREAK = 0x6fa6d4;
   static readonly LOADED = 0xffffff;
   static readonly ROCK = 0x3a3d48;

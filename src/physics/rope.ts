@@ -1,3 +1,4 @@
+import type { Face } from "./faces";
 import { Particle } from "./particle";
 import type { ParticleSave } from "./particle";
 import type { Pair, Point, Terrain } from "./terrain";
@@ -112,6 +113,17 @@ export class Rope {
       points: this.points.map((point) => point.save()),
       still: this.still,
     };
+  }
+
+  /** Whether it runs down a face of ice, as the fixed rope down a step does: one anchor at the
+   * face's lip, a cowstail's height below it at most, or above it, and the other lower than the
+   * face's middle. A rope across a crevasse, anchored at both lips, runs down neither side. */
+  runsDown(face: Face, reach: number): boolean {
+    const [low, high] = [this.from, this.to].sort((one, other) => one.y - other.y);
+    const middle = (face.topHeight + face.footHeight) / 2;
+    return (
+      low !== undefined && high !== undefined && low.y < middle && high.y >= face.topHeight - reach
+    );
   }
 
   /** Where it is: its anchors and every point between, for the rendering. */

@@ -658,6 +658,26 @@ describe("SlopePhysics: the layout", () => {
       { x: 23, y: 0 },
     ]);
   });
+
+  it("names the faces of ice no ladder stands on, for the picture: not a crevasse's sides under its crossing", () => {
+    const bridged = (ladders: readonly { id: string; from: number; to: number }[]) =>
+      new Climb(
+        TestMountain.CALM,
+        TestMountain.CREVASSE.layout([{ id: "anna", along: 1 }], [], [...ladders]),
+      ).physics;
+
+    expect(bridged([{ id: "bridge", from: 20, to: 83 }]).bareFaces).toEqual([]);
+    // With no ladder over it, its sides are faces to go down and up on the tools.
+    expect(bridged([]).bareFaces).toEqual([
+      { foot: 50, top: 20 },
+      { foot: 53, top: 83 },
+    ]);
+    const wall = new Climb(
+      TestMountain.CALM,
+      TestMountain.WALL.layout([{ id: "anna", along: 1 }], [], []),
+    ).physics;
+    expect(wall.bareFaces).toEqual([{ foot: 20, top: 30 }]);
+  });
 });
 
 describe("SlopePhysics: the rope", () => {

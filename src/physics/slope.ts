@@ -118,6 +118,9 @@ export interface SlopeSettings {
   /** How fast a climber hanging on their rope climbs back up it to where they slipped, at a whole
    * stride, in m/s. */
   readonly climbBack: number;
+  /** How fast a climber lowers themselves down a face of ice on the fixed rope that runs down it,
+   * at a whole stride, in m/s: the rope through their descender, their front points on the ice. */
+  readonly rappel: number;
   /** A ladder staged to break (#209): the seconds it creaks before it breaks, and the seconds the
    * Icefall Doctors take to lash it back. */
   readonly ladderBreak: { readonly creak: number; readonly relash: number };
@@ -149,6 +152,9 @@ export class Slope {
   /** Slower than this, in metres a second, a body on the ground lies still, and so does a rope
    * nobody is clipped to, which then waits for someone to move it: the engine's number too. */
   static readonly REST_SPEED = 0.01;
+  /** How near a face of ice's foot or lip a ladder's end stands, along the ground, to be the way
+   * up or down it there, in metres: the engine's number too. */
+  static readonly BY_A_LADDER = 1.5;
 
   readonly walking: Walking;
   readonly slipChance: SteepnessCurve;
@@ -291,6 +297,11 @@ export class Slope {
   /** Whether the ground `way` from `along` is under a ladder, which walking crosses on instead. */
   underLadder(along: number, way: Way): boolean {
     return [...this.ladders.values()].some((ladder) => ladder.into(along) === way);
+  }
+
+  /** Whether one of its fixed ropes runs down a face of ice, to lower oneself down it on. */
+  ropeDown(face: Face): boolean {
+    return [...this.ropes.values()].some((rope) => rope.runsDown(face, this.settings.cowstail));
   }
 
   /** Whether a ladder's end is within `reach` metres along the ground of `along`. */

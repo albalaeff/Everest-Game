@@ -20,6 +20,11 @@ export interface SeenClimber {
   readonly gear: { readonly jumar: boolean; readonly tools: number };
   /** Whether a crampon they didn't check has come loose (#196). */
   readonly cramponLoose: boolean;
+  /** Whether they're on the ice on their tools, and whether the pick they hang from bites
+   * poorly; whether they're lowering themselves down a face on its rope. */
+  readonly onIce: boolean;
+  readonly pickPoor: boolean;
+  readonly lowering: boolean;
 }
 
 /** A climber on the slope as the device saves them (src/physics → ClimberSave), as far as the
@@ -48,6 +53,8 @@ export interface SavedClimb {
       /** Each ladder, and where one staged to break for training breaks (#209). */
       ladders: { readonly id: string; breaks?: number }[];
     };
+    /** What each climber's pack holds: a second ice tool is a second pick in the ice. */
+    packs?: { climbers: { readonly id: string; items: Record<string, number> }[] };
     /** The training events staged on the route (#209), and what has come down. */
     "objective-hazards": {
       events?: {
@@ -67,6 +74,7 @@ declare global {
     /** What the page shows its stories (src/page/game-page.ts → PageHooks). */
     everest: {
       pixelAt(x: number, y: number): readonly number[];
+      screenAt(x: number, y: number): readonly number[];
       climberAt(climber: string): readonly number[];
       climber(climber: string): SeenClimber;
     };

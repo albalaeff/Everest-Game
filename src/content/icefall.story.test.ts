@@ -109,10 +109,11 @@ describe("Base Camp to Camp 1 at a steady pace, clipped in all the way", () => {
     expect(hours).toBeLessThan(middle - 1);
   });
 
-  it("climbs every ladder on the way, and the rope holds any fall of more than a slide (#208)", () => {
+  it("climbs every ladder on the way, and the steps of ice with none on the tools, and the rope holds any fall of more than a slide (#208)", () => {
     const player = rules.physics.climber(Section.PLAYER);
 
     expect(crossing.laddersClimbed).toEqual(mountain.route.layout.ladders.map(({ id }) => id));
+    expect(crossing.facesClimbed).toEqual(rules.physics.bareFaces.map(({ foot }) => foot));
     expect(player.falls.length).toBeLessThanOrEqual(3);
     expect(player.falls.filter(({ drop }) => drop > 2).every(({ held }) => held === true)).toBe(
       true,
@@ -168,6 +169,29 @@ describe("Experience on the ladders and ropes: a novice and a veteran, as fit as
  * climber is held back by their power, down it by their footing, so the way down is quicker and
  * tires them less; a heavier pack takes more of the same power.
  */
+describe("The steps of ice on the tools: a second tool against the ice axe alone", () => {
+  /** The hours a careful climber at a steady pace takes to Camp 1 with `tools` ice tools. */
+  const hours = (tools: number): number => {
+    const mountain = new Mountain(knowledge);
+    const rules = mountain.rules();
+    const pack = { jumar: 1, "ice-tool": tools - 1, water: 2, food: 2, oxygen: 0 };
+    const expedition = Expedition.start(
+      mountain.scenario(SEED, undefined, undefined, false, pack),
+      rules.all,
+    );
+    const crossing = new Crossing(expedition, rules.physics, Section.PLAYER);
+    const steps = LONGEST_HOURS * HOUR * (1 / rules.clock.secondsAStep);
+    if (!crossing.until(mountain.route.destination.from, steps)) {
+      throw new Error(`Still in the Icefall after ${LONGEST_HOURS} hours on ${tools} tools`);
+    }
+    return rules.clock.elapsed / HOUR;
+  };
+
+  it("takes a climber up the steps quicker on two tools, its weight and all, than on the axe alone", () => {
+    expect(hours(2)).toBeLessThan(hours(1) - 0.1);
+  });
+});
+
 describe("The cost of the steps: down from Camp 1, and up with a heavier pack", () => {
   const mountain = new Mountain(knowledge);
   const up = crossed(mountain, mountain.scenario(SEED, undefined, undefined, false), "up");

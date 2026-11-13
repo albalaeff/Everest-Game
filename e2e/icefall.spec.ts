@@ -32,11 +32,11 @@ async function height(page: Page): Promise<number> {
   return (await seen(page, "player"))?.y ?? Number.NaN;
 }
 
-/** The camp's stretch begins 678.25 m along the ground, 270 m across the picture, on the flat; the
+/** The camp's stretch begins 659.5 m along the ground, 271.25 m across the picture, on the flat; the
  * climb is saved a step short of it, 3 h 20 min of the mountain's time after setting off, about a
  * typical crossing's, 3 h 27 (#186): 6,667 steps at 36 times play. */
-const CAMP_1_EDGE = 678.05;
-const CAMP_1_X = 270;
+const CAMP_1_EDGE = 659.3;
+const CAMP_1_X = 271.25;
 const STEPS_TO_CAMP_1 = 6_667;
 
 test.describe("on a screen of 630 by 360", () => {

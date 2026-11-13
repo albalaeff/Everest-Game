@@ -259,6 +259,45 @@ describe("Section: the Khumbu Icefall from content/route/icefall.json", () => {
     }
   });
 
+  it("climbs three steps of ice with no ladder on the tools, the Popcorn's, the maze's under its towers and the crux above the Upper Icefall's last ladder, each on its rope from its foot to past its lip", () => {
+    const physics = new SlopePhysics(section.settings);
+    Expedition.start(section.scenario(1), [physics]);
+    const steps = physics.bareFaces;
+    const { ladders, ropes } = section.layout;
+    const crux = steps.at(-1) ?? { foot: 0, top: 0 };
+    const below = ladders.find(({ to }) => to <= crux.foot && to >= crux.foot - 3);
+
+    expect(steps.map(({ foot }) => partAt(foot))).toEqual(["popcorn", "maze", "upper-icefall"]);
+    for (const { foot, top } of steps) {
+      // Up the route, a few metres high, as the Icefall's walls climbed on the rope are.
+      const height = terrain.point(top).y - terrain.point(foot).y;
+      expect(top).toBeGreaterThan(foot);
+      expect(height).toBeGreaterThan(2);
+      expect(height).toBeLessThan(4);
+      expect(ropes.some((rope) => rope.from <= foot && rope.to > top)).toBe(true);
+    }
+    // The crux is above a ladder: up it to a ledge, and on up the ice.
+    expect(below?.id).toBe("high-wall");
+  });
+
+  it("lays its brittle ice across the crux alone, a band a careful pick goes over", () => {
+    const physics = new SlopePhysics(section.settings);
+    Expedition.start(section.scenario(1), [physics]);
+    const crux = physics.bareFaces.at(-1) ?? { foot: 0, top: 0 };
+    const { brittle = [] } = section.layout;
+    // A pick bites well from the shoulder to short of full stretch: a band thinner than that is
+    // gone over by a pick placed just under it, then one just over it.
+    const goneOver =
+      knowledge.number("technique.pick-stretch") - knowledge.number("technique.pick-lock-off");
+
+    expect(brittle.length).toBeGreaterThan(0);
+    for (const { from, to } of brittle) {
+      expect(from).toBeGreaterThan(crux.foot);
+      expect(to).toBeLessThan(crux.top);
+      expect(terrain.point(to).y - terrain.point(from).y).toBeLessThan(goneOver);
+    }
+  });
+
   it("refuses ice off the ground", () => {
     const layout = { ...icefall.layout, ice: [{ from: 680, to: 700 }] };
 

@@ -83,10 +83,8 @@ export class SlopePhysics implements Rule, HazardGround, Legs {
 
   /** How near a face's foot a climber stands to be at it, in metres: the engine's number. */
   private static readonly AT_FACE = 0.3;
-  /** How near a face's lip a climber stands to be at it, and how near a ladder's end a face's
-   * foot or lip is to be the ladder's, in metres along the ground. */
+  /** How near a face's lip a climber stands to be at it, in metres along the ground. */
   private static readonly AT_LIP = 0.6;
-  private static readonly BY_A_LADDER = 1.5;
 
   readonly name = SlopePhysics.NAME;
 
@@ -253,6 +251,16 @@ export class SlopePhysics implements Rule, HazardGround, Legs {
     return this.ground.brittle ?? [];
   }
 
+  /** The faces of ice no ladder stands on or crosses, which the route goes up on the tools and
+   * down on the rope: each one's ends along the ground, its foot first, for the picture. A face
+   * between a ladder's ends, a wall it stands against or a crevasse's side, is the ladder's. */
+  get bareFaces(): readonly { readonly foot: number; readonly top: number }[] {
+    const slope = this.loaded;
+    return slope.faces.all
+      .filter(({ from, to }) => !slope.underALadder((from + to) / 2))
+      .map(({ foot, top }) => ({ foot, top }));
+  }
+
   /** The faces of ice a climber stands at or hangs on: each one's ends along the ground, its
    * foot first, for the coach and the walkers of the tests. */
   face(along: number): { readonly foot: number; readonly top: number } | null {
@@ -262,21 +270,22 @@ export class SlopePhysics implements Rule, HazardGround, Legs {
   }
 
   /** The wall of ice with no ladder a climber on their feet stands at: at its foot, to climb on
-   * their tools, or at its lip, to climb down it; or none. */
-  iceWall(id: ClimberId): "foot" | "lip" | null {
+   * their tools; at its lip, to climb down it, or to lower themselves down it on the fixed rope
+   * that runs down it (`rope`); or none. */
+  iceWall(id: ClimberId): "foot" | "lip" | "rope" | null {
     const view = this.climber(id);
-    if (view.falling || view.dead || view.onIce || view.ladder !== null) {
+    if (view.falling || view.dead || view.onIce || view.lowering || view.ladder !== null) {
       return null;
     }
     const slope = this.loaded;
     const along = this.along(id);
     const foot = slope.faces.above(along, SlopePhysics.AT_FACE);
-    if (foot !== null && !slope.ladderEndBy(foot.foot, SlopePhysics.BY_A_LADDER)) {
+    if (foot !== null && !slope.ladderEndBy(foot.foot, Slope.BY_A_LADDER)) {
       return "foot";
     }
     const lip = slope.faces.below(along, SlopePhysics.AT_LIP);
-    if (lip !== null && !slope.ladderEndBy(lip.top, SlopePhysics.BY_A_LADDER)) {
-      return "lip";
+    if (lip !== null && !slope.ladderEndBy(lip.top, Slope.BY_A_LADDER)) {
+      return slope.ropeDown(lip) ? "rope" : "lip";
     }
     return null;
   }
