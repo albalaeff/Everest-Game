@@ -22,15 +22,14 @@ export class Palette {
   static readonly PLAYER_SUIT = 0xe8412c;
   static readonly OTHER_SUIT = 0xf5c518;
   /** Their kit, as on #125's scene: the suit's dark panels and seams, the boots and their rands,
-   * the mitts, the steel of the crampons and the axe, the pack, the oxygen's bottle, regulator
-   * and hose, the mask, the goggles, the harness, the slings and the jumar with its grip. */
+   * the mitts, the steel of the crampons, the pack, the oxygen's bottle, regulator and hose, the
+   * mask, the goggles, the harness, the slings and the jumar with its grip. */
   static readonly PANEL = 0x1a1a21;
   static readonly SEAM = 0x180406;
   static readonly BOOTS = 0xb0842c;
   static readonly RAND = 0x17171c;
   static readonly MITTS = 0x16171d;
   static readonly STEEL = 0xa3acc0;
-  static readonly AXE = 0x9aa2b4;
   static readonly PACK = 0x262e47;
   static readonly PACK_LID = 0x313a59;
   static readonly STRAP = 0x15171f;
@@ -48,6 +47,19 @@ export class Palette {
   static readonly LAMP_CASE = 0x2a2d36;
   static readonly LAMP = 0xfff1b0;
   static readonly BREATH = 0xffffff;
+  /** The ice tools: the axe's shaft anodised silver, the second tool's blue, the black rubber of
+   * their grips, the axe's banded in the jumar's red, a grip being red; their forged steel, the
+   * top of the pick catching the light; and the dark edge round them, so a tool reads on the
+   * day's snow and the night's ice alike, as the rope does. */
+  static readonly AXE_SHAFT = 0xb8c2d0;
+  static readonly TOOL_SHAFT = 0x5c84b8;
+  static readonly TOOL_GRIP = 0x1b1d24;
+  static readonly TOOL_STEEL = 0xc3ccd9;
+  static readonly TOOL_SHINE = 0xf6f9ff;
+  static readonly TOOL_EDGE = 0x0f1218;
+  /** The chips of ice a pick or a kick of the front points knocks off, tinted by the hour as the
+   * snow is. */
+  static readonly ICE_CHIP = 0xeef8ff;
   /** The mark over the player's climber in a crowd: white on a dark edge, in every light. */
   static readonly MARK = 0xffffff;
   static readonly MARK_EDGE = 0x15181c;

@@ -5,7 +5,7 @@ import type { Joint, Pose } from "./climber-pose";
 import { FigureRig } from "./figure-rig";
 import type { RigParts } from "./figure-rig";
 import { FigureShapes } from "./figure-shapes";
-import type { Outline } from "./figure-shapes";
+import type { Outline, ToolOutlines } from "./figure-shapes";
 import { Palette } from "./palette";
 
 /** How a colour is shaded over a part, in the part's own bounds: across a limb, from its dark side
@@ -24,12 +24,14 @@ interface SuitParts extends RigParts {
  * A climber in their kit (#168), as #125's scene draws one: a down suit with its baffles, its dark
  * yoke and shins and its hood with a brim; the boots with their rands, their gaiters on the shins
  * turning in the shells as the ankles bend (#175), and the crampons' points and front points
- * under them; the mitts; the pack with its lid, the oxygen's bottle and regulator in it and the
- * ice axe strapped to it; the harness, its belt and its slings; the mask with its valve and hose,
- * on the face or hanging on the chest, the goggles with the sky in them, and the headlamp. Each
- * part is shaded from where the light comes from and drawn once, the far limbs darker and as cold
- * as the sky; what runs between the parts, the hose to the mask's valve and the cowstails to the
- * jumar and the carabiner, is drawn each frame.
+ * under them; the mitts; the pack with its lid, the oxygen's bottle and regulator in it; the
+ * harness, its belt and its slings; the mask with its valve and hose, on the face or hanging on
+ * the chest, the goggles with the sky in them, and the headlamp; and the ice tools, the axe in the
+ * near hand and a second tool in the far one, or strapped head down to the pack, each with a dark
+ * edge so it reads on the snow and the ice alike. Each part is shaded from where the light comes
+ * from and drawn once, the far limbs and the tool in the far hand darker and as cold as the sky;
+ * what runs between the parts, the hose to the mask's valve and the cowstails to the jumar and the
+ * carabiner, is drawn each frame.
  */
 export class SuitRig extends FigureRig<SuitParts> {
   /** Where the lamp shines from, and where the mask's valve breathes out, in the head's frame. */
@@ -59,18 +61,15 @@ export class SuitRig extends FigureRig<SuitParts> {
   private static readonly COLLAR = 0.03;
   /** The harness's belt: the slant it runs across the torso at, and its edges along it. */
   private static readonly BELT = { normal: { x: -0.055, y: 1 }, from: 0.005, to: 0.055 };
-  /** An ice tool, in metres: how thick its shaft, its pick and its grip are drawn; how long the
-   * pick is from the shaft to its point in the ice, and the adze behind it; how far the pick
-   * droops to its point; how far the shaft bows out; and the share of the shaft the grip covers. */
+  /** An ice tool: how far its dark edge shows round it, how wide the shine along its pick's top
+   * is, and where the red band round the axe's grip is, up the shaft from the hand, all in metres;
+   * how dark the side of its shaft away from the light is, and how bright the side towards it. */
   private static readonly TOOL = {
-    shaft: 0.03,
-    blade: 0.024,
-    handle: 0.045,
-    pick: 0.14,
-    adze: 0.06,
-    droop: 0.05,
-    bow: 0.04,
-    grip: 0.3,
+    edge: 0.011,
+    shine: 0.006,
+    band: { from: 0.094, to: 0.116 },
+    shade: { dark: 0.62, light: 1.22 },
+    hole: 0.0055,
   };
   /** Where the cowstails tie in at the harness, in the torso's frame; how far below the tie one
    * off the rope hangs, and either side of it; and the carabiner's ring. */
@@ -97,6 +96,7 @@ export class SuitRig extends FigureRig<SuitParts> {
     const { parts } = this;
     this.far.addChild(
       parts.upperArms[1],
+      parts.tools[1],
       parts.forearms[1],
       parts.thighs[1],
       parts.shins[1],
@@ -105,6 +105,8 @@ export class SuitRig extends FigureRig<SuitParts> {
     this.addChild(
       this.far,
       parts.pack,
+      parts.strapped[1],
+      parts.strapped[0],
       parts.torso,
       parts.thighs[0],
       parts.shins[0],
@@ -115,6 +117,7 @@ export class SuitRig extends FigureRig<SuitParts> {
       parts.mask,
       parts.jumar,
       parts.upperArms[0],
+      parts.tools[0],
       parts.forearms[0],
     );
   }
@@ -192,23 +195,6 @@ export class SuitRig extends FigureRig<SuitParts> {
     lines
       .circle(second.x, second.y, SuitRig.CARABINER)
       .stroke({ width: width * 0.8, color: Palette.STEEL });
-    // The ice tools in the ice: the pick, the shaft down to the hand, and its grip.
-    for (const { head, grip } of pose.tools) {
-      const { TOOL } = SuitRig;
-      lines
-        .moveTo(grip.x, grip.y)
-        .quadraticCurveTo(grip.x - TOOL.bow, (grip.y + head.y) / 2, head.x - TOOL.pick, head.y)
-        .stroke({ width: TOOL.shaft, color: Palette.STEEL, cap: "round" });
-      lines
-        .moveTo(head.x - TOOL.pick - TOOL.adze, head.y + TOOL.droop)
-        .lineTo(head.x - TOOL.pick, head.y + TOOL.droop)
-        .lineTo(head.x, head.y)
-        .stroke({ width: TOOL.blade, color: Palette.STEEL, cap: "round", join: "round" });
-      lines
-        .moveTo(grip.x, grip.y)
-        .lineTo(grip.x + (head.x - grip.x) * TOOL.grip, grip.y + (head.y - grip.y) * TOOL.grip)
-        .stroke({ width: TOOL.handle, color: Palette.SLING, cap: "round" });
-    }
     // The jumar along its cowstail, where the hand holds it.
     jumar.position.set(first.x, first.y);
     jumar.rotation = Math.atan2(first.y - tie.y, first.x - tie.x);
@@ -256,6 +242,11 @@ export class SuitRig extends FigureRig<SuitParts> {
       shares.map((share) => share * length);
     const pair = (draw: () => Graphics): [Graphics, Graphics] => [draw(), draw()];
     const lens = SuitRig.lens();
+    const { axe, iceTool } = SuitRig.SHAPES;
+    const tools = (): [Graphics, Graphics] => [
+      SuitRig.tool(axe, Palette.AXE_SHAFT, true),
+      SuitRig.tool(iceTool, Palette.TOOL_SHAFT, false),
+    ];
     return {
       thighs: pair(() => SuitRig.limb(thigh, suit, along(SuitRig.THIGH_SEAMS, ClimberPose.THIGH))),
       shins: pair(() => SuitRig.shin(suit)),
@@ -271,6 +262,8 @@ export class SuitRig extends FigureRig<SuitParts> {
       mask: SuitRig.mask(),
       lens,
       jumar: SuitRig.jumar(),
+      tools: tools(),
+      strapped: tools(),
     };
   }
 
@@ -334,8 +327,8 @@ export class SuitRig extends FigureRig<SuitParts> {
     return boot;
   }
 
-  /** The pack on the back: the bottle standing in it, its top and the regulator over the lid,
-   * the compression straps across it, and the axe strapped on with its head at the top. */
+  /** The pack on the back: the bottle standing in it, its top and the regulator over the lid, and
+   * the compression straps across it. The tools strapped on it are parts of their own. */
   private static pack(): Graphics {
     const { pack: bag, lid } = SuitRig.SHAPES;
     const pack = new Graphics()
@@ -349,12 +342,6 @@ export class SuitRig extends FigureRig<SuitParts> {
         .fill(Palette.STRAP);
     }
     return pack
-      .moveTo(-0.37, -0.06)
-      .lineTo(-0.345, 0.47)
-      .stroke({ width: 0.019, color: Palette.AXE, cap: "round" })
-      .moveTo(-0.41, 0.49)
-      .quadraticCurveTo(-0.35, 0.495, -0.27, 0.452)
-      .stroke({ width: 0.026, color: Palette.STEEL, cap: "round" })
       .poly([...lid])
       .fill(SuitRig.shading(Palette.PACK_LID, "front"))
       .rect(-0.272, 0.64, 0.036, 0.035)
@@ -442,6 +429,74 @@ export class SuitRig extends FigureRig<SuitParts> {
       .fill(Palette.GRIP)
       .roundRect(-0.035, -0.014, 0.16, 0.026, 0.008)
       .fill(Palette.JUMAR);
+  }
+
+  /** An ice tool, drawn once in its own frame (`FigureShapes`): a dark edge round it, so it reads
+   * on the snow and on the night's ice alike; the shaft in `shaft`, shaded across, lit on the
+   * pick's side, which faces ahead into the light as it hangs from the ice; the steel of its foot,
+   * its trigger rest and its head, lit towards the head's top, the shine along the top of the pick
+   * and the hole through the head; and the black rubber of its grip, banded red on the axe. */
+  private static tool(shapes: ToolOutlines, shaft: number, banded: boolean): Graphics {
+    const { shaft: bar, grip, foot, head, rest, hole, edge } = shapes;
+    const { TOOL } = SuitRig;
+    const steels = rest === null ? [foot] : [foot, rest];
+    const tool = new Graphics();
+    for (const piece of [bar, grip, ...steels, head]) {
+      tool
+        .poly([...piece])
+        .stroke({ width: 2 * TOOL.edge, color: Palette.TOOL_EDGE, join: "round" });
+    }
+    tool.poly([...bar]).fill(SuitRig.toolShading(shaft, "across"));
+    for (const steel of steels) {
+      tool.poly([...steel]).fill(SuitRig.toolShading(Palette.TOOL_STEEL, "across"));
+    }
+    tool.poly([...grip]).fill(SuitRig.toolShading(Palette.TOOL_GRIP, "across"));
+    if (banded) {
+      const { from, to } = TOOL.band;
+      tool.poly([...FigureShapes.band(grip, FigureShapes.AHEAD, from, to)]).fill(Palette.GRIP);
+    }
+    tool
+      .poly([...head])
+      .fill(SuitRig.toolShading(Palette.TOOL_STEEL, "along"))
+      .poly(
+        edge.flatMap(({ x, y }) => [x, y]),
+        false,
+      )
+      .stroke({ width: TOOL.shine, color: Palette.TOOL_SHINE, alpha: 0.9, cap: "round" })
+      .circle(hole.x, hole.y, TOOL.hole)
+      .fill(Palette.TOOL_EDGE);
+    return tool;
+  }
+
+  /** A tool's colour shaded over a piece: across it, lit on its -y side, the pick's; or along it,
+   * lit towards +x, the top of the head. */
+  private static toolShading(colour: number, way: "across" | "along"): FillGradient {
+    const key = `tool ${way} ${colour}`;
+    const known = SuitRig.SHADINGS.get(key);
+    if (known !== undefined) {
+      return known;
+    }
+    const { dark, light } = SuitRig.TOOL.shade;
+    const shading = new FillGradient({
+      type: "linear",
+      start: way === "across" ? { x: 0.5, y: 0 } : { x: 0, y: 0.5 },
+      end: way === "across" ? { x: 0.5, y: 1 } : { x: 1, y: 0.5 },
+      colorStops:
+        way === "across"
+          ? [
+              { offset: 0, color: Palette.css(SuitRig.toned(colour, light)) },
+              { offset: 0.35, color: Palette.css(colour) },
+              { offset: 1, color: Palette.css(SuitRig.toned(colour, dark)) },
+            ]
+          : [
+              { offset: 0, color: Palette.css(SuitRig.toned(colour, dark)) },
+              { offset: 0.6, color: Palette.css(colour) },
+              { offset: 1, color: Palette.css(SuitRig.toned(colour, light)) },
+            ],
+      textureSpace: "local",
+    });
+    SuitRig.SHADINGS.set(key, shading);
+    return shading;
   }
 
   /** The seams across a part where `normal` reaches each of `seams`. */

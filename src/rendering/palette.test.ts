@@ -57,6 +57,15 @@ describe("Palette", () => {
     expect(Palette.contrast(Palette.OTHER_SUIT, snow)).toBeGreaterThan(3);
   });
 
+  it("keeps the ice axe 3:1 on the night's snow, its steel too, and its dark edge 7:1 on the day's", () => {
+    const night = at(3).snowTint;
+
+    expect(Palette.contrast(Palette.AXE_SHAFT, night)).toBeGreaterThan(3);
+    expect(Palette.contrast(Palette.TOOL_STEEL, night)).toBeGreaterThan(3);
+    expect(Palette.contrast(Palette.TOOL_EDGE, Palette.SNOW)).toBeGreaterThan(7);
+    expect(Palette.contrast(Palette.TOOL_EDGE, Palette.ICE)).toBeGreaterThan(7);
+  });
+
   it("keeps the player's mark 3:1 on the night's sky and snow and the day's sky, and its edge on the snow", () => {
     const night = at(3);
 
