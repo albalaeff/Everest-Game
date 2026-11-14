@@ -11,6 +11,9 @@ export interface Scenario {
   readonly seed: number;
   /** Who climbs, players and NPCs alike. This order settles whose actions go first in a step. */
   readonly climbers: readonly ClimberId[];
+  /** The climbers an agent steers (#212), a Sherpa: never a player's seat. None if it's left out,
+   * as in the saves from before them. */
+  readonly npcs?: readonly ClimberId[];
   /** Each rule's start state, in the form of its save. Conditions set in advance, such as harsh
    * weather, go here, and hold on every seed. */
   readonly start: RuleStates;

@@ -62,6 +62,7 @@ export class SlopeFacts {
           excite: number("ladder-bounce-excite"),
           damp: fast("ladder-bounce-damp"),
           slip: number("ladder-bounce-slip"),
+          held: number("ladder-bounce-held"),
         },
         crampon: {
           looseAfter: minutes("loose-crampon-after"),

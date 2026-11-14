@@ -1,7 +1,7 @@
 import { ActionLog } from "./action-log";
 import type { LoggedStep } from "./action-log";
 import type { ClimberId, GameAction } from "./game-action";
-import type { Rule, RuleStates } from "./rule";
+import type { Moment, Rule, RuleStates } from "./rule";
 import type { Scenario } from "./scenario";
 import { SeededRandom } from "./seeded-random";
 import type { RandomState } from "./seeded-random";
@@ -19,8 +19,10 @@ export interface ExpeditionSave {
 /**
  * One expedition: the same in a browser, in a test and on the room server. `advance` is the only
  * door: it takes one fixed step, with what every climber did since the last, and the rules work
- * out what happens. It runs whether or not anyone acted, so the mountain never waits. Nothing
- * here knows a key, a touch, a screen or a real clock.
+ * out what happens. The players' actions come through it, and the agents' NPCs act at its start,
+ * from the state the last step left, in the same scenario order (#212). It runs whether or not
+ * anyone acted, so the mountain never waits. Nothing here knows a key, a touch, a screen or a
+ * real clock.
  */
 export class Expedition {
   private readonly places: ReadonlyMap<ClimberId, number>;
@@ -62,16 +64,20 @@ export class Expedition {
     return this.clock.seconds;
   }
 
-  /** Takes one fixed step, with what every climber did since the last, in any order. */
+  /** Takes one fixed step, with what every player's climber did since the last, in any order,
+   * and what the agents' NPCs do in it (#212). */
   advance(actions: readonly GameAction[] = []): void {
     const ordered = this.inOrder(actions);
     this.log.add(this.clock.step, ordered);
-    const moment = {
+    const sent: Moment = {
       step: this.clock.step,
       seconds: this.clock.seconds,
       actions: ordered,
       random: this.random,
     };
+    const steered = this.rules.flatMap((rule) => rule.act?.(sent) ?? []);
+    const moment =
+      steered.length === 0 ? sent : { ...sent, actions: this.inOrder([...ordered, ...steered]) };
     for (const rule of this.rules) {
       rule.advance(moment);
     }

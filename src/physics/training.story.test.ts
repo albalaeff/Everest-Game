@@ -91,6 +91,31 @@ describe("A ladder staged to break", () => {
     expect(climb.physics.climber("anna")).toMatchObject({ hanging: true, dead: false });
   });
 
+  it("says where the one hanging would be hauled up to, the lip behind them, and nowhere for one on their feet", () => {
+    const climb = crossing();
+    climb.play(steps(10));
+
+    expect(climb.physics.liftPoint("anna")).toEqual({ x: 20, y: 0 });
+    expect(climb.physics.liftPoint("boris")).toBeNull();
+  });
+
+  it("creaks only under a step of the climbers it's staged for, when it names them (#212)", () => {
+    const staged = (trainees: readonly string[]): Climb => {
+      const climb = new Climb(SETTINGS, {
+        ...overTheCrevasse([{ id: "pemba", along: 20 }]),
+        ladders: [{ ...STAGED, trainees }],
+      });
+      climb.play(1, [clip("pemba", "second"), walk("pemba", "right")]);
+      climb.play(steps(8));
+      return climb;
+    };
+
+    const guided = staged(["anna"]);
+    expect(guided.physics.ladderCondition("long")).toBe("whole");
+    expect(guided.physics.climber("pemba")).toMatchObject({ falling: false, ladder: "long" });
+    expect(staged(["pemba"]).physics.ladderCondition("long")).toBe("broken");
+  });
+
   it("drops one who isn't clipped in to the crevasse's floor, to their death", () => {
     const climb = new Climb(SETTINGS, overTheCrevasse([{ id: "anna", along: 20 }]));
     climb.play(steps(15), [walk("anna", "right")]);

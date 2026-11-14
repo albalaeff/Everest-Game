@@ -802,6 +802,24 @@
       ]
     },
     {
+      "id": "route.icefall-flow",
+      "kind": "fact",
+      "claim": "The ice of the Khumbu Icefall flows down this far a day, so its crevasses open and its ladders shift from one day to the next.",
+      "status": "source only",
+      "versions": [
+        {
+          "range": { "min": 0.9, "max": 1.2 },
+          "unit": "m",
+          "note": "The glacier moves 0.9 to 1.2 m a day.",
+          "source": {
+            "title": "Wikipedia: Khumbu Icefall",
+            "url": "https://en.wikipedia.org/wiki/Khumbu_Icefall"
+          },
+          "checked": "2026-11-09"
+        }
+      ]
+    },
+    {
       "id": "route.icefall-ice-steps",
       "kind": "fact",
       "claim": "Not every wall of the Icefall has a ladder: some are climbed on the fixed rope that hangs down them, on the jumar and the crampons' front points, and abseiled on the way down.",

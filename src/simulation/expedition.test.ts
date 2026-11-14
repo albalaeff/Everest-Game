@@ -63,6 +63,38 @@ class Listening implements Rule {
   }
 }
 
+/** An NPC's agent for the tests: it walks its climber up the test slope until they're `top`
+ * metres up, then stops them. */
+class Guiding implements Rule {
+  readonly name = "guiding";
+  private walking = false;
+
+  constructor(
+    private readonly slope: TestSlope,
+    private readonly climber: ClimberId,
+    private readonly top = 10,
+  ) {}
+
+  load(state: Json): void {
+    this.walking = state === true;
+  }
+
+  save(): Json {
+    return this.walking;
+  }
+
+  act(): readonly GameAction[] {
+    const up = this.slope.climber(this.climber).metres < this.top;
+    if (up === this.walking) {
+      return [];
+    }
+    this.walking = up;
+    return [walk(this.climber, up ? "up" : "stop")];
+  }
+
+  advance(): void {}
+}
+
 describe("Expedition in real time", () => {
   it("goes on while nobody does anything", () => {
     const expedition = Expedition.start(TestSlope.scenario(1, ["anna"]), [new TestSlope()]);
@@ -152,6 +184,69 @@ describe("Expedition in real time", () => {
     expedition.advance([walk("boris", "up"), walk("anna", "up"), walk("boris", "stop")]);
 
     expect(rule.heard).toEqual(["anna", "boris", "boris"]);
+  });
+});
+
+describe("Expedition and its agents", () => {
+  const scenario = (climbers: readonly ClimberId[]) => {
+    const start = TestSlope.scenario(1, climbers, TestSlope.CALM);
+    return { ...start, start: { ...start.start, guiding: false, body: null } };
+  };
+
+  it("lets an agent steer its climber through the same door as a player", () => {
+    const slope = new TestSlope();
+    const expedition = Expedition.start(scenario(["anna", "pemba"]), [
+      slope,
+      new Guiding(slope, "pemba"),
+    ]);
+
+    expedition.advance([walk("anna", "up")]);
+    advance(expedition, 399);
+
+    expect(slope.climber("anna").metres).toBeCloseTo(20, 6);
+    expect(slope.climber("pemba").walking).toBe("stop");
+    expect(slope.climber("pemba").metres).toBeCloseTo(10, 0);
+  });
+
+  it("tells every rule an agent's actions in the step they're for, in the scenario's order", () => {
+    const slope = new TestSlope();
+    const heard = new Listening("body", []);
+    const expedition = Expedition.start(scenario(["pemba", "anna"]), [
+      new Guiding(slope, "pemba"),
+      heard,
+      slope,
+    ]);
+
+    expedition.advance([walk("anna", "up")]);
+
+    expect(heard.heard).toEqual(["pemba", "anna"]);
+    expect(slope.climber("pemba").metres).toBeGreaterThan(0);
+  });
+
+  it("logs the players' actions alone: a replay steers the agent's climber again", () => {
+    const play = (): Expedition => {
+      const slope = new TestSlope();
+      const expedition = Expedition.start(scenario(["anna", "pemba"]), [
+        slope,
+        new Guiding(slope, "pemba"),
+      ]);
+      expedition.advance([walk("anna", "up")]);
+      advance(expedition, 300);
+      return expedition;
+    };
+    const save = play().save();
+
+    const slope = new TestSlope();
+    const replayed = Expedition.start(save.scenario, [slope, new Guiding(slope, "pemba")]);
+    const log = new ActionLog(save.actions);
+    while (replayed.step < save.step) {
+      replayed.advance(log.actionsAt(replayed.step));
+    }
+
+    expect(save.actions.flatMap(({ actions }) => actions.map(({ climber }) => climber))).toEqual([
+      "anna",
+    ]);
+    expect(replayed.save()).toEqual(save);
   });
 });
 

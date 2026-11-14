@@ -1180,7 +1180,7 @@ export class Climber {
       this.cramponLoose = true;
     }
     ladder.shake(next - rung, bounce.excite);
-    ladder.passed(rung, next, moment.step);
+    ladder.passed(rung, next, moment.step, this.id);
     const chance = slope.ladderSlipChance.at(steepness) + bounce.slip * ladder.bounce;
     this.onLadder = next === end.rung ? null : new OnLadder(ladder, next);
     this.along = next === end.rung ? end.along : this.along;

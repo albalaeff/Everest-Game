@@ -109,9 +109,10 @@ export class SlopePhysics implements Rule, HazardGround, Legs {
       const anchor = (along: number) => terrain.point(onTheGround(along, `The rope ${id}`));
       return Rope.laid(id, anchor(from), anchor(to), length, terrain).save();
     });
-    const ladders = layout.ladders.map(({ id, from, to, breaks }) => {
+    const ladders = layout.ladders.map(({ id, from, to, breaks, trainees }) => {
       const end = (along: number) => onTheGround(along, `The ladder ${id}`);
-      const staged = breaks === undefined ? {} : { breaks };
+      const staged =
+        breaks === undefined ? {} : { breaks, ...(trainees === undefined ? {} : { trainees }) };
       return new Ladder({ id, from: end(from), to: end(to), ...staged }, terrain).save();
     });
     const climbers = layout.climbers.map(({ id, along, technique = 1, kit, gear }) => {
@@ -224,6 +225,13 @@ export class SlopePhysics implements Rule, HazardGround, Legs {
   ropeWithin(id: ClimberId): string | null {
     const { x, y } = this.climber(id);
     return this.loaded.ropeWithin({ x, y })?.rope.id ?? null;
+  }
+
+  /** Where a climber hanging on their rope would be hauled up to, their way back up it; none for
+   * one on their feet, or not hanging (#209): where the Sherpa's agent goes to pull them out
+   * (#212). */
+  liftPoint(id: ClimberId): Point | null {
+    return this.climberFor(id).liftPoint(this.loaded);
   }
 
   /** How hard a ladder bounces now: nought at rest, and on one up a wall. */

@@ -179,7 +179,8 @@ export class GamePage {
       );
       packing.show((pack) => {
         new GearCheck(this.window, this.texts.gear).show((kit) => {
-          const scenario = this.mountain.scenario(this.newSeed(), answers, kit, true, pack);
+          const seed = this.newSeed();
+          const scenario = this.mountain.scenario(seed, answers, kit, true, pack, true);
           this.playAlone(store, Expedition.start(scenario, rules.all), rules);
         });
       });

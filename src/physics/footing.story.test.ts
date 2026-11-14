@@ -248,6 +248,35 @@ describe("A long ladder across a crevasse bounces under the steps on it", () => 
     expect(together / alone).toBeLessThan(2);
   });
 
+  it("bounces half as hard while someone holds its line taut from its far end, with nobody to haul (#212)", () => {
+    const crossing = (held: boolean): Climb => {
+      const climb = new Climb(
+        STILL_RUNGS,
+        overTheWideCrevasse([
+          { id: "climber-0", along: 20 },
+          { id: "pemba", along: 88 },
+        ]),
+        1,
+      );
+      climb.play(1, [
+        clip("climber-0", "second"),
+        walk("climber-0", "right"),
+        { kind: "haul", climber: "pemba", held },
+      ]);
+      climb.play(steps(4));
+      return climb;
+    };
+    const free = crossing(false);
+    const held = crossing(true);
+
+    expect(free.physics.ladderBounce("long")).toBeGreaterThan(1);
+    expect(held.physics.ladderBounce("long")).toBeCloseTo(
+      STILL_RUNGS.footing.bounce.held * free.physics.ladderBounce("long"),
+      6,
+    );
+    expect(held.physics.climber("pemba")).toMatchObject({ haulHeld: true, hauling: false });
+  });
+
   it("settles once nobody steps on it", () => {
     const climb = onTheLadder(STILL_RUNGS, 1, 1);
     climb.play(steps(4));

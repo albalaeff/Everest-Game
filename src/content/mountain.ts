@@ -1,3 +1,5 @@
+import { Sherpa } from "../agents";
+import type { SherpaSettings } from "../agents";
 import { Lamplight, Logbook, SlopePhysics } from "../physics";
 import type { Kit } from "../physics";
 import { Body, MountainClock, ObjectiveHazards, OxygenSystem, Packs } from "../simulation";
@@ -30,6 +32,8 @@ export interface ExpeditionRules {
   readonly lamps: Lamplight;
   /** What each climber carries, and what the camps hold. */
   readonly packs: Packs;
+  /** The climbers' Sherpa, Pemba, who guides them (#212). */
+  readonly sherpa: Sherpa;
   readonly all: readonly Rule[];
 }
 
@@ -58,13 +62,15 @@ export class Mountain {
   /** A new expedition's scenario on the route, from its seed, with the player as their `answers`
    * make them (#145), or as the route has them, with what they checked of their `kit` before
    * setting off (#196), or all of it, and the training events the seed stages (#209), unless
-   * `training` is off. */
+   * `training` is off; `alone`, with the player and their Sherpa only, and no seat for a
+   * teammate (#212). */
   scenario(
     seed: number,
     answers?: ClimberAnswers,
     kit?: Kit,
     training = true,
     pack?: PackCounts,
+    alone = false,
   ): Scenario {
     const player = answers === undefined ? undefined : this.climbers.climber(answers);
     const scenario = this.route.scenario(
@@ -75,6 +81,7 @@ export class Mountain {
         : { kit, unchecked: this.knowledge.number("body.unchecked-water") },
       training,
       pack,
+      alone,
     );
     return {
       ...scenario,
@@ -105,6 +112,8 @@ export class Mountain {
     const packs = new Packs(this.route.packNumbers, body, physics, oxygen);
     const hazards = new ObjectiveHazards(this.hazardSettings(), clock, physics);
     const logbook = new Logbook(physics, hazards, clock, this.route.logged);
+    // The Sherpa acts at the start of each step, from where the last left everyone (#212).
+    const sherpa = new Sherpa(this.sherpaSettings(), physics, hazards, clock);
     return {
       clock,
       oxygen,
@@ -114,7 +123,24 @@ export class Mountain {
       logbook,
       lamps,
       packs,
-      all: [clock, packs, oxygen, body, hazards, physics, logbook],
+      sherpa,
+      all: [clock, packs, oxygen, body, hazards, physics, logbook, sherpa],
+    };
+  }
+
+  /** The Sherpa's numbers, from their records in content/facts/technique.json: how far ahead he
+   * leads (`technique.sherpa-lead`), when he waits (`-wait`), how far back he follows (`-behind`),
+   * how long he rests with a client he pulled out (`-rest`), and the haul's reach. */
+  sherpaSettings(): SherpaSettings {
+    const range = (name: string) => this.knowledge.range(`technique.sherpa-${name}`);
+    const lead = range("lead");
+    const behind = range("behind");
+    return {
+      lead: { near: lead.min, far: lead.max },
+      wait: this.knowledge.number("technique.sherpa-wait"),
+      behind: { near: behind.min, far: behind.max },
+      rest: this.knowledge.number("technique.sherpa-rest") * 60,
+      reach: this.knowledge.number("technique.haul-reach"),
     };
   }
 

@@ -344,6 +344,112 @@
       "fitted": "2026-11-08"
     },
     {
+      "id": "technique.ladder-bounce-held",
+      "kind": "coefficient",
+      "claim": "The share of the bounce a ladder across a crevasse takes from the steps on it while someone stands at one of its ends holding its line taut (#212), as a client's Sherpa does from the far side: held, a lashed ladder sinks and sways less, and a careful crossing slips less.",
+      "status": "source only",
+      "value": 0.5,
+      "unit": "1",
+      "fitted_to": ["technique.sherpa-leads", "route.icefall-ladders-lashed"],
+      "fitted": "2026-11-15"
+    },
+    {
+      "id": "technique.sherpa-leads",
+      "kind": "fact",
+      "claim": "In the Icefall a client's own Sherpa leads: he sets the pace and looks back, crosses each ladder first, and holds its line taut from the far side while the client crosses.",
+      "status": "source only",
+      "versions": [
+        {
+          "note": "The client's Sherpa goes ahead through the Icefall, crosses each ladder first and keeps the safety line taut from the far side for the client.",
+          "source": {
+            "title": "Alan Arnette: Everest 2018: Into the Icefall",
+            "url": "https://www.alanarnette.com/blog/2018/04/17/everest-2018-into-the-icefall/"
+          },
+          "checked": "2026-11-09"
+        },
+        {
+          "note": "A first trip through the Icefall: the Sherpa leads and sets the pace, and each ladder is crossed one climber at a time, the line held from the other side.",
+          "source": {
+            "title": "Alan Arnette: Virtual Everest 2020: First Steps in the Khumbu Icefall",
+            "url": "https://www.alanarnette.com/blog/2020/04/23/virtual-everest-2020-first-steps-in-the-khumbu-icefall/"
+          },
+          "checked": "2026-11-09"
+        }
+      ]
+    },
+    {
+      "id": "technique.personal-sherpa",
+      "kind": "fact",
+      "claim": "A client's personal Sherpa climbs beside them on all their climbs to the camps; on summit day a climbing Sherpa goes just behind them.",
+      "status": "source only",
+      "versions": [
+        {
+          "note": "The personal sherpa climbs beside the member on all climbs to the camps.",
+          "source": {
+            "title": "Project Himalaya: Trek and climb job roles",
+            "url": "https://project-himalaya.com/info-trek-climb-job-roles.html"
+          },
+          "checked": "2026-11-09"
+        }
+      ]
+    },
+    {
+      "id": "technique.pulled-out",
+      "kind": "fact",
+      "claim": "A climber who slips off a ladder and hangs over the crevasse on its line is pulled out by whoever is nearest, then sits a while on safe ground to recover before going on.",
+      "status": "source only",
+      "versions": [
+        {
+          "note": "A slip off a ladder in the Icefall left the climber hanging over the crevasse on the safety line until a teammate pulled him out.",
+          "source": {
+            "title": "Allan Meek: Falling down an Everest ice crevasse (2017)",
+            "url": "https://groupscs.co.uk/falling-down-everest-ice-crevasse/"
+          },
+          "checked": "2026-11-09"
+        }
+      ]
+    },
+    {
+      "id": "technique.sherpa-lead",
+      "kind": "coefficient",
+      "claim": "How far ahead of the first of his clients a Sherpa walks in the Icefall, in the slope's metres as the game draws them (#212): he walks on when they come nearer than the least of it and waits once he's the most of it ahead, near enough to look back and talk, and to reach each ladder first.",
+      "status": "source only",
+      "range": { "min": 3, "max": 6 },
+      "unit": "m",
+      "fitted_to": ["technique.sherpa-leads", "technique.personal-sherpa"],
+      "fitted": "2026-11-15"
+    },
+    {
+      "id": "technique.sherpa-wait",
+      "kind": "coefficient",
+      "claim": "How far the last of his clients may fall behind a Sherpa before he stops and waits for them, in the slope's metres (#212); he never waits under the seracs or on a snow bridge, but past them, as the Icefall is crossed without lingering where the ice falls.",
+      "status": "source only",
+      "value": 10,
+      "unit": "m",
+      "fitted_to": ["technique.sherpa-leads", "route.icefall-lessons"],
+      "fitted": "2026-11-15"
+    },
+    {
+      "id": "technique.sherpa-behind",
+      "kind": "coefficient",
+      "claim": "How far behind a client who goes ahead of him a Sherpa follows, in the slope's metres (#212): he closes up when they're the most of it ahead and stops when they're nearer than the least.",
+      "status": "source only",
+      "range": { "min": 2, "max": 3 },
+      "unit": "m",
+      "fitted_to": ["technique.personal-sherpa"],
+      "fitted": "2026-11-15"
+    },
+    {
+      "id": "technique.sherpa-rest",
+      "kind": "coefficient",
+      "claim": "The mountain's minutes a Sherpa sits with a client he has pulled off the rope, on safe ground, before they go on (#212): long enough to get their breath back, and short enough not to lose the cold of the morning.",
+      "status": "source only",
+      "value": 10,
+      "unit": "min",
+      "fitted_to": ["technique.pulled-out", "route.icefall-lessons"],
+      "fitted": "2026-11-15"
+    },
+    {
       "id": "technique.lethal-landing",
       "kind": "coefficient",
       "claim": "The speed a falling climber hits the ice at, in metres a second, past which the fall kills them (#190): a drop of about 7 m through the air onto ice. Fitted so that a fall into one of the Icefall's crevasses, over 45 m deep in places (route.icefall-hazards), kills, as the fifteen-storey fall from a ladder near Camp 1 did in 2012 (accidents.2012-ladder-fall), and a slip down a few metres of a wall's foot doesn't.",
