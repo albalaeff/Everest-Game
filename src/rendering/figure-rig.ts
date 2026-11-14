@@ -3,10 +3,12 @@ import { Container } from "pixi.js";
 import { ClimberPose } from "./climber-pose";
 import type { Joint, Pose } from "./climber-pose";
 import { FigureShapes } from "./figure-shapes";
+import type { DrawnTool } from "./ice-tools";
 
 /** A figure's parts, each drawn once in the frame of what it's on (`FigureShapes`): each limb's
- * pair, the near one first, the boots, the pack and the torso, the neck, the head, and the mask,
- * in the head's frame wherever it is. */
+ * pair, the near one first, the boots, the pack and the torso, the neck, the head, the mask, in
+ * the head's frame wherever it is, and the ice tools, the axe first, each in its own frame, once
+ * as it's held and once strapped to the pack, behind the body. */
 export interface RigParts {
   readonly thighs: readonly [Container, Container];
   readonly shins: readonly [Container, Container];
@@ -18,6 +20,8 @@ export interface RigParts {
   readonly neck: Container;
   readonly head: Container;
   readonly mask: Container;
+  readonly tools: readonly [Container, Container];
+  readonly strapped: readonly [Container, Container];
 }
 
 /**
@@ -25,8 +29,9 @@ export interface RigParts {
  * frame to where `ClimberPose` has its bones, so a stride costs no drawing. A limb is shaded from
  * one side of it to the other, and turned over to keep its lit side towards the light as it
  * swings. The mask is on the face while the oxygen flows, and hangs from its strap on the chest
- * while it doesn't (#87). What the parts look like is the subclass's: the climber in their kit,
- * or the rim of light round them.
+ * while it doesn't (#87). Each ice tool is where `IceTools` has it, in the hand or on the pack.
+ * What the parts look like is the subclass's: the climber in their kit, or the rim of light round
+ * them.
  */
 export abstract class FigureRig<Parts extends RigParts = RigParts> extends Container {
   /** Where the light on the figure comes from, in its own frame: ahead of the climber, above. */
@@ -73,6 +78,24 @@ export abstract class FigureRig<Parts extends RigParts = RigParts> extends Conta
     // The head nods down by `nod`: its x ahead turns towards its -y.
     parts.head.rotation = -pose.nod;
     FigureRig.wear(parts, masked);
+    FigureRig.carry(parts, pose.tools);
+  }
+
+  /** Each ice tool where it's drawn: the part that's held where a hand has it, or the one on the
+   * pack where it's strapped; neither for a tool they don't carry. */
+  private static carry({ tools, strapped }: RigParts, drawn: readonly DrawnTool[]): void {
+    for (const index of [0, 1] as const) {
+      const tool = drawn[index];
+      const held = tools[index];
+      const packed = strapped[index];
+      held.visible = tool !== undefined && tool.hand !== null;
+      packed.visible = tool !== undefined && tool.hand === null;
+      if (tool !== undefined) {
+        const part = tool.hand === null ? packed : held;
+        part.position.set(tool.grip.x, tool.grip.y);
+        part.rotation = tool.angle;
+      }
+    }
   }
 
   /** The mask over the mouth and nose, where the head is; or off it, hanging on the chest. */

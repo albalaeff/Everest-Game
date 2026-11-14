@@ -32,6 +32,7 @@ import { PrayerFlags } from "./prayer-flags";
 import { RopeCurve } from "./rope-curve";
 import type { Held } from "./rope-curve";
 import { SlopeDetails } from "./slope-details";
+import { IceChips } from "./ice-chips";
 import { SnowPuffs } from "./snow-puffs";
 import { SteppedPoints } from "./stepped-points";
 import type { BetweenSteps } from "./stepped-points";
@@ -196,6 +197,13 @@ export class SlopeLayer extends ParallaxLayer {
   /** How far the seeds of the steps of ice with no ladder are from the ladders' walls', so no two
    * are drawn alike. */
   private static readonly BARE_SEEDS = 1000;
+  /** The seed of the chips' chance, from the layer's, and how much of the lamps' light they
+   * catch at night. */
+  private static readonly CHIP_SEED = 11;
+  private static readonly CHIP_GLINT = 0.7;
+  /** A chip of ice drawn as a shard: its three corners round its middle, how far round each is
+   * turned and how far out it is, as a share of its size. */
+  private static readonly SHARD = { turns: [0, 2.2, 4.0], reaches: [1, 0.55, 0.75] };
   /** The steepest the snow's crest runs, as a rise over its run: a wall's ice is bare. */
   private static readonly CREST_STEEPEST = 1.2;
   /** How far below its lowest point the ground is filled. */
@@ -262,6 +270,10 @@ export class SlopeLayer extends ParallaxLayer {
   private readonly mark = new PlayerMark();
   private readonly puffs = new SnowPuffs();
   private readonly puffGraphics = new Graphics();
+  /** The chips of ice the picks and the front points knock off, and whether any were drawn. */
+  private readonly chips: IceChips;
+  private readonly chipGraphics = new Graphics();
+  private chipsShown = false;
   private readonly hazards: HazardDrawing;
   private readonly drift: Drift;
   private readonly driftContainer: ParticleContainer;
@@ -281,6 +293,24 @@ export class SlopeLayer extends ParallaxLayer {
   private readonly heightAt = (x: number): number => this.physics.terrain.height(x);
   private readonly drawPuff = (x: number, y: number, radius: number, alpha: number): void => {
     this.puffGraphics.circle(x, y, radius).fill({ color: 0xffffff, alpha });
+  };
+  /** A chip of ice: a shard, turned as it spins. */
+  private readonly drawChip = (
+    x: number,
+    y: number,
+    size: number,
+    angle: number,
+    alpha: number,
+  ): void => {
+    const { SHARD } = SlopeLayer;
+    const corner = (index: number): readonly [number, number] => {
+      const turn = angle + (SHARD.turns[index] ?? 0);
+      const reach = size * (SHARD.reaches[index] ?? 1);
+      return [x + reach * Math.cos(turn), y + reach * Math.sin(turn)];
+    };
+    this.chipGraphics
+      .poly([...corner(0), ...corner(1), ...corner(2)])
+      .fill({ color: Palette.ICE_CHIP, alpha });
   };
   private readonly drawFlag = (
     colour: number,
@@ -316,6 +346,7 @@ export class SlopeLayer extends ParallaxLayer {
     motes: number,
   ) {
     super("slope", { x: 1, y: 1 });
+    this.chips = new IceChips(seed + SlopeLayer.CHIP_SEED);
     const { terrain } = physics;
     this.addChild(this.veil);
     this.ground = SlopeLayer.runOut(terrain);
@@ -409,12 +440,12 @@ export class SlopeLayer extends ParallaxLayer {
     });
     this.figures = climbers.map((id) => {
       const suit = id === player ? Palette.PLAYER_SUIT : Palette.OTHER_SUIT;
-      const figure = new ClimberFigure(suit, physics, this.puffs);
+      const figure = new ClimberFigure(suit, physics, this.puffs, this.chips);
       this.addChild(figure);
       return { id, figure, view: null };
     });
     this.playerFigure = this.figures.find(({ id }) => id === player)?.figure ?? null;
-    this.addChild(this.puffGraphics);
+    this.addChild(this.puffGraphics, this.chipGraphics);
     this.drift = new Drift(
       {
         count: motes,
@@ -495,6 +526,7 @@ export class SlopeLayer extends ParallaxLayer {
     }
     const view = SlopeLayer.inView(camera);
     this.puffs.advance(seconds, atmosphere.gust);
+    this.chips.advance(seconds);
     this.load();
     this.beams.length = 0;
     for (const { id, figure, view: climber } of this.figures) {
@@ -534,6 +566,7 @@ export class SlopeLayer extends ParallaxLayer {
       this.drawCamps(gust, elapsed, size);
     }
     this.drawPuffs();
+    this.drawChips();
     this.blow(seconds, camera, atmosphere);
     this.drawVeil(camera, atmosphere);
   }
@@ -560,6 +593,12 @@ export class SlopeLayer extends ParallaxLayer {
       this.hazards.falling.tint = palette.snowTint;
       this.driftContainer.tint = palette.snowCrest;
       this.puffGraphics.tint = palette.snowCrest;
+      // Chips of ice glint in the headlamps' light at night.
+      this.chipGraphics.tint = Palette.mix(
+        palette.snowCrest,
+        Palette.LAMP,
+        atmosphere.light.lamps * SlopeLayer.CHIP_GLINT,
+      );
     }
     this.tintedWith = atmosphere;
     this.tentGlow.alpha = atmosphere.light.lamps * SlopeLayer.TENT_GLOW_ALPHA;
@@ -914,6 +953,17 @@ export class SlopeLayer extends ParallaxLayer {
       join: "round",
     });
     this.flags.forEach(elapsed, gust, this.drawFlag);
+  }
+
+  /** The chips of ice the picks and the front points knocked off, while there are any. */
+  private drawChips(): void {
+    const live = this.chips.live > 0;
+    if (!live && !this.chipsShown) {
+      return;
+    }
+    this.chipsShown = live;
+    this.chipGraphics.clear();
+    this.chips.forEach(this.drawChip);
   }
 
   /** The snow the boots kicked up, while there's any in the air. */

@@ -1,6 +1,7 @@
 import type { ClimberView, Point, Terrain } from "../physics";
 import type { BodyView } from "../simulation";
 import type { Joint, LadderFooting, PoseState } from "./climber-pose";
+import type { PickIn } from "./ice-tools";
 
 /** What a figure reads the ground, the ladders and the ropes from: the slope physics. */
 export interface ReadSlope {
@@ -24,12 +25,16 @@ export interface DrawnAt {
  * jumar to its anchor, in the figure's metres, `grown` times life size from where the climber is
  * drawn, x the way they face. On the ground they face the way they last walked; on a ladder up a
  * wall, the wall, going up or down it by the key. A wall's face or a crevasse's edge beside them
- * is no ground for a boot, which stands level there. It keeps only the picture's own: the way
- * they face and go, how far they've come, and where they were drawn last.
+ * is no ground for a boot, which stands level there. On the ice, each pick is told by the swing
+ * that put it there and the way into the ice where it is. It keeps only the picture's own: the
+ * way they face and go, how far they've come, where they were drawn last, and the picks seen.
  */
 export class ClimberReading {
   /** A ladder's rungs, as the slope layer draws them: every 30 cm, from 15 cm off its `from` end. */
   static readonly RUNG_METRES = 0.3;
+  /** Up a face of ice, how far apart the front points kick in: short steps, the boots near level
+   * at a halt, as a climber front-points. */
+  static readonly ICE_STEP_METRES = 0.16;
   /** The steepest a ladder lies and is still crossed on its rungs, as a sine: the pose's. */
   private static readonly ACROSS = 0.5;
   /** The steepest the ground under a boot is read, rise over run, with a little more for a step:
@@ -42,6 +47,8 @@ export class ClimberReading {
    * on blue ice; a steady one wobbles a little, and a careful one hardly. */
   private static readonly WOBBLY = 0.06;
 
+  /** How near, in metres, a pick in the ice is to one seen last frame to be the same one. */
+  private static readonly SAME_PICK = 1e-6;
   /** What a face of ice goes by as the ladder a climber is on, and how far each way along it the
    * pose reads it, in metres. */
   private static readonly ICE = "the ice";
@@ -49,6 +56,10 @@ export class ClimberReading {
 
   private facingNow: 1 | -1 = 1;
   private upward = true;
+  /** The picks seen in the ice last frame, where they are on the slope and the swing each was,
+   * and how many swings there have been. */
+  private seenPicks: readonly { readonly at: Point; readonly swing: number }[] = [];
+  private swings = 0;
   private travelled = 0;
   private onLadder: string | null = null;
   private started = false;
@@ -132,22 +143,53 @@ export class ClimberReading {
         view.first === null || drawn.jumar === null
           ? 0
           : ClimberReading.toAnchor(this.slope.rope(view.first), drawn.jumar) / grown,
-      ladder: along === null || heading === null ? null : this.footing(along, heading, at, wall),
+      ladder:
+        along === null || heading === null
+          ? null
+          : this.footing(along, heading, at, wall, onIce ? this.alongTheIce(at) : null),
       footing: 1 - Math.min(1, view.slipChance / ClimberReading.WOBBLY),
-      picks: onIce
-        ? view.picks.flatMap((pick) => {
-            const local = this.local(pick, at);
-            return local === null ? [] : [local];
-          })
-        : [],
+      picks: this.picks(onIce ? view.picks : [], at),
+      pickPoor: view.pickPoor,
+      tools: view.gear.tools,
+      onIce,
     };
   }
 
+  /** The picks in the ice, the one they hang from first, from where the climber is drawn: each
+   * told by its swing, a new one by the next, and the way into the ice where it is. */
+  private picks(picks: readonly Point[], at: Point): readonly PickIn[] {
+    const { terrain } = this.slope;
+    // The oldest first, so a new pick's swing comes after those it went in with.
+    const seen = [...picks].reverse().map((pick) => {
+      const known = this.seenPicks.find(
+        ({ at: was }) =>
+          Math.abs(was.x - pick.x) < ClimberReading.SAME_PICK &&
+          Math.abs(was.y - pick.y) < ClimberReading.SAME_PICK,
+      );
+      const swing = known?.swing ?? (this.swings += 1);
+      return { at: pick, swing };
+    });
+    this.seenPicks = seen;
+    return [...seen].reverse().map(({ at: pick, swing }) => {
+      // The ground goes on up the face, or along the top over its lip: into it is to its right.
+      const ahead = terrain.ahead(terrain.nearest(pick).along, 1);
+      return {
+        swing,
+        at: this.local(pick, at) ?? { x: 0, y: 0 },
+        into: { x: ahead.y * this.facingNow, y: -ahead.x },
+      };
+    });
+  }
+
   /** The face of ice a climber on their tools is on, as a ladder up it for the pose: its line
-   * along the ice through where they're drawn, a few metres each way. */
+   * along the ice through where they're drawn, a few metres each way. At its foot or its lip they
+   * stand on a corner, and the face is the steeper of the ground ahead and behind. */
   private face(at: Point): readonly Point[] {
     const { terrain } = this.slope;
-    const ahead = terrain.ahead(terrain.nearest(at).along, 1);
+    const along = terrain.nearest(at).along;
+    const onward = terrain.ahead(along, 1);
+    const back = terrain.ahead(along, -1);
+    const ahead = Math.abs(back.y) > Math.abs(onward.y) ? { x: -back.x, y: -back.y } : onward;
     const reach = ClimberReading.FACE_METRES;
     return [
       { x: at.x - ahead.x * reach, y: at.y - ahead.y * reach },
@@ -178,26 +220,34 @@ export class ClimberReading {
     }
   }
 
-  /** The ladder as the figure goes along it, from where it's drawn: the way, a rung, the ends. */
+  /** The ladder as the figure goes along it, from where it's drawn: the way, a rung, the ends. A
+   * face of ice has no rungs: where the front points kick in is `iceAlong`, how far along the
+   * ground the climber is, in steps of the ice's, so a boot stays where it kicked in as they go. */
   private footing(
     { start, finish }: { readonly start: Point; readonly finish: Point },
     heading: Point,
     at: Point,
     wall: boolean,
+    iceAlong: number | null,
   ): LadderFooting {
     const facing = this.facingNow;
     const up = heading.y >= 0;
     const sign = (wall ? up === this.upward : heading.x * facing >= 0) ? 1 : -1;
     const length = Math.hypot(finish.x - start.x, finish.y - start.y);
-    const rung = ClimberReading.RUNG_METRES;
+    const rung = iceAlong === null ? ClimberReading.RUNG_METRES : ClimberReading.ICE_STEP_METRES;
     const { grown } = this;
     const on = (at.x - start.x) * heading.x + (at.y - start.y) * heading.y;
     return {
       way: { x: sign * heading.x * facing, y: sign * heading.y },
-      rung: (sign * (rung / 2 - on)) / grown,
+      rung: (sign * (rung / 2 - (iceAlong ?? on))) / grown,
       spacing: rung / grown,
       ends: [(sign * -on) / grown, (sign * (length - on)) / grown],
     };
+  }
+
+  /** How far along the ground a climber on a face of ice is, where they're drawn. */
+  private alongTheIce(at: Point): number {
+    return this.slope.terrain.nearest(at).along;
   }
 
   /** A point in the figure's metres from where its climber is drawn. */

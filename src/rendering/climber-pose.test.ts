@@ -467,6 +467,38 @@ describe("ClimberPose", () => {
     }
   });
 
+  it("front-points up a face of ice: the toes at the ice, short steps, standing taller and further off it than on a ladder, the axe in the near hand", () => {
+    const face: LadderFooting = { way: { x: 0, y: 1 }, rung: 0.08, spacing: 0.16, ends: [-6, 6] };
+    const onIce = state({
+      ladder: face,
+      onIce: true,
+      picks: [{ swing: 1, at: { x: 0, y: 1.9 }, into: { x: 1, y: 0 } }],
+    });
+    const climber = new ClimberPose();
+    let pose = climber.advance(FRAME, onIce);
+    for (let frame = 0; frame < 180; frame += 1) {
+      pose = climber.advance(FRAME, onIce);
+    }
+    const onALadder = new ClimberPose().advance(5, state({ ladder: upAWall(0) }));
+
+    for (const leg of [0, 1] as const) {
+      const ankle = pose.legs[leg].end;
+      const sole = pose.soles[leg];
+      const toe = ankle.x + 0.2 * Math.cos(sole) + ClimberPose.ANKLE * Math.sin(sole);
+      expect(toe).toBeGreaterThan(-0.02);
+      expect(toe).toBeLessThan(0.06);
+    }
+    const [near, far] = pose.legs.map((leg) => leg.end.y);
+    expect(Math.abs((near ?? 0) - (far ?? 0))).toBeLessThan(0.2);
+    expect(pose.pelvis.x).toBeLessThan(-0.3);
+    expect(pose.pelvis.y).toBeGreaterThan(onALadder.pelvis.y + 0.08);
+    const [axe] = pose.tools;
+    expect(axe?.hand).toBe(0);
+    expect(
+      Math.hypot(pose.arms[0].end.x - (axe?.grip.x ?? 9), pose.arms[0].end.y - (axe?.grip.y ?? 9)),
+    ).toBeLessThan(1e-6);
+  });
+
   it("wobbles as the footing goes, its arms out for balance and its body swaying, and stands steady with it (#190)", () => {
     const leans = (footing: number): number[] => {
       const climber = new ClimberPose();
