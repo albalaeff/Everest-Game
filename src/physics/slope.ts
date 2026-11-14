@@ -1,5 +1,5 @@
 import { SimulationClock } from "../simulation";
-import type { Moment, Walk } from "../simulation";
+import type { ClimberId, Moment, Walk } from "../simulation";
 import type { Climber, Hauls } from "./climber";
 import { Faces } from "./faces";
 import type { Face } from "./faces";
@@ -256,6 +256,7 @@ export class Slope {
   private hauls(climbers: readonly Climber[]): Hauls {
     const { reach, speed } = this.settings.haul;
     const hauled = new Map<Climber, number>();
+    const haulers = new Map<Climber, ClimberId[]>();
     const hauling = new Set<Climber>();
     for (const hauler of climbers) {
       const at = hauler.hauler(this);
@@ -279,10 +280,12 @@ export class Slope {
         hauling.add(hauler);
         const before = hauled.get(nearest.climber) ?? 0;
         hauled.set(nearest.climber, before + speed * hauler.haulStride);
+        haulers.set(nearest.climber, [...(haulers.get(nearest.climber) ?? []), hauler.id]);
       }
     }
     return {
       of: (climber) => hauled.get(climber) ?? 0,
+      who: (climber) => haulers.get(climber) ?? [],
       by: (climber) => hauling.has(climber),
     };
   }

@@ -26,6 +26,14 @@ export interface Arriving {
   };
 }
 
+/** The climbers' Sherpa as the arrival hears him (#212): his climber, his name, and his line at
+ * the camp, none once he's dead. */
+export interface ArrivingSherpa {
+  readonly climber: ClimberId;
+  readonly name: string;
+  arrival(): string | null;
+}
+
 /** What the debrief reads of the climb besides the climbers: each one's page of the logbook, and
  * what came down on the route (#194). The logbook and the hazards are this. */
 export interface ClimbRecord {
@@ -41,7 +49,8 @@ export interface ClimbRecord {
  * then give the debrief: its verdict and its lines, what the climb was (`Debrief`). [Continue], or
  * Esc, closes it, and the climb goes on behind it; after a death, [Start over] sets off a new one,
  * where there's one to set off. It shows once each time the camp is reached, and once on a death;
- * the camp itself, with its rest and its choices, comes with #53.
+ * the camp itself, with its rest and its choices, comes with #53. On the arrival it opens with
+ * the line of the climbers' Sherpa, if they have one and he's alive (#212).
  */
 export class CampNotice {
   /** How long after a death the notice waits for the body to come to rest, at the most. */
@@ -49,6 +58,7 @@ export class CampNotice {
 
   private readonly notice: HTMLElement;
   private readonly title: HTMLElement;
+  private readonly sherpaSaid: HTMLElement;
   private readonly where: HTMLElement;
   private readonly took: HTMLElement;
   private readonly verdict: HTMLElement;
@@ -73,10 +83,12 @@ export class CampNotice {
     private readonly record: ClimbRecord,
     private readonly debriefTexts: Texts<DebriefTextName>,
     private readonly startOver: (() => void) | null,
+    private readonly sherpa: ArrivingSherpa | null = null,
   ) {
     const { document } = window;
     this.notice = CampNotice.element(document, "");
     this.title = CampNotice.element(document, "#camp-title");
+    this.sherpaSaid = CampNotice.element(document, '[data-text="sherpa"]');
     this.where = CampNotice.element(document, '[data-text="where"]');
     this.took = CampNotice.element(document, '[data-text="took"]');
     this.verdict = CampNotice.element(document, '[data-text="verdict"]');
@@ -127,6 +139,11 @@ export class CampNotice {
     this.took.textContent = `${texts.say(section.id, { time })} ${texts.say("first-time", section.hours)}`;
     this.took.hidden = false;
     this.startOverButton.hidden = true;
+    const said = this.sherpa?.arrival() ?? null;
+    this.sherpaSaid.hidden = said === null;
+    if (said !== null && this.sherpa !== null) {
+      this.sherpaSaid.textContent = texts.say("sherpa-said", { name: this.sherpa.name, said });
+    }
     this.say();
     this.notice.hidden = false;
     this.button.focus();
@@ -139,6 +156,7 @@ export class CampNotice {
     this.title.textContent = this.debriefTexts.say("you-died");
     this.where.textContent = `${readings.altitude(altitude)} · ${readings.clock(clock.timeOfDay)}`;
     this.took.hidden = true;
+    this.sherpaSaid.hidden = true;
     this.startOverButton.hidden = this.startOver === null;
     this.say();
     this.notice.hidden = false;
@@ -154,6 +172,7 @@ export class CampNotice {
       strikes: record.strikes,
       player,
       kit: this.climbers.climber(player).kit,
+      sherpa: this.sherpa?.climber ?? null,
     });
     this.verdict.textContent = said.verdict.text;
     this.verdict.dataset.tone = said.verdict.tone;

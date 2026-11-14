@@ -8,6 +8,7 @@ import controlTexts from "../content/controls.json";
 import disclaimerTexts from "../content/disclaimer.json";
 import renderingTexts from "../content/rendering.json";
 import roomTexts from "../content/room.json";
+import sherpaTexts from "../content/sherpa.json";
 import { Build } from "./build";
 import { KNOWLEDGE_FILES } from "./content/knowledge-files";
 import { Disclaimer } from "./interface/disclaimer";
@@ -30,6 +31,7 @@ new Disclaimer(document, disclaimerTexts.en, new ExpertReview(facts)).show(() =>
     debrief: new Texts(debriefTexts.en),
     gear: new Texts(gearTexts.en),
     pack: new Texts(packTexts.en),
+    sherpa: new Texts(sherpaTexts.en),
   };
   void new GamePage(window, texts, facts, build).open();
 });

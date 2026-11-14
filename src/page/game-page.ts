@@ -5,6 +5,7 @@ import type { KnowledgeFile } from "../content/knowledge-base";
 import { Mountain } from "../content/mountain";
 import type { ExpeditionRules } from "../content/mountain";
 import { Section } from "../content/section";
+import { SherpaFacts } from "../content/sherpa-facts";
 import { ControlsPage } from "../input/controls-page";
 import type { ControlTexts } from "../input/controls-page";
 import { PageElements } from "../input/page-elements";
@@ -16,6 +17,9 @@ import { CoachCard } from "../interface/coach-card";
 import type { CoachTextName } from "../interface/coach-card";
 import { Debrief } from "../interface/debrief";
 import type { DebriefTextName } from "../interface/debrief";
+import { SherpaBubble } from "../interface/sherpa-bubble";
+import { SherpaVoice } from "../interface/sherpa-voice";
+import type { SherpaTextName } from "../interface/sherpa-voice";
 import { SunClock } from "../interface/sun-clock";
 import type { Texts } from "../interface/texts";
 import type { ClimberView } from "../physics";
@@ -56,6 +60,7 @@ import { SoloGame } from "./solo-game";
 import { StartMenu } from "./start-menu";
 import { ClimbInterface } from "./climb-interface";
 import { CoachedClimb } from "./coached-climb";
+import { SherpaClimb } from "./sherpa-climb";
 
 export interface PageTexts {
   readonly controls: ControlTexts;
@@ -73,6 +78,8 @@ export interface PageTexts {
   readonly gear: Texts;
   /** The pack's words: the screen at Base Camp and the card on the climb. */
   readonly pack: Texts<PackTextName>;
+  /** Pemba's lines (#212). */
+  readonly sherpa: Texts<SherpaTextName>;
 }
 
 /** What the page's stories read that the DOM doesn't show, on `window.everest`. */
@@ -115,6 +122,7 @@ export class GamePage {
   private static readonly START_OVER = "everest.start-over";
 
   private readonly elements: PageElements;
+  private readonly knowledge: KnowledgeBase;
   private readonly mountain: Mountain;
   private readonly guide: GuideAdvice;
 
@@ -126,6 +134,7 @@ export class GamePage {
   ) {
     this.elements = new PageElements(window.document);
     const knowledge = new KnowledgeBase(facts);
+    this.knowledge = knowledge;
     this.mountain = new Mountain(knowledge);
     this.guide = new GuideAdvice(knowledge, this.mountain.questionnaire);
   }
@@ -276,6 +285,7 @@ export class GamePage {
         parts: this.mountain.route.parts,
         climbers: scenario.climbers,
         player,
+        npcs: scenario.npcs ?? [],
         seed: scenario.seed,
       },
       choice.chosen,
@@ -308,6 +318,34 @@ export class GamePage {
       player,
       this.playersPack().base,
     );
+    const coach = new CoachCard(
+      window.document,
+      texts.coach,
+      new Coach(this.storage()),
+      new CoachedClimb(physics, rules.hazards, rules.lamps, player),
+    );
+    // Pemba, the climbers' Sherpa, if the climb has him (#212): his voice in a bubble over him.
+    const sherpa = scenario.npcs?.[0] ?? null;
+    const voice = new SherpaVoice(texts.sherpa, new SherpaFacts(this.knowledge).fills);
+    let drawn = false;
+    const bubble =
+      sherpa === null
+        ? null
+        : new SherpaBubble(
+            window,
+            voice,
+            new SherpaClimb(
+              rules.sherpa,
+              physics,
+              rules.clock,
+              this.mountain.route.parts,
+              rules.hazards.zones,
+              player,
+              this.knowledge.number("time.first-light") * 3600,
+              () => coach.tip,
+            ),
+            (x, y) => (drawn ? scene.screenAt(x, y) : null),
+          );
     const arrival = new CampNotice(
       window,
       texts.camps,
@@ -324,12 +362,13 @@ export class GamePage {
       },
       texts.debrief,
       climb.startOver,
-    );
-    const coach = new CoachCard(
-      window.document,
-      texts.coach,
-      new Coach(this.storage()),
-      new CoachedClimb(physics, rules.hazards, rules.lamps, player),
+      sherpa === null
+        ? null
+        : {
+            climber: sherpa,
+            name: voice.name,
+            arrival: () => (physics.climber(sherpa).dead ? null : voice.arrival()),
+          },
     );
     const loop = new GameLoop(climb.played, scene);
     const button = new QualityButton(choice, texts.rendering, (quality) => {
@@ -342,6 +381,7 @@ export class GamePage {
       inventory.update();
       arrival.update(seconds);
       coach.update(seconds);
+      bubble?.update(seconds);
     };
     this.expose({
       pixelAt: (x, y) => scene.pixelAt(x, y),
@@ -353,6 +393,7 @@ export class GamePage {
       climber: (climber) => physics.climber(climber),
     });
     if (await scene.open(window)) {
+      drawn = true;
       scene.eachFrame((seconds, now) => {
         loop.frame(seconds);
         afterFrame(seconds);

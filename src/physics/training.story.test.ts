@@ -190,7 +190,10 @@ describe("Hauling a partner out", () => {
     });
     expect(out).toBeLessThan(30);
     expect(anna).toMatchObject({ falling: false, x: 20, y: 0 });
-    expect(anna.falls).toMatchObject([{ broke: true, held: true, pulled: true }]);
+    // The fall says who pulled her out (#212).
+    expect(anna.falls).toMatchObject([
+      { broke: true, held: true, pulled: true, pulledBy: ["boris"] },
+    ]);
     climb.play(1);
     expect(climb.physics.climber("boris")).toMatchObject({ hauling: false, haulHeld: true });
   });

@@ -128,10 +128,12 @@ export class ClimberFigure extends Container {
     suit: number,
     slope: ReadSlope,
     private readonly puffs: SnowPuffs,
+    /** How big their pack is against a client's: a Sherpa's is bigger (#212). */
+    pack = 1,
   ) {
     super();
     this.reading = new ClimberReading(slope);
-    this.figure = new SuitRig(suit);
+    this.figure = new SuitRig(suit, pack);
     this.addChild(this.pool, this.cone, this.lit, this.rim, this.figure, this.halo, this.breath);
     this.cone.mask = this.lit;
   }

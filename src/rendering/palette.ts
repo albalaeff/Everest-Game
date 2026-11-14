@@ -18,9 +18,11 @@ export interface Channels {
  * (`WeatherLook.overcast`). The interface's blues live in the style sheet, where the text is.
  */
 export class Palette {
-  /** The climbers: the player's suit, 3.6:1 on the snow, and the others', apart by colour alone. */
+  /** The climbers: the player's suit, 3.6:1 on the snow, the others', apart by colour alone, and
+   * their Sherpa's blue (#212), 3:1 on the day's snow and the night's. */
   static readonly PLAYER_SUIT = 0xe8412c;
   static readonly OTHER_SUIT = 0xf5c518;
+  static readonly SHERPA_SUIT = 0x3a86f0;
   /** Their kit, as on #125's scene: the suit's dark panels and seams, the boots and their rands,
    * the mitts, the steel of the crampons and the axe, the pack, the oxygen's bottle, regulator
    * and hose, the mask, the goggles, the harness, the slings and the jumar with its grip. */

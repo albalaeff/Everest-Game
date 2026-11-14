@@ -250,6 +250,126 @@ header {
   display: none;
 }
 
+/* Pemba's bubble (#212): over his head, its tail pointing down at him, his name in his suit's
+ * blue so his words read as his, not the coach's; at the edge nearest him while he's off the
+ * screen, pointing his way, and at the top when there's no picture. */
+#sherpa {
+  position: fixed;
+  left: 50%;
+  top: 9rem;
+  display: grid;
+  gap: 0.15rem;
+  width: max-content;
+  max-width: min(20rem, calc(100vw - 3rem));
+  margin: 0;
+  padding: 0.55rem 0.85rem 0.6rem;
+  border: 1px solid rgb(58 134 240 / 60%);
+  border-radius: 0.9rem;
+  background: var(--card);
+  box-shadow:
+    inset 0 1px 0 rgb(255 255 255 / 12%),
+    0 0.5rem 1.4rem rgb(0 0 0 / 40%);
+  color: var(--ink);
+  font-size: 1.1rem;
+  line-height: 1.35;
+  text-align: left;
+  text-wrap: pretty;
+  pointer-events: none;
+  transform: translate(-50%, calc(-100% - 0.8rem));
+  z-index: 2;
+}
+
+#sherpa[hidden] {
+  display: none;
+}
+
+#sherpa [data-text="who"] {
+  color: #8fbcff;
+  font-size: 0.8rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+/* The tail, under the bubble's middle, pointing down at him. */
+#sherpa::after {
+  position: absolute;
+  left: calc(50% - 0.55rem);
+  bottom: -0.55rem;
+  width: 1.1rem;
+  height: 0.55rem;
+  background: rgb(10 20 42 / 96%);
+  clip-path: polygon(0 0, 100% 0, 50% 100%);
+  content: "";
+}
+
+/* A warning of his edged as the coach's are, in red, his name still on it. */
+#sherpa[data-kind="warning"] {
+  border-color: rgb(255 90 79 / 60%);
+}
+
+/* Off the screen: at the edge nearest him, its tail turned his way. */
+#sherpa[data-edge="left"] {
+  transform: translate(0.8rem, -50%);
+}
+
+#sherpa[data-edge="right"] {
+  transform: translate(calc(-100% - 0.8rem), -50%);
+}
+
+#sherpa[data-edge="top"] {
+  transform: translate(-50%, 0.8rem);
+}
+
+#sherpa[data-edge="left"]::after,
+#sherpa[data-edge="right"]::after,
+#sherpa[data-edge="top"]::after {
+  display: none;
+}
+
+#sherpa[data-edge="left"]::before,
+#sherpa[data-edge="right"]::before,
+#sherpa[data-edge="top"]::before {
+  position: absolute;
+  color: #8fbcff;
+  font-size: 1rem;
+  line-height: 1;
+}
+
+#sherpa[data-edge="left"]::before {
+  left: -1.1rem;
+  top: calc(50% - 0.5rem);
+  content: "◀";
+}
+
+#sherpa[data-edge="right"]::before {
+  right: -1.1rem;
+  top: calc(50% - 0.5rem);
+  content: "▶";
+}
+
+#sherpa[data-edge="top"]::before {
+  left: calc(50% - 0.5rem);
+  top: -1.1rem;
+  content: "▲";
+}
+
+/* No picture: a card at the top, under the coach's. */
+#sherpa[data-edge="none"] {
+  top: 9rem;
+  transform: translateX(-50%);
+}
+
+#sherpa[data-edge="none"]::after {
+  display: none;
+}
+
+#camp [data-text="sherpa"] {
+  margin: 0 0 0.6rem;
+  color: #cfe2ff;
+  font-style: italic;
+}
+
 /* While a tip is up, the slope's standing hint steps aside for it. */
 main:has(#coach:not([hidden])) #hint-click,
 main:has(#coach:not([hidden])) #hint-tap {
@@ -619,6 +739,12 @@ kbd {
 /* On the narrowest phones the words don't fit beside the instruments: each of the menu's buttons
  * keeps its mark alone, and its word for a screen reader. */
 @media (max-width: 700px) {
+  /* On a phone his bubble is narrower, its words no smaller than a phone's body text. */
+  #sherpa {
+    max-width: min(15rem, calc(100vw - 3rem));
+    font-size: 1.0625rem;
+  }
+
   .touch .menu .action-button {
     width: 48px;
     padding: 0;

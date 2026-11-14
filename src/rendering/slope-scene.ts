@@ -29,6 +29,8 @@ export interface SceneWorld {
   readonly parts: readonly PartStretch[];
   readonly climbers: readonly ClimberId[];
   readonly player: ClimberId;
+  /** The climbers an agent steers: the Sherpa, in his blue suit (#212). */
+  readonly npcs: readonly ClimberId[];
   readonly seed: number;
 }
 
@@ -183,7 +185,7 @@ export class SlopeScene {
     }
     const { layers: optional, flakes, motes, fogBanks, dithered } = this.quality;
     const { width, height } = this.app.screen;
-    const { physics, hazards, body, oxygen, lamps, camps, parts, climbers, player, seed } =
+    const { physics, hazards, body, oxygen, lamps, camps, parts, climbers, player, npcs, seed } =
       this.world;
     const skyline = (style: typeof SkylineLayer.PEAKS, offset: number): SkylineLayer =>
       new SkylineLayer(style, physics.terrain, seed + offset, fogBanks, parts);
@@ -204,6 +206,7 @@ export class SlopeScene {
       parts,
       climbers,
       player,
+      npcs,
       seed,
       motes,
     );

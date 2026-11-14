@@ -57,6 +57,20 @@ describe("Palette", () => {
     expect(Palette.contrast(Palette.OTHER_SUIT, snow)).toBeGreaterThan(3);
   });
 
+  it("keeps the Sherpa's blue suit 3:1 on the day's snow and the night's, apart from the others' by its hue (#212)", () => {
+    const night = at(3).snowTint;
+    const hue = (colour: number): "red" | "green" | "blue" => {
+      const { red, green, blue } = Palette.channels(colour);
+      return blue >= red && blue >= green ? "blue" : red >= green ? "red" : "green";
+    };
+
+    expect(Palette.contrast(Palette.SHERPA_SUIT, Palette.SNOW)).toBeGreaterThan(3);
+    expect(Palette.contrast(Palette.SHERPA_SUIT, night)).toBeGreaterThan(3);
+    expect(hue(Palette.SHERPA_SUIT)).toBe("blue");
+    expect(hue(Palette.PLAYER_SUIT)).toBe("red");
+    expect(hue(Palette.OTHER_SUIT)).not.toBe("blue");
+  });
+
   it("keeps the player's mark 3:1 on the night's sky and snow and the day's sky, and its edge on the snow", () => {
     const night = at(3);
 
