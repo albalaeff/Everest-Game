@@ -21,4 +21,4 @@ export type {
 } from "./slope-physics";
 export type { GradientPoint, SteepnessPoint } from "./steepness";
 export { Terrain } from "./terrain";
-export type { Pair, Point } from "./terrain";
+export type { Pair, Point, Way } from "./terrain";

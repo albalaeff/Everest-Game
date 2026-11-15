@@ -67,6 +67,8 @@ export class ClimberFigure extends Container {
   private static readonly LAMP_SPREAD = 0.26;
   private static readonly LAMP_DOWN = 0.3;
   private static readonly LAMP_ALPHA = 0.32;
+  /** How long the beam takes to swing most of the way round to where it's aimed (#222). */
+  private static readonly LAMP_SWING_SECONDS = 0.15;
   /** How many rays across the cone find where the ground cuts it. */
   private static readonly LAMP_RAYS = 12;
   /** The pool the beam throws on the snow where it comes down, its length and depth, in metres,
@@ -132,6 +134,8 @@ export class ClimberFigure extends Container {
   private turn = 1;
   /** The lamp's beam this frame, in the layer's metres, or none while it's off. */
   private shining: Beam | null = null;
+  /** Where the headlamp points, in the figure's radians from the level ahead, while it's on. */
+  private aim: number | null = null;
 
   constructor(
     suit: number,
@@ -245,7 +249,7 @@ export class ClimberFigure extends Container {
     this.alpha = climber.dead ? ClimberFigure.DEAD_ALPHA : 1;
     this.draw(pose, masked, atmosphere, climber.dead, grown, size);
     const upright = !climber.dead && !climber.falling;
-    this.drawLamp(pose, atmosphere, upright && lit ? state : null);
+    this.drawLamp(pose, atmosphere, upright && lit ? state : null, seconds);
     this.drawBreath(atmosphere, climber.dead, atmosphere.gust * facing, lit);
     this.holds = climber.first !== null && pose.jumar !== null;
     if (pose.jumar !== null) {
@@ -403,7 +407,12 @@ export class ClimberFigure extends Container {
    * boots stand on and a little below it, as far as the ground lets it, a wall's face or the snow
    * (#202), and the pool it throws where it comes down to them, ahead of the climber's point. Drawn
    * once, and only placed each frame. */
-  private drawLamp(pose: Pose, atmosphere: Atmosphere, state: PoseState | null): void {
+  private drawLamp(
+    pose: Pose,
+    atmosphere: Atmosphere,
+    state: PoseState | null,
+    seconds: number,
+  ): void {
     const { lamps } = atmosphere.light;
     const on = lamps > 0.01 && state !== null;
     this.cone.visible = on;
@@ -411,6 +420,7 @@ export class ClimberFigure extends Container {
     this.pool.visible = on;
     this.shining = null;
     if (!on) {
+      this.aim = null;
       return;
     }
     // The ground from where the figure stands, in its metres: the boots', which the beam tips
@@ -420,7 +430,12 @@ export class ClimberFigure extends Container {
     const lights = (x: number): number => state.terrain(x + offset.x) - offset.y;
     const slope = Math.atan(ClimberFigure.rise(under));
     const from = this.figure.lamp;
-    const angle = slope - ClimberFigure.LAMP_DOWN;
+    // Up a wall the beam goes where the eyes look, across the top as they come level with it
+    // (#222); elsewhere along the slope the boots stand on. It swings round over a moment.
+    const aim = (pose.gaze ?? slope) - ClimberFigure.LAMP_DOWN;
+    const swing = 1 - Math.exp(-Math.max(seconds, 0) / ClimberFigure.LAMP_SWING_SECONDS);
+    this.aim = this.aim === null ? aim : this.aim + (aim - this.aim) * swing;
+    const angle = this.aim;
     const reach = ClimberFigure.LAMP_REACH;
     this.cone.position.set(from.x, from.y);
     this.cone.rotation = angle;

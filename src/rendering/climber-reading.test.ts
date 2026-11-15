@@ -195,6 +195,21 @@ describe("ClimberReading", () => {
     expect(pick?.into.y).toBeCloseTo(0, 9);
   });
 
+  it("reads a face of ice as a ladder from its foot to its lip, so the pose knows where it ends (#222)", () => {
+    const reading = new ClimberReading(slope);
+    reading.read(view({ walking: "right" }), BODY, drawn(19, 2));
+    const top = (y: number): readonly number[] =>
+      reading.read(view({ onIce: true }), BODY, drawn(20, y)).ladder?.ends ?? [];
+
+    // The wall goes up from 2 m to 5 m: low on it, its lip is 2.5 m over the climber's point; near
+    // the lip, 0.4 m, and its foot 2.6 m under it; at the lip, none.
+    expect(Math.max(...top(2.5))).toBeCloseTo(2.5, 6);
+    expect(Math.min(...top(2.5))).toBeCloseTo(-0.5, 6);
+    expect(Math.max(...top(4.6))).toBeCloseTo(0.4, 6);
+    expect(Math.min(...top(4.6))).toBeCloseTo(-2.6, 6);
+    expect(Math.max(...top(5))).toBeCloseTo(0, 6);
+  });
+
   it("tells each pick in the ice by the swing that put it there, and the way into the ice where it is", () => {
     const reading = new ClimberReading(slope);
     const on = (picks: readonly Point[], tools = 2) =>
