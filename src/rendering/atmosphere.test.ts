@@ -86,4 +86,15 @@ describe("Atmosphere", () => {
     expect(atmosphere.gust).toBeCloseTo(new Gust("wind").at(60), 9);
     expect(atmosphere.after(-1, seconds(10), "wind", BASE_CAMP).elapsed).toBeCloseTo(60, 9);
   });
+
+  it("blows the wind up as hard as a gust on its way does, never past a full blow (#197)", () => {
+    const calm = Atmosphere.at(seconds(4), "clear", BASE_CAMP);
+    const usual = calm.after(1, seconds(4), "clear", BASE_CAMP);
+    const rising = calm.after(1, seconds(4), "clear", BASE_CAMP, 0.8);
+    const full = calm.after(1, seconds(4), "clear", BASE_CAMP, 3);
+
+    expect(usual.gust).toBeLessThan(0.3);
+    expect(rising.gust).toBeCloseTo(0.8, 9);
+    expect(full.gust).toBe(1);
+  });
 });

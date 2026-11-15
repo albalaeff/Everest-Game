@@ -21,8 +21,11 @@ export type AlongStretch = {
 /**
  * How a climber keeps their feet (#208): each metre they walk on blue ice, a ladder or steep snow
  * has a chance of slipping, by what's under them, divided by how sure-footed they are: a careful
- * pace's more, a hurried or tired one's less (`Legs.sureness`). Standing still never slips. The
- * chances are a metre's at a sure-footedness of 1.
+ * pace's more, a hurried or tired one's less (`Legs.sureness`). Standing still never slips but
+ * where a stance is hard (#197): on the front points, on a ladder bouncing hard, on ice steeper
+ * than a flat foot holds on. And a jolt they can't prevent, a gust, a ladder twisting, a climber
+ * passing them on their rope, slips them at its chance where a slip can happen. The chances are a
+ * metre's at a sure-footedness of 1, and standing's a second's.
  */
 export interface FootingSettings {
   /** The chance a metre of blue ice on the level slips, and how much more it is for each unit of
@@ -45,6 +48,22 @@ export interface FootingSettings {
    * loose, on the next ladder; how sure-footed a loose one leaves its climber, a share; and the
    * seconds a refit takes, standing. */
   readonly crampon: { readonly looseAfter: number; readonly loose: number; readonly refit: number };
+  /** Standing still where a stance is hard (#197), each a chance a second at a sure-footedness of
+   * 1: on the front points, on a face of ice or on blue ice steeper than `steepness`, in degrees,
+   * where a crampon's flat foot no longer holds; and for each unit of a ladder's bounce past
+   * `bounceFrom`, the sway a crossing sets going on its own. */
+  readonly still: {
+    readonly steepness: number;
+    readonly frontPoints: number;
+    readonly bounce: number;
+    readonly bounceFrom: number;
+  };
+  /** The share of a jolt's chance, a gust, a ladder twisting, a climber passing (#197), that slips
+   * a climber standing still, braced for it, against one on the move. */
+  readonly braced: number;
+  /** One climber passing another on a rope they share (#197): how near along the ground, in
+   * metres, and the chance it slips the one passed where a slip can happen, as a jolt does. */
+  readonly passing: { readonly near: number; readonly slip: number };
 }
 
 /**
@@ -94,6 +113,10 @@ export interface SlopeSettings {
   readonly friction: number;
   /** How far a cowstail reaches from a climber to their rope, in metres. */
   readonly cowstail: number;
+  /** How long the typical client's hands take to clip a cowstail's carabiner onto a rope, in
+   * seconds, standing (#197): a climber's technique shares it as it shares their speed; nought
+   * clips at once. */
+  readonly clip: number;
   /** The energy a metre of walking takes of each kilogram moved, in J/kg/m, by the gradient
    * ahead: from the steepest measured down to the steepest measured up. */
   readonly walkingCost: readonly GradientPoint[];
@@ -376,6 +399,42 @@ export class Slope {
     return found;
   }
 
+  /** Each climber passed on the ground this step by another on a rope they share, within the
+   * passing's reach (#197): the one passed, who moved the less, keeps their feet at the passing's
+   * chance of a jolt, or slips. They were where `before` says, in the climbers' order. */
+  private pass(
+    climbers: readonly Climber[],
+    before: readonly (number | null)[],
+    moment: Moment,
+  ): void {
+    const { near, slip } = this.settings.footing.passing;
+    if (!(slip > 0)) {
+      return;
+    }
+    const passed = new Set<Climber>();
+    for (const [i, one] of climbers.entries()) {
+      for (const [j, other] of climbers.entries()) {
+        const [was, wasOther] = [before[i], before[j]];
+        const [now, nowOther] = [one.onTheGround, other.onTheGround];
+        if (j <= i || was == null || wasOther == null || now === null || nowOther === null) {
+          continue;
+        }
+        const crossed = Math.sign(was - wasOther) * Math.sign(now - nowOther) < 0;
+        const close = Math.min(Math.abs(was - wasOther), Math.abs(now - nowOther)) <= near;
+        const shared = one.ropes.some((rope) => other.ropes.includes(rope));
+        if (crossed && close && shared) {
+          passed.add(Math.abs(now - was) < Math.abs(nowOther - wasOther) ? one : other);
+        }
+      }
+    }
+    for (const climber of passed) {
+      const chance = slip * climber.unsteadiness(this);
+      if (chance > 0 && moment.random.chance(Math.min(1, chance))) {
+        climber.upset(this, moment.step);
+      }
+    }
+  }
+
   /** One step for every climber on it, in the scenario's order. A rope that lay still and
    * nobody is clipped to waits, so the ropes of a whole section cost nothing until used. The
    * ladders' bounce dies away after the climbers' steps set it going; one that has creaked long
@@ -388,10 +447,12 @@ export class Slope {
     const ropes = [...this.ropes.values()].filter((rope) => clipped.has(rope) || !rope.resting);
     const hauls = this.hauls(climbers);
     this.steady(climbers, hauls);
+    const before = climbers.map((climber) => climber.onTheGround);
     for (const climber of climbers) {
       climber.walk(this, moment, hauls);
       climber.beginStep();
     }
+    this.pass(climbers, before, moment);
     for (const ladder of this.ladders.values()) {
       ladder.settle(SimulationClock.STEP_SECONDS, footing.bounce.damp);
       if (ladder.snap(moment.step, Slope.steps(ladderBreak.creak))) {

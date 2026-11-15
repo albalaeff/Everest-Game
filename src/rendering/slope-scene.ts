@@ -1,7 +1,15 @@
 import { Application, Rectangle } from "pixi.js";
 
 import type { Lamps, SlopePhysics } from "../physics";
-import type { Body, Breathing, ClimberId, MountainClock, ObjectiveHazards } from "../simulation";
+import type {
+  Body,
+  Breathing,
+  ClimberId,
+  JoltWarning,
+  JoltZone,
+  MountainClock,
+  ObjectiveHazards,
+} from "../simulation";
 import { Atmosphere } from "./atmosphere";
 import type { Camera } from "./camera";
 import type { CampStretch } from "./camp-signs";
@@ -32,6 +40,11 @@ export interface SceneWorld {
   /** The climbers an agent steers: the Sherpa, in his blue suit (#212). */
   readonly npcs: readonly ClimberId[];
   readonly seed: number;
+  /** The jolts on their way (#197): a gust streams the snow, a lashed ladder shudders. */
+  readonly jolts?: {
+    readonly zones: readonly JoltZone[];
+    readonly warnings: readonly JoltWarning[];
+  };
 }
 
 /**
@@ -49,6 +62,9 @@ export class SlopeScene {
    * how many frames the cycle runs. */
   private static readonly SHAKE_METRES = 0.06;
   private static readonly SHAKE_FRAMES = 5;
+  /** A gust on its way (#197): the seconds of picture its wind takes to rise to its full blow, and
+   * to die away once it has come and gone. */
+  private static readonly GUST = { rise: 1.5, fall: 1.5 };
 
   private readonly app = new Application();
   private opened = false;
@@ -59,6 +75,8 @@ export class SlopeScene {
   private snow: SnowLayer | null = null;
   private atmosphere: Atmosphere;
   private frames = 0;
+  /** How hard a gust on its way blows the picture's wind now, 0 to 1. */
+  private blowing = 0;
 
   constructor(
     private readonly host: HTMLElement,
@@ -123,11 +141,18 @@ export class SlopeScene {
     this.camera.resize(width, height);
     this.slope?.move(between);
     this.camera.follow(seconds, this.slope?.player ?? this.camera.climber);
+    const gusting = (this.world.jolts?.warnings ?? []).some(({ kind }) => kind === "gust");
+    const { rise, fall } = SlopeScene.GUST;
+    this.blowing = Math.min(
+      Math.max(this.blowing + (gusting ? seconds / rise : -seconds / fall), 0),
+      1,
+    );
     this.atmosphere = this.atmosphere.after(
       seconds,
       clock.timeOfDay,
       hazards.weather,
       this.altitude,
+      this.blowing,
     );
     for (const layer of this.layers) {
       layer.place(this.camera);
@@ -187,6 +212,7 @@ export class SlopeScene {
     const { width, height } = this.app.screen;
     const { physics, hazards, body, oxygen, lamps, camps, parts, climbers, player, npcs, seed } =
       this.world;
+    const { jolts } = this.world;
     const skyline = (style: typeof SkylineLayer.PEAKS, offset: number): SkylineLayer =>
       new SkylineLayer(style, physics.terrain, seed + offset, fogBanks, parts);
     this.sky = new SkyLayer(dithered);
@@ -209,6 +235,7 @@ export class SlopeScene {
       npcs,
       seed,
       motes,
+      jolts,
     );
     this.snow = flakes > 0 ? new SnowLayer(flakes, width, height) : null;
     const behind = this.skylines.filter((layer) => layer.depth.x < 1);

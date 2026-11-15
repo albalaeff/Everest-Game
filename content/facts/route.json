@@ -1352,6 +1352,54 @@
       "kind": "question",
       "question": "What was the Hillary Step made of before 2015, rock, snow or both, and how high was it? The spec calls it a rock step; Olaf Rieck's undated page says only a 12 m vertical wall.",
       "about": ["route.hillary-step-before-2015"]
+    },
+    {
+      "id": "route.icefall-wind",
+      "kind": "fact",
+      "claim": "As the sun warms the Icefall in the morning, its thermals bring a cross wind, gusting over the ladders; the night is calmer.",
+      "status": "source only",
+      "versions": [
+        {
+          "note": "Crossing a ladder as the morning thermals created a steady cross wind.",
+          "source": {
+            "title": "Alan Arnette: Wobbly Ladders to Camp 1 (2011)",
+            "url": "https://www.alanarnette.com/2011/04/21/wobbly-ladders-to-camp-1/"
+          },
+          "checked": "2026-11-15"
+        }
+      ]
+    },
+    {
+      "id": "route.icefall-ladders-shift",
+      "kind": "fact",
+      "claim": "The Icefall's ladders move under the climbers: lashed end to end they wobble left, right, up and down; the glacier shifts them on their anchors, and the anchors loosen after warm afternoons.",
+      "status": "source only",
+      "versions": [
+        {
+          "note": "Watching a Sherpa cross three or four ladders lashed together, the wobble goes left, right, up and down: it is three-dimensional.",
+          "source": {
+            "title": "Alan Arnette: Everest 2013: Crossing the Ladders of Everest",
+            "url": "https://www.alanarnette.com/2013/04/12/everest-2013-crossing-the-ladders-of-everest/"
+          },
+          "checked": "2026-11-15"
+        },
+        {
+          "note": "The ladders had shifted or slipped, or the Icefall had moved, far enough to need a leap to get off them.",
+          "source": {
+            "title": "Alan Arnette: Wobbly Ladders to Camp 1 (2011)",
+            "url": "https://www.alanarnette.com/2011/04/21/wobbly-ladders-to-camp-1/"
+          },
+          "checked": "2026-11-15"
+        },
+        {
+          "note": "After warm afternoons the ladders' anchor points loosen meaningfully.",
+          "source": {
+            "title": "Global Summit Guide: Khumbu Icefall, the mistakes that have killed climbers since 2014",
+            "url": "https://globalsummitguide.com/khumbu-icefall-mistakes-that-killed-climbers/"
+          },
+          "checked": "2026-11-15"
+        }
+      ]
     }
   ]
 }

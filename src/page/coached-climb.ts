@@ -1,16 +1,28 @@
 import type { CoachWorld } from "../interface/coach";
 import type { ClimberView, LadderCondition, Lamps, Point, SlopePhysics } from "../physics";
-import type { ClimberId, HazardKind, HazardZone, ObjectiveHazards } from "../simulation";
+import type {
+  ClimberId,
+  HazardKind,
+  HazardZone,
+  JoltKind,
+  Jolts,
+  ObjectiveHazards,
+} from "../simulation";
 
 /** The climb as the coach reads it (#192): the player's climber and the route's ropes, ladders,
- * blue ice and hazard zones, and the player's lamp (#196), from the physics, the hazards and the
- * lamps, which it only reads. */
+ * blue ice and hazard zones, the player's lamp (#196), and the jolts on their way to them (#197),
+ * from the physics, the hazards, the lamps and the jolts, which it only reads. */
 export class CoachedClimb implements CoachWorld {
+  /** How near behind the player, along the ground, someone coming past them on their rope is
+   * said to be passing them: a few steps. */
+  private static readonly PASSING = 3;
+
   constructor(
     private readonly physics: SlopePhysics,
     private readonly hazards: ObjectiveHazards,
     private readonly lamps: Lamps,
     private readonly climberId: ClimberId,
+    private readonly jolts: Pick<Jolts, "comingTo"> | null = null,
   ) {}
 
   player(): ClimberView {
@@ -23,6 +35,14 @@ export class CoachedClimb implements CoachWorld {
 
   warning(): HazardKind | null {
     return this.hazards.warningAt(this.physics.along(this.climberId));
+  }
+
+  jolt(): JoltKind | null {
+    return this.jolts?.comingTo(this.climberId) ?? null;
+  }
+
+  passing(): boolean {
+    return this.physics.passerOf(this.climberId, CoachedClimb.PASSING) !== null;
   }
 
   ladderCondition(id: string): LadderCondition {

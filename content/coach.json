@@ -53,7 +53,17 @@
     "ice-down.pc": "No ladder down this ice. Right-click the face below your feet to step down onto your front points, then hold S, and click to swing the axe in lower as you go.",
     "ice-down.touch": "No ladder down this ice. Tap the face below your feet to step down onto your front points, then pull your thumb down, and tap to swing the axe in lower as you go.",
     "rappel.pc": "No ladder down this ice, and the fixed rope runs down it. Clipped to the rope, hold S to lower yourself down it, your front points on the ice.",
-    "rappel.touch": "No ladder down this ice, and the fixed rope runs down it. Clipped to the rope, pull your thumb down to lower yourself down it, your front points on the ice."
+    "rappel.touch": "No ladder down this ice, and the fixed rope runs down it. Clipped to the rope, pull your thumb down to lower yourself down it, your front points on the ice.",
+    "gust.pc": "A gust is coming across the slope: stop where you are, and stay clipped.",
+    "gust.touch": "A gust is coming across the slope: stop where you are, and stay clipped.",
+    "ladder-twist.pc": "This ladder is lashed together, and it's starting to twist: stand still, hold on, and stay clipped.",
+    "ladder-twist.touch": "This ladder is lashed together, and it's starting to twist: stand still, hold on, and stay clipped.",
+    "passing.pc": "Someone's passing you on your rope: stand still until they're by.",
+    "passing.touch": "Someone's passing you on your rope: stand still until they're by.",
+    "ladder-bounced.pc": "Someone's crossing your ladder and it's bouncing: hold on, and stay clipped.",
+    "ladder-bounced.touch": "Someone's crossing your ladder and it's bouncing: hold on, and stay clipped.",
+    "front-points.pc": "Standing still won't steady you here: on your front points your calves tire. Climb on, or rest your weight on the rope.",
+    "front-points.touch": "Standing still won't steady you here: on your front points your calves tire. Climb on, or rest your weight on the rope."
   },
   "ru": {
     "walk.pc": "Держи D, чтобы идти. C — осторожный шаг, Shift — быстрее.",
@@ -109,6 +119,16 @@
     "ice-down.pc": "Лестницы вниз по этому льду нет. Щёлкни правой кнопкой по стене ниже ног, чтобы встать на передние зубья, потом держи S и щёлкай, чтобы перебивать ледоруб ниже.",
     "ice-down.touch": "Лестницы вниз по этому льду нет. Коснись стены ниже ног, чтобы встать на передние зубья, потом веди палец вниз и касайся, чтобы перебивать ледоруб ниже.",
     "rappel.pc": "Лестницы вниз по этому льду нет, но по нему идут перила. Пристёгнутым к верёвке держи S, чтобы спуститься по ней, упираясь передними зубьями в лёд.",
-    "rappel.touch": "Лестницы вниз по этому льду нет, но по нему идут перила. Пристёгнутым к верёвке веди палец вниз, чтобы спуститься по ней, упираясь передними зубьями в лёд."
+    "rappel.touch": "Лестницы вниз по этому льду нет, но по нему идут перила. Пристёгнутым к верёвке веди палец вниз, чтобы спуститься по ней, упираясь передними зубьями в лёд.",
+    "gust.pc": "Через склон идёт порыв ветра: остановись и не отстёгивайся.",
+    "gust.touch": "Через склон идёт порыв ветра: остановись и не отстёгивайся.",
+    "ladder-twist.pc": "Эта лестница связана из нескольких, и её начинает скручивать: замри, держись и не отстёгивайся.",
+    "ladder-twist.touch": "Эта лестница связана из нескольких, и её начинает скручивать: замри, держись и не отстёгивайся.",
+    "passing.pc": "Кто-то обходит тебя по твоей верёвке: стой, пока не пройдёт.",
+    "passing.touch": "Кто-то обходит тебя по твоей верёвке: стой, пока не пройдёт.",
+    "ladder-bounced.pc": "По твоей лестнице кто-то идёт, и она раскачивается: держись и не отстёгивайся.",
+    "ladder-bounced.touch": "По твоей лестнице кто-то идёт, и она раскачивается: держись и не отстёгивайся.",
+    "front-points.pc": "Стоя здесь не устоишь: на передних зубьях устают икры. Лезь дальше или повисни на верёвке.",
+    "front-points.touch": "Стоя здесь не устоишь: на передних зубьях устают икры. Лезь дальше или повисни на верёвке."
   }
 }

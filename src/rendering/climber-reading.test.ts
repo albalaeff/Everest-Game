@@ -68,6 +68,8 @@ const view = (over: Partial<ClimberView> = {}): ClimberView => ({
   pickPoor: false,
   lowering: false,
   gear: { jumar: true, tools: 1 },
+  clipping: null,
+  stillChance: 0,
   ...over,
 });
 

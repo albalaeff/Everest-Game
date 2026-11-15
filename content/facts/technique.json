@@ -580,7 +580,7 @@
       "kind": "coefficient",
       "claim": "The share of the speed on a ladder and clipped to a fixed rope of a climber who has never used crampons, a jumar or a ladder, against one with alpine climbs behind them, whom the ladder speeds and the walking power are fitted to. Fitted so that such a climber, as fit as the typical client, takes about the middle of the hours the sources give a first crossing of the Icefall, 5, where a typical client who never stops at an anchor takes 3.8: 5.0.",
       "status": "source only",
-      "value": 0.7,
+      "value": 0.77,
       "unit": "1",
       "fitted_to": ["time.base-camp-to-camp-1", "route.icefall-ladders"],
       "fitted": "2026-11-08"
@@ -590,7 +590,7 @@
       "kind": "coefficient",
       "claim": "The same share for a climber who has climbed a 7,000 m or an 8,000 m peak. Fitted so that such a climber, as fit as the typical client, crosses the Icefall the first time in about 3 hours, the shortest the sources give it, and summits more often: they take less time on the ropes, not fewer risks (technique.experience-and-summits).",
       "status": "source only",
-      "value": 1.35,
+      "value": 1.4,
       "unit": "1",
       "fitted_to": [
         "time.base-camp-to-camp-1",
@@ -916,6 +916,162 @@
         "technique.ice-climb-slip",
         "technique.ice-climb-one-tool"
       ]
+    },
+    {
+      "id": "technique.flat-footing",
+      "kind": "fact",
+      "claim": "On snow and ice up to about 40° a climber in crampons stands and walks flat-footed, every point but the front ones in; steeper, on the front points, which tire the calves quickly, so that nobody stands there long.",
+      "status": "source only",
+      "versions": [
+        {
+          "value": 40,
+          "unit": "°",
+          "note": "Flat-footing, the French technique, is the preferred technique on low-angle to moderately steep ice, slopes up to about 40°.",
+          "source": {
+            "title": "REI Expert Advice: How to Climb Ice",
+            "url": "https://www.rei.com/learn/expert-advice/ice-climbing-waterfalls-alpine-walls.html"
+          },
+          "checked": "2026-11-15"
+        },
+        {
+          "note": "Mountaineers avoid front-pointing as much as they can: it wears out the calves quickly.",
+          "source": {
+            "title": "Alpine Institute: Crampon Technique for Ice Climbing",
+            "url": "https://www.alpineinstitute.com/crampon-technique-for-ice-climbing/"
+          },
+          "checked": "2026-11-15"
+        }
+      ]
+    },
+    {
+      "id": "technique.changeover",
+      "kind": "fact",
+      "claim": "At each anchor of the fixed line a climber clips the next rope before unclipping the last, one carabiner at a time, the jumar too: a clip-in takes about half a minute, and the anchors come often, so they add up; tired or new to it, a climber fumbles the carabiners.",
+      "status": "source only",
+      "versions": [
+        {
+          "value": 30,
+          "unit": "s",
+          "note": "Skipping a clip-in to save 30 seconds across a small ladder section is the commonest contributor to fatal crevasse falls.",
+          "source": {
+            "title": "Global Summit Guide: Khumbu Icefall, the mistakes that have killed climbers since 2014",
+            "url": "https://globalsummitguide.com/khumbu-icefall-mistakes-that-killed-climbers/"
+          },
+          "checked": "2026-11-15"
+        },
+        {
+          "note": "Climbers swear at each anchor that makes them unclip the carabiner, perhaps the jumar, and at how close together the anchors are.",
+          "source": {
+            "title": "Alan Arnette: Everest 2013: Climbing to Camp 1",
+            "url": "https://www.alanarnette.com/2013/04/19/everest-2013-climbing-to-camp-1/"
+          },
+          "checked": "2026-11-15"
+        },
+        {
+          "note": "Coming down through the Icefall there is no room for tired steps or fumbled carabiners.",
+          "source": {
+            "title": "RMI Expeditions: Mt. Everest Expedition: Ice Fall Dress Rehearsal (2011)",
+            "url": "https://www.rmiguides.com/blog/2011/04/18/mt._everest_expedition_ice_fall_dress_rehearsal"
+          },
+          "checked": "2026-11-15"
+        }
+      ]
+    },
+    {
+      "id": "technique.passing-on-ropes",
+      "kind": "fact",
+      "claim": "On the Icefall's fixed lines the Sherpas pass the clients, going up and coming down, and the client steps aside to let them by.",
+      "status": "source only",
+      "versions": [
+        {
+          "note": "As the traffic picks up, a client gets used to stepping aside to let Sherpas pass going up and coming down.",
+          "source": {
+            "title": "Alan Arnette: Everest 2013: Climbing to Camp 1",
+            "url": "https://www.alanarnette.com/2013/04/19/everest-2013-climbing-to-camp-1/"
+          },
+          "checked": "2026-11-15"
+        }
+      ]
+    },
+    {
+      "id": "technique.clip-time",
+      "kind": "coefficient",
+      "claim": "How long the typical client's hands take to clip one cowstail's carabiner onto a rope, standing (#197): a changeover clips two, the half a minute a clip-in takes; a climber's technique shares it as it shares their speed, so a novice is slower at the anchors and a veteran quicker.",
+      "status": "source only",
+      "value": 15,
+      "unit": "s",
+      "fitted_to": ["technique.changeover", "time.base-camp-to-camp-1"],
+      "fitted": "2026-11-15"
+    },
+    {
+      "id": "technique.front-points-slip",
+      "kind": "coefficient",
+      "claim": "The chance a second a climber standing still on their front points slips, at a steady pace's sure-footedness (#197): on a face of ice, or on blue ice too steep to stand on flat-footed, the calves tire, the more on the axe alone and on a pick that bites poorly. Fitted so that a minute's stand there on the axe alone slips a climber about one time in twenty, and a clip's seconds seldom: they climb on, or rest on the rope, which takes their weight.",
+      "status": "source only",
+      "value": 0.0002,
+      "unit": "1/s",
+      "fitted_to": ["technique.flat-footing", "route.icefall-ice-steps"],
+      "fitted": "2026-11-15"
+    },
+    {
+      "id": "technique.ladder-still-slip",
+      "kind": "coefficient",
+      "claim": "The chance a second a climber standing still on a ladder slips, for each unit of its bounce past what a careful crossing sets going on its own (#197): a lashed ladder lurches in three dimensions under someone else's steps. Fitted so that a climber standing on a long ladder while another hurries onto it slips now and then, and never from their own crossing's sway.",
+      "status": "source only",
+      "value": 0.0005,
+      "unit": "1/s",
+      "fitted_to": ["route.icefall-ladders-lashed", "route.icefall-ladders-shift"],
+      "fitted": "2026-11-15"
+    },
+    {
+      "id": "technique.ladder-still-from",
+      "kind": "coefficient",
+      "claim": "How hard a ladder bounces, in technique.ladder-bounce-excite's units, before a climber standing still on it can slip (#197): a careful crossing of the Icefall's longest ladder sways it about this hard on its own, and another's hurried steps past it.",
+      "status": "source only",
+      "value": 5,
+      "unit": "1",
+      "fitted_to": ["route.icefall-ladders-lashed"],
+      "fitted": "2026-11-15"
+    },
+    {
+      "id": "technique.jolt-braced",
+      "kind": "coefficient",
+      "claim": "The share of a jolt's chance of slipping a climber, a gust, a ladder twisting, someone passing them on the rope (#197), that is left when they stand still, braced for it, against one on the move: the warning's point is to stop.",
+      "status": "source only",
+      "value": 0.5,
+      "unit": "1",
+      "fitted_to": ["route.icefall-wind", "technique.passing-on-ropes"],
+      "fitted": "2026-11-15"
+    },
+    {
+      "id": "technique.passing-near",
+      "kind": "coefficient",
+      "claim": "How near along the ground one climber passes another on a rope they share for the passing to jolt the one passed (#197): within arm's reach.",
+      "status": "source only",
+      "value": 1,
+      "unit": "m",
+      "fitted_to": ["technique.passing-on-ropes"],
+      "fitted": "2026-11-15"
+    },
+    {
+      "id": "technique.passing-slip",
+      "kind": "coefficient",
+      "claim": "The chance a climber passed on the rope slips, on the move where a slip can happen, at a steady pace's sure-footedness (#197): the passer brushes by, the rope tugs. Fitted so that a client standing aside on blue ice or a ladder's end is seldom upset, and one walking on careless more often.",
+      "status": "source only",
+      "value": 0.05,
+      "unit": "1",
+      "fitted_to": ["technique.passing-on-ropes"],
+      "fitted": "2026-11-15"
+    },
+    {
+      "id": "technique.sherpa-pass",
+      "kind": "coefficient",
+      "claim": "How many of the mountain's seconds a client who went ahead of their Sherpa stands still before he goes past them on the fixed rope to lead again (#197): a couple of minutes' rest, and he steps by, as the Sherpas pass their clients going up and down.",
+      "status": "source only",
+      "value": 120,
+      "unit": "s",
+      "fitted_to": ["technique.passing-on-ropes", "technique.sherpa-leads"],
+      "fitted": "2026-11-15"
     }
   ]
 }

@@ -3,7 +3,14 @@ import { FillGradient, Graphics, Particle, ParticleContainer, Texture } from "pi
 import { Terrain } from "../physics";
 import type { ClimberView, LadderCondition, Lamps, Point, SlopePhysics } from "../physics";
 import { SeededRandom } from "../simulation";
-import type { Body, Breathing, ClimberId, ObjectiveHazards } from "../simulation";
+import type {
+  Body,
+  Breathing,
+  ClimberId,
+  JoltWarning,
+  JoltZone,
+  ObjectiveHazards,
+} from "../simulation";
 import type { Atmosphere } from "./atmosphere";
 import type { Beam } from "./beam";
 import type { Camera } from "./camera";
@@ -71,6 +78,9 @@ interface DrawnLadder {
   /** Its condition as last drawn, and the picture's seconds it has been so since (#209). */
   condition: LadderCondition;
   since: number;
+  /** The twist's zone it lies under, a lashed ladder's (#197), or none: it shudders while the
+   * twist is on its way. */
+  readonly lashed: string | null;
 }
 
 interface DrawnClimber {
@@ -191,6 +201,8 @@ export class SlopeLayer extends ParallaxLayer {
    * its end that's tearing free drops this far; broken, it swings down into the crevasse from its
    * other end over so many seconds, knocks against the wall and settles. */
   private static readonly CREAK = { metres: 0.025, hz: 9, drop: 0.12 };
+  /** How near a twist zone's ends are to a ladder's, along the ground, to be its (#197). */
+  private static readonly SAME = 1e-6;
   private static readonly SWING = { fall: 0.55, knock: 0.35, back: 0.18, settle: 3 };
   /** The streaks down a wall's bare ice: how wide, and how strong. */
   private static readonly STREAK_METRES = 0.035;
@@ -346,6 +358,10 @@ export class SlopeLayer extends ParallaxLayer {
     npcs: readonly ClimberId[],
     seed: number,
     motes: number,
+    private readonly jolts: {
+      readonly zones: readonly JoltZone[];
+      readonly warnings: readonly JoltWarning[];
+    } | null = null,
   ) {
     super("slope", { x: 1, y: 1 });
     this.chips = new IceChips(seed + SlopeLayer.CHIP_SEED);
@@ -363,6 +379,14 @@ export class SlopeLayer extends ParallaxLayer {
       const across = Math.abs(finish.y - start.y) < length / 2;
       const bow = new LadderBow(length);
       const condition = physics.ladderCondition(id);
+      const [from, to] = [start, finish].map((end) => terrain.nearest(end).along);
+      const lashed =
+        jolts?.zones.find(
+          (zone) =>
+            zone.kind === "twist" &&
+            Math.abs(zone.from - (from ?? 0)) < SlopeLayer.SAME &&
+            Math.abs(zone.to - (to ?? 0)) < SlopeLayer.SAME,
+        )?.id ?? null;
       return {
         id,
         start,
@@ -375,6 +399,7 @@ export class SlopeLayer extends ParallaxLayer {
         bowed: false,
         condition,
         since: 0,
+        lashed,
       };
     });
     const bare = parts.find(({ id }) => id === SlopeLayer.BARE) ?? null;
@@ -563,6 +588,7 @@ export class SlopeLayer extends ParallaxLayer {
       ladder.since += seconds;
       const moving =
         condition === "creaking" ||
+        this.twisting(ladder) ||
         (condition === "broken" && ladder.since < SlopeLayer.SWING.settle);
       if (rescaled || changed || moving || ladder.bowed || ladder.loads.length > 0 || bouncing) {
         this.bounced.set(ladder.id, bounce);
@@ -735,7 +761,18 @@ export class SlopeLayer extends ParallaxLayer {
 
   /** How far a creaking ladder is shaken down at `along` this frame (#209): a shudder all along
    * it, and its end that's tearing free dropping. Nought for a whole or broken one. */
+  /** Whether a lashed ladder's twist is on its way (#197): it shudders as one creaking does, with
+   * no end torn free. */
+  private twisting(ladder: DrawnLadder): boolean {
+    const { lashed } = ladder;
+    return lashed !== null && (this.jolts?.warnings ?? []).some(({ zone }) => zone === lashed);
+  }
+
   private creak(ladder: DrawnLadder): (along: number) => number {
+    if (ladder.condition !== "creaking" && this.twisting(ladder)) {
+      const { CREAK } = SlopeLayer;
+      return (along) => CREAK.metres * Math.sin(2 * Math.PI * CREAK.hz * this.elapsed + along * 3);
+    }
     if (ladder.condition !== "creaking") {
       return () => 0;
     }

@@ -46,6 +46,19 @@ export type {
   Strike,
   Warning,
 } from "./objective-hazards";
+export { DayWarmth } from "./day-warmth";
+export type { SunShares, WarmthHours } from "./day-warmth";
+export { Jolts } from "./jolts";
+export type {
+  Jolt,
+  JoltGround,
+  JoltKind,
+  JoltOdds,
+  JoltSettings,
+  JoltStart,
+  JoltWarning,
+  JoltZone,
+} from "./jolts";
 export { PACK_ITEMS, Packs } from "./packs";
 export type {
   Bottles,

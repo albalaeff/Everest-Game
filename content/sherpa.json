@@ -48,7 +48,12 @@
     "joke-pack.1": "My pack is bigger than yours. Don't worry, it's mostly biscuits.",
     "joke-crampons.1": "Crampons. Shoes for the ice. Very ugly shoes.",
     "joke-uncle.1": "My uncle says the Icefall is easy. My uncle stays at Base Camp.",
-    "camp-1.1": "Camp 1. Now the hardest part: sitting and doing nothing."
+    "camp-1.1": "Camp 1. Now the hardest part: sitting and doing nothing.",
+    "gust.1": "Wind coming. Stop here, hold the rope.",
+    "gust.2": "Wind! Stand still till it's gone.",
+    "twist.1": "This ladder moves. Don't step now, hold on.",
+    "passing.1": "I come past you. Stand still, hold the rope.",
+    "passing.2": "Behind you. Let me by, I go first now."
   },
   "ru": {
     "name": "Пемба",
@@ -99,6 +104,11 @@
     "joke-pack.1": "Рюкзак у меня больше твоего. Не волнуйся, там в основном печенье.",
     "joke-crampons.1": "Кошки. Обувь для льда. Очень некрасивая обувь.",
     "joke-uncle.1": "Дядя говорит, ледопад это легко. Дядя сидит в базовом лагере.",
-    "camp-1.1": "Первый лагерь. Теперь самое трудное: сидеть и ничего не делать."
+    "camp-1.1": "Первый лагерь. Теперь самое трудное: сидеть и ничего не делать.",
+    "gust.1": "Ветер идёт. Стой тут, держи верёвку.",
+    "gust.2": "Ветер! Замри, пока не пройдёт.",
+    "twist.1": "Лестница ходит. Не шагай сейчас, держись.",
+    "passing.1": "Я пройду мимо. Стой, держи верёвку.",
+    "passing.2": "Я сзади. Пропусти, теперь я впереди."
   }
 }

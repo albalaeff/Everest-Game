@@ -63,9 +63,16 @@ export class Atmosphere {
   }
 
   /** The atmosphere `seconds` later, the clock at `timeOfDay`, the weather and the altitude as they
-   * are: the same palette while the light and the air look as they did when it was mixed, so a
-   * dawn that no frame's step shows still shows once it has gone on long enough. */
-  after(seconds: number, timeOfDay: number, weather: HazardWeather, altitude: number): Atmosphere {
+   * are, and a gust that jolts the climbers `blowing`, 0 to 1, on its way (#197): the same palette
+   * while the light and the air look as they did when it was mixed, so a dawn that no frame's step
+   * shows still shows once it has gone on long enough. */
+  after(
+    seconds: number,
+    timeOfDay: number,
+    weather: HazardWeather,
+    altitude: number,
+    blowing = 0,
+  ): Atmosphere {
     const light = DayLight.at(timeOfDay);
     const air = ThinAir.at(altitude);
     const look = WeatherLook.of(weather);
@@ -77,7 +84,7 @@ export class Atmosphere {
       air,
       look,
       same ? mixed : { palette: new Palette(light, air, look), light, air },
-      new Gust(weather).at(elapsed),
+      Math.max(new Gust(weather).at(elapsed), Math.min(Math.max(blowing, 0), 1)),
       elapsed,
     );
   }

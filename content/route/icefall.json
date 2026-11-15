@@ -315,6 +315,17 @@
       { "id": "cwm-bridges", "kind": "crevasse", "from": 644.5, "to": 659.5 }
     ]
   },
+  "jolts": {
+    "zones": [
+      { "id": "icefall-wind", "kind": "gust", "from": 20, "to": 642.5 },
+      { "id": "popcorn-lashed", "kind": "twist", "from": 90.75, "to": 122.875 },
+      { "id": "wide-lashed", "kind": "twist", "from": 199.75, "to": 246.25 },
+      { "id": "big-lashed", "kind": "twist", "from": 319.75, "to": 379.5 },
+      { "id": "upper-lashed", "kind": "twist", "from": 424.125, "to": 495.5 },
+      { "id": "crux-lashed", "kind": "twist", "from": 507.875, "to": 515.5 },
+      { "id": "top-lashed", "kind": "twist", "from": 522.625, "to": 568.5 }
+    ]
+  },
   "bodies": [
     {
       "id": "player",

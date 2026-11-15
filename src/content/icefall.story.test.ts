@@ -81,10 +81,10 @@ function crossed(
 
 /**
  * The Khumbu Icefall (#26): a careful climber at a steady pace, clipped in all the way, takes
- * the hours the sources give, in their faster half, since they never stop at an anchor as a
- * player does and the game eases the climb up its slopes (technique.uphill-cost-share, #186);
- * and the one who sets off in the night runs a fraction of the risk of one who sets off in the
- * morning (route.icefall-lessons).
+ * the hours the sources give, in their faster half: they stop at each anchor for their clips'
+ * seconds, as a player does (#197), but never longer, and the game eases the climb up its slopes
+ * (technique.uphill-cost-share, #186); and the one who sets off in the night runs a fraction of
+ * the risk of one who sets off in the morning (route.icefall-lessons).
  */
 describe("Base Camp to Camp 1 at a steady pace, clipped in all the way", () => {
   const mountain = new Mountain(knowledge);
@@ -106,7 +106,7 @@ describe("Base Camp to Camp 1 at a steady pace, clipped in all the way", () => {
 
     expect(arrived).toBe(true);
     expect(hours).toBeGreaterThan(sources.min + 0.25);
-    expect(hours).toBeLessThan(middle - 1);
+    expect(hours).toBeLessThan(middle - 0.5);
   });
 
   it("climbs every ladder on the way, and the steps of ice with none on the tools, and the rope holds any fall of more than a slide (#208)", () => {
