@@ -1,0 +1,164 @@
+{
+  "$schema": "../facts.schema.json",
+  "facts": [
+    {
+      "id": "history.first-ascent",
+      "kind": "fact",
+      "claim": "The year of Everest's first ascent: Edmund Hillary and Tenzing Norgay, of the British expedition led by John Hunt, on 29 May, by the South Col route.",
+      "status": "source only",
+      "versions": [
+        {
+          "value": 1953,
+          "unit": "year",
+          "source": {
+            "title": "Britannica: The historic ascent of 1953",
+            "url": "https://www.britannica.com/place/Mount-Everest/The-historic-ascent-of-1953"
+          },
+          "checked": "2026-11-15"
+        },
+        {
+          "value": 1953,
+          "unit": "year",
+          "note": "Edmund Hillary and Tenzing Norgay, on May 29, 1953.",
+          "source": {
+            "title": "Explorersweb: Mount Everest: Everything You Wanted to Know",
+            "url": "https://explorersweb.com/mount-everest-everything-you-wanted-to-know/"
+          },
+          "checked": "2026-11-15"
+        }
+      ]
+    },
+    {
+      "id": "history.first-ascent-time",
+      "kind": "fact",
+      "claim": "The time of day Hillary and Tenzing reached the summit, on 29 May 1953.",
+      "status": "source only",
+      "versions": [
+        {
+          "value": 11.5,
+          "unit": "h",
+          "note": "11:30 am.",
+          "source": {
+            "title": "Britannica: The historic ascent of 1953",
+            "url": "https://www.britannica.com/place/Mount-Everest/The-historic-ascent-of-1953"
+          },
+          "checked": "2026-11-15"
+        },
+        {
+          "value": 11.5,
+          "unit": "h",
+          "note": "At about 11:30 a.m.",
+          "source": {
+            "title": "Oxford University Press: Hillary and Tenzing climb Mt. Everest",
+            "url": "https://blog.oup.com/2012/05/hillary-and-tenzing-climb-mt-everest/"
+          },
+          "checked": "2026-11-15"
+        }
+      ]
+    },
+    {
+      "id": "history.summit-offerings",
+      "kind": "fact",
+      "claim": "On the summit in 1953, Tenzing, a Buddhist, buried sweets and biscuits in the snow as an offering to the gods; Hillary left a crucifix John Hunt had given him.",
+      "status": "source only",
+      "versions": [
+        {
+          "note": "Tenzing, a Buddhist, made an offering of food for the mountain; Hillary left a crucifix Hunt had given him.",
+          "source": {
+            "title": "Britannica: The historic ascent of 1953",
+            "url": "https://www.britannica.com/place/Mount-Everest/The-historic-ascent-of-1953"
+          },
+          "checked": "2026-11-15"
+        },
+        {
+          "note": "He buried offerings, sweets from his daughter among them, to the Buddhist deities; Hillary buried a crucifix given to him by Hunt.",
+          "source": {
+            "title": "The Irish Times: On top of the world (2023)",
+            "url": "https://www.irishtimes.com/opinion/an-irish-diary/2023/05/28/on-top-of-the-world-paul-clements-on-the-conquest-of-everest-by-edmund-hillary-and-tenzing-norgay"
+          },
+          "checked": "2026-11-15"
+        }
+      ]
+    },
+    {
+      "id": "history.most-ascents",
+      "kind": "fact",
+      "claim": "The most ascents of Everest by one climber: Kami Rita Sherpa of Thame, the latest on 17 May 2026; his first was in 1994.",
+      "status": "source only",
+      "versions": [
+        {
+          "value": 32,
+          "unit": "ascents",
+          "source": {
+            "title": "Anadolu: Nepali mountaineer Kami Rita Sherpa summits Everest for record 32nd time (2026)",
+            "url": "https://aa.com.tr/en/sports/nepali-mountaineer-kami-rita-sherpa-summits-everest-for-record-32nd-time/3939924"
+          },
+          "checked": "2026-11-15"
+        },
+        {
+          "value": 32,
+          "unit": "ascents",
+          "note": "Born in Thame; first climbed Everest in 1994.",
+          "source": {
+            "title": "Everest Chronicle: Kami Rita Sherpa scales Everest for record 32nd time (2026)",
+            "url": "https://everestchronicle.com/kami-rita-sherpa-scales-everest-for-record-32nd-time"
+          },
+          "checked": "2026-11-15"
+        }
+      ]
+    },
+    {
+      "id": "history.most-ascents-woman",
+      "kind": "fact",
+      "claim": "The most ascents of Everest by a woman: Lhakpa Sherpa, the latest on 17 May 2026.",
+      "status": "source only",
+      "versions": [
+        {
+          "value": 11,
+          "unit": "ascents",
+          "source": {
+            "title": "Guinness World Records: Most ascents of Everest (female)",
+            "url": "https://guinnessworldrecords.com/world-records/most-ascents-of-mt-everest-by-a-woman"
+          },
+          "checked": "2026-11-15"
+        },
+        {
+          "value": 11,
+          "unit": "ascents",
+          "source": {
+            "title": "The Kathmandu Post: Lhakpa Sherpa scales Everest for record 11th time (2026)",
+            "url": "https://kathmandupost.com/national/2026/05/17/lhakpa-sherpa-scales-everest-for-record-11th-time"
+          },
+          "checked": "2026-11-15"
+        }
+      ]
+    },
+    {
+      "id": "history.longest-on-top",
+      "kind": "fact",
+      "claim": "The longest stay on Everest's summit: Babu Chhiri Sherpa, without bottled oxygen, in May 1999.",
+      "status": "source only",
+      "versions": [
+        {
+          "value": 21,
+          "unit": "h",
+          "source": {
+            "title": "Guinness World Records: Longest stay on Everest summit",
+            "url": "https://www.guinnessworldrecords.com/world-records/72175-longest-stay-on-everest-summit"
+          },
+          "checked": "2026-11-15"
+        },
+        {
+          "value": 21,
+          "unit": "h",
+          "note": "Overnight on the summit without bottled oxygen in May 1999.",
+          "source": {
+            "title": "American Alpine Journal: Everest, the Death of Babu Chiri (2002)",
+            "url": "https://publications.americanalpineclub.org/articles/12200241103/Asia-Nepal-Khumbu-Himal-Everest-the-Death-of-Babu-Chiri"
+          },
+          "checked": "2026-11-15"
+        }
+      ]
+    }
+  ]
+}

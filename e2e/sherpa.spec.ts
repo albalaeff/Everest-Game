@@ -47,9 +47,8 @@ test("alone, the player sets off with Pemba ahead of them, who says the hour and
 
   await expect(page.locator('#sherpa[data-cue="set-off"]')).toBeVisible(SPEAKING);
   await expect(bubble(page).locator('[data-text="who"]')).toHaveText("Pemba");
-  await expect(bubble(page).locator('[data-text="said"]')).toContainText(
-    "03:00. Good. The Icefall sleeps while it's cold, so we go now.",
-  );
+  // One of his lines for it, the climb's seed picks which (#218): the hour, and the cold.
+  await expect(bubble(page).locator('[data-text="said"]')).toContainText(/^03:00\. .*\bcold\b/u);
   expect(await along(page, "pemba")).toBeGreaterThan(await along(page, "player"));
 });
 

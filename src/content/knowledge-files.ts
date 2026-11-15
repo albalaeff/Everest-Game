@@ -6,10 +6,12 @@ import crowds from "../../content/facts/crowds.json";
 import deaths from "../../content/facts/deaths.json";
 import gear from "../../content/facts/gear.json";
 import hazards from "../../content/facts/hazards.json";
+import history from "../../content/facts/history.json";
 import medicine from "../../content/facts/medicine.json";
 import oxygen from "../../content/facts/oxygen.json";
 import route from "../../content/facts/route.json";
 import rules from "../../content/facts/rules.json";
+import sherpas from "../../content/facts/sherpas.json";
 import technique from "../../content/facts/technique.json";
 import time from "../../content/facts/time.json";
 import tours from "../../content/facts/tours.json";
@@ -30,10 +32,12 @@ export const KNOWLEDGE_FILES: readonly KnowledgeFile[] = [
   deaths,
   gear,
   hazards,
+  history,
   medicine,
   oxygen,
   route,
   rules,
+  sherpas,
   technique,
   time,
   tours,

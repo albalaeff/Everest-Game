@@ -79,6 +79,8 @@ class ExpertList:
                     "rules",
                     "accidents",
                     "deaths",
+                    "sherpas",
+                    "history",
                 }
             ),
         ),

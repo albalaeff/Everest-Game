@@ -327,7 +327,11 @@ export class GamePage {
     );
     // Pemba, the climbers' Sherpa, if the climb has him (#212): his voice in a bubble over him.
     const sherpa = scenario.npcs?.[0] ?? null;
-    const voice = new SherpaVoice(texts.sherpa, new SherpaFacts(this.knowledge).fills);
+    const voice = new SherpaVoice(
+      texts.sherpa,
+      new SherpaFacts(this.knowledge).fills,
+      scenario.seed,
+    );
     let drawn = false;
     const bubble =
       sherpa === null
