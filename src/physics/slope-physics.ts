@@ -30,8 +30,9 @@ export interface RopeLayout {
 export interface ClimberLayout {
   readonly id: ClimberId;
   readonly along: number;
-  /** Their skill on ladders and fixed ropes: the share of the speed they go at on a ladder or
-   * clipped to a rope, 1 unless it says otherwise. */
+  /** Their skill in crampons, on ladders and on fixed ropes: the share of the speed they go at on
+   * the ground, a ladder or the ice, and of the typical client's pace at a clip (#197), 1 unless
+   * it says otherwise. */
   readonly technique?: number;
   /** What they checked of their kit before setting off (#196): all of it unless it says
    * otherwise. */
@@ -210,6 +211,31 @@ export class SlopePhysics implements Rule, HazardGround, JoltGround, Legs {
    * clipped. */
   upset(id: ClimberId, step: number): void {
     this.climberFor(id).upset(this.loaded, step);
+  }
+
+  /** Who is coming past a climber on a rope they share (#197): on their feet within `reach`
+   * metres behind them along the ground, stepping their way, while the climber stands or goes
+   * the other way; or none. */
+  passerOf(id: ClimberId, reach: number): ClimberId | null {
+    const me = this.climberFor(id);
+    const at = me.onTheGround;
+    if (at === null || me.dead) {
+      return null;
+    }
+    for (const other of this.onSlope.values()) {
+      const there = other.onTheGround;
+      if (other === me || other.dead || there === null || !other.tookAStep) {
+        continue;
+      }
+      const toward = Math.sign(at - there);
+      const near = Math.abs(at - there) <= reach;
+      const shared = other.ropes.some((rope) => me.ropes.includes(rope));
+      const aside = !me.tookAStep || me.heading !== toward;
+      if (toward !== 0 && other.heading === toward && near && shared && aside) {
+        return other.id;
+      }
+    }
+    return null;
   }
 
   /** Whether a climber stands on a ladder: a twist at its lashings jolts whoever is on it. */

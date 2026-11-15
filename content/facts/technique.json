@@ -1062,6 +1062,16 @@
       "unit": "1",
       "fitted_to": ["technique.passing-on-ropes"],
       "fitted": "2026-11-15"
+    },
+    {
+      "id": "technique.sherpa-pass",
+      "kind": "coefficient",
+      "claim": "How many of the mountain's seconds a client who went ahead of their Sherpa stands still before he goes past them on the fixed rope to lead again (#197): a couple of minutes' rest, and he steps by, as the Sherpas pass their clients going up and down.",
+      "status": "source only",
+      "value": 120,
+      "unit": "s",
+      "fitted_to": ["technique.passing-on-ropes", "technique.sherpa-leads"],
+      "fitted": "2026-11-15"
     }
   ]
 }

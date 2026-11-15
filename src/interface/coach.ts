@@ -1,5 +1,5 @@
 import type { ClimberView, LadderCondition, Point } from "../physics";
-import type { HazardKind, HazardZone } from "../simulation";
+import type { HazardKind, HazardZone, JoltKind } from "../simulation";
 
 /** What the coach can say: the tutorial's tips, each said once where the route first needs it,
  * and the warnings, said whenever they matter. */
@@ -30,7 +30,12 @@ export type CoachTip =
   | "serac-crack"
   | "ladder-creak"
   | "ladder-broken"
-  | "haul";
+  | "haul"
+  | "gust"
+  | "ladder-twist"
+  | "passing"
+  | "ladder-bounced"
+  | "front-points";
 
 /** What the coach reads of the climb: the player's climber, the route's ropes, ladders, blue ice
  * and hazards, and whether the player is in the dark. The page hands it the physics', the
@@ -41,6 +46,10 @@ export interface CoachWorld {
   inTheDark(): boolean;
   /** The hazard going over where the player stands, a crack or a roar, or none (#209). */
   warning(): HazardKind | null;
+  /** The jolt on its way to the player, a gust or their lashed ladder twisting, or none (#197). */
+  jolt(): JoltKind | null;
+  /** Whether someone is coming past the player on their rope (#197). */
+  passing(): boolean;
   /** Whether a ladder is whole, creaking or broken (#209). */
   ladderCondition(id: string): LadderCondition;
   /** Whether someone else hangs on the rope (#209), for the player to pull out. */
@@ -83,8 +92,10 @@ export interface CoachStorage {
  * blue ice or a ladder (#208), unclipped where a slip is a fall, stopped under the seracs, a crampon come loose and the
  * headlamp dead in the dark, a check skipped before setting off catching up with the player
  * (#196), and the training events (#209): a serac cracking ahead, the ladder creaking under them,
- * a partner hanging to pull out; and a broken ladder's wait. It holds the screen's own state
- * alone, as the rendering does: what's been learnt, and what it shows.
+ * a partner hanging to pull out; and a broken ladder's wait; and what jolts them (#197): a gust
+ * coming, their lashed ladder twisting, someone passing them on their rope, their ladder bouncing
+ * under someone else's steps, and a stand on the front points held too long. It holds the
+ * screen's own state alone, as the rendering does: what's been learnt, and what it shows.
  */
 export class Coach {
   /** Where the device keeps what's been learnt. */
@@ -95,6 +106,9 @@ export class Coach {
   static readonly STOPPED_SECONDS = 4;
   /** How long the coach says the headlamp has died, once the dark comes. */
   static readonly DARK_SECONDS = 6;
+  /** How long a player stands still on their front points before the coach says so: longer than
+   * the pause before each pick (#197). */
+  static readonly STANCE_SECONDS = 2;
   /** How far a climber walks before the walk is learnt; how near a ladder's end, an anchor and
    * the ice ahead have to be for their tips; how far from a crevasse's ladder an unclipped
    * climber is warned; and the chance a metre of slipping past which their steps are careless. */
@@ -113,9 +127,14 @@ export class Coach {
     "pick-poor",
     "serac-crack",
     "ladder-creak",
+    "ladder-twist",
+    "gust",
     "haul",
+    "passing",
     "stopped-under-seracs",
     "unclipped",
+    "ladder-bounced",
+    "front-points",
     "careless",
     "crampon-loose",
     "lamp",
@@ -142,9 +161,14 @@ export class Coach {
     "pick-poor",
     "serac-crack",
     "ladder-creak",
+    "ladder-twist",
+    "gust",
     "haul",
+    "passing",
     "stopped-under-seracs",
     "unclipped",
+    "ladder-bounced",
+    "front-points",
     "careless",
     "crampon-loose",
     "lamp",
@@ -162,9 +186,11 @@ export class Coach {
    * stood at last on their feet, which says how they got onto the ice. */
   private onTools = false;
   private wallBefore: "foot" | "lip" | "rope" | null = null;
-  /** How long the player has stood still under the seracs, and been in the dark. */
+  /** How long the player has stood still under the seracs, been in the dark, and stood still on
+   * their front points, nothing holding them. */
   private still = 0;
   private dark = 0;
+  private stance = 0;
 
   constructor(private readonly storage: CoachStorage | null) {
     this.done = new Set(Coach.kept(storage));
@@ -250,6 +276,8 @@ export class Coach {
     const underSeracs = this.inZone(world, along, "serac");
     this.still = underSeracs && !view.moving && !view.falling ? this.still + seconds : 0;
     this.dark = world.inTheDark() ? this.dark + seconds : 0;
+    const hard = view.stillChance > 0 && view.ladder === null && !view.falling;
+    this.stance = hard ? this.stance + seconds : 0;
   }
 
   /** Whether a tip is wanted where the player is now. */
@@ -301,6 +329,16 @@ export class Coach {
         return !view.falling && world.warning() === "serac";
       case "ladder-creak":
         return view.ladder !== null && world.ladderCondition(view.ladder) === "creaking";
+      case "ladder-twist":
+        return view.ladder !== null && !view.falling && world.jolt() === "twist";
+      case "gust":
+        return !view.falling && world.jolt() === "gust";
+      case "passing":
+        return !view.falling && world.passing();
+      case "ladder-bounced":
+        return view.ladder !== null && !view.falling && view.stillChance > 0;
+      case "front-points":
+        return this.stance >= Coach.STANCE_SECONDS;
       case "haul":
         return !view.falling && !view.hauling && world.partnerHangs();
       case "ladder-broken":

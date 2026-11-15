@@ -138,6 +138,28 @@ describe("A Sherpa leads his client", () => {
     expect(climb.sherpa.view.doing).toBe("following");
   });
 
+  it("goes past a client who went ahead of him and stands still a while, and leads again (#197)", () => {
+    const climb = FLAT();
+    climb.play(1, [walk("anna", "right")]);
+    climb.play(steps(2));
+    climb.physics.stride("pemba", 0.5);
+    climb.play(steps(30));
+    const following = climb.sherpa.view.doing;
+    climb.physics.stride("pemba", 1);
+    climb.play(1, [walk("anna", "stop")]);
+    const waited = climb.until(() => climb.sherpa.view.doing === "passing", steps(20));
+    const stood = climb.physics.climber("anna").moving;
+    const passed = climb.until(() => climb.along("pemba") > climb.along("anna"), steps(20));
+    climb.play(steps(5));
+
+    expect(following).toBe("following");
+    expect(waited).toBe(true);
+    expect(stood).toBe(false);
+    expect(passed).toBe(true);
+    expect(climb.along("pemba") - climb.along("anna")).toBeGreaterThanOrEqual(3);
+    expect(climb.sherpa.view.doing).toBe("leading");
+  });
+
   it("stops in the camp the climb is bound for", () => {
     const climb = FLAT();
     climb.play(1, [walk("anna", "right")]);

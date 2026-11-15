@@ -21,12 +21,14 @@ import type { SherpaSettings, SherpaStart } from "../sherpa";
  */
 export class GuidedClimb {
   /** The Sherpa leads 3 to 6 m ahead, waits for a client 10 m behind, follows 2 to 3 m back,
-   * rests a mountain minute with a client he pulled out, and hauls from 3 m. */
+   * goes past one ahead who has stood half a mountain minute, rests a mountain minute with a
+   * client he pulled out, and hauls from 3 m. */
   static readonly SHERPA: SherpaSettings = {
     lead: { near: 3, far: 6 },
     wait: 10,
     behind: { near: 2, far: 3 },
     rest: 60,
+    pass: 30,
     reach: 3,
   };
   /** No hazard goes of itself; a staged one cracks for a minute of the mountain's: six seconds

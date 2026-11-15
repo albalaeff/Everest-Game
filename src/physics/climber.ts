@@ -951,6 +951,11 @@ export class Climber {
     return this.took;
   }
 
+  /** The way along the ground their key points: 1 on, -1 back, 0 neither. */
+  get heading(): Way | 0 {
+    return Climber.WAYS[this.walking];
+  }
+
   beginStep(): void {
     this.falling?.beginStep();
   }

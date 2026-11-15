@@ -31,6 +31,9 @@ export type SherpaCue =
   | "crampon"
   | "lamp"
   | "floor"
+  | "gust"
+  | "twist"
+  | "passing"
   | "popcorn"
   | "maze"
   | "football-field"
@@ -90,10 +93,11 @@ type Waiting = { readonly cue: SherpaCue; readonly when: When; readonly until: n
 /**
  * Pemba's voice (#212): a line at a time, two short sentences at most, in a bubble over him, up as
  * long as it takes to read. A warning he says at once, cutting in: careless steps, unclipped by a
- * crevasse, stopped under the seracs, a serac cracking, a ladder creaking, a slip the rope held,
- * the player hanging, and his haul, the coach's warnings his cues too, though he never names a key:
- * the coach does. What he does himself he says as soon as the line up is read: the first ladder he
- * crosses, the line he holds, a rest, a client who goes ahead. Each part of the route, and the sun
+ * crevasse, stopped under the seracs, a serac cracking, a ladder creaking, a gust coming and a
+ * ladder twisting (#197), a slip the rope held, the player hanging, his haul and his going past
+ * them on the rope, the coach's warnings his cues too, though he never names a key: the coach does.
+ * What he does himself he says as soon as the line up is read: the first ladder he crosses, the
+ * line he holds, a rest, a client who goes ahead. Each part of the route, and the sun
  * on the ice, gets a line once a climb in a quiet moment, and a fact or a story with it, every
  * number from the knowledge base (`SherpaFacts`); a joke comes in a quiet moment too, at most one
  * a minute and never twice. A cue's lines take turns. It holds what's on the screen and what's
@@ -133,6 +137,8 @@ export class SherpaVoice {
     "crampon-loose": "crampon",
     lamp: "lamp",
     "crevasse-floor": "floor",
+    gust: "gust",
+    "ladder-twist": "twist",
   };
   /** What each part of the route makes him say, and the fact or story that follows it there. */
   private static readonly PLACES: Readonly<Record<string, readonly SherpaCue[]>> = {
@@ -341,6 +347,9 @@ export class SherpaVoice {
     }
     if (doing === "following" && was.doing === "leading") {
       this.wait("overtaken", "soon");
+    }
+    if (doing === "passing" && was.doing !== "passing") {
+      this.wait("passing", "now");
     }
     if (doing === "waiting" && now.client !== null && was.client === null) {
       this.wait("waiting", "soon");

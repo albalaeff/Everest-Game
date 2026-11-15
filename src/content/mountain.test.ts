@@ -211,6 +211,7 @@ describe("Mountain", () => {
         far: knowledge.range("technique.sherpa-behind").max,
       },
       rest: knowledge.number("technique.sherpa-rest") * 60,
+      pass: knowledge.number("technique.sherpa-pass"),
       reach: knowledge.number("technique.haul-reach"),
     });
     expect(settings.lead.near).toBeLessThan(settings.lead.far);

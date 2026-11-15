@@ -162,6 +162,21 @@ describe("SherpaVoice: Pemba's lines, for the moment (#212)", () => {
     expect(heard).toEqual(["set-off.1", "unclipped.1"]);
   });
 
+  it("cuts in when a gust is coming and when the player's ladder twists, and as he goes past them on the rope (#197)", () => {
+    const { world, heard, play } = listening();
+    play(8);
+
+    world.coach = "gust";
+    play(4);
+    world.coach = "ladder-twist";
+    play(4);
+    world.coach = null;
+    world.view = { ...world.view, doing: "passing" };
+    play(4);
+
+    expect(heard).toEqual(["set-off.1", "gust.1", "twist.1", "passing.1"]);
+  });
+
   it("says the same warning again only after a while, the next of its lines", () => {
     const { world, heard, play } = listening();
     play(8);

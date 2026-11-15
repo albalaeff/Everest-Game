@@ -24,6 +24,9 @@ export interface SherpaSettings {
   readonly behind: { readonly near: number; readonly far: number };
   /** The mountain's seconds he rests with a client he went to pull off the rope. */
   readonly rest: number;
+  /** The mountain's seconds a client he follows stands still before he goes past them on the
+   * rope to lead again (#197). */
+  readonly pass: number;
   /** How near the point a hanging climber is hauled up to he has to stand: the haul's reach. */
   readonly reach: number;
 }
@@ -36,6 +39,8 @@ export type SherpaDoing =
   | "leading"
   /** Behind a client who went ahead of him. */
   | "following"
+  /** Going past a client who went ahead of him and stood still, to lead again (#197). */
+  | "passing"
   /** At a ladder's far end, holding its line taut for a client to cross. */
   | "holding"
   /** Going to a client who hangs on the rope, or hauling them out. */
@@ -104,6 +109,9 @@ type SherpaSave = SherpaStart & {
   /** The client he's going to pull out, until they're on their feet; then the rest with them. */
   readonly rescue: ClimberId | null;
   readonly rest: Rest | null;
+  /** When, on the mountain's clock, the client ahead of him stopped, while they stand still
+   * (#197): missing from the saves of builds before he passed. */
+  readonly stillSince?: number | null;
 };
 
 /** What he does this step: which way he goes, or none to stand, and whether he holds the haul. */
@@ -122,7 +130,8 @@ type Plan = {
  *
  * He waits until a client sets off, then leads, `lead` metres ahead of the first of them, and
  * waits for the last once they're `wait` behind; one who goes ahead of him he follows, `behind`
- * metres back. He never stands where the ice falls: not in a hazard's zone, on blue ice or on a
+ * metres back, until they stand still for `pass` of the mountain's seconds, and he goes past them
+ * on the rope to lead again (#197). He never stands where the ice falls: not in a hazard's zone, on blue ice or on a
  * ladder, but goes on to safe ground. He crosses each ladder first and holds its line taut from
  * its far end until his clients behind are across (the haul, held with nobody to haul, steadies
  * it), and never steps onto a ladder someone's on or that's broken. A client hanging on the rope
@@ -222,6 +231,7 @@ export class Sherpa implements Rule {
     this.noticeSetOff();
     const along = this.physics.along(climber);
     this.noticeLadder(me, along);
+    this.noticeStill(along);
     const plan = this.plan(me, along);
     this.state = {
       ...this.loaded,
@@ -243,6 +253,26 @@ export class Sherpa implements Rule {
     const now = clients.filter((id) => setOff.includes(id) || this.physics.climber(id).moving);
     if (now.length !== setOff.length) {
       this.state = { ...this.loaded, setOff: now };
+    }
+  }
+
+  /** How long the client furthest ahead of him has stood still, on their feet off a ladder: since
+   * when, while they do. */
+  private noticeStill(along: number): void {
+    const state = this.loaded;
+    const first = state.setOff
+      .filter((id) => !this.physics.climber(id).dead)
+      .reduce<ClimberId | null>(
+        (best, id) =>
+          best === null || this.physics.along(id) > this.physics.along(best) ? id : best,
+        null,
+      );
+    const view = first === null ? null : this.physics.climber(first);
+    const ahead = first === null ? 0 : this.physics.along(first) - along;
+    const still = view !== null && ahead > Sherpa.LEVEL && !view.moving && this.onTheGround(view);
+    const since = still ? (state.stillSince ?? this.clock.elapsed) : null;
+    if (since !== (state.stillSince ?? null)) {
+      this.state = { ...state, stillSince: since };
     }
   }
 
@@ -407,6 +437,12 @@ export class Sherpa implements Rule {
       const ahead = first.along - along;
       if (along - last.along > wait) {
         return stand("waiting", last.id);
+      }
+      const { stillSince = null } = state;
+      const rested = stillSince !== null && this.clock.elapsed - stillSince >= this.settings.pass;
+      if (rested && ahead <= behind.far + Sherpa.CLEAR) {
+        // They've stood a while: he goes past them on the rope, and leads again (#197).
+        return go("passing");
       }
       if (ahead > behind.far || (state.walking && ahead > behind.near)) {
         return go("following");

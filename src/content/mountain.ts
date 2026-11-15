@@ -137,7 +137,8 @@ export class Mountain {
 
   /** The Sherpa's numbers, from their records in content/facts/technique.json: how far ahead he
    * leads (`technique.sherpa-lead`), when he waits (`-wait`), how far back he follows (`-behind`),
-   * how long he rests with a client he pulled out (`-rest`), and the haul's reach. */
+   * how long he rests with a client he pulled out (`-rest`), how long a client ahead of him stands
+   * before he goes past them (`-pass`, #197), and the haul's reach. */
   sherpaSettings(): SherpaSettings {
     const range = (name: string) => this.knowledge.range(`technique.sherpa-${name}`);
     const lead = range("lead");
@@ -147,6 +148,7 @@ export class Mountain {
       wait: this.knowledge.number("technique.sherpa-wait"),
       behind: { near: behind.min, far: behind.max },
       rest: this.knowledge.number("technique.sherpa-rest") * 60,
+      pass: this.knowledge.number("technique.sherpa-pass"),
       reach: this.knowledge.number("technique.haul-reach"),
     };
   }

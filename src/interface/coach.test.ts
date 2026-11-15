@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import type { ClimberView, LadderCondition, Point } from "../physics";
-import type { HazardKind, HazardZone } from "../simulation";
+import type { HazardKind, HazardZone, JoltKind } from "../simulation";
 import { Coach } from "./coach";
 import type { CoachWorld } from "./coach";
 
@@ -45,6 +45,8 @@ class World implements CoachWorld {
   view: ClimberView = standing(0);
   dark = false;
   going: HazardKind | null = null;
+  jolting: JoltKind | null = null;
+  passer = false;
   conditions: Record<string, LadderCondition> = {};
   partner = false;
   ice = [{ from: 70, to: 80 }];
@@ -82,6 +84,14 @@ class World implements CoachWorld {
 
   warning(): HazardKind | null {
     return this.going;
+  }
+
+  jolt(): JoltKind | null {
+    return this.jolting;
+  }
+
+  passing(): boolean {
+    return this.passer;
   }
 
   ladderCondition(id: string): LadderCondition {
@@ -317,6 +327,54 @@ describe("Coach: the warnings, whenever they matter", () => {
     world.conditions = { crevasse: "creaking" };
 
     expect(after(coach, world)).toBe("ladder-creak");
+  });
+
+  it("says a gust is coming, at once, and to stop and stay clipped (#197)", () => {
+    const { coach } = fresh();
+    const world = new World();
+    world.view = standing(60, { moving: true, walking: "right" });
+    after(coach, world);
+    world.jolting = "gust";
+
+    expect(after(coach, world)).toBe("gust");
+    world.jolting = null;
+    expect(after(coach, world, Coach.LEAST_SECONDS)).not.toBe("gust");
+  });
+
+  it("says the player's lashed ladder is twisting, and only to one on it (#197)", () => {
+    const { coach } = fresh();
+    const world = new World();
+    world.view = standing(53, { ladder: "crevasse", moving: true, walking: "right" });
+    world.jolting = "twist";
+    const onIt = after(coach, world);
+    world.view = standing(45, { moving: true, walking: "right" });
+    const offIt = after(coach, world, Coach.LEAST_SECONDS);
+
+    expect(onIt).toBe("ladder-twist");
+    expect(offIt).not.toBe("ladder-twist");
+  });
+
+  it("tells the player someone is passing them on their rope, to stand still until they're by (#197)", () => {
+    const { coach } = fresh();
+    const world = new World();
+    world.view = standing(15, { second: "one" });
+    world.passer = true;
+
+    expect(after(coach, world)).toBe("passing");
+  });
+
+  it("says a ladder bouncing under someone else's steps is no place to stand, and a front-point stand held too long (#197)", () => {
+    const { coach } = fresh();
+    const bounced = new World();
+    bounced.view = standing(53, { ladder: "crevasse", stillChance: 0.2 });
+    const onPoints = new World();
+    onPoints.view = standing(45, { onIce: true, stillChance: 0.02 });
+    const brief = after(coach, onPoints, Coach.STANCE_SECONDS / 2);
+    const held = after(coach, onPoints, Coach.STANCE_SECONDS);
+
+    expect(after(fresh().coach, bounced)).toBe("ladder-bounced");
+    expect(brief).not.toBe("front-points");
+    expect(held).toBe("front-points");
   });
 
   it("says a broken ladder is being lashed back to one waiting at its end (#209)", () => {

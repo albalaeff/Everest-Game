@@ -457,6 +457,28 @@ describe("Passing on a shared rope", () => {
     expect(sure).toBe(0.5);
   });
 
+  it("says who is coming past a climber on their rope: behind them and stepping their way, and nobody once they're by", () => {
+    const rope: RopeLayout = { id: "fixed", from: 2, to: 40, length: 38.5 };
+    const layout = TestMountain.FLAT.layout(
+      [
+        { id: "anna", along: 10 },
+        { id: "ben", along: 8 },
+        { id: "cleo", along: 5 },
+      ],
+      [rope],
+    );
+    const climb = new Climb(TestMountain.CALM, layout);
+    climb.play(1, [clip("anna", "second"), clip("ben", "second")]);
+    climb.play(steps(1), [walk("ben", "right"), walk("cleo", "right")]);
+    const coming = climb.physics.passerOf("anna", 3);
+    climb.play(steps(3));
+    const gone = climb.physics.passerOf("anna", 3);
+
+    // Cleo walks on no rope of Anna's; Ben is past her after 3 s.
+    expect(coming).toBe("ben");
+    expect(gone).toBeNull();
+  });
+
   it("jolts nobody off their feet where nothing slips, nor anyone already falling", () => {
     const climb = new Climb(
       TestMountain.CALM,

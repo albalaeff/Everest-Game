@@ -287,6 +287,7 @@ export class GamePage {
         player,
         npcs: scenario.npcs ?? [],
         seed: scenario.seed,
+        jolts: rules.jolts,
       },
       choice.chosen,
     );
@@ -322,7 +323,7 @@ export class GamePage {
       window.document,
       texts.coach,
       new Coach(this.storage()),
-      new CoachedClimb(physics, rules.hazards, rules.lamps, player),
+      new CoachedClimb(physics, rules.hazards, rules.lamps, player, rules.jolts),
     );
     // Pemba, the climbers' Sherpa, if the climb has him (#212): his voice in a bubble over him.
     const sherpa = scenario.npcs?.[0] ?? null;
