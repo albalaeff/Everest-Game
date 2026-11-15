@@ -167,6 +167,7 @@ describe("Mountain", () => {
     expect(first.clock).not.toBe(second.clock);
     expect(first.body).not.toBe(second.body);
     expect(first.hazards).not.toBe(second.hazards);
+    expect(first.jolts).not.toBe(second.jolts);
     expect(first.logbook).not.toBe(second.logbook);
     expect(first.packs).not.toBe(second.packs);
     expect(first.sherpa).not.toBe(second.sherpa);
@@ -176,6 +177,7 @@ describe("Mountain", () => {
       first.oxygen,
       first.body,
       first.hazards,
+      first.jolts,
       first.physics,
       first.logbook,
       first.sherpa,

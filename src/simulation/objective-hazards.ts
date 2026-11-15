@@ -1,3 +1,5 @@
+import { DayWarmth } from "./day-warmth";
+import type { SunShares, WarmthHours } from "./day-warmth";
 import type { ClimberId } from "./game-action";
 import type { Json } from "./json";
 import type { MountainClock } from "./mountain-clock";
@@ -33,9 +35,9 @@ export interface HazardSettings {
   readonly kinds: Readonly<Record<HazardKind, HazardOdds>>;
   /** The day's warmth, in hours of the day: it starts to warm the ice `from`, is warmest at
    * `peak`, and is over `until`. */
-  readonly warmth: { readonly from: number; readonly peak: number; readonly until: number };
+  readonly warmth: WarmthHours;
   /** How much of the sun's warmth reaches the ice under cloud, and while snow falls: a share. */
-  readonly sun: { readonly cloud: number; readonly snow: number };
+  readonly sun: SunShares;
   /** The training events (#209): how many of the mountain's seconds a staged collapse cracks and
    * groans before it comes down, long enough to stop or back off. */
   readonly training: { readonly crack: number };
@@ -117,9 +119,8 @@ type HazardSave = {
 
 /**
  * How often each kind of hazard goes on a climber under it, by the hour and the weather: its rate
- * in the cold of the night, raised by the sun's warmth as the day goes, and by snow and wind.
- * The warmth rises in a line from `from` to `peak` and falls in one to `until`, so it needs
- * nothing but the four operations (docs/conventions/simulation-core.md → The same result).
+ * in the cold of the night, raised by the sun's warmth as the day goes (`DayWarmth`), and by snow
+ * and wind.
  */
 export class HazardChance {
   private static readonly HOUR = 3600;
@@ -130,13 +131,10 @@ export class HazardChance {
     "wind",
   ]);
 
+  private readonly warmth: DayWarmth;
+
   constructor(private readonly settings: HazardSettings) {
-    const { from, peak, until } = settings.warmth;
-    if (!(from < peak && peak < until)) {
-      throw new RangeError(
-        `The day's warmth can't rise from ${from} h to ${peak} h and end at ${until} h`,
-      );
-    }
+    this.warmth = new DayWarmth(settings.warmth, settings.sun);
   }
 
   /** Whether the hazards know a weather. */
@@ -148,7 +146,7 @@ export class HazardChance {
    * midnight, in `weather`. */
   perHour(kind: HazardKind, timeOfDay: number, weather: HazardWeather): number {
     const odds = this.settings.kinds[kind];
-    const warmed = 1 + (odds.warmth - 1) * this.warmthAt(timeOfDay) * this.sunIn(weather);
+    const warmed = 1 + (odds.warmth - 1) * this.warmth.at(timeOfDay, weather);
     const snow = weather === "snow" ? odds.snow : 1;
     const wind = weather === "wind" ? odds.wind : 1;
     return odds.rate * warmed * snow * wind;
@@ -174,22 +172,6 @@ export class HazardChance {
   /** How many steps of `seconds` a training event cracks for before it comes down. */
   crackSteps(seconds: number): number {
     return Math.ceil(this.settings.training.crack / seconds);
-  }
-
-  /** The day's warmth at a time of day: 0 in the night, 1 at its peak. */
-  private warmthAt(timeOfDay: number): number {
-    const hour = timeOfDay / HazardChance.HOUR;
-    const { from, peak, until } = this.settings.warmth;
-    if (hour <= from || hour >= until) {
-      return 0;
-    }
-    return hour < peak ? (hour - from) / (peak - from) : (until - hour) / (until - peak);
-  }
-
-  /** How much of the sun's warmth reaches the ice in a weather. */
-  private sunIn(weather: HazardWeather): number {
-    const { sun } = this.settings;
-    return weather === "cloud" ? sun.cloud : weather === "snow" ? sun.snow : 1;
   }
 }
 

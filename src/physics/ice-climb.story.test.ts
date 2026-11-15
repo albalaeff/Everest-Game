@@ -213,6 +213,55 @@ describe("A wall of ice, on the tools", () => {
     expect(climb.physics.climber("anna")).toMatchObject({ onIce: false, y: 0 });
   });
 
+  it("slips a climber who hangs still on their front points now and then, more on the axe alone, and never one who climbs on (#197)", () => {
+    // Standing still on the front points slips a twentieth of the time a second, on two tools.
+    const TIRING: SlopeSettings = {
+      ...CALM,
+      footing: { ...CALM.footing, still: { ...CALM.footing.still, frontPoints: 0.05 } },
+    };
+    const seeds = Array.from({ length: 20 }, (_, index) => index + 1);
+    const hangsStill = (gear: Gear, seed: number): boolean => {
+      const climb = new Climb(TIRING, wall(gear), seed);
+      climb.play(steps(2), [swing("anna", 20, 2), walk("anna", "up")]);
+      climb.play(steps(10));
+      const anna = climb.physics.climber("anna");
+      return anna.falling || anna.falls.length > 0;
+    };
+    const twoTools = seeds.filter((seed) => hangsStill(TWO_TOOLS, seed)).length;
+    const axeAlone = seeds.filter((seed) => hangsStill(AXE_ALONE, seed)).length;
+    const climbsOn = new Climb(TIRING, wall(TWO_TOOLS), 1);
+    climbUp(climbsOn, 20, 6);
+
+    expect(twoTools).toBeGreaterThan(0);
+    expect(axeAlone).toBeGreaterThan(twoTools);
+    expect(climbsOn.physics.climber("anna").falls).toEqual([]);
+  });
+
+  it("lets a climber who slips off the face, on a rope anchored at its foot, down to the foot, where they stand (#197)", () => {
+    // The rope comes from the flat and ends half a metre up the face: no higher.
+    const anchored: SlopeLayout = {
+      ...wall(TWO_TOOLS),
+      ropes: [{ id: "below", from: 15, to: 20.5, length: 6 }],
+    };
+    const slipping: SlopeSettings = {
+      ...CALM,
+      footing: {
+        ...CALM.footing,
+        still: { ...CALM.footing.still, frontPoints: TestMountain.SURE },
+      },
+    };
+    const climb = new Climb(slipping, anchored);
+    climb.play(1, [clip("anna", "first"), swing("anna", 20, 2), walk("anna", "up")]);
+    climb.play(steps(0.4));
+    // Standing still 0.2 m up the face, short of where the rope holds her: her calves give.
+    climb.play(2, [walk("anna", "stop")]);
+    const hanging = climb.physics.climber("anna");
+    climb.play(steps(10), [walk("anna", "up")]);
+
+    expect(hanging.falling).toBe(true);
+    expect(climb.physics.climber("anna")).toMatchObject({ falling: false, x: 20, y: 0 });
+  });
+
   it("tires a climber who hangs still on their tools", () => {
     const climb = new Climb(CALM, wall(TWO_TOOLS));
     climb.play(steps(1), [swing("anna", 20, 2)]);

@@ -431,6 +431,126 @@
         "hazards.cornice-deadly",
         "hazards.cornice-deadly-clipped"
       ]
+    },
+    {
+      "id": "hazards.gust-rate",
+      "kind": "coefficient",
+      "claim": "How many times an hour a gust comes across the Icefall's open ground with a climber on it, in the cold of the night and in clear weather (#197). Fitted so that a crossing before dawn meets one now and then, from time to time as the sources have it, and the morning's several.",
+      "status": "source only",
+      "value": 0.5,
+      "unit": "1/h",
+      "fitted_to": ["route.icefall-wind"],
+      "fitted": "2026-11-15"
+    },
+    {
+      "id": "hazards.gust-warmth",
+      "kind": "coefficient",
+      "claim": "How many times its rate at night a gust comes at the warmest hour of a clear day: the sun's thermals bring the cross wind.",
+      "status": "source only",
+      "value": 6,
+      "unit": "1",
+      "fitted_to": ["route.icefall-wind"],
+      "fitted": "2026-11-15"
+    },
+    {
+      "id": "hazards.gust-snow",
+      "kind": "coefficient",
+      "claim": "How many times its rate a gust comes while snow falls: a storm's wind.",
+      "status": "source only",
+      "value": 3,
+      "unit": "1",
+      "fitted_to": ["route.icefall-wind"],
+      "fitted": "2026-11-15"
+    },
+    {
+      "id": "hazards.gust-wind",
+      "kind": "coefficient",
+      "claim": "How many times its rate a gust comes in a strong wind.",
+      "status": "source only",
+      "value": 10,
+      "unit": "1",
+      "fitted_to": ["route.icefall-wind"],
+      "fitted": "2026-11-15"
+    },
+    {
+      "id": "hazards.gust-warning",
+      "kind": "coefficient",
+      "claim": "How many of the mountain's seconds a gust shows coming, the snow streaming across the slope and its roar, before it hits (#197): long enough for a player who sees it to stop and brace, a couple of seconds of play, where a real gust gives a few seconds' warning.",
+      "status": "source only",
+      "value": 72,
+      "unit": "s",
+      "fitted_to": ["route.icefall-wind"],
+      "fitted": "2026-11-15"
+    },
+    {
+      "id": "hazards.gust-slip",
+      "kind": "coefficient",
+      "claim": "The chance a gust slips a climber on the move on a ladder, blue ice, the front points or steep snow, at a steady pace's sure-footedness (#197); a careful one, braced, far less. Fitted so that an unclipped climber caught on a ladder by a gust risks a fall, and a clipped one only hangs.",
+      "status": "source only",
+      "value": 0.3,
+      "unit": "1",
+      "fitted_to": ["route.icefall-wind", "route.icefall-lessons"],
+      "fitted": "2026-11-15"
+    },
+    {
+      "id": "hazards.twist-rate",
+      "kind": "coefficient",
+      "claim": "How many times an hour a lashed ladder twists at its lashings under a climber on it, in the cold of the night and in clear weather (#197). Fitted so that a crossing of the Icefall's long ladders meets one now and then.",
+      "status": "source only",
+      "value": 0.5,
+      "unit": "1/h",
+      "fitted_to": ["route.icefall-ladders-shift"],
+      "fitted": "2026-11-15"
+    },
+    {
+      "id": "hazards.twist-warmth",
+      "kind": "coefficient",
+      "claim": "How many times its rate at night a lashed ladder twists at the warmest hour of a clear day: the sun softens the ice its anchors are in.",
+      "status": "source only",
+      "value": 3,
+      "unit": "1",
+      "fitted_to": ["route.icefall-ladders-shift"],
+      "fitted": "2026-11-15"
+    },
+    {
+      "id": "hazards.twist-snow",
+      "kind": "coefficient",
+      "claim": "How many times its rate a lashed ladder twists while snow falls: the same.",
+      "status": "source only",
+      "value": 1,
+      "unit": "1",
+      "fitted_to": ["route.icefall-ladders-shift"],
+      "fitted": "2026-11-15"
+    },
+    {
+      "id": "hazards.twist-wind",
+      "kind": "coefficient",
+      "claim": "How many times its rate a lashed ladder twists in a strong wind, which sways it.",
+      "status": "source only",
+      "value": 2,
+      "unit": "1",
+      "fitted_to": ["route.icefall-ladders-shift"],
+      "fitted": "2026-11-15"
+    },
+    {
+      "id": "hazards.twist-warning",
+      "kind": "coefficient",
+      "claim": "How many of the mountain's seconds a lashed ladder creaks and starts to sway before it twists under the climber on it (#197): long enough to stop and hold the rope, a second and a half of play.",
+      "status": "source only",
+      "value": 54,
+      "unit": "s",
+      "fitted_to": ["route.icefall-ladders-shift"],
+      "fitted": "2026-11-15"
+    },
+    {
+      "id": "hazards.twist-slip",
+      "kind": "coefficient",
+      "claim": "The chance a ladder's twist slips a climber on the move on it, at a steady pace's sure-footedness (#197); a careful one, braced, far less. Fitted so that the twist is a scare more often than a slip, which the rope holds.",
+      "status": "source only",
+      "value": 0.5,
+      "unit": "1",
+      "fitted_to": ["route.icefall-ladders-shift", "route.icefall-lessons"],
+      "fitted": "2026-11-15"
     }
   ]
 }

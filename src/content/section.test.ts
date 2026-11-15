@@ -145,6 +145,14 @@ describe("Section: the Khumbu Icefall from content/route/icefall.json", () => {
         expedition.advance();
       }
       expedition.advance([{ kind: "clip", climber: "anna", cowstail: "second" }]);
+      // The clip takes the typical client its seconds (#197).
+      for (
+        let step = 0;
+        step < section.settings.clip * SimulationClock.STEPS_PER_SECOND;
+        step += 1
+      ) {
+        expedition.advance();
+      }
 
       expect(`${ladder.id}: ${physics.climber("anna").second ?? "none"}`).not.toBe(
         `${ladder.id}: none`,

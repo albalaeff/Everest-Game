@@ -12,6 +12,7 @@ import type {
 } from "../physics";
 import {
   Body,
+  Jolts,
   MountainClock,
   ObjectiveHazards,
   OxygenSystem,
@@ -26,6 +27,7 @@ import type {
   ClockStart,
   HazardEvent,
   HazardStart,
+  JoltStart,
   PackCounts,
   PackItem,
   PackNumbers,
@@ -107,6 +109,16 @@ export interface SectionData {
       readonly to: number;
     }[];
   };
+  /** The stretches a jolt comes on (#197): the open slope a gust blows over, a lashed ladder's
+   * from end to end, which twists. */
+  readonly jolts?: {
+    readonly zones: readonly {
+      readonly id: string;
+      readonly kind: string;
+      readonly from: number;
+      readonly to: number;
+    }[];
+  };
   /** Each climber's body as they set off: its `load` is what they wear and carry besides what
    * their pack holds. */
   readonly bodies: readonly BodyStart[];
@@ -151,8 +163,10 @@ export class Section {
   readonly packs: readonly PackOf[];
   readonly packNumbers: PackNumbers;
   readonly stores: readonly CampStore[];
-  /** Its weather and the stretches of it under a hazard, which `ObjectiveHazards.start` checks. */
+  /** Its weather and the stretches of it under a hazard, which `ObjectiveHazards.start` checks;
+   * and the stretches a jolt comes on, in the same weather, which `Jolts.start` checks (#197). */
   readonly hazards: HazardStart;
+  readonly jolts: JoltStart;
   readonly clock: ClockStart;
   /** The hours the sources give it the first time. */
   readonly hours: KnowledgeRange;
@@ -203,6 +217,10 @@ export class Section {
       throw new RangeError(`${data.id} ends at ${data.to}, which isn't one of its camps`);
     }
     this.hazards = hazards as HazardStart;
+    this.jolts = {
+      weather: this.hazards.weather,
+      zones: (data.jolts?.zones ?? []) as JoltStart["zones"],
+    };
     this.bodies = layout.climbers.map(({ id }) => {
       const body = bodies.find((start) => start.id === id);
       if (body === undefined) {
@@ -346,6 +364,7 @@ export class Section {
           this.packNumbers,
         ),
         [ObjectiveHazards.NAME]: ObjectiveHazards.start(hazards),
+        [Jolts.NAME]: Jolts.start(this.jolts),
         [SlopePhysics.NAME]: SlopePhysics.start({ ...layout, ladders }),
       },
     };

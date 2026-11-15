@@ -2,11 +2,14 @@ import { Sherpa } from "../agents";
 import type { SherpaSettings } from "../agents";
 import { Lamplight, Logbook, SlopePhysics } from "../physics";
 import type { Kit } from "../physics";
-import { Body, MountainClock, ObjectiveHazards, OxygenSystem, Packs } from "../simulation";
+import { Body, Jolts, MountainClock, ObjectiveHazards, OxygenSystem, Packs } from "../simulation";
 import type {
   HazardKind,
   HazardOdds,
   HazardSettings,
+  JoltKind,
+  JoltOdds,
+  JoltSettings,
   PackCounts,
   Rule,
   Scenario,
@@ -25,6 +28,8 @@ export interface ExpeditionRules {
   readonly body: Body;
   readonly oxygen: OxygenSystem;
   readonly hazards: ObjectiveHazards;
+  /** The gusts and the ladders' twists, which jolt the climbers off balance (#197). */
+  readonly jolts: Jolts;
   readonly physics: SlopePhysics;
   /** The climb's logbook, which the debrief reads (#194). */
   readonly logbook: Logbook;
@@ -93,8 +98,8 @@ export class Mountain {
   }
 
   /** Rules for one expedition, fresh: it loads its state into them, and nothing else shares them.
-   * The clock runs first, so the hazards read this step's hour, and the hazards before the
-   * physics, so a climber they knock falls in the same step. */
+   * The clock runs first, so the hazards read this step's hour, and the hazards and the jolts
+   * before the physics, so a climber they knock or upset falls in the same step. */
   rules(): ExpeditionRules {
     const clock = new MountainClock(this.knowledge.number(Mountain.COMPRESSION));
     const physics = new SlopePhysics(this.route.settings);
@@ -111,6 +116,7 @@ export class Mountain {
     // what's on the harness.
     const packs = new Packs(this.route.packNumbers, body, physics, oxygen);
     const hazards = new ObjectiveHazards(this.hazardSettings(), clock, physics);
+    const jolts = new Jolts(this.joltSettings(), clock, physics);
     const logbook = new Logbook(physics, hazards, clock, this.route.logged);
     // The Sherpa acts at the start of each step, from where the last left everyone (#212).
     const sherpa = new Sherpa(this.sherpaSettings(), physics, hazards, clock);
@@ -119,12 +125,13 @@ export class Mountain {
       oxygen,
       body,
       hazards,
+      jolts,
       physics,
       logbook,
       lamps,
       packs,
       sherpa,
-      all: [clock, packs, oxygen, body, hazards, physics, logbook, sherpa],
+      all: [clock, packs, oxygen, body, hazards, jolts, physics, logbook, sherpa],
     };
   }
 
@@ -173,5 +180,22 @@ export class Mountain {
       sun: { cloud: number("sun-under-cloud"), snow: number("sun-in-snow") },
       training: { crack: number("training-crack") },
     };
+  }
+
+  /** The jolts' numbers (#197), from their records in content/facts/hazards.json: each kind's
+   * `hazards.<kind>-rate`, `-warmth`, `-snow`, `-wind`, `-warning` and `-slip`, and the day's
+   * warmth, the hazards'. */
+  joltSettings(): JoltSettings {
+    const number = (name: string) => this.knowledge.number(`hazards.${name}`);
+    const odds = (kind: JoltKind): JoltOdds => ({
+      rate: number(`${kind}-rate`),
+      warmth: number(`${kind}-warmth`),
+      snow: number(`${kind}-snow`),
+      wind: number(`${kind}-wind`),
+      warning: number(`${kind}-warning`),
+      slip: number(`${kind}-slip`),
+    });
+    const { warmth, sun } = this.hazardSettings();
+    return { kinds: { gust: odds("gust"), twist: odds("twist") }, warmth, sun };
   }
 }

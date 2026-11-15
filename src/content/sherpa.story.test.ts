@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { Expedition } from "../simulation";
+import { Expedition, SimulationClock } from "../simulation";
 import { KnowledgeBase } from "./knowledge-base";
 import { KNOWLEDGE_FILES } from "./knowledge-files";
 import { Mountain } from "./mountain";
@@ -67,8 +67,11 @@ describe("Pemba guides the player through the Khumbu Icefall (#212)", () => {
     expect(arrived).toBe(true);
     expect(ahead).toBeGreaterThan(0.9);
     expect([...held].sort()).toEqual([...rules.physics.ladders].sort());
-    // The longest he stood still under the seracs was a changeover of his cowstails at an anchor.
-    expect(longestStill).toBeLessThanOrEqual(5);
+    // The longest he stood still under the seracs was a changeover of his cowstails at an anchor:
+    // two clips at his technique's pace (#197), and a step for each unclip.
+    const { technique = 1 } = mountain.route.layout.climbers.find(({ id }) => id === SHERPA) ?? {};
+    const clip = (mountain.route.settings.clip / technique) * SimulationClock.STEPS_PER_SECOND;
+    expect(longestStill).toBeLessThanOrEqual(2 * Math.ceil(clip) + 5);
     expect(pemba.dead).toBe(false);
     expect(pemba.falls.every((fall) => fall.held !== false)).toBe(true);
     expect(rules.physics.along(SHERPA)).toBeGreaterThanOrEqual(mountain.route.destination.from);

@@ -5,15 +5,17 @@ import type { KnowledgeBase } from "./knowledge-base";
  * The slope physics' numbers, from the knowledge base (docs/conventions/slope-physics.md →
  * Numbers): gravity, the snow's friction and the cost of walking by gradient, which are facts;
  * and the walking power, the fastest walk, the ladder speeds, the slips' chances (#208), the cowstail's
- * reach, a hazard's knock, self-arrest, the lethal landing and the climb back, coefficients
- * fitted to the Icefall's hours and the chronicle (content/facts/technique.json). The ground walked
+ * reach, a clip's time, the hard stances and the jolts (#197), a hazard's knock, self-arrest, the
+ * lethal landing and the climb back, coefficients fitted to the Icefall's hours and the chronicle
+ * (content/facts/technique.json). The ground walked
  * runs from the steepest down to the steepest up, the Icefall's; a ladder, from down a wall to
  * across to up one.
  *
  * The records are life's numbers. The mountain's clock runs faster than the route is drawn
  * (`time.compression` over `route.drawn-scale`), so the climber walks and climbs that many
  * times faster than in life over the drawn ground, and slips at a metre's chance as in life, and a
- * ladder's bounce dies away that many times faster; a section takes its real hours by the clock. A fall, a
+ * ladder's bounce dies away that many times faster; a clip takes its seconds, and a chance a
+ * second comes, the clock's times faster; a section takes its real hours by the clock. A fall, a
  * knock, a landing and the reaches are at life size, as the walls they happen on are drawn.
  */
 export class SlopeFacts {
@@ -30,6 +32,8 @@ export class SlopeFacts {
     const minutes = (name: string): number =>
       (number(name) * 60) / knowledge.number("time.compression");
     const seconds = (name: string): number => number(name) / knowledge.number("time.compression");
+    // A chance a second of the mountain's as one a second of play: the clock runs that much faster.
+    const perSecond = (name: string): number => number(name) * knowledge.number("time.compression");
     const steepest = knowledge.range("route.icefall-steepness").max;
     const slipFree = number("slip-free-steepness");
     const slip = number("slip-steep");
@@ -37,6 +41,7 @@ export class SlopeFacts {
       gravity: number("gravity"),
       friction: number("snow-friction"),
       cowstail: number("cowstail-reach"),
+      clip: seconds("clip-time"),
       walkingCost: SlopeFacts.walkingCost(knowledge),
       steepest,
       walkingPower: fast("walking-power"),
@@ -69,6 +74,14 @@ export class SlopeFacts {
           loose: number("loose-crampon-footing"),
           refit: minutes("crampon-refit"),
         },
+        still: {
+          steepness: number("flat-footing"),
+          frontPoints: perSecond("front-points-slip"),
+          bounce: perSecond("ladder-still-slip"),
+          bounceFrom: number("ladder-still-from"),
+        },
+        braced: number("jolt-braced"),
+        passing: { near: number("passing-near"), slip: number("passing-slip") },
       },
       lethalLanding: number("lethal-landing"),
       climbBack: fast("climb-back-speed"),

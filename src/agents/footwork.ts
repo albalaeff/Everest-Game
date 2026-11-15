@@ -33,8 +33,9 @@ export type FootworkSave = {
  * A climber's footwork on a section, as a careful climber's (#212): what they do each step to go
  * up the route or down it, or to stand. Walking up and right, or down and left, the jumar's slide
  * held, clipped to the fixed ropes with both cowstails wherever one is within reach, the
- * cowstails moved across one at a time where a rope ends at the next one's anchor, and both off
- * where a rope ends and nothing follows. At a ladder down a wall ahead it walks down and right
+ * cowstails moved across one at a time where a rope ends at the next one's anchor, each on before
+ * the other comes off, however long the clip takes (#197), and both off where a rope ends and
+ * nothing follows. At a ladder down a wall ahead it walks down and right
  * onto it, and on the way down, up and left at its foot; off its other end, it walks flat. At a
  * face of ice with no ladder ahead, it climbs it on its tools, a pick at a time, each swung in
  * solid ice short of full stretch, the last over the lip; at the lip of one, it steps down onto
@@ -194,10 +195,22 @@ export class Footwork {
       this.walking = Footwork.WAYS[this.way];
       return [jumar, { kind: "walk", climber, direction: this.walking }];
     }
-    if (view.dead) {
+    if (view.dead || view.clipping !== null) {
+      // Its hands at a clip (#197), it waits for the carabiner to go on before the next action:
+      // never both cowstails off.
       return [];
     }
     if (view.falling) {
+      if (
+        view.hanging &&
+        view.first !== null &&
+        view.second !== null &&
+        view.first !== view.second
+      ) {
+        // Hanging from two ropes, caught at a changeover, the one anchored the other way holds it
+        // back: the second comes off, and it climbs the jumar's (#197).
+        return [{ kind: "unclip", climber, cowstail: "second" }];
+      }
       // Hanging on the rope, it climbs back up; sliding, it waits.
       const up: Walk["direction"] = "up";
       if (view.hanging && this.walking !== up) {

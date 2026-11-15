@@ -326,7 +326,7 @@ describe("SlopePhysics: technique", () => {
       [{ id: "bridge", from: 20, to: 83 }],
     );
 
-  it("goes at the climber's technique's share of the speed on a ladder and on a rope, not off them", () => {
+  it("goes at the climber's technique's share of the speed on a ladder and on the ground, clipped or not (#197)", () => {
     const ladder = new Climb(TestMountain.CALM, atTheLadder(0.5));
     const start = TestMountain.upTheSlope(15);
     const layout = TestMountain.SLOPE.layout(
@@ -353,7 +353,7 @@ describe("SlopePhysics: technique", () => {
     );
     expect(usual).toBeGreaterThan(2);
     expect(clipped).toBeCloseTo(usual / 2, 6);
-    expect(unclipped).toBeCloseTo(usual, 6);
+    expect(unclipped).toBeCloseTo(usual / 2, 6);
   });
 
   it("slips at the same chance a metre at a lesser technique: slower on a ladder, no surer (#208)", () => {

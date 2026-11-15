@@ -28,11 +28,14 @@ export class TestMountain {
    * step slips. A whole stride walks the flat at the fastest walk, 1 m/s, on all its power; down a
    * gentle slope at it on less, and up one slower; past 45°, each metre of height costs the same.
    * A ladder's rungs slip a twentieth of the time a metre; there's no ice, and no ladder bounces,
-   * unless a test lays them; and no landing kills, unless a test says so. */
+   * unless a test lays them; and no landing kills, unless a test says so. A clip goes on at once,
+   * standing still never slips, and nobody passing anyone jolts them (#197), unless a test says
+   * so. */
   static readonly SETTINGS: SlopeSettings = {
     gravity: 9.8,
     friction: 0.4,
     cowstail: 0.8,
+    clip: 0,
     walkingCost: [
       [-1, 2],
       [-0.1, 0.5],
@@ -62,6 +65,9 @@ export class TestMountain {
       iceFriction: 0.1,
       bounce: { excite: 0, damp: 1, slip: 0, held: 0.5 },
       crampon: { looseAfter: 2, loose: 0.3, refit: 1 },
+      still: { steepness: 30, frontPoints: 0, bounce: 0, bounceFrom: 1 },
+      braced: 0.5,
+      passing: { near: 1, slip: 0 },
     },
     lethalLanding: 1000,
     climbBack: 0.5,
@@ -121,11 +127,11 @@ export class TestMountain {
   static readonly SLIPPERY: SlopeSettings = {
     ...TestMountain.CALM,
     footing: {
+      ...TestMountain.CALM.footing,
       ice: 0.2,
       iceSteep: 3,
       iceFriction: 0.05,
       bounce: { excite: 0.5, damp: 1, slip: 0.1, held: 0.5 },
-      crampon: { looseAfter: 2, loose: 0.3, refit: 1 },
     },
     lethalLanding: 12,
   };
