@@ -1335,7 +1335,8 @@ export class Climber {
    * A tool pointed at the ice. The ice axe: on the ice already, the next pick, swung in where it
    * was pointed if their arm reaches it, between the height of their shoulder and full stretch
    * above their feet, or over the lip of their face; standing at a face's foot, on a ledge of it,
-   * or hanging against it on their rope, the first pick, and they're on the ice. The crampons,
+   * or hanging against it on their rope, the first pick, and they're on the ice, but never once
+   * they stand on its lip. The crampons,
    * pointed down a face from its lip: they turn to face the ice, the axe planted over the lip, and
    * step down onto it. A pick swung at full stretch, or into brittle ice, bites poorly. On the axe
    * alone there's a moment with no pick in the ice as it swings, and now and then that's a fall.
@@ -1374,6 +1375,10 @@ export class Climber {
       }
       this.stand(falling, body.along);
       this.onIce = new OnIce(found.face, [surface.along], this.bitesPoorly(surface, body.y, slope));
+      return;
+    }
+    if (onIce === null && this.along === found.face.top) {
+      // On their feet on its lip, they're up it: down it is the crampons', kicked in below them.
       return;
     }
     const feet = terrain.point(this.along);

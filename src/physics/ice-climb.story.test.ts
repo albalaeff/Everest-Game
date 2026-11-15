@@ -181,6 +181,17 @@ describe("A wall of ice, on the tools", () => {
     expect(climb.physics.climber("anna").x).toBeGreaterThan(21);
   });
 
+  it("leaves a climber on their feet on the lip when a pick is swung over it once they're up", () => {
+    const climb = new Climb(CALM, wall(TWO_TOOLS));
+    climbUp(climb, 20, 6);
+    climb.play(steps(1), [swing("anna", 20.4, 6), walk("anna", "up")]);
+    const swungAgain = climb.physics.climber("anna");
+    climb.play(steps(2), [walk("anna", "right")]);
+
+    expect(swungAgain).toMatchObject({ x: 20, y: 6, onIce: false, falling: false });
+    expect(climb.physics.climber("anna").x).toBeGreaterThan(21);
+  });
+
   it("is climbed on the ice axe alone at half the speed, a single pick in the ice", () => {
     const twoTools = new Climb(CALM, wall(TWO_TOOLS));
     const axeAlone = new Climb(CALM, wall(AXE_ALONE));
