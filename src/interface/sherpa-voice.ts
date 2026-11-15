@@ -1,5 +1,6 @@
 import type { SherpaView } from "../agents";
 import type { ClimberView } from "../physics";
+import { SeededRandom } from "../simulation";
 import type { CoachTip } from "./coach";
 import type { TextFills, Texts } from "./texts";
 
@@ -45,11 +46,34 @@ export type SherpaCue =
   | "fact-2014"
   | "fact-2012"
   | "fact-camp-1"
+  | "fact-crossings"
+  | "fact-1953"
+  | "fact-kami-rita"
+  | "fact-lhakpa"
+  | "fact-babu-chiri"
+  | "fact-2015"
+  | "fact-1996"
+  | "fact-camp-2"
+  | "fact-water"
   | "story-name"
+  | "story-puja"
+  | "story-juniper"
+  | "story-goddess"
+  | "story-chomolungma"
+  | "story-dream"
+  | "story-thanks"
   | "joke-tea"
   | "joke-pack"
   | "joke-crampons"
   | "joke-uncle"
+  | "joke-yak"
+  | "joke-dal-bhat"
+  | "joke-phone"
+  | "joke-kids"
+  | "joke-oxygen"
+  | "joke-gloves"
+  | "joke-namche"
+  | "joke-dance"
   | "camp-1";
 
 /** What his voice reads of the climb: his agent's view, his climber and the player's, where they
@@ -90,6 +114,14 @@ type When = "now" | "soon" | "quiet" | "joke";
 /** A cue waiting to be said: how soon, and until when it still fits, on the voice's seconds. */
 type Waiting = { readonly cue: SherpaCue; readonly when: When; readonly until: number };
 
+/** A part of the route as he speaks of it: his line for it, and the facts and stories he may
+ * tell there, so many a climb (#218). */
+interface Place {
+  readonly line: SherpaCue;
+  readonly stories: readonly SherpaCue[];
+  readonly tell: number;
+}
+
 /**
  * Pemba's voice (#212): a line at a time, two short sentences at most, in a bubble over him, up as
  * long as it takes to read. A warning he says at once, cutting in: careless steps, unclipped by a
@@ -100,8 +132,11 @@ type Waiting = { readonly cue: SherpaCue; readonly when: When; readonly until: n
  * line he holds, a rest, a client who goes ahead. Each part of the route, and the sun
  * on the ice, gets a line once a climb in a quiet moment, and a fact or a story with it, every
  * number from the knowledge base (`SherpaFacts`); a joke comes in a quiet moment too, at most one
- * a minute and never twice. A cue's lines take turns. It holds what's on the screen and what's
- * been said, as the coach does, and nothing of the game's.
+ * a minute and never twice. A cue's lines take turns. He thinks as a Sherpa (#218): the mountain
+ * is Chomolungma, its goddess asked for leave at the puja, the Icefall crossed fast and often,
+ * the family at home. The climb's seed picks which of a part's facts and stories he tells, the
+ * jokes' order and which of a cue's lines comes first, so no two climbs sound alike. It holds
+ * what's on the screen and what's been said, as the coach does, and nothing of the game's.
  */
 export class SherpaVoice {
   /** A line's least and longest time up, in seconds of play, and its reading pace in words a
@@ -140,19 +175,60 @@ export class SherpaVoice {
     gust: "gust",
     "ladder-twist": "twist",
   };
-  /** What each part of the route makes him say, and the fact or story that follows it there. */
-  private static readonly PLACES: Readonly<Record<string, readonly SherpaCue[]>> = {
-    popcorn: ["popcorn", "fact-ladders", "story-name"],
-    maze: ["maze", "fact-flow"],
-    "football-field": ["football-field"],
-    "upper-icefall": ["upper-icefall", "fact-2014"],
-    "western-cwm": ["western-cwm", "fact-2012", "fact-camp-1"],
+  /** What each part of the route makes him say, and the facts and stories he may tell there:
+   * so many a climb, picked by its seed (#218). The start of the Icefall, near Base Camp, has the
+   * puja and the earthquake's avalanche; the avalanche of 2014 he tells where it came down; the
+   * Football Field, under the seracs, has its line alone; the Western Cwm, the camps and the
+   * people on top. */
+  private static readonly PLACES: Readonly<Record<string, Place>> = {
+    popcorn: {
+      line: "popcorn",
+      stories: [
+        "fact-ladders",
+        "story-name",
+        "story-puja",
+        "story-juniper",
+        "fact-crossings",
+        "fact-2015",
+      ],
+      tell: 2,
+    },
+    maze: {
+      line: "maze",
+      stories: ["fact-flow", "story-goddess", "story-chomolungma", "story-dream", "fact-water"],
+      tell: 2,
+    },
+    "football-field": { line: "football-field", stories: [], tell: 0 },
+    "upper-icefall": { line: "upper-icefall", stories: ["fact-2014"], tell: 1 },
+    "western-cwm": {
+      line: "western-cwm",
+      stories: [
+        "fact-camp-1",
+        "fact-camp-2",
+        "fact-2012",
+        "fact-1953",
+        "fact-1996",
+        "fact-kami-rita",
+        "fact-lhakpa",
+        "fact-babu-chiri",
+        "story-thanks",
+      ],
+      tell: 2,
+    },
   };
   private static readonly JOKES: readonly SherpaCue[] = [
     "joke-tea",
     "joke-pack",
     "joke-crampons",
     "joke-uncle",
+    "joke-yak",
+    "joke-dal-bhat",
+    "joke-phone",
+    "joke-kids",
+    "joke-oxygen",
+    "joke-gloves",
+    "joke-namche",
+    "joke-dance",
   ];
   /** The cues said once a climb. */
   private static readonly ONCE: ReadonlySet<SherpaCue> = new Set<SherpaCue>([
@@ -161,23 +237,17 @@ export class SherpaVoice {
     "slow-ladder",
     "overtaken",
     "seracs",
-    "popcorn",
-    "maze",
-    "football-field",
-    "upper-icefall",
-    "western-cwm",
     "sun",
-    "fact-ladders",
-    "fact-flow",
-    "fact-2014",
-    "fact-2012",
-    "fact-camp-1",
-    "story-name",
+    ...Object.values(SherpaVoice.PLACES).flatMap(({ line, stories }) => [line, ...stories]),
     ...SherpaVoice.JOKES,
   ]);
 
-  /** Each cue's lines, in their file's order. */
+  /** Each cue's lines, in their file's order, and the one that comes first this climb. */
   private readonly lines: ReadonlyMap<SherpaCue, readonly SherpaTextName[]>;
+  private readonly firsts: ReadonlyMap<SherpaCue, number>;
+  /** The facts and stories he tells at each part of the route this climb, and the jokes' order. */
+  private readonly told: ReadonlyMap<string, readonly SherpaCue[]>;
+  private readonly jokes: readonly SherpaCue[];
   /** How many times each cue has been said, and when it last was, on the voice's seconds. */
   private readonly said = new Map<SherpaCue, number>();
   private readonly saidAt = new Map<SherpaCue, number>();
@@ -211,6 +281,8 @@ export class SherpaVoice {
     private readonly texts: Texts<SherpaTextName>,
     /** The numbers his lines say, from the knowledge base. */
     private readonly fills: TextFills,
+    /** The climb's seed: which stories he tells, the jokes' order, each cue's first line. */
+    seed: number,
   ) {
     const lines = new Map<SherpaCue, SherpaTextName[]>();
     for (const name of texts.names) {
@@ -222,6 +294,17 @@ export class SherpaVoice {
       lines.set(cue, [...(lines.get(cue) ?? []), name]);
     }
     this.lines = lines;
+    const random = SeededRandom.fromSeed(seed);
+    this.firsts = new Map(
+      [...lines].map(([cue, names]) => [cue, random.between(0, names.length - 1)]),
+    );
+    this.told = new Map(
+      Object.entries(SherpaVoice.PLACES).map(([part, { stories, tell }]) => [
+        part,
+        SherpaVoice.shuffled(stories, random).slice(0, tell),
+      ]),
+    );
+    this.jokes = SherpaVoice.shuffled(SherpaVoice.JOKES, random);
   }
 
   /** His name, for the bubble. */
@@ -318,14 +401,18 @@ export class SherpaVoice {
     this.noticeDoing(now.sherpa, before.sherpa);
     this.noticeCrossing(now.onLadder, before.onLadder, before.sherpa.ladder, player, seconds);
     if (now.part !== before.part || this.before === null) {
-      for (const cue of SherpaVoice.PLACES[now.part ?? ""] ?? []) {
-        this.wait(cue, "quiet", Infinity);
+      const place = SherpaVoice.PLACES[now.part ?? ""];
+      if (place !== undefined) {
+        for (const cue of [place.line, ...(this.told.get(now.part ?? "") ?? [])]) {
+          this.wait(cue, "quiet", Infinity);
+        }
       }
       // A place's lines fit while the player is there.
       this.waiting = this.waiting.filter(
         ({ cue }) =>
           !Object.entries(SherpaVoice.PLACES).some(
-            ([part, cues]) => part !== now.part && cues.includes(cue),
+            ([part, { line, stories }]) =>
+              part !== now.part && (line === cue || stories.includes(cue)),
           ),
       );
     }
@@ -418,7 +505,7 @@ export class SherpaVoice {
     if (quiet !== undefined) {
       return quiet;
     }
-    const joke = SherpaVoice.JOKES.find((cue) => (this.said.get(cue) ?? 0) === 0);
+    const joke = this.jokes.find((cue) => (this.said.get(cue) ?? 0) === 0);
     if (joke === undefined || this.sinceJoke < SherpaVoice.JOKE_EVERY) {
       return null;
     }
@@ -444,15 +531,29 @@ export class SherpaVoice {
     this.shownFor = 0;
   }
 
-  /** The cue's line whose turn it is. */
+  /** The cue's line whose turn it is: they take turns, from the one the seed put first. */
   private variant(cue: SherpaCue): SherpaTextName {
     const lines = this.lines.get(cue) ?? [];
-    const times = this.said.get(cue) ?? 0;
+    const times = (this.firsts.get(cue) ?? 0) + (this.said.get(cue) ?? 0);
     const line = lines[times % Math.max(1, lines.length)];
     if (line === undefined) {
       throw new RangeError(`Pemba has no line for ${cue}`);
     }
     return line;
+  }
+
+  /** The cues in the order the climb's generator draws: Fisher and Yates's shuffle. */
+  private static shuffled(cues: readonly SherpaCue[], random: SeededRandom): readonly SherpaCue[] {
+    const order = [...cues];
+    for (let last = order.length - 1; last > 0; last -= 1) {
+      const drawn = random.between(0, last);
+      const [kept, taken] = [order[last], order[drawn]];
+      if (kept !== undefined && taken !== undefined) {
+        order[last] = taken;
+        order[drawn] = kept;
+      }
+    }
+    return order;
   }
 
   /** How long a line stays up: as long as it takes to read, within its least and its longest. */

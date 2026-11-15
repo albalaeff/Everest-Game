@@ -7,7 +7,7 @@ import { Climber } from "../physics";
 import type { ClimberView, Fall } from "../physics";
 import type { CoachTip } from "./coach";
 import { SherpaVoice } from "./sherpa-voice";
-import type { SherpaTextName, SherpaWorld } from "./sherpa-voice";
+import type { SherpaLine, SherpaTextName, SherpaWorld } from "./sherpa-voice";
 import { Texts } from "./texts";
 
 /** A climber standing on the ground, as the physics would show them. */
@@ -101,55 +101,93 @@ const FILLS = {
   most: 21,
   fallYear: "2012",
   avalancheYear: "2014",
+  stormYear: "1996",
+  quakeYear: "2015",
   fieldAltitude: 5700,
   campAltitude: 5880,
+  camp2Altitude: 6400,
+  water: 3.3,
+  clientLeast: 6,
+  clientMost: 8,
+  crossLeast: 30,
+  crossMost: 40,
+  firstYear: "1953",
+  firstTime: "11:30",
+  kamiRita: 32,
+  lhakpa: 11,
+  babuHours: 21,
 };
 const english = new Texts<SherpaTextName>(sherpaTexts.en);
 
-/** A voice and its world, and a way to play frames of a sixtieth of a second, saying what was up. */
-const listening = () => {
+/** A line's cue: its name without its variant's number. */
+const cueOf = (name: string): string => name.slice(0, name.lastIndexOf("."));
+
+/** A cue's lines, in their file's order. */
+const linesOf = (cue: string): readonly string[] =>
+  english.names.filter((name) => cueOf(name) === cue);
+
+/** A voice and its world on a climb's seed, and a way to play frames of a sixtieth of a second,
+ * saying what was up: the lines said, their names and their cues. */
+const listening = (seed = 1) => {
   const world = new FakeWorld();
-  const voice = new SherpaVoice(english, FILLS);
+  const voice = new SherpaVoice(english, FILLS, seed);
+  const said: SherpaLine[] = [];
   const heard: string[] = [];
   const play = (seconds: number): string | null => {
     let line: string | null = null;
     for (let frame = 0; frame < Math.round(seconds * 60); frame += 1) {
-      const said = voice.line(world, 1 / 60);
-      line = said?.name ?? null;
-      if (said !== null && heard.at(-1) !== said.name) {
-        heard.push(said.name);
+      const up = voice.line(world, 1 / 60);
+      line = up?.name ?? null;
+      if (up !== null && said.at(-1) !== up) {
+        said.push(up);
+        heard.push(up.name);
       }
     }
     return line;
   };
-  return { world, voice, heard, play };
+  const cues = (): string[] => heard.map(cueOf);
+  return { world, voice, said, heard, cues, play };
+};
+
+/** The parts of the route he has lines for, in the order a climb goes through them. */
+const PARTS = ["popcorn", "maze", "football-field", "upper-icefall", "western-cwm"];
+
+/** A climb on `seed`: a minute in each part of the route, and what he said. */
+const climbing = (seed: number): readonly SherpaLine[] => {
+  const { world, said, play } = listening(seed);
+  play(8);
+  for (const part of PARTS) {
+    world.inPart = part;
+    play(60);
+  }
+  return said;
 };
 
 describe("SherpaVoice: Pemba's lines, for the moment (#212)", () => {
   it("sets off with the clock's time, then keeps quiet while nothing happens", () => {
-    const { voice, world, heard, play } = listening();
+    const { voice, world, cues, play } = listening();
 
     const first = voice.line(world, 1 / 60);
     play(10);
 
-    expect(first).toMatchObject({
-      cue: "set-off",
-      words: "03:00. Good. The Icefall sleeps while it's cold, so we go now.",
-      urgent: false,
-    });
-    expect(heard).toEqual(["set-off.1"]);
+    expect(first).toMatchObject({ cue: "set-off", urgent: false });
+    expect(first?.words).toMatch(/^03:00\. .*\bcold\b/u);
+    expect(cues()).toEqual(["set-off"]);
   });
 
-  it("keeps a line up as long as it takes to read: longer for more words, within its least and longest", () => {
-    const { play } = listening();
+  it("keeps a line up as long as it takes to read: a glance, and its words at a reading pace", () => {
+    const { voice, world, play } = listening();
 
-    // The set-off line has 12 words: a glance and 12 words at 2.6 a second, about 5.8 s.
-    expect(play(5.5)).toBe("set-off.1");
-    expect(play(0.5)).toBeNull();
+    const first = voice.line(world, 1 / 60);
+    // The set-off line: a glance of 1.2 s and its words at 2.6 a second, about 6 s.
+    const reading = 1.2 + (first?.words.split(" ").length ?? 0) / 2.6;
+
+    expect(play(reading - 0.3)).toBe(first?.name);
+    expect(play(0.6)).toBeNull();
   });
 
   it("cuts in at once with a warning the coach shows, unclipped by a crevasse, and lets it be read", () => {
-    const { world, heard, play } = listening();
+    const { world, cues, play } = listening();
     play(1);
 
     world.coach = "unclipped";
@@ -158,12 +196,12 @@ describe("SherpaVoice: Pemba's lines, for the moment (#212)", () => {
     world.coach = null;
     play(6);
 
-    expect(now).toBe("unclipped.1");
-    expect(heard).toEqual(["set-off.1", "unclipped.1"]);
+    expect(cueOf(now ?? "")).toBe("unclipped");
+    expect(cues()).toEqual(["set-off", "unclipped"]);
   });
 
   it("cuts in when a gust is coming and when the player's ladder twists, and as he goes past them on the rope (#197)", () => {
-    const { world, heard, play } = listening();
+    const { world, cues, play } = listening();
     play(8);
 
     world.coach = "gust";
@@ -174,7 +212,7 @@ describe("SherpaVoice: Pemba's lines, for the moment (#212)", () => {
     world.view = { ...world.view, doing: "passing" };
     play(4);
 
-    expect(heard).toEqual(["set-off.1", "gust.1", "twist.1", "passing.1"]);
+    expect(cues()).toEqual(["set-off", "gust", "twist", "passing"]);
   });
 
   it("says the same warning again only after a while, the next of its lines", () => {
@@ -187,11 +225,11 @@ describe("SherpaVoice: Pemba's lines, for the moment (#212)", () => {
       world.coach = null;
       play(seconds);
     }
+    const careless = heard.filter((name) => cueOf(name) === "careless");
+    const lines = linesOf("careless");
+    const first = lines.indexOf(careless[0] ?? "");
 
-    expect(heard.filter((name) => name.startsWith("careless"))).toEqual([
-      "careless.1",
-      "careless.2",
-    ]);
+    expect(careless).toEqual([lines[first], lines[(first + 1) % lines.length]]);
   });
 
   it("names no key nor button, which the coach does: a line says what to do, not what to press", () => {
@@ -227,43 +265,69 @@ describe("SherpaVoice: Pemba's lines, for the moment (#212)", () => {
     }
   });
 
-  it("says a part of the route once, after a quiet moment, and its fact and story after that, with the knowledge base's numbers", () => {
-    const { world, heard, play } = listening();
+  it("says a part of the route once, after a quiet moment, then two of its facts and stories", () => {
+    const { world, cues, play } = listening();
     play(8);
 
     world.inPart = "popcorn";
     play(1);
-    const early = heard.length;
+    const early = cues().length;
     play(60);
     // Back to the Popcorn a while later: nothing it said there before, again.
     world.inPart = "maze";
     play(1);
     world.inPart = "popcorn";
     play(30);
-    const words = heard.map((name) =>
-      english.say(name as SherpaTextName, { ...FILLS, time: "03:00" }),
-    );
+    const told = cues().slice(2, 4);
 
     expect(early).toBe(1);
-    expect(heard.slice(1, 4)).toEqual(["popcorn.1", "fact-ladders.1", "story-name.1"]);
-    expect(words[2]).toBe(
+    expect(cues()[1]).toBe("popcorn");
+    expect(told.filter((cue) => /^(?:fact|story)-/u.test(cue))).toHaveLength(2);
+    expect(new Set(cues()).size).toBe(cues().length);
+  });
+
+  it("fills his facts with the numbers the page hands him, on any climb", () => {
+    const said = [1, 2, 3, 4, 5, 6].flatMap(climbing);
+
+    expect(said.filter(({ words }) => words.includes("{"))).toEqual([]);
+    expect(said.find(({ cue }) => cue === "fact-ladders")?.words).toBe(
       "Every spring the Icefall Doctors fix this route. 8 to 21 ladders, depends on the year.",
     );
-    expect(heard.filter((name) => name === "popcorn.1")).toHaveLength(1);
+  });
+
+  it("picks by the climb's seed which facts and stories he tells, and which lines come first: two climbs don't sound alike, one seed sounds the same (#218)", () => {
+    const climbs = [1, 2, 3, 4, 5, 6].map((seed) => climbing(seed).map(({ name }) => name));
+    const stories = climbs.map((names) =>
+      names.filter((name) => /^(?:fact|story)-/u.test(name)).join(),
+    );
+
+    expect(climbing(1).map(({ name }) => name)).toEqual(climbs[0]);
+    expect(new Set(stories).size).toBe(climbs.length);
+    expect(new Set(climbs.map(([first]) => first)).size).toBeGreaterThan(1);
   });
 
   it("tells a joke after a quiet minute, at most one a minute, and never the same one twice", () => {
-    const { heard, play } = listening();
+    const { cues, play } = listening();
 
     play(5 * 60);
-    const jokes = heard.filter((name) => name.startsWith("joke-"));
+    const jokes = cues().filter((cue) => cue.startsWith("joke-"));
 
     expect(jokes).toHaveLength(4);
     expect(new Set(jokes).size).toBe(4);
   });
 
+  it("starts his jokes somewhere else on another climb", () => {
+    const firsts = [1, 2, 3, 4, 5, 6].map((seed) => {
+      const { cues, play } = listening(seed);
+      play(70);
+      return cues().find((cue) => cue.startsWith("joke-"));
+    });
+
+    expect(new Set(firsts).size).toBeGreaterThan(2);
+  });
+
   it("says what he does: the first ladder he steps onto, the line he holds, and his rest with the player and going on", () => {
-    const { world, heard, play } = listening();
+    const { world, cues, play } = listening();
     play(8);
 
     world.pembaView = standing({ ladder: "block" });
@@ -276,7 +340,7 @@ describe("SherpaVoice: Pemba's lines, for the moment (#212)", () => {
     world.view = { ...world.view, doing: "leading", client: null, restLeft: null };
     play(5);
 
-    expect(heard).toEqual(["set-off.1", "first-ladder.1", "holding.1", "safe.1", "going-on.1"]);
+    expect(cues()).toEqual(["set-off", "first-ladder", "holding", "safe", "going-on"]);
   });
 
   it("says so when the player crosses a ladder whose line he holds without a slip, twice a climb at most", () => {
@@ -302,10 +366,10 @@ describe("SherpaVoice: Pemba's lines, for the moment (#212)", () => {
     crossing(false);
     crossing(false);
 
-    expect(heard.filter((name) => name.startsWith("good-crossing"))).toEqual([
-      "good-crossing.1",
-      "good-crossing.2",
-    ]);
+    const good = heard.filter((name) => cueOf(name) === "good-crossing");
+
+    expect(good).toHaveLength(2);
+    expect(new Set(good).size).toBe(2);
   });
 
   it("says he has the player when they hang near him, to climb when he's far, and counts as he hauls", () => {
@@ -322,12 +386,12 @@ describe("SherpaVoice: Pemba's lines, for the moment (#212)", () => {
     far.world.playerView = standing({ falling: true, hanging: true });
     far.play(1);
 
-    expect(near.heard.slice(1)).toEqual(["rescue-coming.1", "pulling.1"]);
-    expect(far.heard.slice(1)).toEqual(["climb-yourself.1"]);
+    expect(near.cues().slice(1)).toEqual(["rescue-coming", "pulling"]);
+    expect(far.cues().slice(1)).toEqual(["climb-yourself"]);
   });
 
   it("laughs at a slip the rope held, and has nothing to say once he's dead", () => {
-    const { world, heard, play } = listening();
+    const { world, cues, play } = listening();
     play(8);
     const held: Fall = { step: 9, drop: 2, speed: 3, impact: 0, held: true };
 
@@ -337,14 +401,16 @@ describe("SherpaVoice: Pemba's lines, for the moment (#212)", () => {
     world.coach = "unclipped";
     const dead = play(5);
 
-    expect(heard.slice(1)).toEqual(["slip-held.1"]);
+    expect(cues().slice(1)).toEqual(["slip-held"]);
     expect(dead).toBeNull();
   });
 
   it("says the arrival's line for the camp, and his name", () => {
     const { voice } = listening();
 
-    expect(voice.arrival()).toBe("Camp 1. Now the hardest part: sitting and doing nothing.");
+    expect(linesOf("camp-1").map((name) => english.say(name as SherpaTextName))).toContain(
+      voice.arrival(),
+    );
     expect(voice.name).toBe("Pemba");
   });
 });

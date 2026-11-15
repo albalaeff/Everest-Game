@@ -1,0 +1,262 @@
+{
+  "$schema": "../facts.schema.json",
+  "facts": [
+    {
+      "id": "sherpas.chomolungma",
+      "kind": "fact",
+      "claim": "Sherpas and Tibetans call Everest Chomolungma, most often put as 'Goddess Mother of the World'; Sherpa mothers told their children it meant the mountain so high that no bird can fly over it.",
+      "status": "source only",
+      "versions": [
+        {
+          "note": "Chomolungma means 'Goddess Mother of the World' or 'Goddess of the Valley'.",
+          "source": {
+            "title": "Britannica: What are other names for Mount Everest?",
+            "url": "https://www.britannica.com/question/What-are-other-names-for-Mount-Everest"
+          },
+          "checked": "2026-11-15"
+        },
+        {
+          "note": "Also put as 'Goddess Mother of the Wind'; Sherpa mothers told their children it meant 'the mountain so high that no bird can fly over it'.",
+          "source": {
+            "title": "Michael Ward: The Name of the World's Highest Peak (The Himalayan Journal 53)",
+            "url": "https://www.himalayanclub.org/hj/53/3/the-name-of-the-worlds-highest-peak/"
+          },
+          "checked": "2026-11-15"
+        }
+      ]
+    },
+    {
+      "id": "sherpas.miyolangsangma",
+      "kind": "fact",
+      "claim": "Sherpas believe the goddess Miyolangsangma lives on Everest's summit, a goddess of inexhaustible giving who wants respect and offerings, and that a climber must win her favour before going up.",
+      "status": "source only",
+      "versions": [
+        {
+          "note": "The Tibetan Buddhist goddess who lives at the top of Chomolungma, one of the five long-life sisters; her virtue is inexhaustible giving.",
+          "source": {
+            "title": "Wikipedia: Miyolangsangma",
+            "url": "https://en.wikipedia.org/wiki/Miyolangsangma"
+          },
+          "checked": "2026-11-15"
+        },
+        {
+          "note": "Sherpas believe climbers must appease her first to reach the summit safely; her generosity asks to be met with respect and offerings.",
+          "source": {
+            "title": "Tsem Rinpoche: Miyolangsangma, the Goddess of Inexhaustible Giving",
+            "url": "https://www.tsemrinpoche.com/tsem-tulku-rinpoche/buddhas-dharma/miyolangsangma-the-goddess-of-inexhaustible-giving.html"
+          },
+          "checked": "2026-11-15"
+        }
+      ]
+    },
+    {
+      "id": "sherpas.puja",
+      "kind": "fact",
+      "claim": "Before a team climbs, a lama holds a puja at Base Camp: he asks the mountain's gods to let the climbers pass, to forgive them for hurting the mountain with their sharp points, and to keep them safe; the crampons and the axes are brought to be blessed. Nobody goes up the Icefall before it.",
+      "status": "source only",
+      "versions": [
+        {
+          "note": "A lama from a local village prays to the mountain gods before any serious climbing, asking forgiveness for hurting the mountains with sharp points; harnesses, crampons and ice axes are brought to it.",
+          "source": {
+            "title": "Alan Arnette: Everest 2021: Puja Before Climbing",
+            "url": "https://www.alanarnette.com/2021/04/14/everest-2021-puja-before-climbing/"
+          },
+          "checked": "2026-11-15"
+        },
+        {
+          "note": "A must-do before anyone enters the Icefall; for the Sherpas, an homage to Miyolangsangma, who lives on the summit; barley flour smeared on each other for a white beard and a long life.",
+          "source": {
+            "title": "Alan Arnette: Everest 2024: Tibet Climbs in Peril",
+            "url": "https://www.alanarnette.com/2024/04/16/everest-2024-tibet-climbs-in-peril/"
+          },
+          "checked": "2026-11-15"
+        }
+      ]
+    },
+    {
+      "id": "sherpas.juniper",
+      "kind": "fact",
+      "claim": "Each time before they leave Base Camp for the Icefall, the climbers and the Sherpas pass by the puja's altar and let the smoke of burning juniper cover them.",
+      "status": "source only",
+      "versions": [
+        {
+          "note": "Every time before leaving Base Camp, each climber and Sherpa passes the spot, letting the smoke from the juniper boughs cover them.",
+          "source": {
+            "title": "Alan Arnette: Everest 2021: Puja Before Climbing",
+            "url": "https://www.alanarnette.com/2021/04/14/everest-2021-puja-before-climbing/"
+          },
+          "checked": "2026-11-15"
+        }
+      ]
+    },
+    {
+      "id": "sherpas.day-names",
+      "kind": "fact",
+      "claim": "Many Sherpas are named for the day of the week they were born on: Dawa Monday, Mingma Tuesday, Lhakpa Wednesday, Phurba Thursday, Pasang Friday, Pemba Saturday, Nyima Sunday.",
+      "status": "source only",
+      "versions": [
+        {
+          "note": "Pemba: born on a Saturday; the article lists all seven days.",
+          "source": {
+            "title": "B. R. Goodfellow: Suggested Explanations of Sherpa Names (The Himalayan Journal 20, 1957)",
+            "url": "https://www.himalayanclub.org/hj/20/19/suggested-explanations-of-sheepa-names/"
+          },
+          "checked": "2026-11-15"
+        }
+      ]
+    },
+    {
+      "id": "sherpas.thanks",
+      "kind": "fact",
+      "claim": "On the summit, Tenzing Norgay called out 'Thuji chey, Chomolungma': thank you, Chomolungma.",
+      "status": "source only",
+      "versions": [
+        {
+          "note": "When Tenzing Norgay Sherpa summited, he called out 'Thuji chey, Chomolungma'.",
+          "source": {
+            "title": "Alan Arnette: What's in a name: Everest, Chomolungma, Sagarmatha? (2020)",
+            "url": "https://www.alanarnette.com/blog/?p=37557"
+          },
+          "checked": "2026-11-15"
+        }
+      ]
+    },
+    {
+      "id": "sherpas.dreams",
+      "kind": "fact",
+      "claim": "A Sherpa takes a bad dream before a climb as a sign: in 2021 Kami Rita Sherpa turned back from Camp 3 on his 26th attempt, the weather turning and the goddess, he said, telling him in a dream it was enough.",
+      "status": "source only",
+      "versions": [
+        {
+          "note": "'I didn't have a good dream. I felt the goddess was telling me it is enough for this time.' Sherpas consider the peak holy.",
+          "source": {
+            "title": "The Himalayan Times (Reuters): Record-breaking Sherpa says mountain goddess warned him from 26th Everest ascent",
+            "url": "https://thehimalayantimes.com/nepal/record-breaking-sherpa-says-mountain-goddess-warned-him-from-26th-everest-ascent"
+          },
+          "checked": "2026-11-15"
+        },
+        {
+          "note": "Sherpas believe Everest to be a goddess and hold a religious ceremony before stepping on the mountain.",
+          "source": {
+            "title": "AP via NewsChannel 9: Bad dream stops Mount Everest guide from climbing peak for the 26th time",
+            "url": "https://newschannel9.com/news/nation-world/bad-dream-stops-mount-everest-guide-from-climbing-peak-for-the-26th-time"
+          },
+          "checked": "2026-11-15"
+        }
+      ]
+    },
+    {
+      "id": "sherpas.icefall-crossings",
+      "kind": "fact",
+      "claim": "How many times a climbing Sherpa goes through the Khumbu Icefall in a season, carrying the expedition's loads.",
+      "status": "source only",
+      "versions": [
+        {
+          "range": {
+            "min": 30,
+            "max": 40
+          },
+          "unit": "crossings",
+          "note": "Sherpa trips through the icefall can be as many as 30 to 40 a season.",
+          "source": {
+            "title": "National Geographic: Nepalis Hold Their Breath as New Everest Climbing Season Begins (2016)",
+            "url": "https://www.nationalgeographic.com/adventure/article/mount-everest-climbing-season-begins"
+          },
+          "checked": "2026-11-15"
+        },
+        {
+          "value": 30,
+          "unit": "crossings",
+          "note": "Not uncommon for Sherpas to go through the Khumbu Icefall around 30 times each season.",
+          "source": {
+            "title": "Wikipedia: Sherpa people",
+            "url": "https://en.wikipedia.org/wiki/Sherpa_people"
+          },
+          "checked": "2026-11-15"
+        }
+      ]
+    },
+    {
+      "id": "sherpas.client-crossings",
+      "kind": "fact",
+      "claim": "How many times a paying client goes through the Khumbu Icefall in a season: three or four round trips.",
+      "status": "source only",
+      "versions": [
+        {
+          "range": {
+            "min": 6,
+            "max": 8
+          },
+          "unit": "crossings",
+          "note": "A regular paying client might make six to eight trips.",
+          "source": {
+            "title": "National Geographic: Nepalis Hold Their Breath as New Everest Climbing Season Begins (2016)",
+            "url": "https://www.nationalgeographic.com/adventure/article/mount-everest-climbing-season-begins"
+          },
+          "checked": "2026-11-15"
+        },
+        {
+          "range": {
+            "min": 6,
+            "max": 8
+          },
+          "unit": "crossings",
+          "note": "The average client passes through the Khumbu six to eight times, three or four round trips; the average Sherpa ten times that.",
+          "source": {
+            "title": "National Geographic: The new climbing season begins with a 'safer' route through a killer icefall (2015)",
+            "url": "https://www.nationalgeographic.com/travel/article/150408-everest-climbing-sherpas-mountaineering-nepal-himalaya-guides"
+          },
+          "checked": "2026-11-15"
+        }
+      ]
+    },
+    {
+      "id": "sherpas.words",
+      "kind": "fact",
+      "claim": "Words a guide in the Khumbu uses with clients on the trail: bistari, bistari, Nepali for 'slowly, slowly', and jam jam, 'let's go'.",
+      "status": "source only",
+      "versions": [
+        {
+          "note": "Bistari bistari, 'slowly, slowly', the most important phrase on the trail; jam jam, 'let's go, let's go'.",
+          "source": {
+            "title": "Mosaic Adventure: Glossary for Everest Base Camp Trek",
+            "url": "https://mosaicadventure.com/glossary-for-everest-base-camp-trek/"
+          },
+          "checked": "2026-11-15"
+        },
+        {
+          "note": "Bistarai, bistarai: slowly, slowly; jam jam: let's go, what the guide says when it's time to start moving.",
+          "source": {
+            "title": "Best Heritage Tour: Basic Nepali Words for Travelers",
+            "url": "https://www.bestheritagetour.com/blog/basic-nepali-words-for-travelers"
+          },
+          "checked": "2026-11-15"
+        }
+      ]
+    },
+    {
+      "id": "sherpas.duty",
+      "kind": "fact",
+      "claim": "For a climbing Sherpa, guiding is the family's living and a duty: the season's pay keeps the family and the children at school, and sons follow their fathers onto the mountain.",
+      "status": "source only",
+      "versions": [
+        {
+          "note": "'Taking clients to the summit is my duty.' He followed his father, who worked on Everest as a sirdar, the head Sherpa.",
+          "source": {
+            "title": "Anadolu: Nepali mountaineer Kami Rita Sherpa summits Everest for record 32nd time (2026)",
+            "url": "https://aa.com.tr/en/sports/nepali-mountaineer-kami-rita-sherpa-summits-everest-for-record-32nd-time/3939924"
+          },
+          "checked": "2026-11-15"
+        },
+        {
+          "note": "After the 2015 earthquake many spent most of the money they had saved for their children's education on rebuilding their homes.",
+          "source": {
+            "title": "National Geographic: Nepalis Hold Their Breath as New Everest Climbing Season Begins (2016)",
+            "url": "https://www.nationalgeographic.com/adventure/article/mount-everest-climbing-season-begins"
+          },
+          "checked": "2026-11-15"
+        }
+      ]
+    }
+  ]
+}
