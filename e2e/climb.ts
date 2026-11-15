@@ -55,6 +55,11 @@ export interface SavedClimb {
     };
     /** What each climber's pack holds: a second ice tool is a second pick in the ice. */
     packs?: { climbers: { readonly id: string; items: Record<string, number> }[] };
+    /** The stretches a gust or a lashed ladder's twist comes on, and those on their way (#197). */
+    jolts?: {
+      zones: unknown[];
+      warnings: { zone: string; kind: string; began: number; comes: number }[];
+    };
     /** The training events staged on the route (#209), and what has come down. */
     "objective-hazards": {
       events?: {
@@ -316,6 +321,14 @@ export function stage(
     if (ladder !== null && laid.id === ladder.id) {
       laid.breaks = ladder.breaks;
     }
+  }
+}
+
+/** No gust nor twist comes on the climb (#197): the jolts' stretches gone, so a story that cues
+ * the expedition's next draw has it for the step it means. */
+export function calm(climb: SavedClimb): void {
+  if (climb.rules.jolts !== undefined) {
+    climb.rules.jolts.zones = [];
   }
 }
 

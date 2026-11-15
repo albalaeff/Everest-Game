@@ -292,7 +292,7 @@ export class SherpaVoice {
       this.wait("set-off", "soon");
     }
     const warning = now.tip === null ? undefined : SherpaVoice.WARNINGS[now.tip];
-    if (warning !== undefined && now.tip !== before.tip) {
+    if (warning !== undefined && (now.tip !== before.tip || this.before === null)) {
       this.wait(warning, warning === "broken" ? "soon" : "now");
     }
     if (now.seracs && !before.seracs) {
