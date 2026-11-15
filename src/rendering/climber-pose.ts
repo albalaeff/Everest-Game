@@ -87,6 +87,11 @@ export interface Pose {
   /** How far forward the spine leans, and the head, in radians. */
   readonly lean: number;
   readonly nod: number;
+  /** Up a wall, where the eyes look, in radians from the level towards the wall, up above 0: up
+   * it while its top is far over the head, across the top as the eyes come level with it, down
+   * onto it once over it (#222). The headlamp shines that way. Null anywhere else, where the lamp
+   * goes by the slope under the boots. */
+  readonly gaze: number | null;
   /** How far over the whole figure has gone, in radians: 0 on its feet, a quarter turn lying
    * face down along the ground, its head the way it faced. */
   readonly tilt: number;
@@ -131,10 +136,11 @@ interface Targets {
   readonly offset: Joint;
 }
 
-/** A mode's targets this frame, and which boots are down. */
+/** A mode's targets this frame, which boots are down, and up a wall where the eyes look. */
 interface Made {
   readonly targets: Targets;
   readonly down: readonly [boolean, boolean];
+  readonly gaze?: number;
 }
 
 /** Where the walk is: how far into the stride, the stride's length, how far behind the climber's
@@ -216,11 +222,24 @@ export class ClimberPose {
   static readonly HEAD_RADIUS = 0.12;
   /** The pelvis' height over the soles standing, the knees a little bent. */
   static readonly STANDING = 0.86;
-  /** A stride at each pace: how far the body goes while each boot takes a step. */
+  /** A stride at each pace: how far the body goes while each boot takes a step. On the ground it
+   * grows with the speed, so the steps come no faster than so many a second, up to the longest
+   * (#222): the mountain's clock runs faster than the route is drawn, so the climber walks over
+   * it faster than in life, and short strides would be a scurry. */
   static readonly STRIDE: Readonly<Record<Pace["pace"], number>> = {
     "rest-step": 0.42,
     steady: 0.56,
     faster: 0.66,
+  };
+  static readonly LONGEST_STRIDE: Readonly<Record<Pace["pace"], number>> = {
+    "rest-step": 1,
+    steady: 1.1,
+    faster: 1.15,
+  };
+  static readonly STEPS_A_SECOND: Readonly<Record<Pace["pace"], number>> = {
+    "rest-step": 2.2,
+    steady: 2.6,
+    faster: 3,
   };
   /** How far a boot steps on a ladder, about: a rung at life size, and on a ladder drawn smaller
    * than the figure the nearest whole number of rungs. Each boot goes two steps in a stride, from
@@ -229,10 +248,20 @@ export class ClimberPose {
   /** How high a boot lifts in a step, and on a ladder. */
   static readonly LIFT = 0.14;
   static readonly RUNG_LIFT = 0.22;
-  /** How much of a leg's cycle its boot is down. */
+  /** How much of a leg's cycle its boot is down; and how much of the end of its swing it takes
+   * the weight over, coming down. */
   static readonly STANCE = 0.6;
-  /** How much of each step of the rest step the figure stands still on its locked lower leg. */
+  private static readonly LOADING = 0.35;
+  /** How much of each step of the rest step the figure stands still on its locked lower leg; and
+   * below how many steps a second it starts to pause, and above how many it stops (#222): the
+   * pause shows where careful steps go slowly, up steep ground, and gives way to a smooth careful
+   * walk where they go faster. Each step decides at its start, where the figure is on its point
+   * and stands on no locked leg, so the change shows no jolt. */
   static readonly REST_PAUSE = 0.45;
+  static readonly PAUSED_STEPS = { from: 2.4, to: 2.6 };
+  /** Careful steps (#222): how much lower the boots lift than at a steady pace, how much less the
+   * arms swing and the pelvis dips, and how much lower the head looks, at the feet. */
+  private static readonly CAREFUL = { lift: 0.4, swing: 0.6, bob: 0.7, nod: 0.12 };
   /** The lean, in radians, by tiredness; what walking, the jumar and a ladder add; and bent
    * double over the knees. */
   static readonly LEAN: Readonly<Record<Tiredness, number>> = {
@@ -273,8 +302,11 @@ export class ClimberPose {
   };
   /** Where in the stride a climber stands at first: both boots down, one ahead. */
   private static readonly START = 0.05;
-  /** How long the boots take to settle at a halt, or the stride to pick up again. */
+  /** How long the boots take to settle at a halt, or the stride to pick up again; and how long
+   * the speed the stride grows with takes to follow the climber's, slower, so a boot down hardly
+   * slides as the stride changes under it (#222). */
   private static readonly SETTLE_SECONDS = 0.25;
+  private static readonly SPEED_SECONDS = 0.6;
   /** The sink of the pelvis by tiredness, standing. */
   private static readonly SINK: Readonly<Record<Tiredness, number>> = {
     fresh: 0,
@@ -313,8 +345,12 @@ export class ClimberPose {
   private static readonly SOLE_STEEPEST = 0.6;
   /** How far the slope leans the body into it: a share of its angle, between these. */
   private static readonly SLOPE_LEAN = { share: 0.45, least: -0.12, most: 0.3 };
-  /** How far back over the locked lower leg the pelvis goes in the rest step's pause. */
-  private static readonly REST_BACK = 0.04;
+  /** How far back over the locked lower leg the pelvis goes in the rest step's pause; how far
+   * under the whole leg's reach it stands on it, locked; and how far into the step through it
+   * comes down off it, before the back boot lifts (#222). */
+  private static readonly REST_BACK = 0.08;
+  private static readonly LOCK_SLACK = 0.02;
+  private static readonly OFF_THE_LOCK = 0.18;
   /** How far a leg reaches, as a share of its length: never quite straight. */
   private static readonly REACH = 0.995;
   /** Where the near hand holds the jumar when the rope is out of its reach, from the shoulder:
@@ -355,10 +391,12 @@ export class ClimberPose {
     pelvis: { up: 0.84, off: -0.34 },
     lean: 0.08,
   };
-  /** Up a wall, the head looks up it, and once it comes over the wall's top, down onto it, the body
-   * leaning over the edge to step off: the gaze up the wall and onto its top, how far over the top
-   * the head is when it's looking down onto it, and how far the climber leans over it there. */
-  private static readonly CREST = { up: -0.3, onto: 0.35, over: 0.45, lean: 0.4 };
+  /** Up a wall, the head looks up it, across its top as the eyes come level with it, and once it
+   * comes over the top, down onto it, the body leaning over the edge to step off (#222): the nod up
+   * the wall and onto its top, how far under the top the head starts to come down to the level,
+   * how far over the top it is when it's looking down onto it, and how far the climber leans over
+   * it there. */
+  private static readonly CREST = { up: -0.3, onto: 0.35, below: 0.6, over: 0.45, lean: 0.4 };
   /** On steps likely to slip (#208), a climber wobbles, more the likelier: below this footing,
    * swaying their body this far each way, so many times a second, their arms out for balance to
    * these hands, from the shoulder, the near one forward and the far one back. */
@@ -480,8 +518,15 @@ export class ClimberPose {
   private crouch = 0;
   private lift = 0;
   private pushing = 0;
-  /** How far into the rest step's rhythm, 0 to 1. */
+  /** How far into the rest step's rhythm, 0 to 1; and how fast the climber's point goes over the
+   * ground, in the figure's metres a second, smoothed. */
   private resting = 0;
+  private speed = 0;
+  /** Whether this step of the rest step pauses, and where in its step the walk was last frame. */
+  private pauses = true;
+  private lastStep = 0;
+  /** Up a wall, where the eyes look this frame. */
+  private gazing: number | null = null;
   /** Whether the second carabiner was on last frame, where it was, and the far hand's reach to
    * it: the seconds left. */
   private clipped: boolean | null = null;
@@ -521,13 +566,14 @@ export class ClimberPose {
     const crouching = mode === "wall" && state.onIce === true && Number.isFinite(this.short);
     const crouch = crouching ? this.crouch + this.short : 0;
     this.crouch += (Math.min(Math.max(crouch, 0), ClimberPose.MOST_CROUCH) - this.crouch) * share;
-    const gait = this.gait(state, mode, share);
+    const gait = this.gait(state, mode, share, frame);
     this.time += frame;
     const made = this.hauling(
       this.wobbling(this.made(mode, state, gait), state, mode),
       state,
       mode,
     );
+    this.gazing = mode === "wall" ? (made.gaze ?? null) : null;
     if (this.mode !== null && mode !== this.mode && this.last !== null) {
       const tilt = ClimberPose.nearest(this.last.tilt, made.targets.tilt);
       this.blendFrom = { ...this.last, tilt };
@@ -630,9 +676,20 @@ export class ClimberPose {
   }
 
   /** The stride's place and length, paced by the way covered, and the rest step's pause. */
-  private gait(state: PoseState, mode: Mode, share: number): Gait {
+  private gait(state: PoseState, mode: Mode, share: number, frame: number): Gait {
     const { ladder } = state;
-    let pace = ClimberPose.STRIDE[state.pace] * ClimberPose.TIRED[state.tiredness].stride;
+    const last = this.lastTravelled;
+    const moved = last === null ? 0 : Math.abs(state.travelled - last);
+    this.lastTravelled = state.travelled;
+    const speed = state.moving && frame > 1e-9 ? moved / frame : 0;
+    this.speed += (speed - this.speed) * (1 - Math.exp(-frame / ClimberPose.SPEED_SECONDS));
+    // On the ground the stride grows with the speed, so the steps come no faster than so many a
+    // second, up to the longest (#222).
+    const tired = ClimberPose.TIRED[state.tiredness].stride;
+    const shortest = ClimberPose.STRIDE[state.pace] * tired;
+    const longest = Math.max(shortest, ClimberPose.LONGEST_STRIDE[state.pace] * tired);
+    const steps = ClimberPose.STEPS_A_SECOND[state.pace];
+    let pace = Math.min(Math.max(shortest, (2 * this.speed * tired) / steps), longest);
     if (ladder !== null) {
       const across = mode === "wall" ? 1 : Math.abs(ladder.way.x);
       // Up a face of ice, each boot kicks in a step at a time; on a ladder, rung by rung.
@@ -640,9 +697,6 @@ export class ClimberPose {
     }
     const stride = this.stride === null ? pace : this.stride + (pace - this.stride) * share;
     this.stride = stride;
-    const last = this.lastTravelled;
-    const moved = last === null ? 0 : Math.abs(state.travelled - last);
-    this.lastTravelled = state.travelled;
     if (mode === "walk" || mode === "rungs" || mode === "wall" || mode === "rise") {
       const ahead = moved / Math.max(stride, 1e-6);
       const onward = this.cycle + ahead;
@@ -650,19 +704,28 @@ export class ClimberPose {
       this.cycle = ((cycle % 1) + 1) % 1;
     }
     // The rest step: in each step, the drawn walk stands still for the pause and then steps
-    // through, the figure that far behind the climber's point.
+    // through, the figure that far behind the climber's point. It pauses where the steps come
+    // slowly, and walks on smoothly where they come faster, decided at each step's start (#222).
     const step = (2 * this.cycle) % 1;
+    if (step < this.lastStep) {
+      const stepping = (2 * this.speed) / Math.max(stride, 1e-6);
+      const { from, to } = ClimberPose.PAUSED_STEPS;
+      this.pauses = this.pauses ? stepping < to : stepping < from;
+    }
+    this.lastStep = step;
+    const resting = this.pauses ? this.resting : 0;
     const pause = ClimberPose.REST_PAUSE;
     const stepped = step < pause ? 0 : ClimberPose.smooth((step - pause) / (1 - pause));
-    const lag = (this.resting * (step - stepped)) / 2;
-    const into = ClimberPose.smooth(step / 0.15) * (1 - stepped);
+    const lag = (resting * (step - stepped)) / 2;
+    // Up onto the locked leg over the first half of the pause, and down off it through the step.
+    const into = ClimberPose.smooth(step / (pause / 2)) * (1 - stepped);
     const phase = (this.cycle - lag + 1) % 1;
     this.settled = [this.settle(phase, 0, state, share), this.settle(phase, 1, state, share)];
     return {
       phase,
       stride,
       behind: lag * stride,
-      pausing: this.resting * (1 - this.standing) * into,
+      pausing: resting * (1 - this.standing) * into,
       settled: this.settled,
     };
   }
@@ -744,7 +807,7 @@ export class ClimberPose {
       mode === "wall"
         ? targets.hands
         : [state.jumar === null ? out(near, WOBBLE.near) : near, out(far, WOBBLE.far)];
-    return { targets: { ...targets, lean, hands }, down: made.down };
+    return { ...made, targets: { ...targets, lean, hands } };
   }
 
   /** The targets of a climber hauling a partner up the rope, on their feet (#209): leaning back
@@ -764,7 +827,7 @@ export class ClimberPose {
       y: pelvis.y + 0.12 + 0.05 * Math.cos(cycle + phase),
     });
     const hands: readonly [Joint, Joint] = [hand(0), hand(Math.PI)];
-    return { targets: { ...targets, pelvis, lean, hands }, down: made.down };
+    return { ...made, targets: { ...targets, pelvis, lean, hands } };
   }
 
   /** Mixes the targets with the last mode's, as the blend into this one goes on. */
@@ -786,24 +849,34 @@ export class ClimberPose {
     const { ladder } = state;
     const { behind } = gait;
     const tired = ClimberPose.TIRED[state.tiredness];
-    const lift = (ladder === null ? ClimberPose.LIFT : ClimberPose.RUNG_LIFT) * tired.lift;
+    // Careful steps (#222): the boots kept low, the arms stiller, no dip, the eyes on the feet.
+    const careful = this.resting;
+    const { CAREFUL } = ClimberPose;
+    const lift =
+      (ladder === null ? ClimberPose.LIFT : ClimberPose.RUNG_LIFT) *
+      tired.lift *
+      (1 - CAREFUL.lift * careful);
     const near = this.boot(state, gait, 0, lift);
     const far = this.boot(state, gait, 1, lift);
     const slope = this.slopeAt(state, 0, behind);
     const lean = this.walkingLean(state, slope);
     const pelvisX = -0.08 * lean - ClimberPose.REST_BACK * gait.pausing;
     const dip = (1 + Math.cos(4 * Math.PI * (gait.phase - ClimberPose.START))) / 2;
-    const bob = ClimberPose.BOB * dip * (1 - this.standing);
+    const bob = ClimberPose.BOB * dip * (1 - this.standing) * (1 - CAREFUL.bob * careful);
     const sink = ClimberPose.SINK[state.tiredness] + ClimberPose.CLIP_CROUCH * this.reach();
     let height = this.height(state, pelvisX, behind) + ClimberPose.STANDING - sink - bob;
-    // In the rest step's pause the climber stands straight on the back leg, locked, the boot on
-    // its toe as far as its stiff ankle needs.
-    const backIsNear = near.ankle.x < far.ankle.x;
+    // In the rest step's pause the climber stands straight on the back leg, locked, on the boot as
+    // it stands: the leg that's down, or the one behind if both are, never a boot swinging past it
+    // (#222).
+    const backIsNear = near.down === far.down ? near.ankle.x < far.ankle.x : near.down;
     const back = backIsNear ? near : far;
     const backHip = ClimberPose.hipOf(pelvisX, backIsNear ? 0 : 1);
-    const straight: Joint = { x: backHip.x, y: ClimberPose.reachUp(backHip, back.ankle) };
-    const onToe = ClimberPose.stiff(straight, back, back.pivots);
-    height += gait.pausing * (ClimberPose.reachUp(backHip, onToe.ankle) - height);
+    // Locked, not hyperextended: a reach short of the whole leg's to the boot as it stands, so
+    // the knee and the boot don't flick between ways of standing on it; and down off it early in
+    // the step through, before its boot lifts, so the hips don't jolt as the weight goes on.
+    const locked = ClimberPose.reachUp(backHip, back.ankle) - ClimberPose.LOCK_SLACK;
+    const onIt = 1 - ClimberPose.smooth(((2 * gait.phase) % 1) / ClimberPose.OFF_THE_LOCK);
+    height += gait.pausing * onIt * Math.max(locked - height, 0);
     // Each boot turns as far as its stiff ankle needs, and the hips sink as far as each leg
     // bearing the weight needs to reach it.
     const nearFoot = ClimberPose.stiff(ClimberPose.hipOf(pelvisX, 0, height), near, near.pivots);
@@ -831,7 +904,7 @@ export class ClimberPose {
       targets: {
         pelvis,
         lean,
-        nod: lean * 1.3 + tired.nod,
+        nod: lean * 1.3 + tired.nod + CAREFUL.nod * careful,
         ankles: [nearFoot.ankle, farFoot.ankle],
         soles: [nearFoot.sole, farFoot.sole],
         pivots: [near.pivots, far.pivots],
@@ -882,7 +955,10 @@ export class ClimberPose {
       return { x, y: this.height(state, x, gait.behind) + ClimberPose.LINES };
     }
     const root = ClimberPose.armRoot(shoulder, arm);
-    const swing = ClimberPose.ARM_SWING * ClimberPose.TIRED[state.tiredness].swing;
+    const swing =
+      ClimberPose.ARM_SWING *
+      ClimberPose.TIRED[state.tiredness].swing *
+      (1 - ClimberPose.CAREFUL.swing * this.resting);
     const cycle = Math.cos(2 * Math.PI * (gait.phase + arm / 2 - ClimberPose.START));
     const angle = -swing * cycle * (1 - this.standing) + lean * 0.5;
     const reach = ClimberPose.UPPER_ARM + ClimberPose.FOREARM - 0.04;
@@ -986,7 +1062,12 @@ export class ClimberPose {
       ankle: ClimberPose.between(swinging, onto, settled),
       sole: sole + (toSlope - sole) * settled,
       down: settled > 0.95,
-      weight: settled,
+      // The leg takes the weight over the end of its swing, coming down, so the hips settle onto
+      // a long step rather than drop at the moment it lands (#222).
+      weight: Math.max(
+        settled,
+        ClimberPose.smooth((swung - 1 + ClimberPose.LOADING) / ClimberPose.LOADING),
+      ),
       pivots: ClimberPose.pivotsBetween(pivots, ClimberPose.OFF_THE_GROUND, aloft),
     };
   }
@@ -1037,9 +1118,11 @@ export class ClimberPose {
     }
     const pelvis = at(up, wall.pelvis.off);
     const crest = ClimberPose.CREST;
-    // How far over the wall's top the head has come, going up: none going down.
+    // How far over the wall's top the head has come, going up: none going down. The gaze comes
+    // down from up the wall to the level as the eyes come up to the top, and onto it over it.
     const headUp = up + ClimberPose.SPINE * Math.cos(wall.lean) + ClimberPose.NECK;
     const over = sign > 0 ? ClimberPose.smooth((headUp - top) / crest.over) : 0;
+    const level = sign > 0 ? ClimberPose.smooth(1 + (headUp - top) / crest.below) : 0;
     const lean = wall.lean + (crest.lean - wall.lean) * over;
     const shoulder = ClimberPose.shoulderOf(pelvis, lean);
     const hands = this.holdingHands(
@@ -1054,7 +1137,7 @@ export class ClimberPose {
       targets: {
         pelvis,
         lean,
-        nod: sign > 0 ? crest.up + (crest.onto - crest.up) * over : 0.4,
+        nod: sign > 0 ? crest.up * (1 - level) + crest.onto * over : 0.4,
         ankles: [nearAnkle, farAnkle],
         soles: [0, 0],
         pivots: [ClimberPose.ON_A_WALL, ClimberPose.ON_A_WALL],
@@ -1063,6 +1146,7 @@ export class ClimberPose {
         offset: ClimberPose.ORIGIN,
       },
       down: [near.down, far.down],
+      ...(sign > 0 ? { gaze: (Math.PI / 2) * (1 - level) - crest.onto * over } : {}),
     };
   }
 
@@ -1246,6 +1330,7 @@ export class ClimberPose {
       soles: [near.sole, far.sole],
       lean,
       nod,
+      gaze: this.gazing,
       tilt,
       offset,
       jumar: onTheRope === null ? null : ClimberPose.between(onTheRope, holder, this.holding),

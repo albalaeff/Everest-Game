@@ -1,4 +1,4 @@
-import type { ClimberView, Point, Terrain } from "../physics";
+import type { ClimberView, Point, Terrain, Way } from "../physics";
 import type { BodyView } from "../simulation";
 import type { Joint, LadderFooting, PoseState } from "./climber-pose";
 import type { PickIn } from "./ice-tools";
@@ -181,20 +181,45 @@ export class ClimberReading {
     });
   }
 
-  /** The face of ice a climber on their tools is on, as a ladder up it for the pose: its line
-   * along the ice through where they're drawn, a few metres each way. At its foot or its lip they
-   * stand on a corner, and the face is the steeper of the ground ahead and behind. */
+  /** The face of ice a climber on their tools is on, as a ladder up it for the pose: from its
+   * foot to its lip, so the pose knows where it ends and the head comes over it (#222). At its
+   * foot or its lip they stand on a corner, and the face is the steeper of the ground ahead and
+   * behind. Off a face, the ground's line through where they're drawn, a few metres each way. */
   private face(at: Point): readonly Point[] {
     const { terrain } = this.slope;
     const along = terrain.nearest(at).along;
     const onward = terrain.ahead(along, 1);
     const back = terrain.ahead(along, -1);
-    const ahead = Math.abs(back.y) > Math.abs(onward.y) ? { x: -back.x, y: -back.y } : onward;
-    const reach = ClimberReading.FACE_METRES;
-    return [
-      { x: at.x - ahead.x * reach, y: at.y - ahead.y * reach },
-      { x: at.x + ahead.x * reach, y: at.y + ahead.y * reach },
-    ];
+    const steeper: Way = Math.abs(back.y) > Math.abs(onward.y) ? -1 : 1;
+    const ahead = steeper > 0 ? onward : { x: -back.x, y: -back.y };
+    if (Math.abs(ahead.y) < ClimberReading.ACROSS) {
+      const reach = ClimberReading.FACE_METRES;
+      return [
+        { x: at.x - ahead.x * reach, y: at.y - ahead.y * reach },
+        { x: at.x + ahead.x * reach, y: at.y + ahead.y * reach },
+      ];
+    }
+    // The way along the ground that goes up the face, and the way down it.
+    const up: Way = ahead.y >= 0 ? 1 : -1;
+    const down: Way = up > 0 ? -1 : 1;
+    return [terrain.point(this.faceEnd(along, down)), terrain.point(this.faceEnd(along, up))];
+  }
+
+  /** How far along the ground a face runs from `along` the way `way`: to the first corner past
+   * which the ground is no wall, or the ground's end. */
+  private faceEnd(along: number, way: Way): number {
+    const { terrain } = this.slope;
+    let at = along;
+    for (;;) {
+      if (Math.abs(terrain.ahead(at, way).y) < ClimberReading.ACROSS) {
+        return at;
+      }
+      const corner = terrain.cornerAhead(at, way);
+      if (corner === at) {
+        return at;
+      }
+      at = corner;
+    }
   }
 
   /** Faces the way they walk on the ground or across a ladder, and the wall up one. */

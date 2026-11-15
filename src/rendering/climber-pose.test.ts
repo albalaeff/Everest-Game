@@ -144,13 +144,18 @@ function through(
   return frames;
 }
 
-/** A climber walking `frames` frames from a stand. */
-function walk(frames: number, over: Over = {}, height: (x: number) => number = flat): Frame[] {
+/** A climber walking `frames` frames from a stand, `step` metres a frame. */
+function walk(
+  frames: number,
+  over: Over = {},
+  height: (x: number) => number = flat,
+  step = 0.01,
+): Frame[] {
   const moving = (x: number, into: number): Partial<PoseState> => ({
     ...of(over, x, into),
     moving: true,
   });
-  return through([{ frames, over: moving }], height);
+  return through([{ frames, over: moving }], height, step);
 }
 
 /** A climber going up a ladder on a wall, 6 mm a frame. */
@@ -362,15 +367,71 @@ describe("ClimberPose", () => {
       if (!stays && still >= 5) {
         const { legs } = before.pose;
         const back = legs[0].end.x < legs[1].end.x ? legs[0] : legs[1];
+        // Locked, not hyperextended: a little short of the whole leg's reach (#222).
         const straight = ClimberPose.THIGH + ClimberPose.SHIN;
-        expect(length(back.root, back.end)).toBeGreaterThan(0.96 * straight);
+        expect(length(back.root, back.end)).toBeGreaterThan(0.9 * straight);
         pauses += 1;
       }
       still = stays ? still + 1 : 0;
     }
     expect(pauses).toBeGreaterThan(3);
     for (const { pose } of resting) {
-      expect(-pose.offset.x).toBeLessThanOrEqual(ClimberPose.STRIDE["rest-step"] / 2 + 1e-9);
+      expect(-pose.offset.x).toBeLessThanOrEqual(
+        ClimberPose.LONGEST_STRIDE["rest-step"] / 2 + 1e-9,
+      );
+    }
+  });
+
+  it("walks at the game's pace in strides that grow with the speed, so the steps can be counted (#222)", () => {
+    // The game walks a fresh climber about 2.1 m/s on the flat at a steady pace: 0.035 m a frame.
+    const steady = walk(420, {}, flat, 0.035).slice(120);
+    const landings = steady.filter(({ pose }) => pose.landed.some(Boolean)).length;
+    expect(landings / (steady.length * FRAME)).toBeLessThan(4);
+    // Slowly, the stride is as it was.
+    const slow = walk(420, {}, flat, 0.005).slice(120);
+    const slowLandings = slow.filter(({ pose }) => pose.landed.some(Boolean)).length;
+    const slowSteps = slowLandings / (slow.length * FRAME);
+    expect(slowSteps).toBeGreaterThan((0.8 * (2 * 0.005)) / (FRAME * ClimberPose.STRIDE.steady));
+  });
+
+  it("steps carefully on the flat at the game's pace, the weight going on with no stop-and-go and no bob (#222)", () => {
+    // The game walks a careful climber about 1.6 m/s on the flat: 0.026 m a frame.
+    const careful = walk(420, { pace: "rest-step" }, flat, 0.026).slice(120);
+    const landings = careful.filter(({ pose }) => pose.landed.some(Boolean)).length;
+    expect(landings / (careful.length * FRAME)).toBeLessThan(3.4);
+    const drawn = (frame: Frame): Joint => ({ x: frame.x + frame.pose.offset.x, y: 0 });
+    expect(longestStill(careful, drawn, 1e-4)).toBeLessThanOrEqual(1);
+    const heights = careful.map(({ pose }) => pose.pelvis.y + pose.offset.y);
+    expect(Math.max(...heights) - Math.min(...heights)).toBeLessThan(0.035);
+    // Careful, the boots go lower than at a steady pace, and the arms swing less.
+    const steady = walk(420, {}, flat, 0.026).slice(120);
+    const highest = (frames: Frame[]): number =>
+      Math.max(...frames.flatMap(({ pose }) => pose.legs.map((leg) => leg.end.y)));
+    expect(highest(careful)).toBeLessThan(highest(steady) - 0.02);
+    const swing = (frames: Frame[]): number => {
+      const hands = frames.map(({ pose }) => pose.arms[0].end.x - pose.shoulder.x);
+      return Math.max(...hands) - Math.min(...hands);
+    };
+    expect(swing(careful)).toBeLessThan(0.7 * swing(steady));
+  });
+
+  it("walks with no jolt at the game's pace: the hips and the boots move a little each frame, careful, steady or faster, on the flat and up a slope (#222)", () => {
+    const walks = [
+      walk(420, { pace: "rest-step" }, flat, 0.026),
+      walk(420, { pace: "rest-step" }, (x) => 0.42 * x, 0.0078),
+      walk(420, { pace: "rest-step" }, (x) => 0.55 * x, 0.004),
+      walk(420, { pace: "rest-step" }, (x) => 0.3 * x),
+      walk(420, {}, flat, 0.035),
+      walk(420, { pace: "faster" }, flat, 0.0525),
+    ];
+    for (const frames of walks) {
+      for (const [before, after] of pairs(frames.slice(120))) {
+        const hips = (frame: Frame): number => frame.pose.pelvis.y + frame.pose.offset.y;
+        expect(Math.abs(hips(after) - hips(before))).toBeLessThan(0.015);
+        for (const leg of LEGS) {
+          expect(Math.abs(after.pose.soles[leg] - before.pose.soles[leg])).toBeLessThan(0.3);
+        }
+      }
     }
   });
 
@@ -542,6 +603,40 @@ describe("ClimberPose", () => {
     expect(descending.advance(FRAME, state({ ladder: down, moving: true })).nod).toBeGreaterThan(
       0.3,
     );
+  });
+
+  it("looks up a wall till its top nears the eyes, across it as they come level, and down onto it once over, on rungs and on the ice (#222)", () => {
+    const climbAt = (y: number, onIce: boolean): Pose => {
+      const climber = new ClimberPose();
+      const at = (): PoseState => state({ ladder: upAWall(y), travelled: y, moving: true, onIce });
+      climber.advance(5, at());
+      return climber.advance(FRAME, at());
+    };
+    for (const onIce of [false, true]) {
+      // The wall is 6 m: how far over its top the head is, from well under it to well over it.
+      const seen = Array.from({ length: 70 }, (_, index) => {
+        const y = 3 + index * 0.05;
+        const pose = climbAt(y, onIce);
+        return { above: y + pose.head.y - 6, nod: pose.nod, gaze: pose.gaze ?? Number.NaN };
+      });
+      for (const { above, nod, gaze } of seen) {
+        if (above < -0.8) {
+          expect(nod).toBeLessThan(-0.25);
+          expect(gaze).toBeGreaterThan(1.4);
+        }
+        if (Math.abs(above) < 0.06) {
+          expect(Math.abs(nod)).toBeLessThan(0.08);
+          expect(Math.abs(gaze)).toBeLessThan(0.15);
+        }
+        if (above > 0.5) {
+          expect(nod).toBeGreaterThan(0.3);
+          expect(gaze).toBeLessThan(-0.25);
+        }
+      }
+      expect(seen.some(({ above }) => Math.abs(above) < 0.06)).toBe(true);
+    }
+    // On the ground the lamp goes by the boots' slope, as before: the pose sets no gaze.
+    expect(new ClimberPose().advance(5, state()).gaze).toBeNull();
   });
 
   it("holds the jumar in the near hand: on the rope within reach, the rope lifted to it beyond", () => {
