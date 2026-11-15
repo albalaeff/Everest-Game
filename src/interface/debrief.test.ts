@@ -170,6 +170,21 @@ describe("Debrief: what the climb was, after it (#194)", () => {
     expect(value(debrief.of(facts()), "Ladder broke under you (training)")).toBeUndefined();
   });
 
+  it("names Pemba when it was he who pulled the player out of the ladder that broke (#212)", () => {
+    const fall: Fall = { ...held(4), broke: true, pulled: true, pulledBy: ["pemba"] };
+    const said = debrief.of(facts({ falls: [fall], sherpa: "pemba" }));
+    const byAPartner = debrief.of(
+      facts({ falls: [{ ...fall, pulledBy: ["teammate"] }], sherpa: "pemba" }),
+    );
+
+    expect(value(said, "Ladder broke under you (training)")).toBe(
+      "the rope held you, and Pemba pulled you out",
+    );
+    expect(value(byAPartner, "Ladder broke under you (training)")).toBe(
+      "the rope held you, and your partner pulled you out",
+    );
+  });
+
   it("traces a death off a ladder that broke back to the rope that wasn't clipped (#209)", () => {
     const said = debrief.of(
       facts({

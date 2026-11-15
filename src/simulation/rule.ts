@@ -32,4 +32,11 @@ export interface Rule {
   save(): Json;
   /** Works out one step: the same state, moment and draws must give the same result. */
   advance(moment: Moment): void;
+  /**
+   * An agent's (#212): what the NPCs it steers do this step, worked out from what the last step
+   * left, before any rule advances, so every rule hears them with the players' actions
+   * (docs/conventions/simulation-core.md → The only door). The log keeps the players' alone: an
+   * agent's come again from its state, on a replay too. A rule that steers nobody has none.
+   */
+  act?(moment: Moment): readonly GameAction[];
 }

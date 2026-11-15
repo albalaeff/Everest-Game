@@ -38,7 +38,7 @@ describe("Room", () => {
     expect(anna.welcome).toMatchObject({ code: "K7PX3", climber: "player" });
     expect(boris.welcome).toMatchObject({ code: "K7PX3", climber: "teammate" });
     expect(anna.welcome.save).toMatchObject({ step: 0, actions: [] });
-    expect(anna.welcome.save.scenario.climbers).toEqual(["player", "teammate"]);
+    expect(anna.welcome.save.scenario.climbers).toEqual(["player", "teammate", "pemba"]);
     expect(room.players).toBe(2);
   });
 
@@ -66,7 +66,7 @@ describe("Room", () => {
     expect(room.seated).toBe(1);
   });
 
-  it("turns a third player away: the room is full", () => {
+  it("turns a third player away: the room is full, and nobody takes the Sherpa's seat (#212)", () => {
     const { room } = aRoom();
     join(room, "anna-token");
     join(room, "boris-token");

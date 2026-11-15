@@ -91,9 +91,15 @@ export class SuitRig extends FigureRig<SuitParts> {
   /** Where the second carabiner was drawn, on its sling, or none while it's off the rope. */
   private carabinerAt: Joint | null = null;
 
-  constructor(suit: number) {
+  /** A Sherpa's pack, as many times as big as a client's (#212): he carries more. */
+  static readonly LOADED = 1.3;
+
+  /** A climber in a suit of `suit`'s colour, with a pack `pack` times a client's. */
+  constructor(suit: number, pack = 1) {
     super(SuitRig.drawParts(suit));
     const { parts } = this;
+    // The pack hangs from the hips, so it grows from there: taller, and further off the back.
+    parts.pack.scale.set(pack);
     this.far.addChild(
       parts.upperArms[1],
       parts.tools[1],

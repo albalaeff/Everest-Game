@@ -30,6 +30,7 @@ const FILES: readonly KnowledgeFile[] = [
         { value: 6300, source: SOURCE, checked: "2026-11-01" },
       ]),
       fact("medicine.descent", [{ note: "Descend.", source: SOURCE, checked: "2026-11-01" }]),
+      { id: "accidents.a-fall", kind: "accident", status: "source only", date: "2012-04-21" },
     ],
   },
 ];
@@ -64,6 +65,12 @@ describe("KnowledgeBase", () => {
     expect(base.range("body.spread")).toEqual({ min: 1, max: 3 });
     expect(base.range("oxygen.flow")).toEqual({ min: 3, max: 3 });
     expect(() => base.range("medicine.descent")).toThrow("medicine.descent");
+  });
+
+  it("gives the year of a dated record, an accident's, and none of an undated one (#212)", () => {
+    expect(base.year("accidents.a-fall")).toBe(2012);
+    expect(() => base.year("oxygen.flow")).toThrow("oxygen.flow");
+    expect(() => base.year("route.summit")).toThrow("route.summit");
   });
 
   it("reads the game's own records: the scale, and the summit day it's fitted to", () => {

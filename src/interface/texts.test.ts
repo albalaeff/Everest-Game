@@ -26,6 +26,10 @@ describe("Texts", () => {
     expect(texts.say("plain")).toBe("Continue");
   });
 
+  it("names the texts it has, in their order", () => {
+    expect(texts.names).toEqual(["took", "duration", "plain"]);
+  });
+
   it("refuses a name it has no text for", () => {
     expect(() => texts.say("missing")).toThrow(RangeError);
   });

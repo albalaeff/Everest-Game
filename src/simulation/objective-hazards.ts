@@ -51,10 +51,12 @@ export type HazardZone = {
 };
 
 /** A collapse staged for training (#209), as a flight simulator stages an engine failure: a
- * stretch of the ground a hazard comes down on once, cracking first when the first climber comes
- * within `lead` metres of it, from either side, or onto it. Not the real odds: the zones' are. */
+ * stretch of the ground a hazard comes down on once, cracking first when the first of its
+ * `trainees`, the players it's staged for (#212), or of anyone if none are named, comes within
+ * `lead` metres of it, from either side, or onto it. Not the real odds: the zones' are. */
 export type HazardEvent = HazardZone & {
   readonly lead: number;
+  readonly trainees?: readonly ClimberId[];
 };
 
 /** What a scenario sets: the weather, the zones of its section, and its training events. */
@@ -333,8 +335,9 @@ export class ObjectiveHazards implements Rule {
     this.stage(moment, timeOfDay);
   }
 
-  /** The training events: each cracks once a climber comes near it, and comes down when its crack
-   * runs out, once. They draw nothing to go, so the zones draw as they would without them. */
+  /** The training events: each cracks once one of its trainees comes near it, and comes down when
+   * its crack runs out, once. They draw nothing to go, so the zones draw as they would without
+   * them. */
   private stage(moment: Moment, timeOfDay: number): void {
     const { step } = moment;
     for (const event of this.events) {
@@ -346,8 +349,11 @@ export class ObjectiveHazards implements Rule {
         }
         continue;
       }
-      const near = this.ground.climbers.some((climber) =>
-        ObjectiveHazards.nears(event, this.ground.along(climber)),
+      const { trainees } = event;
+      const near = this.ground.climbers.some(
+        (climber) =>
+          (trainees === undefined || trainees.includes(climber)) &&
+          ObjectiveHazards.nears(event, this.ground.along(climber)),
       );
       if (near && !strikes.some((strike) => strike.zone === event.id)) {
         const cracking: Warning = {

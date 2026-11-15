@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 
+import { Sherpa } from "../agents";
 import { Climber, SlopePhysics } from "../physics";
 import type { LadderLayout } from "../physics";
 import { Body, Expedition, HazardChance, ObjectiveHazards, SimulationClock } from "../simulation";
@@ -132,8 +133,13 @@ describe("Mountain", () => {
       ]).toContain(id);
       expect(ladders.some((laid) => laid.id === id)).toBe(true);
     }
-    expect(hazards.events).toEqual([mountain.route.staged(7).collapse]);
-    expect(physics.ladders.filter(({ breaks }) => breaks !== undefined)).toHaveLength(1);
+    // Staged for the players, not their Sherpa (#212).
+    expect(hazards.events).toEqual([
+      { ...mountain.route.staged(7).collapse, trainees: ["player", "teammate"] },
+    ]);
+    expect(physics.ladders.filter(({ breaks }) => breaks !== undefined)).toMatchObject([
+      { trainees: ["player", "teammate"] },
+    ]);
     const untrained = mountain.scenario(7, undefined, undefined, false);
     expect(untrained.start[ObjectiveHazards.NAME]).not.toHaveProperty("events");
   });
@@ -163,6 +169,7 @@ describe("Mountain", () => {
     expect(first.hazards).not.toBe(second.hazards);
     expect(first.logbook).not.toBe(second.logbook);
     expect(first.packs).not.toBe(second.packs);
+    expect(first.sherpa).not.toBe(second.sherpa);
     expect(first.all[1]).toBe(first.packs);
     expect([...first.all.slice(0, 1), ...first.all.slice(2)]).toEqual([
       first.clock,
@@ -171,7 +178,41 @@ describe("Mountain", () => {
       first.hazards,
       first.physics,
       first.logbook,
+      first.sherpa,
     ]);
+  });
+
+  it("gives the climbers their Sherpa, Pemba (#212): an NPC who guides the players, on the knowledge base's numbers", () => {
+    const mountain = new Mountain(knowledge);
+    const together = mountain.scenario(1);
+    const alone = mountain.scenario(1, undefined, undefined, true, undefined, true);
+    const settings = mountain.sherpaSettings();
+
+    expect(together).toMatchObject({ climbers: ["player", "teammate", "pemba"], npcs: ["pemba"] });
+    expect(together.start[Sherpa.NAME]).toMatchObject({
+      climber: "pemba",
+      clients: ["player", "teammate"],
+      arrival: { from: mountain.route.destination.from, to: mountain.route.destination.to },
+    });
+    // Alone, the player climbs with Pemba, and nobody has a teammate's seat.
+    expect(alone).toMatchObject({ climbers: ["player", "pemba"], npcs: ["pemba"] });
+    expect(alone.start[Sherpa.NAME]).toMatchObject({ clients: ["player"] });
+    expect(Expedition.start(alone, mountain.rules().all).scenario.climbers).toHaveLength(2);
+    expect(settings).toEqual({
+      lead: {
+        near: knowledge.range("technique.sherpa-lead").min,
+        far: knowledge.range("technique.sherpa-lead").max,
+      },
+      wait: knowledge.number("technique.sherpa-wait"),
+      behind: {
+        near: knowledge.range("technique.sherpa-behind").min,
+        far: knowledge.range("technique.sherpa-behind").max,
+      },
+      rest: knowledge.number("technique.sherpa-rest") * 60,
+      reach: knowledge.number("technique.haul-reach"),
+    });
+    expect(settings.lead.near).toBeLessThan(settings.lead.far);
+    expect(settings.lead.far).toBeLessThan(settings.wait);
   });
 
   it("lays the route's hazards, in its weather, where the climbers start clear of them", () => {

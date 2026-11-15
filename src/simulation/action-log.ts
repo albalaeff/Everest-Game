@@ -8,8 +8,9 @@ export interface LoggedStep {
 }
 
 /**
- * What the climbers did, step by step. With its scenario it's a replay (docs/conventions.md →
- * Time and chance): played by a `HeadlessRunner`, it gives the same expedition again.
+ * What the players' climbers did, step by step. With its scenario it's a replay
+ * (docs/conventions.md → Time and chance): played by a `HeadlessRunner`, it gives the same
+ * expedition again, the agents steering their NPCs as they did (#212).
  */
 export class ActionLog implements ActionSource {
   private readonly steps = new Map<number, readonly GameAction[]>();

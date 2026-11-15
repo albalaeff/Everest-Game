@@ -156,7 +156,7 @@ describe("Section: the Khumbu Icefall from content/route/icefall.json", () => {
     const physics = new SlopePhysics(section.settings);
     const expedition = Expedition.start(section.scenario(1), [physics]);
 
-    expect(expedition.scenario.climbers).toEqual([Section.PLAYER, "teammate"]);
+    expect(expedition.scenario.climbers).toEqual([Section.PLAYER, "teammate", "pemba"]);
     for (const id of expedition.scenario.climbers) {
       const { x, y } = physics.climber(id);
       expect(physics.climber(id)).toMatchObject({ falling: false, ladder: null });

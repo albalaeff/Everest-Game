@@ -1,4 +1,5 @@
 import icefall from "../../content/route/icefall.json";
+import { Sherpa } from "../agents";
 import { SlopePhysics, Terrain } from "../physics";
 import type {
   ClimberLayout,
@@ -78,6 +79,9 @@ export interface SectionData {
   readonly to: string;
   /** The day the expedition sets off on it. */
   readonly date: string;
+  /** The climber of the layout whom the Sherpa's agent steers (#212), if the section has one:
+   * never a player's seat. */
+  readonly sherpa?: string;
   readonly layout: {
     readonly terrain: readonly DataPair[];
     /** The snow on the ground, if it has any. */
@@ -131,6 +135,8 @@ export class Section {
   static readonly PLAYER: ClimberId = "player";
 
   readonly id: string;
+  /** The climber the Sherpa's agent steers (#212), or none. */
+  readonly sherpa: ClimberId | null;
   readonly settings: SlopeSettings;
   readonly layout: SlopeLayout;
   /** Its parts, from its foot to its top, end to end over its whole ground. */
@@ -163,6 +169,10 @@ export class Section {
   constructor(knowledge: KnowledgeBase, data: SectionData = icefall) {
     const { layout, hazards, bodies } = data;
     this.id = data.id;
+    this.sherpa = data.sherpa ?? null;
+    if (this.sherpa !== null && !layout.climbers.some(({ id }) => id === this.sherpa)) {
+      throw new RangeError(`The Sherpa ${this.sherpa} isn't one of the climbers of ${data.id}`);
+    }
     this.settings = new SlopeFacts(knowledge).settings;
     const terrain = Section.pairs(layout.terrain, data.id);
     const ground = new Terrain(terrain);
@@ -261,17 +271,20 @@ export class Section {
   /** A scenario on the section: the seed, the climbers in the layout's order, the clock at its
    * start, the player as their answers make them (#145), or as the file has them, and with what
    * they checked of their kit (#196): a skipped water check leaves them `unchecked` litres short.
-   * Unless `training` is off, it stages the training events from the seed (#209). The player
-   * carries the `pack` they chose at Base Camp, or the file's: its weight on their body with
-   * what they carry besides, its jumar and its tools on their harness, its bottles their oxygen. */
+   * Unless `training` is off, it stages the training events from the seed (#209), for the
+   * players alone (#212). The player carries the `pack` they chose at Base Camp, or the file's:
+   * its weight on their body with what they carry besides, its jumar and its tools on their
+   * harness, its bottles their oxygen. The Sherpa, if the section has one, is its NPC, guiding
+   * the players; `alone`, the player is the only one, with no seat for a teammate (#212). */
   scenario(
     seed: number,
     player?: ClimberStart,
     gear?: { readonly kit: Kit; readonly unchecked: number },
     training = true,
     pack?: PackCounts,
+    alone = false,
   ): Scenario {
-    const made = player === undefined ? this : this.withPlayer(player);
+    const made = this.climbing(alone, player === undefined ? this : this.withPlayer(player));
     const checked = gear === undefined ? made : Section.withKit(made, gear);
     const packs = this.packs.map((packed) =>
       packed.id === Section.PLAYER && pack !== undefined ? { ...packed, items: pack } : packed,
@@ -294,27 +307,44 @@ export class Section {
         return { ...climber, gear: { jumar: items.jumar > 0, tools: 1 + items["ice-tool"] } };
       }),
     };
+    const climbers = layout.climbers.map((climber) => climber.id);
+    const { sherpa } = this;
+    const trainees = climbers.filter((id) => id !== sherpa);
     const staged = training ? this.staged(seed) : { collapse: null, ladder: null };
     const hazards: HazardStart =
-      staged.collapse === null ? this.hazards : { ...this.hazards, events: [staged.collapse] };
+      staged.collapse === null
+        ? this.hazards
+        : { ...this.hazards, events: [{ ...staged.collapse, trainees }] };
     const breaking = staged.ladder;
     const ladders =
       breaking === null
         ? layout.ladders
         : layout.ladders.map((ladder) =>
-            ladder.id === breaking.id ? { ...ladder, breaks: breaking.breaks } : ladder,
+            ladder.id === breaking.id ? { ...ladder, breaks: breaking.breaks, trainees } : ladder,
           );
+    const guided =
+      sherpa === null
+        ? {}
+        : {
+            [Sherpa.NAME]: Sherpa.start({
+              climber: sherpa,
+              clients: trainees,
+              arrival: { from: this.destination.from, to: this.destination.to },
+            }),
+          };
     return {
       seed,
-      climbers: layout.climbers.map((climber) => climber.id),
+      climbers,
+      ...(sherpa === null ? {} : { npcs: [sherpa] }),
       start: {
+        ...guided,
         [MountainClock.NAME]: MountainClock.start(this.clock),
-        [OxygenSystem.NAME]: OxygenSystem.start(
-          layout.climbers.map(({ id }) => id),
-          (id) => packOf(id).items.oxygen,
-        ),
+        [OxygenSystem.NAME]: OxygenSystem.start(climbers, (id) => packOf(id).items.oxygen),
         [Body.NAME]: Body.start(bodies),
-        [Packs.NAME]: Packs.start({ climbers: packs, camps: this.stores }, this.packNumbers),
+        [Packs.NAME]: Packs.start(
+          { climbers: packs.filter(({ id }) => climbers.includes(id)), camps: this.stores },
+          this.packNumbers,
+        ),
         [ObjectiveHazards.NAME]: ObjectiveHazards.start(hazards),
         [SlopePhysics.NAME]: SlopePhysics.start({ ...layout, ladders }),
       },
@@ -345,6 +375,22 @@ export class Section {
         ? null
         : { id: crossing.id, breaks: (crossing.length * (1 + random.fraction())) / 3 };
     return { collapse, ladder };
+  }
+
+  /** The bodies and the layout of the climbers who climb: everyone the file has, or, `alone`, the
+   * player and the Sherpa, with no seat for a teammate (#212). */
+  private climbing(
+    alone: boolean,
+    { bodies, layout }: { readonly bodies: readonly BodyStart[]; readonly layout: SlopeLayout },
+  ): { readonly bodies: readonly BodyStart[]; readonly layout: SlopeLayout } {
+    if (!alone) {
+      return { bodies, layout };
+    }
+    const kept = (id: ClimberId): boolean => id === Section.PLAYER || id === this.sherpa;
+    return {
+      bodies: bodies.filter(({ id }) => kept(id)),
+      layout: { ...layout, climbers: layout.climbers.filter(({ id }) => kept(id)) },
+    };
   }
 
   /** The bodies and the layout, with the player as their answers make them. */

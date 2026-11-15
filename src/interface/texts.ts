@@ -12,6 +12,11 @@ export class Texts<Name extends string = string> {
 
   constructor(private readonly texts: Readonly<Record<Name, string>>) {}
 
+  /** The names it has a text for, in the file's order: a line's variants, say (#212). */
+  get names(): readonly Name[] {
+    return Object.keys(this.texts) as Name[];
+  }
+
   /** The text called `name`, with each `{fill}` in it replaced by the fill's value. */
   say(name: Name, fills: TextFills = {}): string {
     if (!Object.hasOwn(this.texts, name)) {

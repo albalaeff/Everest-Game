@@ -1,5 +1,5 @@
 import { SimulationClock } from "../simulation";
-import type { Moment, Walk } from "../simulation";
+import type { ClimberId, Moment, Walk } from "../simulation";
 import type { Climber, Hauls } from "./climber";
 import { Faces } from "./faces";
 import type { Face } from "./faces";
@@ -32,9 +32,15 @@ export interface FootingSettings {
   /** How hard blue ice holds what slides on it: snow's `friction` for ice. */
   readonly iceFriction: number;
   /** A ladder across a crevasse bounces under the steps on it: how much each metre walked on it
-   * sets it going for each metre of its length, how much of it dies away a second, and how much
-   * each unit of it adds to the chance a metre on it slips. */
-  readonly bounce: { readonly excite: number; readonly damp: number; readonly slip: number };
+   * sets it going for each metre of its length, how much of it dies away a second, how much each
+   * unit of it adds to the chance a metre on it slips, and the share of it the steps set going
+   * while someone holds its rope taut from one of its ends (#212). */
+  readonly bounce: {
+    readonly excite: number;
+    readonly damp: number;
+    readonly slip: number;
+    readonly held: number;
+  };
   /** A crampon not checked before setting off (#196): the seconds on the move after which it comes
    * loose, on the next ladder; how sure-footed a loose one leaves its climber, a share; and the
    * seconds a refit takes, standing. */
@@ -250,6 +256,7 @@ export class Slope {
   private hauls(climbers: readonly Climber[]): Hauls {
     const { reach, speed } = this.settings.haul;
     const hauled = new Map<Climber, number>();
+    const haulers = new Map<Climber, ClimberId[]>();
     const hauling = new Set<Climber>();
     for (const hauler of climbers) {
       const at = hauler.hauler(this);
@@ -273,12 +280,35 @@ export class Slope {
         hauling.add(hauler);
         const before = hauled.get(nearest.climber) ?? 0;
         hauled.set(nearest.climber, before + speed * hauler.haulStride);
+        haulers.set(nearest.climber, [...(haulers.get(nearest.climber) ?? []), hauler.id]);
       }
     }
     return {
       of: (climber) => hauled.get(climber) ?? 0,
+      who: (climber) => haulers.get(climber) ?? [],
       by: (climber) => hauling.has(climber),
     };
+  }
+
+  /** Each ladder held from one of its ends by a climber holding the haul with nobody to haul, at
+   * its end within the haul's reach, bounces at `footing.bounce.held` of what the steps on it set
+   * going this step; every other at all of it (#212): its rope held taut, the ladder sways less. */
+  private steady(climbers: readonly Climber[], hauls: Hauls): void {
+    const { haul, footing } = this.settings;
+    const holders = climbers.flatMap((climber) => {
+      const at = hauls.by(climber) ? null : climber.hauler(this);
+      return at === null ? [] : [at];
+    });
+    for (const ladder of this.ladders.values()) {
+      const held = holders.some((at) =>
+        ladder.shape.some((end) => {
+          const x = end.x - at.x;
+          const y = end.y - at.y;
+          return Math.sqrt(x * x + y * y) <= haul.reach;
+        }),
+      );
+      ladder.steady(held ? footing.bounce.held : 1);
+    }
   }
 
   /** Whether the ground at `along` is bare blue ice. */
@@ -350,12 +380,14 @@ export class Slope {
    * nobody is clipped to waits, so the ropes of a whole section cost nothing until used. The
    * ladders' bounce dies away after the climbers' steps set it going; one that has creaked long
    * enough breaks, and its climbers fall, and one broken long enough is lashed back (#209). A
-   * climber holding the haul by someone hanging hauls them up instead of stepping. */
+   * climber holding the haul by someone hanging hauls them up instead of stepping; one holding it
+   * at a ladder's end with nobody to haul holds its rope taut, and steadies it (#212). */
   advance(climbers: readonly Climber[], moment: Moment): void {
     const { gravity, friction, footing, ladderBreak } = this.settings;
     const clipped = new Set(climbers.flatMap((climber) => climber.ropes));
     const ropes = [...this.ropes.values()].filter((rope) => clipped.has(rope) || !rope.resting);
     const hauls = this.hauls(climbers);
+    this.steady(climbers, hauls);
     for (const climber of climbers) {
       climber.walk(this, moment, hauls);
       climber.beginStep();

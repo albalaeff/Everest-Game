@@ -1,0 +1,33 @@
+# The agents
+
+`src/agents/` steers the NPCs: climbers no player steers, a Sherpa first (#212), the guides, clients and other expeditions later ([../../spec.md](../../spec.md) → Technical architecture: "Agent AI: Sherpas, clients, other expeditions and queues on the fixed ropes, simple finite-state machines"). An agent is a rule of the core run inside its step ([simulation-core.md](simulation-core.md) → Rules), on the slope physics' view of the climbers, and it keeps the core's rules for the same result everywhere. It follows [../conventions.md](../conventions.md) → Modules, Objects, and Time and chance; these are its own rules.
+
+## Through the same door
+
+- **An agent acts as a player does, with `GameAction`s** ([simulation-core.md](simulation-core.md) → The only door): its `act(moment)`, called at the start of each step, before any rule advances, says what its NPCs do in it, from where the last step left everyone. The expedition hears them with the players' actions, in the scenario's order of climbers, so every rule, the body's pace and the physics' walk and clip, takes them as a player's. An NPC is a climber of the scenario like any other; only the agent's `act` steers it.
+- **The log keeps the players' actions alone.** An agent's come again from its state, on a replay too: the same scenario, log and rules give the same expedition, the agents' NPCs moving as they did. An agent keeps its whole state in plain data it can `save`, as every rule does, so a save goes on exactly.
+- **The scenario names its NPCs** (`Scenario.npcs`): a room seats no player on one ([room-server.md](room-server.md)), and the staged training events are for the players alone (`trainees`, [slope-physics.md](slope-physics.md) → Ladders, [simulation-core.md](simulation-core.md) → Objective hazards). Every browser of a room runs the agents as the server does, so they're never sent.
+
+## Footwork
+
+`Footwork` is a careful climber's moves, step by step: up the route or down it, or standing, as the agent asks each step. It holds the jumar's slide, clips both cowstails to the fixed rope wherever one is within reach, moves them across at an anchor one at a time, takes the ladders up and down the walls, climbs a step of ice on its tools a pick at a time and lowers itself down one on its rope, takes the rest step on blue ice and on a crossing, and climbs back up its rope after a slip. A new way takes over once its climber is on their feet on the ground, never on a ladder, on the ice or down a rope. Its state is plain data. The tests' walker of the Icefall (`src/content/testing/crossing.ts`) moves on it too, so what the stories hold to the sources' hours is what the Sherpa walks on.
+
+## The Sherpa
+
+`Sherpa` (`sherpa.ts`) guides his clients through a section as a client's own Sherpa does in the Icefall: he leads, sets the pace and looks back, crosses each ladder first and holds its line taut from the far side (`technique.sherpa-leads`, `technique.personal-sherpa`). Each step he does the most pressing of:
+
+- **Rescue.** A client hanging on the rope: to the ground within the haul's reach of where they'd come up (`SlopePhysics.liftPoint`), the one nearest him, a ladder's end or under where they'd come up, and the haul held there. With nothing in reach, across a broken ladder say, he stands where he is.
+- **Rest.** Once they're on their feet, on the nearest ground out of every hazard's zone and off blue ice, either way, for `technique.sherpa-rest` of the mountain's minutes once they've come to it; it ends sooner if they go on past him, or away.
+- **Back off.** A hazard going over him, a zone's or a training event's with its lead: out from under its stretch to its nearer end; short of it, he stands.
+- **Hold the line.** Off the end of a ladder he just crossed, the haul held with nobody to haul, which steadies it ([slope-physics.md](slope-physics.md) → Ladders), until every client who set off is across; not where the ice falls while they're still `technique.sherpa-wait` from its other end.
+- **Lead, follow, wait.** He waits until a client sets off (a seat nobody plays never does), then leads, `technique.sherpa-lead` metres ahead of the first of them, walking on when they come nearer than its least and stopping once he's its most ahead; one who goes ahead he follows, `technique.sherpa-behind` back; and he waits once the last is `technique.sherpa-wait` behind. He never stands in a hazard's zone, on blue ice or on a ladder: he goes on to safe ground and waits there. He never steps onto a ladder someone's on, or one that's broken. In the camp the section ends at, he stops.
+
+`Sherpa.view` says what he's doing (`SherpaDoing`), with whom and which ladder's line he holds, for his voice and the picture. His numbers come from the knowledge base (`Mountain.sherpaSettings`), and the haul's reach is the physics'. The same hazards threaten him as anyone.
+
+## The same result everywhere
+
+The agents use the core's maths alone, and import only themselves, the slope physics and the core: `agents-purity.test.ts` checks both, with the core's checks (`src/simulation/testing/module-code.ts`), and `npm run typecheck` checks them with no DOM in scope, as it does the core.
+
+## Tests
+
+The tests play an agent through `Expedition` (`testing/guided-climb.ts`: the slope physics, the hazards, the mountain's clock and a Sherpa on a test mountain's ground and numbers, and the actions a test sends his clients). `sherpa.story.test.ts` is the Sherpa's: waiting for his client to set off and walking 3 to 6 m ahead at their pace; waiting past a serac's zone, never in it; following one who went ahead; stopping in camp; crossing a ladder first and holding its line until the client is over; waiting at a broken ladder, clipped in, until it's lashed back; hauling out a client under a ladder that broke near his end, and resting with them; backing off out from under a serac cracking over him; and going on from a save. `src/content/sherpa.story.test.ts` crosses the Icefall on the game's numbers: Pemba leading a careful player to Camp 1, first across every ladder and holding each, never waiting under the seracs; and pulling them out when the ladder staged to break gives way near his end.

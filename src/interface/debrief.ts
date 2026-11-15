@@ -11,13 +11,15 @@ export type Tone = "good" | "warn" | "bad" | "plain";
 export type DebriefTextName = keyof (typeof import("../../content/debrief.json"))["en"];
 
 /** What the debrief reads of a climb: the player's page of the logbook, their falls, what came
- * down on the route, and what they checked of their kit before setting off (#196). */
+ * down on the route, what they checked of their kit before setting off (#196), and who their
+ * Sherpa is, if they have one (#212). */
 export interface DebriefFacts {
   readonly page: LogPage;
   readonly falls: readonly Fall[];
   readonly strikes: readonly Strike[];
   readonly player: ClimberId;
   readonly kit: Kit;
+  readonly sherpa?: ClimberId | null;
 }
 
 /** The debrief said: whether the climber died, a verdict, and its lines. */
@@ -62,7 +64,7 @@ export class Debrief {
   ];
 
   /** The debrief of a climb. */
-  of({ page, falls, strikes, player, kit }: DebriefFacts): DebriefSaid {
+  of({ page, falls, strikes, player, kit, sherpa = null }: DebriefFacts): DebriefSaid {
     const caught = falls.filter((fall) => fall.held === true).length;
     const unroped = falls.filter((fall) => fall.held === false);
     const near = strikes.filter((strike) => strike.climbers.includes(player));
@@ -119,12 +121,15 @@ export class Debrief {
     }
     const broke = falls.find(({ broke }) => broke === true);
     if (broke !== undefined) {
+      const bySherpa = sherpa !== null && (broke.pulledBy ?? []).includes(sherpa);
       const said =
         broke.held !== true
           ? "training-ladder.fell"
-          : broke.pulled === true
-            ? "training-ladder.pulled"
-            : "training-ladder.held";
+          : broke.pulled !== true
+            ? "training-ladder.held"
+            : bySherpa
+              ? "training-ladder.pulled-by-sherpa"
+              : "training-ladder.pulled";
       line("training-ladder", this.texts.say(said), broke.held === true ? "good" : "bad");
     }
     return { dead, verdict: this.verdict(page, caught, unroped, strikes, player), lines };

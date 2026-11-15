@@ -328,6 +328,22 @@ describe("ObjectiveHazards: a collapse staged for training (#209)", () => {
     ]);
   });
 
+  it("cracks only as one of the climbers it's staged for comes near, when it names them (#212)", () => {
+    const ground = new TestGround({ first: 38, second: 0 });
+    const exposure = new Exposure(ground, "04:00", {
+      ...staged(),
+      events: [{ ...STAGED, trainees: ["second"] }],
+    });
+
+    exposure.play(3);
+    const ahead = exposure.hazards.warnings;
+    ground.put("second", 37.5);
+    exposure.play(1);
+
+    expect(ahead).toEqual([]);
+    expect(exposure.hazards.warnings).toMatchObject([{ zone: "collapse", began: 3 }]);
+  });
+
   it("spares a climber who stops short of it, or backs off, and comes down all the same", () => {
     const ground = new TestGround({ first: 38, second: 0 });
     const exposure = new Exposure(ground, "04:00", staged());

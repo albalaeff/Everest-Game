@@ -5,7 +5,8 @@
     "icefall": "Base Camp to Camp 1: {time}.",
     "first-time": "Climbers take {min} to {max} hours the first time.",
     "duration": "{hours} h {minutes} min",
-    "continue": "Continue"
+    "continue": "Continue",
+    "sherpa-said": "{name}: “{said}”"
   },
   "ru": {
     "base-camp": "Базовый лагерь",
@@ -13,6 +14,7 @@
     "icefall": "От базового лагеря до лагеря 1: {time}.",
     "first-time": "В первый раз у альпинистов уходит от {min} до {max} часов.",
     "duration": "{hours} ч {minutes} мин",
-    "continue": "Продолжить"
+    "continue": "Продолжить",
+    "sherpa-said": "{name}: «{said}»"
   }
 }

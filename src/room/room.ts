@@ -24,7 +24,8 @@ export interface RoomSave {
 /**
  * One room: the expedition its players share, run by the server's clock
  * (docs/conventions/room-server.md). A player who says hello is seated on a climber of the
- * scenario, in the order of joining, and the seat stays theirs by their token: a reload or a lost
+ * scenario, in the order of joining, but never on an NPC, whom the agents steer in every browser
+ * as on the server (#212), and the seat stays theirs by their token: a reload or a lost
  * connection gets the same climber back. A tick takes the steps the real time owes, each with the
  * actions sent since the last, and sends every step to every player, so every browser runs the
  * same simulation. A player who leaves leaves their climber stopped: nobody steers them now.
@@ -167,14 +168,16 @@ export class Room {
     socket.send(JSON.stringify(message));
   }
 
-  /** The token's climber: the one it had, or the first free one in the scenario's order. */
+  /** The token's climber: the one it had, or the first free one in the scenario's order. An NPC,
+   * whom an agent steers, is nobody's seat (#212). */
   private seat(token: string): ClimberId | null {
     const taken = this.seats.get(token);
     if (taken !== undefined) {
       return taken;
     }
-    const seated = new Set(this.seats.values());
-    const free = this.expedition.scenario.climbers.find((climber) => !seated.has(climber));
+    const { climbers, npcs = [] } = this.expedition.scenario;
+    const seated = new Set([...this.seats.values(), ...npcs]);
+    const free = climbers.find((climber) => !seated.has(climber));
     if (free === undefined) {
       return null;
     }

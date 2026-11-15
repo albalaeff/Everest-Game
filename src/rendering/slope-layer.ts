@@ -10,6 +10,7 @@ import type { Camera } from "./camera";
 import { CampSigns } from "./camp-signs";
 import type { CampStretch } from "./camp-signs";
 import { ClimberFigure } from "./climber-figure";
+import { SuitRig } from "./suit-rig";
 import { ClimberPose } from "./climber-pose";
 import { ClimberReading } from "./climber-reading";
 import { Crevasse } from "./crevasse";
@@ -342,6 +343,7 @@ export class SlopeLayer extends ParallaxLayer {
     parts: readonly PartStretch[],
     climbers: readonly ClimberId[],
     player: ClimberId,
+    npcs: readonly ClimberId[],
     seed: number,
     motes: number,
   ) {
@@ -439,8 +441,17 @@ export class SlopeLayer extends ParallaxLayer {
       };
     });
     this.figures = climbers.map((id) => {
-      const suit = id === player ? Palette.PLAYER_SUIT : Palette.OTHER_SUIT;
-      const figure = new ClimberFigure(suit, physics, this.puffs, this.chips);
+      // The player in the brighter suit; their Sherpa in blue, with a bigger pack (#212).
+      const sherpa = npcs.includes(id);
+      const suit =
+        id === player ? Palette.PLAYER_SUIT : sherpa ? Palette.SHERPA_SUIT : Palette.OTHER_SUIT;
+      const figure = new ClimberFigure(
+        suit,
+        physics,
+        this.puffs,
+        this.chips,
+        sherpa ? SuitRig.LOADED : 1,
+      );
       this.addChild(figure);
       return { id, figure, view: null };
     });

@@ -105,7 +105,10 @@ describe("SlopeFacts: the slope physics' numbers from the knowledge base", () =>
       excite: number("technique.ladder-bounce-excite"),
       damp: number("technique.ladder-bounce-damp") * speedUp,
       slip: number("technique.ladder-bounce-slip"),
+      held: number("technique.ladder-bounce-held"),
     });
+    expect(footing.bounce.held).toBeGreaterThan(0);
+    expect(footing.bounce.held).toBeLessThan(1);
     expect(settings.lethalLanding).toBe(number("technique.lethal-landing"));
     expect(settings.climbBack).toBe(number("technique.climb-back-speed") * speedUp);
   });

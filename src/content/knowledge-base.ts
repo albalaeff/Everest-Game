@@ -24,6 +24,8 @@ export interface KnowledgeRecord extends Measured {
   readonly kind: string;
   readonly status?: string | undefined;
   readonly versions?: readonly KnowledgeVersion[] | undefined;
+  /** An accident's day, `YYYY-MM-DD`. */
+  readonly date?: string | undefined;
 }
 
 /** One file of content/facts/, as the page imports it. */
@@ -67,6 +69,16 @@ export class KnowledgeBase {
       min: Math.min(...spans.map(([min]) => min)),
       max: Math.max(...spans.map(([, max]) => max)),
     };
+  }
+
+  /** The year of a dated record, an accident's (#212). */
+  year(id: string): number {
+    const record = this.records.get(id);
+    const year = Number(record?.date?.slice(0, 4));
+    if (record === undefined || !Number.isInteger(year)) {
+      throw new RangeError(`The knowledge base has no dated record ${id}`);
+    }
+    return year;
   }
 
   private static span(measured: Measured): readonly [min: number, max: number] | null {

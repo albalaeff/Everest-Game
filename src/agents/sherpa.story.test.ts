@@ -1,0 +1,277 @@
+import { describe, expect, it } from "vitest";
+
+import { SlopePhysics } from "../physics";
+import type { LadderLayout, RopeLayout, SlopeLayout } from "../physics";
+import { TestMountain } from "../physics/testing/test-mountain";
+import { SimulationClock } from "../simulation";
+import type { ExpeditionSave, GameAction } from "../simulation";
+import { GuidedClimb } from "./testing/guided-climb";
+
+const { walk } = GuidedClimb;
+
+/** The steps in `seconds`. */
+const steps = (seconds: number): number => seconds * SimulationClock.STEPS_PER_SECOND;
+
+const clip = (climber: string, cowstail: "first" | "second"): GameAction => ({
+  kind: "clip",
+  climber,
+  cowstail,
+});
+
+/** The camp the flat's climbs are bound for: its last ten metres. */
+const ARRIVAL = { from: 90, to: 100 };
+/** Anna, a client at 10 m, and Pemba, her Sherpa, at 14, on a hundred metres of flat ground. */
+const FLAT = (): GuidedClimb =>
+  new GuidedClimb({
+    layout: TestMountain.FLAT.layout([
+      { id: "anna", along: 10 },
+      { id: "pemba", along: 14 },
+    ]),
+    sherpa: { climber: "pemba", clients: ["anna"], arrival: ARRIVAL },
+  });
+
+/** Flat to a crevasse 8 m wide and 30 m deep, from x = 20 to 28, and flat beyond to x = 60: its
+ * near lip is 20 m along the ground, its far one 88, and the ground ends at 120. */
+const WIDE: SlopeLayout["terrain"] = [
+  [0, 0],
+  [20, 0],
+  [20, -30],
+  [28, -30],
+  [28, 0],
+  [60, 0],
+];
+const LADDER: LadderLayout = { id: "long", from: 20, to: 88 };
+/** A rope fixed along it, from 4 m before it to 4 m past it, a metre slack. */
+const ALONG_IT: RopeLayout = { id: "fixed", from: 16, to: 92, length: 17 };
+
+/** Anna at `anna` and Pemba at `pemba`, both short of the wide crevasse's ladder, and the ladder
+ * as `ladder` lays it. */
+const atTheCrevasse = (
+  anna: number,
+  pemba: number,
+  ladder: LadderLayout = LADDER,
+  settings = TestMountain.CALM,
+): GuidedClimb =>
+  new GuidedClimb(
+    {
+      layout: {
+        terrain: WIDE,
+        altitude: { start: TestMountain.FOOT, end: TestMountain.FOOT },
+        ropes: [ALONG_IT],
+        ladders: [ladder],
+        climbers: [
+          { id: "anna", along: anna },
+          { id: "pemba", along: pemba },
+        ],
+      },
+      sherpa: { climber: "pemba", clients: ["anna"], arrival: { from: 110, to: 120 } },
+    },
+    settings,
+  );
+
+/** Anna walks right at half a stride, clipping both cowstails to the rope once it's in reach. */
+const annaCrosses = (climb: GuidedClimb): void => {
+  climb.physics.stride("anna", 0.5);
+  climb.play(1, [walk("anna", "right")]);
+  climb.until(() => climb.physics.ropeWithin("anna") !== null, steps(30));
+  climb.play(1, [
+    clip("anna", "second"),
+    clip("anna", "first"),
+    { kind: "jumar", climber: "anna", held: true },
+  ]);
+};
+
+describe("A Sherpa leads his client", () => {
+  it("waits for his client to set off, then walks ahead of them, 3 to 6 m, at their pace", () => {
+    const climb = FLAT();
+    climb.play(steps(2));
+    const before = { along: climb.along("pemba"), doing: climb.sherpa.view.doing };
+    // Anna goes at half his pace: he walks on, waits, walks on.
+    climb.physics.stride("anna", 0.5);
+    climb.play(1, [walk("anna", "right")]);
+    const gaps: number[] = [];
+    for (let second = 0; second < 40; second += 1) {
+      climb.play(steps(1));
+      gaps.push(climb.along("pemba") - climb.along("anna"));
+    }
+
+    expect(before.along).toBeCloseTo(14, 6);
+    expect(before.doing).toBe("waiting");
+    expect(Math.min(...gaps)).toBeGreaterThanOrEqual(2.5);
+    expect(Math.max(...gaps)).toBeLessThanOrEqual(6.1);
+    expect(climb.along("anna")).toBeGreaterThan(25);
+  });
+
+  it("waits for a client who stops, but never in a hazard's zone: past it", () => {
+    const climb = new GuidedClimb({
+      layout: TestMountain.FLAT.layout([
+        { id: "anna", along: 10 },
+        { id: "pemba", along: 14 },
+      ]),
+      hazards: {
+        weather: "clear",
+        zones: [{ id: "seracs", kind: "serac", from: 16, to: 30 }],
+      },
+      sherpa: { climber: "pemba", clients: ["anna"], arrival: ARRIVAL },
+    });
+    climb.play(steps(2), [walk("anna", "right")]);
+    climb.play(steps(30), [walk("anna", "stop")]);
+    const pemba = climb.physics.climber("pemba");
+
+    expect(climb.along("anna")).toBeCloseTo(12, 0);
+    expect(pemba.moving).toBe(false);
+    expect(climb.along("pemba")).toBeGreaterThan(30);
+    expect(climb.along("pemba")).toBeLessThan(31);
+    expect(climb.sherpa.view).toMatchObject({ doing: "waiting", client: "anna" });
+  });
+
+  it("falls in behind a client who goes ahead of him", () => {
+    const climb = FLAT();
+    climb.play(1, [walk("anna", "right")]);
+    climb.play(steps(2));
+    // Pemba tires: he walks at half her pace, and she overtakes him.
+    climb.physics.stride("pemba", 0.5);
+    climb.play(steps(30));
+    const behind = climb.along("anna") - climb.along("pemba");
+
+    expect(behind).toBeGreaterThan(0);
+    expect(climb.sherpa.view.doing).toBe("following");
+  });
+
+  it("stops in the camp the climb is bound for", () => {
+    const climb = FLAT();
+    climb.play(1, [walk("anna", "right")]);
+    climb.play(steps(120));
+
+    expect(climb.along("pemba")).toBeGreaterThanOrEqual(ARRIVAL.from);
+    expect(climb.along("pemba")).toBeLessThan(ARRIVAL.to);
+    expect(climb.physics.climber("pemba").moving).toBe(false);
+  });
+});
+
+describe("A Sherpa at a ladder", () => {
+  it("crosses first, clipped in, and holds its line taut from the far end until his client is over", () => {
+    const climb = atTheCrevasse(12, 17);
+    annaCrosses(climb);
+    const crossed = climb.until(
+      () => climb.along("pemba") >= 88 && !climb.physics.climber("pemba").moving,
+      steps(40),
+    );
+    const holding = { view: climb.sherpa.view, pemba: climb.physics.climber("pemba") };
+    const annaOn = climb.until(() => climb.physics.climber("anna").ladder === "long", steps(40));
+    const whileShe = climb.sherpa.view;
+    climb.until(
+      () => climb.along("anna") >= 88 && climb.physics.climber("anna").ladder === null,
+      steps(60),
+    );
+    climb.play(steps(3));
+
+    expect(crossed).toBe(true);
+    expect(holding.view).toMatchObject({ doing: "holding", ladder: "long", client: "anna" });
+    expect(holding.pemba).toMatchObject({ haulHeld: true, first: "fixed", second: "fixed" });
+    expect(annaOn).toBe(true);
+    expect(whileShe).toMatchObject({ doing: "holding", ladder: "long" });
+    expect(climb.physics.climber("pemba").haulHeld).toBe(false);
+    expect(climb.along("pemba")).toBeGreaterThan(88.5);
+  });
+
+  it("waits at its end while it's broken, clipped in, and crosses once it's lashed back", () => {
+    // The ladder broke as the climb began, and the Icefall Doctors lash it back ten seconds on.
+    const start = atTheCrevasse(12, 17).expedition.save();
+    const physics = start.rules[SlopePhysics.NAME] as unknown as { ladders: LadderLayout[] };
+    physics.ladders = [{ ...LADDER, breaks: 2, broke: 0, free: "start" }];
+    const climb = new GuidedClimb(start);
+    climb.physics.stride("anna", 0.5);
+    climb.play(steps(8), [walk("anna", "right")]);
+    const waiting = { along: climb.along("pemba"), view: climb.physics.climber("pemba") };
+    const broken = climb.physics.ladderCondition("long");
+    climb.play(steps(30));
+
+    expect(broken).toBe("broken");
+    expect(waiting.along).toBeGreaterThan(19);
+    expect(waiting.along).toBeLessThanOrEqual(20);
+    expect(waiting.view).toMatchObject({ ladder: null, falling: false, moving: false });
+    expect([waiting.view.first, waiting.view.second]).toContain("fixed");
+    expect(climb.physics.ladderCondition("long")).toBe("whole");
+    // Across, he holds its line for Anna.
+    expect(climb.along("pemba")).toBeCloseTo(88, 6);
+    expect(climb.sherpa.view).toMatchObject({ doing: "holding", ladder: "long" });
+  });
+});
+
+describe("A Sherpa and a client on the rope", () => {
+  it("hauls out a client hanging under a ladder that broke near his end, then rests with them", () => {
+    // The ladder breaks under Anna's step past its fifth metre, nearer Pemba's end than hers.
+    const climb = atTheCrevasse(
+      12,
+      17,
+      { ...LADDER, breaks: 5, trainees: ["anna"] },
+      { ...TestMountain.CALM, ladderBreak: { creak: 1, relash: 600 } },
+    );
+    annaCrosses(climb);
+    const broke = climb.until(() => climb.physics.climber("anna").hanging, steps(80));
+    climb.play(1, [walk("anna", "stop")]);
+    const hauling = climb.until(() => climb.physics.climber("pemba").hauling, steps(20));
+    const rescue = climb.sherpa.view;
+    const out = climb.until(() => !climb.physics.climber("anna").falling, steps(120));
+    climb.play(steps(3));
+    const resting = { view: climb.sherpa.view, pemba: climb.physics.climber("pemba") };
+    climb.play(steps(7));
+
+    expect(broke).toBe(true);
+    expect(hauling).toBe(true);
+    expect(rescue).toMatchObject({ doing: "rescuing", client: "anna" });
+    expect(out).toBe(true);
+    expect(climb.physics.climber("anna").falls.at(-1)).toMatchObject({ broke: true, pulled: true });
+    expect(resting.view).toMatchObject({ doing: "resting", client: "anna" });
+    expect(resting.view.restLeft).toBeGreaterThan(0);
+    expect(resting.pemba.moving).toBe(false);
+    // A mountain minute later, the rest is over: he leads on.
+    expect(climb.sherpa.view.doing).not.toBe("resting");
+  });
+});
+
+describe("A Sherpa under a hazard", () => {
+  it("backs off out from under a serac cracking over him, as his client nears it", () => {
+    const climb = new GuidedClimb({
+      layout: TestMountain.FLAT.layout([
+        { id: "anna", along: 10 },
+        { id: "pemba", along: 14 },
+      ]),
+      hazards: {
+        weather: "clear",
+        zones: [{ id: "seracs", kind: "serac", from: 15, to: 40 }],
+        events: [{ id: "collapse", kind: "serac", from: 20, to: 28, lead: 3, trainees: ["anna"] }],
+      },
+      sherpa: { climber: "pemba", clients: ["anna"], arrival: ARRIVAL },
+    });
+    climb.physics.stride("anna", 0.5);
+    climb.play(1, [walk("anna", "right")]);
+    const cracking = climb.until(() => climb.hazards.warnings.length > 0, steps(60));
+    const when = climb.along("pemba");
+    climb.play(steps(1));
+    const doing = climb.sherpa.view.doing;
+    climb.play(steps(5), [walk("anna", "stop")]);
+
+    expect(cracking).toBe(true);
+    expect(when).toBeGreaterThan(20);
+    expect(doing).toBe("retreating");
+    expect(climb.hazards.strikes).toMatchObject([{ zone: "collapse", training: true }]);
+    expect(climb.hazards.strikes[0]?.climbers).not.toContain("pemba");
+  });
+});
+
+describe("A Sherpa in a save", () => {
+  it("goes on from a save, through JSON, as if it had never stopped", () => {
+    const climb = FLAT();
+    climb.physics.stride("anna", 0.5);
+    climb.play(1, [walk("anna", "right")]);
+    climb.play(steps(9));
+    const save = JSON.parse(JSON.stringify(climb.expedition.save())) as ExpeditionSave;
+    const resumed = new GuidedClimb(save);
+    climb.play(steps(10));
+    resumed.play(steps(10));
+
+    expect(resumed.expedition.save()).toEqual(climb.expedition.save());
+  });
+});

@@ -36,6 +36,11 @@ export class CoachCard {
     this.onTouch = CoachCard.required(document, "#coach [data-device='touch']");
   }
 
+  /** The tip on the card now, or none: Pemba's voice hears its warnings too (#212). */
+  get tip(): CoachTip | null {
+    return this.shown;
+  }
+
   /** The tip after `seconds` more of the climb, shown if it's changed. */
   update(seconds: number): void {
     const tip = this.coach.tip(this.world, seconds);
