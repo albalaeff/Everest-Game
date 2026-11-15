@@ -13,10 +13,10 @@ export interface OptionalLayers {
 /**
  * One of the three levels of the graphics setting (spec.md → Phone and PC: a quality setting
  * reduces the parallax layers and the particles): which optional layers, how many snowflakes,
- * motes of spindrift and banks of fog, whether the sky's gradient is dithered, and a cap on how
- * sharp the picture is drawn, in device pixels per CSS pixel. Low loses beauty, never
- * information: it keeps some spindrift, which tells the wind, and some fog, which tells the
- * weather.
+ * puffs of blown snow (and as many of the air's glinting crystals) and banks of fog, whether the
+ * sky's gradient is dithered, and a cap on how sharp the picture is drawn, in device pixels per
+ * CSS pixel. Low loses beauty, never information: it keeps some blown snow, which tells the wind,
+ * and some fog, which tells the weather.
  */
 export class GraphicsQuality {
   static readonly LOW = new GraphicsQuality(

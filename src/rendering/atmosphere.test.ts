@@ -97,4 +97,13 @@ describe("Atmosphere", () => {
     expect(rising.gust).toBeCloseTo(0.8, 9);
     expect(full.gust).toBe(1);
   });
+
+  it("keeps the weather's wind and a gust on its way apart, for the snow that gust's wave lifts (#223)", () => {
+    const calm = Atmosphere.at(seconds(4), "clear", BASE_CAMP);
+    const rising = calm.after(1, seconds(4), "clear", BASE_CAMP, 0.8);
+
+    expect(rising.wind).toBeCloseTo(new Gust("clear").at(1), 9);
+    expect(rising.blowing).toBeCloseTo(0.8, 9);
+    expect(calm.blowing).toBe(0);
+  });
 });
