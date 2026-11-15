@@ -1,4 +1,6 @@
 import type { Pace, Tiredness } from "../simulation";
+import { IceTools } from "./ice-tools";
+import type { DrawnTool, PickIn, Strike } from "./ice-tools";
 
 /** A joint of the figure, in its metres from where it stands, x the way they face and y up. */
 export interface Joint {
@@ -58,16 +60,16 @@ export interface PoseState {
   readonly footing: number;
   /** Whether they're hauling a partner up the rope, braced at the edge (#209). */
   readonly hauling: boolean;
-  /** On the ice, where each pick they swung in is, from the climber's point in the figure's
-   * metres, the one they hang from first: none anywhere else. The face is their ladder, its
-   * line the ice. */
-  readonly picks?: readonly Joint[];
-}
-
-/** An ice tool as it's drawn: its pick in the ice, and its grip in the hand. */
-export interface DrawnTool {
-  readonly head: Joint;
-  readonly grip: Joint;
+  /** On the ice, each pick they swung in, the one they hang from first (`PickIn`): none anywhere
+   * else. The face is their ladder, its line the ice. */
+  readonly picks?: readonly PickIn[];
+  /** Whether the pick they hang from bites poorly: swung at full stretch, or into brittle ice. */
+  readonly pickPoor?: boolean;
+  /** How many ice tools they carry: the axe, and a second tool. The axe, if not said. */
+  readonly tools?: number;
+  /** Whether the ladder they're on is a face of ice, on their front points: on their tools, or
+   * lowering down it on its rope. */
+  readonly onIce?: boolean;
 }
 
 /** The figure's joints this frame, in its metres from where it stands, facing +x: the whole of it
@@ -95,10 +97,13 @@ export interface Pose {
    * cowstails run to them from the harness. */
   readonly jumar: Joint | null;
   readonly carabiner: Joint | null;
-  /** Which boots came down on the snow this frame, for the puff they kick up. */
+  /** Which boots came down this frame: on the snow, for the puff they kick up, or on their front
+   * points into a face of ice, for the chips. */
   readonly landed: readonly [boolean, boolean];
-  /** The ice tools in the ice, the near hand's first: none off it. */
+  /** Each ice tool they carry, the axe first, in a hand or strapped to the pack (`IceTools`). */
   readonly tools: readonly DrawnTool[];
+  /** The picks that went into the ice this frame, for the chips they knock off. */
+  readonly strikes: readonly Strike[];
 }
 
 /** What the figure is doing, as the pose draws it: from one to the next, it blends. */
@@ -189,10 +194,13 @@ interface Lying {
  * second carabiner is clipped or unclipped, the climber bends and crouches to it, the far hand on
  * it.
  * Across a ladder each boot comes down on a rung, the hands on its lines; up a wall, boot and hand
- * go rung over rung. A fall takes them over face down, tumbling in the air, or hangs them below
- * the rope; they get up through a kneel; a dead climber lies still. From each to the next the pose
- * blends, in about a quarter of a second. It keeps only the picture's own: where in the stride,
- * the blends, and the clocks of the fall and the reach.
+ * go rung over rung. On a face of ice the boots kick in on their front points, and the ice tools
+ * are swung in and out as `IceTools` moves them, the axe in the near hand; with one tool, the far
+ * hand holds the jumar on the rope or braces on the ice, and the weight sinks onto each pick as it
+ * settles. A fall takes them over face down, tumbling in the air, or hangs them below the rope;
+ * they get up through a kneel; a dead climber lies still. From each to the next the pose blends,
+ * in about a quarter of a second. It keeps only the picture's own: where in the stride, the
+ * blends, the clocks of the fall and the reach, the hand on the jumar, and the tools.
  */
 export class ClimberPose {
   /** The bones, in metres, of a climber 1.77 m tall in boots and a down suit; the ankle stands
@@ -337,6 +345,16 @@ export class ClimberPose {
     lift: 0.12,
     lean: 0.15,
   };
+  /** On a face of ice, front-pointing: the line is the ice itself, so the balls of the feet are
+   * back off it, the boots' toes at the ice with only the crampons' front points in it; the
+   * body stands taller and further out on straighter legs, hanging off the tools, and more
+   * upright. */
+  private static readonly ICE_WALL = {
+    ...ClimberPose.WALL,
+    foot: -0.105,
+    pelvis: { up: 0.84, off: -0.34 },
+    lean: 0.08,
+  };
   /** Up a wall, the head looks up it, and once it comes over the wall's top, down onto it, the body
    * leaning over the edge to step off: the gaze up the wall and onto its top, how far over the top
    * the head is when it's looking down onto it, and how far the climber leans over it there. */
@@ -408,8 +426,10 @@ export class ClimberPose {
     lean: 0.45,
     toes: -1.1,
   };
-  /** An ice tool's grip from its pick: down its shaft, and out from the ice. */
-  private static readonly TOOL_GRIP: Joint = { x: -0.16, y: -0.44 };
+  /** How far the body sinks onto a pick as the weight comes onto it; and the most it crouches on
+   * the ice towards a tool in it below the shoulder and out of the arm's reach, as over a lip. */
+  private static readonly LOAD_SINK = 0.025;
+  private static readonly MOST_CROUCH = 0.45;
   private static readonly ORIGIN: Joint = { x: 0, y: 0 };
   private static readonly UP: Joint = { x: 0, y: 1 };
   private static readonly NONE_DOWN: readonly [boolean, boolean] = [false, false];
@@ -450,6 +470,14 @@ export class ClimberPose {
    * rope that lifted it; how far it pushes it in strokes. */
   private holding = 0;
   private heldAt: Joint | null = null;
+  /** Which hand has the jumar, 0 the near one to 1 the far one: the far one once the near one
+   * holds the axe. */
+  private jumarSide = 0;
+  /** The ice tools: where each is, and its swing; how far a tool in the ice was out of reach
+   * below the shoulder last frame, and how far the climber crouches towards it. */
+  private readonly tools = new IceTools();
+  private short = -Infinity;
+  private crouch = 0;
   private lift = 0;
   private pushing = 0;
   /** How far into the rest step's rhythm, 0 to 1. */
@@ -479,7 +507,20 @@ export class ClimberPose {
     const frame = Math.max(seconds, 0);
     const share = 1 - Math.exp(-frame / ClimberPose.SETTLE_SECONDS);
     const mode = this.modeOf(state);
+    const picks = state.picks ?? [];
+    this.tools.advance(frame, {
+      picks,
+      poor: state.pickPoor ?? false,
+      carried: state.tools ?? 1,
+      upright: !state.falling && !state.dead,
+      // On a ladder, lowering down a face on its rope, or hauling, the hands are needed.
+      free: !state.hauling && (state.ladder === null || picks.length > 0),
+    });
     this.keepTime(frame, share, state, mode);
+    // On the ice, down towards a tool out of reach below, as far as it is, and up off it again.
+    const crouching = mode === "wall" && state.onIce === true && Number.isFinite(this.short);
+    const crouch = crouching ? this.crouch + this.short : 0;
+    this.crouch += (Math.min(Math.max(crouch, 0), ClimberPose.MOST_CROUCH) - this.crouch) * share;
     const gait = this.gait(state, mode, share);
     this.time += frame;
     const made = this.hauling(
@@ -495,10 +536,11 @@ export class ClimberPose {
     this.mode = mode;
     const targets = this.blend(made.targets, frame, mode);
     this.last = targets;
-    const onSnow = mode === "walk";
+    // On the snow a boot comes down; on a face of ice its front points kick in.
+    const kicks = mode === "walk" || (mode === "wall" && state.onIce === true);
     const landed: readonly [boolean, boolean] = [
-      onSnow && made.down[0] && !this.down[0],
-      onSnow && made.down[1] && !this.down[1],
+      kicks && made.down[0] && !this.down[0],
+      kicks && made.down[1] && !this.down[1],
     ];
     this.down = made.down;
     return this.solve(state, targets, landed);
@@ -551,9 +593,15 @@ export class ClimberPose {
   private keepTime(frame: number, share: number, state: PoseState, mode: Mode): void {
     const upright = mode === "walk" || mode === "rungs" || mode === "wall";
     this.standing += ((state.moving && upright ? 0 : 1) - this.standing) * share;
-    // The hand lets the jumar go where the rope runs on to its anchor less far than it lifts it.
+    // The hand lets the jumar go where the rope runs on to its anchor less far than it lifts it;
+    // the near hand holds it, or the far one once the near one has the axe, and neither on two
+    // tools.
     const grip = ClimberPose.smooth(1 + (state.slack - this.lift) / ClimberPose.LET_GO);
-    this.holding += ((state.jumar !== null && upright ? grip : 0) - this.holding) * share;
+    const [nearFree, farFree] = this.tools.handsFree;
+    const free = nearFree || farFree;
+    this.jumarSide += ((nearFree ? 0 : farFree ? 1 : this.jumarSide) - this.jumarSide) * share;
+    const holds = state.jumar !== null && upright && free;
+    this.holding += ((holds ? grip : 0) - this.holding) * share;
     const pushing = state.sliding && state.moving && upright;
     this.pushing += ((pushing ? 1 : 0) - this.pushing) * share;
     const resting = state.pace === "rest-step" && mode === "walk";
@@ -587,7 +635,8 @@ export class ClimberPose {
     let pace = ClimberPose.STRIDE[state.pace] * ClimberPose.TIRED[state.tiredness].stride;
     if (ladder !== null) {
       const across = mode === "wall" ? 1 : Math.abs(ladder.way.x);
-      pace = ClimberPose.rungStride(ladder) * across;
+      // Up a face of ice, each boot kicks in a step at a time; on a ladder, rung by rung.
+      pace = state.onIce === true ? 2 * ladder.spacing : ClimberPose.rungStride(ladder) * across;
     }
     const stride = this.stride === null ? pace : this.stride + (pace - this.stride) * share;
     this.stride = stride;
@@ -877,14 +926,17 @@ export class ClimberPose {
       this.lift = Math.hypot(this.heldAt.x - onX, this.heldAt.y - onY);
     }
     const held = this.heldAt;
-    const onTheJumar = held === null ? near : ClimberPose.between(near, held, this.holding);
+    const side = this.jumarSide;
+    const nearOn =
+      held === null ? near : ClimberPose.between(near, held, this.holding * (1 - side));
+    const farOn = held === null ? far : ClimberPose.between(far, held, this.holding * side);
     const to = this.carabinerSeen;
     const reach = this.reach();
     if (to === null || reach <= 0) {
-      return [onTheJumar, far];
+      return [nearOn, farOn];
     }
     const carabiner: Joint = { x: to.x - offset.x, y: to.y - offset.y };
-    return [onTheJumar, ClimberPose.between(far, carabiner, reach)];
+    return [nearOn, ClimberPose.between(farOn, carabiner, reach)];
   }
 
   /** A boot at `phase` of its leg's cycle: down where it came down, its heel lifting at the end
@@ -942,7 +994,7 @@ export class ClimberPose {
   /** Up or down a ladder on a wall: the balls of the feet on the rungs, the hands on rungs above,
    * each going rung over rung, hand against foot, the body back off the ladder. */
   private wall(state: PoseState, gait: Gait): Made {
-    const wall = ClimberPose.WALL;
+    const wall = state.onIce === true ? ClimberPose.ICE_WALL : ClimberPose.WALL;
     const way = state.ladder?.way ?? ClimberPose.UP;
     const sign = way.y >= 0 ? 1 : -1;
     const rise: Joint = { x: sign * way.x, y: sign * way.y };
@@ -972,7 +1024,9 @@ export class ClimberPose {
     const nearAnkle = ankleOf(near);
     const farAnkle = ankleOf(far);
     const base = at(0, wall.pelvis.off);
-    let up = wall.pelvis.up;
+    // The weight sinks onto a pick as it settles in the ice, and the climber crouches towards one
+    // out of reach below.
+    let up = wall.pelvis.up - ClimberPose.LOAD_SINK * this.tools.loading - this.crouch;
     if (near.down) {
       const hip = ClimberPose.hipOf(base.x, 0, base.y);
       up = Math.min(up, ClimberPose.reachAlong(hip, rise, nearAnkle));
@@ -1164,18 +1218,22 @@ export class ClimberPose {
     const far = ClimberPose.stiff(farHip, { ankle: ankles[1], sole: soles[1] }, pivots[1]);
     const nearRoot = ClimberPose.armRoot(shoulder, 0);
     const farRoot = ClimberPose.armRoot(shoulder, 1);
-    // On the ice each hand is on its tool's grip, under the pick it swung in.
-    const tools: readonly DrawnTool[] = (state.falling || state.dead ? [] : (state.picks ?? []))
-      .slice(0, 2)
-      .map((pick) => {
-        const head = ClimberPose.inside(pick, offset, tilt);
-        const { x, y } = ClimberPose.TOOL_GRIP;
-        return { head, grip: { x: head.x + x, y: head.y + y } };
-      });
-    const nearArm = ClimberPose.bend(nearRoot, tools[0]?.grip ?? hands[0], UPPER_ARM, FOREARM, -1);
-    const farArm = ClimberPose.bend(farRoot, tools[1]?.grip ?? hands[1], UPPER_ARM, FOREARM, -1);
+    // Each hand on its tool, where `IceTools` has it: in the ice, swinging, or carried.
+    const held = this.tools.place({
+      roots: [nearRoot, farRoot],
+      pelvis,
+      lean,
+      reach: UPPER_ARM + FOREARM,
+      hands,
+      inside: (point) => ClimberPose.inside(point, offset, tilt),
+      turned: (way) => ClimberPose.turned(way, -tilt),
+    });
+    this.short = held.short;
+    const nearArm = ClimberPose.bend(nearRoot, held.hands[0] ?? hands[0], UPPER_ARM, FOREARM, -1);
+    const farArm = ClimberPose.bend(farRoot, held.hands[1] ?? hands[1], UPPER_ARM, FOREARM, -1);
     const { jumar, carabiner } = state;
     const onTheRope = jumar === null ? null : ClimberPose.inside(jumar, offset, tilt);
+    const holder = ClimberPose.between(nearArm.end, farArm.end, this.jumarSide);
     return {
       pelvis,
       shoulder,
@@ -1190,10 +1248,11 @@ export class ClimberPose {
       nod,
       tilt,
       offset,
-      jumar: onTheRope === null ? null : ClimberPose.between(onTheRope, nearArm.end, this.holding),
+      jumar: onTheRope === null ? null : ClimberPose.between(onTheRope, holder, this.holding),
       carabiner: carabiner === null ? null : ClimberPose.inside(carabiner, offset, tilt),
       landed,
-      tools,
+      tools: held.tools,
+      strikes: held.strikes,
     };
   }
 

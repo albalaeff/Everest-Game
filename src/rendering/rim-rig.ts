@@ -2,7 +2,7 @@ import { Graphics } from "pixi.js";
 
 import { FigureRig } from "./figure-rig";
 import type { RigParts } from "./figure-rig";
-import type { Outline } from "./figure-shapes";
+import type { Outline, ToolOutlines } from "./figure-shapes";
 
 /**
  * The rim of light round a climber's figure (#168): its silhouette, part for part, drawn white
@@ -13,6 +13,7 @@ export class RimRig extends FigureRig {
   constructor(width: number) {
     super(RimRig.drawParts(width));
     const { parts } = this;
+    this.addChild(parts.strapped[1], parts.strapped[0], parts.tools[1]);
     for (const side of [1, 0] as const) {
       this.addChild(
         parts.thighs[side],
@@ -22,7 +23,7 @@ export class RimRig extends FigureRig {
         parts.forearms[side],
       );
     }
-    this.addChild(parts.pack, parts.torso, parts.neck, parts.head, parts.mask);
+    this.addChild(parts.pack, parts.torso, parts.neck, parts.head, parts.mask, parts.tools[0]);
   }
 
   private static drawParts(width: number): RigParts {
@@ -41,7 +42,9 @@ export class RimRig extends FigureRig {
       part(...outlines),
     ];
     const { thigh, shin, gaiter, boot, upperArm, forearm, mitt } = RimRig.SHAPES;
-    const { pack, lid, torso, neck, hood, mask } = RimRig.SHAPES;
+    const { pack, lid, torso, neck, hood, mask, axe, iceTool } = RimRig.SHAPES;
+    const tool = ({ shaft, grip, foot, head, rest }: ToolOutlines): Graphics =>
+      part(shaft, grip, foot, head, ...(rest === null ? [] : [rest]));
     return {
       thighs: pair(thigh),
       shins: pair(shin, gaiter),
@@ -53,6 +56,8 @@ export class RimRig extends FigureRig {
       neck: part(neck),
       head: part(hood),
       mask: part(mask),
+      tools: [tool(axe), tool(iceTool)],
+      strapped: [tool(axe), tool(iceTool)],
     };
   }
 }

@@ -9,6 +9,7 @@ import { ClimberPose } from "./climber-pose";
 import type { Joint, Pose, PoseState } from "./climber-pose";
 import { ClimberReading } from "./climber-reading";
 import type { ReadSlope } from "./climber-reading";
+import type { IceChips } from "./ice-chips";
 import type { LeastSize } from "./least-size";
 import { Palette } from "./palette";
 import { RimRig } from "./rim-rig";
@@ -35,9 +36,11 @@ interface Spot {
  * with the pool it throws on the snow. It's drawn between the steps, where `SteppedPoints` has the
  * climber and their carabiners, its joints `ClimberPose`'s as `ClimberReading` reads them, and its
  * chest and breath `Breathing`'s, by the altitude and the body; the breath blows downwind, and
- * each boot that comes down on the snow kicks up a puff. A dead climber lies dim, with no words on
- * the screen (#24). It keeps only the picture's own: the points between the steps, the pose, the
- * breath, the turn and the lamp's beam.
+ * each boot that comes down on the snow kicks up a puff. On a face of ice, each pick that strikes
+ * in knocks chips off it, more and bigger where it bites poorly, and so do the front points as
+ * they kick in. A dead climber lies dim, with no words on the screen (#24). It keeps only the
+ * picture's own: the points between the steps, the pose, the breath, the turn and the lamp's
+ * beam.
  */
 export class ClimberFigure extends Container {
   /** From the soles to the top of the head. */
@@ -74,6 +77,10 @@ export class ClimberFigure extends Container {
    * it follows. */
   private static readonly RISE_METRES = 0.4;
   private static readonly MOST_RISE = 1.2;
+  /** Where the front points are, in a boot's frame from the point of the sole under its ankle,
+   * and the way the chips they kick off fly, out of the ice the climber faces and up. */
+  private static readonly FRONT_POINTS: Joint = { x: 0.25, y: -0.02 };
+  private static readonly KICKED_OUT: Joint = { x: -0.95, y: 0.3 };
   /** The rim of light on the sun's side: how far past the body it shows, and how strong it is at
    * night, by day and in the glow of dawn and dusk. */
   private static readonly RIM_METRES = 0.025;
@@ -116,6 +123,8 @@ export class ClimberFigure extends Container {
   };
   private hangs = false;
   private readonly ball: Spot = { x: 0, y: 0 };
+  private readonly chip: Spot = { x: 0, y: 0 };
+  private readonly out: Spot = { x: 0, y: 0 };
   private readonly lamp: Spot = { x: 0, y: 0 };
   private climber: ClimberView | null = null;
   private holds = false;
@@ -128,6 +137,7 @@ export class ClimberFigure extends Container {
     suit: number,
     slope: ReadSlope,
     private readonly puffs: SnowPuffs,
+    private readonly chips: IceChips,
     /** How big their pack is against a client's: a Sherpa's is bigger (#212). */
     pack = 1,
   ) {
@@ -253,6 +263,57 @@ export class ClimberFigure extends Container {
     if (state.ladder === null && !climber.falling && !climber.dead) {
       this.kick(pose, grown);
     }
+    this.knock(pose, state.onIce === true && upright, grown);
+  }
+
+  /** Chips of ice knocked off where each pick struck in this frame, and, `onIce`, where each
+   * boot's front points kicked in. */
+  private knock(pose: Pose, onIce: boolean, grown: number): void {
+    for (const { at, into, poor } of pose.strikes) {
+      this.inLayer(at, this.chip);
+      this.wayInLayer({ x: -into.x, y: -into.y }, this.out);
+      this.chips.burst(
+        this.chip.x,
+        this.chip.y,
+        this.out.x,
+        this.out.y,
+        grown,
+        poor ? "poor" : "pick",
+      );
+      // And a little cloud of the ice's dust, more where it shatters.
+      this.puffs.kick(this.chip.x, this.chip.y, grown * (poor ? 0.75 : 0.5));
+    }
+    if (!onIce) {
+      return;
+    }
+    for (const leg of [0, 1] as const) {
+      if (pose.landed[leg]) {
+        const ankle = pose.legs[leg].end;
+        const sole = pose.soles[leg];
+        const cos = Math.cos(sole);
+        const sin = Math.sin(sole);
+        const { x, y } = ClimberFigure.FRONT_POINTS;
+        const under = y - ClimberPose.ANKLE;
+        this.inLayer(
+          { x: ankle.x + x * cos - under * sin, y: ankle.y + x * sin + under * cos },
+          this.chip,
+        );
+        this.wayInLayer(ClimberFigure.KICKED_OUT, this.out);
+        this.chips.burst(this.chip.x, this.chip.y, this.out.x, this.out.y, grown, "kick");
+      }
+    }
+  }
+
+  /** Which way a way of the figure's goes in the layer, a length of 1. */
+  private wayInLayer(way: Joint, into: Spot): void {
+    const cos = Math.cos(this.rotation);
+    const sin = Math.sin(this.rotation);
+    const { x: across, y: grown } = this.scale;
+    const x = cos * across * way.x - sin * grown * way.y;
+    const y = sin * across * way.x + cos * grown * way.y;
+    const length = Math.hypot(x, y) || 1;
+    into.x = x / length;
+    into.y = y / length;
   }
 
   /** A puff of snow under each boot that came down this frame, at its ball. */

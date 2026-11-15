@@ -173,6 +173,44 @@ describe("ClimberReading", () => {
     expect(left.ladder?.ends).toEqual([1, -3]);
   });
 
+  it("reads a climber on their tools at a wall's foot against its face, not the ground before it, in short steps", () => {
+    const reading = new ClimberReading(slope);
+    reading.read(view({ walking: "right" }), BODY, drawn(19, 2));
+    const state = reading.read(
+      view({ onIce: true, picks: [{ x: 20, y: 3.9 }] }),
+      BODY,
+      drawn(20, 2),
+    );
+
+    expect(reading.facing).toBe(1);
+    expect(state.ladder?.way.x).toBeCloseTo(0, 9);
+    expect(state.ladder?.way.y).toBeCloseTo(1, 9);
+    expect(state.ladder?.spacing).toBeCloseTo(ClimberReading.ICE_STEP_METRES, 9);
+    expect(state.onIce).toBe(true);
+    const [pick] = state.picks ?? [];
+    expect(pick).toMatchObject({ swing: 1, at: { x: 0, y: 1.9 } });
+    expect(pick?.into.x).toBeCloseTo(1, 9);
+    expect(pick?.into.y).toBeCloseTo(0, 9);
+  });
+
+  it("tells each pick in the ice by the swing that put it there, and the way into the ice where it is", () => {
+    const reading = new ClimberReading(slope);
+    const on = (picks: readonly Point[], tools = 2) =>
+      reading.read(view({ onIce: true, picks, gear: { jumar: true, tools } }), BODY, drawn(20, 3));
+    const first = { x: 20, y: 4.4 };
+    const second = { x: 20, y: 4.7 };
+    const overTheLip = { x: 20.5, y: 5 };
+
+    expect(on([first]).picks?.map(({ swing }) => swing)).toEqual([1]);
+    expect(on([second, first]).picks?.map(({ swing }) => swing)).toEqual([2, 1]);
+    const topping = on([overTheLip, second]);
+    expect(topping.picks?.map(({ swing }) => swing)).toEqual([3, 2]);
+    expect(topping.picks?.[0]?.into.x).toBeCloseTo(0, 9);
+    expect(topping.picks?.[0]?.into.y).toBeCloseTo(-1, 9);
+    expect(topping.tools).toBe(2);
+    expect(reading.read(view(), BODY, drawn(20, 5)).picks).toEqual([]);
+  });
+
   it("puts the carabiners in the figure's metres, from where the climber is drawn", () => {
     const reading = new ClimberReading(slope);
     const jumar = { x: 12, y: 1 };
