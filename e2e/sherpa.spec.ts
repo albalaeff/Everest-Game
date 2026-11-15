@@ -12,13 +12,40 @@ import { WALKING, along, atRest, openTheGame } from "./climb";
 /** Pemba's bubble on the page. */
 const bubble = (page: Page) => page.locator("#sherpa");
 
+/** A line shows only as long as it takes to read, and a headless browser under load draws few
+ * frames: so long the line's gone between two of a story's steps. */
+const SPEAKING = { timeout: 15_000 };
+
+/** Where Pemba's bubble is against the place over his head on the screen, both read at one
+ * moment: its middle's distance from it across and its bottom's height above it, in CSS pixels,
+ * whether that's over him, its tail within 24 px of it, and the edge it's at; or null while he
+ * says nothing. */
+async function overHisHead(page: Page): Promise<{
+  readonly across: number;
+  readonly above: number;
+  readonly overHim: boolean;
+  readonly edge: string | undefined;
+} | null> {
+  return page.evaluate(() => {
+    const said = document.querySelector<HTMLElement>("#sherpa");
+    if (said === null || said.hidden) {
+      return null;
+    }
+    const box = said.getBoundingClientRect();
+    const pemba = window.everest.climber("pemba");
+    const [x = 0, y = 0] = window.everest.screenAt(pemba.x, pemba.y + 2.1);
+    const across = Math.abs(box.x + box.width / 2 - x);
+    const above = y - box.bottom;
+    return { across, above, overHim: across < 24 && above > 0, edge: said.dataset.edge };
+  });
+}
+
 test("alone, the player sets off with Pemba ahead of them, who says the hour and that they go now", async ({
   page,
 }) => {
   await openTheGame(page);
 
-  await expect(bubble(page)).toBeVisible({ timeout: 15_000 });
-  await expect(bubble(page)).toHaveAttribute("data-cue", "set-off");
+  await expect(page.locator('#sherpa[data-cue="set-off"]')).toBeVisible(SPEAKING);
   await expect(bubble(page).locator('[data-text="who"]')).toHaveText("Pemba");
   await expect(bubble(page).locator('[data-text="said"]')).toContainText(
     "03:00. Good. The Icefall sleeps while it's cold, so we go now.",
@@ -30,18 +57,8 @@ test("Pemba speaks from over his head: the bubble's tail at his place on the scr
   page,
 }) => {
   await openTheGame(page);
-  await expect(bubble(page)).toBeVisible({ timeout: 15_000 });
-  await expect(bubble(page)).toHaveAttribute("data-edge", "on");
 
-  const [x = 0, y = 0] = await page.evaluate(() => {
-    const pemba = window.everest.climber("pemba");
-    return window.everest.screenAt(pemba.x, pemba.y + 2.1);
-  });
-  const box = await bubble(page).boundingBox();
-
-  expect(box).not.toBeNull();
-  expect(Math.abs((box?.x ?? 0) + (box?.width ?? 0) / 2 - x)).toBeLessThan(24);
-  expect((box?.y ?? 0) + (box?.height ?? 0)).toBeLessThan(y);
+  await expect.poll(() => overHisHead(page), SPEAKING).toMatchObject({ edge: "on", overHim: true });
 });
 
 test("Pemba waits at Base Camp until the player sets off, then walks on ahead of them", async ({
