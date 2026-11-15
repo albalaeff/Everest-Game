@@ -1,4 +1,5 @@
-import { FillGradient, Graphics, Particle, ParticleContainer, Texture } from "pixi.js";
+import { DOMAdapter, FillGradient, Graphics, Particle, ParticleContainer, Texture } from "pixi.js";
+import type { DestroyOptions } from "pixi.js";
 
 import { Terrain } from "../physics";
 import type { ClimberView, LadderCondition, Lamps, Point, SlopePhysics } from "../physics";
@@ -13,6 +14,7 @@ import type {
 } from "../simulation";
 import type { Atmosphere } from "./atmosphere";
 import type { Beam } from "./beam";
+import { BlownSnow } from "./blown-snow";
 import type { Camera } from "./camera";
 import { CampSigns } from "./camp-signs";
 import type { CampStretch } from "./camp-signs";
@@ -105,8 +107,9 @@ interface InView {
  * its hazards, the camps' tents, lit from inside at night, the prayer flags over Base Camp, and
  * every climber on it, drawn by `ClimberFigure`, their mask on as their oxygen flows, and the
  * player's marked in a crowd (`Crowd`, `PlayerMark`);
- * the snow their boots kick up, the spindrift the wind blows along the snow around the camera,
- * its grains glinting in the headlamps' beams, and the veil of a cloudy day behind the slope. In
+ * the snow their boots kick up, the snow the wind lifts off the slope around the camera
+ * (`BlownSnow`, #223), the air's ice crystals glinting in the headlamps' beams, and the veil of a
+ * cloudy day behind the slope. In
  * the picture alone, the ground runs on level past the section's ends, so the view far out shows
  * no cliff there. What moves is drawn between the steps
  * (docs/guidelines/graphics.md → Motion): the climbers and the ropes, which `RopeCurve` draws
@@ -213,6 +216,8 @@ export class SlopeLayer extends ParallaxLayer {
   /** The seed of the chips' chance, from the layer's, and how much of the lamps' light they
    * catch at night. */
   private static readonly CHIP_SEED = 11;
+  /** The blown snow's own seed, from the layer's. */
+  private static readonly BLOWN_SEED = 13;
   private static readonly CHIP_GLINT = 0.7;
   /** A chip of ice drawn as a shard: its three corners round its middle, how far round each is
    * turned and how far out it is, as a share of its size. */
@@ -226,21 +231,33 @@ export class SlopeLayer extends ParallaxLayer {
   private static readonly RUN_OUT_METRES = 300;
   /** How far past the screen's edges a rope or a camp counts as in view. */
   private static readonly MARGIN_METRES = 3;
-  /** The spindrift: how far each side of the camera it blows, how high over the snow, how big,
-   * how fast at the full gust, and from what gust it shows. */
+  /** The air's ice crystals, which glint in a headlamp's beam: how far each side of the camera
+   * they blow, how high over the snow, how big, how fast at the full gust, and from what gust
+   * they blow; and how much lower they ride in the full gust. */
   private static readonly DRIFT_SPAN = 120;
   private static readonly DRIFT_HEIGHT = { min: 0.05, max: 1.6 };
   private static readonly DRIFT_SIZE = { min: 0.05, max: 0.14 };
   private static readonly DRIFT_SPEED = { min: 4, max: 14 };
   private static readonly DRIFT_FROM_GUST = 0.05;
-  private static readonly DRIFT_ALPHA = 0.8;
-  /** How long a mote streaks at the full gust, in its sizes, and how much lower it rides: the
-   * stronger the wind, the longer and lower the spindrift's streaks along the snow. */
-  private static readonly DRIFT_STREAK = 7;
   private static readonly DRIFT_LOWER = 0.6;
   /** The grains glinting in a headlamp's beam: the least light that shows one, its size against
    * the mote's, its brightness, and the share of it that shows with no wind. */
   private static readonly GLINT = { least: 0.04, size: 0.45, alpha: 2.2, calm: 0.45 };
+  /** The snow the wind lifts (#223): how far past the screen's edges it blows, in metres; how
+   * much a puff that shows whole shows, as many puffs a metre as High has across a view of 20 m
+   * high, and how much more each shows where fewer share the view, at the most; how little is
+   * drawn at all, and how much more a headlamp's full beam lights it and shows it; and the soft
+   * puff's texture, so many pixels across. */
+  private static readonly BLOWN_MARGIN = 4;
+  private static readonly BLOWN = {
+    alpha: 0.7,
+    aMetre: 4,
+    sparse: 2.5,
+    least: 0.01,
+    lit: 1.2,
+    litAlpha: 0.45,
+  };
+  private static readonly PUFF_PIXELS = 64;
 
   private readonly ground: readonly Point[];
   /** How far down the ground is filled; where the moraine's rubble ends and the snow begins,
@@ -289,9 +306,14 @@ export class SlopeLayer extends ParallaxLayer {
   private chipsShown = false;
   private readonly hazards: HazardDrawing;
   private readonly drift: Drift;
-  private readonly driftContainer: ParticleContainer;
-  private readonly motes: readonly Particle[];
   private readonly glints = new Graphics();
+  /** The snow the wind lifts, its soft puff, its particles, and the tops of the towers behind the
+   * route, which it streams off as it does off the route's own edges. */
+  private readonly blownSnow: BlownSnow;
+  private readonly softPuff = SlopeLayer.puffTexture();
+  private readonly blownContainer: ParticleContainer;
+  private readonly blownParticles: readonly Particle[];
+  private readonly towerTops: Point[] = [];
   /** The headlamps' beams this frame. */
   private readonly beams: Beam[] = [];
   /** How many tents stand in the camps. */
@@ -493,31 +515,34 @@ export class SlopeLayer extends ParallaxLayer {
       },
       SeededRandom.fromSeed(seed + 3),
     );
-    const texture = Texture.WHITE;
-    this.driftContainer = new ParticleContainer({
-      dynamicProperties: {
-        position: true,
-        vertex: true,
-        rotation: false,
-        uvs: false,
-        color: false,
-      },
+    this.blownSnow = new BlownSnow(
+      motes,
+      [...BlownSnow.edgesOf(this.ground), ...this.towerTops],
+      SeededRandom.fromSeed(seed + SlopeLayer.BLOWN_SEED),
+    );
+    this.blownContainer = new ParticleContainer({
+      dynamicProperties: { position: true, vertex: true, rotation: true, uvs: false, color: true },
     });
-    this.motes = this.drift.motes.map((mote) => {
+    this.blownParticles = this.blownSnow.puffs.map(() => {
       const particle = new Particle({
-        texture,
-        x: mote.x,
-        y: mote.y,
-        scaleX: mote.size / texture.width,
-        scaleY: (mote.size * 0.5) / texture.height,
+        texture: this.softPuff,
         anchorX: 0.5,
         anchorY: 0.5,
+        alpha: 0,
       });
-      this.driftContainer.addParticle(particle);
+      this.blownContainer.addParticle(particle);
       return particle;
     });
     this.glints.blendMode = "add";
-    this.addChild(this.driftContainer, this.glints, this.hazards.falling, this.mark);
+    this.addChild(this.blownContainer, this.glints, this.hazards.falling, this.mark);
+  }
+
+  /** The layer goes, and the blown snow's soft puff with it. */
+  override destroy(options?: DestroyOptions): void {
+    super.destroy(options);
+    if (this.softPuff !== Texture.WHITE) {
+      this.softPuff.destroy(true);
+    }
   }
 
   /** How many climbers are drawn. */
@@ -549,7 +574,7 @@ export class SlopeLayer extends ParallaxLayer {
   /** Each frame, `seconds` after the last, as the camera sees it and in this frame's air: the
    * snow in the hour's light, the lines at the camera's scale, the climbers as they are and the
    * player's mark, the ladders under them and the ropes through their hands, the camps in the
-   * wind, the snow they kick up, the spindrift on the gust, and what's coming down. */
+   * wind, the snow they kick up, the snow the wind lifts, and what's coming down. */
   draw(seconds: number, camera: Camera, atmosphere: Atmosphere): void {
     this.hazards.draw(seconds);
     this.light(atmosphere);
@@ -628,7 +653,6 @@ export class SlopeLayer extends ParallaxLayer {
       this.hazards.standing.tint = palette.snowTint;
       this.hazards.seracs.tint = palette.snowTint;
       this.hazards.falling.tint = palette.snowTint;
-      this.driftContainer.tint = palette.snowCrest;
       this.puffGraphics.tint = palette.snowCrest;
       // Chips of ice glint in the headlamps' light at night.
       this.chipGraphics.tint = Palette.mix(
@@ -1025,38 +1049,78 @@ export class SlopeLayer extends ParallaxLayer {
     this.puffs.forEach(this.drawPuff);
   }
 
-  /** The spindrift along the snow around the camera, blown by the gust in streaks that grow
-   * longer and lower with it, and its grains glinting in the headlamps' beams: the air's ice
-   * crystals faintly with no wind, as #125's scene has. */
+  /** The snow the wind lifts where the camera shows the slope (#223), as `BlownSnow` blows it:
+   * soft veils along the snow and wisps off its edges, in the snow's colour for the hour, brighter
+   * in the headlamps' beams; and the air's ice crystals glinting in the beams, faintly with no
+   * wind, as #125's scene has. */
   private blow(seconds: number, camera: Camera, atmosphere: Atmosphere): void {
+    const { terrain } = this.physics;
+    const { width } = camera.screen;
+    const view = {
+      from: camera.at(0, 0).x - SlopeLayer.BLOWN_MARGIN,
+      to: camera.at(width, 0).x + SlopeLayer.BLOWN_MARGIN,
+    };
+    this.blownSnow.blow(seconds, atmosphere, (x) => terrain.height(x), view);
+    this.drawBlown(atmosphere, this.blownParticles.length / (view.to - view.from));
+    this.glint(seconds, camera, atmosphere);
+  }
+
+  /** Each puff of the blown snow where it is, as long and thick as it is, along its heading, as
+   * much of it as shows, lit by the hour and the beams it's in; each shows more where `aMetre`
+   * puffs a metre share the view, fewer than a view of High's, so the veil reads on every level
+   * and at every zoom. */
+  private drawBlown(atmosphere: Atmosphere, aMetre: number): void {
+    const { beams, softPuff } = this;
+    const { BLOWN, GLINT } = SlopeLayer;
+    const colour = atmosphere.palette.snowCrest;
+    const alpha =
+      BLOWN.alpha *
+      Math.min(Math.max(BLOWN.aMetre / Math.max(aMetre, 0.01), 1) ** 0.6, BLOWN.sparse);
+    let showing = false;
+    for (const [index, puff] of this.blownSnow.puffs.entries()) {
+      const particle = this.blownParticles[index];
+      if (particle === undefined) {
+        continue;
+      }
+      if (puff.shows < BLOWN.least) {
+        particle.alpha = 0;
+        continue;
+      }
+      showing = true;
+      const lit = beams.reduce((most, beam) => Math.max(most, beam.lights(puff)), 0);
+      particle.x = puff.x;
+      particle.y = puff.y;
+      particle.scaleX = puff.length / softPuff.width;
+      particle.scaleY = puff.thickness / softPuff.height;
+      particle.rotation = puff.heading;
+      particle.tint =
+        lit > GLINT.least ? Palette.mix(colour, Palette.LAMP, lit * BLOWN.lit) : colour;
+      particle.alpha = Math.min(1, puff.shows * (alpha + lit * BLOWN.litAlpha));
+    }
+    this.blownContainer.visible = showing;
+  }
+
+  /** The air's ice crystals around the camera, blown along by the gust and lower in it, glinting
+   * where a headlamp's beam lights them. */
+  private glint(seconds: number, camera: Camera, atmosphere: Atmosphere): void {
     const { gust, elapsed } = atmosphere;
     const { beams } = this;
-    const strength = Math.max(
-      0,
-      (gust - SlopeLayer.DRIFT_FROM_GUST) / (1 - SlopeLayer.DRIFT_FROM_GUST),
-    );
-    this.driftContainer.alpha = Math.min(1, strength * 1.5) * SlopeLayer.DRIFT_ALPHA;
-    this.driftContainer.visible = this.driftContainer.alpha > 0.01;
     this.glints.clear();
-    if (!this.driftContainer.visible && beams.length === 0) {
+    if (beams.length === 0) {
       return;
     }
     const { terrain } = this.physics;
     const cameraX = camera.position.x;
-    this.driftContainer.position.set(cameraX, 0);
     this.drift.blow(seconds, gust, (x) => terrain.height(cameraX + x), elapsed);
+    const strength = Math.max(
+      0,
+      (gust - SlopeLayer.DRIFT_FROM_GUST) / (1 - SlopeLayer.DRIFT_FROM_GUST),
+    );
     const shown = SlopeLayer.GLINT.calm + (1 - SlopeLayer.GLINT.calm) * Math.min(1, strength * 1.5);
-    const streak = 1 + SlopeLayer.DRIFT_STREAK * strength;
     const lower = 1 - SlopeLayer.DRIFT_LOWER * strength;
-    for (const [index, mote] of this.drift.motes.entries()) {
+    for (const mote of this.drift.motes) {
       const ground = terrain.height(cameraX + mote.x);
       const at = { x: cameraX + mote.x, y: ground + (mote.y - ground) * lower };
-      const particle = this.motes[index];
-      if (particle !== undefined) {
-        particle.x = mote.x;
-        particle.y = at.y;
-        particle.scaleX = (mote.size * streak) / particle.texture.width;
-      }
       const lit = Math.max(0, ...beams.map((beam) => beam.lights(at)));
       if (lit > SlopeLayer.GLINT.least) {
         this.glints
@@ -1123,6 +1187,30 @@ export class SlopeLayer extends ParallaxLayer {
   }
 
   /** The ground's points, with a level run-out past each end. */
+  /** A soft puff for the blown snow (#223): white at its middle and clear at its edge, a radial
+   * gradient on a canvas of its own, so the snow reads as a veil and not as specks. */
+  private static puffTexture(): Texture {
+    const pixels = SlopeLayer.PUFF_PIXELS;
+    const middle = pixels / 2;
+    const canvas = DOMAdapter.get().createCanvas(pixels, pixels);
+    const context = canvas.getContext("2d");
+    if (context === null) {
+      return Texture.WHITE;
+    }
+    const gradient = context.createRadialGradient(middle, middle, 0, middle, middle, middle);
+    for (const [offset, alpha] of [
+      [0, 1],
+      [0.4, 0.75],
+      [0.75, 0.3],
+      [1, 0],
+    ] as const) {
+      gradient.addColorStop(offset, Palette.css(0xffffff, alpha));
+    }
+    context.fillStyle = gradient;
+    context.fillRect(0, 0, pixels, pixels);
+    return Texture.from(canvas);
+  }
+
   private static runOut(terrain: Terrain): readonly Point[] {
     const points = terrain.points.map(([x, y]) => ({ x, y }));
     const [first] = points;
@@ -1267,6 +1355,15 @@ export class SlopeLayer extends ParallaxLayer {
     this.blocks.stroke({ ...SlopeLayer.BLOCK_STREAK, color: Palette.BLOCK_SHADE, cap: "round" });
     for (const cap of towers.caps) {
       this.blocks.poly(flat(cap)).fill(0xffffff);
+    }
+    for (const { corners } of towers.towers) {
+      const top = corners.reduce<Point | null>(
+        (highest, corner) => (highest === null || corner.y > highest.y ? corner : highest),
+        null,
+      );
+      if (top !== null) {
+        this.towerTops.push(top);
+      }
     }
   }
 

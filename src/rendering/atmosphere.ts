@@ -14,8 +14,8 @@ interface Mixed {
 
 /**
  * The air and the light of a frame, as every layer reads them: the light of the hour, the air
- * above the climber, the palette mixed from them, the weather's look, the wind's gust now, and the
- * picture's own seconds. The scene makes one each frame from the mountain's clock, the climber's
+ * above the climber, the palette mixed from them, the weather's look, the wind's gust now, the
+ * weather's own and a gust's on its way (#197) apart, and the picture's own seconds. The scene makes one each frame from the mountain's clock, the climber's
  * altitude and the hazards' weather; the palette is mixed again only when the light or the air
  * has changed enough to show since it was mixed, or the weather has.
  */
@@ -23,8 +23,12 @@ export class Atmosphere {
   readonly light: DayLight;
   readonly air: ThinAir;
   readonly look: WeatherLook;
-  /** The wind's strength this frame, 0 to 1. */
+  /** The wind's strength this frame, 0 to 1: the weather's as it gusts, or a gust on its way that
+   * jolts the climbers, whichever blows harder; and each of those apart, for the snow it lifts,
+   * whose wave a gust on its way sends across the slope (#223). */
   readonly gust: number;
+  readonly wind: number;
+  readonly blowing: number;
   /** Seconds of picture since the scene opened: what the twinkle, the wobble and the breath run
    * on. */
   readonly elapsed: number;
@@ -35,14 +39,17 @@ export class Atmosphere {
     air: ThinAir,
     look: WeatherLook,
     mixed: Mixed,
-    gust: number,
+    wind: number,
+    blowing: number,
     elapsed: number,
   ) {
     this.light = light;
     this.air = air;
     this.look = look;
     this.mixed = mixed;
-    this.gust = gust;
+    this.wind = wind;
+    this.blowing = blowing;
+    this.gust = Math.max(wind, blowing);
     this.elapsed = elapsed;
   }
 
@@ -58,6 +65,7 @@ export class Atmosphere {
       look,
       { palette: new Palette(light, air, look), light, air },
       new Gust(weather).at(0),
+      0,
       0,
     );
   }
@@ -84,7 +92,8 @@ export class Atmosphere {
       air,
       look,
       same ? mixed : { palette: new Palette(light, air, look), light, air },
-      Math.max(new Gust(weather).at(elapsed), Math.min(Math.max(blowing, 0), 1)),
+      new Gust(weather).at(elapsed),
+      Math.min(Math.max(blowing, 0), 1),
       elapsed,
     );
   }
