@@ -110,6 +110,10 @@ test.describe("the arrival at Camp 1", () => {
   /** What the notice says, and [Continue] closing it. */
   async function expectTheNotice(page: Page): Promise<void> {
     await expect(notice(page)).toBeVisible();
+    // Pemba's line opens it (#212).
+    await expect(notice(page).locator('[data-text="sherpa"]')).toHaveText(
+      "Pemba: “Camp 1. Now the hardest part: sitting and doing nothing.”",
+    );
     await expect(notice(page)).toContainText(/5,8\d\d m · 06:2\d/);
     await expect(notice(page)).toContainText(/Base Camp to Camp 1: 3 h 2\d min\./);
     await expect(notice(page)).toContainText("Climbers take 3 to 7 hours the first time.");

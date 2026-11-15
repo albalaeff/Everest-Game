@@ -310,7 +310,7 @@ export class SherpaVoice {
       this.wait("first-ladder", "soon");
     }
     this.noticeDoing(now.sherpa, before.sherpa);
-    this.noticeCrossing(now.onLadder, before.onLadder, now.sherpa.ladder, player, seconds);
+    this.noticeCrossing(now.onLadder, before.onLadder, before.sherpa.ladder, player, seconds);
     if (now.part !== before.part || this.before === null) {
       for (const cue of SherpaVoice.PLACES[now.part ?? ""] ?? []) {
         this.wait(cue, "quiet", Infinity);
@@ -357,7 +357,8 @@ export class SherpaVoice {
     }
   }
 
-  /** The player on a ladder Pemba holds: slow on it a while, and off it with no slip. */
+  /** The player on a ladder: slow on it a while; and off one Pemba held the line of, with no
+   * slip on it. */
   private noticeCrossing(
     on: string | null,
     was: string | null,

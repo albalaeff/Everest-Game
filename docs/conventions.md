@@ -9,6 +9,7 @@ Every change to this codebase follows the rules in this file, and those of each 
 | the body: `src/simulation/body/`, and the numbers `src/content/body-facts.ts` hands it | [conventions/body.md](conventions/body.md) |
 | the input layer: `src/input/` | [conventions/input.md](conventions/input.md) |
 | the slope physics: `src/physics/` | [conventions/slope-physics.md](conventions/slope-physics.md) |
+| the agents: `src/agents/` | [conventions/agents.md](conventions/agents.md) |
 | the rendering and the page: `src/rendering/`, `src/page/` | [conventions/rendering.md](conventions/rendering.md) |
 | the room server: `src/room/`, and the page's `RoomClient` | [conventions/room-server.md](conventions/room-server.md) |
 | what the player sees, hears or touches: `src/rendering/`, `src/interface/`, `src/input/`, `src/page/`, `index.html`, `src/style.css`, the texts in `content/` | [guidelines.md](guidelines.md), the design guidelines, and its page for the change |

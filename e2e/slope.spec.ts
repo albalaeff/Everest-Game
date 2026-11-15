@@ -130,7 +130,7 @@ test.describe("on a screen of 630 by 360", () => {
     expect(await pair(page, "camera")).toEqual([10, 0]);
   });
 
-  test("the player's climber has no mark over it while only their teammate shares the screen", async ({
+  test("the player's climber has no mark over it while only their Sherpa shares the screen", async ({
     page,
   }) => {
     await openTheGame(page);

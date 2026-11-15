@@ -262,6 +262,35 @@ describe("SherpaVoice: Pemba's lines, for the moment (#212)", () => {
     expect(heard).toEqual(["set-off.1", "first-ladder.1", "holding.1", "safe.1", "going-on.1"]);
   });
 
+  it("says so when the player crosses a ladder whose line he holds without a slip, twice a climb at most", () => {
+    const { world, heard, play } = listening();
+    play(8);
+    const crossing = (slip: boolean): void => {
+      world.view = { ...world.view, doing: "holding", ladder: "long", client: "player" };
+      world.playerView = standing({ ladder: "long" });
+      play(slip ? 1 : 3);
+      if (slip) {
+        world.playerView = standing({ ladder: "long", falling: true, hanging: true });
+        play(2);
+        world.playerView = standing({ ladder: "long" });
+        play(1);
+      }
+      world.playerView = standing();
+      world.view = { ...world.view, doing: "leading", ladder: null, client: null };
+      play(25);
+    };
+
+    crossing(true);
+    crossing(false);
+    crossing(false);
+    crossing(false);
+
+    expect(heard.filter((name) => name.startsWith("good-crossing"))).toEqual([
+      "good-crossing.1",
+      "good-crossing.2",
+    ]);
+  });
+
   it("says he has the player when they hang near him, to climb when he's far, and counts as he hauls", () => {
     const near = listening();
     near.play(8);
