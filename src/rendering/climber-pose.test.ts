@@ -700,6 +700,30 @@ describe("ClimberPose", () => {
     }
   });
 
+  it("doesn't pull on the jumar on a ladder, up a wall or across a crevasse: the weight is on the rungs, and the rope only backs them up", () => {
+    const rope = { jumar: { x: 0, y: 0 }, sliding: true };
+    const up = new ClimberPose();
+    const upOn = (y: number): PoseState =>
+      state({ ...rope, ladder: upAWall(y), travelled: y, moving: true });
+    up.advance(5, upOn(0));
+    const upAWallPulls = Array.from(
+      { length: 600 },
+      (_, frame) => up.advance(FRAME, upOn((frame + 1) * 0.006)).pull,
+    );
+    // A crevasse crossed at an angle, its far lip higher: as steep as ground the arm pulls on.
+    const rising = (x: number): LadderFooting => ({ ...across(x), way: { x: 0.8, y: 0.6 } });
+    const acrossPulls = walk(
+      300,
+      (x) => ({ ...rope, ladder: rising(x) }),
+      (x) => 0.75 * x,
+    )
+      .slice(60)
+      .map((frame) => frame.pose.pull);
+
+    expect(Math.max(...upAWallPulls)).toBe(0);
+    expect(Math.max(...acrossPulls)).toBe(0);
+  });
+
   it("pulls while the jumar grips the rope, never while the hand slides it on (#232)", () => {
     const jumar = (frame: Frame): Joint => inWorld(frame, frame.pose.jumar ?? frame.pose.pelvis);
     const frames = walk(300, { jumar: { x: 0.45, y: 1 }, sliding: true }, (x) => 0.8 * x).slice(60);
