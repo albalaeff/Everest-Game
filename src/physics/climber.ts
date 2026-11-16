@@ -105,6 +105,11 @@ export interface ClimberView {
    * (#197): on the front points of a face, on a ladder bouncing hard, or on blue ice steeper than
    * a flat foot holds on; nought on the move, and anywhere else. */
   readonly stillChance: number;
+  /** What of their ropes held them back in the last step, as their key took them on (#247): the
+   * jumar gripping its rope (`jumar`), or a rope's length past its anchor, which no carabiner
+   * runs past (`rope`); none where they stepped or stood, or a wall or a ladder's end stopped
+   * them. The coach reads it. */
+  readonly heldBack: "jumar" | "rope" | null;
   /** Which way along the slope they face: the way they last walked, up the route to begin with;
    * and whether they've turned out of it to face the viewer, standing (#235). */
   readonly facing: Way;
@@ -223,6 +228,9 @@ export type ClimberSave = {
    * going on; and the chance of slipping standing still, nought where it's missing. */
   readonly clipping?: readonly ClippingSave[];
   readonly stillChance?: number;
+  /** Missing where nothing held them back in the last step, and from the saves of builds before
+   * #247. */
+  readonly heldBack?: "jumar" | "rope";
   /** Missing from the saves of builds before the turn to the viewer (#235): facing up the route,
    * and not turned. */
   readonly facing?: Way;
@@ -516,6 +524,8 @@ export class Climber {
    * they took a step in it. */
   private clipping: readonly ClippingSave[] = [];
   private stillChance = 0;
+  /** What of their ropes held them back in the last step, if anything did (#247). */
+  private heldBack: "jumar" | "rope" | null = null;
   /** Which way along the slope they face, and whether they've turned to face the viewer (#235). */
   private facing: Way = 1;
   private towardViewer = false;
@@ -607,6 +617,7 @@ export class Climber {
     );
     climber.clipping = save.clipping ?? [];
     climber.stillChance = save.stillChance ?? 0;
+    climber.heldBack = save.heldBack ?? null;
     climber.facing = save.facing ?? 1;
     climber.towardViewer = save.towardViewer ?? false;
     return climber;
@@ -640,6 +651,7 @@ export class Climber {
       ...(this.lowering === null ? {} : { lowering: this.lowering.save() }),
       ...(this.clipping.length === 0 ? {} : { clipping: this.clipping }),
       ...(this.stillChance > 0 ? { stillChance: this.stillChance } : {}),
+      ...(this.heldBack === null ? {} : { heldBack: this.heldBack }),
       ...(this.facing === 1 ? {} : { facing: this.facing }),
       ...(this.towardViewer ? { towardViewer: true } : {}),
     };
@@ -681,6 +693,7 @@ export class Climber {
       gear: this.gear,
       clipping: this.clipping[0]?.cowstail ?? null,
       stillChance: this.stillChance,
+      heldBack: this.heldBack,
       facing: this.facing,
       towardViewer: this.towardViewer,
     };
@@ -810,6 +823,7 @@ export class Climber {
     this.exertion = 0;
     this.slipChance = 0;
     this.stillChance = 0;
+    this.heldBack = null;
     this.pulling = false;
     this.took = false;
     const { swing } = this;
@@ -1368,7 +1382,7 @@ export class Climber {
     const stop = slope.stopAhead(this.along, way);
     const walked = this.along + way * speed * SimulationClock.STEP_SECONDS;
     const along = way > 0 ? Math.min(walked, stop) : Math.max(walked, stop);
-    if (this.ropesLet(terrain.point(along), slope)) {
+    if (this.mayStep(terrain.point(along), slope)) {
       const metres = Math.abs(along - this.along);
       this.along = along;
       this.exertion = step.exertion;
@@ -1430,7 +1444,7 @@ export class Climber {
     const room = Math.abs(end - this.along);
     const metres = Math.min(speed * SimulationClock.STEP_SECONDS, room);
     const next = this.along + way * metres;
-    if (!this.ropesLet(terrain.point(next), slope)) {
+    if (!this.mayStep(terrain.point(next), slope)) {
       return;
     }
     this.along = metres >= room - Climber.EXACT ? end : next;
@@ -1456,7 +1470,7 @@ export class Climber {
     const end = ladder.end(way);
     const climbed = rung + way * speed * SimulationClock.STEP_SECONDS;
     const next = way > 0 ? Math.min(climbed, end.rung) : Math.max(climbed, end.rung);
-    if (!this.ropesLet(ladder.point(next), slope)) {
+    if (!this.mayStep(ladder.point(next), slope)) {
       return;
     }
     const { bounce, crampon } = slope.settings.footing;
@@ -1485,10 +1499,31 @@ export class Climber {
 
   /** Whether every rope they're clipped to lets them stand at `foot`. */
   private ropesLet(foot: Point, slope: Slope): boolean {
+    return this.holder(foot, slope) === null;
+  }
+
+  /** Whether their ropes let them step to `foot`, the step their key asks for; if not, what held
+   * them back is noted for their view (#247). */
+  private mayStep(foot: Point, slope: Slope): boolean {
+    const holder = this.holder(foot, slope);
+    if (holder !== null) {
+      this.heldBack = holder;
+    }
+    return holder === null;
+  }
+
+  /** What of their ropes keeps them from `foot`: a rope's length, which no carabiner runs past,
+   * where even a running one wouldn't let them; else the jumar, gripping where it is; none where
+   * every rope lets them. */
+  private holder(foot: Point, slope: Slope): "jumar" | "rope" | null {
     const { cowstail } = slope.settings;
-    return this.carabiners.every((carabiner) =>
-      carabiner.lets(foot, cowstail, this.grips(carabiner)),
+    const refusing = this.carabiners.filter(
+      (carabiner) => !carabiner.lets(foot, cowstail, this.grips(carabiner)),
     );
+    if (refusing.length === 0) {
+      return null;
+    }
+    return refusing.some((carabiner) => !carabiner.lets(foot, cowstail, false)) ? "rope" : "jumar";
   }
 
   /** After a step of `metres` `ahead` at `speed`, from `on` the rung it ended on, if any: the
@@ -1755,7 +1790,7 @@ export class Climber {
     const speed = ice.speed * this.stride * this.technique * (twoTools ? 1 : ice.oneTool);
     const metres = Math.min(speed * SimulationClock.STEP_SECONDS, room);
     const next = this.along + way * metres;
-    if (!this.ropesLet(terrain.point(next), slope)) {
+    if (!this.mayStep(terrain.point(next), slope)) {
       return;
     }
     const ahead = terrain.ahead(this.along, way);

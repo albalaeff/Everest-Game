@@ -33,9 +33,17 @@
       </header>
       <p id="hint-click"></p>
       <p id="hint-tap"></p>
-      <p id="coach" role="status" aria-live="polite" hidden>
-        <span data-device="pc"></span>
-        <span data-device="touch"></span>
+      <div id="coach" role="status" aria-live="polite" hidden>
+        <div class="coach__body">
+          <p class="coach__words" data-device="pc"></p>
+          <p class="coach__words" data-device="touch"></p>
+          <ol class="coach__steps" hidden></ol>
+          <ul class="coach__gear" hidden></ul>
+        </div>
+      </div>
+      <p id="mark" aria-hidden="true" hidden>
+        <span class="mark__ring"></span>
+        <span class="mark__name"></span>
       </p>
       <p id="pointer" aria-hidden="true" hidden>
         <span class="pointer__ring"></span>
@@ -216,6 +224,31 @@
         />
         <path d="M37.8 18.5h2.4M37.5 21h2.4M37.2 23.5h2.4" stroke="#0b1830" stroke-width="1" />
         <circle cx="34" cy="58" r="1.8" fill="#0b1830" />
+      </symbol>
+      <!-- The carabiner at the end of the second cowstail, on the rope through its top (#247). -->
+      <symbol id="art-carabiner" viewBox="0 0 64 64">
+        <path d="M41 2v60" fill="none" stroke="#ff8f45" stroke-width="4" stroke-linecap="round" />
+        <path
+          d="M27.5 33.5c-2 9-9 14-13.5 28.5"
+          fill="none"
+          stroke="#4aa3ff"
+          stroke-width="4.5"
+          stroke-linecap="round"
+        />
+        <g transform="translate(44 5) rotate(35)">
+          <rect
+            x="-8.5"
+            y="0"
+            width="17"
+            height="31"
+            rx="8.5"
+            fill="none"
+            stroke="#c9d6e6"
+            stroke-width="4.5"
+          />
+          <path d="M6.2 9.5h4.6M6.2 21.5h4.6" stroke="#0b1830" stroke-width="1.6" />
+        </g>
+        <path d="M41 2v9.5" fill="none" stroke="#ff8f45" stroke-width="4" stroke-linecap="round" />
       </symbol>
       <symbol id="art-ice-tool" viewBox="0 0 64 64">
         <path

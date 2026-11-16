@@ -103,6 +103,64 @@ describe("SlopePhysics: anchors between ropes", () => {
   });
 });
 
+describe("SlopePhysics: what held a climber back (#247)", () => {
+  /** A rope along the flat to the foot of `TestMountain.WALL`'s wall, its ladder up the wall. */
+  const toTheWall = (along: number): SlopeLayout =>
+    TestMountain.WALL.layout(
+      [{ id: "anna", along }],
+      [{ id: "flat", from: 10, to: 20, length: 10.5 }],
+      [{ id: "wall", from: 20, to: 30 }],
+    );
+
+  it("says the jumar held back a climber who walks on without sliding it", () => {
+    const climb = new Climb(TestMountain.CALM, onTheLine(up(15)));
+
+    climb.play(600, [clip("anna", "first"), clip("anna", "second"), walk("anna", "right")]);
+
+    expect(climb.physics.climber("anna")).toMatchObject({ moving: false, heldBack: "jumar" });
+  });
+
+  it("says the rope held back one who slid the jumar up to its anchor, and nothing one on the move", () => {
+    const going = new Climb(TestMountain.CALM, onTheLine(up(20)));
+    going.play(20, [clip("anna", "first"), jumar("anna", true), walk("anna", "right")]);
+    const held = toTheAnchor();
+
+    expect(going.physics.climber("anna")).toMatchObject({ moving: true, heldBack: null });
+    expect(held.physics.climber("anna")).toMatchObject({ moving: false, heldBack: "rope" });
+  });
+
+  it("says the rope held back one who climbs a ladder off the end of the rope they came on", () => {
+    const climb = new Climb(TestMountain.CALM, toTheWall(20));
+
+    climb.play(200, [clip("anna", "first"), jumar("anna", true), walk("anna", "up")]);
+    const anna = climb.physics.climber("anna");
+
+    // Two cowstails and the rope's half metre of slack up the 10 m wall, and no higher.
+    expect(anna).toMatchObject({ ladder: "wall", moving: false, heldBack: "rope" });
+    expect(anna.y).toBeGreaterThan(1);
+    expect(anna.y).toBeLessThan(3);
+  });
+
+  it("says nothing held back one whom a wall stops, nor one standing still", () => {
+    const climb = new Climb(TestMountain.CALM, toTheWall(17));
+    climb.play(200, [clip("anna", "first"), jumar("anna", true), walk("anna", "right")]);
+    const atTheWall = climb.physics.climber("anna");
+    climb.play(2, [walk("anna", "stop"), jumar("anna", false)]);
+
+    expect(atTheWall).toMatchObject({ x: 20, moving: false, heldBack: null });
+    expect(climb.physics.climber("anna").heldBack).toBeNull();
+  });
+
+  it("keeps what held them back through a save, through JSON", () => {
+    const held = toTheAnchor();
+
+    const save = JSON.parse(JSON.stringify(held.expedition.save())) as ExpeditionSave;
+    const resumed = new Climb(TestMountain.CALM, save);
+
+    expect(resumed.physics.climber("anna").heldBack).toBe("rope");
+  });
+});
+
 describe("SlopePhysics: the jumar", () => {
   it("grips where it's let go: its climber goes no further than a cowstail and the slack", () => {
     const climb = new Climb(TestMountain.CALM, onTheLine(up(15)));

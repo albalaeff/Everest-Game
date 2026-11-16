@@ -17,6 +17,10 @@ import { CoachArrow } from "../interface/coach-arrow";
 import type { PointerTextName } from "../interface/coach-arrow";
 import { CoachCard } from "../interface/coach-card";
 import type { CoachTextName } from "../interface/coach-card";
+import type { GearTextName } from "../interface/coach-gear";
+import { CoachMark } from "../interface/coach-mark";
+import type { MarkTextName } from "../interface/coach-mark";
+import type { StepTextName } from "../interface/coach-steps";
 import { Debrief } from "../interface/debrief";
 import type { DebriefTextName } from "../interface/debrief";
 import { SherpaBubble } from "../interface/sherpa-bubble";
@@ -72,8 +76,11 @@ export interface PageTexts {
   readonly camps: Texts;
   /** Your climber's words: its questions, their choices and the guide's lines. */
   readonly climber: Texts;
-  /** The coach's tips, for a keyboard and for touch (#192), and its arrow's words (#233). */
-  readonly coach: Texts<CoachTextName | PointerTextName>;
+  /** The coach's tips, for a keyboard and for touch (#192), its arrow's words (#233), and a
+   * changeover's steps, the gear's lines and the anchor's mark (#247). */
+  readonly coach: Texts<
+    CoachTextName | PointerTextName | StepTextName | GearTextName | MarkTextName
+  >;
   /** The debrief's words, and the death's (#194). */
   readonly debrief: Texts<DebriefTextName>;
   /** The gear check's words (#196). */
@@ -324,8 +331,10 @@ export class GamePage {
     );
     const coached = new CoachedClimb(physics, rules.hazards, rules.lamps, player, rules.jolts);
     const coach = new CoachCard(window.document, texts.coach, new Coach(this.storage()), coached);
-    // The tip's arrow on the slope, at the place it's about (#233).
+    // The tip's arrow on the slope, at the place it's about (#233), and the ring on a changeover's
+    // anchor (#247).
     const arrow = new CoachArrow(window, texts.coach, coached, (x, y) => scene.screenAt(x, y));
+    const mark = new CoachMark(window, texts.coach, (x, y) => scene.screenAt(x, y));
     // Pemba, the climbers' Sherpa, if the climb has him (#212): his voice in a bubble over him.
     const sherpa = scenario.npcs?.[0] ?? null;
     const voice = new SherpaVoice(
@@ -387,7 +396,8 @@ export class GamePage {
       inventory.update();
       arrival.update(seconds);
       coach.update(seconds);
-      arrow.update(coach.tip);
+      arrow.update(coach.tip, coach.changeover);
+      mark.update(coach.changeover);
       bubble?.update(seconds);
     };
     this.expose({

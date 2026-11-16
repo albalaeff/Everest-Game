@@ -10,6 +10,8 @@ export interface SeenClimber {
   readonly falling: boolean;
   readonly first: string | null;
   readonly second: string | null;
+  /** Which cowstail's carabiner is going onto a rope now, the hands at it (#197). */
+  readonly clipping: "first" | "second" | null;
   readonly ladder: string | null;
   /** Whether they hang on their rope after a fall, to climb back up it (#190). */
   readonly hanging: boolean;
@@ -301,13 +303,40 @@ export async function storeClimb(page: Page, climb: SavedClimb): Promise<void> {
   );
 }
 
+/** A climber in a saved climb: the player, or Pemba (#247). */
+export function savedClimber(climb: SavedClimb, id: string): SavedClimber {
+  const found = climb.rules["slope-physics"].climbers.find((climber) => climber.id === id);
+  if (found === undefined) {
+    throw new Error(`The saved climb has no ${id}`);
+  }
+  return found;
+}
+
 /** The player's climber in a saved climb. */
 export function savedPlayer(climb: SavedClimb): SavedClimber {
-  const player = climb.rules["slope-physics"].climbers.find((climber) => climber.id === "player");
-  if (player === undefined) {
-    throw new Error("The saved climb has no player");
-  }
-  return player;
+  return savedClimber(climb, "player");
+}
+
+/** Presses `key` until the player's `cowstail` is on `rope`, or off it for null (#247): never
+ * while a carabiner is going on, which a press would drop (#197). */
+export async function clipTo(
+  page: Page,
+  key: "KeyE" | "KeyR",
+  cowstail: "first" | "second",
+  rope: string | null,
+): Promise<void> {
+  await expect
+    .poll(
+      async () => {
+        const player = await seen(page, "player");
+        if (player !== null && player[cowstail] !== rope && player.clipping === null) {
+          await page.keyboard.press(key);
+        }
+        return (await seen(page, "player"))?.[cowstail];
+      },
+      { intervals: [1_000], timeout: 20_000 },
+    )
+    .toBe(rope);
 }
 
 /** Stages the climb's training events (#209) in place of those its seed staged: a serac collapse

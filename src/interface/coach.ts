@@ -1,12 +1,15 @@
 import type { ClimberView, LadderCondition, Point } from "../physics";
 import type { HazardKind, HazardZone, JoltKind } from "../simulation";
+import { Changeover } from "./changeover";
 
 /** What the coach can say: the tutorial's tips, each said once where the route first needs it,
- * and the warnings, said whenever they matter. */
+ * but the ropes', said whenever the player is stuck on them, and the warnings, said whenever they
+ * matter. */
 export type CoachTip =
   | "walk"
   | "clip"
   | "anchor"
+  | "rope-end"
   | "jumar"
   | "ladder-up"
   | "ladder-down"
@@ -83,11 +86,14 @@ export interface CoachStorage {
  * do, never by a clock of its own (docs/guidelines/usability.md → Teaching: one thing at a time,
  * where it's needed, then watched). The tutorial teaches each control where the route first needs
  * it, the walk at the start, the clip at the first rope, until both cowstails are on one (#233),
- * the changeover at the first anchor, the
- * ladders, the crossings and the ice, and lets it go once the player has done it, which the
+ * the ladders, the crossings and the ice, and lets it go once the player has done it, which the
  * device keeps, and the same for the ice tools: the first pick at a wall of ice with no ladder,
  * the next ones on it, and the step down onto one from its lip; and the rope down one, where the
- * fixed rope runs down it. The warnings come whenever they
+ * fixed rope runs down it. The ropes' tips come whenever the player is stuck on them (#247): the
+ * jumar whenever its grip is what holds them back, and the changeover (`Changeover`) at a rope's
+ * end, unasked until the first is done and after that wherever the rope holds them back there,
+ * onto the next rope a cowstail at a time, or both off where no next rope is in reach; it stays
+ * while they're at its anchor, until it's done. The warnings come whenever they
  * matter: hanging on the rope, with what gets them out of it (the jumar on the rope, the jumar
  * to clip on, or the tools), down in a crevasse off the rope, a pick that bites poorly, careless steps on
  * blue ice or a ladder (#208), unclipped where a slip is a fall, stopped under the seracs, a crampon come loose and the
@@ -116,8 +122,12 @@ export class Coach {
    * climber is warned; and the chance a metre of slipping past which their steps are careless. */
   private static readonly WALKED = 3;
   private static readonly NEAR_LADDER = 1.5;
-  private static readonly NEAR_ANCHOR = 1.2;
+  private static readonly NEAR_ANCHOR = 1.5;
   private static readonly ICE_AHEAD = 5;
+  /** How far from a changeover's anchor the player goes before the coach lets it go, and how near
+   * two ropes' ends are to share an anchor (#247). */
+  private static readonly LEAVE = 3;
+  private static readonly SAME_ANCHOR = 0.1;
   private static readonly BY_A_CREVASSE = 3;
   private static readonly CARELESS = 0.025;
   /** The tips, most pressing first: the warnings, then the tutorial in the route's order. */
@@ -146,6 +156,7 @@ export class Coach {
     "ice-down",
     "rappel",
     "anchor",
+    "rope-end",
     "jumar",
     "clip",
     "crossing",
@@ -175,14 +186,18 @@ export class Coach {
     "crampon-loose",
     "lamp",
   ]);
+  /** The tutorial's tips that come back whenever the player is stuck on them, learnt or not: the
+   * ropes' (#247). */
+  private static readonly AGAIN: ReadonlySet<CoachTip> = new Set(["anchor", "rope-end", "jumar"]);
 
   private readonly done: Set<CoachTip>;
   private shown: CoachTip | null = null;
   private shownFor = 0;
   /** Where the player stood when the coach first saw them, for the walk. */
   private start: number | null = null;
-  /** The rope whose end the changeover was shown at; the ice the player has been on. */
-  private anchorRope: string | null = null;
+  /** The changeover the player is at, kept until it's over or they leave its anchor (#247); the
+   * ice the player has been on. */
+  private change: Changeover | null = null;
   private onIce = false;
   /** Whether the player was on their tools last frame; and the wall of ice with no ladder they
    * stood at last on their feet, which says how they got onto the ice. */
@@ -201,6 +216,12 @@ export class Coach {
   /** Whether a tip is a warning, said whenever it matters, and not one of the tutorial's. */
   static isWarning(tip: CoachTip): boolean {
     return Coach.WARNINGS.has(tip);
+  }
+
+  /** The changeover the card shows now, or none (#247): its anchor and its steps, for the card,
+   * the arrow and the mark on the anchor. */
+  get changeover(): Changeover | null {
+    return this.shown === "anchor" || this.shown === "rope-end" ? this.change : null;
   }
 
   /** The tip to show after `seconds` more of the climb, or none. */
@@ -243,16 +264,7 @@ export class Coach {
     if (view.first !== null && view.second !== null) {
       this.learn("clip");
     }
-    if (view.first !== null && view.jumarHeld) {
-      this.learn("jumar");
-    }
-    const anchorRope = this.anchorRope;
-    if (
-      anchorRope !== null &&
-      [view.first, view.second].some((rope) => rope !== null && rope !== anchorRope)
-    ) {
-      this.learn("anchor");
-    }
+    this.follow(world, view);
     if (view.ladder !== null) {
       const kind = this.kindOf(world, view.ladder);
       this.learn(kind === "across" ? "crossing" : kind === "up" ? "ladder-up" : "ladder-down");
@@ -286,7 +298,7 @@ export class Coach {
 
   /** Whether a tip is wanted where the player is now. */
   private wants(tip: CoachTip, world: CoachWorld, view: ClimberView, along: number): boolean {
-    if (!Coach.WARNINGS.has(tip) && this.done.has(tip)) {
+    if (!Coach.WARNINGS.has(tip) && !Coach.AGAIN.has(tip) && this.done.has(tip)) {
       return false;
     }
     const clipped = view.first !== null || view.second !== null;
@@ -348,7 +360,9 @@ export class Coach {
       case "ladder-broken":
         return !view.falling && this.byABrokenLadder(world, view);
       case "anchor":
-        return !view.falling && this.atAnAnchor(world, view);
+        return !view.falling && this.change !== null && this.change.next !== null;
+      case "rope-end":
+        return !view.falling && this.change !== null && this.change.next === null;
       case "clip":
         return (
           (view.first === null || view.second === null) &&
@@ -356,7 +370,7 @@ export class Coach {
           world.ropeWithin() !== null
         );
       case "jumar":
-        return view.first !== null && !view.jumarHeld && !view.moving && view.walking !== "stop";
+        return !view.falling && view.heldBack === "jumar";
       case "crossing":
         return this.atLadder(world, view, "across");
       case "ladder-up":
@@ -372,30 +386,62 @@ export class Coach {
     }
   }
 
-  /** Whether the player stands at a rope's end where the next one begins, clipped to the first:
-   * the changeover's place. The rope is kept, so the tip goes once they're on the next one. */
-  private atAnAnchor(world: CoachWorld, view: ClimberView): boolean {
-    for (const id of [view.first, view.second]) {
-      if (id === null) {
+  /** The changeover the player is at (#247): kept while they're at its anchor until it's over,
+   * which learns it; a new one where the end of a rope they're on is within reach, unasked until
+   * the first is done, and wherever that rope holds them back past it. */
+  private follow(world: CoachWorld, view: ClimberView): void {
+    const change = this.change;
+    if (change !== null && change.over(view)) {
+      if (change.next !== null) {
+        this.learn("anchor");
+      }
+      this.change = null;
+    } else if (change !== null && (view.falling || change.away(view) > Coach.LEAVE)) {
+      this.change = null;
+    }
+    if (this.change !== null || view.falling) {
+      return;
+    }
+    const stuck = view.heldBack === "rope";
+    if (stuck || !this.done.has("anchor")) {
+      this.change = this.changeoverAt(world, view, stuck);
+    }
+  }
+
+  /** The changeover due at the end, the way the player faces, of a rope they're on, within reach
+   * of it: onto the rope a clip takes there now, if it's not one of theirs; or, held back there
+   * (`stuck`), onto one that shares the anchor, or off with no next rope in reach. None elsewhere,
+   * nor at a rope's end before a clip there takes another, unless it holds them back. */
+  private changeoverAt(world: CoachWorld, view: ClimberView, stuck: boolean): Changeover | null {
+    const within = world.ropeWithin();
+    const theirs = [view.second, view.first];
+    for (const id of theirs) {
+      const shape = id === null ? [] : world.rope(id);
+      const end = view.facing > 0 ? shape.at(-1) : shape[0];
+      if (id === null || end === undefined) {
         continue;
       }
-      const shape = world.rope(id);
-      const end = shape.at(-1);
-      if (end === undefined || Math.hypot(end.x - view.x, end.y - view.y) > Coach.NEAR_ANCHOR) {
+      if (Math.hypot(end.x - view.x, end.y - view.y) > Coach.NEAR_ANCHOR) {
         continue;
       }
-      const next = world.ropes.some((other) => {
-        const start = world.rope(other)[0];
-        return (
-          other !== id && start !== undefined && Math.hypot(start.x - end.x, start.y - end.y) < 0.1
-        );
-      });
-      if (next) {
-        this.anchorRope = id;
-        return true;
+      const onto = within !== null && !theirs.includes(within) ? within : null;
+      if (onto !== null || stuck) {
+        return new Changeover(end, id, onto ?? this.sharing(world, id, end));
       }
     }
-    return false;
+    return null;
+  }
+
+  /** The rope other than `id` with an end at `anchor`, sharing it, or none. */
+  private sharing(world: CoachWorld, id: string, anchor: Point): string | null {
+    const at = (point: Point | undefined): boolean =>
+      point !== undefined && Math.hypot(point.x - anchor.x, point.y - anchor.y) < Coach.SAME_ANCHOR;
+    return (
+      world.ropes.find((other) => {
+        const shape = world.rope(other);
+        return other !== id && (at(shape[0]) || at(shape.at(-1)));
+      }) ?? null
+    );
   }
 
   /** Whether the player stands at the end of a ladder of `kind` they'd go onto: a crossing's
