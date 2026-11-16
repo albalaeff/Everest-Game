@@ -277,6 +277,15 @@ export class SlopePhysics implements Rule, HazardGround, JoltGround, Legs {
     return this.climberFor(id).liftPoint(this.loaded);
   }
 
+  /** Where a hauler can stand within the haul's reach of to haul a hanging climber up: their way
+   * back up the rope, and off a ladder that stands, its ends (#239); none for one who doesn't
+   * hang. */
+  haulPoints(id: ClimberId): readonly Point[] {
+    return this.climberFor(id)
+      .haulPoints(this.loaded)
+      .map(({ point }) => point);
+  }
+
   /** How hard a ladder bounces now: nought at rest, and on one up a wall. */
   ladderBounce(id: string): number {
     return this.loaded.ladder(id).bounce;

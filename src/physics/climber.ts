@@ -167,12 +167,18 @@ type FallingSave = {
 };
 
 /** Who hauls whom this step (#209): the speed a hanging climber is hauled up at, in m/s, who
- * hauls them (#212), and whether a climber is hauling. */
+ * hauls them (#212), the lip they're hauled up to where it isn't their own way back (#239), and
+ * whether a climber is hauling. */
 export interface Hauls {
   of(climber: Climber): number;
   who(climber: Climber): readonly ClimberId[];
+  to(climber: Climber): number | null;
   by(climber: Climber): boolean;
 }
+
+/** A place a hanging climber can be hauled up to (#239): a hauler stands within the haul's reach
+ * of `point`; `lip` is where along the ground they come up, or none for their own way back. */
+export type HaulPoint = { readonly point: Point; readonly lip: number | null };
 
 /** A climber as saves keep them. */
 export type ClimberSave = {
@@ -526,7 +532,12 @@ export class Climber {
   private static readonly AT_LIP = 0.6;
   private static readonly EXACT = 1e-9;
   /** Nobody hauls anybody. */
-  static readonly NO_HAULS: Hauls = { of: () => 0, who: () => [], by: () => false };
+  static readonly NO_HAULS: Hauls = {
+    of: () => 0,
+    who: () => [],
+    to: () => null,
+    by: () => false,
+  };
 
   /** A climber standing at `along`, still, clipped to nothing, going at `technique`'s share of
    * the speed in crampons and of the pace of a clip, with what they checked of their `kit`. */
@@ -811,7 +822,7 @@ export class Climber {
     }
     if (this.falling !== null) {
       this.clipping = [];
-      this.climbBack(this.falling, slope, hauls.of(this), hauls.who(this));
+      this.climbBack(this.falling, slope, hauls.of(this), hauls.who(this), hauls.to(this));
       return;
     }
     if (hauls.by(this)) {
@@ -1120,6 +1131,7 @@ export class Climber {
     slope: Slope,
     hauled: number,
     haulers: readonly ClimberId[],
+    to: number | null,
   ): void {
     const up = this.walking === "up" || this.walking.startsWith("up-");
     const { from } = falling;
@@ -1128,6 +1140,10 @@ export class Climber {
       up && jumar && this.stride > 0 ? slope.settings.climbBack * this.stride * this.technique : 0;
     if (own + hauled <= 0 || !this.hangs(slope) || from === null) {
       return;
+    }
+    if (hauled > 0 && to !== null && falling.lip === null) {
+      // Hauled from a ladder's end, they come up there, and climb that way too from now (#239).
+      falling.lip = to;
     }
     const { terrain } = slope;
     const { body } = falling;
@@ -1219,6 +1235,30 @@ export class Climber {
     return from.ladder === null
       ? slope.terrain.point(from.along)
       : slope.ladder(from.ladder).point(from.rung);
+  }
+
+  /** Where a hauler can haul them up from (#239): within the haul's reach of their way back up
+   * the rope; and, hanging off a ladder that stands, of either of its ends across a crevasse, or
+   * of its top up a wall: the rope along it is anchored past its ends, and whoever pulls it in at
+   * one brings them up there. None for one who doesn't hang. */
+  haulPoints(slope: Slope): readonly HaulPoint[] {
+    const lift = this.liftPoint(slope);
+    const falling = this.falling;
+    if (lift === null || falling === null) {
+      return [];
+    }
+    const own: HaulPoint = { point: lift, lip: null };
+    const from = falling.from;
+    if (falling.lip !== null || from?.ladder == null) {
+      return [own];
+    }
+    const ladder = slope.ladder(from.ladder);
+    if (ladder.condition === "broken") {
+      return [own];
+    }
+    const ends = ladder.ends.map((along) => ({ point: slope.terrain.point(along), lip: along }));
+    const top = ends.reduce((high, end) => (end.point.y > high.point.y ? end : high));
+    return [own, ...(ladder.across ? ends : [top])];
   }
 
   /** Whether they can haul someone now: holding the haul, on their feet on the ground, alive and

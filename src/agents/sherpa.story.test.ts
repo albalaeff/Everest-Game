@@ -262,6 +262,61 @@ describe("A Sherpa and a client on the rope", () => {
   });
 });
 
+describe("A Sherpa hauling from where he can stand (#239)", () => {
+  it("comes back to the lip of a ladder that broke near his end, stops short of it, and hauls his client out from there", () => {
+    // Pemba 3.5 m past the far lip, as when he leads; the ladder breaks under Anna's step past
+    // its fifth metre, nearer his end than hers.
+    const climb = atTheCrevasse(
+      12,
+      91.5,
+      { ...LADDER, breaks: 5, trainees: ["anna"] },
+      { ...TestMountain.CALM, ladderBreak: { creak: 1, reset: 600 } },
+    );
+    annaCrosses(climb);
+    const broke = climb.until(() => climb.physics.climber("anna").hanging, steps(80));
+    climb.play(1, [walk("anna", "stop")]);
+    const hauling = climb.until(() => climb.physics.climber("pemba").hauling, steps(40));
+    const from = climb.along("pemba");
+    const out = climb.until(() => !climb.physics.climber("anna").falling, steps(120));
+
+    expect(broke).toBe(true);
+    expect(hauling).toBe(true);
+    // He never steps onto the broken ladder: he hauls from the ground by its end.
+    expect(from).toBeGreaterThan(88);
+    expect(from).toBeLessThanOrEqual(89);
+    expect(out).toBe(true);
+    expect(climb.physics.climber("anna").falls.at(-1)).toMatchObject({ broke: true, pulled: true });
+  });
+
+  it("hauls out a client who slipped off the middle of a ladder that stands, from its end on his side, and they come up there", () => {
+    // Anna half way over the 8 m ladder, more than the haul's 3 m from both lips, Pemba across
+    // it and holding its line; then its rungs ice over, and her next step slips.
+    const calm = atTheCrevasse(12, 17);
+    annaCrosses(calm);
+    const half = calm.until(() => calm.physics.climber("anna").x >= 24, steps(120));
+    const icy = new GuidedClimb(calm.expedition.save(), TestMountain.ICY_LADDERS);
+    const slipped = icy.until(() => icy.physics.climber("anna").hanging, steps(20));
+    const at = icy.physics.climber("anna").x;
+    icy.play(1, [walk("anna", "stop")]);
+    const hauling = icy.until(() => icy.physics.climber("pemba").hauling, steps(40));
+    const out = icy.until(() => !icy.physics.climber("anna").falling, steps(200));
+    const anna = icy.physics.climber("anna");
+
+    expect(half).toBe(true);
+    expect(slipped).toBe(true);
+    expect(at).toBeGreaterThan(23);
+    expect(at).toBeLessThan(25);
+    expect(hauling).toBe(true);
+    expect(icy.physics.climber("pemba").ladder).toBeNull();
+    expect(out).toBe(true);
+    // Up at the far lip, by him, on the ground: not back on the rung.
+    expect(anna).toMatchObject({ ladder: null, dead: false });
+    expect(anna.x).toBeCloseTo(28, 1);
+    expect(icy.along("anna")).toBeCloseTo(88, 1);
+    expect(anna.falls.at(-1)).toMatchObject({ held: true, pulled: true });
+  });
+});
+
 describe("A Sherpa under a hazard", () => {
   it("backs off out from under a serac cracking over him, as his client nears it", () => {
     const climb = new GuidedClimb({

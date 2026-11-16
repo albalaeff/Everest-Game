@@ -276,30 +276,34 @@ export class Slope {
     return Math.ceil(seconds / SimulationClock.STEP_SECONDS);
   }
 
-  /** Who hauls whom this step (#209): each climber holding the haul hauls the one hanging whose
-   * way up is nearest them, within the haul's reach; each one hauled comes up at the haul's speed
-   * times each hauler's stride. */
+  /** Who hauls whom this step (#209): each climber holding the haul hauls the one hanging whom
+   * they can haul from nearest, within the haul's reach of their way up or, off a ladder that
+   * stands, of its end (`Climber.haulPoints`, #239); each one hauled comes up at the haul's speed
+   * times each hauler's stride, at the lip their first hauler pulls them to. */
   private hauls(climbers: readonly Climber[]): Hauls {
     const { reach, speed } = this.settings.haul;
     const hauled = new Map<Climber, number>();
     const haulers = new Map<Climber, ClimberId[]>();
+    const lips = new Map<Climber, number | null>();
     const hauling = new Set<Climber>();
     for (const hauler of climbers) {
       const at = hauler.hauler(this);
       if (at === null) {
         continue;
       }
-      let nearest: { readonly climber: Climber; readonly away: number } | null = null;
+      let nearest: {
+        readonly climber: Climber;
+        readonly away: number;
+        readonly lip: number | null;
+      } | null = null;
       for (const other of climbers) {
-        const lift = other === hauler ? null : other.liftPoint(this);
-        if (lift === null) {
-          continue;
-        }
-        const x = lift.x - at.x;
-        const y = lift.y - at.y;
-        const away = Math.sqrt(x * x + y * y);
-        if (away <= reach && away < (nearest?.away ?? Infinity)) {
-          nearest = { climber: other, away };
+        for (const { point, lip } of other === hauler ? [] : other.haulPoints(this)) {
+          const x = point.x - at.x;
+          const y = point.y - at.y;
+          const away = Math.sqrt(x * x + y * y);
+          if (away <= reach && away < (nearest?.away ?? Infinity)) {
+            nearest = { climber: other, away, lip };
+          }
         }
       }
       if (nearest !== null) {
@@ -307,11 +311,15 @@ export class Slope {
         const before = hauled.get(nearest.climber) ?? 0;
         hauled.set(nearest.climber, before + speed * hauler.haulStride);
         haulers.set(nearest.climber, [...(haulers.get(nearest.climber) ?? []), hauler.id]);
+        if (!lips.has(nearest.climber)) {
+          lips.set(nearest.climber, nearest.lip);
+        }
       }
     }
     return {
       of: (climber) => hauled.get(climber) ?? 0,
       who: (climber) => haulers.get(climber) ?? [],
+      to: (climber) => lips.get(climber) ?? null,
       by: (climber) => hauling.has(climber),
     };
   }
