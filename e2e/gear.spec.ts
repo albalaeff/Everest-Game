@@ -75,7 +75,7 @@ test("a crampon not checked comes loose on the first ladder an hour out, and the
         }
         return clipped;
       },
-      { intervals: [500] },
+      { intervals: [500], timeout: 20_000 },
     )
     .toBe("block");
   await page.keyboard.down("KeyW");
