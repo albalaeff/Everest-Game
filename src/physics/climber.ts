@@ -892,7 +892,8 @@ export class Climber {
   /**
    * Standing still where a stance is hard (#197): on the front points, their calves tiring, on a
    * face, the more on the axe alone and on a pick that bites poorly, and on blue ice steeper than
-   * a crampon's flat foot holds on; and on a ladder, by how hard it bounces past what a crossing's
+   * a crampon's flat foot holds on, under their feet: the flat at a crevasse's lip or a wall's
+   * foot is no such stance; and on a ladder, by how hard it bounces past what a crossing's
    * own sway does. Each has a chance a second of slipping, divided by how sure-footed they are;
    * anywhere else, standing still never slips.
    */
@@ -908,7 +909,9 @@ export class Climber {
     } else if (slope.onIce(this.along)) {
       const ahead = slope.terrain.ahead(this.along, 1);
       const behind = slope.terrain.ahead(this.along, -1);
-      const steepness = Math.max(
+      // The ground under their feet: at a corner, a lip or a wall's foot, the gentler side is
+      // the one they stand on (#237).
+      const steepness = Math.min(
         Math.abs(Steepness.ofWay(ahead.x, ahead.y).sine),
         Math.abs(Steepness.ofWay(behind.x, behind.y).sine),
       );
