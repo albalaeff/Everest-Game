@@ -372,6 +372,21 @@ describe("Where standing still isn't safe", () => {
     expect(flat.physics.climber("anna")).toMatchObject({ falling: false, stillChance: 0 });
   });
 
+  it("never slips a climber standing on the flat at a crevasse's lip or at a wall's foot: the ice under their feet is flat (#237)", () => {
+    // The crevasse's near lip is 20 m along the ground and its far lip 83; the wall's foot 20.
+    for (const [mountain, along] of [
+      [TestMountain.CREVASSE, 20],
+      [TestMountain.CREVASSE, 83],
+      [TestMountain.WALL, 20],
+    ] as const) {
+      const slips = SEEDS.filter((seed) => slipped(standing(mountain, along, seed), "anna"));
+      const stood = standing(mountain, along, 1).physics.climber("anna");
+
+      expect(slips).toEqual([]);
+      expect(stood).toMatchObject({ falling: false, stillChance: 0 });
+    }
+  });
+
   it("slips a climber standing on a ladder while another hurries onto it, and never one standing on it alone", () => {
     /** Anna 2 m onto the long ladder, standing, and Ben, if he comes, hurrying onto it behind
      * her, both clipped to the rope along it. */
