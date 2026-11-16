@@ -316,9 +316,11 @@ export class ClimberFigure extends Container {
     if (pose.jumar !== null) {
       this.holding.on.x = this.first.x;
       this.holding.on.y = this.first.y;
-      // Hauling, the rope runs through both hands, pulled in hand over hand (#239).
+      // Hauling, the rope runs through both hands, pulled in hand over hand (#239); held tight
+      // with nobody on it, a ladder's line, it's in both hands too.
       const [near, far] = pose.arms;
-      const grip = climber.hauling
+      const inHand = climber.haulHeld && !climber.falling && !climber.dead;
+      const grip = inHand
         ? { x: (near.end.x + far.end.x) / 2, y: (near.end.y + far.end.y) / 2 }
         : pose.jumar;
       this.inLayer(grip, this.holding.drawn);

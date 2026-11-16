@@ -60,6 +60,9 @@ export interface PoseState {
   readonly footing: number;
   /** Whether they're hauling a partner up the rope, braced at the edge (#209). */
   readonly hauling: boolean;
+  /** Whether they hold a rope tight by hand with nobody to haul, braced: a ladder's line, held for
+   * whoever crosses (#212). */
+  readonly bracing?: boolean;
   /** Whether the rope holds them off the ground, as the physics has it: hanging on it after a
    * fall, or hauled up it (#239). They hang upright then, wherever the carabiner is drawn. Not
    * said, a carabiner above them in the air says so. */
@@ -414,7 +417,14 @@ export class ClimberPose {
   /** Hauling a partner up the rope (#209): leaning back this far, sunk this far into the knees,
    * the hands reaching this far ahead at hip height, hand over hand so many times a second, this
    * far each pull. */
-  private static readonly HAUL = { lean: -0.38, sink: 0.1, ahead: 0.42, hz: 1.1, pull: 0.16 };
+  private static readonly HAUL = {
+    lean: -0.38,
+    sink: 0.1,
+    ahead: 0.42,
+    hz: 1.1,
+    pull: 0.16,
+    hold: 0.55,
+  };
   private static readonly WOBBLE = {
     from: 0.7,
     lean: 0.16,
@@ -837,17 +847,21 @@ export class ClimberPose {
    * on their heels, sunk into their knees, both hands on the rope ahead of them pulling it in,
    * hand over hand. Not hauling, as made. */
   private hauling(made: Made, state: PoseState, mode: Mode): Made {
-    if (!state.hauling || mode !== "walk") {
+    const bracing = state.bracing === true && !state.hauling;
+    if ((!state.hauling && !bracing) || mode !== "walk") {
       return made;
     }
     const { HAUL } = ClimberPose;
     const { targets } = made;
-    const lean = HAUL.lean;
-    const pelvis = { x: targets.pelvis.x, y: targets.pelvis.y - HAUL.sink };
-    const cycle = 2 * Math.PI * HAUL.hz * this.time;
+    // Holding a rope tight with nobody on it: the same stance, eased, the hands still on it.
+    const hold = bracing ? HAUL.hold : 1;
+    const lean = HAUL.lean * hold;
+    const pelvis = { x: targets.pelvis.x, y: targets.pelvis.y - HAUL.sink * hold };
+    const cycle = bracing ? 0 : 2 * Math.PI * HAUL.hz * this.time;
+    const pull = bracing ? 0 : HAUL.pull;
     const hand = (phase: number): Joint => ({
-      x: pelvis.x + HAUL.ahead - HAUL.pull * (0.5 + 0.5 * Math.sin(cycle + phase)),
-      y: pelvis.y + 0.12 + 0.05 * Math.cos(cycle + phase),
+      x: pelvis.x + HAUL.ahead - pull * (0.5 + 0.5 * Math.sin(cycle + phase)),
+      y: pelvis.y + 0.12 + (bracing ? 0.04 * Math.cos(phase) : 0.05 * Math.cos(cycle + phase)),
     });
     const hands: readonly [Joint, Joint] = [hand(0), hand(Math.PI)];
     return { ...made, targets: { ...targets, pelvis, lean, hands } };

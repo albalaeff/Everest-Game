@@ -133,6 +133,7 @@ export class ClimberReading {
       dead: view.dead,
       tiredness: body.tiredness,
       hauling: view.hauling,
+      bracing: view.haulHeld && !view.hauling && !view.falling && !view.dead,
       hanging: view.hanging,
       pace: body.pace,
       ground: this.ground,
@@ -243,6 +244,21 @@ export class ClimberReading {
       this.facingNow = -1;
     } else if (walking.includes("right")) {
       this.facingNow = 1;
+    }
+    // Holding the haul, they face along the rope in their hands, toward its far end: the
+    // crevasse its line crosses, and whoever hangs on it or crosses by it.
+    if (view.haulHeld && view.first !== null) {
+      const points = this.slope.rope(view.first);
+      const [start, end] = [points[0], points[points.length - 1]];
+      if (start !== undefined && end !== undefined) {
+        const far =
+          Math.hypot(start.x - at.x, start.y - at.y) >= Math.hypot(end.x - at.x, end.y - at.y)
+            ? start
+            : end;
+        if (Math.abs(far.x - at.x) > ClimberReading.WALL_SIDE_METRES) {
+          this.facingNow = far.x > at.x ? 1 : -1;
+        }
+      }
     }
   }
 

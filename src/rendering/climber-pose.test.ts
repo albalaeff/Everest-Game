@@ -940,4 +940,30 @@ describe("ClimberPose", () => {
     }
     expect(Math.max(...nearHands) - Math.min(...nearHands)).toBeGreaterThan(0.1);
   });
+
+  it("braces to hold a rope tight with nobody to haul: leaning back less, both hands on it, still", () => {
+    const standing = new ClimberPose();
+    const hauling = new ClimberPose();
+    const holding = new ClimberPose();
+    let still: Pose = standing.advance(FRAME, state());
+    let pulled: Pose = hauling.advance(FRAME, state({ hauling: true }));
+    let held: Pose = holding.advance(FRAME, state({ bracing: true }));
+    const nearHands: number[] = [];
+    for (let frame = 0; frame < 120; frame += 1) {
+      still = standing.advance(FRAME, state());
+      pulled = hauling.advance(FRAME, state({ hauling: true }));
+      held = holding.advance(FRAME, state({ bracing: true }));
+      if (frame >= 60) {
+        nearHands.push(held.arms[0].end.x);
+      }
+    }
+
+    expect(held.lean).toBeLessThan(still.lean - 0.1);
+    expect(held.lean).toBeGreaterThan(pulled.lean);
+    expect(held.pelvis.y).toBeLessThan(still.pelvis.y);
+    for (const arm of held.arms) {
+      expect(arm.end.x).toBeGreaterThan(held.pelvis.x + 0.15);
+    }
+    expect(Math.max(...nearHands) - Math.min(...nearHands)).toBeLessThan(0.01);
+  });
 });
