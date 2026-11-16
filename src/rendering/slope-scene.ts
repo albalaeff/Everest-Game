@@ -174,13 +174,14 @@ export class SlopeScene {
   }
 
   /** While a hazard goes, the whole picture shakes, a few centimetres of slope each way from
-   * frame to frame; it's still otherwise. */
+   * frame to frame, as hard as what's coming down shakes it (#229); it's still otherwise. */
   private shake(): void {
-    if (this.slope?.shaking !== true) {
+    const shaking = this.slope?.shaking ?? 0;
+    if (shaking <= 0) {
       this.app.stage.position.set(0, 0);
       return;
     }
-    const pixels = SlopeScene.SHAKE_METRES * this.camera.pixelsPerMetre;
+    const pixels = SlopeScene.SHAKE_METRES * shaking * this.camera.pixelsPerMetre;
     const step = (this.frames % SlopeScene.SHAKE_FRAMES) - (SlopeScene.SHAKE_FRAMES - 1) / 2;
     const [x, y] = this.frames % 2 === 0 ? [step, -step / 2] : [-step / 2, step];
     this.app.stage.position.set(x * pixels, y * pixels);

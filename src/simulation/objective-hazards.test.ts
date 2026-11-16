@@ -17,8 +17,9 @@ import { TestGround } from "./testing/test-ground";
  * of 10 a step is half a mountain second, so 72 strikes an hour is a chance of 1 in 100 a step. */
 const COMPRESSION = 10;
 const HOUR = 3600;
-/** Nobody it catches dies: the tests of who's caught leave death to the tests of death. */
-const HARMLESS = { deadly: 0, deadlyClipped: 0 };
+/** Nobody it catches dies: the tests of who's caught leave death to the tests of death; and
+ * nothing falls from above but where a test says (#229). */
+const HARMLESS = { deadly: 0, deadlyClipped: 0, fall: 0 };
 const SETTINGS: HazardSettings = {
   kinds: {
     serac: { rate: 72, warmth: 5, snow: 1, wind: 1, warning: 5, ...HARMLESS },
@@ -207,6 +208,26 @@ describe("ObjectiveHazards", () => {
     expect(ground.kills.length).toBeLessThan(250);
   });
 
+  it("lets a serac's ice fall its fall's time after the crack, life size, and says when it breaks off (#229)", () => {
+    const falling: HazardSettings = {
+      ...WARNED,
+      kinds: { ...WARNED.kinds, serac: { ...WARNED.kinds.serac, fall: 1 } },
+    };
+    const ground = new TestGround({ first: 25, second: 0 });
+    const exposure = new Exposure(ground, "14:00", under(SERAC), falling);
+
+    exposure.play(1);
+    const warned = exposure.hazards.warnings;
+    exposure.play(29);
+    const before = exposure.hazards.strikes.length;
+    exposure.play(1);
+
+    // Ten steps of crack, then a second of play, twenty steps, as the ice falls.
+    expect(warned).toEqual([{ zone: "serac", kind: "serac", began: 0, breaks: 10, comes: 30 }]);
+    expect(before).toBe(0);
+    expect(exposure.hazards.strikes).toMatchObject([{ step: 30, climbers: ["first"] }]);
+  });
+
   it("warns before a serac comes down, and spares whoever gets clear in time", () => {
     const ground = new TestGround({ first: 22, second: 28 });
     const exposure = new Exposure(ground, "14:00", under(SERAC), WARNED);
@@ -297,6 +318,25 @@ describe("ObjectiveHazards: a collapse staged for training (#209)", () => {
     weather: "clear",
     zones,
     events: [STAGED],
+  });
+
+  it("cracks as long as it does, then lets its ice fall its fall's time, life size (#229)", () => {
+    const falling: HazardSettings = {
+      ...SETTINGS,
+      kinds: { ...SETTINGS.kinds, serac: { ...SETTINGS.kinds.serac, fall: 0.5 } },
+    };
+    const ground = new TestGround({ first: 37.5, second: 0 });
+    const exposure = new Exposure(ground, "04:00", staged(), falling);
+
+    exposure.play(1);
+    const cracking = exposure.hazards.warnings;
+    ground.put("first", 42);
+    exposure.play(20);
+
+    expect(cracking).toEqual([
+      { zone: "collapse", kind: "serac", began: 0, breaks: 10, comes: 20 },
+    ]);
+    expect(ground.knocks).toEqual([{ climber: "first", step: 20 }]);
   });
 
   it("cracks as the first climber comes within its lead, and comes down on its stretch when the crack runs out", () => {

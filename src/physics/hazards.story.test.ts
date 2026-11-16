@@ -26,6 +26,7 @@ const SERAC_ODDS = {
   warning: 0,
   deadly: 0,
   deadlyClipped: 0,
+  fall: 0,
 };
 const SETTINGS: HazardSettings = {
   kinds: {

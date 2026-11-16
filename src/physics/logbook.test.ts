@@ -20,6 +20,7 @@ const STILL_ODDS = {
   warning: 0,
   deadly: 0,
   deadlyClipped: 0,
+  fall: 0,
 };
 const SETTINGS: HazardSettings = {
   kinds: { serac: STILL_ODDS, avalanche: STILL_ODDS, crevasse: STILL_ODDS, cornice: STILL_ODDS },

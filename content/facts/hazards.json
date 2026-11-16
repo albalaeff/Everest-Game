@@ -112,6 +112,16 @@
       "fitted": "2026-11-04"
     },
     {
+      "id": "hazards.serac-fall",
+      "kind": "coefficient",
+      "claim": "How many seconds a serac's ice takes to fall to the route once it breaks off (#229), life size, as the game's falls are: a body falls the 15 to 21 m the picture draws the seracs over the route, over the 9 m the sources give the Icefall's own, in about 2 s. It comes after the crack (hazards.serac-warning), so the ice comes down as fast as ice does: whoever is at the edge of the stretch can get clear, few others.",
+      "status": "source only",
+      "value": 1.9,
+      "unit": "s",
+      "fitted_to": ["route.icefall-hazards"],
+      "fitted": "2026-11-16"
+    },
+    {
       "id": "hazards.avalanche-warning",
       "kind": "coefficient",
       "claim": "How many seconds pass between the roar of an avalanche starting above and its reaching the climbers below. Fitted so that a climber near the edge of its path can get out of it, and one in the middle rarely can.",
