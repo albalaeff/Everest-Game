@@ -133,6 +133,7 @@ export class ClimberReading {
       dead: view.dead,
       tiredness: body.tiredness,
       hauling: view.hauling,
+      hanging: view.hanging,
       pace: body.pace,
       ground: this.ground,
       terrain: this.terrain,
