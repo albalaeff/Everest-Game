@@ -62,7 +62,7 @@ test("headlamps climb the rope before dawn, and the picture goes when a choice i
 }) => {
   await readTheDisclaimer(page);
 
-  expect(await page.locator("#start .menu-lamp").count()).toBeGreaterThan(0);
+  await expect(page.locator("#start .menu-lamp").first()).toBeAttached();
   await choice(page, "Alone").click();
   await expect(page.locator("#start")).toBeHidden();
   await expect(page.locator("#start .menu-stage > *")).toHaveCount(0);
