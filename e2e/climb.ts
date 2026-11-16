@@ -25,6 +25,8 @@ export interface SeenClimber {
   readonly onIce: boolean;
   readonly pickPoor: boolean;
   readonly lowering: boolean;
+  /** Whether they're hauling, a partner out or a fallen ladder back up (#209, #228). */
+  readonly hauling: boolean;
 }
 
 /** A climber on the slope as the device saves them (src/physics → ClimberSave), as far as the

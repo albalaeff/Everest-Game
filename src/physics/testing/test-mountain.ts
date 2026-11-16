@@ -72,7 +72,7 @@ export class TestMountain {
     lethalLanding: 1000,
     climbBack: 0.5,
     rappel: 1,
-    ladderBreak: { creak: 1, relash: 10 },
+    ladderBreak: { creak: 1, reset: 10 },
     haul: { speed: 0.5, reach: 3 },
     knock: 3,
     arrestSpeed: 5,

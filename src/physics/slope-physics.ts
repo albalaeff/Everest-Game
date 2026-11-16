@@ -282,14 +282,19 @@ export class SlopePhysics implements Rule, HazardGround, JoltGround, Legs {
     return this.loaded.ladder(id).bounce;
   }
 
-  /** Whether a ladder is whole, creaking before it breaks, or broken until it's lashed back
-   * (#209); and the end that tore free, while it's broken. */
+  /** Whether a ladder is whole, creaking before it breaks, or broken until it's hauled back
+   * (#209, #228); the end that tore free, while it's broken; and how far it's been hauled back up,
+   * from 0, hanging, to 1, across. */
   ladderCondition(id: string): LadderCondition {
     return this.loaded.ladder(id).condition;
   }
 
   ladderTorn(id: string): "start" | "finish" | null {
     return this.loaded.ladder(id).torn;
+  }
+
+  ladderRaised(id: string): number {
+    return this.loaded.ladder(id).hauledBack;
   }
 
   /** The stretches of the ground that are bare blue ice, along it. */

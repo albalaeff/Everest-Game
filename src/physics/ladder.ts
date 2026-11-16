@@ -7,7 +7,8 @@ import type { Pair, Point, Terrain, Way } from "./terrain";
  * staged to break for training (#209) has the rung it `breaks` at, in metres from `from`, and the
  * climbers it's staged for, its `trainees`, the players (#212): only a step of theirs sets it
  * creaking, anyone's if none are named. A save keeps the step it began `creaking` on, the step it
- * `broke` on and the end that tore `free`: its start, at `from`, or its finish. */
+ * `broke` on, the end that tore `free`, its start, at `from`, or its finish, and how far it's been
+ * hauled back up, `raised`, from 0 hanging to 1 across (#228). */
 export type LadderLayout = {
   readonly id: string;
   readonly from: number;
@@ -18,9 +19,10 @@ export type LadderLayout = {
   readonly creaking?: number;
   readonly broke?: number;
   readonly free?: "start" | "finish";
+  readonly raised?: number;
 };
 
-/** A ladder's condition: whole, creaking before it breaks, or broken, until it's lashed back. */
+/** A ladder's condition: whole, creaking before it breaks, or broken, until it's hauled back. */
 export type LadderCondition = "whole" | "creaking" | "broken";
 
 /**
@@ -32,14 +34,17 @@ export type LadderCondition = "whole" | "creaking" | "broken";
  * crevasse bounces under the steps on it, the longer the harder, and the bounce dies away when
  * they stop (#190), and less while someone holds its rope taut from an end (#212). One staged to
  * break (#209) creaks once one of its trainees steps past the rung it breaks at, then breaks: the
- * end behind them tears free and it swings down into the crevasse, and nobody walks onto it until
- * the Icefall Doctors lash it back. It breaks once.
+ * end behind them tears free and it swings down into the crevasse, and there it hangs, nobody
+ * walking onto it, until climbers at its lips haul it back up by its ropes and lash it across
+ * (#228): no Icefall Doctors come. It breaks once.
  */
 export class Ladder {
   /** Steeper than this sine, a ladder is up or down a wall, which doesn't bounce. */
   private static readonly ACROSS_SINE = 0.5;
   /** Less bounce than this, it lies still: the engine's number. */
   private static readonly STILL = 1e-4;
+  /** Hauled back this near all the way, it's across: the sums' rounding. */
+  private static readonly ACROSS = 1e-9;
 
   /** Each walking direction as a way on the screen: across, and up. */
   private static readonly KEYS: Readonly<Record<Walk["direction"], Pair>> = {
@@ -70,6 +75,8 @@ export class Ladder {
   private creaking: number | null;
   private broke: number | null;
   private free: "start" | "finish" | null;
+  /** How far it's been hauled back up since it broke, 0 to 1 (#228). */
+  private raised: number;
 
   /** A ladder laid on the ground: its ends on it, `from` further back than `to`. */
   constructor(
@@ -91,6 +98,7 @@ export class Ladder {
     this.creaking = layout.creaking ?? null;
     this.broke = layout.broke ?? null;
     this.free = layout.free ?? null;
+    this.raised = layout.raised ?? 0;
   }
 
   get id(): string {
@@ -109,6 +117,7 @@ export class Ladder {
       ...(this.creaking === null ? {} : { creaking: this.creaking }),
       ...(this.broke === null ? {} : { broke: this.broke }),
       ...(this.free === null ? {} : { free: this.free }),
+      ...(this.raised > 0 ? { raised: this.raised } : {}),
     };
   }
 
@@ -155,12 +164,24 @@ export class Ladder {
     return true;
   }
 
-  /** On `step`, a ladder broken `relash` steps ago is lashed back, whole, and holds from now on. */
-  mend(step: number, relash: number): void {
-    if (this.broke !== null && step - this.broke >= relash) {
+  /** How far a broken ladder has been hauled back up by its ropes (#228), from 0, hanging where it
+   * fell, to 1, across; nought while it's whole. */
+  get hauledBack(): number {
+    return this.broke === null ? 0 : this.raised;
+  }
+
+  /** A broken ladder hauled `share` of the way further back up (#228): all the way, it's laid
+   * across and lashed again, whole, and holds from then on. Nothing for a whole one. */
+  raise(share: number): void {
+    if (this.broke === null || !(share > 0)) {
+      return;
+    }
+    this.raised = Math.min(1, this.raised + share);
+    if (this.raised >= 1 - Ladder.ACROSS) {
       this.broke = null;
       this.breaks = null;
       this.free = null;
+      this.raised = 0;
     }
   }
 

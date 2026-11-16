@@ -71,6 +71,9 @@ export class Footwork {
   /** How far past where it unclipped the climber goes before it clips again: the old rope's
    * anchor is still within reach there. */
   private static readonly FREE_METRES = 1;
+  /** How near a ladder's end it stands, each way, to change its cowstails over there to the rope
+   * within reach before it steps on, in metres: a cowstail's reach of the rope's anchor (#228). */
+  private static readonly AT_A_LADDER = 0.8;
   private static readonly WAYS: Readonly<Record<RouteWay, Walk["direction"]>> = {
     up: "up-right",
     down: "down-left",
@@ -239,6 +242,9 @@ export class Footwork {
       this.pace = careful;
       return [{ kind: "pace", climber, pace: careful }];
     }
+    if (this.reclipping === 0 && this.atANewRope(view)) {
+      return this.changeOver(view, along);
+    }
     const direction = this.direction(view, going);
     if (direction !== this.walking && this.reclipping === 0) {
       this.walking = direction;
@@ -281,6 +287,40 @@ export class Footwork {
     if (this.walking !== "stop") {
       this.walking = "stop";
       return [{ kind: "walk", climber, direction: "stop" }];
+    }
+    return this.clipLoose(view, along);
+  }
+
+  /** Whether it stands on the ground at a ladder's end, clipped to a rope, with another rope within
+   * reach there:
+   * the one along the ladder, anchored at its lip, which a cowstail on the rope it came on can't
+   * reach once it's out on the rungs, where a rope across a crevasse hangs down into it (#228). */
+  private atANewRope(view: ClimberView): boolean {
+    const within = this.physics.ropeWithin(this.climber);
+    if (view.ladder !== null || within === null || (view.first === null && view.second === null)) {
+      return false;
+    }
+    if (view.first === within && view.second === within) {
+      return false;
+    }
+    const near = (end: { readonly x: number; readonly y: number }): boolean =>
+      Math.abs(end.x - view.x) <= Footwork.AT_A_LADDER &&
+      Math.abs(end.y - view.y) <= Footwork.AT_A_LADDER;
+    return this.physics.ladders.some((id) => this.physics.ladder(id).some(near));
+  }
+
+  /** At a ladder's end, onto the rope within reach before it steps on (#228): it stops, then takes
+   * one cowstail off the old rope and clips it to the new, then the other, never both off at once. */
+  private changeOver(view: ClimberView, along: number): readonly GameAction[] {
+    const { climber } = this;
+    if (this.walking !== "stop") {
+      this.walking = "stop";
+      return [{ kind: "walk", climber, direction: "stop" }];
+    }
+    const within = this.physics.ropeWithin(climber);
+    if (view.first !== null && view.second !== null) {
+      const off = view.second !== within ? "second" : "first";
+      return [{ kind: "unclip", climber, cowstail: off }];
     }
     return this.clipLoose(view, along);
   }

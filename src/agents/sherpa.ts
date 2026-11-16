@@ -45,6 +45,9 @@ export type SherpaDoing =
   | "holding"
   /** Going to a client who hangs on the rope, or hauling them out. */
   | "rescuing"
+  /** At the lip of a ladder that broke and fell into its crevasse, holding its rope to haul it
+   * back up with a client, or on his way there (#228). */
+  | "raising"
   /** Sitting with a client he went to pull out, on safe ground. */
   | "resting"
   /** Backing off out from under a hazard that's going. */
@@ -134,7 +137,10 @@ type Plan = {
  * on the rope to lead again (#197). He never stands where the ice falls: not in a hazard's zone, on blue ice or on a
  * ladder, but goes on to safe ground. He crosses each ladder first and holds its line taut from
  * its far end until his clients behind are across (the haul, held with nobody to haul, steadies
- * it), and never steps onto a ladder someone's on or that's broken. A client hanging on the rope
+ * it), and never steps onto a ladder someone's on or that's broken. A ladder that broke and fell
+ * into its crevasse where his clients are he goes to the lip of on his side, and holds its rope
+ * there to haul it back up with them, at either lip, until it's set back (#228): nobody else will.
+ * A client hanging on the rope
  * he goes to, and hauls out from the ground within reach of where they'd come up; then he waits
  * with them on the nearest safe ground for `rest` of the mountain's seconds, or until they go on.
  * A hazard going over him he backs out from under. In the camp the section ends at, he stops.
@@ -295,6 +301,7 @@ export class Sherpa implements Rule {
       this.rescue(me, along) ??
       this.rested(along) ??
       this.retreat(along) ??
+      this.raise(me, along) ??
       this.hold(along) ??
       this.guide(me, along)
     );
@@ -380,6 +387,53 @@ export class Sherpa implements Rule {
     const on = stretch.to + Sherpa.CLEAR;
     const nearer = along - back <= on - along ? back : on;
     return { ...plan, way: this.move(this.toward(nearer, along), along) };
+  }
+
+  /** A ladder down in its crevasse near him and a client (#228): to its lip on his side, and its
+   * rope held there, the haul, until it's set back; a client holding the haul at either lip
+   * hauls it up with him. */
+  private raise(me: ClimberView, along: number): Plan | null {
+    const lip = this.fallenLip(along);
+    if (lip === null) {
+      return null;
+    }
+    const plan = { doing: "raising" as const, client: null };
+    if (Math.abs(lip - along) <= Sherpa.AT_LADDER && this.onTheGround(me)) {
+      return { ...plan, way: null, haul: true };
+    }
+    return { ...plan, way: this.move(this.toward(lip, along), along), haul: false };
+  }
+
+  /** The lip on his side of the nearest ladder that's down in its crevasse, within `wait` of him,
+   * with a client who's set off and lives within `wait` of it; none if there's none. */
+  private fallenLip(along: number): number | null {
+    const { setOff } = this.loaded;
+    const { wait } = this.settings;
+    let nearest: number | null = null;
+    for (const id of this.physics.ladders) {
+      const [from, to] = this.ends(id);
+      if (from === undefined || to === undefined || this.physics.ladderCondition(id) !== "broken") {
+        continue;
+      }
+      const lip =
+        along <= from + Sherpa.AT_LADDER ? from : along >= to - Sherpa.AT_LADDER ? to : null;
+      const clientNear = setOff.some((client) => {
+        const theirs = this.physics.along(client);
+        return (
+          !this.physics.climber(client).dead &&
+          Math.min(Math.abs(theirs - from), Math.abs(theirs - to)) <= wait
+        );
+      });
+      if (
+        lip !== null &&
+        clientNear &&
+        Math.abs(lip - along) <= wait &&
+        (nearest === null || Math.abs(lip - along) < Math.abs(nearest - along))
+      ) {
+        nearest = lip;
+      }
+    }
+    return nearest;
   }
 
   /** At the far end of the ladder he just crossed, its line held taut for the clients still to

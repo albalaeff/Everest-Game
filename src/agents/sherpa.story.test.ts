@@ -197,24 +197,33 @@ describe("A Sherpa at a ladder", () => {
     expect(climb.along("pemba")).toBeGreaterThan(88.5);
   });
 
-  it("waits at its end while it's broken, clipped in, and crosses once it's lashed back", () => {
-    // The ladder broke as the climb began, and the Icefall Doctors lash it back ten seconds on.
+  it("goes to the lip of a ladder that's down, holds its rope there, hauls it back up with his client, and crosses first (#228)", () => {
+    // The ladder broke as the climb began, and hangs from its far end.
     const start = atTheCrevasse(12, 17).expedition.save();
     const physics = start.rules[SlopePhysics.NAME] as unknown as { ladders: LadderLayout[] };
     physics.ladders = [{ ...LADDER, breaks: 2, broke: 0, free: "start" }];
     const climb = new GuidedClimb(start);
     climb.physics.stride("anna", 0.5);
-    climb.play(steps(8), [walk("anna", "right")]);
-    const waiting = { along: climb.along("pemba"), view: climb.physics.climber("pemba") };
-    const broken = climb.physics.ladderCondition("long");
-    climb.play(steps(30));
+    climb.play(1, [walk("anna", "right")]);
+    // Anna stops 2 m short of its lip, within the haul's reach of it.
+    climb.until(() => climb.along("anna") >= 18, steps(30));
+    climb.play(steps(4), [walk("anna", "stop")]);
+    const alone = { along: climb.along("pemba"), view: climb.sherpa.view };
+    const pemba = climb.physics.climber("pemba");
+    climb.play(steps(10));
+    const stillDown = climb.physics.ladderCondition("long");
+    climb.play(1, [{ kind: "haul", climber: "anna", held: true }]);
+    const set = climb.until(() => climb.physics.ladderCondition("long") === "whole", steps(30));
+    climb.play(1, [{ kind: "haul", climber: "anna", held: false }, walk("anna", "right")]);
+    climb.play(steps(25));
 
-    expect(broken).toBe("broken");
-    expect(waiting.along).toBeGreaterThan(19);
-    expect(waiting.along).toBeLessThanOrEqual(20);
-    expect(waiting.view).toMatchObject({ ladder: null, falling: false, moving: false });
-    expect([waiting.view.first, waiting.view.second]).toContain("fixed");
-    expect(climb.physics.ladderCondition("long")).toBe("whole");
+    expect(alone.along).toBeGreaterThan(19);
+    expect(alone.along).toBeLessThanOrEqual(20);
+    expect(alone.view).toMatchObject({ doing: "raising" });
+    expect(pemba).toMatchObject({ ladder: null, falling: false, haulHeld: true });
+    // Alone, he can't lift it.
+    expect(stillDown).toBe("broken");
+    expect(set).toBe(true);
     // Across, he holds its line for Anna.
     expect(climb.along("pemba")).toBeCloseTo(88, 6);
     expect(climb.sherpa.view).toMatchObject({ doing: "holding", ladder: "long" });
@@ -228,7 +237,7 @@ describe("A Sherpa and a client on the rope", () => {
       12,
       17,
       { ...LADDER, breaks: 5, trainees: ["anna"] },
-      { ...TestMountain.CALM, ladderBreak: { creak: 1, relash: 600 } },
+      { ...TestMountain.CALM, ladderBreak: { creak: 1, reset: 600 } },
     );
     annaCrosses(climb);
     const broke = climb.until(() => climb.physics.climber("anna").hanging, steps(80));
