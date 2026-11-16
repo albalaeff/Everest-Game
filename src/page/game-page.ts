@@ -57,6 +57,8 @@ import { RoomLink } from "./room-link";
 import { RoomNotice } from "./room-notice";
 import { RoomPlay } from "./room-play";
 import { RoomServer } from "./room-server";
+import { MenuPicture } from "./menu/menu-picture";
+import type { MenuTexts } from "./menu/menu-texts";
 import type { RoomTexts } from "./room-texts";
 import { SoloGame } from "./solo-game";
 import { StartMenu } from "./start-menu";
@@ -68,6 +70,8 @@ export interface PageTexts {
   readonly controls: ControlTexts;
   readonly rendering: RenderingTexts;
   readonly room: RoomTexts;
+  /** The main menu's words: the game's name, its motto and the route's places. */
+  readonly menu: MenuTexts;
   /** The camps' words: each camp's name, each section's line and the arrival's. */
   readonly camps: Texts;
   /** Your climber's words: its questions, their choices and the guide's lines. */
@@ -155,7 +159,13 @@ export class GamePage {
       this.alone(store, null);
       return;
     }
-    new StartMenu(window.document, this.texts.room).show(saved !== null, (choice) => {
+    new StartMenu(
+      window.document,
+      this.texts.room,
+      this.texts.menu,
+      this.texts.sherpa.say("name"),
+      new MenuPicture(window, this.knowledge, this.texts.menu),
+    ).show(saved !== null, (choice) => {
       if (choice.kind === "alone") {
         this.alone(store, choice.fresh ? null : saved);
       } else {

@@ -3,6 +3,7 @@ import climberTexts from "../content/climber.json";
 import coachTexts from "../content/coach.json";
 import debriefTexts from "../content/debrief.json";
 import gearTexts from "../content/gear.json";
+import menuTexts from "../content/menu.json";
 import packTexts from "../content/pack.json";
 import controlTexts from "../content/controls.json";
 import disclaimerTexts from "../content/disclaimer.json";
@@ -25,6 +26,7 @@ new Disclaimer(document, disclaimerTexts.en, new ExpertReview(facts)).show(() =>
     controls: controlTexts.en,
     rendering: renderingTexts.en,
     room: new Texts(roomTexts.en),
+    menu: new Texts(menuTexts.en),
     camps: new Texts(campTexts.en),
     climber: new Texts(climberTexts.en),
     coach: new Texts(coachTexts.en),
