@@ -264,6 +264,7 @@ export class SlopeScene {
     dataset.flakes = String(this.snow?.flakes ?? 0);
     dataset.climbers = String(this.slope?.climbers ?? 0);
     dataset.tents = String(this.slope?.tents ?? 0);
+    dataset.facing = this.slope?.playerFacesViewer === true ? "viewer" : "side";
     dataset.frames = String(this.frames);
     dataset.camera = `${x.toFixed(2)} ${y.toFixed(2)}`;
     dataset.metresHigh = this.camera.metresHigh.toFixed(2);

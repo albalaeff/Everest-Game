@@ -70,6 +70,8 @@ const view = (over: Partial<ClimberView> = {}): ClimberView => ({
   gear: { jumar: true, tools: 1 },
   clipping: null,
   stillChance: 0,
+  facing: 1,
+  towardViewer: false,
   ...over,
 });
 

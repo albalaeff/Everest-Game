@@ -1,7 +1,7 @@
 import { expect, test } from "@playwright/test";
 import type { Locator, Page } from "@playwright/test";
 
-import { openTheGame } from "./climb";
+import { WALKING, along, atRest, openTheGame, seen } from "./climb";
 
 /**
  * One climb, as the page names what the game receives: the same by keys and by touch. The climber
@@ -161,6 +161,58 @@ test.describe("on a screen of 640 by 360", () => {
     await tapButton(page, "view-closer");
 
     await expectReceived(page, THE_CLIMB);
+  });
+
+  test("A turns the climber to face the player, and A again walks them back", async ({
+    page,
+    hasTouch,
+  }) => {
+    test.skip(hasTouch, "a PC's story");
+    await openTheGame(page);
+    const slope = page.locator("#slope");
+    const from = await atRest(page, "player");
+    await expect(slope).toHaveAttribute("data-facing", "side");
+
+    await page.keyboard.press("KeyA");
+    await expect(slope).toHaveAttribute("data-facing", "viewer");
+    expect(await seen(page, "player")).toMatchObject({ facing: 1, towardViewer: true });
+    expect(await atRest(page, "player")).toBeCloseTo(from, 1);
+
+    await page.keyboard.down("KeyA");
+    await expect.poll(() => along(page, "player"), WALKING).toBeLessThan(from - 0.3);
+    await page.keyboard.up("KeyA");
+    await expect(slope).toHaveAttribute("data-facing", "side");
+    expect(await seen(page, "player")).toMatchObject({ facing: -1, towardViewer: false });
+    await expectReceived(page, ["turn viewer", "walk stop", "walk left", "walk stop"]);
+  });
+
+  test("a thumb pushed back turns the climber to face the player, and pushed back again walks them", async ({
+    page,
+    hasTouch,
+  }) => {
+    test.skip(!hasTouch, "a phone's story");
+    await openTheGame(page);
+    const slope = page.locator("#slope");
+    await expect(slope).toHaveAttribute("data-facing", "side");
+
+    await drag(page, [100, 250], [40, 250]);
+    await expect(slope).toHaveAttribute("data-facing", "viewer");
+    expect(await seen(page, "player")).toMatchObject({ facing: 1, towardViewer: true });
+
+    await drag(page, [100, 250], [40, 250]);
+    await expect(slope).toHaveAttribute("data-facing", "side");
+    expect(await seen(page, "player")).toMatchObject({ facing: -1, towardViewer: false });
+    // Pushed all the way, the joystick hurries too: the pace goes with each push.
+    await expectReceived(page, [
+      "pace faster",
+      "turn viewer",
+      "pace steady",
+      "walk stop",
+      "pace faster",
+      "walk left",
+      "pace steady",
+      "walk stop",
+    ]);
   });
 
   test("a player walks and holds the jumar at once", async ({ page, hasTouch }) => {

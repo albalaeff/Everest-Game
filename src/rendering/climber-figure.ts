@@ -8,6 +8,8 @@ import { Breathing } from "./breathing";
 import { ClimberPose } from "./climber-pose";
 import type { Joint, Pose, PoseState } from "./climber-pose";
 import { ClimberReading } from "./climber-reading";
+import { FacingTurn } from "./facing-turn";
+import { FrontRig } from "./front-rig";
 import type { ReadSlope } from "./climber-reading";
 import type { IceChips } from "./ice-chips";
 import type { LeastSize } from "./least-size";
@@ -56,8 +58,6 @@ export class ClimberFigure extends Container {
   /** From the soles to the top of the head. */
   static readonly HEIGHT_METRES = 1.77;
   private static readonly DEAD_ALPHA = 0.6;
-  /** How long they take to turn round. */
-  private static readonly TURN_SECONDS = 0.16;
   /** How far the chest swells with a breath, as a share of the torso's width. */
   private static readonly CHEST_SWELL = 0.07;
   /** The cowstails: how long they are at life size, the jumar's an arm's length and the second
@@ -85,6 +85,11 @@ export class ClimberFigure extends Container {
    * and its brightness; and the halo round the lamp itself. */
   private static readonly POOL = { length: 3.4, depth: 0.7, alpha: 0.55 };
   private static readonly HALO = { radius: 0.22, alpha: 0.9 };
+  /** The lamp of a climber who faces the viewer (#235), shining out of the picture: a glow round
+   * it, its radius in metres, bright at the lamp and soon faint, so the face under it still reads,
+   * with a few short rays; and the pool at their feet, as a share of the beam's and its
+   * brightness. Never a beam across the picture, and never a white-out. */
+  private static readonly GLOW = { radius: 0.5, alpha: 0.85, rays: 6, ray: 0.55, pool: 0.42 };
   /** How far behind and ahead of the feet the beam reads the slope's rise, and the steepest rise
    * it follows. */
   private static readonly RISE_METRES = 0.4;
@@ -92,6 +97,8 @@ export class ClimberFigure extends Container {
   /** Where the front points are, in a boot's frame from the point of the sole under its ankle,
    * and the way the chips they kick off fly, out of the ice the climber faces and up. */
   private static readonly FRONT_POINTS: Joint = { x: 0.25, y: -0.02 };
+  /** Where a figure seen from the front stands: on the climber's point. */
+  private static readonly ON_THE_SPOT: Joint = { x: 0, y: 0 };
   private static readonly KICKED_OUT: Joint = { x: -0.95, y: 0.3 };
   /** The rim of light on the sun's side: how far past the body it shows, and how strong it is at
    * night, by day and in the glow of dawn and dusk. */
@@ -108,8 +115,14 @@ export class ClimberFigure extends Container {
   private readonly lit = new Graphics();
   private readonly pool = ClimberFigure.drawPool();
   private readonly halo = ClimberFigure.drawHalo();
+  private readonly glow = ClimberFigure.drawGlow();
   private readonly rim = new RimRig(ClimberFigure.RIM_METRES);
   private readonly figure: SuitRig;
+  /** The figure from the front, while they face the viewer, and how far round they've turned
+   * (#235). */
+  private readonly front: FrontRig;
+  private readonly turning = new FacingTurn();
+  private fromTheFront = false;
   private readonly breath = new Graphics();
   /** The climber's point, the jumar's carabiner and the second's, as the last step left them, and
    * drawn between the steps. */
@@ -151,8 +164,6 @@ export class ClimberFigure extends Container {
   private readonly lamp: Spot = { x: 0, y: 0 };
   private climber: ClimberView | null = null;
   private holds = false;
-  /** How far round they've turned: 1 facing right, -1 left. */
-  private turn = 1;
   /** The lamp's beam this frame, in the layer's metres, or none while it's off. */
   private shining: Beam | null = null;
   /** Where the headlamp points, in the figure's radians from the level ahead, while it's on. */
@@ -174,13 +185,31 @@ export class ClimberFigure extends Container {
     this.ropes = slope;
     this.reading = new ClimberReading(slope);
     this.figure = new SuitRig(suit, pack);
-    this.addChild(this.pool, this.cone, this.lit, this.rim, this.figure, this.halo, this.breath);
+    this.front = new FrontRig(suit, pack);
+    this.front.visible = false;
+    this.glow.visible = false;
+    this.addChild(
+      this.pool,
+      this.cone,
+      this.lit,
+      this.rim,
+      this.figure,
+      this.front,
+      this.halo,
+      this.glow,
+      this.breath,
+    );
     this.cone.mask = this.lit;
   }
 
   /** The headlamp's beam as last drawn, in the layer's metres: none by day, or off their feet. */
   get beam(): Beam | null {
     return this.shining;
+  }
+
+  /** Whether the figure is drawn from the front now, facing the viewer (#235). */
+  get facesViewer(): boolean {
+    return this.fromTheFront;
   }
 
   /** Where the climber is drawn this frame, between the steps. */
@@ -254,22 +283,24 @@ export class ClimberFigure extends Container {
     const state = this.reading.read(climber, body, drawn);
     const pose = this.pose.advance(seconds, state);
     const { facing } = this.reading;
-    const turning = (2 * Math.max(seconds, 0)) / ClimberFigure.TURN_SECONDS;
-    this.turn =
-      facing > this.turn
-        ? Math.min(this.turn + turning, facing)
-        : Math.max(this.turn - turning, facing);
-    // Turning round, the figure narrows to its edge and opens the other way.
-    const across = Math.sin((this.turn * Math.PI) / 2) * grown;
+    // Turning round, the figure narrows to its edge and opens the other way; turning to face
+    // the viewer, it narrows a quarter turn and the picture from the front opens in its place
+    // (#235).
+    const towardViewer = climber.towardViewer && !climber.falling && !climber.dead;
+    const turned = this.turning.advance(seconds, facing, towardViewer);
+    const fromTheFront = turned.front > 0;
+    this.fromTheFront = fromTheFront;
+    const across = (fromTheFront ? turned.front : turned.side) * grown;
     this.scale.set(across, grown);
     // Over the way they face: the layer's y is up, so the turn is the other way round.
-    this.rotation = -pose.tilt * facing;
+    this.rotation = fromTheFront ? 0 : -pose.tilt * facing;
     // Their weight on the rope, it gives under them (#232): they sink, bob and hang still.
     const borne = this.borne(climber);
     this.give.advance(seconds, borne === null ? 0 : 1, borne ?? 0);
+    const offset = fromTheFront ? ClimberFigure.ON_THE_SPOT : pose.offset;
     this.position.set(
-      this.point.x + across * pose.offset.x,
-      this.point.y - sag - this.give.metres + grown * pose.offset.y,
+      this.point.x + across * offset.x,
+      this.point.y - sag - this.give.metres + grown * offset.y,
     );
     const moving = climber.moving && !climber.falling && !climber.dead;
     if (!climber.dead) {
@@ -280,14 +311,15 @@ export class ClimberFigure extends Container {
     const upright = !climber.dead && !climber.falling;
     this.drawLamp(pose, atmosphere, upright && lit ? state : null, seconds);
     this.drawBreath(atmosphere, climber.dead, atmosphere.gust * facing, lit);
-    this.holds = climber.first !== null && pose.jumar !== null;
+    // Facing the viewer, the jumar hangs on its cowstail and the rope lies where it lay.
+    this.holds = climber.first !== null && pose.jumar !== null && !fromTheFront;
     if (pose.jumar !== null) {
       this.holding.on.x = this.first.x;
       this.holding.on.y = this.first.y;
       this.inLayer(pose.jumar, this.holding.drawn);
     }
     const carabiner = this.figure.carabiner;
-    this.hangs = climber.second !== null && carabiner !== null;
+    this.hangs = climber.second !== null && carabiner !== null && !fromTheFront;
     if (carabiner !== null) {
       this.hanging.on.x = this.second.x;
       this.hanging.on.y = this.second.y;
@@ -405,6 +437,16 @@ export class ClimberFigure extends Container {
     }
   }
 
+  /** Where a point of the layer is in the figure's metres, standing upright: a carabiner on its
+   * rope, for the cowstail drawn to it. */
+  private inFigure(spot: Spot): Joint {
+    const { x: across, y: grown } = this.scale;
+    return {
+      x: (spot.x - this.position.x) / (across || 1),
+      y: (spot.y - this.position.y) / (grown || 1),
+    };
+  }
+
   /** Where a point of the figure's is in the layer. */
   private inLayer(joint: Joint, into: Spot): void {
     const cos = Math.cos(this.rotation);
@@ -425,8 +467,21 @@ export class ClimberFigure extends Container {
     grown: number,
     size: LeastSize,
   ): void {
-    const { figure } = this;
+    const { figure, front } = this;
     const swell = ClimberFigure.CHEST_SWELL * this.breathing.chest;
+    figure.visible = !this.fromTheFront;
+    front.visible = this.fromTheFront;
+    if (this.fromTheFront) {
+      const thin = size.line(ClimberFigure.COWSTAIL_WIDTH * grown) / grown;
+      front.place(swell, masked, atmosphere.palette.skyHorizon);
+      front.hold(
+        this.climber?.first == null ? null : this.inFigure(this.first),
+        this.climber?.second == null ? null : this.inFigure(this.second),
+        thin,
+      );
+      this.rim.visible = false;
+      return;
+    }
     figure.recolour(atmosphere.palette);
     figure.place(pose, swell, masked);
     const thin = size.line(ClimberFigure.COWSTAIL_WIDTH * grown) / grown;
@@ -463,7 +518,7 @@ export class ClimberFigure extends Container {
     rim.tint = palette.rim;
     const edge = ClimberFigure.RIM_METRES;
     // The figure's x is the way it faces, and turns over halfway round.
-    const side = light.glowSide * (this.turn >= 0 ? 1 : -1);
+    const side = light.glowSide * this.turning.facing;
     rim.position.set(side * edge, edge * 0.4);
     rim.place(pose, swell, masked);
   }
@@ -481,12 +536,28 @@ export class ClimberFigure extends Container {
   ): void {
     const { lamps } = atmosphere.light;
     const on = lamps > 0.01 && state !== null;
-    this.cone.visible = on;
-    this.halo.visible = on;
+    const outward = on && this.fromTheFront;
+    this.cone.visible = on && !outward;
+    this.halo.visible = on && !outward;
     this.pool.visible = on;
+    this.glow.visible = outward;
+    this.pool.scale.set(outward ? ClimberFigure.GLOW.pool : 1);
     this.shining = null;
     if (!on) {
       this.aim = null;
+      return;
+    }
+    if (outward) {
+      // Facing the viewer, the lamp shines out of the picture (#235): a glow round it and a pool
+      // at their feet, no beam across the slope.
+      const { GLOW, POOL } = ClimberFigure;
+      this.aim = null;
+      this.lit.clear();
+      this.glow.position.set(FrontRig.LAMP.x, FrontRig.LAMP.y);
+      this.glow.alpha = GLOW.alpha * lamps;
+      this.pool.position.set(0, 0);
+      this.pool.rotation = 0;
+      this.pool.alpha = POOL.alpha * lamps;
       return;
     }
     // The ground from where the figure stands, in its metres: the boots', which the beam tips
@@ -589,6 +660,31 @@ export class ClimberFigure extends Container {
     return pool;
   }
 
+  /** The glow of a lamp that shines out of the picture (#235), drawn once round it: bright at the
+   * lamp and faint a hand's breadth out, and a few short rays through it, fainter still. */
+  private static drawGlow(): Graphics {
+    const { radius, rays, ray } = ClimberFigure.GLOW;
+    const glow = new Graphics().circle(0, 0, radius).fill(
+      ClimberFigure.radial({ x: 0.5, y: 0.5 }, 0.5, [
+        [0, 1],
+        [0.12, 0.6],
+        [0.3, 0.16],
+        [0.65, 0.05],
+        [1, 0],
+      ]),
+    );
+    for (let index = 0; index < rays; index += 1) {
+      const angle = (Math.PI * index) / rays + Math.PI / (2 * rays);
+      const along = { x: Math.cos(angle) * ray, y: Math.sin(angle) * ray };
+      const across = { x: -Math.sin(angle) * 0.012, y: Math.cos(angle) * 0.012 };
+      glow
+        .poly([across.x, across.y, along.x, along.y, -across.x, -across.y, -along.x, -along.y])
+        .fill({ color: Palette.LAMP, alpha: index % 2 === 0 ? 0.16 : 0.09 });
+    }
+    glow.blendMode = "add";
+    return glow;
+  }
+
   /** The halo round the lamp, drawn once round it. */
   private static drawHalo(): Graphics {
     const halo = new Graphics().circle(0, 0, ClimberFigure.HALO.radius).fill(
@@ -636,11 +732,13 @@ export class ClimberFigure extends Container {
     const { from, to } = Breathing.EXHALE;
     const share = (this.breathing.where - from) / (to - from);
     const size = ClimberFigure.BREATH_RADIUS * (0.4 + 0.6 * share);
-    const mouth = this.figure.mouth;
-    const calm = 1 - Math.abs(downwind);
+    // Facing the viewer, the breath comes out towards them, and drifts only on the wind.
+    const outward = this.fromTheFront;
+    const mouth = outward ? FrontRig.MOUTH : this.figure.mouth;
+    const calm = outward ? 0 : 1 - Math.abs(downwind);
     const x =
       mouth.x +
-      ClimberFigure.BREATH_AHEAD +
+      (outward ? 0 : ClimberFigure.BREATH_AHEAD) +
       share * (ClimberFigure.BREATH_DRIFT * calm + ClimberFigure.BREATH_BLOWN * downwind);
     const y = mouth.y + 0.08 * share;
     const alpha = 1 - share;

@@ -118,7 +118,9 @@ test("lowers the player going back down the Popcorn's step on its rope: they sto
   await page.keyboard.press("KeyE");
   await page.keyboard.down("Space");
 
-  // Back to the edge: clipped to the rope down it, they stop there, and the coach says how.
+  // Back to the edge, A to turn round and A again to walk (#235): clipped to the rope down it,
+  // they stop there, and the coach says how.
+  await page.keyboard.press("KeyA");
   await page.keyboard.down("KeyA");
   await expect(coach(page)).toHaveAttribute("data-tip", "rappel", WALKING);
   await page.keyboard.up("KeyA");

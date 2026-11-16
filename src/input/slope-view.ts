@@ -7,10 +7,19 @@ export interface SlopePoint {
 }
 
 /** The player's climber as the input sees them: where they are, and the rope each cowstail is
- * clipped to, or none. The slope physics' `ClimberView` is one. */
+ * clipped to, or none; and, for the turn back (#235), which way along the slope they face,
+ * whether they've turned to face the viewer, and what keeps them from turning: a fall, a ladder,
+ * the ice or a rope they lower down. The slope physics' `ClimberView` is one; a view that says
+ * nothing of the way they face turns nobody. */
 export interface SeenClimber extends SlopePoint {
   readonly first: string | null;
   readonly second: string | null;
+  readonly facing?: 1 | -1;
+  readonly towardViewer?: boolean;
+  readonly falling?: boolean;
+  readonly ladder?: string | null;
+  readonly onIce?: boolean;
+  readonly lowering?: boolean;
 }
 
 /** The window as far as the input cares: `window` itself, which follows a turned phone. */

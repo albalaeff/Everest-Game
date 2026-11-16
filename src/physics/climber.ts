@@ -105,6 +105,10 @@ export interface ClimberView {
    * (#197): on the front points of a face, on a ladder bouncing hard, or on blue ice steeper than
    * a flat foot holds on; nought on the move, and anywhere else. */
   readonly stillChance: number;
+  /** Which way along the slope they face: the way they last walked, up the route to begin with;
+   * and whether they've turned out of it to face the viewer, standing (#235). */
+  readonly facing: Way;
+  readonly towardViewer: boolean;
 }
 
 /** A cowstail's carabiner going onto a rope (#197), as saves keep it: which cowstail, the rope
@@ -213,6 +217,10 @@ export type ClimberSave = {
    * going on; and the chance of slipping standing still, nought where it's missing. */
   readonly clipping?: readonly ClippingSave[];
   readonly stillChance?: number;
+  /** Missing from the saves of builds before the turn to the viewer (#235): facing up the route,
+   * and not turned. */
+  readonly facing?: Way;
+  readonly towardViewer?: boolean;
 };
 
 /** A cowstail's carabiner, or its jumar, on a rope: it runs along it, or grips it where it is. */
@@ -502,6 +510,9 @@ export class Climber {
    * they took a step in it. */
   private clipping: readonly ClippingSave[] = [];
   private stillChance = 0;
+  /** Which way along the slope they face, and whether they've turned to face the viewer (#235). */
+  private facing: Way = 1;
+  private towardViewer = false;
   private took = false;
 
   /** Everything checked. */
@@ -585,6 +596,8 @@ export class Climber {
     );
     climber.clipping = save.clipping ?? [];
     climber.stillChance = save.stillChance ?? 0;
+    climber.facing = save.facing ?? 1;
+    climber.towardViewer = save.towardViewer ?? false;
     return climber;
   }
 
@@ -616,6 +629,8 @@ export class Climber {
       ...(this.lowering === null ? {} : { lowering: this.lowering.save() }),
       ...(this.clipping.length === 0 ? {} : { clipping: this.clipping }),
       ...(this.stillChance > 0 ? { stillChance: this.stillChance } : {}),
+      ...(this.facing === 1 ? {} : { facing: this.facing }),
+      ...(this.towardViewer ? { towardViewer: true } : {}),
     };
   }
 
@@ -655,6 +670,8 @@ export class Climber {
       gear: this.gear,
       clipping: this.clipping[0]?.cowstail ?? null,
       stillChance: this.stillChance,
+      facing: this.facing,
+      towardViewer: this.towardViewer,
     };
   }
 
@@ -667,6 +684,21 @@ export class Climber {
 
     if (action.kind === "walk") {
       this.walking = action.direction;
+      // A walk turns them side-on, the way it points across the slope (#235).
+      if (action.direction !== "stop") {
+        this.towardViewer = false;
+        this.facing = Climber.WAYS[action.direction] || this.facing;
+      }
+    }
+    // On their feet on the ground, they stop and turn to face out of the slope (#235).
+    const afoot =
+      this.falling === null &&
+      this.onLadder === null &&
+      this.onIce === null &&
+      this.lowering === null;
+    if (action.kind === "turn" && afoot) {
+      this.towardViewer = true;
+      this.walking = "stop";
     }
     if (action.kind === "jumar") {
       this.jumarHeld = action.held;
@@ -1521,6 +1553,7 @@ export class Climber {
     this.onLadder = null;
     this.onIce = null;
     this.lowering = null;
+    this.towardViewer = false;
     this.falling = new Falling(body, step, foot.y, foot.y, speed, from);
   }
 

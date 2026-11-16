@@ -17,8 +17,12 @@ function control(name: ControlName): Control {
 function player() {
   const heard = new HeardActions();
   const slope = new FakeSlopeView({ innerWidth: 640, innerHeight: 360 });
-  return { heard, input: new PlayerInput("anna", slope, heard) };
+  return { heard, slope, input: new PlayerInput("anna", slope, heard) };
 }
+
+const turn = { kind: "turn", climber: "anna", toward: "viewer" } as const;
+const walk = (direction: "left" | "right" | "stop" | "up-left" | "up") =>
+  ({ kind: "walk", climber: "anna", direction }) as const;
 
 describe("PlayerInput", () => {
   it("sends a pace and a direction when they change", () => {
@@ -50,6 +54,84 @@ describe("PlayerInput", () => {
 
     expect(heard.actions.at(-1)).toEqual({ kind: "walk", climber: "anna", direction: "up-right" });
     expect(heard.actions).toHaveLength(3);
+  });
+
+  it("turns the climber to face the viewer on the first push back the way they came, and walks them on the next (#235)", () => {
+    const { heard, slope, input } = player();
+    slope.climber = { ...slope.climber, facing: 1, towardViewer: false };
+
+    input.steer(Steering.ofKeys(-1, 0, "steady"));
+    expect(heard.actions).toEqual([turn]);
+    // The physics has turned them: the key let go stops nothing more, and the next push walks.
+    slope.climber = { ...slope.climber, towardViewer: true };
+    input.steer(Steering.STOPPED);
+    input.steer(Steering.ofKeys(-1, 0, "steady"));
+
+    expect(heard.actions).toEqual([turn, walk("stop"), walk("left")]);
+  });
+
+  it("walks them on the second push even before the view shows the turn: the page's view is a step behind, a room's by the trip there and back", () => {
+    const { heard, slope, input } = player();
+    slope.climber = { ...slope.climber, facing: 1, towardViewer: false };
+
+    input.steer(Steering.ofKeys(-1, 0, "steady"));
+    input.steer(Steering.STOPPED);
+    input.steer(Steering.ofKeys(-1, 0, "steady"));
+    input.steer(Steering.STOPPED);
+    // The view has caught up, and they walk back: the next push back is no turn either.
+    slope.climber = { ...slope.climber, facing: -1 };
+    input.steer(Steering.ofKeys(-1, 0, "steady"));
+
+    expect(heard.actions).toEqual([turn, walk("stop"), walk("left"), walk("stop"), walk("left")]);
+  });
+
+  it("turns them from the left the same way, and a push up the slope at an angle back counts as back", () => {
+    const fromTheLeft = player();
+    fromTheLeft.slope.climber = { ...fromTheLeft.slope.climber, facing: -1, towardViewer: false };
+    fromTheLeft.input.steer(Steering.ofKeys(1, 0, "steady"));
+    expect(fromTheLeft.heard.actions).toEqual([turn]);
+
+    const atAnAngle = player();
+    atAnAngle.slope.climber = { ...atAnAngle.slope.climber, facing: 1, towardViewer: false };
+    atAnAngle.input.steer(Steering.ofKeys(-1, 1, "steady"));
+    expect(atAnAngle.heard.actions).toEqual([turn]);
+  });
+
+  it("walks at once the way the climber faces, and either way once they face the viewer", () => {
+    const { heard, slope, input } = player();
+    slope.climber = { ...slope.climber, facing: 1, towardViewer: false };
+    input.steer(Steering.ofKeys(1, 0, "steady"));
+    input.steer(Steering.STOPPED);
+    slope.climber = { ...slope.climber, towardViewer: true };
+    input.steer(Steering.ofKeys(1, 0, "steady"));
+
+    expect(heard.actions).toEqual([walk("right"), walk("stop"), walk("right")]);
+  });
+
+  it("turns nobody on a ladder, on the ice, lowering down a rope or falling: back is back there", () => {
+    for (const held of [
+      { ladder: "bridge" },
+      { onIce: true },
+      { lowering: true },
+      { falling: true },
+    ]) {
+      const { heard, slope, input } = player();
+      slope.climber = { ...slope.climber, facing: 1, towardViewer: false, ...held };
+
+      input.steer(Steering.ofKeys(-1, 0, "steady"));
+
+      expect(heard.actions).toEqual([walk("left")]);
+    }
+  });
+
+  it("turns nobody for a push straight up or down, nor where the view says nothing of the way they face", () => {
+    const { heard, slope, input } = player();
+    input.steer(Steering.ofKeys(-1, 0, "steady"));
+    input.steer(Steering.STOPPED);
+    slope.climber = { ...slope.climber, facing: 1, towardViewer: false };
+    input.steer(Steering.ofKeys(0, 1, "steady"));
+
+    expect(heard.actions).toEqual([walk("left"), walk("stop"), walk("up")]);
   });
 
   it("sends a press once", () => {
