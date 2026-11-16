@@ -1,4 +1,6 @@
+import { Footwork } from "../agents";
 import type { CoachWorld } from "../interface/coach";
+import type { PointerWorld } from "../interface/coach-pointer";
 import type { ClimberView, LadderCondition, Lamps, Point, SlopePhysics } from "../physics";
 import type {
   ClimberId,
@@ -11,8 +13,10 @@ import type {
 
 /** The climb as the coach reads it (#192): the player's climber and the route's ropes, ladders,
  * blue ice and hazard zones, the player's lamp (#196), and the jolts on their way to them (#197),
- * from the physics, the hazards, the lamps and the jolts, which it only reads. */
-export class CoachedClimb implements CoachWorld {
+ * from the physics, the hazards, the lamps and the jolts, which it only reads; and as the coach's
+ * arrow reads it (#233): the face of ice the player is at, where their next pick bites well, as
+ * a careful climber's footwork has it, and the edge a hanging partner comes up at. */
+export class CoachedClimb implements CoachWorld, PointerWorld {
   /** How near behind the player, along the ground, someone coming past them on their rope is
    * said to be passing them: a few steps. */
   private static readonly PASSING = 3;
@@ -98,5 +102,27 @@ export class CoachedClimb implements CoachWorld {
 
   get zones(): readonly HazardZone[] {
     return this.hazards.zones;
+  }
+
+  iceFace(): { readonly foot: Point; readonly top: Point } | null {
+    const face = this.physics.face(this.physics.along(this.climberId));
+    const { terrain } = this.physics;
+    return face === null ? null : { foot: terrain.point(face.foot), top: terrain.point(face.top) };
+  }
+
+  pickSpot(): Point | null {
+    const view = this.physics.climber(this.climberId);
+    const face = this.physics.face(this.physics.along(this.climberId));
+    if (face === null || view.dead) {
+      return null;
+    }
+    return Footwork.pickUp(this.physics, face, view.y);
+  }
+
+  liftPoint(): Point | null {
+    const hanging = this.physics.climbers.find(
+      (id) => id !== this.climberId && this.physics.liftPoint(id) !== null,
+    );
+    return hanging === undefined ? null : this.physics.liftPoint(hanging);
   }
 }

@@ -13,6 +13,8 @@ import type { ActionSink } from "../input/player-action";
 import { ReceivedActions } from "../input/received-actions";
 import { CampNotice } from "../interface/camp-notice";
 import { Coach } from "../interface/coach";
+import { CoachArrow } from "../interface/coach-arrow";
+import type { PointerTextName } from "../interface/coach-arrow";
 import { CoachCard } from "../interface/coach-card";
 import type { CoachTextName } from "../interface/coach-card";
 import { Debrief } from "../interface/debrief";
@@ -70,8 +72,8 @@ export interface PageTexts {
   readonly camps: Texts;
   /** Your climber's words: its questions, their choices and the guide's lines. */
   readonly climber: Texts;
-  /** The coach's tips, for a keyboard and for touch (#192). */
-  readonly coach: Texts<CoachTextName>;
+  /** The coach's tips, for a keyboard and for touch (#192), and its arrow's words (#233). */
+  readonly coach: Texts<CoachTextName | PointerTextName>;
   /** The debrief's words, and the death's (#194). */
   readonly debrief: Texts<DebriefTextName>;
   /** The gear check's words (#196). */
@@ -320,12 +322,10 @@ export class GamePage {
       player,
       this.playersPack().base,
     );
-    const coach = new CoachCard(
-      window.document,
-      texts.coach,
-      new Coach(this.storage()),
-      new CoachedClimb(physics, rules.hazards, rules.lamps, player, rules.jolts),
-    );
+    const coached = new CoachedClimb(physics, rules.hazards, rules.lamps, player, rules.jolts);
+    const coach = new CoachCard(window.document, texts.coach, new Coach(this.storage()), coached);
+    // The tip's arrow on the slope, at the place it's about (#233).
+    const arrow = new CoachArrow(window, texts.coach, coached, (x, y) => scene.screenAt(x, y));
     // Pemba, the climbers' Sherpa, if the climb has him (#212): his voice in a bubble over him.
     const sherpa = scenario.npcs?.[0] ?? null;
     const voice = new SherpaVoice(
@@ -387,6 +387,7 @@ export class GamePage {
       inventory.update();
       arrival.update(seconds);
       coach.update(seconds);
+      arrow.update(coach.tip);
       bubble?.update(seconds);
     };
     this.expose({

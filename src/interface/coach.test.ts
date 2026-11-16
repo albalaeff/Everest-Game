@@ -155,14 +155,20 @@ describe("Coach: the tutorial, one thing at a time, where the route first needs 
     expect(after(coach, world, Coach.LEAST_SECONDS)).toBeNull();
   });
 
-  it("shows the clip by a rope within reach, and lets it go once a cowstail is on it", () => {
+  it("shows the clip by a rope within reach, and lets it go once both cowstails are on one (#233)", () => {
     const { coach } = fresh();
     const world = new World();
     world.view = standing(12);
     after(coach, world);
 
     expect(after(coach, world)).toBe("clip");
+    // One cowstail on isn't clipped in: the tip stays for the other.
     world.view = standing(12, { second: "one" });
+    expect(after(coach, world, Coach.LEAST_SECONDS)).toBe("clip");
+    world.view = standing(12, { first: "one", second: "one" });
+    expect(after(coach, world, Coach.LEAST_SECONDS)).not.toBe("clip");
+    // Learnt: it doesn't come back at the next rope.
+    world.view = standing(25);
     expect(after(coach, world, Coach.LEAST_SECONDS)).not.toBe("clip");
   });
 
@@ -209,7 +215,7 @@ describe("Coach: the tutorial, one thing at a time, where the route first needs 
     const world = new World();
     world.view = standing(4, { moving: true, walking: "right" });
     after(coach, world);
-    world.view = standing(12, { second: "one" });
+    world.view = standing(12, { first: "one", second: "one" });
     after(coach, world, Coach.LEAST_SECONDS);
     const storage = {
       getItem: (key: string) => kept.get(key) ?? null,

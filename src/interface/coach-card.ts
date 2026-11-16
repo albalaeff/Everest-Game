@@ -27,7 +27,7 @@ export class CoachCard {
 
   constructor(
     document: Document,
-    private readonly texts: Texts<CoachTextName>,
+    private readonly texts: Pick<Texts<CoachTextName>, "say">,
     private readonly coach: Coach,
     private readonly world: CoachWorld,
   ) {
