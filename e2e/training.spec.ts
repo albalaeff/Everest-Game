@@ -6,8 +6,9 @@ import { SAVING, SURE_FOOTED, climbFrom, savedClimb, savedPlayer, seen, stage } 
 /**
  * The training events (#209), as a player meets them: a serac cracks just ahead and comes down
  * across the route, and whoever stops at the crack is spared; a ladder creaks and breaks under a
- * climber clipped in, the rope holds them, and W climbs them out to the lip, where they wait for
- * the Icefall Doctors to lash it back. The stories stage each event where the climber stands.
+ * climber clipped in, the rope holds them, W climbs them out to the lip, and there they and Pemba,
+ * at its other lip, haul it back up with F held (#228). The stories stage each event where the
+ * climber stands.
  */
 
 /** The coach's card on the page. */
@@ -49,7 +50,7 @@ test.describe("on a screen of 630 by 360", () => {
     expect(player?.dead).toBe(false);
   });
 
-  test("a ladder breaks under a climber clipped in: the rope holds them, the jumar clipped on climbs them out, and they wait at the lip", async ({
+  test("a ladder breaks under a climber clipped in: the rope holds them, the jumar clipped on climbs them out, and they and Pemba haul it back up", async ({
     page,
     hasTouch,
   }) => {
@@ -58,6 +59,11 @@ test.describe("on a screen of 630 by 360", () => {
     // on it slipping before it does.
     await climbFrom(page, (climb) => {
       savedPlayer(climb).along = 319.75;
+      // Pemba across it, 3.5 m past its far lip, waiting for the player.
+      const pemba = climb.rules["slope-physics"].climbers.find(({ id }) => id === "pemba");
+      if (pemba !== undefined) {
+        pemba.along = 383;
+      }
       stage(climb, null, { id: "big-crevasse", breaks: 1 });
       climb.random = [...SURE_FOOTED];
     });
@@ -101,5 +107,17 @@ test.describe("on a screen of 630 by 360", () => {
     expect(out?.x).toBeCloseTo(155.38, 0);
     expect(out?.falls).toMatchObject([{ held: true, broke: true }]);
     await expect(coach(page)).toHaveAttribute("data-tip", "ladder-broken", { timeout: 20_000 });
+
+    // Nobody comes to fix it: with F held at its lip, and Pemba holding its rope at the other once
+    // his rest with the player is over, they haul it back up together, and he says it holds.
+    await page.keyboard.down("KeyF");
+    await expect
+      .poll(async () => (await seen(page, "player"))?.hauling, { timeout: 60_000 })
+      .toBe(true);
+    await expect(page.locator("#sherpa")).toHaveAttribute("data-cue", "set-back", {
+      timeout: 60_000,
+    });
+    await page.keyboard.up("KeyF");
+    await expect(coach(page)).not.toHaveAttribute("data-tip", "ladder-broken");
   });
 });

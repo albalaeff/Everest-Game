@@ -3,8 +3,8 @@ import type { KnowledgeBase } from "./knowledge-base";
 /**
  * The numbers Pemba says (#212), from the knowledge base (docs/conventions.md → Data, not
  * literals), each by the name his lines in content/sherpa.json fill it in under: how far the
- * Icefall's ice flows a day (`route.icefall-flow`), how many minutes the Icefall Doctors take to
- * lash a broken ladder back (`technique.ladder-relash`), how many ladders they fix the route with
+ * Icefall's ice flows a day (`route.icefall-flow`), how many ladders the Icefall Doctors fix the
+ * route with
  * (`route.icefall-ladders`, the range its sources give), the years of the ladder fall of 2012 and
  * the avalanche of 2014 (`accidents.*`), and the altitudes of the Football Field and Camp 1. And
  * what he knows as a Sherpa (#218): how many times a client and a Sherpa cross the Icefall in a
@@ -31,7 +31,6 @@ export class SherpaFacts {
     };
     return {
       flow: tenths(knowledge.number("route.icefall-flow")),
-      minutes: knowledge.number("technique.ladder-relash"),
       least: ladders.min,
       most: ladders.max,
       fallYear: String(knowledge.year("accidents.2012-ladder-fall")),

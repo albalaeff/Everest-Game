@@ -150,9 +150,9 @@ export interface SlopeSettings {
   /** How fast a climber lowers themselves down a face of ice on the fixed rope that runs down it,
    * at a whole stride, in m/s: the rope through their descender, their front points on the ice. */
   readonly rappel: number;
-  /** A ladder staged to break (#209): the seconds it creaks before it breaks, and the seconds the
-   * Icefall Doctors take to lash it back. */
-  readonly ladderBreak: { readonly creak: number; readonly relash: number };
+  /** A ladder staged to break (#209): the seconds it creaks before it breaks, and the seconds two
+   * climbers at whole strides take to haul it back up and lash it across once it has (#228). */
+  readonly ladderBreak: { readonly creak: number; readonly reset: number };
   /** Hauling a partner who hangs on the rope (#209): how fast a whole stride hauls them up it, in
    * m/s, and how near the point they're hauled to the hauler has to stand, in metres. */
   readonly haul: { readonly speed: number; readonly reach: number };
@@ -184,6 +184,9 @@ export class Slope {
   /** How near a face of ice's foot or lip a ladder's end stands, along the ground, to be the way
    * up or down it there, in metres: the engine's number too. */
   static readonly BY_A_LADDER = 1.5;
+  /** How many climbers it takes to haul a fallen ladder back up by its ropes, and the most whose
+   * strides count (#228): a ladder's weight, two pairs of hands. */
+  static readonly HANDS = 2;
 
   readonly walking: Walking;
   readonly slipChance: SteepnessCurve;
@@ -313,6 +316,44 @@ export class Slope {
     };
   }
 
+  /** Who sets a fallen ladder back this step (#228): two or more who can haul, holding the haul
+   * within its reach of either of its ends and hauling nobody, haul it back up together, each at
+   * their stride's share of two whole strides' pace; one alone can't lift it. */
+  private raising(
+    climbers: readonly Climber[],
+    hauls: Hauls,
+  ): { readonly raisers: ReadonlySet<Climber>; readonly raised: ReadonlyMap<Ladder, number> } {
+    const { haul, ladderBreak } = this.settings;
+    const raisers = new Set<Climber>();
+    const raised = new Map<Ladder, number>();
+    for (const ladder of this.ladders.values()) {
+      if (ladder.condition !== "broken") {
+        continue;
+      }
+      const at = climbers.filter((climber) => {
+        const point = hauls.by(climber) ? null : climber.hauler(this);
+        return (
+          point !== null &&
+          ladder.shape.some((end) => {
+            const x = end.x - point.x;
+            const y = end.y - point.y;
+            return Math.sqrt(x * x + y * y) <= haul.reach;
+          })
+        );
+      });
+      if (at.length < Slope.HANDS) {
+        continue;
+      }
+      for (const climber of at) {
+        raisers.add(climber);
+      }
+      const strides = at.reduce((sum, climber) => sum + climber.haulStride, 0);
+      const pace = Math.min(strides, Slope.HANDS) / Slope.HANDS;
+      raised.set(ladder, (pace * SimulationClock.STEP_SECONDS) / ladderBreak.reset);
+    }
+    return { raisers, raised };
+  }
+
   /** Each ladder held from one of its ends by a climber holding the haul with nobody to haul, at
    * its end within the haul's reach, bounces at `footing.bounce.held` of what the steps on it set
    * going this step; every other at all of it (#212): its rope held taut, the ladder sways less. */
@@ -438,14 +479,20 @@ export class Slope {
   /** One step for every climber on it, in the scenario's order. A rope that lay still and
    * nobody is clipped to waits, so the ropes of a whole section cost nothing until used. The
    * ladders' bounce dies away after the climbers' steps set it going; one that has creaked long
-   * enough breaks, and its climbers fall, and one broken long enough is lashed back (#209). A
-   * climber holding the haul by someone hanging hauls them up instead of stepping; one holding it
-   * at a ladder's end with nobody to haul holds its rope taut, and steadies it (#212). */
+   * enough breaks, and its climbers fall (#209), and one broken comes back up while two haul it
+   * from its lips (#228). A climber holding the haul by someone hanging hauls them up instead of
+   * stepping, and so does one hauling a fallen ladder; one holding it at a ladder's end with
+   * nobody to haul holds its rope taut, and steadies it (#212). */
   advance(climbers: readonly Climber[], moment: Moment): void {
     const { gravity, friction, footing, ladderBreak } = this.settings;
     const clipped = new Set(climbers.flatMap((climber) => climber.ropes));
     const ropes = [...this.ropes.values()].filter((rope) => clipped.has(rope) || !rope.resting);
-    const hauls = this.hauls(climbers);
+    const hauling = this.hauls(climbers);
+    const { raisers, raised } = this.raising(climbers, hauling);
+    const hauls: Hauls = {
+      ...hauling,
+      by: (climber) => hauling.by(climber) || raisers.has(climber),
+    };
     this.steady(climbers, hauls);
     const before = climbers.map((climber) => climber.onTheGround);
     for (const climber of climbers) {
@@ -460,7 +507,7 @@ export class Slope {
           climber.offBroken(ladder, this, moment.step);
         }
       }
-      ladder.mend(moment.step, Slope.steps(ladderBreak.relash));
+      ladder.raise(raised.get(ladder) ?? 0);
     }
     for (let substep = 0; substep < Slope.SUBSTEPS; substep += 1) {
       for (const climber of climbers) {

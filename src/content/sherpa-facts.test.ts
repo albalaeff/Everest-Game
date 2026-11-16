@@ -14,7 +14,6 @@ describe("SherpaFacts: the numbers Pemba says, from the knowledge base (#212, #2
 
     expect(fills).toEqual({
       flow: Math.round(knowledge.number("route.icefall-flow") * 10) / 10,
-      minutes: knowledge.number("technique.ladder-relash"),
       least: ladders.min,
       most: ladders.max,
       fallYear: "2012",

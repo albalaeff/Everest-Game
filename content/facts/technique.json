@@ -480,14 +480,14 @@
       "fitted": "2026-11-08"
     },
     {
-      "id": "technique.ladder-relash",
+      "id": "technique.ladder-reset",
       "kind": "coefficient",
-      "claim": "The minutes the Icefall Doctors take to lash a broken ladder back across its crevasse (#209), while the climbers wait at the lip and the morning goes: the route's ladders are theirs to fix (route.icefall-ladders).",
+      "claim": "The minutes two climbers at its lips take to haul a ladder that broke and fell into its crevasse back up by its ropes and lash it across again (#228), pulling together at a whole stride each: the sections lashed end to end with rope (route.icefall-ladders-lashed) come up slowly hand over hand, and the lashings and anchors take their time. One alone can't lift it; nobody comes to fix it for them.",
       "status": "source only",
-      "value": 20,
+      "value": 6,
       "unit": "min",
       "fitted_to": ["route.icefall-ladders", "route.icefall-ladders-lashed"],
-      "fitted": "2026-11-08"
+      "fitted": "2026-11-16"
     },
     {
       "id": "technique.haul-speed",

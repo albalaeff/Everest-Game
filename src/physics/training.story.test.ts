@@ -20,12 +20,12 @@ const steps = (seconds: number): number => seconds * SimulationClock.STEPS_PER_S
 /** Holds the haul, or lets it go. */
 const haul = (climber: string, held: boolean): GameAction => ({ kind: "haul", climber, held });
 
-/** Nobody slips, a ladder creaks a second before it breaks and is lashed back half a minute
- * after, a whole stride hauls at 0.5 m/s from 3 m, and a landing faster than 12 m/s, a drop of
- * about 7 m, kills. */
+/** Nobody slips, a ladder creaks a second before it breaks and two at whole strides haul it back
+ * in 8 s, a whole stride hauls a partner at 0.5 m/s from 3 m, and a landing faster than 12 m/s,
+ * a drop of about 7 m, kills. */
 const SETTINGS: SlopeSettings = {
   ...TestMountain.CALM,
-  ladderBreak: { creak: 1, relash: 30 },
+  ladderBreak: { creak: 1, reset: 8 },
   lethalLanding: 12,
 };
 
@@ -72,7 +72,7 @@ const crossing = (back = 18): Climb => {
  * Training events on the ladders (#209): a ladder staged to break creaks once a climber steps past
  * the rung it breaks at, then breaks, and swings down into the crevasse. The rope holds the climber
  * who clipped in, and up they come to the lip, by their own climb or hauled by a partner holding
- * the haul at the lip; nobody crosses until the Icefall Doctors lash it back.
+ * the haul at the lip; nobody crosses until two of them haul the ladder back (#228).
  */
 describe("A ladder staged to break", () => {
   it("creaks as a climber steps past the rung it breaks at, then breaks, and the rope holds the one clipped in", () => {
@@ -136,21 +136,96 @@ describe("A ladder staged to break", () => {
     expect(anna.falls).toMatchObject([{ broke: true, held: true }]);
     expect(anna.falls[0]?.pulled).toBeUndefined();
   });
+});
 
-  it("lets nobody onto it until it's lashed back, and then it holds", () => {
-    const climb = crossing();
+describe("A fallen ladder set back (#228)", () => {
+  /** Anna, out of the crevasse at the near lip of the ladder that broke under her, and Boris
+   * `boris` metres along the ground. */
+  const outOfIt = (boris = 18): Climb => {
+    const climb = crossing(boris);
     climb.play(steps(10));
     climb.play(1, [clip("anna", "first"), walk("anna", "up")]);
     climb.play(steps(16));
+    climb.play(1, [walk("anna", "stop")]);
+    return climb;
+  };
+  /** Both hold the haul. */
+  const bothHaul = [haul("anna", true), haul("boris", true)];
+
+  it("stays down however long they wait, and lets nobody onto it", () => {
+    const climb = outOfIt();
     climb.play(1, [Climb.jumar("anna", true), walk("anna", "right")]);
-    climb.play(steps(5));
-    const waiting = climb.physics.climber("anna");
+    climb.play(steps(90));
+
+    expect(climb.physics.ladderCondition("long")).toBe("broken");
+    expect(climb.physics.ladderRaised("long")).toBe(0);
+    expect(climb.physics.climber("anna")).toMatchObject({ x: 20, ladder: null, falling: false });
+  });
+
+  it("comes back up while two hold the haul within reach of its ends, in its time at whole strides, and then it holds", () => {
+    const climb = outOfIt();
+    climb.play(1, bothHaul);
+    climb.play(steps(4) - 1);
+    const halfway = climb.physics.ladderRaised("long");
+    const hauling = ["anna", "boris"].map((id) => climb.physics.climber(id));
+    climb.play(steps(4.2));
+    const set = climb.physics.ladderCondition("long");
+    climb.play(1, [
+      haul("anna", false),
+      haul("boris", false),
+      Climb.jumar("anna", true),
+      walk("anna", "right"),
+    ]);
     climb.play(steps(30));
 
-    expect(waiting).toMatchObject({ x: 20, ladder: null, falling: false });
-    expect(climb.physics.ladderCondition("long")).toBe("whole");
+    expect(halfway).toBeCloseTo(0.5, 2);
+    for (const climber of hauling) {
+      expect(climber).toMatchObject({ hauling: true, haulHeld: true, moving: true, exertion: 1 });
+    }
+    expect(set).toBe("whole");
+    expect(climb.physics.ladderRaised("long")).toBe(0);
     expect(climb.physics.climber("anna").x).toBeGreaterThan(28);
     expect(climb.physics.climber("anna").falls).toHaveLength(1);
+  });
+
+  it("comes back up as well with one at each lip", () => {
+    const climb = outOfIt(90);
+    climb.play(1, bothHaul);
+    climb.play(steps(8.2));
+
+    expect(climb.physics.ladderCondition("long")).toBe("whole");
+  });
+
+  it("doesn't move for one alone, nor for two out of reach of its ends, and stays where it came to once they let go", () => {
+    const alone = outOfIt();
+    alone.play(1, [haul("anna", true)]);
+    alone.play(steps(10));
+    const far = outOfIt(10);
+    far.play(1, bothHaul);
+    far.play(steps(10));
+    const paused = outOfIt();
+    paused.play(1, bothHaul);
+    paused.play(steps(2));
+    paused.play(1, [haul("boris", false)]);
+    const partway = paused.physics.ladderRaised("long");
+    paused.play(steps(5));
+
+    expect(alone.physics.ladderRaised("long")).toBe(0);
+    expect(alone.physics.climber("anna")).toMatchObject({ hauling: false, haulHeld: true });
+    expect(far.physics.ladderRaised("long")).toBe(0);
+    expect(partway).toBeGreaterThan(0.2);
+    expect(paused.physics.ladderRaised("long")).toBeCloseTo(partway, 9);
+    expect(paused.physics.ladderCondition("long")).toBe("broken");
+  });
+
+  it("comes up slower at their strides' share: twice as long at half a stride each", () => {
+    const climb = outOfIt();
+    climb.physics.stride("anna", 0.5);
+    climb.physics.stride("boris", 0.5);
+    climb.play(1, bothHaul);
+    climb.play(steps(8) - 1);
+
+    expect(climb.physics.ladderRaised("long")).toBeCloseTo(0.5, 2);
   });
 });
 
@@ -240,6 +315,27 @@ describe("A save keeps the training's ladder and the haul", () => {
     expect(resumed.physics.ladderCondition("long")).toBe(whole.physics.ladderCondition("long"));
     expect(resumed.physics.climber("anna")).toEqual(whole.physics.climber("anna"));
     expect(resumed.physics.climber("boris")).toEqual(whole.physics.climber("boris"));
+    expect(resumed.expedition.save()).toEqual(whole.expedition.save());
+  });
+
+  it("goes on from a save made while the fallen ladder is hauled back as it would have (#228)", () => {
+    const go = (climb: Climb): Climb => {
+      climb.play(steps(10));
+      climb.play(1, [clip("anna", "first"), walk("anna", "up")]);
+      climb.play(steps(16));
+      climb.play(1, [walk("anna", "stop"), haul("anna", true), haul("boris", true)]);
+      climb.play(steps(3));
+      return climb;
+    };
+    const whole = go(crossing());
+    const saved = JSON.parse(JSON.stringify(go(crossing()).expedition.save())) as ExpeditionSave;
+    const resumed = new Climb(SETTINGS, saved);
+    for (const climb of [whole, resumed]) {
+      climb.play(steps(6));
+    }
+
+    expect(resumed.physics.ladderRaised("long")).toBe(whole.physics.ladderRaised("long"));
+    expect(resumed.physics.ladderCondition("long")).toBe("whole");
     expect(resumed.expedition.save()).toEqual(whole.expedition.save());
   });
 });

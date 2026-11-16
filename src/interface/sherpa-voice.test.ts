@@ -96,7 +96,6 @@ class FakeWorld implements SherpaWorld {
 
 const FILLS = {
   flow: 1.1,
-  minutes: 20,
   least: 8,
   most: 21,
   fallYear: "2012",
@@ -388,6 +387,35 @@ describe("SherpaVoice: Pemba's lines, for the moment (#212)", () => {
 
     expect(near.cues().slice(1)).toEqual(["rescue-coming", "pulling"]);
     expect(far.cues().slice(1)).toEqual(["climb-yourself"]);
+  });
+
+  it("says a fallen ladder is theirs to haul back, pulls with the player, and says when it's lashed again (#228)", () => {
+    const { world, cues, play } = listening();
+    play(8);
+
+    world.coach = "ladder-broken";
+    world.view = { ...world.view, doing: "raising" };
+    play(8);
+    world.pembaView = standing({ hauling: true, haulHeld: true });
+    play(8);
+    world.coach = null;
+    world.view = { ...world.view, doing: "leading" };
+    world.pembaView = standing();
+    play(8);
+
+    expect(cues().slice(1)).toEqual(["broken", "raising", "set-back"]);
+  });
+
+  it("says nothing of a ladder set back when he stopped holding its rope before anyone hauled (#228)", () => {
+    const { world, cues, play } = listening();
+    play(8);
+
+    world.view = { ...world.view, doing: "raising" };
+    play(4);
+    world.view = { ...world.view, doing: "waiting" };
+    play(8);
+
+    expect(cues()).not.toContain("set-back");
   });
 
   it("laughs at a slip the rope held, and has nothing to say once he's dead", () => {

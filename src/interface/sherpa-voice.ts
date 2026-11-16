@@ -29,6 +29,8 @@ export type SherpaCue =
   | "crack"
   | "creak"
   | "broken"
+  | "raising"
+  | "set-back"
   | "crampon"
   | "lamp"
   | "floor"
@@ -386,7 +388,8 @@ export class SherpaVoice {
       this.wait(near ? "rescue-coming" : "climb-yourself", "now");
     }
     if (now.hauling && !before.hauling) {
-      this.wait("pulling", "now");
+      // Hauling a fallen ladder back up with the player, or the player out (#228).
+      this.wait(now.sherpa.doing === "raising" ? "raising" : "pulling", "now");
     }
     if (player.falling && before.onLadder !== null) {
       this.slippedOnIt = true;
@@ -398,7 +401,7 @@ export class SherpaVoice {
     if (now.pembaOnLadder && !before.pembaOnLadder) {
       this.wait("first-ladder", "soon");
     }
-    this.noticeDoing(now.sherpa, before.sherpa);
+    this.noticeDoing(now.sherpa, before.sherpa, before.hauling);
     this.noticeCrossing(now.onLadder, before.onLadder, before.sherpa.ladder, player, seconds);
     if (now.part !== before.part || this.before === null) {
       const place = SherpaVoice.PLACES[now.part ?? ""];
@@ -423,9 +426,13 @@ export class SherpaVoice {
   }
 
   /** What he does now, against the last frame: a rest begun and over, a client who went ahead,
-   * one far behind he waits for, and a ladder's line he holds. */
-  private noticeDoing(now: SherpaView, was: SherpaView): void {
+   * one far behind he waits for, a ladder's line he holds, and a fallen ladder set back while he
+   * hauled it (#228). */
+  private noticeDoing(now: SherpaView, was: SherpaView, hauled: boolean): void {
     const { doing, ladder } = now;
+    if (was.doing === "raising" && doing !== "raising" && hauled) {
+      this.wait("set-back", "soon");
+    }
     if (doing === "resting" && was.doing !== "resting") {
       this.wait("safe", "soon");
     }

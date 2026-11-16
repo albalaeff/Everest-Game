@@ -34,6 +34,8 @@ import { IceTowers } from "./ice-towers";
 import type { TowerSizes } from "./ice-towers";
 import { IceWall } from "./ice-wall";
 import { LadderBow } from "./ladder-bow";
+import { LadderShake } from "./ladder-shake";
+import type { Shake } from "./ladder-shake";
 import { LeastSize } from "./least-size";
 import { Palette } from "./palette";
 import { ParallaxLayer } from "./parallax-layer";
@@ -80,9 +82,16 @@ interface DrawnLadder {
   /** Its condition as last drawn, and the picture's seconds it has been so since (#209). */
   condition: LadderCondition;
   since: number;
-  /** The twist's zone it lies under, a lashed ladder's (#197), or none: it shudders while the
-   * twist is on its way. */
+  /** The twist's zone it lies under, a lashed ladder's (#197), or none: it rocks while the twist
+   * is on its way, and settles after. */
   readonly lashed: string | null;
+  /** How it shakes (#228); the picture's seconds its twist has been on its way and over, while it
+   * rocks; how far it's drawn hauled back up, catching up with the physics; and the seconds since
+   * it was laid back across, while it bounces on the lip. */
+  readonly shaker: LadderShake;
+  twist: { on: number; over: number } | null;
+  raised: number;
+  landed: number | null;
 }
 
 interface DrawnClimber {
@@ -200,10 +209,25 @@ export class SlopeLayer extends ParallaxLayer {
    * how many times a second, and so many pieces its rails are drawn in while it does. */
   private static readonly BOUNCE_METRES = 0.035;
   private static readonly BOUNCE_HZ = 2.2;
-  /** A ladder staged to break (#209): creaking, it shudders this far, so many times a second, and
-   * its end that's tearing free drops this far; broken, it swings down into the crevasse from its
-   * other end over so many seconds, knocks against the wall and settles. */
-  private static readonly CREAK = { metres: 0.025, hz: 9, drop: 0.12 };
+  /** A ladder staged to break (#209): broken, it swings down into the crevasse from its other end
+   * over so many seconds, knocks against the wall and settles; hanging there, it sways this far,
+   * in radians, so many times a second, more while it's hauled back up, catching up with the
+   * haul over so many seconds (#228). How it shakes is `LadderShake`'s; a lashed ladder's rock
+   * settles over so many seconds once its twist has come, and one laid back across bounces on
+   * the lip for so long. */
+  private static readonly HANGING = {
+    sway: 0.02,
+    hz: 0.3,
+    hauled: 0.035,
+    pulls: 0.9,
+    catches: 0.3,
+  };
+  private static readonly SETTLED = { twist: 2.5, landing: 1.5 };
+  /** How much of a ladder's width the picture shows lying flat, seen from a little above: rolled
+   * over its long axis, its rails close and open as they turn (#228). */
+  private static readonly RAIL_DEPTH = 0.35;
+  /** The ladders' shakes' seeds, from the layer's. */
+  private static readonly SHAKE_SEED = 17;
   /** How near a twist zone's ends are to a ladder's, along the ground, to be its (#197). */
   private static readonly SAME = 1e-6;
   private static readonly SWING = { fall: 0.55, knock: 0.35, back: 0.18, settle: 3 };
@@ -391,7 +415,7 @@ export class SlopeLayer extends ParallaxLayer {
     this.addChild(this.veil);
     this.ground = SlopeLayer.runOut(terrain);
     this.bottom = Math.min(...this.ground.map(({ y }) => y)) - SlopeLayer.BELOW_METRES;
-    this.ladders = physics.ladders.map((id) => {
+    this.ladders = physics.ladders.map((id, index) => {
       const [start, finish] = physics.ladder(id);
       if (start === undefined || finish === undefined) {
         throw new RangeError("A ladder needs two ends to draw");
@@ -420,8 +444,13 @@ export class SlopeLayer extends ParallaxLayer {
         loads: [],
         bowed: false,
         condition,
-        since: 0,
+        // A ladder already broken when the climb loads hangs from the first frame.
+        since: condition === "broken" ? SlopeLayer.SWING.settle : 0,
         lashed,
+        shaker: new LadderShake(length, seed + SlopeLayer.SHAKE_SEED + index),
+        twist: null,
+        raised: physics.ladderRaised(id),
+        landed: null,
       };
     });
     const bare = parts.find(({ id }) => id === SlopeLayer.BARE) ?? null;
@@ -607,14 +636,17 @@ export class SlopeLayer extends ParallaxLayer {
       const condition = this.physics.ladderCondition(ladder.id);
       const changed = condition !== ladder.condition;
       if (changed) {
+        ladder.landed = ladder.condition === "broken" && condition === "whole" ? 0 : null;
         ladder.condition = condition;
         ladder.since = 0;
       }
       ladder.since += seconds;
+      this.follow(ladder, seconds);
       const moving =
         condition === "creaking" ||
-        this.twisting(ladder) ||
-        (condition === "broken" && ladder.since < SlopeLayer.SWING.settle);
+        condition === "broken" ||
+        ladder.twist !== null ||
+        ladder.landed !== null;
       if (rescaled || changed || moving || ladder.bowed || ladder.loads.length > 0 || bouncing) {
         this.bounced.set(ladder.id, bounce);
         this.drawLadder(ladder, size);
@@ -713,7 +745,11 @@ export class SlopeLayer extends ParallaxLayer {
       return 0;
     }
     const along = SlopeLayer.alongLadder(ladder, at);
-    return ladder.bow.sag(ladder.loads, along) + this.bouncing(ladder, along);
+    return (
+      ladder.bow.sag(ladder.loads, along) +
+      this.bouncing(ladder, along) +
+      this.shake(ladder).drop(along)
+    );
   }
 
   /** How far a ladder across a crevasse bounces down at `along` this frame, up and down with the
@@ -746,17 +782,21 @@ export class SlopeLayer extends ParallaxLayer {
     const width = size.line(SlopeLayer.RAIL_METRES);
     const bounce = this.physics.ladderBounce(ladder.id);
     const bowed = across && (loads.length > 0 || bounce > 0);
-    const creak = this.creak(ladder);
+    const shake = this.shake(ladder);
+    const shaking = shake !== LadderShake.STILL;
     const sag = (along: number): number =>
-      (bowed ? bow.sag(loads, along) + this.bouncing(ladder, along) : 0) + creak(along);
-    const pieces = bowed ? SlopeLayer.BOW_PIECES : 1;
+      (bowed ? bow.sag(loads, along) + this.bouncing(ladder, along) : 0) + shake.drop(along);
+    // Rolled over its long axis, its rails show closer together or further apart (#228).
+    const turned = (along: number): number => SlopeLayer.turned(shake.roll(along));
+    const pieces = bowed || shaking ? SlopeLayer.BOW_PIECES : 1;
     graphics.clear();
     const rails = (): void => {
       for (const side of [1, -1]) {
         for (let piece = 0; piece <= pieces; piece += 1) {
           const along = (length * piece) / pieces;
-          const x = start.x + alongX * along + side * railX;
-          const y = start.y + alongY * along + side * railY - sag(along);
+          const open = side * turned(along);
+          const x = start.x + alongX * along + open * railX;
+          const y = start.y + alongY * along + open * railY - sag(along);
           if (piece === 0) {
             graphics.moveTo(x, y);
           } else {
@@ -768,14 +808,17 @@ export class SlopeLayer extends ParallaxLayer {
       for (let rung = step / 2; rung < length; rung += step) {
         const x = start.x + alongX * rung;
         const y = start.y + alongY * rung - sag(rung);
-        graphics.moveTo(x - railX, y - railY).lineTo(x + railX, y + railY);
+        const open = turned(rung);
+        graphics
+          .moveTo(x - railX * open, y - railY * open)
+          .lineTo(x + railX * open, y + railY * open);
       }
     };
     rails();
     graphics.stroke({ width: width * 2.2, color: Palette.LADDER_SHADE, cap: "round" });
     rails();
     graphics.stroke({ width, color: Palette.LADDER, cap: "round" });
-    SlopeLayer.lashings(graphics, ladder, sag, size);
+    SlopeLayer.lashings(graphics, ladder, sag, turned, size);
     if (across && ladder.condition !== "broken") {
       SlopeLayer.handLine(graphics, ladder, sag, size);
     }
@@ -783,32 +826,58 @@ export class SlopeLayer extends ParallaxLayer {
     this.swing(ladder);
   }
 
-  /** How far a creaking ladder is shaken down at `along` this frame (#209): a shudder all along
-   * it, and its end that's tearing free dropping. Nought for a whole or broken one. */
-  /** Whether a lashed ladder's twist is on its way (#197): it shudders as one creaking does, with
-   * no end torn free. */
+  /** Whether a lashed ladder's twist is on its way (#197). */
   private twisting(ladder: DrawnLadder): boolean {
     const { lashed } = ladder;
     return lashed !== null && (this.jolts?.warnings ?? []).some(({ zone }) => zone === lashed);
   }
 
-  private creak(ladder: DrawnLadder): (along: number) => number {
-    if (ladder.condition !== "creaking" && this.twisting(ladder)) {
-      const { CREAK } = SlopeLayer;
-      return (along) => CREAK.metres * Math.sin(2 * Math.PI * CREAK.hz * this.elapsed + along * 3);
+  /** A ladder's clocks, `seconds` on: its twist's, on its way and over, until it's settled; its
+   * bounce on the lip once laid back, until it's settled; and how far it's drawn hauled back up,
+   * catching up with the haul (#228). */
+  private follow(ladder: DrawnLadder, seconds: number): void {
+    const { SETTLED, HANGING } = SlopeLayer;
+    if (this.twisting(ladder)) {
+      ladder.twist =
+        ladder.twist === null || ladder.twist.over > 0
+          ? { on: 0, over: 0 }
+          : { on: ladder.twist.on + seconds, over: 0 };
+    } else if (ladder.twist !== null) {
+      const over = ladder.twist.over + seconds;
+      ladder.twist = over > SETTLED.twist ? null : { on: ladder.twist.on + seconds, over };
     }
-    if (ladder.condition !== "creaking") {
-      return () => 0;
+    if (ladder.landed !== null) {
+      ladder.landed += seconds;
+      if (ladder.landed > SETTLED.landing) {
+        ladder.landed = null;
+      }
     }
-    const { CREAK } = SlopeLayer;
-    const torn = this.physics.ladderTorn(ladder.id);
-    const { length } = ladder;
-    return (along) => {
-      const shudder = CREAK.metres * Math.sin(2 * Math.PI * CREAK.hz * this.elapsed + along * 3);
-      const share = Math.min(Math.max(along / (length || 1), 0), 1);
-      const free = torn === "start" ? 1 - share : torn === "finish" ? share : 0;
-      return shudder + CREAK.drop * free * free;
-    };
+    const raised = this.physics.ladderRaised(ladder.id);
+    ladder.raised += (raised - ladder.raised) * Math.min(seconds / HANGING.catches, 1);
+    if (ladder.condition !== "broken") {
+      ladder.raised = 0;
+    }
+  }
+
+  /** How a ladder shakes this frame (#228): creaking, in jerks at its failing end; rocking while
+   * its twist comes and settling after; bouncing on the lip once laid back; else still. */
+  private shake(ladder: DrawnLadder): Shake {
+    if (ladder.condition === "creaking") {
+      return ladder.shaker.creaking(ladder.since, this.physics.ladderTorn(ladder.id));
+    }
+    if (ladder.twist !== null && ladder.condition === "whole") {
+      return ladder.shaker.twisting(ladder.twist.on, ladder.twist.over);
+    }
+    if (ladder.landed !== null) {
+      return ladder.shaker.landing(ladder.landed);
+    }
+    return LadderShake.STILL;
+  }
+
+  /** How far a ladder's rails show apart, rolled `roll` over its long axis, against lying flat:
+   * its width turned up or down towards the view from a little above. */
+  private static turned(roll: number): number {
+    return Math.cos(roll) + Math.sin(roll) / SlopeLayer.RAIL_DEPTH;
   }
 
   /** A broken ladder swung down into its crevasse from the end that holds (#209): it falls,
@@ -826,9 +895,20 @@ export class SlopeLayer extends ParallaxLayer {
     // Hanging straight down from the end that holds: a quarter turn, the free end down. The
     // layer's y is up, so a turn the free end down is the other way round on its graphics.
     const quarter = (torn === "start" ? 1 : -1) * (Math.PI / 2);
+    // Hauled back up, it comes round again in pulls, swaying more for them (#228); hanging, the
+    // crevasse's air sways it a little.
+    const { HANGING } = SlopeLayer;
+    const hauled = ladder.raised;
+    const pull =
+      hauled > 0
+        ? HANGING.hauled * Math.max(Math.sin(2 * Math.PI * HANGING.pulls * this.elapsed), 0)
+        : 0;
+    const sway = HANGING.sway * Math.sin(2 * Math.PI * HANGING.hz * this.elapsed + ladder.length);
+    const round = SlopeLayer.swung(ladder.since) * (1 - hauled * hauled * (3 - 2 * hauled));
     graphics.pivot.set(holds.x, holds.y);
     graphics.position.set(holds.x, holds.y);
-    graphics.rotation = quarter * SlopeLayer.swung(ladder.since);
+    graphics.rotation =
+      quarter * round + (sway - pull) * (torn === "start" ? 1 : -1) * (1 - hauled);
   }
 
   /** How far round a broken ladder has swung, `seconds` after it broke: 0 laid, 1 hanging. It
@@ -849,6 +929,7 @@ export class SlopeLayer extends ParallaxLayer {
     graphics: Graphics,
     { start, finish, length }: DrawnLadder,
     sag: (along: number) => number,
+    turned: (along: number) => number,
     size: LeastSize,
   ): void {
     const { LASHING, LADDER_HALF_WIDTH } = SlopeLayer;
@@ -863,7 +944,7 @@ export class SlopeLayer extends ParallaxLayer {
         const along =
           (length * joint) / sections + (wrap - (LASHING.wraps - 1) / 2) * LASHING.apart;
         for (const side of [1, -1]) {
-          const rail = side * LADDER_HALF_WIDTH;
+          const rail = side * LADDER_HALF_WIDTH * turned(along);
           const x = start.x + alongX * along - alongY * rail;
           const y = start.y + alongY * along + alongX * rail - sag(along);
           graphics

@@ -92,7 +92,8 @@ export interface CoachStorage {
  * blue ice or a ladder (#208), unclipped where a slip is a fall, stopped under the seracs, a crampon come loose and the
  * headlamp dead in the dark, a check skipped before setting off catching up with the player
  * (#196), and the training events (#209): a serac cracking ahead, the ladder creaking under them,
- * a partner hanging to pull out; and a broken ladder's wait; and what jolts them (#197): a gust
+ * a partner hanging to pull out; and a ladder fallen into its crevasse, to haul back up with a
+ * partner (#228); and what jolts them (#197): a gust
  * coming, their lashed ladder twisting, someone passing them on their rope, their ladder bouncing
  * under someone else's steps, and a stand on the front points held too long. It holds the
  * screen's own state alone, as the rendering does: what's been learnt, and what it shows.
@@ -425,7 +426,7 @@ export class Coach {
     });
   }
 
-  /** Whether the player stands at an end of a ladder that's broken, waiting for it. */
+  /** Whether the player stands at an end of a ladder that's broken, to haul back up (#228). */
   private byABrokenLadder(world: CoachWorld, view: ClimberView): boolean {
     return world.ladders.some((id) => {
       if (world.ladderCondition(id) !== "broken") {
