@@ -340,6 +340,8 @@ export class SlopeLayer extends ParallaxLayer {
   private readonly towerTops: Point[] = [];
   /** The headlamps' beams this frame. */
   private readonly beams: Beam[] = [];
+  /** Where the frame fell among the game's steps, as it last moved. */
+  private between: BetweenSteps = { taken: 0, progress: 0 };
   /** How many tents stand in the camps. */
   readonly tents: number;
   /** The scale the lines were last drawn at, in pixels a metre: none yet. */
@@ -460,7 +462,9 @@ export class SlopeLayer extends ParallaxLayer {
       new Terrain(this.ground.map(({ x, y }) => [x, y] as const)),
       crossings,
     );
-    this.hazards = new HazardDrawing(hazards, terrain, surface);
+    this.hazards = new HazardDrawing(hazards, terrain, surface, this.softPuff, () =>
+      this.figures.filter(({ view }) => view !== null && !view.dead).map(({ figure }) => figure.at),
+    );
     this.drawSnow(new IceBody(surface, seed + 5));
     this.drawBlocks(surface, parts, seed + 7);
     this.drawDetails(new SlopeDetails(terrain, seed));
@@ -563,7 +567,13 @@ export class SlopeLayer extends ParallaxLayer {
       return particle;
     });
     this.glints.blendMode = "add";
-    this.addChild(this.blownContainer, this.glints, this.hazards.falling, this.mark);
+    this.addChild(
+      this.blownContainer,
+      this.glints,
+      this.hazards.falling,
+      this.hazards.dust,
+      this.mark,
+    );
   }
 
   /** The layer goes, and the blown snow's soft puff with it. */
@@ -579,9 +589,9 @@ export class SlopeLayer extends ParallaxLayer {
     return this.figures.length;
   }
 
-  /** Whether a hazard is going now, which shakes the picture. */
-  get shaking(): boolean {
-    return this.hazards.going;
+  /** How hard what's coming down shakes the picture now, from nothing to about 1. */
+  get shaking(): number {
+    return this.hazards.shaking;
   }
 
   /** Where the player is drawn this frame, between the steps: what the camera follows. */
@@ -591,6 +601,7 @@ export class SlopeLayer extends ParallaxLayer {
 
   /** The ropes and the climbers as the frame's steps left them, drawn `between` the steps. */
   move(between: BetweenSteps): void {
+    this.between = between;
     for (const rope of this.ropes) {
       rope.chain.follow(this.physics.rope(rope.id), between);
     }
@@ -605,7 +616,7 @@ export class SlopeLayer extends ParallaxLayer {
    * player's mark, the ladders under them and the ropes through their hands, the camps in the
    * wind, the snow they kick up, the snow the wind lifts, and what's coming down. */
   draw(seconds: number, camera: Camera, atmosphere: Atmosphere): void {
-    this.hazards.draw(seconds);
+    this.hazards.draw(seconds, this.between, atmosphere);
     this.light(atmosphere);
     const { pixelsPerMetre } = camera;
     const size = new LeastSize(pixelsPerMetre);

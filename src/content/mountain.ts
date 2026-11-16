@@ -155,7 +155,8 @@ export class Mountain {
 
   /** The hazards' numbers, from their records in content/facts/hazards.json: each kind's
    * `hazards.<kind>-rate`, `-warmth`, `-snow`, `-wind`, `-warning`, `-deadly` and
-   * `-deadly-clipped`, and the day's warmth. */
+   * `-deadly-clipped`, a serac's `hazards.serac-fall` (#229), and the day's warmth. Only a
+   * serac's ice falls from above the route; the others' warning is their whole run. */
   hazardSettings(): HazardSettings {
     const number = (name: string) => this.knowledge.number(`hazards.${name}`);
     const odds = (kind: HazardKind): HazardOdds => ({
@@ -166,6 +167,7 @@ export class Mountain {
       warning: number(`${kind}-warning`),
       deadly: number(`${kind}-deadly`),
       deadlyClipped: number(`${kind}-deadly-clipped`),
+      fall: kind === "serac" ? number("serac-fall") : 0,
     });
     return {
       kinds: {

@@ -4,6 +4,7 @@ import type { ClimberId } from "./game-action";
 import type { Json } from "./json";
 import type { MountainClock } from "./mountain-clock";
 import type { Moment, Rule } from "./rule";
+import { SimulationClock } from "./simulation-clock";
 
 /** What can come down on a climber, or give way under them (spec.md → Simulation systems). */
 export type HazardKind = "serac" | "avalanche" | "crevasse" | "cornice";
@@ -24,6 +25,10 @@ export interface HazardOdds {
   /** How many of the mountain's seconds pass between the first sign of it going, a crack or a
    * roar, and its coming down: whoever gets clear in time is spared. 0 is no warning. */
   readonly warning: number;
+  /** How long what comes down takes to fall to the route once it breaks off, in seconds of play:
+   * life size, as the falls are, after its sign (#229). A serac's ice from its height; 0 for what
+   * doesn't fall from above. */
+  readonly fall: number;
   /** The chance it kills outright a climber it catches who isn't clipped to a rope. */
   readonly deadly: number;
   /** The same for one clipped to a rope, which holds them in the fall but not under ice. */
@@ -68,11 +73,14 @@ export interface HazardStart {
   readonly events?: readonly HazardEvent[];
 }
 
-/** A zone that's going: it began to on the step `began`, and comes down on the step `comes`. */
+/** A zone that's going: it began to on the step `began`, and comes down on the step `comes`; what
+ * falls from above breaks off on the step `breaks` and falls till then (#229), missing where
+ * nothing does, and from the saves of builds before. */
 export type Warning = {
   readonly zone: string;
   readonly kind: HazardKind;
   readonly began: number;
+  readonly breaks?: number;
   readonly comes: number;
 };
 
@@ -172,6 +180,12 @@ export class HazardChance {
   /** How many steps of `seconds` a training event cracks for before it comes down. */
   crackSteps(seconds: number): number {
     return Math.ceil(this.settings.training.crack / seconds);
+  }
+
+  /** How many steps what `kind` brings down takes to fall once it breaks off (#229): its fall's
+   * seconds of play, life size. */
+  fallSteps(kind: HazardKind): number {
+    return Math.ceil(this.settings.kinds[kind].fall * SimulationClock.STEPS_PER_SECOND - 1e-9);
   }
 }
 
@@ -300,15 +314,17 @@ export class ObjectiveHazards implements Rule {
         continue;
       }
       if (moment.random.chance(this.chance.within(secondsAStep, zone.kind, timeOfDay, weather))) {
-        const steps = this.chance.warningSteps(zone.kind, secondsAStep);
-        if (steps === 0) {
+        const sign = this.chance.warningSteps(zone.kind, secondsAStep);
+        const fall = this.chance.fallSteps(zone.kind);
+        if (sign + fall === 0) {
           this.comeDown(zone, moment, timeOfDay);
         } else {
           const going: Warning = {
             zone: zone.id,
             kind: zone.kind,
             began: step,
-            comes: step + steps,
+            ...(fall > 0 ? { breaks: step + sign } : {}),
+            comes: step + sign + fall,
           };
           this.state = { ...this.loaded, warnings: [...this.loaded.warnings, going] };
         }
@@ -338,11 +354,14 @@ export class ObjectiveHazards implements Rule {
           ObjectiveHazards.nears(event, this.ground.along(climber)),
       );
       if (near && !strikes.some((strike) => strike.zone === event.id)) {
+        const crack = this.chance.crackSteps(this.clock.secondsAStep);
+        const fall = this.chance.fallSteps(event.kind);
         const cracking: Warning = {
           zone: event.id,
           kind: event.kind,
           began: step,
-          comes: step + this.chance.crackSteps(this.clock.secondsAStep),
+          ...(fall > 0 ? { breaks: step + crack } : {}),
+          comes: step + crack + fall,
         };
         this.state = { ...this.loaded, warnings: [...warnings, cracking] };
       }

@@ -9,20 +9,29 @@ export interface DebrisPiece extends Point {
 }
 
 /** A serac over the route, in metres: its outline, closed, from its foot over its broken top; its
- * face away from the light; the snow on its top; and the cracks down its ice. */
+ * face away from the light; the snow on its top; and the cracks down its ice; which way it leans
+ * out along x; the middle of its foot, the ice about it, and how tall it stands over that; and
+ * where its shade ends across it. */
 export interface Serac {
   readonly outline: readonly Point[];
   readonly shade: readonly Point[];
   readonly cap: readonly Point[];
   readonly cracks: readonly (readonly Point[])[];
+  readonly turned: 1 | -1;
+  readonly middle: number;
+  readonly base: number;
+  readonly height: number;
+  readonly shadeAt: number;
 }
 
 /**
  * The hazards as the picture shows them, in slope metres, with no words (#24): seracs towering
- * over a serac's stretch, leaning out over the route and cracked, as the Icefall's are (#184),
- * and loaded snow along an avalanche slope or a cornice, so the player sees where not to linger,
- * and nothing over a hidden crevasse. While one goes, its ice or snow comes down from high above
- * the stretch to its ground as the warning runs out.
+ * over a serac's stretch, leaning out over the route and cracked, as the Icefall's are (#184), one
+ * every so often along it so that one stands over wherever a climber is, and a training collapse's
+ * right over its stretch (#229); and loaded snow along an avalanche slope or a cornice, so the
+ * player sees where not to linger, and nothing over a hidden crevasse. While an avalanche or a
+ * cornice goes, its snow comes down from high above the stretch to its ground as the warning runs
+ * out; a serac's fall is `SeracFall`'s.
  */
 export class HazardSigns {
   /** How far each side of its middle a serac stands at its foot. */
@@ -30,6 +39,9 @@ export class HazardSigns {
   /** The seracs' heights over a stretch, from its start, over the highest ice about them: the
    * drawing's numbers, over the 9 m the sources give the Icefall's (route.icefall-hazards). */
   static readonly TOWER_METRES: readonly number[] = [15, 21, 17];
+  /** How far apart the seracs stand along a long stretch, about: a stretch has as many as its
+   * heights at the fewest (#229). */
+  static readonly TOWER_SPACING = 10;
   /** How deep the snow on a serac's top lies, how much of its width its face away from the light
    * is, and where its cracks start across it and how far down its height they run. */
   private static readonly CAP_METRES = 0.45;
@@ -45,20 +57,6 @@ export class HazardSigns {
   /** How high above the ground what comes down starts, and how many pieces of it there are. */
   static readonly FALL_METRES = 14;
   static readonly PIECES = 9;
-  /** A staged collapse's crack (#209): how high over the route it starts, on the serac's face just
-   * above the climbers' heads where the view shows it, how far down it runs when it's whole, how
-   * many pieces it's drawn in and how far each kinks aside; the chips off it, how many, how big,
-   * and how many times each falls as the crack runs. */
-  private static readonly CRACK_TOP = 8;
-  private static readonly CRACK_DOWN = 5;
-  private static readonly CRACK_PIECES = 7;
-  private static readonly CRACK_KINK = 0.35;
-  private static readonly CHIPS = 5;
-  private static readonly CHIP_METRES = 0.12;
-  private static readonly CHIP_FALLS = 3;
-  /** The rubble a staged collapse leaves: a block about every so many metres, of these sizes. */
-  private static readonly RUBBLE_EVERY = 1.1;
-  private static readonly RUBBLE_SIZES: readonly number[] = [1.1, 0.6, 1.5, 0.8, 1.2, 0.5];
   /** The pieces start at a few heights, so they don't come down in a line. */
   private static readonly STAGGER_METRES = 2;
   private static readonly PIECE_METRES: Readonly<Record<HazardKind, number>> = {
@@ -83,45 +81,94 @@ export class HazardSigns {
   }
 
   /** The seracs towering over a serac's stretch, behind it, each on the highest ice about it, a
-   * crevasse between them closed at its lips; none over any other zone. */
-  seracs(zone: HazardZone): readonly Serac[] {
+   * crevasse between them closed at its lips: as many as their heights, or one every so often
+   * along a long stretch, the one nearest each of `events`, the training collapses staged on it,
+   * moved right over that's stretch (#229); none over any other zone. */
+  seracs(zone: HazardZone, events: readonly HazardZone[] = []): readonly Serac[] {
     if (zone.kind !== "serac") {
       return [];
     }
-    const heights = HazardSigns.TOWER_METRES;
-    const half = HazardSigns.TOWER_HALF_WIDTH;
     const left = this.terrain.point(zone.from).x;
     const right = this.terrain.point(zone.to).x;
-    return heights.map((height, index) => {
-      const middle = left + ((right - left) * (index + 0.5)) / heights.length;
-      const base = this.surface.highest(middle - half, middle + half);
-      // Every other one leans the other way, so no two neighbours match.
-      const turned = index % 2 === 0 ? 1 : -1;
-      const at = ([across, up]: readonly [number, number]): Point => ({
-        x: middle + turned * across * half,
-        y: base + up * height,
-      });
-      const outline = HazardSigns.SERAC_SHAPE.map(at);
-      const cut = middle - turned * half * (1 - 2 * HazardSigns.SHADED_SHARE);
-      const shade = outline.map(({ x, y }) => ({
-        x: turned === 1 ? Math.min(x, cut) : Math.max(x, cut),
-        y,
-      }));
-      const top = HazardSigns.SERAC_SHAPE.filter(([, up]) => up >= HazardSigns.TOP).map(at);
-      const cap = [
-        ...top,
-        ...top.map(({ x, y }) => ({ x, y: y - HazardSigns.CAP_METRES })).reverse(),
-      ];
-      const cracks = HazardSigns.CRACKS.map(([across, down]) => {
-        const from = at([across, 0.97]);
-        const below = [0.3, 0.55, 0.8, 1].map((share) => ({
-          x: from.x + turned * half * 0.12 * Math.sin(share * 9 + across * 5),
-          y: from.y - height * down * share,
-        }));
-        return [from, ...below];
-      });
-      return { outline, shade, cap, cracks };
+    const count = Math.max(
+      HazardSigns.TOWER_METRES.length,
+      Math.round((right - left) / HazardSigns.TOWER_SPACING),
+    );
+    const middles = Array.from(
+      { length: count },
+      (_, index) => left + ((right - left) * (index + 0.5)) / count,
+    );
+    for (const event of events) {
+      const over = this.terrain.point((event.from + event.to) / 2).x;
+      if (event.kind !== "serac" || over < left || over > right) {
+        continue;
+      }
+      const nearest = middles.reduce(
+        (best, middle, index) =>
+          Math.abs(middle - over) < Math.abs((middles[best] ?? Infinity) - over) ? index : best,
+        0,
+      );
+      middles[nearest] = over;
+    }
+    return middles.map((middle, index) => this.tower(middle, index));
+  }
+
+  /** A serac over the middle of a stretch of its own: a training collapse's staged off the serac
+   * zones (#229). */
+  seracOver(stretch: HazardZone): Serac {
+    return this.tower(this.terrain.point((stretch.from + stretch.to) / 2).x, 0);
+  }
+
+  /** The part of `points` in a serac's shade, its side away from the light: each pressed in to
+   * where its shade ends. */
+  static shaded(serac: Serac, points: readonly Point[]): Point[] {
+    const { turned, shadeAt } = serac;
+    return points.map(({ x, y }) => ({
+      x: turned === 1 ? Math.min(x, shadeAt) : Math.max(x, shadeAt),
+      y,
+    }));
+  }
+
+  /** The serac whose foot's middle is at `middle` along x, the `index`th of its stretch: as tall
+   * as the heights say in turn, every other one leaning the other way, so no two neighbours
+   * match. */
+  private tower(middle: number, index: number): Serac {
+    const heights = HazardSigns.TOWER_METRES;
+    const height = heights[index % heights.length] ?? 0;
+    const half = HazardSigns.TOWER_HALF_WIDTH;
+    const base = this.surface.highest(middle - half, middle + half);
+    const turned = index % 2 === 0 ? 1 : -1;
+    const at = ([across, up]: readonly [number, number]): Point => ({
+      x: middle + turned * across * half,
+      y: base + up * height,
     });
+    const outline = HazardSigns.SERAC_SHAPE.map(at);
+    const shadeAt = middle - turned * half * (1 - 2 * HazardSigns.SHADED_SHARE);
+    const top = HazardSigns.SERAC_SHAPE.filter(([, up]) => up >= HazardSigns.TOP).map(at);
+    const cap = [
+      ...top,
+      ...top.map(({ x, y }) => ({ x, y: y - HazardSigns.CAP_METRES })).reverse(),
+    ];
+    const cracks = HazardSigns.CRACKS.map(([across, down]) => {
+      const from = at([across, 0.97]);
+      const below = [0.3, 0.55, 0.8, 1].map((share) => ({
+        x: from.x + turned * half * 0.12 * Math.sin(share * 9 + across * 5),
+        y: from.y - height * down * share,
+      }));
+      return [from, ...below];
+    });
+    const serac = {
+      outline,
+      shade: [],
+      cap,
+      cracks,
+      turned,
+      middle,
+      base,
+      height,
+      shadeAt,
+    } as const;
+    return { ...serac, shade: HazardSigns.shaded(serac, outline) };
   }
 
   /** What comes down over a zone, `share` of the way through its warning: 0 as it begins, 1 as
@@ -138,67 +185,6 @@ export class HazardSigns {
       pieces.push({ x: ground.x, y: ground.y + high * left, size });
     }
     return pieces;
-  }
-
-  /** The crack a staged collapse opens down the ice above its stretch (#209), `share` of the way
-   * through its crack: a jagged line from high on the serac's face, longer as it goes, and the
-   * chips that come off it, falling. */
-  crack(
-    zone: HazardZone,
-    share: number,
-  ): {
-    readonly line: readonly Point[];
-    readonly chips: readonly DebrisPiece[];
-  } {
-    const grown = Math.min(Math.max(share, 0), 1);
-    const middle = this.terrain.point((zone.from + zone.to) / 2);
-    const top = middle.y + HazardSigns.CRACK_TOP;
-    const down = HazardSigns.CRACK_DOWN * grown;
-    const line: Point[] = [];
-    for (let piece = 0; piece <= HazardSigns.CRACK_PIECES; piece += 1) {
-      const along = piece / HazardSigns.CRACK_PIECES;
-      // Jagged: each piece kinks one way, then the other.
-      const kink = (piece % 2 === 0 ? 1 : -1) * HazardSigns.CRACK_KINK * (0.5 + along / 2);
-      line.push({ x: middle.x + kink, y: top - down * along });
-    }
-    const chips: DebrisPiece[] = [];
-    for (let chip = 0; chip < HazardSigns.CHIPS; chip += 1) {
-      // Each chip falls from the crack in turn, over and over, faster as the crack grows.
-      const cycle = (grown * HazardSigns.CHIP_FALLS + chip / HazardSigns.CHIPS) % 1;
-      const from = top - down * ((chip + 1) / (HazardSigns.CHIPS + 1));
-      chips.push({
-        x: middle.x + HazardSigns.CRACK_KINK * ((chip % 3) - 1),
-        y: from - (from - middle.y) * cycle * cycle,
-        size: HazardSigns.CHIP_METRES * (1 + (chip % 2)),
-      });
-    }
-    return { line, chips };
-  }
-
-  /** The blocks of ice a staged collapse leaves lying over its stretch (#209), as outlines: big
-   * and small, tipped this way and that, sunk a little into the snow. */
-  rubble(zone: HazardZone): readonly (readonly Point[])[] {
-    const blocks: (readonly Point[])[] = [];
-    const count = Math.max(2, Math.round((zone.to - zone.from) / HazardSigns.RUBBLE_EVERY));
-    for (let block = 0; block < count; block += 1) {
-      const at = this.terrain.point(HazardSigns.across(zone, (block + 0.5) / count));
-      const size = HazardSigns.RUBBLE_SIZES[block % HazardSigns.RUBBLE_SIZES.length] ?? 1;
-      const tip = ((block * 7) % 5) / 5 - 0.4;
-      const corners: readonly (readonly [number, number])[] = [
-        [-0.55, -0.15],
-        [0.5, -0.2],
-        [0.6, 0.55],
-        [0.1, 0.8],
-        [-0.5, 0.6],
-      ];
-      blocks.push(
-        corners.map(([x, y]) => ({
-          x: at.x + size * (x * Math.cos(tip) - y * Math.sin(tip)),
-          y: at.y + size * (x * Math.sin(tip) + y * Math.cos(tip)),
-        })),
-      );
-    }
-    return blocks;
   }
 
   /** A point `share` of the way along a zone, in metres along the ground. */

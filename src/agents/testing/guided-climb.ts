@@ -34,7 +34,16 @@ export class GuidedClimb {
   /** No hazard goes of itself; a staged one cracks for a minute of the mountain's: six seconds
    * of play. */
   static readonly QUIET: HazardSettings = (() => {
-    const odds = { rate: 0, warmth: 1, snow: 1, wind: 1, warning: 0, deadly: 0, deadlyClipped: 0 };
+    const odds = {
+      rate: 0,
+      warmth: 1,
+      snow: 1,
+      wind: 1,
+      warning: 0,
+      deadly: 0,
+      deadlyClipped: 0,
+      fall: 0,
+    };
     return {
       kinds: { serac: odds, avalanche: odds, crevasse: odds, cornice: odds },
       warmth: { from: 6, peak: 14, until: 20 },

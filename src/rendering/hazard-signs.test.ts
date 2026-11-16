@@ -15,6 +15,7 @@ const TERRAIN = new Terrain([
 const SERAC: HazardZone = { id: "serac", kind: "serac", from: 5, to: 15 };
 const SLOPE: HazardZone = { id: "slope", kind: "avalanche", from: 22, to: 46 };
 const BRIDGE: HazardZone = { id: "bridge", kind: "crevasse", from: 5, to: 15 };
+const CORNICE: HazardZone = { id: "cornice", kind: "cornice", from: 5, to: 15 };
 const signs = new HazardSigns(TERRAIN, new IceSurface(TERRAIN, []));
 
 const within = (points: readonly Point[], from: number, to: number): boolean =>
@@ -61,6 +62,46 @@ describe("HazardSigns", () => {
     }
   });
 
+  it("stands a serac every 10 m or so along a long stretch, so one is over wherever a climber is (#229)", () => {
+    const flat = new Terrain([
+      [0, 0],
+      [200, 0],
+    ]);
+    const long: HazardZone = { id: "glacier", kind: "serac", from: 20, to: 120 };
+    const middles = new HazardSigns(flat, new IceSurface(flat, []))
+      .seracs(long)
+      .map(({ middle }) => middle);
+
+    expect(middles.length).toBe(10);
+    expect(Math.min(...middles) - 20).toBeLessThanOrEqual(HazardSigns.TOWER_SPACING / 2 + 1e-9);
+    expect(120 - Math.max(...middles)).toBeLessThanOrEqual(HazardSigns.TOWER_SPACING / 2 + 1e-9);
+    for (const [index, middle] of middles.slice(1).entries()) {
+      expect(middle - (middles[index] ?? 0)).toBeLessThanOrEqual(HazardSigns.TOWER_SPACING + 1e-9);
+    }
+  });
+
+  it("stands a training collapse's serac right over its stretch, on the zone or off it (#229)", () => {
+    const staged: HazardZone = { id: "serac-collapse", kind: "serac", from: 8, to: 12 };
+    const off: HazardZone = { id: "serac-collapse", kind: "serac", from: 30, to: 38 };
+    const moved = signs.seracs(SERAC, [staged]);
+
+    expect(moved.map(({ middle }) => middle)).toContain(10);
+    expect(moved.length).toBe(signs.seracs(SERAC).length);
+    expect(signs.seracs(SERAC, [off])).toEqual(signs.seracs(SERAC));
+    expect(signs.seracOver(off).middle).toBe(TERRAIN.point(34).x);
+  });
+
+  it("shades a serac's side away from the light, whatever's drawn of it", () => {
+    const [serac] = signs.seracs(SERAC);
+    const outline = serac?.outline ?? [];
+    const shaded = serac === undefined ? [] : HazardSigns.shaded(serac, outline);
+
+    expect(shaded).toEqual(serac?.shade);
+    expect(Math.max(...shaded.map(({ x }) => x))).toBeLessThan(
+      Math.max(...outline.map(({ x }) => x)),
+    );
+  });
+
   it("lays loaded snow along an avalanche slope, just above its ground", () => {
     const [band] = signs.zone(SLOPE);
     const top = TERRAIN.point(SLOPE.to);
@@ -75,9 +116,9 @@ describe("HazardSigns", () => {
   });
 
   it("brings what comes down from high above the stretch to its ground as the warning runs", () => {
-    const start = signs.debris(SERAC, 0);
-    const half = signs.debris(SERAC, 0.5);
-    const end = signs.debris(SERAC, 1);
+    const start = signs.debris(CORNICE, 0);
+    const half = signs.debris(CORNICE, 0.5);
+    const end = signs.debris(CORNICE, 1);
 
     expect(start.length).toBe(HazardSigns.PIECES);
     expect(within(start, 5, 15)).toBe(true);
@@ -88,38 +129,11 @@ describe("HazardSigns", () => {
     expect(end.every((piece) => Math.abs(piece.y) < 1e-9)).toBe(true);
   });
 
-  it("makes snow bigger than ice, and holds what's past the warning's end on the ground", () => {
+  it("makes an avalanche's snow bigger than a cornice's, and holds what's past the warning's end on the ground", () => {
     const snow = signs.debris(SLOPE, 2);
-    const ice = signs.debris(SERAC, 1);
+    const cornice = signs.debris(CORNICE, 1);
 
-    expect(snow[0]?.size).toBeGreaterThan(ice[0]?.size ?? Infinity);
+    expect(snow[0]?.size).toBeGreaterThan(cornice[0]?.size ?? Infinity);
     expect(snow.every((piece) => Math.abs(piece.y - TERRAIN.nearest(piece).y) < 1e-9)).toBe(true);
-  });
-
-  it("opens a staged collapse's crack down the serac over its stretch, longer as it goes, chips falling off it (#209)", () => {
-    const early = signs.crack(SERAC, 0.1);
-    const late = signs.crack(SERAC, 0.9);
-    const length = (line: readonly Point[]): number => (line[0]?.y ?? 0) - (line.at(-1)?.y ?? 0);
-
-    expect(within(late.line, 9, 11)).toBe(true);
-    // On the serac's face over the route, above the climbers' heads, where the view shows it.
-    expect(Math.min(...late.line.map(({ y }) => y))).toBeGreaterThan(2.5);
-    expect(Math.max(...late.line.map(({ y }) => y))).toBeLessThan(9);
-    expect(length(late.line)).toBeGreaterThan(length(early.line) * 4);
-    expect(late.chips.length).toBeGreaterThan(0);
-    for (const chip of late.chips) {
-      expect(chip.y).toBeGreaterThanOrEqual(0);
-    }
-  });
-
-  it("leaves blocks of ice lying on the ground over a staged collapse's stretch (#209)", () => {
-    const blocks = signs.rubble(SERAC);
-
-    expect(blocks.length).toBeGreaterThan(5);
-    for (const block of blocks) {
-      expect(within(block, 4, 16)).toBe(true);
-      expect(Math.min(...block.map(({ y }) => y))).toBeLessThan(0.2);
-      expect(Math.max(...block.map(({ y }) => y))).toBeLessThan(2);
-    }
   });
 });
