@@ -74,8 +74,14 @@ test("with motion reduced, the menu's picture holds still, its rope drawn", asyn
 
   await expect(page.locator("#start .menu-rope")).toBeVisible();
   await expect(page.locator("#start .menu-lamp")).toHaveCount(0);
+  // The picture's motion is the style sheet's animations; a button's quick answer to a finger is
+  // a transition, which stays (Safari counts one a side of its border).
   const moving = await page.evaluate(
-    () => document.querySelector("#start")?.getAnimations({ subtree: true }).length,
+    () =>
+      document
+        .querySelector("#start")
+        ?.getAnimations({ subtree: true })
+        .filter((animation) => "animationName" in animation).length,
   );
   expect(moving).toBe(0);
 });
