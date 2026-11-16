@@ -21,9 +21,9 @@ test.beforeEach(({ hasTouch }) => {
   test.skip(hasTouch, "a tester's tool, used on a PC");
 });
 
-// A small laptop's screen: frames a slow machine draws sooner, and the slope still clear of the
-// panel 8 m ahead of the player.
-test.use({ viewport: { width: 960, height: 540 } });
+// A small screen, which a slow machine draws sooner: the panel covers the player on it, and the
+// slope 16 m ahead of them is clear of it.
+test.use({ viewport: { width: 640, height: 360 } });
 
 /** The god mode's panel. */
 const panel = (page: Page) => page.getByRole("dialog", { name: "God mode" });
@@ -85,19 +85,19 @@ test("the panel goes to the crux from its list, to metres along the ground and t
   expect(pemba).toBeGreaterThanOrEqual(crux);
   expect(pemba).toBeLessThan(crux + 10);
 
-  // Metres along the ground, then a click 8 m on up the slope.
-  await panel(page).getByLabel("Metres along").fill("250");
+  // Metres along the ground, back by Base Camp, then a click on the moraine 16 m on up.
+  await panel(page).getByLabel("Metres along").fill("12");
   await panel(page).locator('[data-form="metres"]').getByRole("button", { name: "Go" }).click();
-  await expect.poll(() => along(page), WALKING).toBe(250);
+  await expect.poll(() => along(page), WALKING).toBe(12);
   await settledOnThePlayer(page);
   await panel(page).getByRole("button", { name: "Pick on the slope" }).click();
   const [x = 0, y = 0] = await page.evaluate(() => {
     const [at = 0, up = 0] = window.everest.climberAt("player");
-    return window.everest.screenAt(at + 8, up + 1);
+    return window.everest.screenAt(at + 16, up + 1);
   });
   await page.mouse.click(x, y);
-  await expect.poll(() => along(page), WALKING).toBeGreaterThan(256);
-  expect(await along(page)).toBeLessThan(261);
+  await expect.poll(() => along(page), WALKING).toBeGreaterThan(26);
+  expect(await along(page)).toBeLessThan(30);
 
   // The clock set on to 13:00, and snow.
   await panel(page).getByLabel("Clock").fill("13:00");
