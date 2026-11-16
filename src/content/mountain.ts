@@ -135,6 +135,12 @@ export class Mountain {
     };
   }
 
+  /** How far a fixed rope gives under a climber's weight, as a share of its loaded length
+   * (`gear.fixed-rope-stretch`, #232): the picture draws a loaded rope's give by it. */
+  get ropeStretch(): number {
+    return this.knowledge.number("gear.fixed-rope-stretch");
+  }
+
   /** The Sherpa's numbers, from their records in content/facts/technique.json: how far ahead he
    * leads (`technique.sherpa-lead`), when he waits (`-wait`), how far back he follows (`-behind`),
    * how long he rests with a client he pulled out (`-rest`), how long a client ahead of him stands

@@ -675,6 +675,42 @@ describe("ClimberPose", () => {
     expect(longestStill(slid, jumar, 1e-3)).toBe(0);
   });
 
+  it("pulls on the jumar between its strokes up steep ground, harder the steeper, and not on the flat or at a halt (#232)", () => {
+    const rope = { jumar: { x: 0.45, y: 1 }, sliding: true };
+    const pulls = (frames: readonly Frame[]): number[] => frames.map((frame) => frame.pose.pull);
+    const steep = pulls(walk(300, rope, (x) => 0.8 * x).slice(60));
+    const gentle = pulls(walk(300, rope, (x) => 0.35 * x).slice(60));
+    const level = pulls(walk(300, rope).slice(60));
+    const down = pulls(walk(300, rope, (x) => -0.8 * x).slice(60));
+    const gripped = pulls(walk(300, { jumar: { x: 0.45, y: 1 } }, (x) => 0.8 * x).slice(60));
+    const halted = new ClimberPose().advance(5, state({ ...rope, ground: (x) => 0.8 * x }));
+
+    // A pull each stroke, and the rope let go slack between them.
+    expect(Math.max(...steep)).toBeGreaterThan(0.6);
+    expect(Math.min(...steep)).toBe(0);
+    expect(Math.max(...gentle)).toBeGreaterThan(0.05);
+    expect(Math.max(...gentle)).toBeLessThan(Math.max(...steep) / 2);
+    expect(Math.max(...level)).toBe(0);
+    expect(Math.max(...down)).toBe(0);
+    expect(Math.max(...gripped)).toBe(0);
+    expect(halted.pull).toBe(0);
+    for (const pull of steep) {
+      expect(pull).toBeGreaterThanOrEqual(0);
+      expect(pull).toBeLessThanOrEqual(1);
+    }
+  });
+
+  it("pulls while the jumar grips the rope, never while the hand slides it on (#232)", () => {
+    const jumar = (frame: Frame): Joint => inWorld(frame, frame.pose.jumar ?? frame.pose.pelvis);
+    const frames = walk(300, { jumar: { x: 0.45, y: 1 }, sliding: true }, (x) => 0.8 * x).slice(60);
+    for (const [before, after] of pairs(frames)) {
+      if (after.pose.pull > 0.3) {
+        // The climber goes 10 mm a frame: the hand on the rope, less than half of that.
+        expect(Math.abs(jumar(after).x - jumar(before).x)).toBeLessThan(4e-3);
+      }
+    }
+  });
+
   it("bends to the second carabiner as it's clipped, the far hand on it, and stands again", () => {
     const climber = new ClimberPose();
     const before = climber.advance(5, state());

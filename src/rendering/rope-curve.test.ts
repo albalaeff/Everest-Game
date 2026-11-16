@@ -157,6 +157,147 @@ describe("RopeCurve", () => {
     expect(nearest(curve, 5.5, 0.3)).toBeLessThan(1e-9);
   });
 
+  /** A rope lying on a slope that rises half a metre a metre, from its foot to an anchor at its
+   * top, and the slope's snow. */
+  const SLOPE = (x: number): number => x / 2;
+  const up = (from: number, to: number): Chain =>
+    chain(
+      ...Array.from(
+        { length: to - from + 1 },
+        (_, index) => [from + index, (from + index) / 2] as const,
+      ),
+    );
+  /** How far the curve strays from the straight line between two points, at most, between them
+   * across. */
+  const offLine = (
+    curve: RopeCurve,
+    from: readonly [number, number],
+    to: readonly [number, number],
+  ): number => {
+    let most = 0;
+    const length = Math.hypot(to[0] - from[0], to[1] - from[1]);
+    for (let index = 0; index < curve.length; index += 1) {
+      const x = curve.x(index);
+      if (x > Math.min(from[0], to[0]) + 1e-6 && x < Math.max(from[0], to[0]) - 1e-6) {
+        const across =
+          ((to[0] - from[0]) * (curve.y(index) - from[1]) - (to[1] - from[1]) * (x - from[0])) /
+          length;
+        most = Math.max(most, Math.abs(across));
+      }
+    }
+    return most;
+  };
+
+  it("runs straight from a jumar that bears a climber's weight to the anchor above it (#232)", () => {
+    const curve = new RopeCurve();
+    const held = [{ on: { x: 4, y: 2 }, drawn: { x: 4, y: 2.9 }, load: 1 }];
+    curve.shape(up(0, 10), held, SLOPE, 0, 0);
+
+    expect(nearest(curve, 4, 2.9)).toBeLessThan(1e-9);
+    expect(offLine(curve, [4, 2.9], [10, 5])).toBeLessThan(1e-6);
+    // Half way up it, the rope is well off the snow it lay on.
+    expect(nearest(curve, 7, 3.95)).toBeLessThan(0.02);
+  });
+
+  it("leaves the rope below a loaded jumar as slack as it was, from a link below it", () => {
+    const loaded = new RopeCurve();
+    const slack = new RopeCurve();
+    const at = { on: { x: 4, y: 2 }, drawn: { x: 4, y: 2.9 } };
+    loaded.shape(up(0, 10), [{ ...at, load: 1 }], SLOPE, 0, 0);
+    slack.shape(up(0, 10), [at], SLOPE, 0, 0);
+    const below = (curve: RopeCurve): number[] =>
+      Array.from({ length: curve.length }, (_, index) => index)
+        .filter((index) => curve.x(index) < 3 - 1e-6)
+        .flatMap((index) => [curve.x(index), curve.y(index)]);
+
+    expect(below(loaded)).toEqual(below(slack));
+    expect(nearest(loaded, 1, 0.5)).toBeLessThan(1e-9);
+  });
+
+  it("comes half way to the straight line under half the weight, and lies as it did under none", () => {
+    const curve = new RopeCurve();
+    const at = { on: { x: 4, y: 2 }, drawn: { x: 4, y: 2.9 } };
+    curve.shape(up(0, 10), [{ ...at, load: 0 }], SLOPE, 0, 0);
+    const slack = nearest(curve, 8, 4);
+    curve.shape(up(0, 10), [{ ...at, load: 0.5 }], SLOPE, 0, 0);
+
+    expect(slack).toBeLessThan(1e-9);
+    // The rope's point at 8 m lay on the snow at 4 m up; taut, it's 0.3 m over it.
+    expect(nearest(curve, 8, 4.15)).toBeLessThan(0.02);
+  });
+
+  it("bears no weight on an anchor below the climber: only the rope above them comes taut", () => {
+    const curve = new RopeCurve();
+    const held = [{ on: { x: 6, y: 3 }, drawn: { x: 6, y: 3.9 }, load: 1 }];
+    curve.shape(up(0, 10), held, SLOPE, 0, 0);
+
+    expect(offLine(curve, [6, 3.9], [10, 5])).toBeLessThan(1e-6);
+    expect(nearest(curve, 2, 1)).toBeLessThan(1e-9);
+  });
+
+  /** A crevasse 6 m deep from 1 m to 5 m across, a rope hanging into it from an anchor a metre
+   * back from one lip to one two metres back from the other. */
+  const DEEP = (x: number): number => (x > 1 && x < 5 ? -6 : 0);
+  const hung = chain(
+    [0, 0],
+    [1, 0],
+    [1.3, -0.9],
+    [1.8, -1.8],
+    [2.4, -2.6],
+    [3, -3],
+    [3.6, -2.6],
+    [4.2, -1.8],
+    [4.7, -0.9],
+    [5, 0],
+    [6, 0],
+    [7, 0],
+  );
+
+  it("bends over a lip between a climber hanging in a crevasse and each anchor, straight between", () => {
+    const curve = new RopeCurve();
+    const held = [{ on: { x: 3, y: -3 }, drawn: { x: 3, y: -3.4 }, load: 1 }];
+    curve.shape(hung, held, DEEP, 0, 0);
+
+    // Straight from the carabiner to each lip, and along the snow from there to the anchor.
+    expect(offLine(curve, [3, -3.4], [4.4, -1])).toBeLessThan(0.03);
+    expect(offLine(curve, [1.6, -1], [3, -3.4])).toBeLessThan(0.03);
+    for (let index = 0; index < curve.length; index += 1) {
+      const [x, y] = [curve.x(index), curve.y(index)];
+      expect(y).toBeGreaterThan(DEEP(x) - 0.12);
+      if (x > 5.5 || x < 0.5) {
+        expect(Math.abs(y)).toBeLessThan(0.06);
+      }
+    }
+  });
+
+  it("runs taut both ways from hands that pull it tight, to an anchor no higher than they are", () => {
+    const curve = new RopeCurve();
+    const held = [{ on: { x: 6, y: 0 }, drawn: { x: 6.2, y: 1 }, load: 1, pulled: true }];
+    curve.shape(hung, held, DEEP, 0, 0);
+
+    // Across the crevasse it's a rail from his hands to the far lip, not a loop hanging into it.
+    expect(nearest(curve, 3, -3)).toBeGreaterThan(2.5);
+    expect(offLine(curve, [6.2, 1], [0, 0])).toBeLessThan(0.02);
+  });
+
+  it("quivers across itself in the middle of its loaded length, and not at its ends", () => {
+    const curve = new RopeCurve();
+    const at = { on: { x: 4, y: 2 }, drawn: { x: 4, y: 2.9 }, load: 1 };
+    curve.shape(up(0, 10), [{ ...at, quiver: 0.04 }], SLOPE, 0, 0);
+
+    expect(offLine(curve, [4, 2.9], [10, 5])).toBeCloseTo(0.04, 2);
+    expect(nearest(curve, 4, 2.9)).toBeLessThan(1e-9);
+    expect([curve.x(curve.length - 1), curve.y(curve.length - 1)]).toEqual([10, 5]);
+  });
+
+  it("doesn't flutter on the gust where it's taut", () => {
+    const curve = new RopeCurve();
+    const held = [{ on: { x: 4, y: 2 }, drawn: { x: 4, y: 2.9 }, load: 1 }];
+    curve.shape(up(0, 10), held, SLOPE, 1, 0.4);
+
+    expect(offLine(curve, [4, 2.9], [10, 5])).toBeLessThan(1e-6);
+  });
+
   it("draws the same rope the same way every time, a longer or a shorter one after it", () => {
     const curve = new RopeCurve();
     const xs = (): number[] => Array.from({ length: curve.length }, (_, index) => curve.x(index));
