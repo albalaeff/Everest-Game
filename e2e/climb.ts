@@ -82,6 +82,23 @@ export interface SavedClimb {
   };
 }
 
+/** The god mode as the stories use it, on `window.everest.god` with `?god` (src/page/god-mode.ts →
+ * GodHooks, #245): its places, where the player and their Sherpa are, and its powers. */
+export interface SeenGod {
+  readonly places: readonly { readonly id: string; readonly along: number }[];
+  readonly where: { readonly along: number; readonly sherpa: number | null };
+  readonly state: { readonly immortal: boolean; readonly speed: number; readonly weather: string };
+  teleport(where: string | number, who?: string): number;
+  hour(time: string): void;
+  weather(weather: string): void;
+  speed(times: number): void;
+  serac(): { readonly id: string; readonly from: number; readonly to: number };
+  ladder(id?: string): string | null;
+  jolt(kind?: string): boolean;
+  slip(): void;
+  immortal(on: boolean): void;
+}
+
 declare global {
   interface Window {
     /** What the page shows its stories (src/page/game-page.ts → PageHooks). */
@@ -90,6 +107,7 @@ declare global {
       screenAt(x: number, y: number): readonly number[];
       climberAt(climber: string): readonly number[];
       climber(climber: string): SeenClimber;
+      god?: SeenGod;
     };
   }
 }
@@ -173,6 +191,16 @@ export async function openTheGame(page: Page): Promise<void> {
   await choice(page, "Alone").click();
   await climberScreen(page).getByRole("button", { name: "Climb" }).click();
   await setOffChecked(page);
+}
+
+/** Opens the game with the god mode (#245) on a new climb alone, as `openTheGame` does, on a device
+ * with no climb of the god mode's saved, and waits for its powers on the page. */
+export async function openTheGameAsGod(page: Page): Promise<void> {
+  await readTheDisclaimer(page, "/?god");
+  await choice(page, "Alone").click();
+  await climberScreen(page).getByRole("button", { name: "Climb" }).click();
+  await setOffChecked(page);
+  await page.waitForFunction(() => "everest" in window && window.everest.god !== undefined);
 }
 
 /** Opens the game again on the climb alone the device has saved: [Alone] goes on with it, with

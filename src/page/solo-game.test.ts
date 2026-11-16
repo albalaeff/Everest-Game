@@ -169,4 +169,34 @@ describe("SoloGame", () => {
 
     expect(store.stored.map((save) => save.step)).toEqual([140]);
   });
+
+  it("says how many steps it has played, for the god mode to stage what comes on the next (#245)", () => {
+    const { game } = aGame();
+
+    game.advance(1);
+    game.advance(0.5);
+
+    expect(game.step).toBe(30);
+  });
+
+  it("runs as many times faster as the god mode says, a frame taking that many seconds' steps at most (#245)", () => {
+    const { game, expedition } = aGame();
+
+    game.faster(5);
+    for (let frame = 0; frame < 4; frame += 1) {
+      game.advance(0.25);
+    }
+    const inASecond = expedition.step;
+    game.advance(60);
+    const inALongFrame = expedition.step - inASecond;
+    game.faster(1);
+    game.advance(1);
+
+    expect(inASecond).toBe(100);
+    expect(inALongFrame).toBe(100);
+    expect(expedition.step - inASecond - inALongFrame).toBe(20);
+    expect(() => {
+      game.faster(0);
+    }).toThrow(RangeError);
+  });
 });

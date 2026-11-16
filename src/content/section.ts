@@ -396,6 +396,40 @@ export class Section {
     return { collapse, ladder };
   }
 
+  /** A serac collapse staged over `along` on the spot, called `id` (#245), as the seed stages one
+   * on a serac zone (`staged`): the training's stretch round it, as far as the ground lets it,
+   * cracking the training's lead short of it. */
+  collapseOver(along: number, id: string): HazardEvent {
+    const { lead, length } = this.training;
+    const end = new Terrain(this.layout.terrain).length;
+    const from = Math.max(0, Math.min(along - length / 2, end - length));
+    return { id, kind: "serac", from, to: Math.min(end, from + length), lead };
+  }
+
+  /** A ladder staged to break on the spot (#245): the first crossing long enough to break that a
+   * climber `along` the ground hasn't crossed yet, the one under them too, breaking in its middle,
+   * where the seed breaks one in its middle third (`staged`); none past the last of them. */
+  breakAhead(along: number): { readonly id: string; readonly breaks: number } | null {
+    const crossing = this.training.crossings.find(({ id }) =>
+      this.layout.ladders.some((ladder) => ladder.id === id && ladder.to > along),
+    );
+    return crossing === undefined ? null : this.breakOf(crossing.id);
+  }
+
+  /** The ladder `id` staged to break on the spot (#245), in the middle of its length. */
+  breakOf(id: string): { readonly id: string; readonly breaks: number } {
+    const ladder = this.layout.ladders.find((laid) => laid.id === id);
+    if (ladder === undefined) {
+      throw new RangeError(`${this.id} has no ladder ${id}`);
+    }
+    const ground = new Terrain(this.layout.terrain);
+    const start = ground.point(ladder.from);
+    const end = ground.point(ladder.to);
+    const x = end.x - start.x;
+    const y = end.y - start.y;
+    return { id, breaks: Math.sqrt(x * x + y * y) / 2 };
+  }
+
   /** The bodies and the layout of the climbers who climb: everyone the file has, or, `alone`, the
    * player and the Sherpa, with no seat for a teammate (#212). */
   private climbing(

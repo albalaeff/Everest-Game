@@ -48,6 +48,10 @@ import { ActionQueue, EverySink, ZoomSink } from "./action-queue";
 import { BrowserSockets } from "./browser-sockets";
 import { ClimberScreen } from "./climber-screen";
 import { GearCheck } from "./gear-check";
+import { GodMode } from "./god-mode";
+import type { GodHooks } from "./god-mode";
+import { GodPanel } from "./god-panel";
+import type { GodTextName } from "./god-panel";
 import { InventoryPanel } from "./inventory-panel";
 import type { PackTextName } from "./pack-list";
 import { PackScreen } from "./pack-screen";
@@ -89,6 +93,8 @@ export interface PageTexts {
   readonly pack: Texts<PackTextName>;
   /** Pemba's lines (#212). */
   readonly sherpa: Texts<SherpaTextName>;
+  /** The god mode's panel (#245). */
+  readonly god: Texts<GodTextName>;
 }
 
 /** What the page's stories read that the DOM doesn't show, on `window.everest`. */
@@ -101,6 +107,8 @@ export interface PageHooks {
   climberAt(climber: ClimberId): readonly number[];
   /** A climber of the expedition as the physics shows them: on a ladder, on a rope, falling. */
   climber(climber: ClimberId): ClimberView;
+  /** The god mode's places and powers, with `?god` alone (#245). */
+  god?: GodHooks;
 }
 
 /** A climb as the page plays it: alone or in a room, it's the same from here. */
@@ -114,6 +122,8 @@ interface Climb {
   readonly sink: ActionSink;
   /** How to set off a new climb after the player's death, alone; none in a room. */
   readonly startOver: (() => void) | null;
+  /** The god mode over the climb alone, with `?god` (#245); none otherwise, and in a room. */
+  readonly god: GodMode | null;
 }
 
 /**
@@ -155,16 +165,21 @@ export class GamePage {
       this.together(linked);
       return;
     }
-    const store = new IndexedDbStore(window.indexedDB);
+    // The god mode keeps a climb of its own, and never touches the player's (#245).
+    const godly = GodMode.asked(window.location.href);
+    const store = new IndexedDbStore(
+      window.indexedDB,
+      godly ? IndexedDbStore.GOD : IndexedDbStore.SLOT,
+    );
     const saved = await store.load();
     if (this.tabStorage()?.getItem(GamePage.START_OVER) !== null && this.tabStorage() !== null) {
       this.tabStorage()?.removeItem(GamePage.START_OVER);
-      this.alone(store, null);
+      this.alone(store, null, godly);
       return;
     }
     new StartMenu(window.document, this.texts.room).show(saved !== null, (choice) => {
       if (choice.kind === "alone") {
-        this.alone(store, choice.fresh ? null : saved);
+        this.alone(store, choice.fresh ? null : saved, godly);
       } else {
         this.together(choice.kind === "join" ? choice.code : null);
       }
@@ -173,12 +188,12 @@ export class GamePage {
 
   /** The climb alone: the one `saved` on the device, or a new one, which replaces it at once, for
    * the climber the player says they are on Your climber, with the kit they check at Base Camp
-   * (#196). */
-  private alone(store: ExpeditionStore, saved: ExpeditionSave | null): void {
+   * (#196); `godly`, under the god mode (#245). */
+  private alone(store: ExpeditionStore, saved: ExpeditionSave | null, godly: boolean): void {
     const rules = this.mountain.rules();
     const resumed = SoloGame.resume(saved, rules.all);
     if (resumed !== null) {
-      this.playAlone(store, resumed, rules);
+      this.playAlone(store, resumed, rules, godly);
       return;
     }
     const { questionnaire } = this.mountain;
@@ -199,7 +214,7 @@ export class GamePage {
         new GearCheck(this.window, this.texts.gear).show((kit) => {
           const seed = this.newSeed();
           const scenario = this.mountain.scenario(seed, answers, kit, true, pack, true);
-          this.playAlone(store, Expedition.start(scenario, rules.all), rules);
+          this.playAlone(store, Expedition.start(scenario, rules.all), rules, godly);
         });
       });
     });
@@ -214,8 +229,14 @@ export class GamePage {
     return packed;
   }
 
-  /** Plays `expedition` alone, saved on the device from the start. */
-  private playAlone(store: ExpeditionStore, expedition: Expedition, rules: ExpeditionRules): void {
+  /** Plays `expedition` alone, saved on the device from the start; `godly`, under the god mode
+   * (#245). */
+  private playAlone(
+    store: ExpeditionStore,
+    expedition: Expedition,
+    rules: ExpeditionRules,
+    godly: boolean,
+  ): void {
     const queue = new ActionQueue();
     const player = Section.PLAYER;
     const game = new SoloGame(expedition, queue, store, player);
@@ -225,10 +246,18 @@ export class GamePage {
       this.tabStorage()?.setItem(GamePage.START_OVER, "1");
       this.window.location.reload();
     };
-    void this.play(
-      { scenario: expedition.scenario, player, played: game, sink: queue, startOver },
-      rules,
-    );
+    const { scenario } = expedition;
+    const god = godly
+      ? new GodMode(
+          game,
+          rules,
+          this.mountain.route,
+          player,
+          scenario.npcs?.[0] ?? null,
+          scenario.seed,
+        )
+      : null;
+    void this.play({ scenario, player, played: game, sink: queue, startOver, god }, rules);
   }
 
   /** A room: the one with `code`, or a new one when it's null. The climb is drawn once the room
@@ -243,7 +272,14 @@ export class GamePage {
     const play = new RoomPlay(window, notice, reloads, code, (welcome) => {
       const { scenario } = welcome.save;
       void this.play(
-        { scenario, player: welcome.climber, played: client, sink: client, startOver: null },
+        {
+          scenario,
+          player: welcome.climber,
+          played: client,
+          sink: client,
+          startOver: null,
+          god: null,
+        },
         rules,
       );
     });
@@ -391,7 +427,16 @@ export class GamePage {
     });
     button.appendTo(this.elements.find("header"));
     const fps = new FpsReadout(this.elements.find("#fps"), texts.rendering.fps);
+    const { god } = climb;
+    const godPanel =
+      god === null
+        ? null
+        : new GodPanel(window, texts.god, god, camera, sherpa === null ? null : voice.name);
+    godPanel?.appendTo(this.elements.find("header"));
     const afterFrame = (seconds: number): void => {
+      // Before the death is read: an immortal player stands up again (#245).
+      god?.update(seconds);
+      godPanel?.update();
       climbInterface.update();
       inventory.update();
       arrival.update(seconds);
@@ -408,6 +453,7 @@ export class GamePage {
         return [x, y];
       },
       climber: (climber) => physics.climber(climber),
+      ...(god === null ? {} : { god }),
     });
     if (await scene.open(window)) {
       drawn = true;

@@ -136,6 +136,48 @@ describe("A ladder staged to break", () => {
     expect(anna.falls).toMatchObject([{ broke: true, held: true }]);
     expect(anna.falls[0]?.pulled).toBeUndefined();
   });
+
+  it("is staged between steps by the god mode as a scenario stages it, and creaks under the trainees it names (#245)", () => {
+    const climb = new Climb(SETTINGS, {
+      ...overTheCrevasse([
+        { id: "pemba", along: 20 },
+        { id: "anna", along: 18 },
+      ]),
+      ladders: [{ id: "long", from: 20, to: 88 }],
+    });
+
+    climb.physics.stageBreak("long", 3, ["anna"]);
+    climb.play(1, [clip("pemba", "second"), walk("pemba", "right")]);
+    climb.play(steps(8));
+    const underPemba = climb.physics.ladderCondition("long");
+    climb.physics.stand("pemba", 88, true);
+    climb.physics.stand("anna", 20, true);
+    climb.play(1, [Climb.jumar("anna", true), walk("anna", "right")]);
+    climb.play(steps(6.2));
+    const creaking = climb.physics.ladderCondition("long");
+    climb.play(steps(1));
+
+    expect(underPemba).toBe("whole");
+    expect(creaking).toBe("creaking");
+    expect(climb.physics.ladderCondition("long")).toBe("broken");
+    expect(climb.physics.climber("anna")).toMatchObject({ falling: true, second: "fixed" });
+  });
+
+  it("lies across again, whole, staged again after it broke (#245)", () => {
+    const climb = crossing();
+    climb.play(steps(10));
+    const broken = climb.physics.ladderCondition("long");
+
+    climb.physics.stageBreak("long", 3, ["anna"]);
+
+    expect(broken).toBe("broken");
+    expect(climb.physics.ladderCondition("long")).toBe("whole");
+    expect(climb.physics.ladderTorn("long")).toBeNull();
+    expect(climb.physics.climber("anna")).toMatchObject({ hanging: true, second: "fixed" });
+    expect(() => {
+      climb.physics.stageBreak("nowhere", 3, ["anna"]);
+    }).toThrow(RangeError);
+  });
 });
 
 describe("A fallen ladder set back (#228)", () => {

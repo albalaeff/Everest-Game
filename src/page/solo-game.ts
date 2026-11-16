@@ -19,7 +19,9 @@ export class SoloGame implements Played {
   static readonly MAX_STEPS_A_FRAME = SimulationClock.STEPS_PER_SECOND;
   static readonly SAVE_EVERY_SECONDS = 10;
 
-  private readonly pacer = new StepPacer(SoloGame.MAX_STEPS_A_FRAME);
+  private pacer = new StepPacer(SoloGame.MAX_STEPS_A_FRAME);
+  /** How many times faster than real time it runs: once, but at the god mode's word (#245). */
+  private times = 1;
   private unsaved = 0;
 
   constructor(
@@ -46,8 +48,23 @@ export class SoloGame implements Played {
     }
   }
 
+  /** How many steps have been played: the next is the god mode's to stage what comes on (#245). */
+  get step(): number {
+    return this.expedition.step;
+  }
+
+  /** Runs `times` times faster than real time from now on, a frame taking that many seconds'
+   * steps at most: the god mode's speed (#245), and 1 for real time. */
+  faster(times: number): void {
+    if (!(times >= 1)) {
+      throw new RangeError(`The climb can't run ${times} times faster than real time`);
+    }
+    this.times = times;
+    this.pacer = new StepPacer(SoloGame.MAX_STEPS_A_FRAME * times);
+  }
+
   advance(seconds: number): number {
-    const steps = this.pacer.due(seconds);
+    const steps = this.pacer.due(seconds * this.times);
     for (let step = 0; step < steps; step += 1) {
       this.expedition.advance(step === 0 ? this.actions.take() : []);
     }

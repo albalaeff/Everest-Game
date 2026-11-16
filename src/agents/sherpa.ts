@@ -215,6 +215,16 @@ export class Sherpa implements Rule {
     };
   }
 
+  /** Takes the climb afresh from where he stands, between steps, as if he'd just come there: his
+   * footwork and his plans as a scenario starts him, and the clients who've set off: the god
+   * mode's, once it has put him or them somewhere else (#245). */
+  afresh(): void {
+    const { climber, clients, arrival, setOff } = this.loaded;
+    const fresh = Sherpa.start({ climber, clients, arrival }) as unknown as SherpaSave;
+    const save: SherpaSave = { ...fresh, setOff };
+    this.load(save);
+  }
+
   load(state: Json): void {
     const save = state as unknown as SherpaSave;
     this.state = save;

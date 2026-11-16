@@ -484,3 +484,43 @@ describe("Section: the Khumbu Icefall from content/route/icefall.json", () => {
     expect(() => new Section(knowledge, { ...icefall, layout })).toThrow(RangeError);
   });
 });
+
+describe("Section: training staged on the spot, by the god mode (#245)", () => {
+  const lead = knowledge.number("hazards.training-serac-lead");
+  const length = knowledge.number("hazards.training-serac-length");
+  /** A ladder's length, end to end. */
+  const lengthOf = (id: string): number => {
+    const laid = section.layout.ladders.find((ladder) => ladder.id === id);
+    const from = terrain.point(laid?.from ?? 0);
+    const to = terrain.point(laid?.to ?? 0);
+    return Math.sqrt((to.x - from.x) ** 2 + (to.y - from.y) ** 2);
+  };
+
+  it("stages a serac collapse over a point as the seed stages one: the training's stretch round it, cracking its lead short", () => {
+    expect(section.collapseOver(400, "god-serac-1")).toEqual({
+      id: "god-serac-1",
+      kind: "serac",
+      from: 400 - length / 2,
+      to: 400 + length / 2,
+      lead,
+    });
+    expect(section.collapseOver(0, "at-the-foot")).toMatchObject({ from: 0, to: length });
+    expect(section.collapseOver(terrain.length, "at-the-top")).toMatchObject({
+      from: terrain.length - length,
+      to: terrain.length,
+    });
+  });
+
+  it("breaks the first crossing long enough to break that a climber hasn't crossed yet, in its middle", () => {
+    expect(section.breakAhead(10)).toEqual({
+      id: "popcorn-crevasse",
+      breaks: lengthOf("popcorn-crevasse") / 2,
+    });
+    expect(section.breakAhead(100)?.id).toBe("popcorn-crevasse");
+    expect(section.breakAhead(130)?.id).toBe("wide-crevasse");
+    expect(section.breakAhead(500)?.id).toBe("top-crevasse");
+    expect(section.breakAhead(570)).toBeNull();
+    expect(section.breakOf("block")).toEqual({ id: "block", breaks: lengthOf("block") / 2 });
+    expect(() => section.breakOf("nowhere")).toThrow(RangeError);
+  });
+});

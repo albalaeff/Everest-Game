@@ -150,6 +150,33 @@ export class Jolts implements Rule {
     return this.loaded.zones;
   }
 
+  /**
+   * Brings a jolt of `kind` on its way to `climber` between steps, over the stretch of that kind
+   * they're on, a gust's or a lashed ladder's, as if the chance had on `step`: it warns its
+   * `warning` first, and comes on whoever it catches then. The god mode's (#245), never a rule's.
+   * None where no such stretch is under them, or one is on its way there already: whether it came.
+   */
+  bring(kind: JoltKind, climber: ClimberId, step: number): boolean {
+    const { zones, warnings } = this.loaded;
+    const along = this.ground.along(climber);
+    const zone = zones.find((each) => each.kind === kind && along >= each.from && along <= each.to);
+    if (zone === undefined || warnings.some((coming) => coming.zone === zone.id)) {
+      return false;
+    }
+    const steps = Math.ceil(this.settings.kinds[kind].warning / this.clock.secondsAStep);
+    const coming: JoltWarning = { zone: zone.id, kind, began: step, comes: step + steps };
+    this.state = { ...this.loaded, warnings: [...warnings, coming] };
+    return true;
+  }
+
+  /** Changes the weather between steps, as a scenario sets it: the god mode's (#245). */
+  changeWeather(weather: HazardWeather): void {
+    if (!HazardChance.knows(weather)) {
+      throw new RangeError(`The jolts don't know the weather ${weather}`);
+    }
+    this.state = { ...this.loaded, weather };
+  }
+
   /** The jolts on their way now, which haven't come yet. */
   get warnings(): readonly JoltWarning[] {
     return this.loaded.warnings;

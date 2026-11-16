@@ -12,9 +12,15 @@ export class IndexedDbStore implements ExpeditionStore {
   static readonly DATABASE = "everest";
   static readonly STORE = "expeditions";
   static readonly SLOT = "solo";
+  /** The god mode's climb, beside the player's own, which it never touches (#245). */
+  static readonly GOD = "god";
   private static readonly VERSION = 1;
 
-  constructor(private readonly factory: IDBFactory | undefined) {}
+  /** The climb in `slot`: the player's own, or the god mode's. */
+  constructor(
+    private readonly factory: IDBFactory | undefined,
+    private readonly slot: string = IndexedDbStore.SLOT,
+  ) {}
 
   async load(): Promise<ExpeditionSave | null> {
     try {
@@ -22,7 +28,7 @@ export class IndexedDbStore implements ExpeditionStore {
       const expeditions = database
         .transaction(IndexedDbStore.STORE, "readonly")
         .objectStore(IndexedDbStore.STORE);
-      const found: unknown = await IndexedDbStore.done(expeditions.get(IndexedDbStore.SLOT));
+      const found: unknown = await IndexedDbStore.done(expeditions.get(this.slot));
       database.close();
       return (found as ExpeditionSave | undefined) ?? null;
     } catch {
@@ -34,7 +40,7 @@ export class IndexedDbStore implements ExpeditionStore {
     try {
       const database = await this.open();
       const transaction = database.transaction(IndexedDbStore.STORE, "readwrite");
-      transaction.objectStore(IndexedDbStore.STORE).put(save, IndexedDbStore.SLOT);
+      transaction.objectStore(IndexedDbStore.STORE).put(save, this.slot);
       await new Promise<void>((resolve, reject) => {
         transaction.oncomplete = () => {
           resolve();
