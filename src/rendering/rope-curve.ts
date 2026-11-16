@@ -24,10 +24,14 @@ export interface Held {
 }
 
 /** A point the rope is held at: its place along the chain (2.5 is half way from the third point to
- * the fourth), which of the curve's points it is, how far along the rope, how far it's drawn from
- * where it lies, and how far along the rope back and on it lifts the rope with it. */
+ * the fourth); whether it's drawn back past the rope's first anchor (-1), past its last (1) or
+ * along it (0), and its order there, which put the holds in their order along the rope; which of
+ * the curve's points it is, how far along the rope, how far it's drawn from where it lies, and how
+ * far along the rope back and on it lifts the rope with it. */
 interface Hold {
   place: number;
+  end: -1 | 0 | 1;
+  order: number;
   index: number;
   along: number;
   x: number;
@@ -45,10 +49,14 @@ interface Hold {
  * holds a jumar off the rope, the rope runs through the jumar, lifted to it over a couple of metres
  * each side, less and less, and not at all at an anchor or another jumar. Where it hangs free of
  * the snow it sways on the gust, the way the wind blows, less near what holds it; on the snow it
- * lies still. Where it bears a climber's weight (#232) it runs taut from the jumar or the
- * carabiner that holds them to each anchor above them, straight but where the snow or a lip is
- * in its way, which it bends over, as far as it's loaded; there it turns a corner at what holds
- * it, slack below and taut above, quivers across itself as it comes taut, and doesn't flutter.
+ * lies still. It runs through what holds it in the order they're drawn along it, so where the
+ * physics has a climber's jumar and second carabiner on one spot, as on a ladder, it goes from
+ * the harness up to the hand and never doubles back between them (#250). Where it bears a
+ * climber's weight (#232) it runs taut from the jumar or the carabiner that holds them to each
+ * anchor above them, straight but where the snow or a lip is in its way, which it bends over, as
+ * far as it's loaded; there it turns a corner at what holds it, slack below and taut above,
+ * quivers across itself as it comes taut, and doesn't flutter. A taut stretch runs through every
+ * hand and carabiner on its way, turning a corner at each, not straight past them (#250).
  * The curve is a centripetal Catmull-Rom spline, which never loops where the points
  * are uneven, in a few pieces a link. It keeps only the picture's own: the curve, in arrays it
  * reuses.
@@ -72,6 +80,9 @@ export class RopeCurve {
   private static readonly HELD_METRES = 1.5;
   /** How near one of the chain's points a jumar's goes, as a share of the link. */
   private static readonly APART = 0.02;
+  /** How near its place on the chain is to be to the one nearest an anchor that a jumar's can
+   * have for it to be at that anchor, as a share of the link: the sums' rounding. */
+  private static readonly AT_AN_END = 1e-9;
   /** How far above what holds a climber an anchor is to bear all of their weight, in metres: one
    * level with them, or below, bears none. */
   private static readonly BEAR_METRES = 0.4;
@@ -145,6 +156,8 @@ export class RopeCurve {
     while (holds.length < held.length) {
       holds.push({
         place: 0,
+        end: 0,
+        order: 0,
         index: 0,
         along: 0,
         x: 0,
@@ -157,11 +170,18 @@ export class RopeCurve {
       });
     }
     this.holding = links < 2 ? 0 : held.length;
+    const first = RopeCurve.APART + RopeCurve.AT_AN_END;
+    const last = links - 1 - first;
     for (let index = 0; index < this.holding; index += 1) {
       const hold = holds[index];
       const jumar = held[index];
       if (hold !== undefined && jumar !== undefined) {
         hold.place = RopeCurve.placeOn(chain, jumar.on);
+        const ahead = RopeCurve.drawnOn(chain, hold.place, jumar.on, jumar.drawn);
+        hold.end = hold.place >= last && ahead > 0 ? 1 : hold.place <= first && ahead < 0 ? -1 : 0;
+        // Along the rope, the further it's drawn, the later; past an anchor, the nearer it, the
+        // later from its first and the sooner from its last.
+        hold.order = hold.end === 0 ? hold.place + ahead : -ahead;
         hold.x = jumar.drawn.x;
         hold.y = jumar.drawn.y;
         hold.load = Math.min(Math.max(jumar.load ?? 0, 0), 1);
@@ -209,18 +229,37 @@ export class RopeCurve {
     }
   }
 
-  /** The holds in order along the rope: there are only ever a few. */
+  /** The holds in the order the rope runs through them: there are only ever a few. Along the rope
+   * each goes where it's drawn along it, so where the physics has a climber's jumar and second
+   * carabiner on one spot, as on a ladder, the jumar in their hand goes past the carabiner at their
+   * harness, and the rope never doubles back between them; none goes on the rope before one it's
+   * drawn past. Past an anchor, where the rope ends, it runs out to them and back, to the furthest
+   * first and back by the nearer: up to the hands of whoever holds it tight past its top anchor,
+   * and down by their harness to the anchor. */
   private sortHolds(): void {
     const { holds } = this;
     for (let index = 1; index < this.holding; index += 1) {
       for (let at = index; at > 0; at -= 1) {
         const before = holds[at - 1];
         const hold = holds[at];
-        if (before === undefined || hold === undefined || before.place <= hold.place) {
+        if (
+          before === undefined ||
+          hold === undefined ||
+          before.end < hold.end ||
+          (before.end === hold.end && before.order <= hold.order)
+        ) {
           break;
         }
         holds[at - 1] = hold;
         holds[at] = before;
+      }
+    }
+    // Each on the rope no further back than the one before it, so they go into it in this order.
+    for (let index = 1; index < this.holding; index += 1) {
+      const before = holds[index - 1];
+      const hold = holds[index];
+      if (before !== undefined && hold !== undefined) {
+        hold.place = Math.max(hold.place, before.place);
       }
     }
   }
@@ -322,43 +361,72 @@ export class RopeCurve {
     return nearest;
   }
 
-  /** The rope from a hold to the anchor at `end`, brought `bear` of the way to its taut way
-   * between them, each point as far along that as it is along the rope, and across it by the
-   * hold's quiver, most in the middle; but the points other jumars hold, which stay in their
-   * hands. */
+  /** The rope from a hold to the anchor or the hold at `end`, brought `bear` of the way to its
+   * taut way: through each hand or carabiner on the rope on the way, which stay where they're
+   * drawn, so it runs taut from one to the next and turns a corner at each, as a rope pulled
+   * tight through them does, rather than straight past them. */
   private pull(hold: Hold, end: number, bear: number, ground: (x: number) => number): void {
-    const { xs, ys, distances, holds } = this;
-    const from = hold.index;
+    const step = end > hold.index ? 1 : -1;
+    let from = hold.index;
+    for (let point = from + step; ; point += step) {
+      const held = this.heldAt(point);
+      if (point === end || held) {
+        this.pullStretch(from, point, bear, hold.quiver, ground);
+        this.corner[from] = Math.max(this.corner[from] ?? 0, bear);
+      }
+      if (point === end) {
+        return;
+      }
+      if (held) {
+        this.tight[point] = Math.max(this.tight[point] ?? 0, bear);
+        from = point;
+      }
+    }
+  }
+
+  /** Whether a hold is drawn at the curve's point `point`. */
+  private heldAt(point: number): boolean {
+    for (let index = 0; index < this.holding; index += 1) {
+      if (this.holds[index]?.index === point) {
+        return true;
+      }
+    }
+    return false;
+  }
+
+  /** The rope between two of its points, nothing holding it between them, brought `bear` of the
+   * way to its taut way between them, each point as far along that as it is along the rope, and
+   * across it by `quiver`, most in the middle. */
+  private pullStretch(
+    from: number,
+    to: number,
+    bear: number,
+    quiver: number,
+    ground: (x: number) => number,
+  ): void {
+    const { xs, ys, distances } = this;
     const fromX = xs[from] ?? 0;
     const fromY = ys[from] ?? 0;
-    const toX = xs[end] ?? 0;
-    const toY = ys[end] ?? 0;
+    const toX = xs[to] ?? 0;
+    const toY = ys[to] ?? 0;
     const length = this.tautWay(fromX, fromY, toX, toY, ground);
-    const rope = Math.abs((distances[end] ?? 0) - (distances[from] ?? 0));
+    const rope = Math.abs((distances[to] ?? 0) - (distances[from] ?? 0));
     const straight = Math.hypot(toX - fromX, toY - fromY);
     if (!(rope > 0) || !(length > 0) || !(straight > 0)) {
       return;
     }
     const acrossX = -(toY - fromY) / straight;
     const acrossY = (toX - fromX) / straight;
-    const step = end > from ? 1 : -1;
-    for (let point = from + step; point !== end; point += step) {
-      let held = false;
-      for (let other = 0; other < this.holding; other += 1) {
-        held ||= holds[other]?.index === point;
-      }
+    const step = to > from ? 1 : -1;
+    for (let point = from + step; point !== to; point += step) {
       const share = Math.abs((distances[point] ?? 0) - (distances[from] ?? 0)) / rope;
       this.tight[point] = Math.max(this.tight[point] ?? 0, bear);
-      if (held) {
-        continue;
-      }
-      const quiver = hold.quiver * Math.sin(Math.PI * share);
-      const x = this.onTheWay(share * length, this.pathX) + acrossX * quiver;
-      const y = this.onTheWay(share * length, this.pathY) + acrossY * quiver;
+      const shaken = quiver * Math.sin(Math.PI * share);
+      const x = this.onTheWay(share * length, this.pathX) + acrossX * shaken;
+      const y = this.onTheWay(share * length, this.pathY) + acrossY * shaken;
       xs[point] = (xs[point] ?? 0) + (x - (xs[point] ?? 0)) * bear;
       ys[point] = (ys[point] ?? 0) + (y - (ys[point] ?? 0)) * bear;
     }
-    this.corner[from] = Math.max(this.corner[from] ?? 0, bear);
   }
 
   /** The taut way from one point to another over the ground, into `pathX` and `pathY`: straight,
@@ -584,6 +652,17 @@ export class RopeCurve {
       }
     }
     return place;
+  }
+
+  /** How far along the chain a hold at `place` is drawn from where it's `on` the rope, in links:
+   * the way from one to the other along the link it's on. A jumar in a hand above the harness is
+   * drawn further along a rope that goes up than the carabiner at the harness. */
+  private static drawnOn(chain: Chain, place: number, on: Point, drawn: Point): number {
+    const link = Math.min(Math.max(Math.floor(place), 0), chain.length - 2);
+    const dx = chain.x(link + 1) - chain.x(link);
+    const dy = chain.y(link + 1) - chain.y(link);
+    const square = dx * dx + dy * dy;
+    return square > 0 ? ((drawn.x - on.x) * dx + (drawn.y - on.y) * dy) / square : 0;
   }
 
   /** The knot interval of a centripetal spline between two points: the square root of how far
