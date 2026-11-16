@@ -19,7 +19,7 @@ In order:
 
    Whatever has to stay (a secret, a database only this machine has), the handoff names, and says why.
 
-3. **A handoff on each issue whose state isn't on GitHub yet:** the one in progress, and any where this session learned what the next one needs (a code map, a decision from the chat). Write it in the issue's language, as below, and post it with `uv run python scripts/github.py comment <n> <file> --handoff`, adding `--closing` when this session is about to close. The script signs it and adds a mark people don't see: this machine, the time, what the issue's work has cost here (so `title --done` counts every machine), and whether the session was closing. A milestone comment (plan, PR opened, CI result, merged) is the handoff when it ends with these parts, so it needs no second one.
+3. **A handoff on each issue whose state isn't on GitHub yet:** the one in progress, and any where this session learned what the next one needs (a code map, a decision from the chat). Write it in the issue's language, as below, into a file with the Write tool, which makes its folder too (an agent's go in `.agent-runs/`): never a heredoc, nor `mkdir` chained to the command, which an agent is refused (template#3). Post it with `uv run python scripts/github.py comment <n> <file> --handoff`, adding `--closing` when this session is about to close. The script signs it and adds a mark people don't see: this machine, the time, what the issue's work has cost here (so `title --done` counts every machine), and whether the session was closing. A milestone comment (plan, PR opened, CI result, merged) is the handoff when it ends with these parts, so it needs no second one.
 
    ```markdown
    <what happened, for people: a few lines>
