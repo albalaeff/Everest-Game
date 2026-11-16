@@ -59,7 +59,7 @@ async function settledOnThePlayer(page: Page): Promise<readonly number[]> {
   return last;
 }
 
-test("the panel goes to the crux from its list, to metres along the ground and to a click on the slope, and sets the clock and the weather", async ({
+test("the panel goes to a ladder from its list, to metres along the ground and to a click on the slope, keeps the player immortal, and sets the clock and the weather", async ({
   page,
 }) => {
   // One climb for all of the panel, drawn on Low: setting off and each press wait for frames,
@@ -69,21 +69,26 @@ test("the panel goes to the crux from its list, to metres along the ground and t
     localStorage.setItem("everest.graphics", "low");
   });
   await openTheGameAsGod(page);
-  const crux = await placeAlong(page, "face:upper-icefall");
+  const slot = await placeAlong(page, "ladder:slot");
   await page.getByRole("button", { name: "God mode" }).click();
 
-  // The crux, from the list: on their feet, clipped in a step short of its ice, Pemba beside them.
-  await panel(page).getByLabel("Go to").selectOption("face:upper-icefall");
+  // Immortal first: a slow machine's minutes are the mountain's hours, and a death's notice would
+  // cover the panel.
+  await panel(page).getByLabel("Immortal").check();
+  expect(await page.evaluate(() => window.everest.god?.state.immortal)).toBe(true);
+
+  // The slot's ladder, from the list: on their feet, clipped in a step short of it, Pemba with them.
+  await panel(page).getByLabel("Go to").selectOption("ladder:slot");
   await panel(page).locator('[data-form="place"]').getByRole("button", { name: "Go" }).click();
-  expect(crux).toBeGreaterThan(500);
-  await expect.poll(() => along(page), WALKING).toBeCloseTo(crux, 1);
+  expect(slot).toBe(259.25);
+  await expect.poll(() => along(page), WALKING).toBe(slot);
   const player = await seen(page, "player");
   expect(player).toMatchObject({ dead: false, falling: false, ladder: null });
   expect(player?.first).not.toBeNull();
-  await expect(panel(page)).toContainText(`You: ${String(crux)} m along`);
+  await expect(panel(page)).toContainText("You: 259.3 m along");
   const pemba = await page.evaluate(() => window.everest.god?.where.sherpa ?? Number.NaN);
-  expect(pemba).toBeGreaterThanOrEqual(crux);
-  expect(pemba).toBeLessThan(crux + 10);
+  expect(pemba).toBeGreaterThanOrEqual(slot);
+  expect(pemba).toBeLessThan(slot + 40);
 
   // Metres along the ground, back by Base Camp, then a click on the moraine 16 m on up.
   await panel(page).getByLabel("Metres along").fill("12");

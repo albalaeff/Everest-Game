@@ -85,6 +85,7 @@ export interface SavedClimb {
 export interface SeenGod {
   readonly places: readonly { readonly id: string; readonly along: number }[];
   readonly where: { readonly along: number; readonly sherpa: number | null };
+  readonly state: { readonly immortal: boolean; readonly speed: number; readonly weather: string };
   teleport(where: string | number, who?: string): number;
   hour(time: string): void;
   weather(weather: string): void;
