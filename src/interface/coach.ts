@@ -82,7 +82,8 @@ export interface CoachStorage {
  * The coach (#192): a tip at a time, the one that matters most where the player is, by what they
  * do, never by a clock of its own (docs/guidelines/usability.md → Teaching: one thing at a time,
  * where it's needed, then watched). The tutorial teaches each control where the route first needs
- * it, the walk at the start, the clip at the first rope, the changeover at the first anchor, the
+ * it, the walk at the start, the clip at the first rope, until both cowstails are on one (#233),
+ * the changeover at the first anchor, the
  * ladders, the crossings and the ice, and lets it go once the player has done it, which the
  * device keeps, and the same for the ice tools: the first pick at a wall of ice with no ladder,
  * the next ones on it, and the step down onto one from its lip; and the rope down one, where the
@@ -145,8 +146,8 @@ export class Coach {
     "ice-down",
     "rappel",
     "anchor",
-    "clip",
     "jumar",
+    "clip",
     "crossing",
     "ladder-up",
     "ladder-down",
@@ -237,7 +238,9 @@ export class Coach {
     if (Math.abs(along - (this.start ?? along)) >= Coach.WALKED) {
       this.learn("walk");
     }
-    if (view.first !== null || view.second !== null) {
+    // Clipped in is both cowstails on a rope: the clip's tip, and its arrow, stay for the second
+    // (#233).
+    if (view.first !== null && view.second !== null) {
       this.learn("clip");
     }
     if (view.first !== null && view.jumarHeld) {
@@ -347,7 +350,11 @@ export class Coach {
       case "anchor":
         return !view.falling && this.atAnAnchor(world, view);
       case "clip":
-        return !clipped && !view.falling && world.ropeWithin() !== null;
+        return (
+          (view.first === null || view.second === null) &&
+          !view.falling &&
+          world.ropeWithin() !== null
+        );
       case "jumar":
         return view.first !== null && !view.jumarHeld && !view.moving && view.walking !== "stop";
       case "crossing":

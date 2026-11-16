@@ -418,7 +418,7 @@ export class Footwork {
       default: {
         this.atLip = 0;
         const lip = this.physics.terrain.point(face.top);
-        const below = this.onFace(face, lip.y - Footwork.STEP_DOWN);
+        const below = Footwork.onFace(this.physics, face, lip.y - Footwork.STEP_DOWN);
         return [{ kind: "tool", climber, tool: "crampons", x: below.x, y: below.y }];
       }
     }
@@ -444,12 +444,10 @@ export class Footwork {
     return (near ?? 0) >= -Footwork.AT_FACE && (far ?? 0) > Footwork.EXACT;
   }
 
-  /** The next pick on `face` for feet `feet` high, climbing it `way`: going up, as high as it
-   * bites well, short of the brittle ice, or over the lip once that's within reach; going down,
-   * a little over the shoulder. */
+  /** The next pick on `face` for feet `feet` high, climbing it `way`: going up, where a careful
+   * climber's goes (`pickUp`); going down, a little over the shoulder. */
   private pick(face: BareFace, feet: number, way: RouteWay): GameAction {
     const { climber, physics } = this;
-    const lip = physics.terrain.point(face.top);
     const place = (point: Point): GameAction => ({
       kind: "tool",
       climber,
@@ -458,28 +456,36 @@ export class Footwork {
       y: point.y,
     });
     if (way === "down") {
-      return place(this.onFace(face, feet + Footwork.PICK_DOWN));
+      return place(Footwork.onFace(physics, face, feet + Footwork.PICK_DOWN));
     }
+    return place(Footwork.pickUp(physics, face, feet));
+  }
+
+  /** Where a careful climber swings the next pick into `face`, going up it, their feet `feet`
+   * high: as high as it bites well, short of the brittle ice, or over the lip once that's within
+   * reach. The coach's arrow points there too (#233). */
+  static pickUp(physics: SlopePhysics, face: BareFace, feet: number): Point {
+    const lip = physics.terrain.point(face.top);
     const [highest = 0] = Footwork.PICKS_UP;
     if (feet + highest >= lip.y - Footwork.EXACT) {
       const beyond = face.top + (face.top > face.foot ? 1 : -1) * Footwork.OVER_LIP;
-      return place(physics.terrain.point(beyond));
+      return physics.terrain.point(beyond);
     }
-    const solid = Footwork.PICKS_UP.map((rise) => this.onFace(face, feet + rise)).find(
-      (point) => !this.brittleAt(point),
+    const solid = Footwork.PICKS_UP.map((rise) => Footwork.onFace(physics, face, feet + rise)).find(
+      (point) => !Footwork.brittleAt(physics, point),
     );
-    return place(solid ?? this.onFace(face, feet + highest));
+    return solid ?? Footwork.onFace(physics, face, feet + highest);
   }
 
   /** Whether the ice at a point of a face is brittle. */
-  private brittleAt(point: Point): boolean {
-    const along = this.physics.terrain.nearest(point).along;
-    return this.physics.brittle.some(({ from, to }) => along >= from && along <= to);
+  private static brittleAt(physics: SlopePhysics, point: Point): boolean {
+    const along = physics.terrain.nearest(point).along;
+    return physics.brittle.some(({ from, to }) => along >= from && along <= to);
   }
 
   /** The point of `face` at `height`, found along the ground between its foot and its top. */
-  private onFace({ foot, top }: BareFace, height: number): Point {
-    const { terrain } = this.physics;
+  private static onFace(physics: SlopePhysics, { foot, top }: BareFace, height: number): Point {
+    const { terrain } = physics;
     let [low, high] = [foot, top];
     for (let round = 0; round < 60; round += 1) {
       const middle = (low + high) / 2;

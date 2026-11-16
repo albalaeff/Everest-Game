@@ -33,6 +33,7 @@
   --icon-pack: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23000' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M7 9a5 5 0 0 1 10 0v10a2 2 0 0 1-2 2H9a2 2 0 0 1-2-2zM10 5V4a2 2 0 0 1 4 0v1M9 14h6v3H9z'/%3E%3C/svg%3E");
   --icon-tent: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23000' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M2 20 12 4l10 16zM12 4v6M9 20l3-6 3 6'/%3E%3C/svg%3E");
   --icon-peak: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23000' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M2 20 9 7l4 6 2.5-3.5L22 20zM9 7l1.5 4.5'/%3E%3C/svg%3E");
+  --icon-arrow: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M9 2h6v10h5l-8 10-8-10h5z'/%3E%3C/svg%3E");
   --icon-warning: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23000' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M12 3 22 20H2zM12 10v4.5M12 17.5v.5'/%3E%3C/svg%3E");
   color-scheme: dark;
   font-family: system-ui, sans-serif;
@@ -248,6 +249,193 @@ header {
 #coach [data-device="touch"],
 .touch #coach [data-device="pc"] {
   display: none;
+}
+
+/* The coach's arrow (#233): on the slope at the place the card's tip is about. A ring round the
+ * exact place, an arrow pointing onto it from the side the tip says, clear of it, and at the
+ * arrow's tail the control to use there, as key caps. The rope's orange for a tip, red for a
+ * warning, as the card; a dark edge so it reads on snow by day and on the night's ice. It bobs a
+ * little along its own way, and stands still for a player who asked for less motion. It never
+ * takes a click from the slope. */
+#pointer {
+  --pointer: var(--rope);
+  position: fixed;
+  left: 0;
+  top: 0;
+  width: 0;
+  height: 0;
+  margin: 0;
+  pointer-events: none;
+  z-index: 2;
+}
+
+#pointer[hidden] {
+  display: none;
+}
+
+#pointer[data-kind="warning"] {
+  --pointer: var(--danger);
+}
+
+.pointer__ring {
+  position: absolute;
+  left: -0.55rem;
+  top: -0.55rem;
+  width: 1.1rem;
+  height: 1.1rem;
+  box-sizing: border-box;
+  border: 0.16rem solid var(--pointer);
+  border-radius: 50%;
+  box-shadow:
+    0 0 0 1px rgb(4 10 24 / 85%),
+    inset 0 0 0 1px rgb(4 10 24 / 85%);
+}
+
+.pointer__arrow {
+  position: absolute;
+  display: flex;
+  gap: 0.2rem;
+  align-items: center;
+  width: max-content;
+  animation: pointer-bob 0.9s ease-in-out infinite alternate;
+}
+
+/* The arrow itself: a shaft and a head, drawn pointing down and turned the way it points. */
+.pointer__arrow::after {
+  flex: none;
+  width: 2.2rem;
+  height: 2.2rem;
+  background: var(--pointer);
+  content: "";
+  filter: drop-shadow(0 0 1px rgb(4 10 24)) drop-shadow(0 1px 1px rgb(4 10 24 / 80%));
+  -webkit-mask: var(--icon-arrow) center / contain no-repeat;
+  mask: var(--icon-arrow) center / contain no-repeat;
+}
+
+#pointer[data-way="down"] .pointer__arrow {
+  --bob: 0 -0.3rem;
+  bottom: 0.75rem;
+  flex-direction: column;
+  transform: translateX(-50%);
+}
+
+#pointer[data-way="up"] .pointer__arrow {
+  --bob: 0 0.3rem;
+  top: 0.75rem;
+  flex-direction: column-reverse;
+  transform: translateX(-50%);
+}
+
+#pointer[data-way="up"] .pointer__arrow::after {
+  rotate: 180deg;
+}
+
+#pointer[data-way="right"] .pointer__arrow {
+  --bob: -0.3rem 0;
+  right: 0.75rem;
+  flex-direction: row;
+  transform: translateY(-50%);
+}
+
+#pointer[data-way="right"] .pointer__arrow::after {
+  rotate: -90deg;
+}
+
+#pointer[data-way="left"] .pointer__arrow {
+  --bob: 0.3rem 0;
+  left: 0.75rem;
+  flex-direction: row-reverse;
+  transform: translateY(-50%);
+}
+
+#pointer[data-way="left"] .pointer__arrow::after {
+  rotate: 90deg;
+}
+
+/* An arrow for the way to go starts at its place and runs on from it, its words at its tail,
+ * and has no ring: it marks no exact spot. */
+#pointer[data-anchor="tail"] .pointer__ring {
+  display: none;
+}
+
+#pointer[data-anchor="tail"][data-way="down"] .pointer__arrow {
+  top: 0;
+  bottom: auto;
+}
+
+#pointer[data-anchor="tail"][data-way="up"] .pointer__arrow {
+  top: auto;
+  bottom: 0;
+}
+
+#pointer[data-anchor="tail"][data-way="right"] .pointer__arrow {
+  right: auto;
+  left: 0;
+}
+
+#pointer[data-anchor="tail"][data-way="left"] .pointer__arrow {
+  right: 0;
+  left: auto;
+}
+
+.pointer__words {
+  padding: 0.22rem 0.55rem 0.26rem;
+  border: 1px solid var(--pointer);
+  border-radius: 0.6rem;
+  background: var(--card);
+  box-shadow: 0 0.3rem 0.9rem rgb(0 0 0 / 45%);
+  color: var(--ink);
+  font-size: 1rem;
+  font-weight: 600;
+  line-height: 1.3;
+  white-space: nowrap;
+}
+
+.pointer__words kbd {
+  margin: 0 0.25em 0 0;
+  padding: 0.05em 0.45em;
+  border: 1px solid rgb(255 255 255 / 34%);
+  border-bottom-width: 2px;
+  border-radius: 0.4em;
+  background: rgb(255 255 255 / 12%);
+  color: #fff;
+  font-family: inherit;
+  font-size: 0.9em;
+  font-weight: 700;
+}
+
+.pointer__words kbd[data-button] {
+  padding: 0.05em 0.6em;
+  border-radius: 999px;
+}
+
+#pointer [data-device="touch"],
+.touch #pointer [data-device="pc"] {
+  display: none;
+}
+
+.touch #pointer [data-device="touch"] {
+  display: block;
+}
+
+.touch .pointer__words {
+  font-size: 0.875rem;
+}
+
+@keyframes pointer-bob {
+  from {
+    translate: 0 0;
+  }
+
+  to {
+    translate: var(--bob, 0 0);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .pointer__arrow {
+    animation: none;
+  }
 }
 
 /* Pemba's bubble (#212): over his head, its tail pointing down at him, his name in his suit's

@@ -56,8 +56,8 @@ The screen around the slope: where things go, the HUD, the buttons, the text, co
   - *In Everest:* the readouts and the hints sit over the sky, but a ridge, the snow or a whiteout can come behind them; they get a backing with #25.
   - *Check:* on a section that puts the slope behind the HUD, a story reads the picture behind each text with `window.everest.pixelAt` and computes the contrast.
 - **A tip names what to press, and the eye finds it.** The coach's card draws each key (D, Shift) and each button ([Clip 1]) its words name as a key cap. A tip of the tutorial is edged in the rope's orange with a peak, and a warning in red with a triangle.
-  - *In Everest:* `CoachCard` writes the keys and the bracketed buttons as `kbd`, a button's without its brackets, and marks the card `data-kind="tip"` or `"warning"` (`Coach.isWarning`).
-  - *Check:* `e2e/coach.spec.ts` reads the walk's keys as key caps, and `e2e/training.spec.ts` a warning's mark.
+  - *In Everest:* `CoachCard` writes the keys and the bracketed buttons as `kbd`, a button's without its brackets, and marks the card `data-kind="tip"` or `"warning"` (`Coach.isWarning`). The tip's arrow on the slope (`CoachArrow`, `#pointer`, #233) names the one control to use at the place it points at, the same way: a key in braces in its words ({R}), a button in brackets, each a key cap; it's the rope's orange for a tip and red for a warning, with a ring round the place and a dark edge so it reads on snow and on the night's ice, it stands off the place on the side its tip says, clear of the climber, and it bobs along its own way unless the player asked for less motion (`prefers-reduced-motion`).
+  - *Check:* `e2e/coach.spec.ts` reads the walk's keys as key caps, the arrow's key and its place on the rope, and that it takes no click; `e2e/training.spec.ts` a warning's mark.
 - **The font is the system's** (`system-ui`): it downloads nothing, has every Cyrillic letter, and reads as the device's own. Figures that change are tabular.
 
 ## Colour
