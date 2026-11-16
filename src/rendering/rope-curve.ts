@@ -287,7 +287,10 @@ export class RopeCurve {
       if (hold === undefined || !(hold.load > 0)) {
         continue;
       }
-      for (const end of [0, points - 1]) {
+      for (const anchor of [0, points - 1]) {
+        // As far as the next hold that bears weight, if there is one on the way: the rope is
+        // taut from a hauler's hands to whoever hangs on it, not on past them (#239).
+        const end = this.loadedBefore(hold, anchor);
         const rise = ((ys[end] ?? 0) - (ys[hold.index] ?? 0)) / RopeCurve.BEAR_METRES;
         const bear = hold.load * (hold.pulled ? 1 : RopeCurve.ease(rise));
         if (end !== hold.index && bear > 0) {
@@ -297,6 +300,26 @@ export class RopeCurve {
       }
     }
     return taut;
+  }
+
+  /** The point the rope runs taut to from `hold` toward the anchor at `anchor`: the nearest other
+   * hold on the way that bears weight, or the anchor. */
+  private loadedBefore(hold: Hold, anchor: number): number {
+    let nearest = anchor;
+    for (let index = 0; index < this.holding; index += 1) {
+      const other = this.holds[index];
+      if (other === undefined || other === hold || !(other.load > 0)) {
+        continue;
+      }
+      const between =
+        anchor > hold.index
+          ? other.index > hold.index && other.index < nearest
+          : other.index < hold.index && other.index > nearest;
+      if (between) {
+        nearest = other.index;
+      }
+    }
+    return nearest;
   }
 
   /** The rope from a hold to the anchor at `end`, brought `bear` of the way to its taut way

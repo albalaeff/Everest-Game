@@ -316,7 +316,14 @@ export class ClimberFigure extends Container {
     if (pose.jumar !== null) {
       this.holding.on.x = this.first.x;
       this.holding.on.y = this.first.y;
-      this.inLayer(pose.jumar, this.holding.drawn);
+      // Hauling, the rope runs through both hands, pulled in hand over hand (#239); held tight
+      // with nobody on it, a ladder's line, it's in both hands too.
+      const [near, far] = pose.arms;
+      const inHand = climber.haulHeld && !climber.falling && !climber.dead;
+      const grip = inHand
+        ? { x: (near.end.x + far.end.x) / 2, y: (near.end.y + far.end.y) / 2 }
+        : pose.jumar;
+      this.inLayer(grip, this.holding.drawn);
     }
     const carabiner = this.figure.carabiner;
     this.hangs = climber.second !== null && carabiner !== null && !fromTheFront;
@@ -354,12 +361,13 @@ export class ClimberFigure extends Container {
   /** The weight on each cowstail's rope this frame (#232): all of it on the one that holds a
    * climber who hangs or lowers, the jumar's if it's on, with the quiver of its coming taut; on
    * their feet, the arm's pull on the jumar between its strokes; and a rope held tight by hand,
-   * the haul held with nobody to haul, taut both ways from the jumar on it. */
+   * the haul held, taut both ways from the hands on it: to whoever hangs on it, hauled up, and
+   * back to its anchor (#239), or a ladder's line with nobody to haul. */
   private load(climber: ClimberView, pose: Pose, weighted: boolean): void {
     const { holding, hanging } = this;
     const onJumar = weighted && climber.first !== null;
     const apart = climber.second !== climber.first;
-    const tight = climber.haulHeld && !climber.hauling && !climber.falling && !climber.dead;
+    const tight = climber.haulHeld && !climber.falling && !climber.dead;
     holding.load = onJumar || tight ? 1 : pose.pull;
     holding.pulled = tight;
     holding.quiver = onJumar ? this.give.quiver : 0;

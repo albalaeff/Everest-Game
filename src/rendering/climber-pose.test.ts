@@ -805,6 +805,43 @@ describe("ClimberPose", () => {
     }
   });
 
+  it("hangs upright on the rope, never tumbling, with the carabiner level with them or below: hauled up toward a lip (#239)", () => {
+    for (const carabiner of [
+      { x: 0.6, y: 0.02 },
+      { x: -0.5, y: -0.2 },
+    ]) {
+      const climber = new ClimberPose();
+      climber.advance(5, state());
+      const hauled = state({ falling: true, hanging: true, ground: () => -3, carabiner });
+      const tilts: number[] = [];
+      for (let frame = 0; frame < 120; frame += 1) {
+        tilts.push(climber.advance(FRAME, hauled).tilt);
+      }
+      const pose = climber.advance(FRAME, hauled);
+
+      // Leaning toward the carabiner, a quarter turn at the very most, and still: no spin.
+      expect(Math.abs(pose.tilt)).toBeLessThanOrEqual(0.9);
+      expect(Math.sign(pose.tilt)).toBe(Math.sign(carabiner.x));
+      expect(Math.abs(pose.tilt - (tilts.at(-1) ?? 0))).toBeLessThan(1e-6);
+      for (const leg of pose.legs) {
+        expect(leg.end.y).toBeLessThan(-0.5);
+      }
+    }
+  });
+
+  it("still tumbles in the air off the rope, the physics not holding them", () => {
+    const climber = new ClimberPose();
+    climber.advance(5, state());
+    const free = state({ falling: true, hanging: false, ground: () => -5 });
+    for (let frame = 0; frame < 60; frame += 1) {
+      climber.advance(FRAME, free);
+    }
+    const before = climber.advance(FRAME, free).tilt;
+    const after = climber.advance(FRAME, free).tilt;
+
+    expect(after).not.toBeCloseTo(before, 4);
+  });
+
   it("gets up after a fall through a kneel", () => {
     const climber = new ClimberPose();
     climber.advance(5, state());
@@ -902,5 +939,31 @@ describe("ClimberPose", () => {
       expect(arm.end.x).toBeGreaterThan(pulled.pelvis.x + 0.15);
     }
     expect(Math.max(...nearHands) - Math.min(...nearHands)).toBeGreaterThan(0.1);
+  });
+
+  it("braces to hold a rope tight with nobody to haul: leaning back less, both hands on it, still", () => {
+    const standing = new ClimberPose();
+    const hauling = new ClimberPose();
+    const holding = new ClimberPose();
+    let still: Pose = standing.advance(FRAME, state());
+    let pulled: Pose = hauling.advance(FRAME, state({ hauling: true }));
+    let held: Pose = holding.advance(FRAME, state({ bracing: true }));
+    const nearHands: number[] = [];
+    for (let frame = 0; frame < 120; frame += 1) {
+      still = standing.advance(FRAME, state());
+      pulled = hauling.advance(FRAME, state({ hauling: true }));
+      held = holding.advance(FRAME, state({ bracing: true }));
+      if (frame >= 60) {
+        nearHands.push(held.arms[0].end.x);
+      }
+    }
+
+    expect(held.lean).toBeLessThan(still.lean - 0.1);
+    expect(held.lean).toBeGreaterThan(pulled.lean);
+    expect(held.pelvis.y).toBeLessThan(still.pelvis.y);
+    for (const arm of held.arms) {
+      expect(arm.end.x).toBeGreaterThan(held.pelvis.x + 0.15);
+    }
+    expect(Math.max(...nearHands) - Math.min(...nearHands)).toBeLessThan(0.01);
   });
 });

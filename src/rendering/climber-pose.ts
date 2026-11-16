@@ -60,6 +60,13 @@ export interface PoseState {
   readonly footing: number;
   /** Whether they're hauling a partner up the rope, braced at the edge (#209). */
   readonly hauling: boolean;
+  /** Whether they hold a rope tight by hand with nobody to haul, braced: a ladder's line, held for
+   * whoever crosses (#212). */
+  readonly bracing?: boolean;
+  /** Whether the rope holds them off the ground, as the physics has it: hanging on it after a
+   * fall, or hauled up it (#239). They hang upright then, wherever the carabiner is drawn. Not
+   * said, a carabiner above them in the air says so. */
+  readonly hanging?: boolean;
   /** On the ice, each pick they swung in, the one they hang from first (`PickIn`): none anywhere
    * else. The face is their ladder, its line the ice. */
   readonly picks?: readonly PickIn[];
@@ -410,7 +417,14 @@ export class ClimberPose {
   /** Hauling a partner up the rope (#209): leaning back this far, sunk this far into the knees,
    * the hands reaching this far ahead at hip height, hand over hand so many times a second, this
    * far each pull. */
-  private static readonly HAUL = { lean: -0.38, sink: 0.1, ahead: 0.42, hz: 1.1, pull: 0.16 };
+  private static readonly HAUL = {
+    lean: -0.38,
+    sink: 0.1,
+    ahead: 0.42,
+    hz: 1.1,
+    pull: 0.16,
+    hold: 0.55,
+  };
   private static readonly WOBBLE = {
     from: 0.7,
     lean: 0.16,
@@ -418,6 +432,9 @@ export class ClimberPose {
     near: { x: 0.42, y: -0.05 },
     far: { x: -0.38, y: -0.12 },
   };
+  /** How far above their harness a climber held by the rope is drawn hanging from at the least,
+   * in metres, however low the carabiner is drawn (#239). */
+  private static readonly HELD_ABOVE = 0.45;
   /** A fall: how high off the ground a body is in the air, how fast it tumbles there, and how
    * fast and how far the limbs flail. */
   private static readonly AIR_METRES = 0.4;
@@ -625,7 +642,7 @@ export class ClimberPose {
       return "dead";
     }
     if (state.falling) {
-      return this.hangingFrom(state) === null ? "fall" : "hang";
+      return this.heldUp(state) || this.hangingFrom(state) !== null ? "hang" : "fall";
     }
     if (this.rising < 1) {
       return "rise";
@@ -635,6 +652,12 @@ export class ClimberPose {
       return "walk";
     }
     return Math.abs(ladder.way.y) >= 0.5 ? "wall" : "rungs";
+  }
+
+  /** Whether the rope holds them up off the ground, as the physics has it (#239): one it holds
+   * lying on a crevasse's floor lies there. */
+  private heldUp(state: PoseState): boolean {
+    return state.hanging === true && -state.ground(0) > ClimberPose.AIR_METRES;
   }
 
   /** What a falling climber hangs from: a cowstail's carabiner above them, off the ground. */
@@ -824,17 +847,21 @@ export class ClimberPose {
    * on their heels, sunk into their knees, both hands on the rope ahead of them pulling it in,
    * hand over hand. Not hauling, as made. */
   private hauling(made: Made, state: PoseState, mode: Mode): Made {
-    if (!state.hauling || mode !== "walk") {
+    const bracing = state.bracing === true && !state.hauling;
+    if ((!state.hauling && !bracing) || mode !== "walk") {
       return made;
     }
     const { HAUL } = ClimberPose;
     const { targets } = made;
-    const lean = HAUL.lean;
-    const pelvis = { x: targets.pelvis.x, y: targets.pelvis.y - HAUL.sink };
-    const cycle = 2 * Math.PI * HAUL.hz * this.time;
+    // Holding a rope tight with nobody on it: the same stance, eased, the hands still on it.
+    const hold = bracing ? HAUL.hold : 1;
+    const lean = HAUL.lean * hold;
+    const pelvis = { x: targets.pelvis.x, y: targets.pelvis.y - HAUL.sink * hold };
+    const cycle = bracing ? 0 : 2 * Math.PI * HAUL.hz * this.time;
+    const pull = bracing ? 0 : HAUL.pull;
     const hand = (phase: number): Joint => ({
-      x: pelvis.x + HAUL.ahead - HAUL.pull * (0.5 + 0.5 * Math.sin(cycle + phase)),
-      y: pelvis.y + 0.12 + 0.05 * Math.cos(cycle + phase),
+      x: pelvis.x + HAUL.ahead - pull * (0.5 + 0.5 * Math.sin(cycle + phase)),
+      y: pelvis.y + 0.12 + (bracing ? 0.04 * Math.cos(phase) : 0.05 * Math.cos(cycle + phase)),
     });
     const hands: readonly [Joint, Joint] = [hand(0), hand(Math.PI)];
     return { ...made, targets: { ...targets, pelvis, lean, hands } };
@@ -1242,10 +1269,17 @@ export class ClimberPose {
   }
 
   /** Hanging from a cowstail below the rope: the pelvis at the harness, the body in line with the
-   * cowstail, the near hand up on it, the legs dangling. */
+   * cowstail, the near hand up on it, the legs dangling. Held by the rope with the carabiner
+   * level with them or below, hauled up toward a lip, they hang upright still, leaning its way
+   * (#239): a harness never turns a climber over. */
   private hanging(state: PoseState): Targets {
-    const hold = this.hangingFrom(state) ?? ClimberPose.UP;
-    const tilt = Math.min(Math.max(Math.atan2(hold.x, hold.y), -0.9), 0.9);
+    const drawn = state.jumar ?? state.carabiner;
+    const lifted =
+      drawn === null ? null : { x: drawn.x, y: Math.max(drawn.y, ClimberPose.HELD_ABOVE) };
+    const hold = this.hangingFrom(state) ?? (this.heldUp(state) ? lifted : null) ?? ClimberPose.UP;
+    const leant = Math.min(Math.max(Math.atan2(hold.x, hold.y), -0.9), 0.9);
+    // Level with the carabiner, the lean eases to half: the rope pulls them along, not over.
+    const tilt = drawn !== null && drawn.y < ClimberPose.HELD_ABOVE ? leant / 2 : leant;
     const above = ClimberPose.turned(hold, -tilt);
     const shoulder = ClimberPose.shoulderOf(ClimberPose.ORIGIN, -0.08);
     const reach = ClimberPose.UPPER_ARM + ClimberPose.FOREARM - 0.02;

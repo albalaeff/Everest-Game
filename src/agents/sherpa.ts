@@ -307,15 +307,16 @@ export class Sherpa implements Rule {
     );
   }
 
-  /** A client hanging on the rope: to the ground within reach of where they'd come up, nearest
-   * him, and the haul held there; none in reach, he stands where it's safe. Once they're on
-   * their feet again, the rest begins. */
+  /** A client hanging on the rope: to the ground within reach of where they can be hauled up
+   * from, nearest him, and the haul held there, or as near it as he can stand, a ladder that's
+   * down barring the last of the way, if that's within the haul's reach too (#239); none in
+   * reach, he stands where it's safe. Once they're on their feet again, the rest begins. */
   private rescue(me: ClimberView, along: number): Plan | null {
     const state = this.loaded;
     const hanging = state.clients
-      .map((id) => ({ id, lift: this.physics.liftPoint(id) }))
-      .filter((client): client is { id: ClimberId; lift: Point } => client.lift !== null)
-      .map((client) => ({ ...client, spot: this.haulSpot(client.lift, along) }))
+      .map((id) => ({ id, points: this.physics.haulPoints(id) }))
+      .filter((client) => client.points.length > 0)
+      .map((client) => ({ ...client, spot: this.haulSpot(client.points, along) }))
       .sort((a, b) => this.away(a.spot, along) - this.away(b.spot, along));
     const [client] = hanging;
     if (client === undefined) {
@@ -336,10 +337,14 @@ export class Sherpa implements Rule {
     if (client.spot === null) {
       return { ...plan, way: this.onTheGround(me) ? null : this.forward(me), haul: false };
     }
-    if (Math.abs(client.spot - along) <= Sherpa.AT && this.onTheGround(me)) {
+    const afoot = this.onTheGround(me);
+    if (Math.abs(client.spot - along) <= Sherpa.AT && afoot) {
       return { ...plan, way: null, haul: true };
     }
-    return { ...plan, way: this.move(this.toward(client.spot, along), along), haul: false };
+    const way = this.move(this.toward(client.spot, along), along);
+    const here = this.physics.terrain.point(along);
+    const inReach = client.points.some((point) => this.within(point, here));
+    return { ...plan, way, haul: way === null && afoot && inReach };
   }
 
   /** With a client he pulled out: to the safe spot, and there until the rest is over, or until
@@ -598,21 +603,27 @@ export class Sherpa implements Rule {
     return ends;
   }
 
-  /** Where along the ground he hauls a client hanging from: on the ground within reach of where
-   * they'd come up, at a ladder's end or under where they'd come up, the nearest him; none if no
-   * ground is in reach. */
-  private haulSpot(lift: Point, along: number): number | null {
+  /** Where along the ground he hauls a client hanging from: on the ground within reach of one of
+   * the `points` they can be hauled up from, at a ladder's end or under the point, the nearest
+   * him; none if no ground is in reach. */
+  private haulSpot(points: readonly Point[], along: number): number | null {
     const { terrain } = this.physics;
-    const below = terrain.nearest(lift).along;
-    const spots = [below, ...this.physics.ladders.flatMap((id) => this.ends(id))]
-      .filter((spot) => {
-        const point = terrain.point(spot);
-        const x = point.x - lift.x;
-        const y = point.y - lift.y;
-        return Math.sqrt(x * x + y * y) <= this.settings.reach && this.standable(spot);
-      })
+    const ends = this.physics.ladders.flatMap((id) => this.ends(id));
+    const spots = points
+      .flatMap((point) =>
+        [terrain.nearest(point).along, ...ends].filter(
+          (spot) => this.within(point, terrain.point(spot)) && this.standable(spot),
+        ),
+      )
       .sort((a, b) => Math.abs(a - along) - Math.abs(b - along));
     return spots[0] ?? null;
+  }
+
+  /** Whether `from` is within the haul's reach of `point`. */
+  private within(point: Point, from: Point): boolean {
+    const x = from.x - point.x;
+    const y = from.y - point.y;
+    return Math.sqrt(x * x + y * y) <= this.settings.reach;
   }
 
   /** The nearest spot to `from` along the ground, either way, where nobody need stand under

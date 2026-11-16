@@ -94,6 +94,24 @@ describe("ClimberReading", () => {
     expect(reading.facing).toBe(1);
   });
 
+  it("faces along the rope they hold tight or haul on, toward its far end, whichever way they last walked", () => {
+    const reading = new ClimberReading(slope);
+    // At the rope's upper anchor after walking up to it: the rope runs back down behind them.
+    const there = drawn(14, 2);
+    reading.read(view({ x: 14, y: 2, walking: "right", first: "rise" }), BODY, there);
+    reading.read(view({ x: 14, y: 2, first: "rise" }), BODY, there);
+    expect(reading.facing).toBe(1);
+
+    reading.read(view({ x: 14, y: 2, first: "rise", haulHeld: true }), BODY, there);
+    expect(reading.facing).toBe(-1);
+    const hauling = view({ x: 14, y: 2, first: "rise", haulHeld: true, hauling: true });
+    reading.read(hauling, BODY, there);
+    expect(reading.facing).toBe(-1);
+    // The haul let go, they face as they did holding it, until they walk.
+    reading.read(view({ x: 14, y: 2, first: "rise" }), BODY, there);
+    expect(reading.facing).toBe(-1);
+  });
+
   it("counts the way covered across the ground in the figure's metres, and none in a fall", () => {
     const reading = new ClimberReading(slope);
     reading.read(view(), BODY, drawn(10, 0, 2));

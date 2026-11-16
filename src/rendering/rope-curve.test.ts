@@ -280,6 +280,25 @@ describe("RopeCurve", () => {
     expect(offLine(curve, [6.2, 1], [0, 0])).toBeLessThan(0.02);
   });
 
+  it("runs taut from a hauler's hands to the climber hanging below them, not on across the crevasse to the far anchor (#239)", () => {
+    const curve = new RopeCurve();
+    const held = [
+      { on: { x: 3.6, y: -2.6 }, drawn: { x: 3.6, y: -3 }, load: 1 },
+      { on: { x: 6, y: 0 }, drawn: { x: 6.2, y: 1 }, load: 1, pulled: true },
+    ];
+    curve.shape(hung, held, DEEP, 0, 0);
+
+    // From his hands over the lip, down to the carabiner: no rail across the crevasse.
+    expect(offLine(curve, [3.6, -3], [5, 0])).toBeLessThan(0.05);
+    expect(nearest(curve, 3, 0.5)).toBeGreaterThan(1.5);
+    expect(nearest(curve, 6.2, 1)).toBeLessThan(1e-9);
+    expect(nearest(curve, 3.6, -3)).toBeLessThan(1e-9);
+    // And on from the climber up to the lip on the other side, as when nobody hauls.
+    expect(offLine(curve, [1.3, -0.35], [3.6, -3])).toBeLessThan(0.05);
+    // Behind him it's tight to its anchor.
+    expect(offLine(curve, [6.2, 1], [7, 0])).toBeLessThan(0.02);
+  });
+
   it("quivers across itself in the middle of its loaded length, and not at its ends", () => {
     const curve = new RopeCurve();
     const at = { on: { x: 4, y: 2 }, drawn: { x: 4, y: 2.9 }, load: 1 };
