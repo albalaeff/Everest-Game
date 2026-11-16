@@ -1,3 +1,4 @@
+import { GearDrawing } from "../interface/gear-drawing";
 import type { Texts } from "../interface/texts";
 import { PACK_ITEMS } from "../simulation";
 import type { PackCounts, PackItem, PackNumbers } from "../simulation";
@@ -60,10 +61,9 @@ interface Tile {
  * name, why it matters, what it weighs, how many are packed between [−] and [+], and [Drink] or
  * [Eat] where the pack can be used. An opened litre is a bottle half full. The screen that owns
  * the list says what each tile shows and hears its buttons; the list only draws, and changes the
- * page where a tile changed. The drawings are index.html's symbols, `#art-…`.
+ * page where a tile changed. The drawings are index.html's symbols, `#art-…` (`GearDrawing`).
  */
 export class PackList {
-  private static readonly SVG = "http://www.w3.org/2000/svg";
   /** The load the weight's bar is full at, in kilograms: a porter's, twice a client's. */
   static readonly FULL_LOAD = 20;
 
@@ -98,7 +98,7 @@ export class PackList {
       const art = make("div", "art");
       art.setAttribute("aria-hidden", "true");
       const slots = Array.from({ length: numbers.most[item] }, () => {
-        const { svg, use } = PackList.drawing(document, item);
+        const { svg, use } = new GearDrawing(document, item);
         art.append(svg);
         return use;
       });
@@ -193,7 +193,7 @@ export class PackList {
         const row = document.createElement("li");
         const label = document.createElement("span");
         label.textContent = texts.say(`worn.${thing}`);
-        const { svg } = PackList.drawing(document, thing);
+        const { svg } = new GearDrawing(document, thing);
         svg.setAttribute("aria-hidden", "true");
         row.append(svg, label);
         return row;
@@ -224,19 +224,6 @@ export class PackList {
   /** A weight or a count as the page writes it: to a tenth. */
   static rounded(value: number): number {
     return Math.round(value * 10) / 10;
-  }
-
-  /** One of index.html's drawings of the gear, as an element of the page. */
-  private static drawing(
-    document: Document,
-    thing: string,
-  ): { readonly svg: SVGSVGElement; readonly use: SVGUseElement } {
-    const svg = document.createElementNS(PackList.SVG, "svg");
-    svg.setAttribute("viewBox", "0 0 64 64");
-    const use = document.createElementNS(PackList.SVG, "use");
-    use.setAttribute("href", `#art-${thing}`);
-    svg.append(use);
-    return { svg, use };
   }
 
   private static set(element: HTMLElement, text: string): void {
