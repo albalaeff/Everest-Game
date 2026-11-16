@@ -591,6 +591,11 @@ export class SlopeLayer extends ParallaxLayer {
     return this.figures.length;
   }
 
+  /** Whether the player's climber is drawn facing the viewer now (#235). */
+  get playerFacesViewer(): boolean {
+    return this.playerFigure?.facesViewer ?? false;
+  }
+
   /** How hard what's coming down shakes the picture now, from nothing to about 1. */
   get shaking(): number {
     return this.hazards.shaking;

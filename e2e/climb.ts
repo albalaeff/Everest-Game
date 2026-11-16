@@ -27,6 +27,10 @@ export interface SeenClimber {
   readonly lowering: boolean;
   /** Whether they're hauling, a partner out or a fallen ladder back up (#209, #228). */
   readonly hauling: boolean;
+  /** Which way along the slope they face, up the route (1) or back down it (-1), and whether
+   * they've turned to face the player (#235). */
+  readonly facing: 1 | -1;
+  readonly towardViewer: boolean;
 }
 
 /** A climber on the slope as the device saves them (src/physics → ClimberSave), as far as the

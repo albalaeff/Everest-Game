@@ -17,6 +17,13 @@ export interface Walk extends ClimberAction {
   readonly direction: Vertical | Horizontal | `${Vertical}-${Horizontal}` | "stop";
 }
 
+/** Turns to face out of the slope, toward the viewer, standing (#235): the first push back the
+ * way a climber came, which the next `walk` turns into a walk, side-on again. */
+export interface Turn extends ClimberAction {
+  readonly kind: "turn";
+  readonly toward: "viewer";
+}
+
 /** Sets the walking pace, until another `pace` says otherwise. */
 export interface Pace extends ClimberAction {
   readonly kind: "pace";
@@ -99,6 +106,7 @@ export interface SetUpTent extends ClimberAction {
  */
 export type GameAction =
   | Walk
+  | Turn
   | Pace
   | Clip
   | Unclip

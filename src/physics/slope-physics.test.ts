@@ -115,6 +115,106 @@ describe("SlopePhysics: walking", () => {
   });
 });
 
+describe("SlopePhysics: the turn to face the viewer (#235)", () => {
+  const turn = (climber: ClimberId): GameAction => ({ kind: "turn", climber, toward: "viewer" });
+
+  it("faces up the route to begin with, and the way last walked after", () => {
+    const climb = new Climb(TestMountain.CALM, alone(TestMountain.FLAT, 10));
+    expect(climb.physics.climber("anna")).toMatchObject({ facing: 1, towardViewer: false });
+
+    climb.play(20, [walk("anna", "left")]);
+    expect(climb.physics.climber("anna")).toMatchObject({ facing: -1, towardViewer: false });
+    climb.play(20, [walk("anna", "stop")]);
+    expect(climb.physics.climber("anna").facing).toBe(-1);
+    climb.play(20, [walk("anna", "up-right")]);
+    expect(climb.physics.climber("anna").facing).toBe(1);
+  });
+
+  it("turns a climber on their feet to face the viewer, standing, and keeps the way they faced", () => {
+    const climb = new Climb(TestMountain.CALM, alone(TestMountain.FLAT, 10));
+    climb.play(20, [walk("anna", "right")]);
+    const walking = climb.physics.climber("anna");
+
+    climb.play(20, [turn("anna")]);
+    const turned = climb.physics.climber("anna");
+
+    expect(turned).toMatchObject({ towardViewer: true, facing: 1, walking: "stop", moving: false });
+    expect(turned.x).toBeCloseTo(walking.x, 1);
+    climb.play(20);
+    expect(climb.physics.climber("anna").x).toBe(turned.x);
+  });
+
+  it("turns them side-on again with the next walk, the way it points, and they walk", () => {
+    const climb = new Climb(TestMountain.CALM, alone(TestMountain.FLAT, 10));
+    climb.play(5, [turn("anna")]);
+    const from = climb.physics.climber("anna").x;
+
+    climb.play(20, [walk("anna", "left")]);
+
+    expect(climb.physics.climber("anna")).toMatchObject({ towardViewer: false, facing: -1 });
+    expect(climb.physics.climber("anna").x).toBeLessThan(from - 0.5);
+  });
+
+  it("stays turned through a stop, a clip and a held jumar: only a walk turns them back", () => {
+    const climb = new Climb(TestMountain.CALM, alone(TestMountain.FLAT, 10));
+    climb.play(5, [turn("anna")]);
+
+    climb.play(5, [walk("anna", "stop"), clip("anna"), Climb.jumar("anna", true)]);
+
+    expect(climb.physics.climber("anna").towardViewer).toBe(true);
+  });
+
+  it("turns nobody on a ladder, nor falling: there a climber faces what holds them", () => {
+    // The crevasse of `TestMountain.CREVASSE`, from its edge 20 m along the ground to the other.
+    const bridge = { id: "bridge", from: 20, to: 83 };
+    const onLadder = new Climb(
+      TestMountain.CALM,
+      TestMountain.CREVASSE.layout([{ id: "anna", along: 19 }], [], [bridge]),
+    );
+    onLadder.play(80, [walk("anna", "right")]);
+    expect(onLadder.physics.climber("anna").ladder).toBe("bridge");
+    onLadder.play(5, [turn("anna")]);
+    expect(onLadder.physics.climber("anna")).toMatchObject({
+      towardViewer: false,
+      ladder: "bridge",
+    });
+
+    const falling = new Climb(
+      TestMountain.CALM,
+      alone(TestMountain.SLOPE, TestMountain.upTheSlope(20)),
+    );
+    falling.physics.knock("anna", falling.expedition.step);
+    falling.play(2, [turn("anna")]);
+    expect(falling.physics.climber("anna").towardViewer).toBe(false);
+  });
+
+  it("is knocked out of the turn by a fall", () => {
+    const climb = new Climb(
+      TestMountain.CALM,
+      alone(TestMountain.SLOPE, TestMountain.upTheSlope(20)),
+    );
+    climb.play(5, [turn("anna")]);
+
+    climb.physics.knock("anna", climb.expedition.step);
+
+    expect(climb.physics.climber("anna")).toMatchObject({ towardViewer: false, falling: true });
+  });
+
+  it("goes on from a save turned as they were, facing the way they faced", () => {
+    const climb = new Climb(TestMountain.CALM, alone(TestMountain.FLAT, 10));
+    climb.play(20, [walk("anna", "left")]);
+    climb.play(5, [turn("anna")]);
+
+    const resumed = new Climb(
+      TestMountain.CALM,
+      JSON.parse(JSON.stringify(climb.expedition.save())) as ExpeditionSave,
+    );
+
+    expect(resumed.physics.climber("anna")).toMatchObject({ towardViewer: true, facing: -1 });
+    expect(resumed.physics.climber("anna")).toEqual(climb.physics.climber("anna"));
+  });
+});
+
 describe("SlopePhysics: the stride", () => {
   it("walks a climber at their stride's share of the speed, and not at all at nought", () => {
     const layout = TestMountain.FLAT.layout([

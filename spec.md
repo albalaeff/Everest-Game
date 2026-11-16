@@ -120,6 +120,7 @@ You can also turn around earlier: symptoms, strong wind or a queue at any stage 
 | Action | On a PC | On a phone |
 | --- | --- | --- |
 | Walk along the slope | A / D | Joystick left, right |
+| Turn to face you, then walk back | The key back the way you came: once to turn, again to walk | The joystick pushed back: once to turn, again to walk |
 | Up and down ladders and ropes | W / S | Joystick up, down |
 | Pace: rest step or faster | Hold C / hold Shift | Joystick: a small push is the rest step, the outer ring is faster |
 | Clip a cowstail onto the next rope | E (first cowstail), R (second) | [Clip 1], [Clip 2] |

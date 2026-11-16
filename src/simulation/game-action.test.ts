@@ -10,6 +10,7 @@ const EVERY_ACTION: Readonly<Record<GameAction["kind"], GameAction>> = {
   pace: { kind: "pace", climber: "anna", pace: "rest-step" },
   clip: { kind: "clip", climber: "anna", cowstail: "first" },
   unclip: { kind: "unclip", climber: "anna", cowstail: "second" },
+  turn: { kind: "turn", climber: "anna", toward: "viewer" },
   jumar: { kind: "jumar", climber: "anna", held: true },
   haul: { kind: "haul", climber: "anna", held: true },
   tool: { kind: "tool", climber: "anna", tool: "ice-axe", x: 12.5, y: 3 },

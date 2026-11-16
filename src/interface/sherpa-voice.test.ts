@@ -41,6 +41,8 @@ const standing = (over: Partial<ClimberView> = {}): ClimberView => ({
   gear: Climber.EQUIPPED,
   clipping: null,
   stillChance: 0,
+  facing: 1,
+  towardViewer: false,
   ...over,
 });
 

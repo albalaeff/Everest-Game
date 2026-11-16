@@ -32,6 +32,8 @@ test.describe("on a screen of 630 by 360", () => {
     await page.keyboard.down("KeyD");
     await expect(coach(page)).toHaveAttribute("data-tip", "serac-crack", { timeout: 20_000 });
     await page.keyboard.up("KeyD");
+    // Back off: A turns them to face the player, and A again walks them back (#235).
+    await page.keyboard.press("KeyA");
     await page.keyboard.down("KeyA");
     await page.waitForTimeout(600);
     await page.keyboard.up("KeyA");

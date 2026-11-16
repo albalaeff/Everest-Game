@@ -115,6 +115,7 @@ export class Protocol {
         "stop",
       ],
     },
+    turn: { toward: ["viewer"] },
     pace: { pace: ["rest-step", "steady", "faster"] },
     clip: { cowstail: ["first", "second"] },
     unclip: { cowstail: ["first", "second"] },
