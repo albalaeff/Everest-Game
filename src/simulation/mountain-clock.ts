@@ -128,8 +128,8 @@ export class MountainClock implements Rule {
     return date;
   }
 
-  /** The seconds since midnight of a time of day, `HH:MM`. */
-  private static secondsOf(time: string): number {
+  /** The seconds since midnight of a time of day, `HH:MM`: a start's, or the god mode's (#245). */
+  static secondsOf(time: string): number {
     const parts = MountainClock.TIME.exec(time);
     const hours = Number(parts?.[1]);
     const minutes = Number(parts?.[2]);

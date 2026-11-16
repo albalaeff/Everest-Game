@@ -6,6 +6,7 @@ A 2D browser game: a simulator-trainer for climbing Everest by the South route. 
 
 - [Architecture](#architecture)
 - [Local development](#local-development)
+- [God mode](#god-mode)
 - [Agents](#agents)
 - [Tests](#tests)
 - [Deployment](#deployment)
@@ -42,6 +43,31 @@ npm run room -- --ip 0.0.0.0   # on your network too, for a phone's
 ```
 
 A page served on this machine finds the room server on its own host; `npm run room` keeps its rooms in `.wrangler/state/`.
+
+## God mode
+
+`?god` in the address (`http://localhost:4173/?god`, or the live site's) gives the climb alone a tester's powers (#245): go anywhere on the route and set a scenario up there, rather than walk from Base Camp for minutes. It keeps a climb of its own on the device, so the player's own climb isn't touched; a room has none. To look at a part of the route or a scenario, by hand or as Claude in a browser, use it.
+
+- **The panel:** `[God mode]`, beside `[Graphics]`, opens it. Go to a place of the list (the camps, the parts of the route, the ladders, the steps of ice, the hazards' stretches and where the seed staged its training), to metres along the ground, or to where the next click on the slope lands: you arrive on your feet, clipped to the rope there, Pemba with you; under a ladder you stand at its nearer end, on a step of ice at its foot or its top. Set the clock on to a time of day, the speed (×1, ×5, ×20) and the weather; stage a serac collapse over you, the ladder ahead breaking, a gust, a twist on a lashed ladder or a slip; stay immortal.
+- **A script** (a story, Claude in a browser) has the same on `window.everest.god`:
+
+  ```js
+  const god = window.everest.god;
+  god.places; // [{ id: "ladder:big-crevasse", kind: "ladder", name: "big-crevasse", along: 318.75 }, ...]
+  god.teleport("face:upper-icefall"); // the crux; or metres along: god.teleport(312.5)
+  god.teleport("camp:camp-1", "pemba"); // Pemba alone
+  god.where; // { along, altitude, sherpa }
+  god.hour("13:00"); // the next 13:00: the clock never runs back
+  god.weather("snow"); // clear, cloud, snow or wind
+  god.speed(20);
+  god.serac(); // a collapse over you: it cracks at once
+  god.ladder(); // the next ladder long enough to break, or god.ladder("big-crevasse")
+  god.jolt("gust"); // or "twist", on a lashed ladder
+  god.slip();
+  god.immortal(true);
+  ```
+
+- **In a story:** `openTheGameAsGod` in `e2e/climb.ts` sets off with it, and `e2e/god.spec.ts` uses it.
 
 ## Agents
 

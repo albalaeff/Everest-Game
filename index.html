@@ -116,6 +116,45 @@
       <button type="button" class="setting-button" data-act="copy" hidden></button>
       <button type="button" class="setting-button" data-act="back" hidden></button>
     </p>
+    <section id="god" role="dialog" aria-modal="false" aria-labelledby="god-title" hidden>
+      <div class="god__header">
+        <h2 id="god-title" data-text="title"></h2>
+        <button type="button" class="god__button" data-act="close" data-text="close"></button>
+      </div>
+      <form class="god__row" data-form="place">
+        <label for="god-place" data-text="go-to"></label>
+        <select id="god-place"></select>
+        <button type="submit" class="god__button" data-text="go"></button>
+      </form>
+      <form class="god__row" data-form="metres">
+        <label for="god-metres" data-text="metres"></label>
+        <input id="god-metres" type="number" min="0" step="0.5" required />
+        <button type="submit" class="god__button" data-text="go"></button>
+        <button type="button" class="god__button" data-act="pick" data-text="pick"></button>
+      </form>
+      <form class="god__row" data-form="clock">
+        <label for="god-clock" data-text="clock"></label>
+        <input
+          id="god-clock"
+          type="text"
+          inputmode="numeric"
+          pattern="([01][0-9]|2[0-3]):[0-5][0-9]"
+          maxlength="5"
+          placeholder="13:00"
+          required
+        />
+        <button type="submit" class="god__button" data-text="set"></button>
+      </form>
+      <div class="god__row" data-row="speed"><span data-text="speed"></span></div>
+      <div class="god__row" data-row="weather"><span data-text="weather"></span></div>
+      <div class="god__row" data-row="stage"><span data-text="stage"></span></div>
+      <label class="god__row god__check">
+        <input type="checkbox" data-act="immortal" />
+        <span data-text="immortal"></span>
+      </label>
+      <p class="god__note" data-text="note" role="status" aria-live="polite"></p>
+      <p class="god__where" data-text="where"></p>
+    </section>
     <section id="camp" role="dialog" aria-modal="true" aria-labelledby="camp-title" hidden>
       <div>
         <h2 id="camp-title"></h2>

@@ -3,6 +3,7 @@ import climberTexts from "../content/climber.json";
 import coachTexts from "../content/coach.json";
 import debriefTexts from "../content/debrief.json";
 import gearTexts from "../content/gear.json";
+import godTexts from "../content/god.json";
 import packTexts from "../content/pack.json";
 import controlTexts from "../content/controls.json";
 import disclaimerTexts from "../content/disclaimer.json";
@@ -32,6 +33,7 @@ new Disclaimer(document, disclaimerTexts.en, new ExpertReview(facts)).show(() =>
     gear: new Texts(gearTexts.en),
     pack: new Texts(packTexts.en),
     sherpa: new Texts(sherpaTexts.en),
+    god: new Texts(godTexts.en),
   };
   void new GamePage(window, texts, facts, build).open();
 });

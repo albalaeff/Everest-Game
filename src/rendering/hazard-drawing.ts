@@ -116,6 +116,8 @@ export class HazardDrawing {
   private readonly towers: Tower[] = [];
   private readonly showing = new Map<string, Showing>();
   private readonly collapses = new Map<string, Collapse>();
+  /** The training collapses the picture has stood its seracs for, by their ids. */
+  private readonly staged = new Set<string>();
   private readonly particles: Particle[] = [];
   /** How many strikes the picture has seen, and how hard it shakes this frame. */
   private struck = 0;
@@ -134,7 +136,6 @@ export class HazardDrawing {
   ) {
     this.signs = new HazardSigns(terrain, surface);
     const staged = hazards.events.filter(({ kind }) => kind === "serac");
-    const seracZones = hazards.zones.filter(({ kind }) => kind === "serac");
     for (const zone of hazards.zones) {
       for (const outline of this.signs.zone(zone)) {
         this.standing.poly(flat(outline)).fill(HazardDrawing.LOADED);
@@ -143,15 +144,7 @@ export class HazardDrawing {
         this.addTower(serac, zone.id);
       }
     }
-    for (const event of staged) {
-      const over = this.middleOf(event);
-      const onAZone = seracZones.some(
-        (zone) => over >= this.xOf(zone.from) && over <= this.xOf(zone.to),
-      );
-      if (!onAZone) {
-        this.addTower(this.signs.seracOver(event), event.id);
-      }
-    }
+    this.standOver(staged);
     // What came down before the picture began: its seracs broken and its rubble on the route.
     for (const strike of hazards.strikes) {
       this.settle(strike);
@@ -217,6 +210,10 @@ export class HazardDrawing {
   private follow(seconds: number, between: BetweenSteps): void {
     for (const collapse of this.collapses.values()) {
       collapse.steps += between.taken;
+    }
+    const { events } = this.hazards;
+    if (events.length > this.staged.size) {
+      this.standOver(events.filter(({ kind }) => kind === "serac"));
     }
     for (const warning of this.hazards.warnings) {
       const key = `${warning.zone}@${warning.began}`;
@@ -363,6 +360,25 @@ export class HazardDrawing {
       this.standing
         .poly(points)
         .stroke({ width: HazardDrawing.CHUNK_EDGE_METRES, color: HazardDrawing.RUBBLE_EDGE });
+    }
+  }
+
+  /** A serac over each training collapse staged off the serac zones (#209), from the start or
+   * later, by the god mode (#245): one staged on a zone breaks the tower nearest its stretch. */
+  private standOver(staged: readonly HazardZone[]): void {
+    const seracZones = this.hazards.zones.filter(({ kind }) => kind === "serac");
+    for (const event of staged) {
+      if (this.staged.has(event.id)) {
+        continue;
+      }
+      this.staged.add(event.id);
+      const over = this.middleOf(event);
+      const onAZone = seracZones.some(
+        (zone) => over >= this.xOf(zone.from) && over <= this.xOf(zone.to),
+      );
+      if (!onAZone) {
+        this.addTower(this.signs.seracOver(event), event.id);
+      }
     }
   }
 

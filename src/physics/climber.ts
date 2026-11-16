@@ -576,6 +576,41 @@ export class Climber {
     );
   }
 
+  /** The same climber stood on their feet at `along`, alive and still, off any ladder, fall, face
+   * or clip going on, as `standing` lays one, with their own technique, stride, sureness, kit, a
+   * crampon come loose, time on the move, gear and falls: the god mode's (#245). On `rope`, both
+   * cowstails are on it there, the jumar's and the carabiner's; on none, neither. */
+  placed(along: number, rope: { readonly rope: Rope; readonly slide: Slide } | null): Climber {
+    const carabiner = (): Carabiner | null =>
+      rope === null ? null : new Carabiner(rope.rope, rope.slide);
+    return new Climber(
+      this.id,
+      this.technique,
+      along,
+      null,
+      "stop",
+      this.stride,
+      false,
+      0,
+      false,
+      carabiner(),
+      carabiner(),
+      null,
+      [...this.falls],
+      false,
+      0,
+      this.sureness,
+      this.kit,
+      this.cramponLoose,
+      0,
+      this.onTheMove,
+      false,
+      this.gear,
+      null,
+      null,
+    );
+  }
+
   static load(save: ClimberSave, slope: Slope): Climber {
     const carabiner = (clip: CarabinerSave | null) =>
       clip === null ? null : new Carabiner(slope.rope(clip.rope), clip.slide);

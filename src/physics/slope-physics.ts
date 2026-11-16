@@ -189,6 +189,37 @@ export class SlopePhysics implements Rule, HazardGround, JoltGround, Legs {
     return this.climberFor(id).alongNow(this.loaded);
   }
 
+  /**
+   * Stands a climber on their feet `along` the ground, alive and still, off any ladder, fall, face
+   * or rope, as a scenario lays them (`start`), with their own technique, kit, gear and falls: the
+   * god mode's, between steps, never a rule's (#245). `clipped`, both their cowstails go onto the
+   * rope within reach there at once, if one is.
+   */
+  stand(id: ClimberId, along: number, clipped: boolean): void {
+    const slope = this.loaded;
+    if (!(along >= 0 && along <= slope.terrain.length)) {
+      throw new RangeError(`${id} can't stand off the ground, at ${along} m along it`);
+    }
+    const rope = clipped ? slope.ropeWithin(slope.terrain.point(along)) : null;
+    this.onSlope.set(id, this.climberFor(id).placed(along, rope));
+  }
+
+  /** Stages a ladder to break for training (#209) as a scenario stages one, between steps: across
+   * and whole again, breaking `rung` metres out from its near end under a step of one of its
+   * `trainees`: the god mode's (#245). Whoever stands on it stays there. */
+  stageBreak(id: string, rung: number, trainees: readonly ClimberId[]): void {
+    const save = this.save() as unknown as SlopeSave;
+    if (!save.ladders.some((laid) => laid.id === id)) {
+      throw new RangeError(`There's no ladder ${id} to break`);
+    }
+    const ladders = save.ladders.map((laid): LadderLayout => {
+      const { from, to } = laid;
+      return laid.id === id ? { id, from, to, breaks: rung, trainees } : laid;
+    });
+    const staged: SlopeSave = { ...save, ladders };
+    this.load(staged);
+  }
+
   /** Knocks a climber off their feet, down the slope, on `step`: what a hazard does when it goes.
    * A clipped climber's rope holds them, as in any fall; one already falling falls on. */
   knock(id: ClimberId, step: number): void {

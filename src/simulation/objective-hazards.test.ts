@@ -449,3 +449,60 @@ describe("ObjectiveHazards: a collapse staged for training (#209)", () => {
     expect(() => ObjectiveHazards.start({ ...staged(), events: [flood] })).toThrow(RangeError);
   });
 });
+
+describe("ObjectiveHazards: staged between steps, by the god mode (#245)", () => {
+  const OVER_THEM: HazardEvent = { id: "god-serac-1", kind: "serac", from: 38, to: 42, lead: 3 };
+
+  it("stages a collapse as a scenario does: it cracks with a climber on it, and comes down on its stretch", () => {
+    const ground = new TestGround({ first: 40, second: 0 });
+    const exposure = new Exposure(ground, "04:00", under(SLOPE));
+    exposure.play(3);
+
+    exposure.hazards.stageEvent(OVER_THEM);
+    exposure.play(1);
+    const cracking = exposure.hazards.warnings;
+    exposure.play(10);
+
+    expect(exposure.hazards.events).toEqual([OVER_THEM]);
+    expect(cracking).toEqual([{ zone: "god-serac-1", kind: "serac", began: 3, comes: 13 }]);
+    expect(ground.knocks).toEqual([{ climber: "first", step: 13 }]);
+    expect(exposure.hazards.strikes).toMatchObject([
+      { zone: "god-serac-1", climbers: ["first"], training: true },
+    ]);
+  });
+
+  it("keeps the seed's events beside it, and takes the place of one of the same stretch's id", () => {
+    const seeds: HazardEvent = { id: "serac-collapse", kind: "serac", from: 80, to: 88, lead: 3 };
+    const exposure = new Exposure(new TestGround({ first: 0 }), "04:00", {
+      ...under(SLOPE),
+      events: [seeds],
+    });
+
+    exposure.hazards.stageEvent(OVER_THEM);
+    exposure.hazards.stageEvent({ ...OVER_THEM, from: 60, to: 64 });
+
+    expect(exposure.hazards.events).toEqual([seeds, { ...OVER_THEM, from: 60, to: 64 }]);
+  });
+
+  it("changes the weather between steps, and a save keeps it", () => {
+    const exposure = new Exposure(new TestGround({ first: 0 }), "04:00", under(SLOPE));
+
+    exposure.hazards.changeWeather("snow");
+
+    expect(exposure.hazards.weather).toBe("snow");
+    expect(exposure.expedition.save().rules[ObjectiveHazards.NAME]).toMatchObject({
+      weather: "snow",
+    });
+  });
+
+  it("refuses an event that isn't a stretch, and a weather it doesn't know", () => {
+    const exposure = new Exposure(new TestGround({ first: 0 }), "04:00", under(SLOPE));
+
+    expect(() => {
+      exposure.hazards.stageEvent({ ...OVER_THEM, from: 42, to: 38 });
+    }).toThrow(RangeError);
+    expect(() => {
+      exposure.hazards.changeWeather("fog" as HazardWeather);
+    }).toThrow(RangeError);
+  });
+});

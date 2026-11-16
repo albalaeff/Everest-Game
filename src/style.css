@@ -1863,3 +1863,136 @@ kbd {
     justify-content: end;
   }
 }
+
+/* The god mode's panel (#245): a tester's, under the instruments on the left, over the game but
+ * under its notices; edged in the ice's blue, not the rope's orange, since it's no way on. */
+#god {
+  position: fixed;
+  top: calc(var(--edge-top) + 6.25rem);
+  left: var(--edge-left);
+  width: min(25rem, calc(100vw - var(--edge-left) - var(--edge-right)));
+  max-height: calc(100vh - var(--edge-top) - var(--edge-bottom) - 6.25rem);
+  box-sizing: border-box;
+  padding: 0.7rem 0.9rem;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  border: 1px solid var(--glass-edge);
+  border-top: 0.25rem solid var(--accent);
+  border-radius: 0.5rem 0.5rem 1.1rem 1.1rem;
+  background: var(--card);
+  box-shadow: 0 1rem 2.5rem rgb(0 0 0 / 38%);
+  color: var(--ink);
+  font-size: 0.875rem;
+  touch-action: pan-y;
+}
+
+#god[hidden] {
+  display: none;
+}
+
+.god__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 0.4rem;
+}
+
+#god h2 {
+  margin: 0;
+  color: var(--accent);
+  font-size: 0.8rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.god__row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  align-items: center;
+  margin: 0;
+  padding: 0.45rem 0;
+  border-top: 1px solid rgb(255 255 255 / 10%);
+}
+
+.god__row > label,
+.god__row > span:first-child {
+  min-width: 5.5rem;
+  color: var(--muted);
+}
+
+#god select,
+#god input:not([type="checkbox"]) {
+  min-height: 2rem;
+  box-sizing: border-box;
+  padding: 0 0.5rem;
+  border: 1px solid var(--glass-edge);
+  border-radius: 0.4rem;
+  background: var(--glass-deep);
+  color: var(--ink);
+  font: inherit;
+  font-variant-numeric: tabular-nums;
+}
+
+#god select {
+  flex: 1 1 12rem;
+  min-width: 0;
+}
+
+#god-metres,
+#god-clock {
+  width: 5.5rem;
+}
+
+.god__button {
+  min-height: 2rem;
+  padding: 0 0.7rem;
+  border: 1px solid var(--metal-edge);
+  border-radius: 0.4rem;
+  background: var(--metal);
+  box-shadow: var(--metal-shadow);
+  color: var(--ink);
+  font: inherit;
+  cursor: pointer;
+}
+
+.god__button:hover {
+  border-color: var(--ice);
+  background: var(--metal-lit);
+}
+
+.god__button[aria-pressed="true"] {
+  border-color: var(--accent);
+  background: var(--accent);
+  color: var(--accent-ink);
+}
+
+.god__check {
+  cursor: pointer;
+}
+
+.god__check input {
+  width: 1.1rem;
+  height: 1.1rem;
+  margin: 0;
+  accent-color: var(--accent);
+}
+
+.god__note:empty {
+  display: none;
+}
+
+.god__note,
+.god__where {
+  margin: 0.4rem 0 0;
+  color: var(--muted);
+  font-variant-numeric: tabular-nums;
+}
+
+/* On touch, the panel's targets are a finger's (docs/guidelines/interface.md → Buttons). */
+.touch #god select,
+.touch #god input:not([type="checkbox"]),
+.touch .god__button {
+  min-height: 48px;
+}

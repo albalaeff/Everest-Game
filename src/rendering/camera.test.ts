@@ -231,6 +231,20 @@ describe("Camera", () => {
     expect(camera.position).toEqual({ x: 100, y: 50 });
   });
 
+  it("cuts to a climber two screens away or more, put there at once, rather than sweep across the route (#245)", () => {
+    const climber = new StillClimber();
+    const camera = new Camera(climber, 640, 360);
+    climber.moveTo(10 + 41, 2);
+    camera.follow(FRAME);
+    const cut = camera.position;
+    climber.moveTo(10 + 41 + 39, 2);
+    camera.follow(FRAME);
+
+    expect(cut).toEqual({ x: 51, y: 2 });
+    expect(camera.position.x).toBeGreaterThan(51);
+    expect(camera.position.x).toBeLessThan(60);
+  });
+
   it("places a tool a metre ahead of the climber: the ice axe above, the crampons below", () => {
     const camera = new Camera(new StillClimber(), 640, 360);
 
