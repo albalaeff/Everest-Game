@@ -132,6 +132,72 @@
       "fitted": "2026-11-12"
     },
     {
+      "id": "gear.fixed-rope-stretch",
+      "kind": "fact",
+      "claim": "A fixed line is static rope: under a climber's weight it stretches by about this share of its loaded length, so a climber whose weight comes onto it sinks that far before it holds them (#232).",
+      "status": "source only",
+      "versions": [
+        {
+          "value": 0.035,
+          "unit": "1",
+          "note": "A review of static ropes for hauling, rigging and ascending: one elongates 3.5 percent under a 300-pound load and another 3.6; a polyester one far less, 1.4. The game's fixed lines are nylon, the first two.",
+          "source": {
+            "title": "Alpinist: a review of Sterling's static ropes (2018)",
+            "url": "https://alpinist.com/?p=59217"
+          },
+          "checked": "2026-11-16"
+        }
+      ]
+    },
+    {
+      "id": "gear.fixed-rope-under-weight",
+      "kind": "fact",
+      "claim": "How a fixed line behaves under a climber: it's slack until weight comes onto it, takes up its stretch before it holds, runs tight from the jumar to the anchor above while it's loaded, and is pulled tight by hand along a ladder (#232).",
+      "status": "source only",
+      "versions": [
+        {
+          "note": "A fixed rope is a static or semi-static nylon rope, secured at one or both ends to rock or ice.",
+          "source": {
+            "title": "ExplorersWeb: Newcomers' Guide: Fixed Ropes in Himalayan Climbing (2022)",
+            "url": "https://explorersweb.com/newcomers-guide-fixed-ropes-in-himalayan-climbing/"
+          },
+          "checked": "2026-11-16"
+        },
+        {
+          "note": "Starting up a rope on jumars, a climber first steps up a few times to pull the stretch out of it; the top jumar slides up easily because the rope is tensioned below it.",
+          "source": {
+            "title": "VDiff Climbing: How to Climb a Big Wall: Following",
+            "url": "https://www.vdiffclimbing.com/bigwall-following/"
+          },
+          "checked": "2026-11-16"
+        },
+        {
+          "note": "On a fixed line up steep snow the ascender is pushed along the rope, kept above the climber; where it won't slide, the rope is pulled through the bottom of it. The line is a backup: in a fall the teeth bite and catch.",
+          "source": {
+            "title": "Climbing Tech Tips: Alpine: Ascending Fixed Lines",
+            "url": "https://climbingtechtips.vhx.tv/videos/alpine-ascending-fixed-lines"
+          },
+          "checked": "2026-11-16"
+        },
+        {
+          "note": "On a ladder in the Icefall the climber holds the hand lines a little behind them to pull them taut, and teammates squat at both ends and pull the rope tight, which makes it more of a rail.",
+          "source": {
+            "title": "Alan Arnette: crossing a ladder in the Khumbu Icefall (2018)",
+            "url": "https://www.alanarnette.com/blog/wp-json/wp/v2/posts/29665"
+          },
+          "checked": "2026-11-16"
+        },
+        {
+          "note": "Static rope stretches under 6 % at a tenth of its breaking strength, and low-stretch rope 6 to 10 % (Cordage Institute 1801).",
+          "source": {
+            "title": "PMI: Types of Ropes",
+            "url": "https://pmirope.com/choosing-a-rope/"
+          },
+          "checked": "2026-11-16"
+        }
+      ]
+    },
+    {
       "id": "gear.packing",
       "kind": "question",
       "question": "What does a client carry through the Icefall on a rotation to Camp 1, and what do they leave at Base Camp or have carried for them: how much water and food, a second ice tool, oxygen? What's cached at Camp 1?",

@@ -109,6 +109,10 @@ export interface Pose {
   readonly tools: readonly DrawnTool[];
   /** The picks that went into the ice this frame, for the chips they knock off. */
   readonly strikes: readonly Strike[];
+  /** How hard the hand pulls on the jumar now, as a share of the climber's weight, 0 to 1
+   * (#232): up steep ground, between the strokes that slide it on, while it grips the rope; none
+   * on the flat, going down or at a halt. The rope above it comes taut by it. */
+  readonly pull: number;
 }
 
 /** What the figure is doing, as the pose draws it: from one to the next, it blends. */
@@ -360,6 +364,9 @@ export class ClimberPose {
   private static readonly JUMAR_HOLD: Joint = { x: 0.34, y: -0.3 };
   private static readonly JUMAR_PUSH = 0.7;
   private static readonly LET_GO = 0.3;
+  /** The pull on the jumar between its strokes (#232): the steepness of the ground, as a sine,
+   * from which a climber leans on the rope at all, and at which they pull with all they do. */
+  private static readonly PULL = { from: 0.17, whole: 0.7 };
   /** How long the far hand takes to clip the second cowstail, or unclip it, and come back; how
    * far the body leans into the reach, and crouches to the rope. */
   private static readonly CLIP_SECONDS = 0.6;
@@ -518,6 +525,8 @@ export class ClimberPose {
   private crouch = 0;
   private lift = 0;
   private pushing = 0;
+  /** How hard the hand pulls on the jumar this frame (#232). */
+  private pulling = 0;
   /** How far into the rest step's rhythm, 0 to 1; and how fast the climber's point goes over the
    * ground, in the figure's metres a second, smoothed. */
   private resting = 0;
@@ -568,6 +577,7 @@ export class ClimberPose {
     this.crouch += (Math.min(Math.max(crouch, 0), ClimberPose.MOST_CROUCH) - this.crouch) * share;
     const gait = this.gait(state, mode, share, frame);
     this.time += frame;
+    this.pulling = 0;
     const made = this.hauling(
       this.wobbling(this.made(mode, state, gait), state, mode),
       state,
@@ -993,6 +1003,12 @@ export class ClimberPose {
       const step = (2 * this.cycle) % 1;
       const push = ClimberPose.smooth(step / ClimberPose.JUMAR_PUSH) - step;
       const ahead = (push * this.pushing * (this.stride ?? 0)) / 2;
+      // Between the strokes the jumar grips, and up steep ground the arm pulls on it (#232).
+      const { from, whole } = ClimberPose.PULL;
+      const gripping = Math.max(step - ClimberPose.JUMAR_PUSH, 0) / (1 - ClimberPose.JUMAR_PUSH);
+      const steep = ClimberPose.smooth((along.y - from) / (whole - from));
+      const going = this.pushing * (1 - this.standing) * this.holding;
+      this.pulling = state.moving ? Math.sin(Math.PI * gripping) * steep * going : 0;
       const x = shoulder.x + ClimberPose.JUMAR_HOLD.x;
       const y = shoulder.y + ClimberPose.JUMAR_HOLD.y;
       this.heldAt = {
@@ -1338,6 +1354,7 @@ export class ClimberPose {
       landed,
       tools: held.tools,
       strikes: held.strikes,
+      pull: Math.min(Math.max(this.pulling, 0), 1),
     };
   }
 

@@ -406,6 +406,7 @@ export class SlopeLayer extends ParallaxLayer {
     npcs: readonly ClimberId[],
     seed: number,
     motes: number,
+    ropeStretch: number,
     private readonly jolts: {
       readonly zones: readonly JoltZone[];
       readonly warnings: readonly JoltWarning[];
@@ -530,6 +531,7 @@ export class SlopeLayer extends ParallaxLayer {
         physics,
         this.puffs,
         this.chips,
+        ropeStretch,
         sherpa ? SuitRig.LOADED : 1,
       );
       this.addChild(figure);

@@ -14,6 +14,7 @@ import type { LeastSize } from "./least-size";
 import { Palette } from "./palette";
 import { RimRig } from "./rim-rig";
 import type { Held } from "./rope-curve";
+import { RopeGive } from "./rope-give";
 import type { SnowPuffs } from "./snow-puffs";
 import { SteppedPoints } from "./stepped-points";
 import type { BetweenSteps } from "./stepped-points";
@@ -23,6 +24,15 @@ import { SuitRig } from "./suit-rig";
 interface Spot {
   x: number;
   y: number;
+}
+
+/** A cowstail's hold on its rope as the rope draws it (`Held`), filled again each frame. */
+interface Grip {
+  readonly on: Spot;
+  readonly drawn: Spot;
+  load: number;
+  pulled: boolean;
+  quiver: number;
 }
 
 /**
@@ -91,6 +101,8 @@ export class ClimberFigure extends Container {
   private readonly pose = new ClimberPose();
   private readonly breathing = new Breathing();
   private readonly reading: ClimberReading;
+  /** The slope's ropes, for the anchors of the one that holds them. */
+  private readonly ropes: ReadSlope;
   private readonly cone = ClimberFigure.drawCone();
   /** What of the cone shows: the fan the lamp lights, stopping at the ground (#202). */
   private readonly lit = new Graphics();
@@ -112,17 +124,26 @@ export class ClimberFigure extends Container {
   private readonly second: Spot = { x: 0, y: 0 };
   private readonly drawn: { at: Spot; jumar: Spot | null; carabiner: Spot | null; grown: number } =
     { at: this.point, jumar: null, carabiner: null, grown: 1 };
-  /** The jumar, where the physics has it on the rope and where the hand holds it, this frame. */
-  private readonly holding: { readonly on: Spot; readonly drawn: Spot } = {
+  /** The jumar, where the physics has it on the rope and where the hand holds it, this frame, and
+   * how much of the climber's weight the rope bears there (#232). */
+  private readonly holding: Grip = {
     on: { x: 0, y: 0 },
     drawn: { x: 0, y: 0 },
+    load: 0,
+    pulled: false,
+    quiver: 0,
   };
   /** The second carabiner, where the physics has it on the rope and where its sling holds it,
-   * this frame (#202). */
-  private readonly hanging: { readonly on: Spot; readonly drawn: Spot } = {
+   * this frame (#202), and the weight on it. */
+  private readonly hanging: Grip = {
     on: { x: 0, y: 0 },
     drawn: { x: 0, y: 0 },
+    load: 0,
+    pulled: false,
+    quiver: 0,
   };
+  /** How far the rope that holds them gives under their weight (#232). */
+  private readonly give: RopeGive;
   private hangs = false;
   private readonly ball: Spot = { x: 0, y: 0 };
   private readonly chip: Spot = { x: 0, y: 0 };
@@ -142,10 +163,15 @@ export class ClimberFigure extends Container {
     slope: ReadSlope,
     private readonly puffs: SnowPuffs,
     private readonly chips: IceChips,
+    /** How far a fixed rope gives under a climber's weight, as a share of its loaded length
+     * (`gear.fixed-rope-stretch`, #232). */
+    ropeStretch: number,
     /** How big their pack is against a client's: a Sherpa's is bigger (#212). */
     pack = 1,
   ) {
     super();
+    this.give = new RopeGive(ropeStretch);
+    this.ropes = slope;
     this.reading = new ClimberReading(slope);
     this.figure = new SuitRig(suit, pack);
     this.addChild(this.pool, this.cone, this.lit, this.rim, this.figure, this.halo, this.breath);
@@ -238,9 +264,12 @@ export class ClimberFigure extends Container {
     this.scale.set(across, grown);
     // Over the way they face: the layer's y is up, so the turn is the other way round.
     this.rotation = -pose.tilt * facing;
+    // Their weight on the rope, it gives under them (#232): they sink, bob and hang still.
+    const borne = this.borne(climber);
+    this.give.advance(seconds, borne === null ? 0 : 1, borne ?? 0);
     this.position.set(
       this.point.x + across * pose.offset.x,
-      this.point.y - sag + grown * pose.offset.y,
+      this.point.y - sag - this.give.metres + grown * pose.offset.y,
     );
     const moving = climber.moving && !climber.falling && !climber.dead;
     if (!climber.dead) {
@@ -264,10 +293,47 @@ export class ClimberFigure extends Container {
       this.hanging.on.y = this.second.y;
       this.inLayer(carabiner, this.hanging.drawn);
     }
+    this.load(climber, pose, borne !== null);
     if (state.ladder === null && !climber.falling && !climber.dead) {
       this.kick(pose, grown);
     }
     this.knock(pose, state.onIce === true && upright, grown);
+  }
+
+  /** How much rope bears the climber's weight, in metres, from the cowstail that holds them to
+   * the anchor above it (#232): hanging on the rope after a slip, or lowering down a step on it;
+   * none on their feet, whose own weight is on their boots. */
+  private borne(climber: ClimberView): number | null {
+    const weighted = !climber.dead && (climber.hanging || climber.lowering);
+    const rope = weighted ? (climber.first ?? climber.second) : null;
+    if (rope === null) {
+      return null;
+    }
+    const on = climber.first === null ? this.second : this.first;
+    const points = this.ropes.rope(rope);
+    const [from, to] = [points[0], points[points.length - 1]];
+    if (from === undefined || to === undefined) {
+      return null;
+    }
+    const anchor = from.y >= to.y ? from : to;
+    return Math.hypot(anchor.x - on.x, anchor.y - on.y);
+  }
+
+  /** The weight on each cowstail's rope this frame (#232): all of it on the one that holds a
+   * climber who hangs or lowers, the jumar's if it's on, with the quiver of its coming taut; on
+   * their feet, the arm's pull on the jumar between its strokes; and a rope held tight by hand,
+   * the haul held with nobody to haul, taut both ways from the jumar on it. */
+  private load(climber: ClimberView, pose: Pose, weighted: boolean): void {
+    const { holding, hanging } = this;
+    const onJumar = weighted && climber.first !== null;
+    const apart = climber.second !== climber.first;
+    const tight = climber.haulHeld && !climber.hauling && !climber.falling && !climber.dead;
+    holding.load = onJumar || tight ? 1 : pose.pull;
+    holding.pulled = tight;
+    holding.quiver = onJumar ? this.give.quiver : 0;
+    hanging.load = weighted && (climber.first === null || apart) ? 1 : 0;
+    hanging.pulled = false;
+    hanging.quiver = weighted && climber.first === null ? this.give.quiver : 0;
   }
 
   /** Chips of ice knocked off where each pick struck in this frame, and, `onIce`, where each

@@ -157,6 +157,15 @@ describe("Mountain", () => {
     );
   });
 
+  it("hands the picture how far a fixed rope gives under a climber, a few per cent of its length (#232)", () => {
+    const { ropeStretch } = new Mountain(knowledge);
+
+    expect(ropeStretch).toBe(knowledge.number("gear.fixed-rope-stretch"));
+    // Static rope: under the 6 % of its standard, and not nothing.
+    expect(ropeStretch).toBeGreaterThan(0.01);
+    expect(ropeStretch).toBeLessThan(0.06);
+  });
+
   it("gives each expedition rules of its own, so two rooms on one server share nothing", () => {
     const mountain = new Mountain(knowledge);
 

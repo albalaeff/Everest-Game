@@ -287,6 +287,7 @@ export class GamePage {
         player,
         npcs: scenario.npcs ?? [],
         seed: scenario.seed,
+        ropeStretch: this.mountain.ropeStretch,
         jolts: rules.jolts,
       },
       choice.chosen,

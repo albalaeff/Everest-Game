@@ -40,6 +40,9 @@ export interface SceneWorld {
   /** The climbers an agent steers: the Sherpa, in his blue suit (#212). */
   readonly npcs: readonly ClimberId[];
   readonly seed: number;
+  /** How far a fixed rope gives under a climber's weight, as a share of its loaded length
+   * (#232): the knowledge base's `gear.fixed-rope-stretch`. */
+  readonly ropeStretch: number;
   /** The jolts on their way (#197): a gust streams the snow, a lashed ladder shudders. */
   readonly jolts?: {
     readonly zones: readonly JoltZone[];
@@ -213,7 +216,7 @@ export class SlopeScene {
     const { width, height } = this.app.screen;
     const { physics, hazards, body, oxygen, lamps, camps, parts, climbers, player, npcs, seed } =
       this.world;
-    const { jolts } = this.world;
+    const { jolts, ropeStretch } = this.world;
     const skyline = (style: typeof SkylineLayer.PEAKS, offset: number): SkylineLayer =>
       new SkylineLayer(style, physics.terrain, seed + offset, fogBanks, parts);
     this.sky = new SkyLayer(dithered);
@@ -236,6 +239,7 @@ export class SlopeScene {
       npcs,
       seed,
       motes,
+      ropeStretch,
       jolts,
     );
     this.snow = flakes > 0 ? new SnowLayer(flakes, width, height) : null;
