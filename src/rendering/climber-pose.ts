@@ -118,7 +118,8 @@ export interface Pose {
   readonly strikes: readonly Strike[];
   /** How hard the hand pulls on the jumar now, as a share of the climber's weight, 0 to 1
    * (#232): up steep ground, between the strokes that slide it on, while it grips the rope; none
-   * on the flat, going down or at a halt. The rope above it comes taut by it. */
+   * on the flat, going down, at a halt or on a ladder, whose rungs bear the weight (#250). The
+   * rope above it comes taut by it. */
   readonly pull: number;
 }
 
@@ -1030,12 +1031,14 @@ export class ClimberPose {
       const step = (2 * this.cycle) % 1;
       const push = ClimberPose.smooth(step / ClimberPose.JUMAR_PUSH) - step;
       const ahead = (push * this.pushing * (this.stride ?? 0)) / 2;
-      // Between the strokes the jumar grips, and up steep ground the arm pulls on it (#232).
+      // Between the strokes the jumar grips, and up steep ground the arm pulls on it (#232); not
+      // on a ladder, whose rungs bear the weight, the rope beside it only backing them up (#250).
       const { from, whole } = ClimberPose.PULL;
       const gripping = Math.max(step - ClimberPose.JUMAR_PUSH, 0) / (1 - ClimberPose.JUMAR_PUSH);
       const steep = ClimberPose.smooth((along.y - from) / (whole - from));
       const going = this.pushing * (1 - this.standing) * this.holding;
-      this.pulling = state.moving ? Math.sin(Math.PI * gripping) * steep * going : 0;
+      const onRungs = state.ladder !== null && state.onIce !== true;
+      this.pulling = state.moving && !onRungs ? Math.sin(Math.PI * gripping) * steep * going : 0;
       const x = shoulder.x + ClimberPose.JUMAR_HOLD.x;
       const y = shoulder.y + ClimberPose.JUMAR_HOLD.y;
       this.heldAt = {

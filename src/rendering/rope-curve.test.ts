@@ -299,6 +299,101 @@ describe("RopeCurve", () => {
     expect(offLine(curve, [6.2, 1], [7, 0])).toBeLessThan(0.02);
   });
 
+  /** A rope up a wall 5 m high, a metre a link from its foot to its anchor at the top; and a
+   * climber on it 1.5 m up, their jumar in their hand and their second carabiner on its sling at
+   * their harness, both on the one spot of the rope, as the physics has them on a ladder. */
+  const WALL = chain([0, 0], [0, 1], [0, 2], [0, 3], [0, 4], [0, 5]);
+  const IN_HAND = { on: { x: 0, y: 1.5 }, drawn: { x: 0.15, y: 2.3 } };
+  const AT_THE_HARNESS = { on: { x: 0, y: 1.5 }, drawn: { x: -0.05, y: 1.7 } };
+  const ys = (curve: RopeCurve): number[] =>
+    Array.from({ length: curve.length }, (_, index) => curve.y(index));
+  /** How far the curve strays from the straight line between two points, at most, where it's
+   * between their heights. */
+  const offTheWay = (
+    curve: RopeCurve,
+    from: readonly [number, number],
+    to: readonly [number, number],
+  ): number => {
+    let most = 0;
+    const length = Math.hypot(to[0] - from[0], to[1] - from[1]);
+    for (let index = 0; index < curve.length; index += 1) {
+      const y = curve.y(index);
+      if (y > Math.min(from[1], to[1]) + 1e-6 && y < Math.max(from[1], to[1]) - 1e-6) {
+        const across =
+          ((to[0] - from[0]) * (y - from[1]) - (to[1] - from[1]) * (curve.x(index) - from[0])) /
+          length;
+        most = Math.max(most, Math.abs(across));
+      }
+    }
+    return most;
+  };
+
+  it("runs through two holds on one spot of the rope in the order they're drawn along it, up from the harness to the hand, never doubling back between them", () => {
+    const curve = new RopeCurve();
+    curve.shape(WALL, [IN_HAND, AT_THE_HARNESS], SNOW, 0, 0);
+    const heights = ys(curve);
+    const xs = Array.from({ length: curve.length }, (_, index) => curve.x(index));
+
+    expect(nearest(curve, 0.15, 2.3)).toBeLessThan(1e-9);
+    expect(nearest(curve, -0.05, 1.7)).toBeLessThan(1e-9);
+    // Up the wall all the way: never down from the hand to the harness and up again.
+    heights.slice(1).forEach((y, index) => {
+      expect(y).toBeGreaterThanOrEqual(heights[index] ?? Infinity);
+    });
+    // Whichever of them the figure hands the rope first.
+    curve.shape(WALL, [AT_THE_HARNESS, IN_HAND], SNOW, 0, 0);
+    expect(ys(curve)).toEqual(heights);
+    expect(Array.from({ length: curve.length }, (_, index) => curve.x(index))).toEqual(xs);
+  });
+
+  it("pulled tight from above, runs straight to the hand and the harness of a climber on it below and on from them, not past them", () => {
+    const curve = new RopeCurve();
+    const above = { on: { x: 0, y: 4.2 }, drawn: { x: 0.4, y: 4.9 }, load: 1, pulled: true };
+    curve.shape(WALL, [IN_HAND, AT_THE_HARNESS, above], SNOW, 0, 0);
+
+    expect(offTheWay(curve, [0.4, 4.9], [0.15, 2.3])).toBeLessThan(1e-3);
+    expect(offTheWay(curve, [0.15, 2.3], [-0.05, 1.7])).toBeLessThan(1e-3);
+    expect(offTheWay(curve, [-0.05, 1.7], [0, 0])).toBeLessThan(1e-3);
+    expect(nearest(curve, 0.4, 4.9)).toBeLessThan(1e-9);
+    expect(nearest(curve, 0.15, 2.3)).toBeLessThan(1e-9);
+    expect(nearest(curve, -0.05, 1.7)).toBeLessThan(1e-9);
+  });
+
+  /** Whether any two pieces of the curve that don't meet end to end cross. */
+  const crossesItself = (curve: RopeCurve): boolean => {
+    const at = (index: number): readonly [number, number] => [curve.x(index), curve.y(index)];
+    const side = (
+      [ax, ay]: readonly [number, number],
+      [bx, by]: readonly [number, number],
+      [cx, cy]: readonly [number, number],
+    ): number => Math.sign((bx - ax) * (cy - ay) - (by - ay) * (cx - ax));
+    for (let one = 0; one + 1 < curve.length; one += 1) {
+      for (let other = one + 2; other + 1 < curve.length; other += 1) {
+        const [a, b, c, d] = [at(one), at(one + 1), at(other), at(other + 1)];
+        if (side(a, b, c) * side(a, b, d) < 0 && side(c, d, a) * side(c, d, b) < 0) {
+          return true;
+        }
+      }
+    }
+    return false;
+  };
+
+  it("goes up to the hands of whoever holds it tight past its anchor and back down by their harness to it, not across itself, with a climber just below", () => {
+    const curve = new RopeCurve();
+    // He stands over the anchor, both his cowstails on it: the rope in his hands, pulled tight.
+    const hands = { on: { x: 0, y: 5 }, drawn: { x: 0.39, y: 5.95 }, load: 1, pulled: true };
+    const harness = { on: { x: 0, y: 5 }, drawn: { x: 0.08, y: 5.39 } };
+    // Below him, near the top of the wall, a climber's hand and harness.
+    const hand = { on: { x: 0, y: 4.2 }, drawn: { x: 0.23, y: 4.9 } };
+    const theirs = { on: { x: 0, y: 4.2 }, drawn: { x: -0.02, y: 4.22 } };
+    curve.shape(WALL, [hand, theirs, hands, harness], SNOW, 0, 0);
+
+    expect(crossesItself(curve)).toBe(false);
+    for (const { drawn } of [hands, harness, hand, theirs]) {
+      expect(nearest(curve, drawn.x, drawn.y)).toBeLessThan(1e-9);
+    }
+  });
+
   it("quivers across itself in the middle of its loaded length, and not at its ends", () => {
     const curve = new RopeCurve();
     const at = { on: { x: 4, y: 2 }, drawn: { x: 4, y: 2.9 }, load: 1 };
