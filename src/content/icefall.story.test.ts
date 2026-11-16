@@ -283,6 +283,61 @@ describe("The training events on a careful crossing (#209)", () => {
   });
 });
 
+describe("Pemba and a client hanging at the big crevasse (#239)", () => {
+  it("comes back to its lip from where he leads, and hauls out a client who hangs there and does nothing", () => {
+    const mountain = new Mountain(knowledge);
+    const rules = mountain.rules();
+    const scenario = mountain.scenario(SEED, undefined, undefined, false);
+    const { layout } = mountain.route;
+    const crevasse = layout.ladders.find(({ id }) => id === "big-crevasse");
+    const pemba = mountain.route.sherpa;
+    if (crevasse === undefined || pemba === null) {
+      throw new Error("The Icefall has no big crevasse, or no Sherpa");
+    }
+    // The player at its near lip; Pemba 3.5 m past its far one, where he leads; and its 8 m
+    // ladder breaks under the player's step past its fifth metre, nearer his end than theirs.
+    const climbers = layout.climbers.map((climber) => ({
+      ...climber,
+      along: climber.id === Section.PLAYER ? crevasse.from : crevasse.to + 3.5,
+    }));
+    const ladders = layout.ladders.map((ladder) =>
+      ladder === crevasse ? { ...ladder, breaks: 5, trainees: [Section.PLAYER] } : ladder,
+    );
+    const physics = SlopePhysics.start({ ...layout, climbers, ladders });
+    const expedition = Expedition.start(
+      { ...scenario, start: { ...scenario.start, [SlopePhysics.NAME]: physics } },
+      rules.all,
+    );
+    const player = () => rules.physics.climber(Section.PLAYER);
+    const until = (done: () => boolean, steps: number): boolean => {
+      for (let step = 0; step < steps && !done(); step += 1) {
+        expedition.advance();
+      }
+      return done();
+    };
+    const farLip = rules.physics.terrain.point(crevasse.to);
+
+    expedition.advance([{ kind: "clip", climber: Section.PLAYER, cowstail: "second" }]);
+    until(() => player().second !== null, 200);
+    expedition.advance([{ kind: "walk", climber: Section.PLAYER, direction: "right" }]);
+    const hung = until(() => player().hanging, 2000);
+    expedition.advance([{ kind: "walk", climber: Section.PLAYER, direction: "stop" }]);
+    const hauling = until(() => rules.physics.climber(pemba).hauling, 600);
+    const from = rules.physics.along(pemba);
+    const out = until(() => !player().falling, 3000);
+
+    expect(hung).toBe(true);
+    expect(hauling).toBe(true);
+    // He stops short of the ladder that's down, and hauls from there: within the haul's reach.
+    expect(from - crevasse.to).toBeGreaterThan(0.3);
+    expect(from - crevasse.to).toBeLessThan(1);
+    expect(out).toBe(true);
+    expect(player().falls.at(-1)).toMatchObject({ held: true, broke: true, pulled: true });
+    expect(player().x).toBeCloseTo(farLip.x, 1);
+    expect(player().dead).toBe(false);
+  });
+});
+
 describe("Leaving early is safer: the night's crossing against the morning's", () => {
   /** The chance a hazard goes on the climber, summed over every step they're under one, on a
    * crossing that sets off at `time`. */
