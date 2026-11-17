@@ -5,6 +5,9 @@ import { IceTools } from "./ice-tools";
 /** A shape's outline: its corners in order round it, in metres. */
 export type Outline = readonly Joint[];
 
+/** The parts the suit's down pads round a bone: the legs, the arms and the neck. */
+export type Padded = "thigh" | "shin" | "upperArm" | "forearm" | "neck";
+
 /** An ice tool's shapes, in its own frame (`IceTools`): its shaft, the rubber of its grip, its
  * foot, a spike or a pommel, its steel head with the pick and the adze or hammer, a trigger rest
  * if it has one; where the hole through its head is, and the top edge of its pick, which catches
@@ -31,23 +34,54 @@ export interface ToolOutlines {
  * the pick towards -y (`IceTools`): a mountaineer's ice axe, its shaft straight, a classic pick
  * with teeth under its end and an adze, and a technical tool, its shaft bent clear of the ice, a
  * banana pick, a hammer, a trigger rest over the grip and a pommel. The rigs share one set
- * (`FigureRig.SHAPES`).
+ * (`FigureRig.SHAPES`), and the suit's numbers with the figure seen from the front
+ * (`FrontShapes`, #235): its down, its seams, its yoke, its panels and its belt.
  */
 export class FigureShapes {
   /** Up a part, and ahead along it: the lines a band is cut along. */
   static readonly UP: Joint = { x: 0, y: 1 };
   static readonly AHEAD: Joint = { x: 1, y: 0 };
+  /** The suit's down, seen side-on and from the front alike (#235): how thick it is round the
+   * root of each limb and of the neck, and round its end, in metres each side of the bone. */
+  static readonly DOWN: Readonly<Record<Padded, { readonly root: number; readonly end: number }>> =
+    {
+      thigh: { root: 0.108, end: 0.084 },
+      shin: { root: 0.082, end: 0.068 },
+      upperArm: { root: 0.074, end: 0.063 },
+      forearm: { root: 0.061, end: 0.05 },
+      neck: { root: 0.1, end: 0.09 },
+    };
+  /** The seams between the down's baffles: as shares of a limb from the joint it hangs from, or
+   * metres up the torso from the pelvis. */
+  static readonly SEAMS: Readonly<
+    Record<"thigh" | "upperArm" | "forearm" | "torso", readonly number[]>
+  > = {
+    thigh: [0.3, 0.55, 0.8],
+    upperArm: [0.4, 0.7],
+    forearm: [0.45],
+    torso: [0.1, 0.185, 0.27, 0.355],
+  };
+  /** How far up the torso from the pelvis its dark yoke begins, and down a shin from the knee its
+   * dark panel, in metres. */
+  static readonly YOKE = 0.43;
+  static readonly SHIN_PANEL = 0.17;
+  /** The boot's gaiter: how far up the shin from the ankle its collar is, how deep the collar is,
+   * and how wide it is each side, at the collar and round the ankle. */
+  static readonly GAITER = { up: 0.176, collar: 0.03, half: 0.08, ankle: 0.09 };
+  /** The harness's belt round the torso: the slant it runs across it at, side-on, and its edges
+   * up from the pelvis. */
+  static readonly BELT = { normal: { x: -0.055, y: 1 }, from: 0.005, to: 0.055 };
   /** How finely the curves are cut: corners a curve, and radians a corner round an end. */
   private static readonly CURVE_CORNERS = 6;
   private static readonly ARC_STEP = Math.PI / 8;
 
   /** The legs, the arms and the neck, each as long as its bone and as thick at each end as the
    * suit's down is there. */
-  readonly thigh = FigureShapes.capsule(ClimberPose.THIGH, 0.108, 0.084);
-  readonly shin = FigureShapes.capsule(ClimberPose.SHIN, 0.082, 0.068);
-  readonly upperArm = FigureShapes.capsule(ClimberPose.UPPER_ARM, 0.074, 0.063);
-  readonly forearm = FigureShapes.capsule(ClimberPose.FOREARM, 0.061, 0.05);
-  readonly neck = FigureShapes.capsule(ClimberPose.NECK, 0.1, 0.09);
+  readonly thigh = FigureShapes.padded("thigh", ClimberPose.THIGH);
+  readonly shin = FigureShapes.padded("shin", ClimberPose.SHIN);
+  readonly upperArm = FigureShapes.padded("upperArm", ClimberPose.UPPER_ARM);
+  readonly forearm = FigureShapes.padded("forearm", ClimberPose.FOREARM);
+  readonly neck = FigureShapes.padded("neck", ClimberPose.NECK);
   /** The mitt on the forearm's end, and the cuff over the wrist. */
   readonly mitt = FigureShapes.ellipse({ x: ClimberPose.FOREARM + 0.012, y: -0.006 }, 0.072, 0.056);
   readonly cuff = FigureShapes.box(
@@ -62,9 +96,14 @@ export class FigureShapes {
   /** The boot's gaiter, on the shin and turning with it: from its collar down round the ankle, its
    * end inside the shell however far the boot lets the ankle bend. */
   readonly gaiter: Outline = [
-    ...FigureShapes.arc({ x: ClimberPose.SHIN - 0.015, y: 0 }, 0.09, Math.PI / 2, -Math.PI / 2),
-    { x: ClimberPose.SHIN - 0.176, y: -0.08 },
-    { x: ClimberPose.SHIN - 0.176, y: 0.08 },
+    ...FigureShapes.arc(
+      { x: ClimberPose.SHIN - 0.015, y: 0 },
+      FigureShapes.GAITER.ankle,
+      Math.PI / 2,
+      -Math.PI / 2,
+    ),
+    { x: ClimberPose.SHIN - FigureShapes.GAITER.up, y: -FigureShapes.GAITER.half },
+    { x: ClimberPose.SHIN - FigureShapes.GAITER.up, y: FigureShapes.GAITER.half },
   ];
   /** The crampon under it: its frame along the sole, its points, and the front points ahead. */
   readonly crampon: readonly Outline[] = [
@@ -296,8 +335,8 @@ export class FigureShapes {
   }
 
   /** A strip along the polyline `centre`, as wide each side as `from` at its start and `to` at its
-   * end: a shaft, bent where its line bends. */
-  private static strip(centre: readonly Joint[], from: number, to: number): Outline {
+   * end: a shaft, bent where its line bends; a strap. */
+  static strip(centre: readonly Joint[], from: number, to: number): Outline {
     const lengths = centre.map((point, index) => {
       const before = centre[index - 1] ?? point;
       return Math.hypot(point.x - before.x, point.y - before.y);
@@ -350,6 +389,12 @@ export class FigureShapes {
     return [...front, ...round, ...heel.slice(1, -1)];
   }
 
+  /** The part of the suit `part`, `length` long along its bone, padded with its down. */
+  private static padded(part: Padded, length: number): Outline {
+    const { root, end } = FigureShapes.DOWN[part];
+    return FigureShapes.capsule(length, root, end);
+  }
+
   /** A limb `length` long along +x, as thick as `from` round its root and `to` round its end, the
    * sides straight between. */
   private static capsule(length: number, from: number, to: number): Outline {
@@ -360,7 +405,8 @@ export class FigureShapes {
     ];
   }
 
-  private static arc(centre: Joint, radius: number, from: number, to: number): Outline {
+  /** The corners of an arc round `centre`, `radius` from it, from the angle `from` to `to`. */
+  static arc(centre: Joint, radius: number, from: number, to: number): Outline {
     const corners = Math.max(2, Math.ceil(Math.abs(to - from) / FigureShapes.ARC_STEP));
     return Array.from({ length: corners + 1 }, (_, corner) => {
       const angle = from + ((to - from) * corner) / corners;
@@ -368,7 +414,8 @@ export class FigureShapes {
     });
   }
 
-  private static ellipse(centre: Joint, across: number, up: number): Outline {
+  /** An ellipse round `centre`, `across` wide each side and `up` high above and below it. */
+  static ellipse(centre: Joint, across: number, up: number): Outline {
     const corners = Math.ceil((2 * Math.PI) / FigureShapes.ARC_STEP);
     return Array.from({ length: corners }, (_, corner) => {
       const angle = (2 * Math.PI * corner) / corners;
@@ -376,7 +423,8 @@ export class FigureShapes {
     });
   }
 
-  private static box(left: number, bottom: number, right: number, top: number): Outline {
+  /** A box from its bottom left corner to its top right one. */
+  static box(left: number, bottom: number, right: number, top: number): Outline {
     return [
       { x: left, y: bottom },
       { x: right, y: bottom },
@@ -388,7 +436,7 @@ export class FigureShapes {
   /** An outline from `start` along lines and curves, each its numbers: a corner, `[x, y]`, or a
    * curve through one control point or two to its end, `[cx, cy, x, y]` or
    * `[c1x, c1y, c2x, c2y, x, y]`. One that ends where it began isn't given that corner twice. */
-  private static path(start: Joint, segments: readonly (readonly number[])[]): Outline {
+  static path(start: Joint, segments: readonly (readonly number[])[]): Outline {
     const outline: Joint[] = [start];
     for (const segment of segments) {
       const controls: Joint[] = [outline.at(-1) ?? start];

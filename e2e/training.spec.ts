@@ -57,6 +57,9 @@ test.describe("on a screen of 630 by 360", () => {
     hasTouch,
   }) => {
     test.skip(hasTouch, "a PC's story");
+    // The haul alone takes 18 s of play, and the whole story 50 to 60 s on CI's two cores when it
+    // passes: the default minute ran out on its last step (#244).
+    test.slow();
     // At the near lip of the big crevasse, its 8 m ladder staged to break a metre out, and no step
     // on it slipping before it does.
     await climbFrom(page, (climb) => {
@@ -110,8 +113,8 @@ test.describe("on a screen of 630 by 360", () => {
     expect(out?.falls).toMatchObject([{ held: true, broke: true }]);
     await expect(coach(page)).toHaveAttribute("data-tip", "ladder-broken", { timeout: 20_000 });
 
-    // Nobody comes to fix it: with F held at its lip, and Pemba holding its rope at the other once
-    // his rest with the player is over, they haul it back up together, and he says it holds.
+    // Nobody comes to fix it: with F held at its lip, and Pemba holding its rope at the other, they
+    // haul it back up together, and he says it holds.
     await page.keyboard.down("KeyF");
     await expect
       .poll(async () => (await seen(page, "player"))?.hauling, { timeout: 60_000 })
