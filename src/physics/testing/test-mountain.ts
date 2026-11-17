@@ -30,7 +30,10 @@ export class TestMountain {
    * A ladder's rungs slip a twentieth of the time a metre; there's no ice, and no ladder bounces,
    * unless a test lays them; and no landing kills, unless a test says so. A clip goes on at once,
    * standing still never slips, and nobody passing anyone jolts them (#197), unless a test says
-   * so. */
+   * so. No landing hurts, unless a test says so (#241): then every hard one does, a leg on ground
+   * a climber could stand on and an arm on a face; a rescue's anchor takes 4 s, a tourniquet 1,
+   * a splint 3 and a wrap 2, a lift 1, a whole stride hauls a casualty up a rescue line at
+   * 0.5 m/s, and a rescuer carries one at half their stride. */
   static readonly SETTINGS: SlopeSettings = {
     gravity: 9.8,
     friction: 0.4,
@@ -90,6 +93,23 @@ export class TestMountain {
       poor: 5,
       swingSlip: 0,
       hang: 0.5,
+    },
+    injury: {
+      sprain: 1000,
+      fracture: 1000,
+      open: 1000,
+      unhurt: { soft: 0, hard: 0 },
+      leg: { flat: 1, steep: 0 },
+      sore: 0.5,
+      wrapped: 0.8,
+    },
+    rescue: {
+      reach: 1.5,
+      anchor: 4,
+      aid: { tourniquet: 1, splint: 3, wrap: 2 },
+      haul: 0.5,
+      lift: 1,
+      carry: 0.5,
     },
   };
   /** Nobody ever slips. */

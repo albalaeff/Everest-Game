@@ -78,6 +78,34 @@
       "published": 2026,
       "use": "Background on the death zone above 8,000 m, not medical guidance: never a source for a treatment.",
       "read": "2026-11-03"
+    },
+    {
+      "title": "Nau et al. 2021, Falls from Great Heights: Risk to Sustain Severe Thoracic and Pelvic Injuries Increases with Height of the Fall",
+      "url": "https://doi.org/10.3390/jcm10112307",
+      "published": 2021,
+      "use": "An open (CC BY) study of 178 patients who fell more than 3 m (J. Clin. Med. 10:2307): which bones and organs a fall injures by its height, and that the landing's surface and the body's position decide it. The game's landings are fitted to it (#241); it says nothing of treatment.",
+      "read": "2026-11-17"
+    },
+    {
+      "title": "Amadasi et al. 2025, Injury pattern of feet and lower limbs in a feet-first fall from height",
+      "url": "https://doi.org/10.1007/s12024-025-00939-3",
+      "published": 2025,
+      "use": "An open (CC BY) forensic case (Forensic Sci. Med. Pathol. 21:1535–1539): what a landing on the feet breaks, and why. For which limb a landing hurts (#241).",
+      "read": "2026-11-17"
+    },
+    {
+      "title": "WMS Magazine: Tourniquet Replacement (vol. 41, issue 1)",
+      "url": "https://wms.imiscloud.com/magazine/1424/Tourniquet-Replacement/default.aspx",
+      "published": 2024,
+      "use": "The Wilderness Medical Society's magazine on tourniquets in the field: when one is used, where it goes, how long it stays on before it's converted or replaced, and the cold. For the first aid of a limb that bleeds (#241).",
+      "read": "2026-11-17"
+    },
+    {
+      "title": "NOLS: 7 Materials That Can Be Used To Improvise a Splint (2016)",
+      "url": "https://www.nols.edu/?p=745352",
+      "published": 2016,
+      "use": "NOLS Wilderness Medicine on splints in the backcountry: what a splint has to be, and what it's improvised from. For the first aid of a fracture (#241).",
+      "read": "2026-11-17"
     }
   ]
 }

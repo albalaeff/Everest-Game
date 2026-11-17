@@ -38,6 +38,13 @@ const at = (over: Partial<ClimberView> = {}): ClimberView => ({
   heldBack: null,
   facing: 1,
   towardViewer: false,
+  injuries: [],
+  down: false,
+  carriedBy: null,
+  carrying: null,
+  onLine: null,
+  hauled: false,
+  helping: null,
   ...over,
 });
 

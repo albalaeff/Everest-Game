@@ -1,8 +1,11 @@
 import type { ClimberId, HazardGround, JoltGround, Json, Legs, Moment, Rule } from "../simulation";
 import { Climber } from "./climber";
-import type { ClimberSave, ClimberView, Gear, Kit } from "./climber";
+import type { ClimberSave, ClimberView, Gear, Kit, KitsSpent } from "./climber";
+import type { AidDue, Injury } from "./injuries";
 import { Ladder } from "./ladder";
 import type { LadderCondition, LadderLayout } from "./ladder";
+import { RescueLine } from "./rescue-line";
+import type { RescueLineSave, RescueLineView } from "./rescue-line";
 import { Rope } from "./rope";
 import type { RopeSave } from "./rope";
 import type { SectionAltitude } from "./section-scale";
@@ -13,7 +16,10 @@ import type { SnowLayout } from "./snow";
 import { Terrain } from "./terrain";
 import type { Pair, Point } from "./terrain";
 
+export type { AidDue, AidSeconds, Injury, InjuryKind, InjuryPart, InjurySettings } from "./injuries";
 export type { LadderCondition, LadderLayout } from "./ladder";
+export type { RescueLineView } from "./rescue-line";
+export type { RescueSettings } from "./rescue-work";
 export type { AlongStretch, FootingSettings, IceClimbSettings, SlopeSettings } from "./slope";
 export type { SnowLayout } from "./snow";
 
@@ -67,6 +73,9 @@ type SlopeSave = {
   readonly ropes: readonly RopeSave[];
   readonly ladders: readonly LadderLayout[];
   readonly climbers: readonly ClimberSave[];
+  /** The rescue lines thrown on it (#241): missing from the saves of builds before them, and
+   * where there's none. */
+  readonly lines?: readonly RescueLineSave[];
 };
 
 /**
@@ -201,7 +210,16 @@ export class SlopePhysics implements Rule, HazardGround, JoltGround, Legs {
       throw new RangeError(`${id} can't stand off the ground, at ${along} m along it`);
     }
     const rope = clipped ? slope.ropeWithin(slope.terrain.point(along)) : null;
-    this.onSlope.set(id, this.climberFor(id).placed(along, rope));
+    const climber = this.climberFor(id);
+    // Off anyone's back first, and nobody left on theirs (#241).
+    climber.unlink(slope);
+    this.onSlope.set(id, climber.placed(along, rope));
+  }
+
+  /** Injures a climber as a hard landing would have, between steps, on `step`: the god mode's
+   * (#245), to stage a rescue (#241). A broken bone puts them down where they stand. */
+  injure(id: ClimberId, injury: Pick<Injury, "part" | "kind">, step: number): void {
+    this.climberFor(id).injure(injury, step);
   }
 
   /** Stages a ladder to break for training (#209) as a scenario stages one, between steps: across
@@ -337,6 +355,46 @@ export class SlopePhysics implements Rule, HazardGround, JoltGround, Legs {
     return this.loaded.ladder(id).hauledBack;
   }
 
+  /** The rescue lines thrown on the slope, built or half built, in the order they were begun
+   * (#241): each one's anchor and foot along the ground, and the line it hangs down. */
+  get lines(): readonly RescueLineView[] {
+    const { lines, terrain } = this.loaded;
+    return [...lines.values()].map((line) => line.view(terrain));
+  }
+
+  /** Where a rescuer can anchor a line over a climber who lies where the route doesn't reach, a
+   * crevasse's floor or a ledge down its wall: the edges above them, along the ground, the one
+   * further back first (#241). None for a climber the route reaches, or one off the ground. */
+  anchorSpots(id: ClimberId): readonly number[] {
+    const slope = this.loaded;
+    const lies = this.climberFor(id).strandedAt(slope);
+    if (lies === null) {
+      return [];
+    }
+    return ([-1, 1] as const).flatMap((way) => {
+      const spot = slope.anchorSpot(lies, way);
+      return spot === null ? [] : [spot];
+    });
+  }
+
+  /** What first aid a climber is due next, and how far it has come; none for one who's due
+   * none (#241). */
+  aidDue(id: ClimberId): AidDue | null {
+    return this.climberFor(id).aidDue(this.settings.rescue.aid);
+  }
+
+  /** Whether a casualty can be moved, hauled or carried: nothing bleeds, and what's broken is
+   * splinted (#241). */
+  movable(id: ClimberId): boolean {
+    return this.climberFor(id).movable;
+  }
+
+  /** How many first-aid kits and rescue kits a climber has used up so far (#241): the packs take
+   * them out of the pack. */
+  kitsSpent(id: ClimberId): KitsSpent {
+    return this.climberFor(id).kitsSpent;
+  }
+
   /** The stretches of the ground that are bare blue ice, along it. */
   get ice(): readonly AlongStretch[] {
     return this.ground.ice ?? [];
@@ -416,20 +474,27 @@ export class SlopePhysics implements Rule, HazardGround, JoltGround, Legs {
       ...(save.ice === undefined ? {} : { ice: save.ice }),
       ...(save.brittle === undefined ? {} : { brittle: save.brittle }),
     };
+    for (const line of save.lines ?? []) {
+      slope.lines.set(line.id, RescueLine.load(line));
+    }
     this.onSlope.clear();
     for (const climber of save.climbers) {
       this.onSlope.set(climber.id, Climber.load(climber, slope));
     }
+    for (const climber of this.onSlope.values()) {
+      climber.link(this.onSlope, slope);
+    }
   }
 
   save(): Json {
-    const { scale, ropes, ladders } = this.loaded;
+    const { scale, ropes, ladders, lines } = this.loaded;
     const save: SlopeSave = {
       ...this.ground,
       altitude: scale.altitude,
       ropes: [...ropes.values()].map((rope) => rope.save()),
       ladders: [...ladders.values()].map((ladder) => ladder.save()),
       climbers: [...this.onSlope.values()].map((climber) => climber.save()),
+      ...(lines.size === 0 ? {} : { lines: [...lines.values()].map((line) => line.save()) }),
     };
     return save;
   }

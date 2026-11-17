@@ -202,6 +202,98 @@
       "kind": "question",
       "question": "What does a client carry through the Icefall on a rotation to Camp 1, and what do they leave at Base Camp or have carried for them: how much water and food, a second ice tool, oxygen? What's cached at Camp 1?",
       "about": ["gear.most-water", "gear.most-food", "gear.most-oxygen"]
+    },
+    {
+      "id": "gear.rescue-kit-rope",
+      "kind": "fact",
+      "claim": "A crevasse rescue kit, a thin static rope with a progress-capture pulley, an ascender, three locking carabiners and a sling in a pouch, weighs about this much.",
+      "status": "source only",
+      "versions": [
+        {
+          "value": 0.97,
+          "unit": "kg",
+          "note": "Petzl's RAD SYSTEM: 30 m of 6 mm cord (0.66 kg), three screw-lock carabiners, a TIBLOC ascender, a NANO TRAXION progress-capture pulley and a 120 cm sling, 0.97 kg in its pouch.",
+          "source": {
+            "title": "Petzl: RAD SYSTEM → Specifications",
+            "url": "https://www.petzl.com/INT/en/Sport/Kits/RAD-SYSTEM"
+          },
+          "checked": "2026-11-17"
+        }
+      ]
+    },
+    {
+      "id": "gear.ice-screw-weight",
+      "kind": "fact",
+      "claim": "A light ice screw, long enough to anchor on, weighs about this much.",
+      "status": "source only",
+      "versions": [
+        {
+          "value": 0.1,
+          "unit": "kg",
+          "note": "Petzl's LASER SPEED LIGHT: 0.091 kg at 13 cm, 0.1 kg at 17 cm, 0.11 kg at 21 cm.",
+          "source": {
+            "title": "Petzl: LASER SPEED LIGHT → References",
+            "url": "https://www.petzl.com/INT/en/Sport/Anchors/LASER-SPEED-LIGHT"
+          },
+          "checked": "2026-11-17"
+        }
+      ]
+    },
+    {
+      "id": "gear.splint-weight",
+      "kind": "fact",
+      "claim": "A mouldable splint, an aluminium strip between two layers of foam, a metre long, weighs about this much.",
+      "status": "source only",
+      "versions": [
+        {
+          "value": 0.113,
+          "unit": "kg",
+          "note": "The 36-inch SAM Splint: 4 oz (0.113 kg), an aluminium alloy core in closed-cell foam.",
+          "source": {
+            "title": "SAM Medical: SAM Splint 36\" → Specifications (Stay Ready Outdoors)",
+            "url": "https://stayreadyoutdoors.com/products/regular-sam-splint"
+          },
+          "checked": "2026-11-17"
+        }
+      ]
+    },
+    {
+      "id": "gear.tourniquet-weight",
+      "kind": "fact",
+      "claim": "A windlass tourniquet weighs about this much.",
+      "status": "source only",
+      "versions": [
+        {
+          "value": 0.077,
+          "unit": "kg",
+          "note": "The C-A-T Gen 7: 2.7 oz.",
+          "source": {
+            "title": "North American Rescue: Combat Application Tourniquet (C-A-T) → Specifications",
+            "url": "https://www.narescue.com/cat-tourniquet-ems.html"
+          },
+          "checked": "2026-11-17"
+        }
+      ]
+    },
+    {
+      "id": "gear.rescue-kit-weight",
+      "kind": "coefficient",
+      "claim": "What a rescue kit weighs in the pack, in kilograms (#241): the rope with its pulley, ascender, carabiners and sling (gear.rescue-kit-rope) and two ice screws for the anchor (gear.ice-screw-weight).",
+      "status": "source only",
+      "value": 1.17,
+      "unit": "kg",
+      "fitted_to": ["gear.rescue-kit-rope", "gear.ice-screw-weight"],
+      "fitted": "2026-11-17"
+    },
+    {
+      "id": "gear.first-aid-kit-weight",
+      "kind": "coefficient",
+      "claim": "What a first-aid kit weighs in the pack, in kilograms (#241): a tourniquet (gear.tourniquet-weight), a mouldable splint (gear.splint-weight), an elastic wrap, dressings, tape and gloves in a pouch. Enough for one casualty.",
+      "status": "source only",
+      "value": 0.4,
+      "unit": "kg",
+      "fitted_to": ["gear.tourniquet-weight", "gear.splint-weight"],
+      "fitted": "2026-11-17"
     }
   ]
 }
