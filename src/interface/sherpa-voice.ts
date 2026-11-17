@@ -1,4 +1,4 @@
-import type { SherpaView } from "../agents";
+import type { SherpaDoing, SherpaView } from "../agents";
 import type { ClimberView } from "../physics";
 import { SeededRandom } from "../simulation";
 import type { CoachTip } from "./coach";
@@ -131,10 +131,13 @@ interface Place {
  * ladder twisting (#197), a slip the rope held, the player hanging, his haul and his going past
  * them on the rope, the coach's warnings his cues too, though he never names a key: the coach does.
  * What he does himself he says as soon as the line up is read: the first ladder he crosses, the
- * line he holds, a rest, a client who goes ahead. Each part of the route, and the sun
- * on the ice, gets a line once a climb in a quiet moment, and a fact or a story with it, every
+ * line he holds, a rest, a client who goes ahead. A fallen ladder lashed again stays so, and he
+ * says it once the line up is read, however long that takes (#244). Each part of the route, and
+ * the sun on the ice, gets a line once a climb in a quiet moment, and a fact or a story with it, every
  * number from the knowledge base (`SherpaFacts`); a joke comes in a quiet moment too, at most one
- * a minute and never twice. A cue's lines take turns. He thinks as a Sherpa (#218): the mountain
+ * a minute and never twice. A quiet moment has nothing said and nothing on his hands: none while
+ * he goes to a client hanging on the rope or hauls them out, raises a fallen ladder or backs out
+ * from under a hazard (#244). A cue's lines take turns. He thinks as a Sherpa (#218): the mountain
  * is Chomolungma, its goddess asked for leave at the puja, the Icefall crossed fast and often,
  * the family at home. The climb's seed picks which of a part's facts and stories he tells, the
  * jokes' order and which of a cue's lines comes first, so no two climbs sound alike. It holds
@@ -163,6 +166,13 @@ export class SherpaVoice {
   private static readonly NEAR = 6;
   /** How many good crossings he says so of, at most. */
   private static readonly GOOD_CROSSINGS = 2;
+  /** What leaves him no breath for small talk (#244): going to a client on the rope and hauling
+   * them out, raising a fallen ladder hand over hand, backing out from under a hazard. */
+  private static readonly BUSY: ReadonlySet<SherpaDoing> = new Set<SherpaDoing>([
+    "rescuing",
+    "raising",
+    "retreating",
+  ]);
   /** The coach's warnings, as his cues. */
   private static readonly WARNINGS: Partial<Readonly<Record<CoachTip, SherpaCue>>> = {
     unclipped: "unclipped",
@@ -320,7 +330,7 @@ export class SherpaVoice {
     this.shownFor += seconds;
     this.sinceJoke += seconds;
     if (this.shown === null) {
-      this.quiet += seconds;
+      this.quiet = this.busy(world) ? 0 : this.quiet + seconds;
     }
     if (world.pemba().dead) {
       this.shown = null;
@@ -427,11 +437,12 @@ export class SherpaVoice {
 
   /** What he does now, against the last frame: a rest begun and over, a client who went ahead,
    * one far behind he waits for, a ladder's line he holds, and a fallen ladder set back while he
-   * hauled it (#228). */
+   * hauled it (#228), which stays set back: that he says once the line up is read, however long
+   * it takes to read (#244). */
   private noticeDoing(now: SherpaView, was: SherpaView, hauled: boolean): void {
     const { doing, ladder } = now;
     if (was.doing === "raising" && doing !== "raising" && hauled) {
-      this.wait("set-back", "soon");
+      this.wait("set-back", "soon", SherpaVoice.LONGEST + SherpaVoice.FRESH);
     }
     if (doing === "resting" && was.doing !== "resting") {
       this.wait("safe", "soon");
@@ -477,6 +488,11 @@ export class SherpaVoice {
     if (crossed && !this.slippedOnIt) {
       this.wait("good-crossing", "soon");
     }
+  }
+
+  /** Whether he's at work on the rope or getting out of danger: no quiet moment then (#244). */
+  private busy(world: SherpaWorld): boolean {
+    return SherpaVoice.BUSY.has(world.sherpa().doing);
   }
 
   /** Puts a cue up to be said, unless it's been said as often as it may, or too lately. */
