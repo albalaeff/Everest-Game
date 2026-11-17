@@ -156,6 +156,7 @@ export class Mountain {
       rest: this.knowledge.number("technique.sherpa-rest") * 60,
       pass: this.knowledge.number("technique.sherpa-pass"),
       reach: this.knowledge.number("technique.haul-reach"),
+      aid: this.knowledge.number("technique.rescue-reach"),
     };
   }
 

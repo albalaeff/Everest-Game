@@ -809,6 +809,7 @@ export class Climber {
 
   view(slope: Slope): ClimberView {
     const where = this.where(slope);
+    const { down } = this;
     return {
       x: where.x,
       y: where.y,
@@ -836,7 +837,7 @@ export class Climber {
       picks: this.onIce?.picks.map((along) => slope.terrain.point(along)) ?? [],
       pickPoor: this.onIce?.poor ?? false,
       // Down a rescue line or back up it, they go as down a fixed rope: held by it, on the ice.
-      lowering: this.lowering !== null || (this.onLine !== null && !this.down),
+      lowering: this.lowering !== null || (this.onLine !== null && !down),
       gear: this.gear,
       clipping: this.clipping[0]?.cowstail ?? null,
       stillChance: this.stillChance,
@@ -844,11 +845,11 @@ export class Climber {
       facing: this.facing,
       towardViewer: this.towardViewer,
       injuries: this.injuries.all,
-      down: this.down,
+      down,
       carriedBy: this.carrier?.id ?? null,
       carrying: this.passenger?.id ?? null,
       onLine: this.onLine?.id ?? null,
-      hauled: this.onLine !== null && this.down,
+      hauled: this.onLine !== null && down,
       helping: this.helping,
     };
   }
@@ -1088,7 +1089,11 @@ export class Climber {
       const onLadder = this.onLadder ?? this.ladderAhead(slope);
       const line = onLadder === null ? this.lineHere(slope) : null;
       if (line !== null) {
+        // Onto the rescue line, and off the route's ropes: its rope holds them from here.
         this.onLine = line;
+        this.first = null;
+        this.second = null;
+        this.clipping = [];
         this.towardViewer = false;
         this.rideLine(line, slope);
       } else if (onLadder === null) {
@@ -1603,6 +1608,18 @@ export class Climber {
       this.lowering = null;
       this.clipping = [];
     }
+  }
+
+  /** Whether there may be rescue work to do for them (#241): hurt, on someone's back or on a
+   * rescue line, or on the ground where the route doesn't reach. Nobody looks for any otherwise. */
+  needsHelp(slope: Slope): boolean {
+    if (this.killed) {
+      return this.carrier !== null;
+    }
+    if (this.injuries.all.length > 0 || this.carrier !== null || this.onLine !== null) {
+      return true;
+    }
+    return this.falling === null && this.onLadder === null && slope.faces.deadEnd(this.along);
   }
 
   /** Where a rescuer finds them, for first aid or to lift them: on the ground, standing or

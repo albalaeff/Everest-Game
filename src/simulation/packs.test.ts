@@ -12,14 +12,31 @@ import type { Scenario } from "./scenario";
 /** A jumar of 200 g, a tool of half a kilogram, a litre of water a kilogram, a bar 100 g and a
  * bottle 4 kg; a drink is half a litre, and a bar 250 kcal. */
 const NUMBERS: PackNumbers = {
-  weights: { jumar: 0.2, "ice-tool": 0.5, water: 1, food: 0.1, oxygen: 4 },
-  most: { jumar: 1, "ice-tool": 1, water: 3, food: 6, oxygen: 3 },
+  weights: {
+    jumar: 0.2,
+    "ice-tool": 0.5,
+    water: 1,
+    food: 0.1,
+    oxygen: 4,
+    "first-aid": 0.4,
+    "rescue-kit": 1.2,
+  },
+  most: {
+    jumar: 1,
+    "ice-tool": 1,
+    water: 3,
+    food: 6,
+    oxygen: 3,
+    "first-aid": 1,
+    "rescue-kit": 1,
+  },
   sip: 0.5,
   bar: 250,
 };
 const OXYGEN = { bottleLitres: 120, bottlePressure: 300, bottles: 0, maximumFlow: 8 };
-const PACKED: PackCounts = { jumar: 1, "ice-tool": 0, water: 2, food: 2, oxygen: 0 };
-const NOTHING: PackCounts = { jumar: 0, "ice-tool": 0, water: 0, food: 0, oxygen: 0 };
+const NO_KITS = { "first-aid": 0, "rescue-kit": 0 };
+const PACKED: PackCounts = { jumar: 1, "ice-tool": 0, water: 2, food: 2, oxygen: 0, ...NO_KITS };
+const NOTHING: PackCounts = { jumar: 0, "ice-tool": 0, water: 0, food: 0, oxygen: 0, ...NO_KITS };
 
 /** The body and the slope under the packs: what Anna carries, drank and ate, where she is and
  * what's on her harness. */
@@ -29,7 +46,8 @@ class World implements Shoulders, Harness {
   load = 0;
   drunk = 0;
   eaten = 0;
-  gear = { jumar: false, tools: 0 };
+  gear = { jumar: false, tools: 0, firstAid: false, rescueKit: false };
+  used = { firstAid: 0, rescueKit: 0 };
 
   carry(_id: ClimberId, kilograms: number): void {
     this.load = kilograms;
@@ -51,8 +69,15 @@ class World implements Shoulders, Harness {
     return { falling: this.falling, dead: false };
   }
 
-  equip(_id: ClimberId, gear: { jumar: boolean; tools: number }): void {
+  equip(
+    _id: ClimberId,
+    gear: { jumar: boolean; tools: number; firstAid: boolean; rescueKit: boolean },
+  ): void {
     this.gear = gear;
+  }
+
+  kitsSpent(): { firstAid: number; rescueKit: number } {
+    return this.used;
   }
 }
 
@@ -80,7 +105,15 @@ const climb = (
               from: 0,
               to: 8,
               stock: NOTHING,
-              endless: ["jumar", "ice-tool", "water", "food", "oxygen"],
+              endless: [
+                "jumar",
+                "ice-tool",
+                "water",
+                "food",
+                "oxygen",
+                "first-aid",
+                "rescue-kit",
+              ],
             },
             { id: "camp-1", from: 100, to: 110, stock: NOTHING, endless: ["water"] },
           ],
@@ -108,7 +141,7 @@ describe("Packs", () => {
     expect(packs.pack("anna")).toMatchObject({ items: PACKED, camp: "base-camp" });
     expect(packs.pack("anna").weight).toBeCloseTo(2.4, 9);
     expect(world.load).toBeCloseTo(10.4, 9);
-    expect(world.gear).toEqual({ jumar: true, tools: 1 });
+    expect(world.gear).toMatchObject({ jumar: true, tools: 1 });
   });
 
   it("takes from a camp's store and leaves there, one at a time, up to the most a climber carries", () => {
@@ -121,7 +154,7 @@ describe("Packs", () => {
     expedition.advance([pack("water", "take"), pack("water", "take")]);
 
     expect(packs.pack("anna").items).toMatchObject({ jumar: 0, "ice-tool": 1, water: 3 });
-    expect(world.gear).toEqual({ jumar: false, tools: 2 });
+    expect(world.gear).toMatchObject({ jumar: false, tools: 2 });
     expect(world.load).toBeCloseTo(8 + 0.5 + 3 + 0.2, 9);
   });
 
@@ -146,7 +179,14 @@ describe("Packs", () => {
     expedition.advance([pack("ice-tool", "take"), pack("ice-tool", "take"), pack("jumar", "take")]);
 
     expect(cached.items).toMatchObject({ "ice-tool": 0, food: 1, water: 3 });
-    expect(cached.stock).toEqual({ jumar: 0, "ice-tool": 1, water: null, food: 1, oxygen: 0 });
+    expect(cached.stock).toEqual({
+      jumar: 0,
+      "ice-tool": 1,
+      water: null,
+      food: 1,
+      oxygen: 0,
+      ...NO_KITS,
+    });
     expect(packs.pack("anna").items).toMatchObject({ "ice-tool": 1, jumar: 1 });
     expect(packs.pack("anna").stock).toMatchObject({ "ice-tool": 0 });
   });
@@ -193,6 +233,56 @@ describe("Packs", () => {
 
     expect(resumed.pack("anna")).toEqual(packs.pack("anna"));
     expect(again.load).toBe(world.load);
+  });
+
+  it("hands the harness the kits a rescue takes, and weighs them (#241)", () => {
+    const { expedition, world } = climb({ ...PACKED, "first-aid": 1, "rescue-kit": 1 });
+    expedition.advance();
+
+    expect(world.gear).toMatchObject({ firstAid: true, rescueKit: true });
+    expect(world.load).toBeCloseTo(8 + 2.4 + 0.4 + 1.2, 9);
+  });
+
+  it("takes a kit a rescue has used up out of the pack, once, and keeps count through a save", () => {
+    const { expedition, packs, world } = climb({ ...PACKED, "first-aid": 1, "rescue-kit": 1 });
+    expedition.advance();
+    world.used = { firstAid: 1, rescueKit: 0 };
+    expedition.advance();
+    expedition.advance();
+    const saved = JSON.parse(JSON.stringify(expedition.save())) as ExpeditionSave;
+    const clock = new MountainClock(60);
+    const oxygen = new OxygenSystem(OXYGEN, clock);
+    const again = new World();
+    again.used = { firstAid: 1, rescueKit: 0 };
+    const resumed = new Packs(NUMBERS, again, again, oxygen);
+    Expedition.resume(saved, [clock, resumed, oxygen]).advance();
+
+    expect(packs.pack("anna").items).toMatchObject({ "first-aid": 0, "rescue-kit": 1 });
+    expect(world.gear).toMatchObject({ firstAid: false, rescueKit: true });
+    expect(world.load).toBeCloseTo(8 + 2.4 + 1.2, 9);
+    expect(resumed.pack("anna").items).toMatchObject({ "first-aid": 0, "rescue-kit": 1 });
+    expect(again.gear).toMatchObject({ firstAid: false, rescueKit: true });
+  });
+
+  it("gives a pack saved before the kits none of them", () => {
+    const { expedition } = climb();
+    const saved = JSON.parse(JSON.stringify(expedition.save())) as ExpeditionSave;
+    const kept = saved.rules[Packs.NAME] as unknown as {
+      climbers: { items: Record<string, number> }[];
+    };
+    const [anna] = kept.climbers;
+    delete anna?.items["first-aid"];
+    delete anna?.items["rescue-kit"];
+    const before = JSON.parse(JSON.stringify(saved)) as ExpeditionSave;
+    const clock = new MountainClock(60);
+    const oxygen = new OxygenSystem(OXYGEN, clock);
+    const world = new World();
+    const resumed = new Packs(NUMBERS, world, world, oxygen);
+    Expedition.resume(before, [clock, resumed, oxygen]).advance();
+
+    expect(Object.keys(anna?.items ?? {})).not.toContain("first-aid");
+    expect(resumed.pack("anna").items).toMatchObject({ "first-aid": 0, "rescue-kit": 0, water: 2 });
+    expect(world.load).toBeCloseTo(8 + 2.4, 9);
   });
 
   it("refuses a pack of more than a climber carries", () => {

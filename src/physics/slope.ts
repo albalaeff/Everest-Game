@@ -545,14 +545,17 @@ export class Slope {
       by: (climber) => hauling.by(climber) || raisers.has(climber),
     };
     this.steady(climbers, hauls);
-    // Whoever holds the haul by a casualty, their hands free, works for them (#241).
-    const rescues = new RescueWork(this, climbers, (climber) => hauls.by(climber));
+    // Whoever holds the haul by a casualty, their hands free, works for them (#241): with
+    // nobody hurt, stranded or carried, there's no such work to look for.
+    const rescues = climbers.some((climber) => climber.needsHelp(this))
+      ? new RescueWork(this, climbers, (climber) => hauls.by(climber))
+      : null;
     const before = climbers.map((climber) => climber.onTheGround);
     for (const climber of climbers) {
-      climber.walk(this, moment, hauls, rescues);
+      climber.walk(this, moment, hauls, rescues ?? undefined);
       climber.beginStep();
     }
-    rescues.carryOut();
+    rescues?.carryOut();
     this.pass(climbers, before, moment);
     for (const ladder of this.ladders.values()) {
       ladder.settle(SimulationClock.STEP_SECONDS, footing.bounce.damp);
