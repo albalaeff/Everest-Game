@@ -185,7 +185,7 @@ export class ClimberFigure extends Container {
     this.ropes = slope;
     this.reading = new ClimberReading(slope);
     this.figure = new SuitRig(suit, pack);
-    this.front = new FrontRig(suit, pack);
+    this.front = new FrontRig(suit, pack, ClimberFigure.RIM_METRES);
     this.front.visible = false;
     this.glow.visible = false;
     this.addChild(
@@ -487,7 +487,7 @@ export class ClimberFigure extends Container {
         this.climber?.second == null ? null : this.inFigure(this.second),
         thin,
       );
-      this.rim.visible = false;
+      this.drawRim(pose, swell, masked, atmosphere, dead);
       return;
     }
     figure.recolour(atmosphere.palette);
@@ -505,7 +505,8 @@ export class ClimberFigure extends Container {
   }
 
   /** The rim of the hour's light along the body's edge on the side the sun is: the figure's
-   * silhouette a little wider and moved towards it, behind the body, so only that edge shows. */
+   * silhouette a little wider and moved towards it, behind the body, so only that edge shows;
+   * seen from the front, the front figure's own (#235). */
   private drawRim(
     pose: Pose,
     swell: number,
@@ -514,17 +515,23 @@ export class ClimberFigure extends Container {
     dead: boolean,
   ): void {
     const { light, palette } = atmosphere;
-    const { rim } = this;
-    rim.visible = !dead;
-    if (dead) {
-      return;
-    }
+    const { rim, front, fromTheFront } = this;
     const strength = ClimberFigure.RIM_ALPHA;
-    rim.alpha =
+    const alpha =
       (strength.night + (strength.day - strength.night) * light.daylight) * (1 - light.glow) +
       strength.glow * light.glow;
-    rim.tint = palette.rim;
     const edge = ClimberFigure.RIM_METRES;
+    rim.visible = !dead && !fromTheFront;
+    // From the front, the figure's x is the viewer's right, whichever way they faced.
+    front.light(!dead && fromTheFront, palette.rim, alpha, {
+      x: light.glowSide * edge,
+      y: edge * 0.4,
+    });
+    if (dead || fromTheFront) {
+      return;
+    }
+    rim.alpha = alpha;
+    rim.tint = palette.rim;
     // The figure's x is the way it faces, and turns over halfway round.
     const side = light.glowSide * this.turning.facing;
     rim.position.set(side * edge, edge * 0.4);
