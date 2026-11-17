@@ -409,6 +409,65 @@ describe("SherpaVoice: Pemba's lines, for the moment (#212)", () => {
     expect(cues().slice(1)).toEqual(["broken", "raising", "set-back"]);
   });
 
+  it("tells no story while he hauls a fallen ladder back up, and says it's lashed the moment it is (#244)", () => {
+    const { world, cues, play } = listening();
+    play(8);
+    // In the Maze, its line said and read, its facts and stories still to tell.
+    world.inPart = "maze";
+    play(14);
+    world.view = { ...world.view, doing: "raising" };
+    world.pembaView = standing({ hauling: true, haulHeld: true });
+    play(11);
+    world.view = { ...world.view, doing: "leading" };
+    world.pembaView = standing();
+    const lashed = play(0.1);
+    play(20);
+
+    expect(cues().slice(1, 4)).toEqual(["maze", "raising", "set-back"]);
+    expect(cueOf(lashed ?? "")).toBe("set-back");
+    // The Maze's stories wait for a quiet moment once he's done, and come then.
+    expect(
+      cues()
+        .slice(4)
+        .some((cue) => /^(?:fact|story)-/u.test(cue)),
+    ).toBe(true);
+  });
+
+  it("says no place's line while the player hangs on the rope and he goes to them, but once they rest (#244)", () => {
+    const { world, cues, play } = listening();
+    play(8);
+
+    world.inPart = "maze";
+    world.playerView = standing({ falling: true, hanging: true });
+    world.pembaAt = 12;
+    world.view = { ...world.view, doing: "rescuing", client: "player" };
+    play(20);
+    const hanging = cues().slice(1);
+    world.playerView = standing();
+    world.view = { ...world.view, doing: "resting", restLeft: 600 };
+    play(20);
+
+    expect(hanging).toEqual(["rescue-coming"]);
+    expect(cues().slice(2, 4)).toEqual(["safe", "maze"]);
+  });
+
+  it("says the ladder's lashed once the warning up is read, however long it takes to read (#244)", () => {
+    const { world, cues, play } = listening();
+    play(8);
+    world.view = { ...world.view, doing: "raising" };
+    world.pembaView = standing({ hauling: true, haulHeld: true });
+    play(10);
+
+    // The player's lamp dies as the ladder comes back: both its lines take over 4 s to read.
+    world.coach = "lamp";
+    play(1 / 60);
+    world.view = { ...world.view, doing: "leading" };
+    world.pembaView = standing();
+    play(12);
+
+    expect(cues().slice(1)).toEqual(["raising", "lamp", "set-back"]);
+  });
+
   it("says nothing of a ladder set back when he stopped holding its rope before anyone hauled (#228)", () => {
     const { world, cues, play } = listening();
     play(8);
