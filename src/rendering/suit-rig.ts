@@ -6,12 +6,8 @@ import { FigureRig } from "./figure-rig";
 import type { RigParts } from "./figure-rig";
 import { FigureShapes } from "./figure-shapes";
 import type { Outline, ToolOutlines } from "./figure-shapes";
+import { KitShading } from "./kit-shading";
 import { Palette } from "./palette";
-
-/** How a colour is shaded over a part, in the part's own bounds: across a limb, from its dark side
- * to its lit one; from the back of a body to its front; from below and behind a head to above it
- * and ahead. */
-type Shade = "across" | "front" | "above";
 
 /** The suit's parts, and two it moves besides: the goggles' lens, tinted the sky's colour, and the
  * jumar, on the rope in the near hand. */
@@ -37,30 +33,11 @@ export class SuitRig extends FigureRig<SuitParts> {
   /** Where the lamp shines from, and where the mask's valve breathes out, in the head's frame. */
   static readonly LAMP: Joint = { x: 0.11, y: 0.111 };
   static readonly VALVE: Joint = { x: 0.158, y: -0.075 };
-  /** How dark a colour's shaded side is, and how bright its lit side, as shares of it. */
-  private static readonly TONES = { dark: 0.55, light: 1.32 };
-  private static readonly SHADES: Readonly<Record<Shade, { start: Joint; end: Joint }>> = {
-    across: { start: { x: 0.5, y: 0 }, end: { x: 0.5, y: 1 } },
-    front: { start: { x: 0, y: 0.35 }, end: { x: 1, y: 0.65 } },
-    above: { start: { x: 0.15, y: 0.1 }, end: { x: 0.85, y: 0.95 } },
-  };
+  /** How the kit is painted: the same as from the front. */
+  private static readonly PAINT = KitShading.SHARED;
   /** How far the far limbs are shaded, and how much of the sky's cold light they take. */
   private static readonly FAR_SHADE = 0.25;
   private static readonly FAR_COLD = 0.22;
-  /** The seams between the down's baffles: how wide and how dark, and where they are, as shares
-   * of a limb from the joint it hangs from, or metres up the torso. */
-  private static readonly SEAM = { width: 0.012, alpha: 0.42 };
-  private static readonly THIGH_SEAMS = [0.3, 0.55, 0.8];
-  private static readonly ARM_SEAMS = [0.4, 0.7];
-  private static readonly FOREARM_SEAMS = [0.45];
-  private static readonly TORSO_SEAMS = [0.1, 0.185, 0.27, 0.355];
-  /** How far up the torso its dark yoke begins, and down a shin its dark panel; how deep the
-   * gaiter's collar is. */
-  private static readonly YOKE = 0.43;
-  private static readonly SHIN_PANEL = 0.17;
-  private static readonly COLLAR = 0.03;
-  /** The harness's belt: the slant it runs across the torso at, and its edges along it. */
-  private static readonly BELT = { normal: { x: -0.055, y: 1 }, from: 0.005, to: 0.055 };
   /** An ice tool: how far its dark edge shows round it, how wide the shine along its pick's top
    * is, and where the red band round the axe's grip is, up the shaft from the hand, all in metres;
    * how dark the side of its shaft away from the light is, and how bright the side towards it. */
@@ -83,9 +60,6 @@ export class SuitRig extends FigureRig<SuitParts> {
     round: { x: 0.18, y: 0.42 },
     width: 0.022,
   };
-  /** Each colour's shading, made once for every figure that wears it. */
-  private static readonly SHADINGS = new Map<string, FillGradient>();
-
   private readonly far = new Container();
   private readonly lines = new Graphics();
   /** Where the second carabiner was drawn, on its sling, or none while it's off the rope. */
@@ -254,11 +228,13 @@ export class SuitRig extends FigureRig<SuitParts> {
       SuitRig.tool(iceTool, Palette.TOOL_SHAFT, false),
     ];
     return {
-      thighs: pair(() => SuitRig.limb(thigh, suit, along(SuitRig.THIGH_SEAMS, ClimberPose.THIGH))),
+      thighs: pair(() =>
+        SuitRig.limb(thigh, suit, along(FigureShapes.SEAMS.thigh, ClimberPose.THIGH)),
+      ),
       shins: pair(() => SuitRig.shin(suit)),
       boots: pair(() => SuitRig.boot()),
       upperArms: pair(() =>
-        SuitRig.limb(upperArm, suit, along(SuitRig.ARM_SEAMS, ClimberPose.UPPER_ARM)),
+        SuitRig.limb(upperArm, suit, along(FigureShapes.SEAMS.upperArm, ClimberPose.UPPER_ARM)),
       ),
       forearms: pair(() => SuitRig.forearm(suit)),
       pack: SuitRig.pack(),
@@ -276,7 +252,7 @@ export class SuitRig extends FigureRig<SuitParts> {
   /** A limb of the suit along its bone, shaded across it, with the seams between its baffles
    * `seams` metres along it. */
   private static limb(outline: Outline, suit: number, seams: readonly number[]): Graphics {
-    const limb = new Graphics().poly([...outline]).fill(SuitRig.shading(suit, "across"));
+    const limb = new Graphics().poly([...outline]).fill(SuitRig.PAINT.of(suit, "across"));
     SuitRig.seams(limb, outline, FigureShapes.AHEAD, seams);
     return limb;
   }
@@ -286,13 +262,13 @@ export class SuitRig extends FigureRig<SuitParts> {
   private static shin(suit: number): Graphics {
     const { shin, gaiter } = SuitRig.SHAPES;
     const { AHEAD } = FigureShapes;
-    const panel = FigureShapes.band(shin, AHEAD, SuitRig.SHIN_PANEL, Infinity);
-    const collar = Math.min(...gaiter.map(({ x }) => x)) + SuitRig.COLLAR;
+    const panel = FigureShapes.band(shin, AHEAD, FigureShapes.SHIN_PANEL, Infinity);
+    const collar = Math.min(...gaiter.map(({ x }) => x)) + FigureShapes.GAITER.collar;
     return SuitRig.limb(shin, suit, [])
       .poly([...panel])
-      .fill(SuitRig.shading(Palette.PANEL, "across"))
+      .fill(SuitRig.PAINT.of(Palette.PANEL, "across"))
       .poly([...gaiter])
-      .fill(SuitRig.shading(Palette.BOOTS, "across"))
+      .fill(SuitRig.PAINT.of(Palette.BOOTS, "across"))
       .poly([...FigureShapes.band(gaiter, AHEAD, -Infinity, collar)])
       .fill(Palette.RAND)
       .moveTo(0.26, 0.055)
@@ -303,12 +279,12 @@ export class SuitRig extends FigureRig<SuitParts> {
   /** The forearm, its cuff over the wrist and the mitt on its end. */
   private static forearm(suit: number): Graphics {
     const { forearm, cuff, mitt } = SuitRig.SHAPES;
-    const seams = SuitRig.FOREARM_SEAMS.map((share) => share * ClimberPose.FOREARM);
+    const seams = FigureShapes.SEAMS.forearm.map((share) => share * ClimberPose.FOREARM);
     return SuitRig.limb(forearm, suit, seams)
       .poly([...cuff])
-      .fill(SuitRig.shading(Palette.shaded(suit, 0.45), "across"))
+      .fill(SuitRig.PAINT.of(Palette.shaded(suit, 0.45), "across"))
       .poly([...mitt])
-      .fill(SuitRig.shading(Palette.MITTS, "across"));
+      .fill(SuitRig.PAINT.of(Palette.MITTS, "across"));
   }
 
   /** The boot on its sole: the crampon under it, the shell, and the rubber rand round the sole and
@@ -320,7 +296,7 @@ export class SuitRig extends FigureRig<SuitParts> {
     for (const piece of crampon) {
       boot.poly([...piece]).fill(Palette.STEEL);
     }
-    boot.poly([...shell]).fill(SuitRig.shading(Palette.BOOTS, "front"));
+    boot.poly([...shell]).fill(SuitRig.PAINT.of(Palette.BOOTS, "front"));
     const toe = FigureShapes.band(
       FigureShapes.band(shell, AHEAD, 0.175, Infinity),
       UP,
@@ -339,9 +315,9 @@ export class SuitRig extends FigureRig<SuitParts> {
     const { pack: bag, lid } = SuitRig.SHAPES;
     const pack = new Graphics()
       .roundRect(-0.295, 0.48, 0.08, 0.17, 0.035)
-      .fill(SuitRig.shading(Palette.BOTTLE, "front"))
+      .fill(SuitRig.PAINT.of(Palette.BOTTLE, "front"))
       .poly([...bag])
-      .fill(SuitRig.shading(Palette.PACK, "front"));
+      .fill(SuitRig.PAINT.of(Palette.PACK, "front"));
     for (const y of [0.22, 0.38]) {
       pack
         .poly([...FigureShapes.band(bag, FigureShapes.UP, y - 0.011, y + 0.011)])
@@ -349,7 +325,7 @@ export class SuitRig extends FigureRig<SuitParts> {
     }
     return pack
       .poly([...lid])
-      .fill(SuitRig.shading(Palette.PACK_LID, "front"))
+      .fill(SuitRig.PAINT.of(Palette.PACK_LID, "front"))
       .rect(-0.272, 0.64, 0.036, 0.035)
       .fill(Palette.REGULATOR)
       .circle(-0.24, 0.668, 0.016)
@@ -361,13 +337,13 @@ export class SuitRig extends FigureRig<SuitParts> {
   private static torso(suit: number): Graphics {
     const { torso: body } = SuitRig.SHAPES;
     const { UP } = FigureShapes;
-    const { normal, from, to } = SuitRig.BELT;
+    const { normal, from, to } = FigureShapes.BELT;
     const torso = new Graphics()
       .poly([...body])
-      .fill(SuitRig.shading(suit, "front"))
-      .poly([...FigureShapes.band(body, UP, SuitRig.YOKE, Infinity)])
-      .fill(SuitRig.shading(Palette.PANEL, "front"));
-    SuitRig.seams(torso, body, UP, SuitRig.TORSO_SEAMS);
+      .fill(SuitRig.PAINT.of(suit, "front"))
+      .poly([...FigureShapes.band(body, UP, FigureShapes.YOKE, Infinity)])
+      .fill(SuitRig.PAINT.of(Palette.PANEL, "front"));
+    SuitRig.seams(torso, body, UP, FigureShapes.SEAMS.torso);
     return torso
       .poly([...FigureShapes.band(body, normal, from, to)])
       .fill(Palette.HARNESS)
@@ -387,7 +363,7 @@ export class SuitRig extends FigureRig<SuitParts> {
     const { hood: shape } = SuitRig.SHAPES;
     const hood = new Graphics()
       .poly([...shape])
-      .fill(SuitRig.shading(suit, "above"))
+      .fill(SuitRig.PAINT.of(suit, "above"))
       .ellipse(0.085, -0.01, 0.06, 0.088)
       .fill(Palette.HOOD_SHADOW)
       .roundRect(0.066, -0.004, 0.088, 0.058, 0.022)
@@ -413,7 +389,7 @@ export class SuitRig extends FigureRig<SuitParts> {
     const { VALVE } = SuitRig;
     return new Graphics()
       .poly([...SuitRig.SHAPES.mask])
-      .fill(SuitRig.shading(Palette.MASK, "front"))
+      .fill(SuitRig.PAINT.of(Palette.MASK, "front"))
       .circle(VALVE.x, VALVE.y, 0.022)
       .fill(Palette.VALVE);
   }
@@ -422,11 +398,12 @@ export class SuitRig extends FigureRig<SuitParts> {
   private static lens(): Graphics {
     return new Graphics()
       .roundRect(0.078, 0.004, 0.07, 0.042, 0.016)
-      .fill(SuitRig.shading(0xffffff, "across"));
+      .fill(SuitRig.PAINT.of(0xffffff, "across"));
   }
 
-  /** The jumar, its body along the rope and its red grip under it, below the rope. */
-  private static jumar(): Graphics {
+  /** The jumar, its body along the rope and its red grip under it, below the rope: drawn once, for
+   * a figure side-on or from the front (`FrontRig`). */
+  static jumar(): Graphics {
     return new Graphics()
       .rect(-0.03, -0.06, 0.014, 0.05)
       .rect(0.088, -0.05, 0.014, 0.04)
@@ -477,32 +454,27 @@ export class SuitRig extends FigureRig<SuitParts> {
   /** A tool's colour shaded over a piece: across it, lit on its -y side, the pick's; or along it,
    * lit towards +x, the top of the head. */
   private static toolShading(colour: number, way: "across" | "along"): FillGradient {
-    const key = `tool ${way} ${colour}`;
-    const known = SuitRig.SHADINGS.get(key);
-    if (known !== undefined) {
-      return known;
-    }
-    const { dark, light } = SuitRig.TOOL.shade;
-    const shading = new FillGradient({
-      type: "linear",
-      start: way === "across" ? { x: 0.5, y: 0 } : { x: 0, y: 0.5 },
-      end: way === "across" ? { x: 0.5, y: 1 } : { x: 1, y: 0.5 },
-      colorStops:
-        way === "across"
-          ? [
-              { offset: 0, color: Palette.css(SuitRig.toned(colour, light)) },
-              { offset: 0.35, color: Palette.css(colour) },
-              { offset: 1, color: Palette.css(SuitRig.toned(colour, dark)) },
-            ]
-          : [
-              { offset: 0, color: Palette.css(SuitRig.toned(colour, dark)) },
-              { offset: 0.6, color: Palette.css(colour) },
-              { offset: 1, color: Palette.css(SuitRig.toned(colour, light)) },
-            ],
-      textureSpace: "local",
+    return SuitRig.PAINT.once(`tool ${way} ${colour}`, () => {
+      const { dark, light } = SuitRig.TOOL.shade;
+      return new FillGradient({
+        type: "linear",
+        start: way === "across" ? { x: 0.5, y: 0 } : { x: 0, y: 0.5 },
+        end: way === "across" ? { x: 0.5, y: 1 } : { x: 1, y: 0.5 },
+        colorStops:
+          way === "across"
+            ? [
+                { offset: 0, color: Palette.css(KitShading.toned(colour, light)) },
+                { offset: 0.35, color: Palette.css(colour) },
+                { offset: 1, color: Palette.css(KitShading.toned(colour, dark)) },
+              ]
+            : [
+                { offset: 0, color: Palette.css(KitShading.toned(colour, dark)) },
+                { offset: 0.6, color: Palette.css(colour) },
+                { offset: 1, color: Palette.css(KitShading.toned(colour, light)) },
+              ],
+        textureSpace: "local",
+      });
     });
-    SuitRig.SHADINGS.set(key, shading);
-    return shading;
   }
 
   /** The seams across a part where `normal` reaches each of `seams`. */
@@ -512,43 +484,11 @@ export class SuitRig extends FigureRig<SuitParts> {
     normal: Joint,
     seams: readonly number[],
   ): void {
-    const half = SuitRig.SEAM.width / 2;
+    const half = KitShading.SEAM.width / 2;
     for (const seam of seams) {
       part
         .poly([...FigureShapes.band(outline, normal, seam - half, seam + half)])
-        .fill({ color: Palette.SEAM, alpha: SuitRig.SEAM.alpha });
+        .fill({ color: Palette.SEAM, alpha: KitShading.SEAM.alpha });
     }
-  }
-
-  /** A colour shaded over a part: its dark side, itself, its lit side, and itself again at the
-   * edge, where the light glances off. */
-  private static shading(colour: number, shade: Shade): FillGradient {
-    const key = `${shade} ${colour}`;
-    const known = SuitRig.SHADINGS.get(key);
-    if (known !== undefined) {
-      return known;
-    }
-    const { dark, light } = SuitRig.TONES;
-    const { start, end } = SuitRig.SHADES[shade];
-    const shading = new FillGradient({
-      type: "linear",
-      start,
-      end,
-      colorStops: [
-        { offset: 0, color: Palette.css(SuitRig.toned(colour, dark)) },
-        { offset: 0.45, color: Palette.css(colour) },
-        { offset: 0.8, color: Palette.css(SuitRig.toned(colour, light)) },
-        { offset: 1, color: Palette.css(colour) },
-      ],
-      textureSpace: "local",
-    });
-    SuitRig.SHADINGS.set(key, shading);
-    return shading;
-  }
-
-  /** A colour with each channel times `share`: darker below 1, brighter above. */
-  private static toned(colour: number, share: number): number {
-    const { red, green, blue } = Palette.channels(colour);
-    return Palette.colour({ red: red * share, green: green * share, blue: blue * share });
   }
 }
