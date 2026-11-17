@@ -160,12 +160,16 @@ export class SuitRig extends FigureRig<SuitParts> {
    * `lengths` says and `width` wide, from the harness to the jumar in the near hand and the second carabiner,
    * slack or taut, and hanging where they're off. The carabiner hangs where it's on the rope as
    * far as its sling reaches, and no farther: where the rope lies on the snow out of its reach, the
-   * sling holds the carabiner up off it, and the rope is lifted to it (#202). Drawn each frame,
-   * once the parts are placed. */
+   * sling holds the carabiner up off it, and the rope is lifted to it (#202). `together`, a
+   * climber who hangs with both on one rope: the carabiner rides on the rope by the jumar, both
+   * at the point the rope holds them from, so the rope runs down to one point over them and up
+   * again, never across itself between the two (#243). Drawn each frame, once the parts are
+   * placed. */
   hold(
     pose: Pose,
     lengths: { readonly jumar: number; readonly carabiner: number },
     width: number,
+    together = false,
   ): void {
     const { parts, lines } = this;
     const { torso, mask, jumar } = parts;
@@ -187,7 +191,12 @@ export class SuitRig extends FigureRig<SuitParts> {
     });
     const first = pose.jumar ?? off(HANGING.ahead);
     const sling = lengths.carabiner;
-    this.carabinerAt = pose.carabiner === null ? null : SuitRig.within(tie, pose.carabiner, sling);
+    this.carabinerAt =
+      pose.carabiner === null
+        ? null
+        : together && pose.jumar !== null
+          ? pose.jumar
+          : SuitRig.within(tie, pose.carabiner, sling);
     const second = this.carabinerAt ?? off(-HANGING.ahead);
     SuitRig.cowstail(
       lines,
@@ -196,7 +205,8 @@ export class SuitRig extends FigureRig<SuitParts> {
       pose.jumar === null ? HANGING.down * 2 : lengths.jumar,
       down,
     );
-    SuitRig.cowstail(lines, tie, second, pose.carabiner === null ? HANGING.down * 2 : sling, down);
+    const slung = together ? lengths.jumar : sling;
+    SuitRig.cowstail(lines, tie, second, pose.carabiner === null ? HANGING.down * 2 : slung, down);
     lines.stroke({ width, color: Palette.SLING, cap: "round", join: "round" });
     lines
       .circle(second.x, second.y, SuitRig.CARABINER)

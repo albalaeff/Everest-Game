@@ -53,6 +53,11 @@ export class ClimberReading {
    * pose reads it, in metres. */
   private static readonly ICE = "the ice";
   private static readonly FACE_METRES = 6;
+  /** A climber who hangs on their rope puts their boots on a wall's face beside them (#243): how
+   * far to either side they look for one, a leg's reach; how far it stands over their harness,
+   * and how much the ground rises at it, to be one, so they're on it till they're level with its
+   * lip; and how finely they look, all in metres at life size. */
+  private static readonly BESIDE = { reach: 0.9, over: 0.05, rise: 0.25, step: 0.05 };
 
   private facingNow: 1 | -1 = 1;
   private upward = true;
@@ -123,8 +128,16 @@ export class ClimberReading {
     this.started = true;
     this.x = at.x;
     this.y = at.y;
-    this.from = view.falling ? this.slope.terrain.height(at.x) : at.y;
+    this.from = view.falling ? this.under(at) : at.y;
     this.grown = grown;
+    // Hanging on their rope, they turn to a wall's face within a leg's reach, to put their
+    // boots on it (#243).
+    const held = view.falling && view.hanging && !view.dead;
+    if (held && this.faceBeside(at, this.facingNow) === null) {
+      const behind = this.facingNow === 1 ? -1 : 1;
+      this.facingNow = this.faceBeside(at, behind) === null ? this.facingNow : behind;
+    }
+    const face = held ? this.faceBeside(at, this.facingNow) : null;
     return {
       travelled: this.travelled,
       // Hauling, they stand braced: the body tires, the legs don't stride (#209).
@@ -154,7 +167,38 @@ export class ClimberReading {
       pickPoor: view.pickPoor,
       tools: view.gear.tools,
       onIce,
+      face: face === null ? null : face / grown,
     };
+  }
+
+  /** The ground under a climber off their feet, drawn `at`: on a wall's line the ground's height
+   * is its top, so one against its face, under its top, is over its foot (#243): in the air, as
+   * the physics has them. */
+  private under(at: Point): number {
+    const { terrain } = this.slope;
+    const here = terrain.height(at.x);
+    if (here <= at.y + ClimberReading.STEP_METRES) {
+      return here;
+    }
+    const { step } = ClimberReading.BESIDE;
+    return Math.min(here, terrain.height(at.x - step), terrain.height(at.x + step));
+  }
+
+  /** How far to `side` of a climber drawn `at` a wall's face stands over their harness, within a
+   * leg's reach of them, in metres: nought against it; none in the open air. */
+  private faceBeside(at: Point, side: 1 | -1): number | null {
+    const { reach, over, rise, step } = ClimberReading.BESIDE;
+    const { terrain } = this.slope;
+    const steps = Math.round((reach * this.grown) / step);
+    let last = this.under(at);
+    for (let away = 1; away <= steps; away += 1) {
+      const height = terrain.height(at.x + side * away * step);
+      if (height - last > rise && height - at.y > over * this.grown) {
+        return (away - 1) * step;
+      }
+      last = height;
+    }
+    return null;
   }
 
   /** The picks in the ice, the one they hang from first, from where the climber is drawn: each

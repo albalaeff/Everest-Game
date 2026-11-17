@@ -23,6 +23,7 @@ import { SuitRig } from "./suit-rig";
 import { ClimberPose } from "./climber-pose";
 import { ClimberReading } from "./climber-reading";
 import { Crevasse } from "./crevasse";
+import { Abreast } from "./abreast";
 import { Crowd } from "./crowd";
 import { Drift } from "./drift";
 import { Glacier } from "./glacier";
@@ -319,7 +320,12 @@ export class SlopeLayer extends ParallaxLayer {
   private readonly campSpans: readonly InView[];
   private readonly ladders: readonly DrawnLadder[];
   private readonly ropes: readonly DrawnRope[];
+  private static readonly NOT_ASIDE: Point = { x: 0, y: 0 };
   private readonly figures: readonly DrawnClimber[];
+  /** The climbers in the order they keep their places at one spot, the player's first, and
+   * their steps aside from each other (#243). */
+  private readonly inPlace: readonly DrawnClimber[];
+  private readonly abreast: Abreast;
   private readonly playerFigure: ClimberFigure | null;
   private readonly mark = new PlayerMark();
   private readonly puffs = new SnowPuffs();
@@ -534,10 +540,19 @@ export class SlopeLayer extends ParallaxLayer {
         ropeStretch,
         sherpa ? SuitRig.LOADED : 1,
       );
-      this.addChild(figure);
       return { id, figure, view: null };
     });
     this.playerFigure = this.figures.find(({ id }) => id === player)?.figure ?? null;
+    // The player's own climber first of those who keep their place, and drawn over the others,
+    // who step aside from them (#243).
+    this.inPlace = [
+      ...this.figures.filter(({ id }) => id === player),
+      ...this.figures.filter(({ id }) => id !== player),
+    ];
+    for (const { figure } of [...this.inPlace].reverse()) {
+      this.addChild(figure);
+    }
+    this.abreast = new Abreast((x) => physics.terrain.height(x));
     this.addChild(this.puffGraphics, this.chipGraphics);
     this.drift = new Drift(
       {
@@ -636,6 +651,7 @@ export class SlopeLayer extends ParallaxLayer {
     this.puffs.advance(seconds, atmosphere.gust);
     this.chips.advance(seconds);
     this.load();
+    this.standAbreast(seconds, size);
     this.beams.length = 0;
     for (const { id, figure, view: climber } of this.figures) {
       const sag = this.sagUnder(climber, figure.at);
@@ -714,6 +730,25 @@ export class SlopeLayer extends ParallaxLayer {
     this.tintedWith = atmosphere;
     this.tentGlow.alpha = atmosphere.light.lamps * SlopeLayer.TENT_GLOW_ALPHA;
     this.tentGlow.visible = this.tentGlow.alpha > 0.01;
+  }
+
+  /** Climbers at one spot of the slope stand a step apart along the ground (`Abreast`, #243): each
+   * one's step aside, for the frames to come. On the ice, lowering or off their feet, a climber
+   * is where the physics has them, as one out on a ladder or up one is. */
+  private standAbreast(seconds: number, size: LeastSize): void {
+    const grown = size.climber(ClimberFigure.HEIGHT_METRES);
+    const aside = this.abreast.advance(
+      seconds,
+      this.inPlace.map(({ figure, view }) => ({
+        at: figure.stands,
+        free: view !== null && !view.dead && !view.falling && !view.onIce && !view.lowering,
+        there: view !== null && !view.dead,
+        grown,
+      })),
+    );
+    this.inPlace.forEach(({ figure }, index) => {
+      figure.standAside(aside[index] ?? SlopeLayer.NOT_ASIDE);
+    });
   }
 
   /** The mark over the player's head while they're in a crowd on the screen: as high over where
@@ -807,11 +842,16 @@ export class SlopeLayer extends ParallaxLayer {
     // Rolled over its long axis, its rails show closer together or further apart (#228).
     const turned = (along: number): number => SlopeLayer.turned(shake.roll(along));
     const pieces = bowed || shaking ? SlopeLayer.BOW_PIECES : 1;
+    // Up a wall, it stands over the wall's top, as the Icefall's are set: rails to hold, stepping
+    // off it or onto it (#243).
+    const over = across ? 0 : ClimberPose.LADDER_OVER;
+    const from = alongY < 0 ? -over : 0;
+    const to = alongY > 0 ? length + over : length;
     graphics.clear();
     const rails = (): void => {
       for (const side of [1, -1]) {
         for (let piece = 0; piece <= pieces; piece += 1) {
-          const along = (length * piece) / pieces;
+          const along = from + ((to - from) * piece) / pieces;
           const open = side * turned(along);
           const x = start.x + alongX * along + open * railX;
           const y = start.y + alongY * along + open * railY - sag(along);
@@ -823,7 +863,8 @@ export class SlopeLayer extends ParallaxLayer {
         }
       }
       const step = ClimberReading.RUNG_METRES;
-      for (let rung = step / 2; rung < length; rung += step) {
+      const first = step / 2 + Math.ceil((from - step / 2) / step - 1e-9) * step;
+      for (let rung = first; rung < to; rung += step) {
         const x = start.x + alongX * rung;
         const y = start.y + alongY * rung - sag(rung);
         const open = turned(rung);

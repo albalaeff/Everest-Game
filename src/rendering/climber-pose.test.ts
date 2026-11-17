@@ -528,6 +528,26 @@ describe("ClimberPose", () => {
     }
   });
 
+  it("at the top of a wall's ladder, keeps its boots on the rungs it has, never on one over its top, and its hands on the rails that stand over it (#243)", () => {
+    const climber = new ClimberPose();
+    climber.advance(5, state({ ladder: upAWall(4), travelled: 4, moving: true }));
+    let pose = climber.advance(FRAME, state({ ladder: upAWall(4), travelled: 4, moving: true }));
+    // The ladder is 6 m, its top rung 5.85 m up it: up its last 2 m, to its top.
+    for (let y = 4; y <= 6; y += 0.46 * FRAME) {
+      pose = climber.advance(FRAME, state({ ladder: upAWall(y), travelled: y, moving: true }));
+      const frame = { x: 0, y, pose };
+      for (const leg of pose.legs) {
+        expect(inWorld(frame, leg.end).y - ClimberPose.ANKLE).toBeLessThan(5.85 + 1e-6);
+      }
+      for (const arm of pose.arms) {
+        expect(inWorld(frame, arm.end).y).toBeLessThan(6 + ClimberPose.LADDER_OVER);
+      }
+    }
+    // At its top, a hand holds a rail over the lip, to step off by.
+    const hands = pose.arms.map((arm) => inWorld({ x: 0, y: 6, pose }, arm.end).y);
+    expect(Math.max(...hands)).toBeGreaterThan(6.25);
+  });
+
   it("front-points up a face of ice: the toes at the ice, short steps, standing taller and further off it than on a ladder, the axe in the near hand", () => {
     const face: LadderFooting = { way: { x: 0, y: 1 }, rung: 0.08, spacing: 0.16, ends: [-6, 6] };
     const onIce = state({
@@ -813,7 +833,7 @@ describe("ClimberPose", () => {
   it("hangs below the rope from its cowstail, a hand up on it, the legs down", () => {
     const climber = new ClimberPose();
     climber.advance(5, state());
-    const carabiner = { x: 0.3, y: 0.7 };
+    const carabiner = { x: 0.2, y: 0.7 };
     const hanging = state({ falling: true, ground: () => -5, carabiner });
     let pose = climber.advance(FRAME, hanging);
     for (let frame = 1; frame < 90; frame += 1) {
@@ -850,6 +870,116 @@ describe("ClimberPose", () => {
       for (const leg of pose.legs) {
         expect(leg.end.y).toBeLessThan(-0.5);
       }
+    }
+  });
+
+  it("caught by a rope from well to the side, leans its way no further than a harness lets them, with no jump as it comes up over them (#243)", () => {
+    const climber = new ClimberPose();
+    climber.advance(5, state({ ladder: across(3) }));
+    // Off a ladder: the carabiner 2 m along the rope, level with them, then over them as they
+    // drop 3 m under it in under a second.
+    let drop = 0;
+    let last: number | null = null;
+    for (let frame = 0; frame < 120; frame += 1) {
+      drop = Math.min(3, drop + 4 * FRAME);
+      const caught = state({
+        falling: true,
+        hanging: true,
+        ground: () => -5,
+        carabiner: { x: 2, y: drop - 0.2 },
+      });
+      const { tilt } = climber.advance(FRAME, caught);
+
+      expect(Math.abs(tilt)).toBeLessThanOrEqual(0.35 + 1e-9);
+      if (last !== null) {
+        expect(Math.abs(tilt - last)).toBeLessThan(0.02);
+      }
+      last = tilt;
+    }
+    expect(last).toBeGreaterThan(0.2);
+  });
+
+  it("hanging beside a wall's face, braces their boots on it: out from it, leaning back off it, the soles flat on it (#243)", () => {
+    const climber = new ClimberPose();
+    climber.advance(5, state());
+    const carabiner = { x: 0.2, y: 0.9 };
+    // The face 0.1 m ahead of where the rope holds them, 3 m of air under them.
+    const braced = state({ falling: true, hanging: true, ground: () => -3, carabiner, face: 0.1 });
+    let pose = climber.advance(FRAME, braced);
+    for (let frame = 1; frame < 120; frame += 1) {
+      pose = climber.advance(FRAME, braced);
+    }
+    const frame = { x: 0, y: 0, pose };
+
+    for (const leg of LEGS) {
+      // Under the ankle, the sole is on the face, below the harness, its toe up it.
+      const sole = inWorld(frame, ofTheBoot(pose, leg, 0));
+      expect(sole.x).toBeCloseTo(0.1, 2);
+      expect(sole.y).toBeLessThan(0.05);
+      expect(Math.abs(pose.soles[leg] - pose.tilt - Math.PI / 2)).toBeLessThan(0.25);
+      // The knee is bent, up and out from the wall: the legs push the body off it.
+      const knee = inWorld(frame, pose.legs[leg].middle);
+      expect(knee.x).toBeLessThan(sole.x - 0.2);
+    }
+    // The harness hangs a leg's length out from the face, the body leaning back off it, and the
+    // near hand still up on the cowstail.
+    expect(inWorld(frame, pose.pelvis).x).toBeLessThan(0.1 - 0.45);
+    expect(pose.tilt).toBeLessThan(-0.2);
+    expect(inWorld(frame, pose.shoulder).x).toBeLessThan(inWorld(frame, pose.pelvis).x);
+    expect(inWorld(frame, pose.arms[0].end).y).toBeGreaterThan(0.4);
+  });
+
+  it("walks their boots up the face as the rope takes them up it: a boot stays where it's set, then steps up (#243)", () => {
+    const climber = new ClimberPose();
+    climber.advance(5, state());
+    const carabiner = { x: 0.2, y: 0.9 };
+    let height = 3;
+    const hauled = (): PoseState =>
+      state({ falling: true, hanging: true, ground: () => -height, carabiner, face: 0.1 });
+    for (let frame = 0; frame < 120; frame += 1) {
+      climber.advance(FRAME, hauled());
+    }
+    const steps: [number, number] = [0, 0];
+    const last: [number | null, number | null] = [null, null];
+    for (let frame = 0; frame < 600; frame += 1) {
+      // Hauled up at 0.15 m/s.
+      height += 0.15 * FRAME;
+      const pose = climber.advance(FRAME, hauled());
+      const frameNow = { x: 0, y: height, pose };
+      for (const leg of LEGS) {
+        const sole = inWorld(frameNow, ofTheBoot(pose, leg, 0));
+        const was = last[leg];
+        // On the face, or a hand's breadth off it between two places.
+        expect(sole.x).toBeGreaterThan(0.1 - 0.12);
+        expect(sole.x).toBeLessThan(0.1 + 0.01);
+        if (was !== null && sole.y - was > 0.005) {
+          steps[leg] += 1;
+        } else if (was !== null && sole.x > 0.1 - 0.005) {
+          // Set on the wall, it stays there while the body goes up.
+          expect(Math.abs(sole.y - was)).toBeLessThan(0.005);
+        }
+        last[leg] = sole.y;
+      }
+    }
+    // 1.5 m up the face: each boot stepped up several times, in turn.
+    expect(steps[0]).toBeGreaterThan(8);
+    expect(steps[1]).toBeGreaterThan(8);
+  });
+
+  it("dangles in the open air as before, with no wall within reach", () => {
+    const climber = new ClimberPose();
+    climber.advance(5, state());
+    const carabiner = { x: 0.2, y: 0.9 };
+    const free = state({ falling: true, hanging: true, ground: () => -3, carabiner, face: null });
+    let pose = climber.advance(FRAME, free);
+    for (let frame = 1; frame < 120; frame += 1) {
+      pose = climber.advance(FRAME, free);
+    }
+
+    expect(pose.offset).toEqual({ x: 0, y: 0 });
+    expect(pose.tilt).toBeCloseTo(Math.atan2(carabiner.x, carabiner.y), 6);
+    for (const leg of pose.legs) {
+      expect(leg.end.y).toBeLessThan(-0.6);
     }
   });
 
