@@ -141,7 +141,8 @@ export class Condition {
 
   /** Lives through `hours` of the mountain's time, on the move, their steps taking `exertion` of
    * their stride's power, or not: they grow short of water, food and sleep, and tire as `effort`
-   * says or, where the body `recovers`, rest. */
+   * says or, where the body `recovers`, rest. `asleep`, in a tent, each hour takes its share of
+   * the hours awake off instead of adding one (#258). */
   live(
     hours: number,
     moving: boolean,
@@ -149,6 +150,7 @@ export class Condition {
     recovers: boolean,
     numbers: BodyNumbers,
     effort: PaceEffort,
+    asleep = false,
   ): void {
     if (moving) {
       const rate = effort.at(numbers.paces[this.pace(numbers)], exertion);
@@ -160,7 +162,9 @@ export class Condition {
     this.exhausted =
       this.fatigue >= 1 || (this.exhausted && this.fatigue >= numbers.profoundlyTired);
     const days = hours / Condition.HOURS_A_DAY;
-    this.awake += hours;
+    this.awake = asleep
+      ? Math.max(0, this.awake - hours * numbers.sleep.restores)
+      : this.awake + hours;
     this.water += numbers.water.loss * days;
     this.food += numbers.food.expenditure * days;
   }

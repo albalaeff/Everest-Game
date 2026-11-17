@@ -6,6 +6,7 @@ import { Body, Expedition, MountainClock, SimulationClock } from "../simulation"
 import { KnowledgeBase } from "./knowledge-base";
 import { KNOWLEDGE_FILES } from "./knowledge-files";
 import { Section } from "./section";
+import { TentFacts } from "./tent-facts";
 
 const knowledge = new KnowledgeBase(KNOWLEDGE_FILES);
 const section = new Section(knowledge);
@@ -15,6 +16,60 @@ const altitudeAlong = (along: number): number => scale.altitudeAt(terrain.point(
 /** The part of the route a point along the ground is in. */
 const partAt = (along: number): string | undefined =>
   section.parts.find(({ from, to }) => from <= along && along < to)?.id;
+
+describe("Section: the camps' tents (#258)", () => {
+  it("pitches two tents at each camp, their doors in reach of the camp, the Sherpa to sleep when the players do", () => {
+    expect(section.tents.npcs).toEqual(["pemba"]);
+    expect(section.tents.camps.map(({ id, doors }) => [id, doors.length])).toEqual([
+      ["base-camp", 2],
+      ["camp-1", 2],
+    ]);
+    for (const camp of section.camps) {
+      for (const { door } of camp.tents ?? []) {
+        expect(door).toBeGreaterThanOrEqual(camp.from - 6);
+        expect(door).toBeLessThanOrEqual(camp.to + 6);
+      }
+    }
+  });
+
+  it("stocks Base Camp's kitchen without end, with a guitar, and Camp 1 with two canisters and six meals, its water the snow's", () => {
+    const [base, high] = section.tents.camps;
+
+    expect(base).toMatchObject({ gas: null, meals: null, guitar: true });
+    expect(high).toMatchObject({ meals: 6, guitar: false });
+    expect(high?.gas).toBeCloseTo(2 * knowledge.number("gear.gas-canister") * 1000, 6);
+    expect(section.stores.map(({ id, endless }) => [id, endless.includes("water")])).toEqual([
+      ["base-camp", true],
+      ["camp-1", false],
+    ]);
+  });
+
+  it("pitches the tents clear of each other, door to tail, and Camp 1's on its flat", () => {
+    const { length, vestibule, tail } = new TentFacts(knowledge).sizes;
+    for (const camp of section.camps) {
+      const spans = (camp.tents ?? []).map(({ door, lies }) => {
+        const far = door + lies * (vestibule + length + tail);
+        return [Math.min(door, far), Math.max(door, far)] as const;
+      });
+      const [first, second] = spans;
+      expect(first?.[1]).toBeLessThanOrEqual(second?.[0] ?? 0);
+      for (const [from, to] of camp.id === "camp-1" ? spans : []) {
+        expect(terrain.point(from).y).toBeCloseTo(terrain.point(to).y, 9);
+      }
+    }
+  });
+
+  it("refuses a tent pitched away from its camp, or lying neither way", () => {
+    const [base, high] = icefall.camps;
+    const away = [{ ...base, tents: [{ door: 100, lies: 1 }] }, high];
+    const askew = [{ ...base, tents: [{ door: 3, lies: 0 }] }, high];
+
+    expect(() => new Section(knowledge, { ...icefall, camps: away } as never)).toThrow("base-camp");
+    expect(() => new Section(knowledge, { ...icefall, camps: askew } as never)).toThrow(
+      "base-camp",
+    );
+  });
+});
 
 describe("Section: the Khumbu Icefall from content/route/icefall.json", () => {
   it("runs from Base Camp to Camp 1, at the knowledge base's altitudes", () => {

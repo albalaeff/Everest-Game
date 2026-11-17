@@ -29,7 +29,7 @@ const THE_CLIMB = [
   "check-self",
   "panel radio",
   "panel inventory",
-  "set-up-tent",
+  "tent",
   "view farther",
   "view closer",
 ];
@@ -156,7 +156,7 @@ test.describe("on a screen of 640 by 360", () => {
     await tapButton(page, "check-self");
     await tapButton(page, "radio");
     await tapButton(page, "inventory");
-    await tapButton(page, "set-up-tent");
+    await tapButton(page, "tent");
     await tapButton(page, "view-farther");
     await tapButton(page, "view-closer");
 

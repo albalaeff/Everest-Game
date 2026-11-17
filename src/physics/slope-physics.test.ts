@@ -974,6 +974,41 @@ describe("SlopePhysics: on the snow", () => {
   });
 });
 
+describe("SlopePhysics: in a tent, under cover (#258)", () => {
+  it("keeps a sheltered climber where they are, whatever their keys say, until they're let out", () => {
+    const climb = new Climb(TestMountain.CALM, alone(TestMountain.FLAT, 10));
+
+    climb.play(20, [walk("anna", "right")]);
+    climb.physics.shelter("anna", true);
+    const inside = climb.physics.climber("anna");
+    climb.play(40, [walk("anna", "right")]);
+
+    expect(inside).toMatchObject({ sheltered: true, walking: "stop" });
+    expect(climb.physics.climber("anna")).toMatchObject({ x: inside.x, moving: false });
+
+    climb.physics.shelter("anna", false);
+    climb.play(20, [walk("anna", "right")]);
+
+    expect(climb.physics.climber("anna").sheltered).toBe(false);
+    expect(climb.physics.climber("anna").x).toBeCloseTo(inside.x + 1, 9);
+  });
+
+  it("keeps who's under cover through a save, and stands them outside where the god mode puts them", () => {
+    const climb = new Climb(TestMountain.CALM, alone(TestMountain.FLAT, 10));
+    climb.physics.shelter("anna", true);
+    climb.play(1);
+
+    const resumed = new Climb(
+      TestMountain.CALM,
+      JSON.parse(JSON.stringify(climb.expedition.save())) as ExpeditionSave,
+    );
+    expect(resumed.physics.climber("anna").sheltered).toBe(true);
+
+    resumed.physics.stand("anna", 14, false);
+    expect(resumed.physics.climber("anna").sheltered).toBe(false);
+  });
+});
+
 describe("SlopePhysics: the same climb everywhere", () => {
   const layout = TestMountain.SLOPE.layout(
     [

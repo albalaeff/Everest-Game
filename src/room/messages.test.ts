@@ -41,7 +41,8 @@ describe("Protocol, from a browser", () => {
       { kind: "oxygen", change: "down" },
       { kind: "check-self" },
       { kind: "radio", channel: "base-camp", phrase: "Turning back" },
-      { kind: "set-up-tent", climber: "boris" },
+      { kind: "tent", climber: "boris", go: "in" },
+      { kind: "chore", climber: "boris", chore: "melt" },
     ];
 
     expect(client({ type: "actions", actions })).toEqual({
@@ -56,7 +57,8 @@ describe("Protocol, from a browser", () => {
         { kind: "oxygen", change: "down" },
         { kind: "check-self" },
         { kind: "radio", channel: "base-camp", phrase: "Turning back" },
-        { kind: "set-up-tent" },
+        { kind: "tent", go: "in" },
+        { kind: "chore", chore: "melt" },
       ],
     });
     expect(client({ type: "actions", actions: [] })).toEqual({ type: "actions", actions: [] });
