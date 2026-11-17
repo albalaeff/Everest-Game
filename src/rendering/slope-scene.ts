@@ -12,7 +12,7 @@ import type {
 } from "../simulation";
 import { Atmosphere } from "./atmosphere";
 import type { Camera } from "./camera";
-import type { CampStretch } from "./camp-signs";
+import type { CampStretch, TentSizes } from "./camp-signs";
 import type { PartStretch } from "./glacier";
 import type { GraphicsQuality } from "./graphics-quality";
 import { Palette } from "./palette";
@@ -34,6 +34,8 @@ export interface SceneWorld {
   /** Whose headlamps are lit (#196): a dead one throws no light. */
   readonly lamps: Lamps;
   readonly camps: readonly CampStretch[];
+  /** The tents' sizes, the knowledge base's (#258). */
+  readonly tentSizes: TentSizes;
   readonly parts: readonly PartStretch[];
   readonly climbers: readonly ClimberId[];
   readonly player: ClimberId;
@@ -216,7 +218,7 @@ export class SlopeScene {
     const { width, height } = this.app.screen;
     const { physics, hazards, body, oxygen, lamps, camps, parts, climbers, player, npcs, seed } =
       this.world;
-    const { jolts, ropeStretch } = this.world;
+    const { jolts, ropeStretch, tentSizes } = this.world;
     const skyline = (style: typeof SkylineLayer.PEAKS, offset: number): SkylineLayer =>
       new SkylineLayer(style, physics.terrain, seed + offset, fogBanks, parts);
     this.sky = new SkyLayer(dithered);
@@ -240,6 +242,7 @@ export class SlopeScene {
       seed,
       motes,
       ropeStretch,
+      tentSizes,
       jolts,
     );
     this.snow = flakes > 0 ? new SnowLayer(flakes, width, height) : null;
@@ -265,6 +268,7 @@ export class SlopeScene {
     dataset.climbers = String(this.slope?.climbers ?? 0);
     dataset.tents = String(this.slope?.tents ?? 0);
     dataset.facing = this.slope?.playerFacesViewer === true ? "viewer" : "side";
+    dataset.passage = this.slope?.playerPassage ?? "outside";
     dataset.frames = String(this.frames);
     dataset.camera = `${x.toFixed(2)} ${y.toFixed(2)}`;
     dataset.metresHigh = this.camera.metresHigh.toFixed(2);
