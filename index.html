@@ -176,26 +176,47 @@
       </div>
     </section>
     <section id="start" role="dialog" aria-modal="true" aria-labelledby="start-title" hidden>
-      <div>
-        <h2 id="start-title" data-text="title"></h2>
-        <button type="button" data-text="alone"></button>
-        <button type="button" data-text="start-over" hidden></button>
-        <button type="button" data-text="together"></button>
-        <form>
-          <label>
-            <span data-text="code"></span>
-            <input
-              name="code"
-              maxlength="5"
-              required
-              autocomplete="off"
-              autocapitalize="characters"
-              spellcheck="false"
-            />
-          </label>
-          <button type="submit" data-text="join"></button>
-        </form>
+      <div class="menu-stage"></div>
+      <div class="menu-scrim"></div>
+      <div class="menu-panel">
+        <div class="menu-brand">
+          <p class="eyebrow" data-text="route"></p>
+          <h2 id="start-title" data-text="name"></h2>
+          <p class="menu-motto" data-text="motto"></p>
+        </div>
+        <nav class="menu-choices">
+          <div class="menu-row">
+            <button type="button" data-act="alone" aria-describedby="start-alone-with">
+              <span class="menu-words">
+                <span data-text="alone"></span>
+                <small id="start-alone-with" data-text="alone-with" aria-hidden="true"></small>
+              </span>
+            </button>
+            <button type="button" data-act="start-over" data-text="start-over" hidden></button>
+          </div>
+          <button type="button" data-act="together" aria-describedby="start-together-with">
+            <span class="menu-words">
+              <span data-text="together"></span>
+              <small id="start-together-with" data-text="together-with" aria-hidden="true"></small>
+            </span>
+          </button>
+          <form>
+            <label>
+              <span data-text="code"></span>
+              <input
+                name="code"
+                maxlength="5"
+                required
+                autocomplete="off"
+                autocapitalize="characters"
+                spellcheck="false"
+              />
+            </label>
+            <button type="submit" data-text="join"></button>
+          </form>
+        </nav>
       </div>
+      <div class="menu-curtain"></div>
     </section>
     <section id="climber" role="dialog" aria-modal="true" aria-labelledby="climber-title" hidden>
       <div>

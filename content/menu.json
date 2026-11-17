@@ -1,0 +1,38 @@
+{
+  "en": {
+    "picture": "Everest before dawn, seen from above Kala Patthar, with the South Col route drawn from Base Camp to the summit",
+    "route": "South Col route · Nepal",
+    "name": "Everest",
+    "motto": "The summit is only halfway.",
+    "alone-with": "You and {name}, your Sherpa",
+    "together-with": "Friends join with the room's code",
+    "base-camp": "Base Camp",
+    "camp-1": "Camp 1",
+    "camp-2": "Camp 2",
+    "camp-3": "Camp 3",
+    "south-col": "South Col",
+    "south-col-camp": "· Camp 4",
+    "balcony": "Balcony",
+    "south-summit": "South Summit",
+    "hillary-step": "Hillary Step",
+    "summit": "Summit"
+  },
+  "ru": {
+    "picture": "Эверест перед рассветом, вид с высоты над Кала-Паттаром: маршрут через Южное седло от базового лагеря до вершины",
+    "route": "Маршрут через Южное седло · Непал",
+    "name": "Эверест",
+    "motto": "Вершина — только половина пути.",
+    "alone-with": "Вы и {name}, ваш шерпа",
+    "together-with": "Друзья входят по коду комнаты",
+    "base-camp": "Базовый лагерь",
+    "camp-1": "Лагерь 1",
+    "camp-2": "Лагерь 2",
+    "camp-3": "Лагерь 3",
+    "south-col": "Южное седло",
+    "south-col-camp": "· Лагерь 4",
+    "balcony": "Балкон",
+    "south-summit": "Южная вершина",
+    "hillary-step": "Ступень Хиллари",
+    "summit": "Вершина"
+  }
+}

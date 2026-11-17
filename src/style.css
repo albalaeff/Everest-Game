@@ -1,3 +1,6 @@
+/* The main menu's type: Jost, served with the game, never from another site. */
+@import "@fontsource-variable/jost";
+
 :root {
   --edge-top: max(0.5rem, env(safe-area-inset-top));
   --edge-right: max(0.5rem, env(safe-area-inset-right));
@@ -33,6 +36,7 @@
   --icon-pack: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23000' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M7 9a5 5 0 0 1 10 0v10a2 2 0 0 1-2 2H9a2 2 0 0 1-2-2zM10 5V4a2 2 0 0 1 4 0v1M9 14h6v3H9z'/%3E%3C/svg%3E");
   --icon-tent: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23000' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M2 20 12 4l10 16zM12 4v6M9 20l3-6 3 6'/%3E%3C/svg%3E");
   --icon-peak: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23000' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M2 20 9 7l4 6 2.5-3.5L22 20zM9 7l1.5 4.5'/%3E%3C/svg%3E");
+  --icon-team: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23000' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Ccircle cx='7' cy='6.5' r='2.5'/%3E%3Ccircle cx='17' cy='8.5' r='2.5'/%3E%3Cpath d='M3 20c0-3.6 1.8-6.5 4-6.5s4 2.9 4 6.5M13 20c0-3 1.8-5.5 4-5.5s4 2.5 4 5.5'/%3E%3C/svg%3E");
   --icon-arrow: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M9 2h6v10h5l-8 10-8-10h5z'/%3E%3C/svg%3E");
   --icon-warning: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23000' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M12 3 22 20H2zM12 10v4.5M12 17.5v.5'/%3E%3C/svg%3E");
   color-scheme: dark;
@@ -1035,7 +1039,7 @@ main button:focus-visible,
 /* The way on, on every screen before the climb and at a camp: the rope's orange, the one thing
  * to press. */
 #disclaimer button,
-#start [data-text="alone"],
+#start [data-act="alone"],
 #climber [data-text="keep"],
 #climber [data-text="climb"],
 #pack [data-text="next"],
@@ -1048,7 +1052,7 @@ main button:focus-visible,
 }
 
 #disclaimer button:hover,
-#start [data-text="alone"]:hover,
+#start [data-act="alone"]:hover,
 #climber [data-text="keep"]:hover,
 #climber [data-text="climb"]:hover,
 #pack [data-text="next"]:hover,
@@ -1296,7 +1300,6 @@ kbd {
 }
 
 #disclaimer > div,
-#start > div,
 #climber > div,
 #gear > div,
 #camp > div {
@@ -1307,7 +1310,6 @@ kbd {
 }
 
 #disclaimer h2,
-#start h2,
 #climber h2,
 #pack h2,
 #gear h2,
@@ -1422,39 +1424,886 @@ kbd {
   touch-action: none;
 }
 
-/* The start's choices, one under the other: the code and its [Join] share a line. */
-#start > div > button {
-  display: flex;
-  width: 100%;
-  max-width: 20rem;
-  margin: 0.75rem auto 0;
+/* The main menu (#248): the mountain before dawn fills the screen, and the start's choices stand
+ * over its quiet side, the left. The picture is drawn by src/page/menu/ at 2160 by 900, its
+ * middle 1600 the 16:9 picture: the stage always covers the screen and keeps the route in view,
+ * wider screens seeing more of the ranges either side. */
+#start {
+  container: start / size;
+  padding: 0;
+  overflow: hidden;
+  background: linear-gradient(#02040c 0% 45%, #06091a 62%);
+  font-family: "Jost Variable", system-ui, sans-serif;
+  touch-action: manipulation;
 }
 
+.menu-stage {
+  --k: max(11.112cqh, min(6.25cqw, 14.2cqh));
+  --w: calc(var(--k) * 21.6);
+  --h: calc(var(--k) * 9);
+
+  position: absolute;
+  top: clamp(calc(100cqh - var(--h)), calc(50cqh - 0.482 * var(--h)), 0px);
+  left: clamp(calc(100cqw - var(--w)), calc(50cqw - 0.544 * var(--w)), 0px);
+  width: var(--w);
+  height: var(--h);
+  transform-origin: 56% 24%;
+  animation: menu-settle 20s cubic-bezier(0.16, 0.6, 0.2, 1) both;
+}
+
+@keyframes menu-settle {
+  from {
+    transform: scale(1.07);
+  }
+}
+
+.menu-layer {
+  position: absolute;
+  inset: 0;
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+/* The light: the night's sky, and over it the dawn's, which comes up on the left, where the sun
+ * rises in May from this side. The night lies over the land as a veil that lifts with it. */
+.menu-night {
+  background: linear-gradient(
+    180deg,
+    #02040c 0%,
+    #040919 26%,
+    #0a1232 48%,
+    #141c47 64%,
+    #1d2550 78%,
+    #1d2550 100%
+  );
+}
+
+.menu-dawn {
+  background:
+    radial-gradient(
+      ellipse 49% 46% at 22.6% 52%,
+      rgb(255 190 134 / 100%) 0%,
+      rgb(250 152 112 / 90%) 18%,
+      rgb(220 124 146 / 58%) 44%,
+      rgb(176 104 138 / 0%) 78%
+    ),
+    linear-gradient(
+      180deg,
+      rgb(8 14 48 / 0%) 0%,
+      rgb(20 30 84 / 40%) 20%,
+      rgb(48 54 120 / 74%) 38%,
+      rgb(104 82 142 / 92%) 52%,
+      rgb(170 104 142 / 97%) 62%,
+      rgb(214 134 134 / 100%) 70%,
+      rgb(214 134 134 / 100%) 100%
+    );
+  animation: menu-show 44s 5s cubic-bezier(0.4, 0, 0.3, 1) both;
+}
+
+@keyframes menu-show {
+  from {
+    opacity: 0;
+  }
+}
+
+.menu-stars {
+  opacity: 0.5;
+  animation: menu-dim 44s 5s cubic-bezier(0.4, 0, 0.3, 1) both;
+}
+
+@keyframes menu-dim {
+  from {
+    opacity: 1;
+  }
+}
+
+.menu-halo {
+  fill: #cfdcff;
+  opacity: 0.16;
+}
+
+.menu-twinkle--deep {
+  animation: menu-twinkle-deep 4s ease-in-out infinite alternate;
+}
+
+.menu-twinkle--faint {
+  animation: menu-twinkle-faint 5s ease-in-out infinite alternate;
+}
+
+@keyframes menu-twinkle-deep {
+  from {
+    opacity: 0.22;
+  }
+
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes menu-twinkle-faint {
+  from {
+    opacity: 0.08;
+  }
+
+  to {
+    opacity: 0.62;
+  }
+}
+
+.menu-line {
+  fill: none;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.menu-veil {
+  opacity: 0;
+  animation: menu-lift 44s 5s cubic-bezier(0.4, 0, 0.3, 1) both;
+}
+
+@keyframes menu-lift {
+  from {
+    opacity: 0.62;
+  }
+}
+
+.menu-warm {
+  animation: menu-show 34s 14s cubic-bezier(0.4, 0, 0.3, 1) both;
+}
+
+/* The plume off the summit, blue by night and lit from behind as the sun comes. */
+.menu-plume {
+  color: #ffcdae;
+  animation: menu-plume 40s 9s cubic-bezier(0.4, 0, 0.3, 1) both;
+}
+
+@keyframes menu-plume {
+  from {
+    color: #aebdf0;
+  }
+}
+
+.menu-plume__banner {
+  fill: currentcolor;
+  opacity: 0.3;
+}
+
+.menu-plume__core {
+  fill: currentcolor;
+  opacity: 0.42;
+}
+
+.menu-puff {
+  opacity: 0;
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: menu-puff 10s linear infinite;
+}
+
+@keyframes menu-puff {
+  0% {
+    opacity: 0;
+    transform: translate(0, 0) scale(0.35);
+  }
+
+  12% {
+    opacity: 0.6;
+  }
+
+  60% {
+    opacity: 0.28;
+  }
+
+  100% {
+    opacity: 0;
+    transform: translate(-330px, -30px) scale(3.4);
+  }
+}
+
+.menu-mist {
+  color: #8fa0e2;
+}
+
+.menu-drift {
+  animation: menu-drift 46s ease-in-out infinite alternate;
+}
+
+.menu-drift--slow {
+  animation-duration: 58s;
+  animation-direction: alternate-reverse;
+}
+
+@keyframes menu-drift {
+  from {
+    transform: translateX(-46px);
+  }
+
+  to {
+    transform: translateX(52px);
+  }
+}
+
+/* The camps' tents and the climbers' headlamps: brightest in the dark. */
+.menu-lights {
+  opacity: 0.86;
+  animation: menu-dim 44s 5s cubic-bezier(0.4, 0, 0.3, 1) both;
+}
+
+.menu-tent {
+  fill: #ffd58a;
+  animation: menu-flicker 3.4s ease-in-out infinite alternate;
+}
+
+.menu-tent-glow {
+  fill: #ffb45e;
+  opacity: 0.2;
+}
+
+@keyframes menu-flicker {
+  from {
+    opacity: 0.55;
+  }
+
+  to {
+    opacity: 1;
+  }
+}
+
+.menu-lamp {
+  opacity: 0;
+}
+
+.menu-lamp__light {
+  fill: #fff3c4;
+}
+
+.menu-lamp__halo {
+  fill: #ffe9a8;
+  opacity: 0.22;
+}
+
+/* The route: the fixed rope in its orange over a dark edge, like a road on a map, drawing itself
+ * from Base Camp to the summit; then a glint runs up it now and again. */
+.menu-rope-edge,
+.menu-rope,
+.menu-rope-glint {
+  fill: none;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.menu-rope-edge,
+.menu-rope {
+  stroke-dasharray: 1 2;
+  animation: menu-draw linear both;
+}
+
+.menu-rope-edge {
+  stroke: #2c1005;
+  stroke-width: 5.4;
+  opacity: 0.9;
+}
+
+.menu-rope {
+  stroke: var(--rope);
+  stroke-width: 2.5;
+}
+
+@keyframes menu-draw {
+  from {
+    stroke-dashoffset: 1;
+  }
+}
+
+.menu-rope-glint {
+  stroke: #fff1d2;
+  stroke-width: 2.7;
+  stroke-dasharray: 0.045 2;
+  opacity: 0;
+  animation: menu-glint 12s 11s cubic-bezier(0.4, 0, 0.4, 1) infinite;
+}
+
+@keyframes menu-glint {
+  0% {
+    opacity: 0;
+    stroke-dashoffset: 0.045;
+  }
+
+  6% {
+    opacity: 0.95;
+  }
+
+  50% {
+    opacity: 0.95;
+  }
+
+  58% {
+    opacity: 0;
+    stroke-dashoffset: -1;
+  }
+
+  100% {
+    opacity: 0;
+    stroke-dashoffset: -1;
+  }
+}
+
+.menu-mark {
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: menu-pop 0.6s cubic-bezier(0.2, 1.5, 0.4, 1) both;
+}
+
+@keyframes menu-pop {
+  from {
+    opacity: 0;
+    transform: scale(0);
+  }
+}
+
+.menu-mark__edge {
+  fill: rgb(6 10 28 / 62%);
+  stroke: #1a0a04;
+  stroke-width: 1;
+}
+
+.menu-mark__ring {
+  fill: none;
+  stroke: var(--rope);
+  stroke-width: 1.8;
+}
+
+.menu-mark__core {
+  fill: #ffe6b8;
+}
+
+.menu-mark--landmark .menu-mark__core {
+  fill: var(--rope);
+  stroke: #fff1d2;
+  stroke-width: 0.8;
+}
+
+.menu-mark--summit .menu-mark__core {
+  fill: #fff;
+  stroke: var(--rope);
+  stroke-width: 1.4;
+}
+
+.menu-pulse {
+  fill: none;
+  stroke: #ffd9b8;
+  stroke-width: 1.2;
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: menu-pulse 3.2s ease-out infinite;
+}
+
+.menu-pulse--late {
+  animation-delay: -1.6s;
+}
+
+@keyframes menu-pulse {
+  from {
+    opacity: 0.9;
+    transform: scale(0.6);
+  }
+
+  to {
+    opacity: 0;
+    transform: scale(3.3);
+  }
+}
+
+/* Each place's name, and its altitude as the altimeter reads it, in the ice's blue. */
+.menu-label {
+  fill: var(--ink);
+  stroke: rgb(4 8 24 / 72%);
+  stroke-width: 3.2px;
+  stroke-linejoin: round;
+  paint-order: stroke;
+  font-size: 13px;
+  font-weight: 500;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  animation: menu-show 0.7s ease both;
+}
+
+.menu-label--end {
+  text-anchor: end;
+}
+
+.menu-label--landmark {
+  fill: #dbe5f3;
+  font-size: 11.5px;
+}
+
+.menu-label--summit {
+  font-size: 15px;
+  font-weight: 600;
+  letter-spacing: 0.18em;
+}
+
+.menu-label__altitude {
+  fill: var(--ice);
+  font-weight: 400;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0.04em;
+  text-transform: none;
+}
+
+.menu-leader {
+  fill: none;
+  stroke: rgb(242 245 249 / 62%);
+  stroke-width: 0.8;
+  animation: menu-show 0.5s ease both;
+}
+
+/* The ridge the viewer stands on: its pole and its prayer flags, streaming on the plume's wind,
+ * dark until the day comes; and the snow that falls across it all. */
+.menu-pole {
+  fill: none;
+  stroke: #080b20;
+  stroke-width: 2.2;
+  stroke-linecap: round;
+}
+
+.menu-flags {
+  opacity: 0.94;
+  animation: menu-flags 44s 5s cubic-bezier(0.4, 0, 0.3, 1) both;
+}
+
+@keyframes menu-flags {
+  from {
+    opacity: 0.42;
+  }
+}
+
+.menu-flag-string {
+  fill: none;
+  stroke: #39416f;
+  stroke-width: 0.9;
+}
+
+.menu-flag {
+  transform-box: fill-box;
+  transform-origin: 50% 0;
+  animation: menu-flap 1.6s ease-in-out infinite alternate;
+}
+
+@keyframes menu-flap {
+  from {
+    transform: skewX(-10deg) scaleY(1);
+  }
+
+  to {
+    transform: skewX(-34deg) scaleY(0.93);
+  }
+}
+
+.menu-flake {
+  fill: #fff;
+  animation: menu-fall 14s linear infinite;
+}
+
+@keyframes menu-fall {
+  from {
+    transform: translate(0, 0);
+  }
+
+  to {
+    transform: translate(-420px, 300px);
+  }
+}
+
+/* The menu's words and choices, over the picture's left. */
+.menu-scrim {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    90deg,
+    rgb(2 5 18 / 60%) 0%,
+    rgb(2 5 18 / 36%) 20%,
+    rgb(2 5 18 / 10%) 36%,
+    rgb(2 5 18 / 0%) 46%
+  );
+  pointer-events: none;
+}
+
+.menu-curtain {
+  position: absolute;
+  inset: 0;
+  background: #02040c;
+  opacity: 0;
+  pointer-events: none;
+  animation: menu-curtain 2.4s ease-out both;
+}
+
+@keyframes menu-curtain {
+  from {
+    opacity: 1;
+  }
+}
+
+.menu-panel {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: max(var(--edge-left), clamp(24px, 6.4cqw, 112px));
+  display: flex;
+  flex-direction: column;
+  gap: clamp(20px, 4.6cqh, 44px);
+  justify-content: center;
+  box-sizing: border-box;
+  width: min(376px, calc(100cqw - 48px));
+  padding: max(24px, var(--edge-top)) 0 max(24px, var(--edge-bottom));
+}
+
+.menu-brand {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.menu-brand p {
+  margin: 0;
+  animation: menu-rise 0.9s cubic-bezier(0.2, 0.7, 0.2, 1) 0.3s both;
+}
+
+.menu-panel [data-text="route"] {
+  color: var(--ice);
+  font-size: 13px;
+  font-weight: 500;
+  letter-spacing: 0.3em;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+#start h2 {
+  margin: 0 0 0 -0.03em;
+  font-size: clamp(46px, 6.5cqw, 98px);
+  font-weight: 300;
+  line-height: 1;
+  letter-spacing: 0.2em;
+  text-shadow: 0 2px 28px rgb(2 5 18 / 55%);
+  text-transform: uppercase;
+  white-space: nowrap;
+  animation: menu-track 2.6s cubic-bezier(0.2, 0.7, 0.2, 1) 0.5s both;
+}
+
+@keyframes menu-track {
+  from {
+    opacity: 0;
+    filter: blur(6px);
+    letter-spacing: 0.52em;
+  }
+}
+
+.menu-panel .menu-motto {
+  margin-top: 2px;
+  font-size: clamp(16px, 1.45cqw, 20px);
+  letter-spacing: 0.02em;
+  text-shadow: 0 1px 14px rgb(2 5 18 / 70%);
+  animation-delay: 1.4s;
+}
+
+@keyframes menu-rise {
+  from {
+    opacity: 0;
+    transform: translateY(14px);
+  }
+}
+
+.menu-choices {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  animation: menu-rise 0.9s cubic-bezier(0.2, 0.7, 0.2, 1) 1.6s both;
+}
+
+.menu-row {
+  display: flex;
+  gap: 10px;
+}
+
+#start .menu-choices > button,
+#start .menu-row > button {
+  gap: 12px;
+  justify-content: flex-start;
+  min-height: 58px;
+  padding: 0 18px;
+  font-size: 17px;
+  text-align: left;
+  touch-action: manipulation;
+}
+
+#start [data-act="alone"] {
+  flex: 1;
+  min-height: 70px;
+  font-size: 21px;
+}
+
+#start [data-act="start-over"] {
+  padding: 0 16px;
+  font-size: 15.5px;
+}
+
+#start [data-act="alone"]::before,
+#start [data-act="together"]::before {
+  flex: none;
+  width: 24px;
+  height: 24px;
+  background: currentcolor;
+  content: "";
+  mask: var(--icon-peak) center / contain no-repeat;
+}
+
+#start [data-act="together"]::before {
+  mask-image: var(--icon-team);
+}
+
+.menu-words {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.menu-words small {
+  color: var(--muted);
+  font-size: 13.5px;
+  font-weight: 500;
+  letter-spacing: 0.01em;
+}
+
+#start [data-act="alone"] small {
+  color: var(--rope-ink);
+  opacity: 0.86;
+}
+
+/* A room's code and its [Join] share a line, on glass. */
 #start form {
   display: flex;
-  flex-wrap: wrap;
-  gap: 0.5rem;
+  gap: 10px;
   align-items: center;
-  justify-content: center;
-  max-width: 20rem;
-  margin: 1.5rem auto 0;
+  padding: 7px 7px 7px 18px;
+  border: 1px solid var(--glass-edge);
+  border-radius: 14px;
+  background: var(--glass);
+  backdrop-filter: blur(14px);
+}
+
+#start label {
+  display: flex;
+  flex: 1;
+  gap: 10px;
+  align-items: center;
+  justify-content: space-between;
+  color: var(--muted);
+  font-size: 15.5px;
+  font-weight: 500;
+  white-space: nowrap;
 }
 
 #start input {
   box-sizing: border-box;
-  width: 6rem;
-  min-height: 48px;
-  padding: 0 0.7rem;
-  border: 1px solid var(--glass-edge);
-  border-radius: 0.75rem;
-  background: rgb(8 20 40 / 50%);
-  color: inherit;
+  width: 116px;
+  min-height: 44px;
+  padding: 0;
+  border: 1px solid var(--metal-edge);
+  border-radius: 10px;
+  background: rgb(4 10 26 / 72%);
+  color: var(--ink);
   font: inherit;
+  font-size: 18px;
+  font-weight: 600;
   font-variant-numeric: tabular-nums;
-  letter-spacing: 0.1em;
+  letter-spacing: 0.26em;
+  text-align: center;
+  text-indent: 0.26em;
   text-transform: uppercase;
   user-select: text;
   -webkit-user-select: text;
+}
+
+#start form button {
+  min-height: 44px;
+  padding: 0 18px;
+  font-size: 16px;
+}
+
+/* A phone held along: the same choices in less height, without their small print. */
+@container start (max-height: 540px) {
+  .menu-panel {
+    left: max(var(--edge-left), clamp(16px, 4cqw, 40px));
+    gap: 12px;
+    width: min(340px, calc(100cqw - 32px));
+    padding: max(12px, var(--edge-top)) 0 max(12px, var(--edge-bottom));
+  }
+
+  .menu-brand {
+    gap: 5px;
+  }
+
+  .menu-panel [data-text="route"] {
+    font-size: 11px;
+  }
+
+  #start h2 {
+    font-size: clamp(34px, 6cqw, 46px);
+  }
+
+  .menu-panel .menu-motto,
+  .menu-words small {
+    display: none;
+  }
+
+  .menu-choices,
+  .menu-row {
+    gap: 8px;
+  }
+
+  #start .menu-choices > button,
+  #start .menu-row > button {
+    min-height: 48px;
+    font-size: 16px;
+  }
+
+  #start [data-act="alone"] {
+    font-size: 18px;
+  }
+}
+
+/* A phone held upright: the mountain above, the choices under the thumbs. */
+@container start (max-aspect-ratio: 6 / 5) {
+  .menu-stage {
+    --k: 14cqw;
+
+    top: clamp(64px, 11cqh, 140px);
+    left: calc(50cqw - 0.6204 * var(--w));
+    transform-origin: 62% 30%;
+  }
+
+  .menu-scrim {
+    background: linear-gradient(
+      180deg,
+      rgb(2 5 18 / 55%) 0%,
+      rgb(2 5 18 / 0%) 20%,
+      rgb(2 5 18 / 0%) 52%,
+      rgb(4 7 22 / 82%) 72%,
+      rgb(4 7 22 / 96%) 100%
+    );
+  }
+
+  .menu-panel {
+    right: max(var(--edge-right), 20px);
+    left: max(var(--edge-left), 20px);
+    gap: 12px;
+    justify-content: flex-start;
+    width: auto;
+    padding: max(22px, var(--edge-top)) 0 max(20px, var(--edge-bottom));
+  }
+
+  .menu-brand {
+    gap: 6px;
+    align-items: center;
+    text-align: center;
+  }
+
+  .menu-panel [data-text="route"] {
+    font-size: 11px;
+    letter-spacing: 0.24em;
+  }
+
+  #start h2 {
+    margin: 0 -0.2em 0 0;
+    font-size: clamp(34px, 11cqw, 60px);
+  }
+
+  .menu-panel .menu-motto {
+    font-size: 15px;
+  }
+
+  .menu-choices {
+    gap: 8px;
+    align-self: center;
+    width: 100%;
+    max-width: 440px;
+    margin-top: auto;
+  }
+
+  .menu-row {
+    gap: 8px;
+  }
+
+  #start .menu-choices > button,
+  #start .menu-row > button {
+    min-height: 52px;
+  }
+
+  #start [data-act="alone"] {
+    min-width: 0;
+    min-height: 62px;
+  }
+
+  #start [data-act="alone"] small {
+    white-space: normal;
+  }
+
+  #start [data-act="start-over"] {
+    flex: 0 1 116px;
+    justify-content: center;
+    padding: 0 10px;
+    text-align: center;
+    white-space: normal;
+  }
+
+  /* Base Camp's name would run off the left: it goes under its mark. */
+  .menu-label[data-place="base-camp"] {
+    text-anchor: start;
+    transform: translate(6px, 32px);
+  }
+
+  .menu-label[data-place="base-camp"] + .menu-label--under {
+    text-anchor: start;
+    transform: translate(6px, 40px);
+  }
+}
+
+/* A small screen: the camps' names larger, the summit ridge's small print left out. */
+@container start (max-width: 900px) {
+  .menu-label {
+    stroke-width: 4px;
+    font-size: 20px;
+  }
+
+  .menu-label--summit {
+    font-size: 22px;
+  }
+
+  .menu-label--under {
+    transform: translateY(8px);
+  }
+
+  .menu-label--landmark,
+  .menu-label__more,
+  .menu-leader--landmark {
+    display: none;
+  }
+}
+
+/* With motion reduced the picture holds still at dawn, the rope drawn: nothing moves. */
+@media (prefers-reduced-motion: reduce) {
+  #start,
+  #start * {
+    animation: none !important;
+  }
+
+  .menu-flake,
+  .menu-puff,
+  .menu-rope-glint,
+  .menu-pulse {
+    display: none;
+  }
 }
 
 /* Your climber: the questions one under the other, each choice a row a finger can take, the
