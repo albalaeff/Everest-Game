@@ -160,6 +160,35 @@ describe("ClimberReading", () => {
     expect(state.ladder).toBeNull();
   });
 
+  it("reads a climber off their feet against a wall's face as over its foot, not on its top above them", () => {
+    const reading = new ClimberReading(slope);
+    // Hanging on their rope against the wall, a metre under its lip: 2 m of air under them.
+    const hanging = reading.read(view({ falling: true, hanging: true }), BODY, drawn(20, 4));
+    expect(hanging.ground(0)).toBeCloseTo(-2, 9);
+
+    // Lying on the wall's top at its edge, and at its foot: on the ground, each.
+    const onTop = reading.read(view({ falling: true }), BODY, drawn(20.02, 5));
+    expect(onTop.ground(0)).toBeCloseTo(0, 9);
+    const atTheFoot = reading.read(view({ falling: true }), BODY, drawn(19.98, 2));
+    expect(atTheFoot.ground(0)).toBeCloseTo(0, 9);
+  });
+
+  it("turns a climber who hangs on their rope beside a wall's face to face it, and leaves one in the open air as they were", () => {
+    const reading = new ClimberReading(slope);
+    reading.read(view({ walking: "left" }), BODY, drawn(19, 2));
+    expect(reading.facing).toBe(-1);
+
+    // Half a metre out from the wall, hauled up toward its lip: it's within a leg's reach.
+    reading.read(view({ falling: true, hanging: true }), BODY, drawn(19.5, 3.5));
+    expect(reading.facing).toBe(1);
+
+    // Three metres out from it, in the open air: no wall to face.
+    const free = new ClimberReading(slope);
+    free.read(view({ walking: "left" }), BODY, drawn(17, 2));
+    free.read(view({ falling: true, hanging: true }), BODY, drawn(17, 4));
+    expect(free.facing).toBe(-1);
+  });
+
   it("faces the wall on a ladder up it, going up or down by the key", () => {
     const reading = new ClimberReading(slope);
     const up = reading.read(view({ ladder: "wall", walking: "up" }), BODY, drawn(20, 3));

@@ -77,6 +77,10 @@ export interface PoseState {
   /** Whether the ladder they're on is a face of ice, on their front points: on their tools, or
    * lowering down it on its rope. */
   readonly onIce?: boolean;
+  /** Hanging on their rope, how far ahead of the climber's point a wall's face stands over their
+   * harness, within a leg's reach, in the figure's metres: they put their boots on it (#243).
+   * None in the open air, or not hanging. */
+  readonly face?: number | null;
 }
 
 /** The figure's joints this frame, in its metres from where it stands, facing +x: the whole of it
@@ -288,6 +292,10 @@ export class ClimberPose {
   static readonly BENT_DOUBLE = 0.95;
   /** How high over a ladder's rungs the hands hold its lines. */
   static readonly LINES = 1;
+  /** How far a ladder up a wall stands over the wall's top, as the Icefall's are set, so a
+   * climber has its rails to hold as they step off it or onto it (#243): the picture draws it so,
+   * and the hands go that far up it. */
+  static readonly LADDER_OVER = 0.75;
   /** How a fallen climber lies: a quarter turn, face down along the ground. */
   static readonly FALLEN_RADIANS = Math.PI / 2;
   /** How long a climber takes to go over in a fall, and to get up after it. */
@@ -384,15 +392,15 @@ export class ClimberPose {
   private static readonly LINE_HOLDS: readonly [number, number] = [0.3, 0.18];
   /** Up a wall: how far toward the wall from the ladder's line the balls of the feet and the
    * hands are, and the ball of the foot from the ankle; the pelvis, up the ladder and off it; how
-   * high over the feet the hands hold, about, and over the top; how far a foot or a hand comes off
-   * between the rungs; the lean into it. */
+   * high over the feet the hands hold, about, and over the top, on the rails that stand over it
+   * (`LADDER_OVER`); how far a foot or a hand comes off between the rungs; the lean into it. */
   private static readonly WALL = {
     foot: 0.04,
     hand: 0.03,
     ball: 0.07,
     pelvis: { up: 0.68, off: -0.3 },
     hands: 1.2,
-    over: 0.1,
+    over: ClimberPose.LADDER_OVER - 0.25,
     lift: 0.12,
     lean: 0.15,
   };
@@ -403,6 +411,7 @@ export class ClimberPose {
   private static readonly ICE_WALL = {
     ...ClimberPose.WALL,
     foot: -0.105,
+    over: 0.1,
     pelvis: { up: 0.84, off: -0.34 },
     lean: 0.08,
   };
@@ -436,6 +445,10 @@ export class ClimberPose {
   /** How far above their harness a climber held by the rope is drawn hanging from at the least,
    * in metres, however low the carabiner is drawn (#239). */
   private static readonly HELD_ABOVE = 0.45;
+  /** How far a climber held by the rope leans the way it pulls, in radians, at the most (#243):
+   * the harness ties in at the waist, by the body's middle, so a pull from well to the side
+   * swings them that way without laying them over. */
+  private static readonly HANG_LEAN = 0.35;
   /** A fall: how high off the ground a body is in the air, how fast it tumbles there, and how
    * fast and how far the limbs flail. */
   private static readonly AIR_METRES = 0.4;
@@ -478,6 +491,25 @@ export class ClimberPose {
     { x: -0.04, y: -0.8 },
   ];
   private static readonly HANGING_SWAY = { metres: 0.05, hz: 0.6 };
+  /** Hanging beside a wall's face, the boots braced on it (#243), as a climber hauled up a wall
+   * or jumaring up one walks their feet up it: from how far off the face the boots come onto it,
+   * and over how much nearer they're fully on; how far out from it the harness hangs, the legs
+   * pushing the body off; how far back the body leans, and the spine curls forward in the
+   * harness; where a boot is set, level with the harness, the legs near straight as a stiff boot
+   * needs with its sole flat on a wall, and how much further down it is when it steps up again; how much of its cycle it's set on the wall, and how far off it it lifts. A
+   * boot set on the wall stays there as the body goes up, so the step's rise is the span over
+   * the share it's set. */
+  private static readonly BRACED = {
+    reach: 0.9,
+    ease: 0.3,
+    off: 0.84,
+    tilt: -0.45,
+    lean: 0.2,
+    top: 0,
+    span: 0.28,
+    set: 0.8,
+    lift: 0.08,
+  };
   /** Kneeling to get up: the pelvis low, a boot ahead, the other knee and toes on the ground, both
    * hands on the front knee. */
   private static readonly KNEEL = {
@@ -563,6 +595,10 @@ export class ClimberPose {
   private fallen = 0;
   private aloft = 0;
   private spin = 0;
+  /** Hanging, how far the boots are braced on a wall's face beside them, 0 to 1, and how far
+   * ahead the face was when last seen (#243). */
+  private braced = 0;
+  private faceAhead = 0;
   /** How far up after a fall, 0 to 1. */
   private rising = 1;
   /** The pose's own seconds, which the wobble sways on. */
@@ -693,6 +729,11 @@ export class ClimberPose {
         : Math.max(0, this.reaching - frame);
     this.clipped = clipped;
     this.carabinerSeen = state.carabiner ?? this.carabinerSeen;
+    const face = mode === "hang" ? (state.face ?? null) : null;
+    this.faceAhead = face ?? this.faceAhead;
+    const { BRACED } = ClimberPose;
+    const brace = face === null ? 0 : ClimberPose.smooth((BRACED.reach - face) / BRACED.ease);
+    this.braced += (brace - this.braced) * share;
     const inTheAir = !upright && -state.ground(0) > ClimberPose.AIR_METRES;
     this.aloft += ((inTheAir ? 1 : 0) - this.aloft) * share;
     const tumbling = inTheAir && mode === "fall";
@@ -1133,12 +1174,16 @@ export class ClimberPose {
       spacing > 1e-6 ? Math.max(1, Math.round(wall.hands / spacing)) * spacing : wall.hands;
     const bottom = Math.min(ends[0] * sign, ends[1] * sign);
     const top = Math.max(ends[0] * sign, ends[1] * sign);
+    // The highest rung it has: no boot stands on one over its top (#243).
+    const lowest = sign * (state.ladder?.rung ?? 0);
+    const topRung =
+      spacing > 1e-6 ? lowest + Math.floor((top - lowest) / spacing + 1e-9) * spacing : top;
     const at = (up: number, off: number): Joint => ({
       x: up * rise.x + off * toWall.x,
       y: up * rise.y + off * toWall.y,
     });
     const ankleOf = (onRungs: OnRungs): Joint => {
-      const ball = at(Math.max(onRungs.up, bottom), wall.foot - onRungs.off);
+      const ball = at(Math.min(Math.max(onRungs.up, bottom), topRung), wall.foot - onRungs.off);
       return {
         x: ball.x - wall.ball * toWall.x + ClimberPose.ANKLE * rise.x,
         y: ball.y - wall.ball * toWall.y + ClimberPose.ANKLE * rise.y,
@@ -1272,17 +1317,22 @@ export class ClimberPose {
   }
 
   /** Hanging from a cowstail below the rope: the pelvis at the harness, the body in line with the
-   * cowstail, the near hand up on it, the legs dangling. Held by the rope with the carabiner
-   * level with them or below, hauled up toward a lip, they hang upright still, leaning its way
-   * (#239): a harness never turns a climber over. */
+   * cowstail as far as a harness leans them (`HANG_LEAN`), the near hand up on it, the legs
+   * dangling. Held by the rope with the carabiner level with them or below, hauled up toward a
+   * lip, they hang upright still, leaning its way (#239): a harness never turns a climber over,
+   * nor lays them flat as the rope comes taut from the side (#243). Beside a wall's face, their
+   * boots are on it (`bracedOn`). */
   private hanging(state: PoseState): Targets {
     const drawn = state.jumar ?? state.carabiner;
     const lifted =
       drawn === null ? null : { x: drawn.x, y: Math.max(drawn.y, ClimberPose.HELD_ABOVE) };
     const hold = this.hangingFrom(state) ?? (this.heldUp(state) ? lifted : null) ?? ClimberPose.UP;
-    const leant = Math.min(Math.max(Math.atan2(hold.x, hold.y), -0.9), 0.9);
-    // Level with the carabiner, the lean eases to half: the rope pulls them along, not over.
-    const tilt = drawn !== null && drawn.y < ClimberPose.HELD_ABOVE ? leant / 2 : leant;
+    const most = ClimberPose.HANG_LEAN;
+    const leant = Math.min(Math.max(Math.atan2(hold.x, hold.y), -most), most);
+    // Level with the carabiner or under it, the lean eases to half: the rope pulls them along,
+    // not over; it comes on as the carabiner comes up over them, with no jump (#243).
+    const over = drawn === null ? 1 : ClimberPose.smooth(drawn.y / ClimberPose.HELD_ABOVE);
+    const tilt = leant * (0.5 + 0.5 * over);
     const above = ClimberPose.turned(hold, -tilt);
     const shoulder = ClimberPose.shoulderOf(ClimberPose.ORIGIN, -0.08);
     const reach = ClimberPose.UPPER_ARM + ClimberPose.FOREARM - 0.02;
@@ -1291,7 +1341,7 @@ export class ClimberPose {
     const { metres, hz } = ClimberPose.HANGING_SWAY;
     const sway = metres * Math.sin(2 * Math.PI * hz * this.fallen);
     const [nearFoot, farFoot] = ClimberPose.HANGING_FEET;
-    return {
+    const free: Targets = {
       pelvis: ClimberPose.ORIGIN,
       lean: -0.08,
       nod: -0.25,
@@ -1310,6 +1360,53 @@ export class ClimberPose {
       ],
       tilt,
       offset: ClimberPose.ORIGIN,
+    };
+    return this.braced > 1e-3
+      ? ClimberPose.mix(free, this.bracedOn(state, hold), this.braced)
+      : free;
+  }
+
+  /** Hanging from `hold` beside a wall's face, the boots on it (#243): the harness out from the
+   * face, the body leaning back off it on the cowstail, the knees bent, the soles flat on the
+   * wall with their toes up it; each boot stays where it's set as the rope takes the body up,
+   * then steps up, in turn, by how high off the ground they've come. */
+  private bracedOn(state: PoseState, hold: Joint): Targets {
+    const { BRACED, ANKLE } = ClimberPose;
+    const { tilt, top, span, set, lift } = BRACED;
+    const offset: Joint = { x: Math.min(0, this.faceAhead - BRACED.off), y: 0 };
+    const wall = this.faceAhead - offset.x;
+    const height = -state.ground(0);
+    const stride = span / set;
+    const boot = (leg: 0 | 1): Joint => {
+      const turns = height / stride + leg / 2;
+      const phase = turns - Math.floor(turns);
+      const swung = phase < set ? 0 : ClimberPose.smooth((phase - set) / (1 - set));
+      const down = phase < set ? (span * phase) / set : span * (1 - swung);
+      const off = phase < set ? 0 : lift * Math.sin(Math.PI * swung);
+      return ClimberPose.turned({ x: wall - ANKLE - off, y: top - down }, -tilt);
+    };
+    const shoulder = ClimberPose.shoulderOf(ClimberPose.ORIGIN, BRACED.lean);
+    const above = ClimberPose.inside(hold, offset, tilt);
+    const reach = ClimberPose.UPPER_ARM + ClimberPose.FOREARM - 0.02;
+    const away = Math.hypot(above.x - shoulder.x, above.y - shoulder.y);
+    const share = away > reach ? reach / away : 1;
+    const sole = Math.PI / 2 + tilt;
+    return {
+      pelvis: ClimberPose.ORIGIN,
+      lean: BRACED.lean,
+      nod: -0.2,
+      ankles: [boot(0), boot(1)],
+      soles: [sole, sole],
+      pivots: [ClimberPose.ON_A_RUNG, ClimberPose.ON_A_RUNG],
+      hands: [
+        {
+          x: shoulder.x + (above.x - shoulder.x) * share,
+          y: shoulder.y + (above.y - shoulder.y) * share,
+        },
+        { x: 0.16, y: 0.42 },
+      ],
+      tilt,
+      offset,
     };
   }
 
@@ -1368,7 +1465,14 @@ export class ClimberPose {
     this.short = held.short;
     const nearArm = ClimberPose.bend(nearRoot, held.hands[0] ?? hands[0], UPPER_ARM, FOREARM, -1);
     const farArm = ClimberPose.bend(farRoot, held.hands[1] ?? hands[1], UPPER_ARM, FOREARM, -1);
-    const { jumar, carabiner } = state;
+    // Hanging, each cowstail runs up to the rope from the harness: one the physics has level
+    // with them or below, hauled toward a lip, is drawn over it, as their hand on it is (#243).
+    const up = (hold: Joint | null): Joint | null =>
+      hold === null || this.mode !== "hang"
+        ? hold
+        : { x: hold.x, y: Math.max(hold.y, ClimberPose.HELD_ABOVE) };
+    const jumar = up(state.jumar);
+    const carabiner = up(state.carabiner);
     const onTheRope = jumar === null ? null : ClimberPose.inside(jumar, offset, tilt);
     const holder = ClimberPose.between(nearArm.end, farArm.end, this.jumarSide);
     return {

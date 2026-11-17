@@ -50,8 +50,9 @@ interface Grip {
  * chest and breath `Breathing`'s, by the altitude and the body; the breath blows downwind, and
  * each boot that comes down on the snow kicks up a puff. On a face of ice, each pick that strikes
  * in knocks chips off it, more and bigger where it bites poorly, and so do the front points as
- * they kick in. A dead climber lies dim, with no words on the screen (#24). It keeps only the
- * picture's own: the points between the steps, the pose, the breath, the turn and the lamp's
+ * they kick in. A dead climber lies dim, with no words on the screen (#24). Beside a climber at
+ * the same spot, they're drawn a step aside (`Abreast`, #243). It keeps only the picture's own:
+ * the points between the steps, the step aside, the pose, the breath, the turn and the lamp's
  * beam.
  */
 export class ClimberFigure extends Container {
@@ -133,6 +134,10 @@ export class ClimberFigure extends Container {
     { x: 0, y: 0 },
   ];
   private readonly point: Spot = { x: 0, y: 0 };
+  /** Where the physics has them this frame, between the steps, and how far aside of it they're
+   * drawn, beside a climber at the same spot (`Abreast`, #243). */
+  private readonly trod: Spot = { x: 0, y: 0 };
+  private readonly aside: Spot = { x: 0, y: 0 };
   private readonly first: Spot = { x: 0, y: 0 };
   private readonly second: Spot = { x: 0, y: 0 };
   private readonly drawn: { at: Spot; jumar: Spot | null; carabiner: Spot | null; grown: number } =
@@ -217,6 +222,19 @@ export class ClimberFigure extends Container {
     return this.point;
   }
 
+  /** Where the physics has the climber this frame, between the steps: where they're drawn, but
+   * for a step aside. */
+  get stands(): Point {
+    return this.trod;
+  }
+
+  /** Draws them `by` this far aside of where they stand, from the next frame: beside a climber
+   * at the same spot, on the ground there (`Abreast`, #243). */
+  standAside(by: Point): void {
+    this.aside.x = by.x;
+    this.aside.y = by.y;
+  }
+
   /** The rope their jumar is on, or none. */
   get rope(): string | null {
     return this.climber?.first ?? null;
@@ -252,8 +270,10 @@ export class ClimberFigure extends Container {
     second.y = secondAt.y;
     const { stepped } = this;
     stepped.follow(this.spots, between);
-    this.point.x = stepped.x(0);
-    this.point.y = stepped.y(0);
+    this.trod.x = stepped.x(0);
+    this.trod.y = stepped.y(0);
+    this.point.x = this.trod.x + this.aside.x;
+    this.point.y = this.trod.y + this.aside.y;
     this.first.x = stepped.x(1);
     this.first.y = stepped.y(1);
     this.second.x = stepped.x(2);
@@ -307,7 +327,9 @@ export class ClimberFigure extends Container {
       this.breathing.advance(seconds, Breathing.period(climber.altitude, body.tiredness, moving));
     }
     this.alpha = climber.dead ? ClimberFigure.DEAD_ALPHA : 1;
-    this.draw(pose, masked, atmosphere, climber.dead, grown, size);
+    // Hanging with both cowstails on the one rope, they hang from one point of it (#243).
+    const together = borne !== null && climber.first !== null && climber.second === climber.first;
+    this.draw(pose, masked, atmosphere, climber.dead, grown, size, together);
     const upright = !climber.dead && !climber.falling;
     this.drawLamp(pose, atmosphere, upright && lit ? state : null, seconds);
     this.drawBreath(atmosphere, climber.dead, atmosphere.gust * facing, lit);
@@ -466,7 +488,7 @@ export class ClimberFigure extends Container {
 
   /** The kit on the pose, the chest swollen with the breath, the mask on the face or on the chest,
    * the far limbs in the hour's cold light; the cowstails no thinner than a line can be drawn,
-   * however small the figure; and the rim behind it. */
+   * however small the figure, both to one point of the rope `together`; and the rim behind it. */
   private draw(
     pose: Pose,
     masked: boolean,
@@ -474,6 +496,7 @@ export class ClimberFigure extends Container {
     dead: boolean,
     grown: number,
     size: LeastSize,
+    together = false,
   ): void {
     const { figure, front } = this;
     const swell = ClimberFigure.CHEST_SWELL * this.breathing.chest;
@@ -500,6 +523,7 @@ export class ClimberFigure extends Container {
         carabiner: ClimberFigure.SLING_METRES / grown,
       },
       thin,
+      together,
     );
     this.drawRim(pose, swell, masked, atmosphere, dead);
   }

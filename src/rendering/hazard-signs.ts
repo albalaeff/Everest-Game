@@ -52,8 +52,10 @@ export class HazardSigns {
   ];
   /** How deep the loaded snow lies on the ground. */
   static readonly LOADED_METRES = 0.8;
-  /** How far apart the loaded snow's points are along the ground. */
-  private static readonly BAND_STEP_METRES = 2;
+  /** How far apart the loaded snow's points are along the ground; and over how much of each end
+   * of its stretch it thins to nothing, as a drift does (#243): a third of a short stretch. */
+  private static readonly BAND_STEP_METRES = 0.5;
+  private static readonly BAND_THINS_METRES = 3;
   /** How high above the ground what comes down starts, and how many pieces of it there are. */
   static readonly FALL_METRES = 14;
   static readonly PIECES = 9;
@@ -210,14 +212,23 @@ export class HazardSigns {
   /** How high up a serac its top's corners are, where its snow lies. */
   private static readonly TOP = 0.85;
 
-  /** The ground along a zone, and the same a snow's depth above it, back. */
+  /** The ground along a zone, and back over it the top of the snow loaded on it: a drift, a
+   * snow's depth above the ground along its middle and thinning to nothing at each end, so it
+   * lies on the slope as blown snow does, with no square edge (#243). */
   private band(zone: HazardZone): readonly Point[] {
+    const length = zone.to - zone.from;
+    const steps = Math.max(2, Math.ceil(length / HazardSigns.BAND_STEP_METRES));
+    const thins = Math.min(HazardSigns.BAND_THINS_METRES, length / 3);
     const ground: Point[] = [];
-    for (let along = zone.from; along < zone.to; along += HazardSigns.BAND_STEP_METRES) {
-      ground.push(this.terrain.point(along));
+    const above: Point[] = [];
+    for (let step = 0; step <= steps; step += 1) {
+      const along = (length * step) / steps;
+      const { x, y } = this.terrain.point(zone.from + along);
+      const share = Math.min(Math.min(along, length - along) / thins, 1);
+      const depth = HazardSigns.LOADED_METRES * share * share * (3 - 2 * share);
+      ground.push({ x, y });
+      above.push({ x, y: y + depth });
     }
-    ground.push(this.terrain.point(zone.to));
-    const above = ground.map(({ x, y }) => ({ x, y: y + HazardSigns.LOADED_METRES })).reverse();
-    return [...ground, ...above];
+    return [...ground, ...above.reverse()];
   }
 }
