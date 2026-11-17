@@ -10,6 +10,8 @@ export interface SeenClimber {
   readonly falling: boolean;
   readonly first: string | null;
   readonly second: string | null;
+  /** Which cowstail's carabiner is going onto a rope now, the hands at it (#197). */
+  readonly clipping: "first" | "second" | null;
   readonly ladder: string | null;
   /** Whether they hang on their rope after a fall, to climb back up it (#190). */
   readonly hanging: boolean;
@@ -80,6 +82,23 @@ export interface SavedClimb {
   };
 }
 
+/** The god mode as the stories use it, on `window.everest.god` with `?god` (src/page/god-mode.ts →
+ * GodHooks, #245): its places, where the player and their Sherpa are, and its powers. */
+export interface SeenGod {
+  readonly places: readonly { readonly id: string; readonly along: number }[];
+  readonly where: { readonly along: number; readonly sherpa: number | null };
+  readonly state: { readonly immortal: boolean; readonly speed: number; readonly weather: string };
+  teleport(where: string | number, who?: string): number;
+  hour(time: string): void;
+  weather(weather: string): void;
+  speed(times: number): void;
+  serac(): { readonly id: string; readonly from: number; readonly to: number };
+  ladder(id?: string): string | null;
+  jolt(kind?: string): boolean;
+  slip(): void;
+  immortal(on: boolean): void;
+}
+
 declare global {
   interface Window {
     /** What the page shows its stories (src/page/game-page.ts → PageHooks). */
@@ -88,6 +107,7 @@ declare global {
       screenAt(x: number, y: number): readonly number[];
       climberAt(climber: string): readonly number[];
       climber(climber: string): SeenClimber;
+      god?: SeenGod;
     };
   }
 }
@@ -171,6 +191,16 @@ export async function openTheGame(page: Page): Promise<void> {
   await choice(page, "Alone").click();
   await climberScreen(page).getByRole("button", { name: "Climb" }).click();
   await setOffChecked(page);
+}
+
+/** Opens the game with the god mode (#245) on a new climb alone, as `openTheGame` does, on a device
+ * with no climb of the god mode's saved, and waits for its powers on the page. */
+export async function openTheGameAsGod(page: Page): Promise<void> {
+  await readTheDisclaimer(page, "/?god");
+  await choice(page, "Alone").click();
+  await climberScreen(page).getByRole("button", { name: "Climb" }).click();
+  await setOffChecked(page);
+  await page.waitForFunction(() => "everest" in window && window.everest.god !== undefined);
 }
 
 /** Opens the game again on the climb alone the device has saved: [Alone] goes on with it, with
@@ -301,13 +331,40 @@ export async function storeClimb(page: Page, climb: SavedClimb): Promise<void> {
   );
 }
 
+/** A climber in a saved climb: the player, or Pemba (#247). */
+export function savedClimber(climb: SavedClimb, id: string): SavedClimber {
+  const found = climb.rules["slope-physics"].climbers.find((climber) => climber.id === id);
+  if (found === undefined) {
+    throw new Error(`The saved climb has no ${id}`);
+  }
+  return found;
+}
+
 /** The player's climber in a saved climb. */
 export function savedPlayer(climb: SavedClimb): SavedClimber {
-  const player = climb.rules["slope-physics"].climbers.find((climber) => climber.id === "player");
-  if (player === undefined) {
-    throw new Error("The saved climb has no player");
-  }
-  return player;
+  return savedClimber(climb, "player");
+}
+
+/** Presses `key` until the player's `cowstail` is on `rope`, or off it for null (#247): never
+ * while a carabiner is going on, which a press would drop (#197). */
+export async function clipTo(
+  page: Page,
+  key: "KeyE" | "KeyR",
+  cowstail: "first" | "second",
+  rope: string | null,
+): Promise<void> {
+  await expect
+    .poll(
+      async () => {
+        const player = await seen(page, "player");
+        if (player !== null && player[cowstail] !== rope && player.clipping === null) {
+          await page.keyboard.press(key);
+        }
+        return (await seen(page, "player"))?.[cowstail];
+      },
+      { intervals: [1_000], timeout: 20_000 },
+    )
+    .toBe(rope);
 }
 
 /** Stages the climb's training events (#209) in place of those its seed staged: a serac collapse

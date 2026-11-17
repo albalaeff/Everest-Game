@@ -1,4 +1,5 @@
 import type { ClimberView, Point } from "../physics";
+import type { Changeover } from "./changeover";
 import type { CoachTip } from "./coach";
 
 /** Which way an arrow points, on the screen. */
@@ -9,8 +10,8 @@ export type PointerSays =
   | "walk"
   | "clip-second"
   | "clip-first"
-  | "move-second"
-  | "move-first"
+  | "off-second"
+  | "off-first"
   | "jumar"
   | "up"
   | "down"
@@ -62,9 +63,10 @@ export interface PointerWorld {
  * about, the way an arrow points and the control its words name, so the player sees where
  * as well as what (docs/guidelines.md → The mountain is the interface), from the side that leaves
  * the climber in view: up from under the rope, out of the ice. The place a carabiner goes
- * on the rope within reach, the second cowstail's first and then the jumar's, and at an anchor on
- * the next rope, one cowstail at a time; the way to walk, up a ladder at its foot and down one at
- * its top, along a crossing; the jumar's slide along the rope from the hand; where the next pick
+ * on the rope within reach, the second cowstail's first and then the jumar's; at a changeover
+ * (#247), the step to do now: the carabiner, then the jumar, to take off the rope they came on,
+ * where it is, and the place on the next rope each goes; the way to walk, up a ladder at its foot
+ * and down one at its top, along a crossing; the jumar's slide from the hand, the way they face; where the next pick
  * bites well on a wall of ice, and over its lip; the face to step down onto and the rope to lower
  * down; up the rope when hanging, and the carabiner to clip the jumar beside; the edge to stand
  * at to pull a partner out or set a ladder back; back from under a cracking serac and on from
@@ -88,15 +90,17 @@ export class CoachPointer {
   private static readonly DOWN_FACE = 0.7;
   /** How far under the boots the arrow to a loose crampon points. */
   private static readonly UNDER_BOOTS = 0.1;
-  /** How near an anchor the player has to be for the next rope's arrow, and how far along that
-   * rope from the anchor it points: where the rope they're on lets them reach. */
-  private static readonly NEAR_ANCHOR = 2.5;
+  /** How far along the next rope from a changeover's anchor its arrow points while a clip still
+   * takes the old one: where the rope they're on lets them reach. */
   private static readonly PAST_ANCHOR = 0.6;
-  /** How near two ropes' ends are to share an anchor. */
-  private static readonly SAME_ANCHOR = 0.1;
 
-  /** The arrow for `tip`, as the climb stands, or none. */
-  point(tip: CoachTip | null, world: PointerWorld): Pointing | null {
+  /** The arrow for `tip`, as the climb stands, or none; at a changeover, for the `change` on the
+   * card (#247). */
+  point(
+    tip: CoachTip | null,
+    world: PointerWorld,
+    change: Changeover | null = null,
+  ): Pointing | null {
     if (tip === null) {
       return null;
     }
@@ -111,13 +115,14 @@ export class CoachPointer {
       case "ladder-creak":
         return this.clip(view, world);
       case "anchor":
-        return this.changeover(view, world);
+      case "rope-end":
+        return change === null || view.falling ? null : this.changeover(view, world, change);
       case "jumar":
         return view.firstAt === null
           ? null
           : {
-              at: { x: view.firstAt.x + AHEAD, y: view.firstAt.y + CHEST },
-              way: "right",
+              at: { x: view.firstAt.x + view.facing * AHEAD, y: view.firstAt.y + CHEST },
+              way: view.facing > 0 ? "right" : "left",
               anchor: "tail",
               says: "jumar",
             };
@@ -174,9 +179,8 @@ export class CoachPointer {
     }
   }
 
-  /** Up from under the rope within reach, onto the place on it a carabiner goes: the second cowstail's first, then the
-   * jumar's; and one already on another rope, at an anchor, moved over to this one, the second
-   * first. None with both on it, or with no rope in reach. */
+  /** Up from under the rope within reach, onto the place on it a carabiner goes: the second
+   * cowstail's first, then the jumar's. None with both on, or with no rope in reach. */
   private clip(view: ClimberView, world: PointerWorld): Pointing | null {
     const rope = world.ropeWithin();
     if (rope === null || view.falling) {
@@ -184,76 +188,54 @@ export class CoachPointer {
     }
     const at = CoachPointer.nearestOn(world.rope(rope), view);
     const says: PointerSays | null =
-      view.second === null
-        ? "clip-second"
-        : view.second !== rope
-          ? "move-second"
-          : view.first === null
-            ? "clip-first"
-            : view.first !== rope
-              ? "move-first"
-              : null;
+      view.second === null ? "clip-second" : view.first === null ? "clip-first" : null;
     return at === null || says === null ? null : { at, way: "up", anchor: "tip", says };
   }
 
-  /** At an anchor, where a rope the player is on ends and the next one starts: the next rope, a
-   * cowstail at a time, the second first, at its point nearest them once it's the one a clip
-   * takes, and until then a little along it from the anchor, where the rope they're on lets them
-   * reach. With no rope starting there, the rope within reach as anywhere else. */
-  private changeover(view: ClimberView, world: PointerWorld): Pointing | null {
-    const next = view.falling ? null : this.nextRope(view, world);
-    if (next === null) {
-      return this.clip(view, world);
+  /** At a changeover (#247), up onto the place of its step to do now: the carabiner or the jumar
+   * to take off the rope they came on, where it is on it; or the place on the next rope it goes,
+   * its point nearest them once a clip takes that rope, and until then a little along it from the
+   * anchor. None once it's over. */
+  private changeover(view: ClimberView, world: PointerWorld, change: Changeover): Pointing | null {
+    const step = change.now(view);
+    const off = (at: Point | null, says: PointerSays): Pointing => ({
+      at: at ?? change.anchor,
+      way: "up",
+      anchor: "tip",
+      says,
+    });
+    switch (step) {
+      case null:
+        return null;
+      case "carabiner-off":
+        return off(view.secondAt, "off-second");
+      case "jumar-off":
+        return off(view.firstAt, "off-first");
+      case "carabiner-on":
+      case "jumar-on": {
+        const { next } = change;
+        const rope = next === null ? [] : world.rope(next);
+        const at =
+          world.ropeWithin() === next
+            ? CoachPointer.nearestOn(rope, view)
+            : CoachPointer.past(rope, change.anchor);
+        const says = step === "carabiner-on" ? "clip-second" : "clip-first";
+        return at === null ? null : { at, way: "up", anchor: "tip", says };
+      }
     }
-    const within = world.ropeWithin() === next.id;
-    const at = within ? CoachPointer.nearestOn(world.rope(next.id), view) : next.past;
-    const says: PointerSays | null =
-      view.second === null
-        ? "clip-second"
-        : view.second !== next.id
-          ? "move-second"
-          : view.first === null
-            ? "clip-first"
-            : view.first !== next.id
-              ? "move-first"
-              : null;
-    return at === null || says === null ? null : { at, way: "up", anchor: "tip", says };
   }
 
-  /** The rope that starts where one the player is clipped to ends, near them, and the point a
-   * little along it from there; or none. */
-  private nextRope(
-    view: ClimberView,
-    world: PointerWorld,
-  ): { readonly id: string; readonly past: Point } | null {
-    for (const id of [view.second, view.first]) {
-      const end = id === null ? undefined : world.rope(id).at(-1);
-      if (
-        end === undefined ||
-        Math.hypot(end.x - view.x, end.y - view.y) > CoachPointer.NEAR_ANCHOR
-      ) {
-        continue;
-      }
-      for (const other of world.ropes) {
-        const shape = world.rope(other);
-        const [start, finish] = [shape[0], shape.at(-1)];
-        if (other === id || start === undefined || finish === undefined) {
-          continue;
-        }
-        if (Math.hypot(start.x - end.x, start.y - end.y) < CoachPointer.SAME_ANCHOR) {
-          const length = Math.hypot(finish.x - start.x, finish.y - start.y) || 1;
-          const share = Math.min(CoachPointer.PAST_ANCHOR, length) / length;
-          return {
-            id: other,
-            past: {
-              x: start.x + (finish.x - start.x) * share,
-              y: start.y + (finish.y - start.y) * share,
-            },
-          };
-        }
-      }
+  /** The point of a rope a little along it from its end at `anchor`, or none. */
+  private static past(rope: readonly Point[], anchor: Point): Point | null {
+    const [first, last] = [rope[0], rope.at(-1)];
+    if (first === undefined || last === undefined) {
+      return null;
     }
-    return null;
+    const away = (point: Point): number => Math.hypot(point.x - anchor.x, point.y - anchor.y);
+    const [from, to] = away(first) <= away(last) ? [first, last] : [last, first];
+    const length = Math.hypot(to.x - from.x, to.y - from.y) || 1;
+    const share = Math.min(CoachPointer.PAST_ANCHOR, length) / length;
+    return { x: from.x + (to.x - from.x) * share, y: from.y + (to.y - from.y) * share };
   }
 
   /** Up a wall's ladder from its foot, down one from its top, or along a crossing from its end:

@@ -1030,3 +1030,111 @@ describe("SlopePhysics: the same climb everywhere", () => {
     expect(walked.expedition.save().random).toEqual(stood.expedition.save().random);
   });
 });
+
+describe("SlopePhysics: staged between steps, by the god mode (#245)", () => {
+  /** Anna walking up the 40° slope, clipped to its rope, with a technique and a gear of her own. */
+  const walkingUp = (): Climb => {
+    const climb = new Climb(TestMountain.CALM, {
+      ...alone(TestMountain.SLOPE, TestMountain.upTheSlope(12), [FIXED]),
+      climbers: [
+        {
+          id: "anna",
+          along: TestMountain.upTheSlope(12),
+          technique: 0.8,
+          gear: { jumar: false, tools: 2 },
+        },
+      ],
+    });
+    climb.play(1, [clip("anna")]);
+    climb.play(20, [walk("anna", "right")]);
+    return climb;
+  };
+
+  it("stands a climber still on their feet where they're put, both cowstails on the rope there", () => {
+    const climb = walkingUp();
+
+    climb.physics.stand("anna", TestMountain.upTheSlope(25), true);
+    const there = climb.physics.climber("anna");
+    climb.play(40);
+
+    expect(climb.physics.along("anna")).toBe(TestMountain.upTheSlope(25));
+    expect(there).toMatchObject({
+      walking: "stop",
+      moving: false,
+      falling: false,
+      ladder: null,
+      first: "fixed",
+      second: "fixed",
+    });
+    expect(climb.physics.along("anna")).toBe(TestMountain.upTheSlope(25));
+  });
+
+  it("stands them clipped to nothing where no rope is within reach, or where they're put unclipped", () => {
+    const climb = walkingUp();
+
+    climb.physics.stand("anna", 5, true);
+    const offTheRope = climb.physics.climber("anna");
+    climb.physics.stand("anna", TestMountain.upTheSlope(20), false);
+
+    expect(offTheRope).toMatchObject({ first: null, second: null });
+    expect(climb.physics.climber("anna")).toMatchObject({ first: null, second: null });
+  });
+
+  it("keeps who they are: their technique, their gear and their falls", () => {
+    const climb = walkingUp();
+    climb.physics.stand("anna", 10, false);
+
+    expect(climb.physics.climber("anna").gear).toEqual({ jumar: false, tools: 2 });
+    expect(climb.expedition.save()).toMatchObject({
+      rules: { [SlopePhysics.NAME]: { climbers: [{ id: "anna", technique: 0.8, along: 10 }] } },
+    });
+
+    const fell = new Climb(
+      TestMountain.HARSH,
+      alone(TestMountain.SLOPE, TestMountain.upTheSlope(20)),
+    );
+    fell.step("anna", "right");
+    fell.play(400);
+    const fallen = fell.physics.climber("anna");
+    fell.physics.stand("anna", 10, false);
+
+    expect(fallen.falls).toHaveLength(1);
+    expect(fell.physics.climber("anna").falls).toEqual(fallen.falls);
+  });
+
+  it("brings a dead climber back to their feet, out of their fall", () => {
+    const climb = new Climb(
+      TestMountain.CALM,
+      alone(TestMountain.SLOPE, TestMountain.upTheSlope(30)),
+    );
+    climb.physics.kill("anna", 0);
+    climb.play(5);
+    const killed = climb.physics.climber("anna");
+
+    climb.physics.stand("anna", TestMountain.upTheSlope(30), false);
+
+    expect(killed).toMatchObject({ dead: true, falling: true });
+    expect(climb.physics.climbers).toEqual(["anna"]);
+    expect(climb.physics.climber("anna")).toMatchObject({ dead: false, falling: false });
+    expect(climb.physics.along("anna")).toBe(TestMountain.upTheSlope(30));
+  });
+
+  it("goes on from a save as it stood them, through JSON as it's stored", () => {
+    const climb = walkingUp();
+    climb.physics.stand("anna", TestMountain.upTheSlope(25), true);
+    const save = JSON.parse(JSON.stringify(climb.expedition.save())) as ExpeditionSave;
+
+    const resumed = new Climb(TestMountain.CALM, save);
+    climb.play(40, [walk("anna", "right")]);
+    resumed.play(40, [walk("anna", "right")]);
+
+    expect(resumed.expedition.save()).toEqual(climb.expedition.save());
+  });
+
+  it("puts nobody off the ground", () => {
+    const climb = walkingUp();
+
+    expect(() => climb.physics.stand("anna", -1, true)).toThrow(RangeError);
+    expect(() => climb.physics.stand("anna", 1000, true)).toThrow(RangeError);
+  });
+});

@@ -240,10 +240,8 @@ export class ObjectiveHazards implements Rule {
         );
       }
     }
-    for (const { id, kind, from, to, lead } of start.events ?? []) {
-      if (!ObjectiveHazards.KINDS.has(kind) || !(from >= 0 && from < to && lead >= 0)) {
-        throw new RangeError(`The training event ${id} is no stretch a hazard comes down on`);
-      }
+    for (const event of start.events ?? []) {
+      ObjectiveHazards.check(event);
     }
     const save: HazardSave = {
       weather: start.weather,
@@ -257,6 +255,27 @@ export class ObjectiveHazards implements Rule {
 
   get weather(): HazardWeather {
     return this.loaded.weather;
+  }
+
+  /** Stages a training event (#209) between steps, as a scenario stages one, beside those staged
+   * already: the god mode's (#245), never a rule's. One with the same id goes from its place. */
+  stageEvent(event: HazardEvent): void {
+    ObjectiveHazards.check(event);
+    const { events = [] } = this.loaded;
+    const others = events.filter(({ id }) => id !== event.id);
+    const kept = others.length === events.length ? [...events, event] : events;
+    this.state = {
+      ...this.loaded,
+      events: kept.map((each) => (each.id === event.id ? event : each)),
+    };
+  }
+
+  /** Changes the weather between steps, as a scenario sets it: the god mode's (#245). */
+  changeWeather(weather: HazardWeather): void {
+    if (!HazardChance.knows(weather)) {
+      throw new RangeError(`The hazards don't know the weather ${weather}`);
+    }
+    this.state = { ...this.loaded, weather };
   }
 
   get zones(): readonly HazardZone[] {
@@ -365,6 +384,13 @@ export class ObjectiveHazards implements Rule {
         };
         this.state = { ...this.loaded, warnings: [...warnings, cracking] };
       }
+    }
+  }
+
+  /** A training event that's a stretch a known hazard comes down on, or none at all. */
+  private static check({ id, kind, from, to, lead }: HazardEvent): void {
+    if (!ObjectiveHazards.KINDS.has(kind) || !(from >= 0 && from < to && lead >= 0)) {
+      throw new RangeError(`The training event ${id} is no stretch a hazard comes down on`);
     }
   }
 

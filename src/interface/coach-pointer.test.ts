@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import type { ClimberView, Point } from "../physics";
+import { Changeover } from "./changeover";
 import { CoachPointer } from "./coach-pointer";
 import type { PointerWorld } from "./coach-pointer";
 
@@ -35,6 +36,7 @@ const standing = (x: number, over: Partial<ClimberView> = {}): ClimberView => ({
   gear: { jumar: true, tools: 1 },
   clipping: null,
   stillChance: 0,
+  heldBack: null,
   facing: 1,
   towardViewer: false,
   ...over,
@@ -174,45 +176,72 @@ describe("CoachPointer", () => {
     expect(pointer.point("ladder-creak", world)).toBeNull();
   });
 
-  it("at an anchor points a little along the next rope, for the second cowstail first", () => {
+  it("at a changeover takes it a step at a time: the carabiner off where it is, onto the next rope, then the jumar (#247)", () => {
     const world = new World();
-    world.view = standing(19.6, { first: "one", second: "one" });
-    const next = pointer.point("anchor", world);
+    const change = new Changeover({ x: 20, y: 0 }, "one", "two");
+    // Past the anchor, where the next rope is the nearest: the carabiner, still on the old rope.
+    const onTheOld = { firstAt: { x: 20, y: 0 }, secondAt: { x: 20, y: 0 } };
+    world.view = standing(20.5, { first: "one", second: "one", ...onTheOld });
+    expect(pointer.point("anchor", world, change)).toEqual({
+      at: { x: 20, y: 0 },
+      way: "up",
+      anchor: "tip",
+      says: "off-second",
+    });
 
-    expect(next).toMatchObject({ way: "up", anchor: "tip", says: "move-second" });
+    world.view = standing(20.5, { first: "one", second: null, ...onTheOld });
+    expect(pointer.point("anchor", world, change)).toMatchObject({
+      says: "clip-second",
+      at: { x: 20.5, y: 0 },
+    });
+
+    world.view = standing(20.5, { first: "one", second: "two", ...onTheOld });
+    expect(pointer.point("anchor", world, change)).toMatchObject({
+      says: "off-first",
+      at: { x: 20, y: 0 },
+    });
+
+    world.view = standing(20.5, { first: null, second: "two" });
+    expect(pointer.point("anchor", world, change)).toMatchObject({ says: "clip-first" });
+
+    world.view = standing(20.5, { first: "two", second: "two" });
+    expect(pointer.point("anchor", world, change)).toBeNull();
+    // No changeover on the card: no arrow for it.
+    expect(pointer.point("anchor", world)).toBeNull();
+  });
+
+  it("points a little along the next rope from the anchor while a clip still takes the old one (#247)", () => {
+    const world = new World();
+    world.view = standing(19.6, { first: "one", second: null });
+    const next = pointer.point("anchor", world, new Changeover({ x: 20, y: 0 }, "one", "two"));
+
+    expect(next).toMatchObject({ way: "up", anchor: "tip", says: "clip-second" });
     expect(next?.at.x).toBeCloseTo(20.6, 6);
     expect(next?.at.y).toBe(0);
   });
 
-  it("takes the changeover a cowstail at a time: the second moved over, then the jumar's", () => {
+  it("at a rope's end with no next one points at the carabiner, then the jumar, to take off (#247)", () => {
     const world = new World();
-    // Past the anchor, where the next rope is the nearest: the second cowstail, still on the old.
-    world.view = standing(20.5, { first: "one", second: "one" });
-    expect(pointer.point("anchor", world)).toMatchObject({
-      says: "move-second",
-      at: { x: 20.5, y: 0 },
-    });
+    const change = new Changeover({ x: 30, y: 0 }, "two", null);
+    world.view = standing(30.7, { first: "two", second: "two", secondAt: { x: 30, y: 0 } });
+    const carabiner = pointer.point("rope-end", world, change);
+    world.view = standing(30.7, { first: "two", firstAt: { x: 30, y: 0 } });
 
-    world.view = standing(20.5, { first: "one", second: null });
-    expect(pointer.point("anchor", world)).toMatchObject({ says: "clip-second" });
-
-    world.view = standing(20.5, { first: "one", second: "two" });
-    expect(pointer.point("anchor", world)).toMatchObject({ says: "move-first" });
-
-    world.view = standing(20.5, { first: null, second: "two" });
-    expect(pointer.point("anchor", world)).toMatchObject({ says: "clip-first" });
-
-    world.view = standing(20.5, { first: "two", second: "two" });
-    expect(pointer.point("anchor", world)).toBeNull();
+    expect(carabiner).toMatchObject({ says: "off-second", at: { x: 30, y: 0 } });
+    expect(pointer.point("rope-end", world, change)).toMatchObject({ says: "off-first" });
   });
 
-  it("points along the rope from the jumar in the hand, for its slide", () => {
+  it("points along the rope from the jumar in the hand, the way the climber faces, for its slide", () => {
     const world = new World();
     world.view = standing(12, { first: "one", second: "one", firstAt: { x: 12.3, y: 0 } });
     const slide = pointer.point("jumar", world);
+    world.view = standing(12, { first: "one", firstAt: { x: 11.7, y: 0 }, facing: -1 });
+    const back = pointer.point("jumar", world);
 
     expect(slide).toMatchObject({ way: "right", anchor: "tail", says: "jumar" });
     expect(slide?.at.x).toBeGreaterThan(12.3);
+    expect(back).toMatchObject({ way: "left", anchor: "tail", says: "jumar" });
+    expect(back?.at.x).toBeLessThan(11.7);
   });
 
   it("points up a wall's ladder from its foot, down it from its top, and along a crossing", () => {

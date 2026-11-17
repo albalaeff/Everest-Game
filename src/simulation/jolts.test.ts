@@ -170,3 +170,55 @@ describe("Jolts", () => {
     expect(() => Jolts.start({ weather: "fog" as never, zones: [] })).toThrow(RangeError);
   });
 });
+
+describe("Jolts: brought between steps, by the god mode (#245)", () => {
+  it("brings a gust on its way to a climber on its stretch now, warned of first as the chance brings one", () => {
+    const ground = new TestGround({ first: 30, second: 10 });
+    const jolted = new Jolted(ground, { weather: "clear", zones: [OPEN, LASHED] });
+
+    const brought = jolted.jolts.bring("gust", "first", 0);
+    const coming = jolted.jolts.warnings;
+    jolted.play(11);
+
+    expect(brought).toBe(true);
+    expect(coming).toEqual([{ zone: "open", kind: "gust", began: 0, comes: 10 }]);
+    expect(jolted.jolts.jolts[0]).toMatchObject({ zone: "open", kind: "gust", caught: ["first"] });
+    expect(ground.upsets[0]).toEqual({ climber: "first", step: 10 });
+  });
+
+  it("brings a twist onto the lashed ladder a climber is at, and catches them on it", () => {
+    const ground = new TestGround({ first: 55, second: 10 });
+    ground.onto("first");
+    const jolted = new Jolted(ground, { weather: "clear", zones: [OPEN, LASHED] });
+
+    const brought = jolted.jolts.bring("twist", "first", 4);
+    jolted.play(5);
+
+    expect(brought).toBe(true);
+    expect(jolted.jolts.jolts[0]).toMatchObject({ zone: "lashed", kind: "twist", step: 4 });
+  });
+
+  it("brings none where no stretch of its kind is under the climber, or one is on its way there already", () => {
+    const ground = new TestGround({ first: 30, second: 10 });
+    const jolted = new Jolted(ground, { weather: "clear", zones: [OPEN, LASHED] });
+
+    const twist = jolted.jolts.bring("twist", "first", 0);
+    const below = jolted.jolts.bring("gust", "second", 0);
+    jolted.jolts.bring("gust", "first", 0);
+    const again = jolted.jolts.bring("gust", "first", 0);
+
+    expect([twist, below, again]).toEqual([false, false, false]);
+    expect(jolted.jolts.warnings).toHaveLength(1);
+  });
+
+  it("changes the weather between steps, and a save keeps it", () => {
+    const jolted = new Jolted(new TestGround({ first: 0 }), { weather: "clear", zones: [OPEN] });
+
+    jolted.jolts.changeWeather("wind");
+
+    expect(jolted.expedition.save().rules[Jolts.NAME]).toMatchObject({ weather: "wind" });
+    expect(() => {
+      jolted.jolts.changeWeather("fog" as JoltStart["weather"]);
+    }).toThrow(RangeError);
+  });
+});

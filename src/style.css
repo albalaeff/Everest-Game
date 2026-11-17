@@ -199,7 +199,7 @@ header {
   display: grid;
   grid-template-columns: auto 1fr;
   gap: 0.75rem;
-  align-items: center;
+  align-items: start;
   max-width: min(38rem, calc(100vw - 2rem));
   margin: 0;
   padding: 0.7rem 1.1rem 0.7rem 0.85rem;
@@ -217,7 +217,8 @@ header {
   text-wrap: pretty;
   pointer-events: none;
   transform: translateX(-50%);
-  z-index: 2;
+  /* Over the slope's arrow and marks and Pemba's bubble (#247): what to do is never hidden. */
+  z-index: 3;
 }
 
 #coach::before {
@@ -253,6 +254,201 @@ header {
 #coach [data-device="touch"],
 .touch #coach [data-device="pc"] {
   display: none;
+}
+
+.coach__words {
+  margin: 0;
+}
+
+/* A changeover's steps under its tip (#247): numbered, the one to do now numbered in the rope's
+ * orange and bold, a done one ticked, struck through and dimmed, so colour is never the only
+ * cue; a carabiner going onto the rope trails off while the hands are at it. */
+.coach__steps {
+  display: grid;
+  gap: 0.3rem;
+  margin: 0.55rem 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.coach__steps[hidden],
+.coach__gear[hidden] {
+  display: none;
+}
+
+.coach__steps li {
+  display: flex;
+  gap: 0.55rem;
+  align-items: center;
+  color: var(--muted);
+}
+
+.coach__number {
+  display: grid;
+  flex: none;
+  place-items: center;
+  width: 1.45rem;
+  height: 1.45rem;
+  box-sizing: border-box;
+  border: 1px solid rgb(255 255 255 / 34%);
+  border-radius: 50%;
+  font-size: 0.8rem;
+  font-weight: 700;
+  line-height: 1;
+}
+
+.coach__steps li[data-state="now"],
+.coach__steps li[data-state="going"] {
+  color: var(--ink);
+  font-weight: 650;
+}
+
+.coach__steps li[data-state="now"] .coach__number,
+.coach__steps li[data-state="going"] .coach__number {
+  border-color: var(--rope);
+  background: var(--rope);
+  color: var(--rope-ink);
+}
+
+.coach__steps li[data-state="going"] [data-device]::after {
+  content: "…";
+}
+
+.coach__steps li[data-state="done"] > * {
+  opacity: 0.6;
+}
+
+.coach__steps li[data-state="done"] [data-device] {
+  text-decoration: line-through;
+  text-decoration-color: rgb(255 255 255 / 45%);
+}
+
+/* What the carabiner and the jumar are, under the clip's tip (#247): each beside its drawing, the
+ * pack's own. */
+.coach__gear {
+  display: grid;
+  gap: 0.4rem;
+  margin: 0.55rem 0 0;
+  padding: 0;
+  list-style: none;
+  color: var(--muted);
+}
+
+.coach__gear li {
+  display: flex;
+  gap: 0.55rem;
+  align-items: flex-start;
+}
+
+.coach__gear svg {
+  flex: none;
+  width: 2.1rem;
+  height: 2.1rem;
+  margin-top: -0.2rem;
+}
+
+/* The end to clip now reads brightest; one already on the rope steps back. */
+.coach__gear li[data-state="now"] {
+  color: var(--ink);
+}
+
+.coach__gear li[data-state="done"] {
+  opacity: 0.6;
+}
+
+/* On a short screen, a phone held sideways (#247): the steps' numbers in a row, and after them
+ * the words of the step to do now alone; of the gear, the end to clip now alone, its drawing a
+ * line high. The card then leaves the climber in view. */
+@media (max-height: 31.25rem) {
+  #coach .coach__steps {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.2rem;
+    align-items: center;
+    margin-top: 0.35rem;
+  }
+
+  #coach .coach__steps li {
+    display: contents;
+  }
+
+  #coach .coach__steps li:not([data-state="now"], [data-state="going"]) [data-device] {
+    display: none;
+  }
+
+  #coach .coach__steps [data-device] {
+    order: 1;
+    margin-left: 0.25rem;
+  }
+
+  .coach__number {
+    width: 1.15rem;
+    height: 1.15rem;
+    font-size: 0.7rem;
+  }
+
+  .coach__gear {
+    margin-top: 0.35rem;
+  }
+
+  .coach__gear li:not([data-state="now"]) {
+    display: none;
+  }
+
+  .coach__gear svg {
+    width: 1.5rem;
+    height: 1.5rem;
+    margin-top: -0.1rem;
+  }
+}
+
+/* The coach's mark on a changeover's anchor (#247): a dashed ring round it, and its name over it
+ * on a tag edged in the rope's orange, as the tip's card; a dark edge so it reads on snow by day
+ * and on the night's ice. It's still, and never takes a click from the slope. */
+#mark {
+  position: fixed;
+  left: 0;
+  top: 0;
+  width: 0;
+  height: 0;
+  margin: 0;
+  pointer-events: none;
+  z-index: 2;
+}
+
+#mark[hidden] {
+  display: none;
+}
+
+.mark__ring {
+  position: absolute;
+  left: -1.1rem;
+  top: -1.1rem;
+  width: 2.2rem;
+  height: 2.2rem;
+  box-sizing: border-box;
+  border: 0.16rem dashed var(--rope);
+  border-radius: 50%;
+  box-shadow:
+    0 0 0 1px rgb(4 10 24 / 85%),
+    inset 0 0 0 1px rgb(4 10 24 / 85%);
+}
+
+.mark__name {
+  position: absolute;
+  bottom: 1.4rem;
+  left: 0;
+  padding: 0.12rem 0.55rem 0.16rem;
+  border: 1px solid var(--rope);
+  border-radius: 0.5rem;
+  background: var(--card);
+  box-shadow: 0 0.3rem 0.9rem rgb(0 0 0 / 45%);
+  color: var(--ink);
+  font-size: 0.9375rem;
+  font-weight: 700;
+  line-height: 1.3;
+  white-space: nowrap;
+  transform: translateX(-50%);
 }
 
 /* The coach's arrow (#233): on the slope at the place the card's tip is about. A ring round the
@@ -885,9 +1081,10 @@ kbd {
   background: rgb(42 18 3 / 12%);
 }
 
-/* The oxygen buttons' labels end with their keys already. */
+/* The oxygen buttons' labels end with their keys already, and a phone's buttons have no keys; the
+ * coach's key caps, on its card and its arrow, stay: on a phone they're its buttons' names (#247). */
 .oxygen kbd,
-.touch kbd {
+.touch #controls kbd {
   display: none;
 }
 
@@ -2711,4 +2908,137 @@ kbd {
     grid-column: 1 / -1;
     justify-content: end;
   }
+}
+
+/* The god mode's panel (#245): a tester's, under the instruments on the left, over the game but
+ * under its notices; edged in the ice's blue, not the rope's orange, since it's no way on. */
+#god {
+  position: fixed;
+  top: calc(var(--edge-top) + 6.25rem);
+  left: var(--edge-left);
+  width: min(25rem, calc(100vw - var(--edge-left) - var(--edge-right)));
+  max-height: calc(100vh - var(--edge-top) - var(--edge-bottom) - 6.25rem);
+  box-sizing: border-box;
+  padding: 0.7rem 0.9rem;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  border: 1px solid var(--glass-edge);
+  border-top: 0.25rem solid var(--accent);
+  border-radius: 0.5rem 0.5rem 1.1rem 1.1rem;
+  background: var(--card);
+  box-shadow: 0 1rem 2.5rem rgb(0 0 0 / 38%);
+  color: var(--ink);
+  font-size: 0.875rem;
+  touch-action: pan-y;
+}
+
+#god[hidden] {
+  display: none;
+}
+
+.god__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 0.4rem;
+}
+
+#god h2 {
+  margin: 0;
+  color: var(--accent);
+  font-size: 0.8rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.god__row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  align-items: center;
+  margin: 0;
+  padding: 0.45rem 0;
+  border-top: 1px solid rgb(255 255 255 / 10%);
+}
+
+.god__row > label,
+.god__row > span:first-child {
+  min-width: 5.5rem;
+  color: var(--muted);
+}
+
+#god select,
+#god input:not([type="checkbox"]) {
+  min-height: 2rem;
+  box-sizing: border-box;
+  padding: 0 0.5rem;
+  border: 1px solid var(--glass-edge);
+  border-radius: 0.4rem;
+  background: var(--glass-deep);
+  color: var(--ink);
+  font: inherit;
+  font-variant-numeric: tabular-nums;
+}
+
+#god select {
+  flex: 1 1 12rem;
+  min-width: 0;
+}
+
+#god-metres,
+#god-clock {
+  width: 5.5rem;
+}
+
+.god__button {
+  min-height: 2rem;
+  padding: 0 0.7rem;
+  border: 1px solid var(--metal-edge);
+  border-radius: 0.4rem;
+  background: var(--metal);
+  box-shadow: var(--metal-shadow);
+  color: var(--ink);
+  font: inherit;
+  cursor: pointer;
+}
+
+.god__button:hover {
+  border-color: var(--ice);
+  background: var(--metal-lit);
+}
+
+.god__button[aria-pressed="true"] {
+  border-color: var(--accent);
+  background: var(--accent);
+  color: var(--accent-ink);
+}
+
+.god__check {
+  cursor: pointer;
+}
+
+.god__check input {
+  width: 1.1rem;
+  height: 1.1rem;
+  margin: 0;
+  accent-color: var(--accent);
+}
+
+.god__note:empty {
+  display: none;
+}
+
+.god__note,
+.god__where {
+  margin: 0.4rem 0 0;
+  color: var(--muted);
+  font-variant-numeric: tabular-nums;
+}
+
+/* On touch, the panel's targets are a finger's (docs/guidelines/interface.md → Buttons). */
+.touch #god select,
+.touch #god input:not([type="checkbox"]),
+.touch .god__button {
+  min-height: 48px;
 }

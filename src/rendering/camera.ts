@@ -47,6 +47,8 @@ export class Camera {
   /** How long the view takes to slide most of the way, 63%, to look the other way: slowly, so
    * the screen stays calm. */
   static readonly TURN_SECONDS = 0.8;
+  /** How many screens' height away a climber is put for the camera to cut to them (#245). */
+  private static readonly CUT_SCREENS = 2;
   /** How far the climber goes back against the way they were going before the view turns: a
    * step back to clip an anchor doesn't swing it. */
   private static readonly TURN_METRES = 0.3;
@@ -168,8 +170,13 @@ export class Camera {
 
   /** Closes on the climber, `on` the point the picture draws them at this frame, between the
    * steps, and glides on to its zoom, for `seconds` more: the same place after a second at 30
-   * frames a second as at 60, and never past them. */
+   * frames a second as at 60, and never past them. A climber `CUT_SCREENS` screens away or more,
+   * put there at once, it cuts to, rather than sweep across the route (#245). */
   follow(seconds: number, on: Point = this.climber): void {
+    const far = Camera.CUT_SCREENS * this.metresHigh;
+    if (Math.abs(on.x - this.x) >= far || Math.abs(on.y - this.y) >= far) {
+      this.jump(on);
+    }
     const share = 1 - Math.exp(-Math.max(seconds, 0) / Camera.SETTLE_SECONDS);
     this.x += (on.x - this.x) * share;
     this.y += (on.y - this.y) * share;
@@ -177,9 +184,10 @@ export class Camera {
     this.look(on.x, seconds);
   }
 
-  /** Straight onto the climber: at the start, and after anything that moves them at once. */
-  jump(): void {
-    const { x, y } = this.climber;
+  /** Straight onto the climber, or the point `on` the picture draws them at: at the start, and
+   * after anything that moves them at once. */
+  jump(on: Point = this.climber): void {
+    const { x, y } = on;
     this.x = x;
     this.y = y;
     this.mark = x;

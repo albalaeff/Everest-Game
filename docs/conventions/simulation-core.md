@@ -19,6 +19,8 @@ The game is real-time, not turn-based: "step" here means a twentieth of a second
 
 An agent is a rule with an `act` (#212, [agents.md](agents.md)): at the start of each step, before any rule advances, the expedition asks it what its NPCs do, from what the last step left, and every rule hears those actions with the players', in the scenario's order of climbers. The log keeps the players' alone, since the agents' come again from their state, on a replay too. The scenario names the climbers an agent steers (`Scenario.npcs`), which a room seats no player on.
 
+The god mode (#245, [rendering.md](rendering.md)) is the one way round it, a tester's, alone and never in a room: between steps, it stages the climb as a scenario's start state does, through powers the rules keep for it and no step calls (`SlopePhysics.stand` and `stageBreak`, `ObjectiveHazards.stageEvent` and `changeWeather`, `Jolts.bring` and `changeWeather`, `Sherpa.afresh`), and sets the clock on by camp's `MountainClock.skip`. The save it makes goes on from there; a climb it touched doesn't replay from its scenario and its log.
+
 ## Rules
 
 The game's rules are classes behind the `Rule` interface: `load`, `save` and `advance`. The core knows only the interface, so the agents and the slope physics can sit above it and still run inside its step. The page, the room server and the tests each build the list of rules, handing them their content data, and an expedition runs them in that order.

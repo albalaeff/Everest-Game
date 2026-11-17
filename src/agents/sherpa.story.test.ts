@@ -361,3 +361,49 @@ describe("A Sherpa in a save", () => {
     expect(resumed.expedition.save()).toEqual(climb.expedition.save());
   });
 });
+
+describe("A Sherpa put somewhere else by the god mode (#245)", () => {
+  it("takes the climb afresh from where he's put, and leads his client on from there", () => {
+    const climb = FLAT();
+    climb.play(1, [walk("anna", "right")]);
+    climb.play(steps(2));
+    // Pemba tires, she overtakes him, and he follows her.
+    climb.physics.stride("pemba", 0.5);
+    climb.play(steps(30));
+    const following = climb.sherpa.view.doing;
+
+    climb.physics.stride("pemba", 1);
+    climb.physics.stand("anna", 50, false);
+    climb.physics.stand("pemba", 50, false);
+    climb.sherpa.afresh();
+    const afresh = climb.sherpa.view;
+    climb.play(steps(10));
+    const ahead = climb.along("pemba") - climb.along("anna");
+
+    expect(following).toBe("following");
+    expect(afresh).toEqual({
+      climber: "pemba",
+      doing: "waiting",
+      client: null,
+      ladder: null,
+      restLeft: null,
+    });
+    expect(climb.along("anna")).toBe(50);
+    expect(ahead).toBeGreaterThanOrEqual(2.5);
+    expect(ahead).toBeLessThanOrEqual(6.1);
+  });
+
+  it("goes on from a save of him taken afresh as if he'd started there", () => {
+    const climb = FLAT();
+    climb.play(1, [walk("anna", "right")]);
+    climb.play(steps(5));
+    climb.physics.stand("pemba", 60, true);
+    climb.sherpa.afresh();
+    const save = JSON.parse(JSON.stringify(climb.expedition.save())) as ExpeditionSave;
+    const resumed = new GuidedClimb(save);
+    climb.play(steps(10));
+    resumed.play(steps(10));
+
+    expect(resumed.expedition.save()).toEqual(climb.expedition.save());
+  });
+});

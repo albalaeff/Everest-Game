@@ -36,6 +36,7 @@ const standing = (x: number, over: Partial<ClimberView> = {}): ClimberView => ({
   gear: { jumar: true, tools: 1 },
   clipping: null,
   stillChance: 0,
+  heldBack: null,
   facing: 1,
   towardViewer: false,
   ...over,
@@ -174,23 +175,98 @@ describe("Coach: the tutorial, one thing at a time, where the route first needs 
     expect(after(coach, world, Coach.LEAST_SECONDS)).not.toBe("clip");
   });
 
-  it("shows the changeover at an anchor where the next rope begins, until the next rope has them", () => {
+  it("shows the changeover past an anchor, where a clip takes the next rope, until both cowstails are on it (#247)", () => {
     const { coach } = fresh();
     const world = new World();
-    world.view = standing(19.5, { first: "one", second: "one" });
+    world.view = standing(20.5, { first: "one", second: "one", walking: "right" });
 
     expect(after(coach, world)).toBe("anchor");
-    world.view = standing(21, { first: "two", second: "two" });
+    expect(coach.changeover).toMatchObject({ anchor: { x: 20, y: 0 }, from: "one", next: "two" });
+    // It stays through each step, the key let go, one cowstail at a time.
+    for (const [first, second] of [
+      ["one", null],
+      ["one", "two"],
+      [null, "two"],
+    ] as const) {
+      world.view = standing(20.5, { first, second });
+      expect(after(coach, world, Coach.LEAST_SECONDS)).toBe("anchor");
+    }
+    world.view = standing(20.5, { first: "two", second: "two" });
     expect(after(coach, world, Coach.LEAST_SECONDS)).not.toBe("anchor");
+    expect(coach.changeover).toBeNull();
   });
 
-  it("shows the jumar while it grips and holds a walking climber back", () => {
+  it("shows the changeover unasked only before the first is done, and after that wherever the rope holds the player at an anchor (#247)", () => {
+    const { kept } = fresh();
+    kept.set(Coach.KEY, JSON.stringify(["walk", "clip", "anchor"]));
+    const learnt = new Coach({
+      getItem: (key) => kept.get(key) ?? null,
+      setItem: (key, value) => kept.set(key, value),
+    });
+    const world = new World();
+    world.view = standing(20.5, { first: "one", second: "one" });
+    const passing = after(learnt, world);
+    world.view = standing(20.6, {
+      first: "one",
+      second: "one",
+      walking: "right",
+      heldBack: "rope",
+    });
+
+    expect(passing).toBeNull();
+    expect(after(learnt, world)).toBe("anchor");
+    // The key let go to change over, it stays.
+    world.view = standing(20.6, { first: "one", second: null });
+    expect(after(learnt, world, Coach.LEAST_SECONDS)).toBe("anchor");
+  });
+
+  it("at a rope's end with no next rope in reach, where it holds the player, has both cowstails off and the player walk on (#247)", () => {
     const { coach } = fresh();
     const world = new World();
-    world.view = standing(15, { first: "one", walking: "right", moving: false });
+    world.view = standing(30.7, { first: "two", second: "two", walking: "right" });
+    const going = after(coach, world);
+    world.view = standing(30.8, {
+      first: "two",
+      second: "two",
+      walking: "right",
+      heldBack: "rope",
+    });
+    const held = after(coach, world, Coach.LEAST_SECONDS);
+    const change = coach.changeover;
+    world.view = standing(30.8, { first: "two", second: null });
+    const halfway = after(coach, world, Coach.LEAST_SECONDS);
+    world.view = standing(30.8);
+
+    expect(going).not.toBe("rope-end");
+    expect(held).toBe("rope-end");
+    expect(change).toMatchObject({ anchor: { x: 30, y: 0 }, from: "two", next: null });
+    expect(halfway).toBe("rope-end");
+    expect(after(coach, world, Coach.LEAST_SECONDS)).not.toBe("rope-end");
+  });
+
+  it("lets a changeover go once the player walks away from its anchor (#247)", () => {
+    const { coach } = fresh();
+    const world = new World();
+    world.view = standing(20.5, { first: "one", second: "one" });
+    after(coach, world);
+    world.view = standing(16, { first: "one", second: "one", moving: true, walking: "left" });
+
+    expect(after(coach, world, Coach.LEAST_SECONDS)).not.toBe("anchor");
+    expect(coach.changeover).toBeNull();
+  });
+
+  it("shows the jumar whenever its grip holds a walking climber back, learnt or not, and not where a wall stops them (#247)", () => {
+    const { coach } = fresh();
+    const world = new World();
+    const held = { first: "one", second: "one", walking: "right", heldBack: "jumar" } as const;
+    world.view = standing(15, held);
 
     expect(after(coach, world)).toBe("jumar");
-    world.view = standing(15, { first: "one", jumarHeld: true, moving: true });
+    world.view = standing(15.5, { first: "one", second: "one", jumarHeld: true, moving: true });
+    expect(after(coach, world, Coach.LEAST_SECONDS)).not.toBe("jumar");
+    world.view = standing(18, held);
+    expect(after(coach, world, Coach.LEAST_SECONDS)).toBe("jumar");
+    world.view = standing(18, { ...held, heldBack: null });
     expect(after(coach, world, Coach.LEAST_SECONDS)).not.toBe("jumar");
   });
 
