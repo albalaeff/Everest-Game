@@ -71,7 +71,8 @@ export class TentScreen {
   /** How long it has been open, and closing, in seconds. */
   private shown = 0;
   private closing = 0;
-  private lit: { at: number; weather: HazardWeather; lamp: boolean } | null = null;
+  /** The hour and the weather the light was last mixed for, and whether they were awake. */
+  private lit: { at: number; weather: HazardWeather; awake: boolean } | null = null;
   private stocked = "";
   /** The wind outside, 0 to 1, as the light was last mixed; and the panel's elements written to,
    * by their selectors. */
@@ -239,17 +240,18 @@ export class TentScreen {
     const { timeOfDay } = world.clock;
     const { weather } = world.hazards;
     const { altitude } = world.physics.climber(player);
-    const due =
-      this.lit === null ||
-      this.lit.weather !== weather ||
-      Math.abs(this.lit.at - timeOfDay) >= TentScreen.LIGHT_EVERY;
-    const dark = this.lit === null || due ? null : this.lit;
-    if (dark === null || dark.lamp !== !asleep) {
+    const { lit } = this;
+    const awake = !asleep;
+    if (
+      lit === null ||
+      lit.weather !== weather ||
+      lit.awake !== awake ||
+      Math.abs(lit.at - timeOfDay) >= TentScreen.LIGHT_EVERY
+    ) {
       const atmosphere = Atmosphere.at(timeOfDay, weather, altitude);
-      const lamp = !asleep && atmosphere.light.lamps >= TentScreen.LAMP_FROM;
-      picture.light(atmosphere, lamp);
+      picture.light(atmosphere, awake && atmosphere.light.lamps >= TentScreen.LAMP_FROM);
       this.gust = atmosphere.wind;
-      this.lit = { at: timeOfDay, weather, lamp: !asleep };
+      this.lit = { at: timeOfDay, weather, awake };
     }
     const stock: TentStock = {
       water: pack.items.water,
@@ -291,7 +293,7 @@ export class TentScreen {
       bars: pack.items.food,
       oxygen: pack.items.oxygen,
     };
-    const panel = this.readout.of(state, asleep);
+    const panel = this.readout.of(state);
     this.write('[data-text="where"]', panel.where);
     this.write('[data-text="clock"]', panel.clock);
     this.write('[data-text="feel"]', panel.feel);

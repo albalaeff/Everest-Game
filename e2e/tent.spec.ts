@@ -123,13 +123,13 @@ test.describe("at Base Camp", () => {
     await press(chore(page, "sleep"));
 
     await expect(tent(page).locator('[data-text="clock"]')).toHaveText(/^02:0\d$/, WALKING);
-    await expect(picture(page)).toHaveAttribute("data-asleep", "yes", WALKING);
-    // Up again, with a stretch: 23 hours less the minutes since 03:00.
+    // 23 hours less the minutes since 03:00, said at once; the picture shows them into the bag,
+    // asleep for a moment, and up again with a stretch.
     await expect(tent(page).locator('[data-text="advice"]')).toHaveText(
       /^You slept 22 h \d+ min\.$/,
-      THROUGH_THE_DOOR,
     );
-    await expect(picture(page)).toHaveAttribute("data-asleep", "no");
+    await expect(picture(page)).toHaveAttribute("data-asleep", "yes", WALKING);
+    await expect(picture(page)).toHaveAttribute("data-asleep", "no", THROUGH_THE_DOOR);
     await expect(tent(page).locator('[data-text="feel"]')).not.toContainText("sleepy");
   });
 

@@ -54,7 +54,7 @@
     "where": "{camp} · {altitude}",
     "enter": "Войти в палатку",
     "leave": "Выйти из палатки",
-    "feel": "Ты чувствуешь себя так: {feel}.",
+    "feel": "Самочувствие: {feel}.",
     "feel.fresh": "полон сил",
     "feel.tired": "устал",
     "feel.profoundly-tired": "очень устал",

@@ -94,7 +94,7 @@ export class TentReadout {
     private readonly camps: (id: string) => string,
   ) {}
 
-  of(state: TentState, asleep = false): TentPanel {
+  of(state: TentState): TentPanel {
     const { texts, readings } = this;
     const { tent, body } = state;
     // Fresh goes without saying beside a symptom: "thirsty", not "fresh, thirsty".
@@ -138,11 +138,13 @@ export class TentReadout {
         oxygen: count(state.oxygen),
       },
       chores: CHORES.map((chore) => this.chore(chore, state)),
-      advice: asleep
-        ? texts.say("advice.asleep")
-        : slept >= TentReadout.SECONDS_A_MINUTE && tent.chore === null
-          ? texts.say("slept", { time: this.time(slept) })
-          : texts.say("advice"),
+      // Asleep with the clock still running, others are awake: the night waits for them.
+      advice:
+        tent.chore === "nap" || tent.chore === "sleep"
+          ? texts.say("advice.asleep")
+          : slept >= TentReadout.SECONDS_A_MINUTE && tent.chore === null
+            ? texts.say("slept", { time: this.time(slept) })
+            : texts.say("advice"),
     };
   }
 

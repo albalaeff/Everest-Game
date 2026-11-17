@@ -175,24 +175,27 @@ export class TentPicture {
    * bottles, the gear in the pack and what's left beside it, and the guitar. */
   stock(stock: TentStock): void {
     const { MOST } = TentPicture;
-    const each = (selector: string, shown: (index: number, element: SVGElement) => boolean) => {
-      for (const element of this.svg.querySelectorAll<SVGElement>(selector)) {
-        const [index = "0"] = Object.values(element.dataset);
-        TentPicture.show(element, shown(Number(index), element));
+    // Each of a kind of thing, by its number in the drawing: `data-bottle="1"` is the second.
+    const each = (
+      kind: "bottle" | "meal" | "gas" | "oxygen",
+      shown: (index: number, element: SVGElement) => boolean,
+    ) => {
+      for (const element of this.svg.querySelectorAll<SVGElement>(`.tent-props [data-${kind}]`)) {
+        TentPicture.show(element, shown(Number(element.dataset[kind] ?? 0), element));
       }
     };
-    each(".tent-props .tent-bottle", (index, bottle) => {
+    each("bottle", (index, bottle) => {
       const share = Math.min(1, Math.max(0, stock.water - index));
       const water = bottle.querySelector(".tent-water");
       water?.setAttribute("height", (64 * share).toFixed(1));
       water?.setAttribute("y", (-4 - 64 * share).toFixed(1));
       return index < Math.min(MOST.bottles, Math.ceil(stock.bottles));
     });
-    each(".tent-meal", (index) => index < Math.min(MOST.meals, stock.meals ?? MOST.meals));
+    each("meal", (index) => index < Math.min(MOST.meals, stock.meals ?? MOST.meals));
     const canisters = stock.gas === null ? MOST.gas : Math.ceil(stock.gas / stock.canister - 1e-6);
     // One canister is under the stove's burner; the rest stand in the vestibule behind.
-    each(".tent-gas", (index) => index < Math.min(MOST.gas, canisters - 1));
-    each(".tent-oxygen", (index) => index < Math.min(MOST.oxygen, stock.oxygen));
+    each("gas", (index) => index < Math.min(MOST.gas, canisters - 1));
+    each("oxygen", (index) => index < Math.min(MOST.oxygen, stock.oxygen));
     for (const [selector, shown] of [
       [".tent-pack-tool", stock.tool],
       [".tent-pack-jumar", stock.jumar],

@@ -139,7 +139,7 @@ describe("TentReadout: the tent's panel in words (#258)", () => {
 
     expect(readout.of(STATE).advice).toContain("door open");
     expect(readout.of(rested).advice).toBe("You slept 5 h 30 min.");
-    expect(readout.of(STATE, true).advice).toContain("Asleep");
+    expect(readout.of({ ...STATE, tent: { ...TENT, chore: "sleep" } }).advice).toContain("Asleep");
   });
 
   it("has every text in Russian too", () => {

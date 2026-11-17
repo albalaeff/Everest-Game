@@ -16,7 +16,6 @@ import type { TentTextName } from "./tent-readout";
  */
 export class TentDoorPin {
   private readonly pin: SlopePin;
-  private door: string | null = null;
 
   constructor(
     window: Window,
@@ -44,12 +43,6 @@ export class TentDoorPin {
   /** Each frame: over the door the player stands at, or hidden. */
   update(): void {
     const door = this.passage() === "outside" ? this.tents.door(this.player) : null;
-    this.door = door === null ? null : `${door.camp}/${door.tent}`;
     this.pin.at(door === null ? null : this.over(door.camp, door.tent));
-  }
-
-  /** The door the button is for, as `camp/tent`: for the stories. */
-  get at(): string | null {
-    return this.door;
   }
 }
