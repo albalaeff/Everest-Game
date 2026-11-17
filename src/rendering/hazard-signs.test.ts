@@ -102,13 +102,29 @@ describe("HazardSigns", () => {
     );
   });
 
-  it("lays loaded snow along an avalanche slope, just above its ground", () => {
-    const [band] = signs.zone(SLOPE);
-    const top = TERRAIN.point(SLOPE.to);
+  it("lays loaded snow along an avalanche slope as a drift: deepest along its middle, thinning to nothing at its ends (#243)", () => {
+    const [band = []] = signs.zone(SLOPE);
+    const from = TERRAIN.point(SLOPE.from);
+    const to = TERRAIN.point(SLOPE.to);
+    const depthAt = (point: { readonly x: number; readonly y: number }): number =>
+      point.y - TERRAIN.height(point.x);
+    const depths = band.map(depthAt);
 
-    expect(band).toBeDefined();
-    expect(band?.some((point) => point.x === top.x && point.y > top.y)).toBe(true);
-    expect(Math.min(...(band ?? []).map((point) => point.y))).toBeGreaterThanOrEqual(0);
+    // On the ground or above it, never under it, and as deep as loaded snow lies in its middle.
+    expect(Math.min(...depths)).toBeGreaterThanOrEqual(-1e-9);
+    expect(Math.max(...depths)).toBeCloseTo(HazardSigns.LOADED_METRES, 6);
+    // No step at either end: its top comes down to the ground there, so it has no square edge.
+    for (const end of [from, to]) {
+      const there = band.filter((point) => Math.abs(point.x - end.x) < 1e-9);
+      expect(there.length).toBeGreaterThan(0);
+      expect(Math.max(...there.map(depthAt))).toBeLessThan(0.01);
+    }
+    // And its top rises and falls gently: no point of it more than a boot above its neighbour.
+    const top = band.slice(band.length / 2);
+    for (let index = 1; index < top.length; index += 1) {
+      const rise = depthAt(top[index] ?? to) - depthAt(top[index - 1] ?? to);
+      expect(Math.abs(rise)).toBeLessThan(0.25);
+    }
   });
 
   it("shows nothing of a hidden crevasse", () => {
