@@ -79,46 +79,53 @@ export class RescueWork implements RescueTasks {
    * built, the casualty a step higher up the line; a kit used up where its job is done; and a
    * lift nobody went on with, let go. */
   carryOut(): void {
-    const { rescue } = this.slope.settings;
-    const step = SimulationClock.STEP_SECONDS;
     const held = new Set<Climber>();
     for (const [rescuer, task] of this.tasks) {
-      const { casualty } = task;
-      const given = step * rescuer.haulStride;
-      let progress = 1;
-      if (task.kind === "aid") {
-        if (casualty.treated(given, rescue.aid)) {
-          rescuer.spend("firstAid");
-        }
-        progress = casualty.aidDue(rescue.aid)?.progress ?? 1;
-      } else if (task.kind === "lift" || task.kind === "set-down") {
-        held.add(casualty);
-        const done = casualty.lifted(rescuer.id, given, rescue.lift);
-        progress = casualty.liftProgress(rescue.lift);
-        if (done && task.kind === "lift") {
-          rescuer.shoulder(casualty);
-        } else if (done) {
-          rescuer.setDown(this.slope);
-        }
-      } else if (task.kind === "anchor") {
-        const share = rescue.anchor > 0 ? given / rescue.anchor : 1;
-        if (task.line.build(share)) {
-          rescuer.spend("rescueKit");
-        }
-        progress = task.line.progress;
-      } else {
-        casualty.hauledUp(task.line, rescue.haul * given);
-        const whole = Math.abs(task.line.top - task.line.foot);
-        const left = Math.abs(task.line.top - casualty.alongNow(this.slope));
-        progress = whole > 0 ? 1 - Math.min(1, left / whole) : 1;
+      if (task.kind === "lift" || task.kind === "set-down") {
+        held.add(task.casualty);
       }
-      rescuer.helped({ kind: task.kind, whom: casualty.id, progress });
+      const progress = this.work(rescuer, task);
+      rescuer.helped({ kind: task.kind, whom: task.casualty.id, progress });
     }
     for (const climber of this.climbers) {
       if (!held.has(climber)) {
         climber.letGo();
       }
     }
+  }
+
+  /** A rescuer's step of work at their task, at their stride's share of its pace. How far that
+   * piece of the work has come, 0 to 1. */
+  private work(rescuer: Climber, task: RescueTask): number {
+    const { rescue } = this.slope.settings;
+    const { casualty } = task;
+    const given = SimulationClock.STEP_SECONDS * rescuer.haulStride;
+    if (task.kind === "aid") {
+      if (casualty.treated(given, rescue.aid)) {
+        rescuer.spend("firstAid");
+      }
+      return casualty.aidDue(rescue.aid)?.progress ?? 1;
+    }
+    if (task.kind === "lift" || task.kind === "set-down") {
+      const done = casualty.lifted(rescuer.id, given, rescue.lift);
+      const progress = casualty.liftProgress(rescue.lift);
+      if (done && task.kind === "lift") {
+        rescuer.shoulder(casualty);
+      } else if (done) {
+        rescuer.setDown(this.slope);
+      }
+      return progress;
+    }
+    if (task.kind === "anchor") {
+      if (task.line.build(rescue.anchor > 0 ? given / rescue.anchor : 1)) {
+        rescuer.spend("rescueKit");
+      }
+      return task.line.progress;
+    }
+    casualty.hauledUp(task.line, rescue.haul * given);
+    const whole = Math.abs(task.line.top - task.line.foot);
+    const left = Math.abs(task.line.top - casualty.alongNow(this.slope));
+    return whole > 0 ? 1 - Math.min(1, left / whole) : 1;
   }
 
   /** What a rescuer who stands `at` does this step, or nothing. */
@@ -128,7 +135,10 @@ export class RescueWork implements RescueTasks {
       return rescuer.standsStill ? { kind: "set-down", casualty: carried } : null;
     }
     return (
-      this.lineHaul(rescuer) ?? this.aid(rescuer, at) ?? this.lift(rescuer, at) ?? this.anchor(rescuer)
+      this.lineHaul(rescuer) ??
+      this.aid(rescuer, at) ??
+      this.lift(rescuer, at) ??
+      this.anchor(rescuer)
     );
   }
 
@@ -153,7 +163,8 @@ export class RescueWork implements RescueTasks {
         }
         const lies = other.reachable;
         return (
-          lies !== null && (line.holds(lies) || Math.abs(lies - line.foot) <= rescue.reach) &&
+          lies !== null &&
+          (line.holds(lies) || Math.abs(lies - line.foot) <= rescue.reach) &&
           Math.abs(lies - line.top) > RescueWork.AT_A_LIP
         );
       });
@@ -207,7 +218,11 @@ export class RescueWork implements RescueTasks {
         if (thrown?.ready === true) {
           continue;
         }
-        return { kind: "anchor", casualty, line: thrown ?? slope.throwLine(spot, lies, rescuer.id) };
+        return {
+          kind: "anchor",
+          casualty,
+          line: thrown ?? slope.throwLine(spot, lies, rescuer.id),
+        };
       }
     }
     return null;

@@ -123,7 +123,10 @@ describe("Pemba, and a client with a broken leg", () => {
   it("takes them on his back, carries them down to Base Camp and sets them down there", () => {
     const climb = aStep(4);
     climb.play(steps(4), [walk("anna", "left")]);
-    const carrying = climb.until(() => climb.physics.climber("pemba").carrying === "anna", steps(60));
+    const carrying = climb.until(
+      () => climb.physics.climber("pemba").carrying === "anna",
+      steps(60),
+    );
     climb.play(steps(4));
     const onTheWay = climb.sherpa.view;
     const walking = climb.physics.climber("pemba");
@@ -184,7 +187,11 @@ describe("Pemba, and a client down in a crevasse", () => {
     expect(at).toBeCloseTo(20, 0);
     expect(line).toMatchObject({ top: 20, built: 1 });
     expect(down).toBe(true);
-    expect(climb.physics.climber("pemba")).toMatchObject({ falling: false, first: null, second: null });
+    expect(climb.physics.climber("pemba")).toMatchObject({
+      falling: false,
+      first: null,
+      second: null,
+    });
     expect(climb.physics.climber("pemba").falls).toEqual([]);
   });
 
@@ -213,7 +220,11 @@ describe("Pemba, and a client down in a crevasse", () => {
 
     expect(evacuated).toBe(true);
     expect(climb.along("anna")).toBeLessThanOrEqual(BASE.to);
-    expect(climb.physics.climber("anna")).toMatchObject({ down: true, dead: false, carriedBy: null });
+    expect(climb.physics.climber("anna")).toMatchObject({
+      down: true,
+      dead: false,
+      carriedBy: null,
+    });
     expect(climb.physics.climber("pemba").falls).toEqual([]);
   });
 

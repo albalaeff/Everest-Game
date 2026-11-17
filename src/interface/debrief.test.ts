@@ -204,3 +204,70 @@ describe("Debrief: what the climb was, after it (#194)", () => {
     expect(value(said, "Unclipped on the route")).toBe("2 h 5 min");
   });
 });
+
+describe("Debrief: a hard landing (#241)", () => {
+  const leg = { part: "leg", step: 2, tourniquet: true, splinted: true, aid: 0 } as const;
+
+  it("names the injuries, and traces a climb that ended on a rescuer's back to the fall with no rope", () => {
+    const said = debrief.of(
+      facts({
+        page: page({ arrived: null, evacuated: 9 * HOUR, unclipped: 120 }),
+        falls: [unheld(4.2, 9)],
+        injuries: [{ ...leg, kind: "open-fracture" }],
+      }),
+    );
+
+    expect(said.dead).toBe(false);
+    expect(said.verdict.tone).toBe("bad");
+    expect(said.verdict.text).toContain("fell 4 m with no rope");
+    expect(said.verdict.text).toContain("an open fracture of the leg");
+    expect(said.verdict.text).toContain("carried down");
+    expect(value(said, "Carried into Base Camp at")).toBe("09:00");
+    expect(value(said, "Injuries")).toBe("an open fracture of the leg");
+    expect(value(said, "Out of the Icefall")).toBeUndefined();
+  });
+
+  it("says a climb that reached the camp on a sprain was a near thing", () => {
+    const said = debrief.of(
+      facts({
+        falls: [unheld(2, 6)],
+        injuries: [{ ...leg, kind: "sprain", tourniquet: false }],
+      }),
+    );
+
+    expect(said.verdict.tone).toBe("warn");
+    expect(said.verdict.text).toContain("a sprained ankle");
+    expect(said.verdict.text).toContain("2 m");
+    expect(value(said, "Injuries")).toBe("a sprained ankle");
+  });
+
+  it("lists each injury, an arm's with a leg's, and says none of a climber who's whole", () => {
+    const both = debrief.of(
+      facts({
+        falls: [unheld(5, 10)],
+        injuries: [
+          { ...leg, part: "arm", kind: "fracture" },
+          { ...leg, kind: "sprain" },
+        ],
+      }),
+    );
+    const whole = debrief.of(facts());
+
+    expect(value(both, "Injuries")).toBe("a broken arm, a sprained ankle");
+    expect(value(whole, "Injuries")).toBeUndefined();
+  });
+
+  it("says it in Russian too", () => {
+    const russian = new Debrief(new Texts(debriefTexts.ru), { from: 6, peak: 14, until: 20 });
+    const said = russian.of(
+      facts({
+        page: page({ arrived: null, evacuated: 9 * HOUR }),
+        falls: [unheld(4, 9)],
+        injuries: [{ ...leg, kind: "fracture" }],
+      }),
+    );
+
+    expect(said.verdict.text).toContain("перелом ноги");
+    expect(value(said, "Травмы")).toBe("перелом ноги");
+  });
+});

@@ -15,6 +15,9 @@ export type LogPage = {
   readonly stopped: number;
   readonly arrived: number | null;
   readonly died: number | null;
+  /** The hour they were set down in the camp the section set off from, carried down with a bone
+   * broken (#241): none yet, and missing from the saves of builds before it. */
+  readonly evacuated?: number | null;
 };
 
 /** The logbook's whole state, as saves keep it. */
@@ -31,7 +34,7 @@ export interface LoggedStretch {
  * The climb's logbook (#194), as a rule run after the physics in each step: for each climber,
  * how long they were unclipped on the route, and how long where a slip was a fall; how long they
  * spent under the seracs, and how long they stood still there; and the hours they arrived at the
- * camp and died at. The debrief reads it; the falls the rope caught are the physics' own. It only
+ * camp and died at, or were set down in the camp they set off from, carried down hurt (#241). The debrief reads it; the falls the rope caught are the physics' own. It only
  * reads the physics and the hazards, and keeps its own numbers, which a save keeps.
  */
 export class Logbook implements Rule {
@@ -48,6 +51,9 @@ export class Logbook implements Rule {
     private readonly hazards: ObjectiveHazards,
     private readonly clock: MountainClock,
     private readonly stretch: LoggedStretch,
+    /** How far along the ground the camp the section sets off from reaches, where a climber who
+     * can't walk is carried down to (#241): none where the section has no such camp. */
+    private readonly base: number | null = null,
   ) {}
 
   /** A scenario's start state: an empty page for each climber. */
@@ -95,7 +101,7 @@ export class Logbook implements Rule {
   /** A climber's page after a step of `seconds`, at `hour`. */
   private write(page: LogPage, seconds: number, hour: number): LogPage {
     const { physics } = this;
-    if (page.died !== null || page.arrived !== null) {
+    if (page.died !== null || page.arrived !== null || (page.evacuated ?? null) !== null) {
       return page;
     }
     const view = physics.climber(page.id);
@@ -103,6 +109,10 @@ export class Logbook implements Rule {
       return { ...page, died: hour };
     }
     const along = physics.along(page.id);
+    if (this.base !== null && view.down && along <= this.base) {
+      // Set down in the camp they set off from: the evacuation is over.
+      return { ...page, evacuated: hour };
+    }
     if (along >= this.stretch.to) {
       return { ...page, arrived: hour };
     }

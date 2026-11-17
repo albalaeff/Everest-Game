@@ -290,8 +290,7 @@ export class Sherpa implements Rule {
       walking: plan.way !== null,
     };
     // Off the route, on a rescue line or in a crevasse, the key is his plan's own (#241).
-    const moves =
-      plan.key === undefined ? this.steps.actions(plan.way) : this.steps.hold(plan.key);
+    const moves = plan.key === undefined ? this.steps.actions(plan.way) : this.steps.hold(plan.key);
     const haul: readonly GameAction[] =
       plan.haul === me.haulHeld ? [] : [{ kind: "haul", climber, held: plan.haul }];
     return [...moves, ...haul];

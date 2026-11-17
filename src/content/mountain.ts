@@ -117,7 +117,13 @@ export class Mountain {
     const packs = new Packs(this.route.packNumbers, body, physics, oxygen);
     const hazards = new ObjectiveHazards(this.hazardSettings(), clock, physics);
     const jolts = new Jolts(this.joltSettings(), clock, physics);
-    const logbook = new Logbook(physics, hazards, clock, this.route.logged);
+    const logbook = new Logbook(
+      physics,
+      hazards,
+      clock,
+      this.route.logged,
+      this.route.base?.to ?? null,
+    );
     // The Sherpa acts at the start of each step, from where the last left everyone (#212).
     const sherpa = new Sherpa(this.sherpaSettings(), physics, hazards, clock);
     return {

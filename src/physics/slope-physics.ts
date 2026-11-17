@@ -16,7 +16,14 @@ import type { SnowLayout } from "./snow";
 import { Terrain } from "./terrain";
 import type { Pair, Point } from "./terrain";
 
-export type { AidDue, AidSeconds, Injury, InjuryKind, InjuryPart, InjurySettings } from "./injuries";
+export type {
+  AidDue,
+  AidSeconds,
+  Injury,
+  InjuryKind,
+  InjuryPart,
+  InjurySettings,
+} from "./injuries";
 export type { LadderCondition, LadderLayout } from "./ladder";
 export type { RescueLineView } from "./rescue-line";
 export type { RescueSettings } from "./rescue-work";

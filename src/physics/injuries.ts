@@ -136,9 +136,7 @@ export class Injuries {
 
   /** Whether they can be moved: nothing bleeds, and every fracture is splinted. */
   get movable(): boolean {
-    return (
-      !this.bleeding && this.list.every(({ kind, splinted }) => kind === "sprain" || splinted)
-    );
+    return !this.bleeding && this.list.every(({ kind, splinted }) => kind === "sprain" || splinted);
   }
 
   /** The share of their stride their legs leave them: all of it unhurt, less on a sprain, and a

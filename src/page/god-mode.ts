@@ -1,6 +1,6 @@
 import type { ExpeditionRules } from "../content/mountain";
 import type { Section } from "../content/section";
-import type { Point } from "../physics";
+import type { Injury, Point } from "../physics";
 import { MountainClock } from "../simulation";
 import type { ClimberId, HazardEvent, HazardWeather, JoltKind } from "../simulation";
 import { GodPlaces } from "./god-places";
@@ -27,6 +27,7 @@ export interface GodHooks {
   ladder(id?: string): string | null;
   jolt(kind?: JoltKind): boolean;
   slip(): void;
+  injure(injury?: Pick<Injury, "part" | "kind">, who?: ClimberId, at?: number): void;
   immortal(on: boolean): void;
 }
 
@@ -46,8 +47,8 @@ export interface GodState {
  * does, through the powers each rule has for it (docs/conventions/simulation-core.md → The only
  * door): it puts a climber on their feet anywhere, clipped to the rope there, their Sherpa with
  * them; sets the clock on to a time of day, the weather and the speed; stages a serac collapse over
- * the player, the next ladder breaking, a gust or a twist, a slip; and, immortal, stands the player
- * up again where their body comes to rest. Each power saves the climb, in the god mode's own slot.
+ * the player, the next ladder breaking, a gust or a twist, a slip, an injury to rescue a climber
+ * from (#241); and, immortal, stands the player up again where their body comes to rest. Each power saves the climb, in the god mode's own slot.
  * The panel and `window.everest.god` are the page's.
  */
 export class GodMode implements GodHooks {
@@ -56,6 +57,11 @@ export class GodMode implements GodHooks {
   /** The speeds its panel offers, times real time. */
   static readonly SPEEDS: readonly number[] = [1, 5, 20];
   static readonly WEATHERS: readonly HazardWeather[] = ["clear", "cloud", "snow", "wind"];
+  /** The injury it stages unless told another: a broken leg, which can't walk. */
+  private static readonly BROKEN_LEG: Pick<Injury, "part" | "kind"> = {
+    part: "leg",
+    kind: "fracture",
+  };
   /** The ids of the collapses it stages, before their count. */
   private static readonly COLLAPSE = "god-serac-";
   /** How long an immortal player lies dead at the most, still falling, before they stand up: less
@@ -188,6 +194,26 @@ export class GodMode implements GodHooks {
   /** The player slips where they stand: a fall, which their rope holds if they're clipped. */
   slip(): void {
     this.rules.physics.upset(this.player, this.game.step);
+    this.game.save();
+  }
+
+  /** Injures `who`, the player unless it says, as a hard landing would have (#241): a broken leg,
+   * unless `injury` says otherwise. With `at`, metres along the ground, they lie there first, off
+   * the rope, as a fall would have left them: a crevasse's floor, under its ladder, too. A Sherpa
+   * who isn't the one hurt takes the climb as he finds it. */
+  injure(
+    injury: Pick<Injury, "part" | "kind"> = GodMode.BROKEN_LEG,
+    who: ClimberId = this.player,
+    at?: number,
+  ): void {
+    const { physics, sherpa } = this.rules;
+    if (at !== undefined) {
+      physics.stand(who, Math.min(Math.max(at, 0), physics.terrain.length), false);
+    }
+    physics.injure(who, injury, this.game.step);
+    if (this.sherpa !== null && who !== this.sherpa) {
+      sherpa.afresh();
+    }
     this.game.save();
   }
 

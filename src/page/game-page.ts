@@ -46,6 +46,7 @@ import { Expedition } from "../simulation";
 import type { ClimberId, ExpeditionSave, PackOf, Scenario } from "../simulation";
 import { ActionQueue, EverySink, ZoomSink } from "./action-queue";
 import { BrowserSockets } from "./browser-sockets";
+import { CarriedPace } from "./carried-pace";
 import { ClimberScreen } from "./climber-screen";
 import { GearCheck } from "./gear-check";
 import { GodMode } from "./god-mode";
@@ -128,6 +129,9 @@ interface Climb {
   readonly startOver: (() => void) | null;
   /** The god mode over the climb alone, with `?god` (#245); none otherwise, and in a room. */
   readonly god: GodMode | null;
+  /** How to run the climb faster than real time, alone, while the player is rescued (#241); none
+   * in a room, which the server paces, and under the god mode, which sets its own speed. */
+  readonly faster: ((times: number) => void) | null;
 }
 
 /**
@@ -267,7 +271,12 @@ export class GamePage {
           scenario.seed,
         )
       : null;
-    void this.play({ scenario, player, played: game, sink: queue, startOver, god }, rules);
+    const faster = godly
+      ? null
+      : (times: number): void => {
+          game.faster(times);
+        };
+    void this.play({ scenario, player, played: game, sink: queue, startOver, god, faster }, rules);
   }
 
   /** A room: the one with `code`, or a new one when it's null. The climb is drawn once the room
@@ -289,6 +298,7 @@ export class GamePage {
           sink: client,
           startOver: null,
           god: null,
+          faster: null,
         },
         rules,
       );
@@ -375,7 +385,14 @@ export class GamePage {
       player,
       this.playersPack().base,
     );
-    const coached = new CoachedClimb(physics, rules.hazards, rules.lamps, player, rules.jolts);
+    const coached = new CoachedClimb(
+      physics,
+      rules.hazards,
+      rules.lamps,
+      player,
+      rules.jolts,
+      this.mountain.route.base?.to ?? 0,
+    );
     const coach = new CoachCard(window.document, texts.coach, new Coach(this.storage()), coached);
     // The tip's arrow on the slope, at the place it's about (#233), and the ring on a changeover's
     // anchor (#247).
@@ -443,9 +460,11 @@ export class GamePage {
         ? null
         : new GodPanel(window, texts.god, god, camera, sherpa === null ? null : voice.name);
     godPanel?.appendTo(this.elements.find("header"));
+    const pace = climb.faster === null ? null : new CarriedPace(physics, player, climb.faster);
     const afterFrame = (seconds: number): void => {
       // Before the death is read: an immortal player stands up again (#245).
       god?.update(seconds);
+      pace?.update();
       godPanel?.update();
       climbInterface.update();
       inventory.update();

@@ -3,7 +3,7 @@ import { describe, expect, it } from "vitest";
 import type { ClimberView, LadderCondition, Point } from "../physics";
 import type { HazardKind, HazardZone, JoltKind } from "../simulation";
 import { Coach } from "./coach";
-import type { CoachWorld } from "./coach";
+import type { CasualtyStage, CoachWorld } from "./coach";
 
 /** A climber standing at `x` on flat ground, steady, clipped to nothing. */
 const standing = (x: number, over: Partial<ClimberView> = {}): ClimberView => ({
@@ -59,6 +59,7 @@ class World implements CoachWorld {
   passer = false;
   conditions: Record<string, LadderCondition> = {};
   partner = false;
+  hurt: CasualtyStage | null = null;
   ice = [{ from: 70, to: 80 }];
   zones: readonly HazardZone[] = [{ id: "seracs", kind: "serac", from: 90, to: 100 }];
   wall: "foot" | "lip" | "rope" | null = null;
@@ -110,6 +111,10 @@ class World implements CoachWorld {
 
   partnerHangs(): boolean {
     return this.partner;
+  }
+
+  casualty(): CasualtyStage | null {
+    return this.hurt;
   }
 
   along(): number {
@@ -613,5 +618,102 @@ describe("Coach: the ice tools and the ways out of a crevasse", () => {
     world.deadEnd = true;
 
     expect(after(coach, world)).toBe("crevasse-floor");
+  });
+});
+
+/** A hard landing (#241): what the coach says to the one who's hurt, and to whoever rescues. */
+describe("The coach, after a hard landing", () => {
+  const leg = { part: "leg", step: 1, tourniquet: false, splinted: false, aid: 0 } as const;
+
+  it("tells a player with a broken leg to lie still, and one with a broken arm what it can't hold", () => {
+    const world = new World();
+    const coach = new Coach(null);
+    world.view = standing(30, { down: true, injuries: [{ ...leg, kind: "fracture" }] });
+    const brokenLeg = coach.tip(world, 1);
+    world.view = standing(30, {
+      down: true,
+      injuries: [{ ...leg, part: "arm", kind: "open-fracture" }],
+    });
+    const brokenArm = coach.tip(world, 1);
+
+    expect(brokenLeg).toBe("broken-leg");
+    expect(brokenArm).toBe("broken-arm");
+    expect(Coach.isWarning("broken-leg")).toBe(true);
+  });
+
+  it("says they're hauled up, and carried, over anything else where they lie", () => {
+    const world = new World();
+    const coach = new Coach(null);
+    world.deadEnd = true;
+    world.view = standing(30, {
+      down: true,
+      hauled: true,
+      injuries: [{ ...leg, kind: "fracture" }],
+    });
+    const hauled = coach.tip(world, 1);
+    world.view = standing(30, { carriedBy: "pemba", injuries: [{ ...leg, kind: "fracture" }] });
+    const carried = coach.tip(world, 1);
+
+    expect(hauled).toBe("hauled-up");
+    expect(carried).toBe("carried");
+  });
+
+  it("says what a sprain means for a few seconds, and lets it go once it's wrapped", () => {
+    const world = new World();
+    const coach = new Coach(null);
+    world.view = standing(30, { injuries: [{ ...leg, kind: "sprain" }] });
+    const first = coach.tip(world, 1);
+    const later = coach.tip(world, Coach.SPRAIN_SECONDS);
+    world.view = standing(30, { injuries: [{ ...leg, kind: "sprain", splinted: true }] });
+    const wrapped = coach.tip(world, 1);
+
+    expect(first).toBe("sprained");
+    expect(later).not.toBe("sprained");
+    expect(wrapped).not.toBe("sprained");
+  });
+
+  it("tells a rescuer each next thing to do for a partner who lies hurt", () => {
+    const world = new World();
+    const coach = new Coach(null);
+    world.view = standing(30);
+    const said = (
+      [
+        "aid",
+        "no-first-aid",
+        "anchor",
+        "no-rescue-kit",
+        "rope-down",
+        "rope-up",
+        "haul",
+        "carry",
+      ] as const
+    ).map((stage) => {
+      world.hurt = stage;
+      return coach.tip(world, Coach.LEAST_SECONDS);
+    });
+    world.hurt = null;
+    world.view = standing(30, { carrying: "anna" });
+    const carrying = coach.tip(world, 1);
+
+    expect(said).toEqual([
+      "casualty-aid",
+      "casualty-no-first-aid",
+      "casualty-anchor",
+      "casualty-no-rescue-kit",
+      "casualty-rope-down",
+      "casualty-rope-up",
+      "casualty-haul",
+      "casualty-carry",
+    ]);
+    expect(carrying).toBe("carrying");
+  });
+
+  it("says nothing of a partner to one who lies hurt themselves", () => {
+    const world = new World();
+    const coach = new Coach(null);
+    world.hurt = "aid";
+    world.view = standing(30, { down: true, injuries: [{ ...leg, kind: "fracture" }] });
+
+    expect(coach.tip(world, 1)).toBe("broken-leg");
   });
 });

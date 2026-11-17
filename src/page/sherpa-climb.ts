@@ -2,7 +2,7 @@ import type { Sherpa, SherpaView } from "../agents";
 import type { CoachTip } from "../interface/coach";
 import { Readings } from "../interface/readings";
 import type { SherpaWorld } from "../interface/sherpa-voice";
-import type { ClimberView, SlopePhysics } from "../physics";
+import type { AidDue, ClimberView, SlopePhysics } from "../physics";
 import type { ClimberId, HazardZone, MountainClock } from "../simulation";
 
 /** A part of the route, by its id and its stretch of the ground. */
@@ -73,5 +73,9 @@ export class SherpaClimb implements SherpaWorld {
 
   tip(): CoachTip | null {
     return this.coachTip();
+  }
+
+  aidDue(climber: ClimberId): AidDue["what"] | null {
+    return this.physics.aidDue(climber)?.what ?? null;
   }
 }

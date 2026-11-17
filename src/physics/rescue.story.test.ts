@@ -280,7 +280,9 @@ describe("First aid", () => {
     const from = climb.physics.along("anna");
     climb.play(steps(5), [walk("anna", "left")]);
 
-    expect(climb.physics.climber("anna").injuries).toMatchObject([{ kind: "sprain", splinted: true }]);
+    expect(climb.physics.climber("anna").injuries).toMatchObject([
+      { kind: "sprain", splinted: true },
+    ]);
     expect(from - climb.physics.along("anna")).toBeCloseTo(4, 0);
   });
 });

@@ -1034,21 +1034,23 @@ export class Climber {
       return;
     }
     this.step(slope, moment);
-    if (this.passenger !== null && this.moving) {
-      // A casualty on their back: every step takes all they have.
-      this.exertion = 1;
-    }
+    this.bearUp();
     if (this.standingStill) {
       this.standStill(slope, moment);
+    }
+  }
+
+  /** A casualty on their back (#241): every step they took takes all they have. */
+  private bearUp(): void {
+    if (this.passenger !== null && this.moving) {
+      this.exertion = 1;
     }
   }
 
   /** Whether they're on their feet and took no step this step: not lowering on a rope, which holds
    * them, and not in a fall. */
   private get standingStill(): boolean {
-    return (
-      !this.took && this.falling === null && this.lowering === null && this.onLine === null
-    );
+    return !this.took && this.falling === null && this.lowering === null && this.onLine === null;
   }
 
   /** This step's step, on their feet: none while their hands are at a clip or a crampon. */
