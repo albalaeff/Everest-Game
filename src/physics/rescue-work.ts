@@ -40,7 +40,8 @@ export interface RescueTasks {
 /**
  * A step's rescue work (#241): what each climber who holds the haul, on their feet with their
  * arms whole, does for a casualty where they stand, as a rescuer does it, the most pressing
- * first. With a casualty on their back, standing still: they set them down. At a rescue line's
+ * first. With a casualty on their back, standing still: they set them down, the haul let go
+ * since it lifted them and held anew; nor does the hold that set them down lift them again. At a rescue line's
  * anchor with a casualty at its foot who can be moved: they haul them up it. By a casualty who's
  * due first aid, with a first-aid kit: the tourniquet on what bleeds, then the splint, then the
  * wrap on a sprain. By a casualty who can't walk and can be moved, on ground the route reaches:
@@ -114,6 +115,9 @@ export class RescueWork implements RescueTasks {
       } else if (done) {
         rescuer.setDown(this.slope);
       }
+      if (done) {
+        rescuer.spendHold();
+      }
       return progress;
     }
     if (task.kind === "anchor") {
@@ -132,7 +136,8 @@ export class RescueWork implements RescueTasks {
   private taskOf(rescuer: Climber, at: Point): RescueTask | null {
     const carried = rescuer.carrying;
     if (carried !== null) {
-      return rescuer.standsStill ? { kind: "set-down", casualty: carried } : null;
+      const sets = rescuer.standsStill && rescuer.liftsAnew;
+      return sets ? { kind: "set-down", casualty: carried } : null;
     }
     return (
       this.lineHaul(rescuer) ??
@@ -187,6 +192,9 @@ export class RescueWork implements RescueTasks {
 
   /** By a casualty who can't walk and can be moved, on ground the route reaches: the nearest. */
   private lift(rescuer: Climber, at: Point): RescueTask | null {
+    if (!rescuer.liftsAnew) {
+      return null;
+    }
     const { faces } = this.slope;
     const casualty = this.nearest(rescuer, at, (other) => {
       const lies = other.reachable;

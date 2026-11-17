@@ -279,6 +279,8 @@ export type ClimberSave = {
   readonly onLine?: string;
   readonly lift?: LiftSave;
   readonly spent?: KitsSpent;
+  /** Whether the haul they hold has lifted a casualty or set one down already (#241). */
+  readonly holdSpent?: boolean;
 };
 
 /** A casualty being lifted onto a rescuer's back, or set down off it: by whom, and the seconds of
@@ -597,6 +599,10 @@ export class Climber {
   private passenger: Climber | null = null;
   /** The rescue line they're on: going down it or up it, or hauled up it, a casualty. */
   private onLine: RescueLine | null = null;
+  /** Whether the haul they hold has lifted a casualty onto their back or set one down already
+   * (#241): it does neither again until it's let go and held anew, so a long hold doesn't put a
+   * casualty down the moment they're up. */
+  private holdSpent = false;
   /** Who is lifting them onto their back, or setting them down, and the seconds of it so far. */
   private lift: LiftSave | null = null;
   /** The kits they've used up, and what they did for a casualty in the last step. */
@@ -744,6 +750,7 @@ export class Climber {
     climber.injuries = new Injuries(save.injuries);
     climber.lift = save.lift ?? null;
     climber.spent = save.spent ?? { firstAid: 0, rescueKit: 0 };
+    climber.holdSpent = save.holdSpent ?? false;
     const { carriedBy, carrying, onLine } = save;
     climber.linked = {
       ...(carriedBy === undefined ? {} : { carriedBy }),
@@ -798,6 +805,7 @@ export class Climber {
       ...(this.carrier === null ? {} : { carriedBy: this.carrier.id }),
       ...(this.passenger === null ? {} : { carrying: this.passenger.id }),
       ...(this.onLine === null ? {} : { onLine: this.onLine.id }),
+      ...(this.holdSpent ? { holdSpent: true } : {}),
       ...(this.lift === null ? {} : { lift: this.lift }),
       ...(this.spent.firstAid + this.spent.rescueKit === 0 ? {} : { spent: this.spent }),
     };
@@ -890,6 +898,8 @@ export class Climber {
     }
     if (action.kind === "haul") {
       this.haulHeld = action.held;
+      // Let go, the next hold lifts a casualty or sets one down again (#241).
+      this.holdSpent = this.holdSpent && action.held;
     }
     const going = (cowstail: "first" | "second"): boolean =>
       this.clipping.some((clip) => clip.cowstail === cowstail);
@@ -1694,6 +1704,18 @@ export class Climber {
   /** Nobody's hands are on them in this step: a lift half done is let go. */
   letGo(): void {
     this.lift = null;
+  }
+
+  /** Whether the haul they hold can lift a casualty onto their back, or set one down: it hasn't
+   * done either yet (#241). */
+  get liftsAnew(): boolean {
+    return !this.holdSpent;
+  }
+
+  /** The haul they hold has lifted a casualty or set one down: it does neither again until
+   * it's let go. */
+  spendHold(): void {
+    this.holdSpent = true;
   }
 
   /** Takes a casualty onto their back (#241): off their own ropes and any rescue line, they go

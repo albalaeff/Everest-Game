@@ -341,6 +341,39 @@ describe("A casualty on a rescuer's back", () => {
     expect(climb.physics.along("anna")).toBeGreaterThan(climb.physics.along("boris") + 0.5);
   });
 
+  it("stays there however long the haul that lifted them is held: it's let go and held again to set them down", () => {
+    const climb = splinted();
+    climb.play(steps(1.1));
+    const lifted = climb.physics.climber("boris");
+    climb.play(steps(6));
+    const held = climb.physics.climber("boris");
+    climb.play(steps(1.1), [haul("boris", false)]);
+    climb.play(steps(1.1), [haul("boris", true)]);
+
+    expect(lifted.carrying).toBe("anna");
+    expect(held).toMatchObject({ carrying: "anna", helping: null, haulHeld: true });
+    expect(climb.physics.climber("boris").carrying).toBeNull();
+    expect(climb.physics.climber("anna")).toMatchObject({ carriedBy: null, down: true });
+  });
+
+  it("stays down however long the haul that set them down is held, and goes on from a save so", () => {
+    const climb = splinted();
+    climb.play(steps(1.1));
+    climb.play(steps(0.5), [haul("boris", false)]);
+    climb.play(steps(1.1), [haul("boris", true)]);
+    const save = JSON.parse(JSON.stringify(climb.expedition.save())) as ExpeditionSave;
+    const resumed = new Climb(HURTS, save);
+    climb.play(steps(6));
+    resumed.play(steps(6));
+    const held = climb.physics.climber("boris");
+    climb.play(steps(0.5), [haul("boris", false)]);
+    climb.play(steps(1.1), [haul("boris", true)]);
+
+    expect(held).toMatchObject({ carrying: null, helping: null });
+    expect(resumed.physics.climber("boris")).toEqual(held);
+    expect(climb.physics.climber("boris").carrying).toBe("anna");
+  });
+
   it("isn't lifted before the splint is on, nor does a casualty take a step on anyone's back", () => {
     const unsplinted = new Climb(HURTS, step(4, { jumar: true, tools: 1 }));
     fallOff(unsplinted, "left");

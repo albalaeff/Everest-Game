@@ -37,6 +37,7 @@ const slope: ReadSlope = {
   terrain,
   ladder: (id) => LADDERS[id] ?? [],
   rope: (id) => ROPES[id] ?? [],
+  lines: [],
 };
 const BODY: BodyView = { tiredness: "fresh", symptoms: [], oximeter: 90, pace: "steady" };
 
@@ -306,5 +307,192 @@ describe("ClimberReading", () => {
 
     expect(low.slack).toBeCloseTo(up / 4, 9);
     expect(high.slack).toBeCloseTo(up / 5, 9);
+  });
+});
+
+/** A rescue line from the wall's lip, down its face and a metre and a half out along its foot. */
+const LIP = terrain.nearest({ x: 20, y: 5 }).along;
+const line = (built = 1): ReadSlope["lines"][number] => ({
+  id: "line",
+  top: LIP,
+  foot: LIP - 4.5,
+  shape: [
+    { x: 20, y: 5 },
+    { x: 20, y: 2 },
+    { x: 18.5, y: 2 },
+  ],
+  built,
+});
+const withLine = (built = 1): ReadSlope => ({ ...slope, lines: [line(built)] });
+const BROKEN_LEG = {
+  part: "leg",
+  kind: "fracture",
+  step: 0,
+  tourniquet: false,
+  splinted: false,
+  aid: 0,
+} as const;
+const BROKEN_ARM = { ...BROKEN_LEG, part: "arm" } as const;
+const SPRAIN = { ...BROKEN_LEG, kind: "sprain" } as const;
+
+describe("ClimberReading: a casualty and their rescuer (#241)", () => {
+  it("tells a climber down with a bone broken by the limb, the leg before the arm, and has them take no stride", () => {
+    const reading = new ClimberReading(slope);
+    const leg = reading.read(view({ down: true, injuries: [BROKEN_LEG] }), BODY, drawn(5, 0));
+    const arm = reading.read(view({ down: true, injuries: [BROKEN_ARM] }), BODY, drawn(5, 0));
+    const both = view({ down: true, injuries: [BROKEN_ARM, BROKEN_LEG], walking: "left" });
+    const sound = reading.read(view(), BODY, drawn(5, 0));
+
+    expect(leg).toMatchObject({ hurt: "leg", falling: false, limp: 0 });
+    expect(arm.hurt).toBe("arm");
+    expect(reading.read(both, BODY, drawn(5, 0)).hurt).toBe("leg");
+    // Down, they turn nowhere, whatever key is held.
+    expect(reading.facing).toBe(1);
+    expect(sound.hurt).toBeNull();
+  });
+
+  it("has a sprained leg limp until it's wrapped, less once it is, and an arm's not at all", () => {
+    const reading = new ClimberReading(slope);
+    const limp = (injury: ClimberView["injuries"][number]): number | undefined =>
+      reading.read(view({ injuries: [injury] }), BODY, drawn(5, 0)).limp;
+
+    expect(limp(SPRAIN)).toBe(1);
+    expect(limp({ ...SPRAIN, splinted: true })).toBeCloseTo(0.45, 9);
+    expect(limp({ ...SPRAIN, part: "arm" })).toBe(0);
+    expect(reading.read(view({ injuries: [SPRAIN] }), BODY, drawn(5, 0)).hurt).toBeNull();
+  });
+
+  it("holds a climber on a rescue line to it a reach above them, the rope running on up to its anchor", () => {
+    const reading = new ClimberReading(withLine());
+    const going = view({ onLine: "line", lowering: true, moving: true });
+    const low = reading.read(going, BODY, drawn(20, 3));
+    const tied = reading.onLine;
+    const still = reading.read({ ...going, moving: false }, BODY, drawn(20, 3));
+    // Drawn twice life size, the reach is longer than the rope above them: at its anchor.
+    const high = reading.read(going, BODY, drawn(20, 4, 2));
+
+    expect(low.jumar?.x).toBeCloseTo(0, 9);
+    expect(low.jumar?.y).toBeCloseTo(0.7, 9);
+    expect(low.slack).toBeCloseTo(1.3, 9);
+    expect(low).toMatchObject({ sliding: true, onIce: true, falling: false });
+    expect(still.sliding).toBe(false);
+    expect(tied).toEqual({
+      line: "line",
+      taut: [
+        { x: 20, y: 5 },
+        { x: 20, y: 3.7 },
+      ],
+    });
+    expect(high.jumar?.y).toBeCloseTo(0.5, 9);
+    expect(high.slack).toBe(0);
+    // Off the line, nothing holds them.
+    reading.read(view(), BODY, drawn(21, 5));
+    expect(reading.onLine).toBeNull();
+  });
+
+  it("holds one round the foot of a line's wall to the rope where it lies, corner and all", () => {
+    const reading = new ClimberReading(withLine());
+    reading.read(view({ onLine: "line", lowering: true }), BODY, drawn(19.5, 2));
+
+    expect(reading.onLine?.taut).toEqual([
+      { x: 20, y: 5 },
+      { x: 20, y: 2.2 },
+    ]);
+  });
+
+  it("hangs a casualty hauled up a rescue line on it: off their feet over the wall's foot, facing the ice", () => {
+    const reading = new ClimberReading(withLine());
+    reading.read(view({ walking: "left" }), BODY, drawn(19, 2));
+    const hauled = view({ down: true, hauled: true, onLine: "line", injuries: [BROKEN_LEG] });
+    const state = reading.read(hauled, BODY, drawn(20, 3.5));
+
+    expect(state).toMatchObject({ falling: true, hanging: true, hurt: "leg", face: 0 });
+    expect(state.ground(0)).toBeCloseTo(-1.5, 9);
+    expect(state.jumar?.y).toBeCloseTo(0.7, 9);
+    expect(reading.facing).toBe(1);
+  });
+
+  it("kneels a rescuer at the hurt limb where it's drawn, turned to it, their legs still", () => {
+    const reading = new ClimberReading(slope);
+    reading.read(view({ walking: "right" }), BODY, drawn(5, 0));
+    const helping = { kind: "aid", whom: "anna", progress: 0.3 } as const;
+    const beside = { mount: null, wound: { x: 4.4, y: 0.2 } };
+    // The physics has them level with the casualty, facing as they walked: the picture turns
+    // them to the limb, drawn a step aside.
+    const state = reading.read(
+      view({ helping, haulHeld: true, moving: true, facing: 1 }),
+      BODY,
+      drawn(5, 0),
+      beside,
+    );
+
+    expect(reading.facing).toBe(-1);
+    expect(state.tending?.what).toBe("aid");
+    expect(state.tending?.at?.x).toBeCloseTo(0.6, 9);
+    expect(state.tending?.at?.y).toBeCloseTo(0.2, 9);
+    expect(state).toMatchObject({ moving: false, bracing: false, hauling: false });
+  });
+
+  it("turns a rescuer to whom they work for where no limb is drawn yet, and kneels them to lift too", () => {
+    const reading = new ClimberReading(slope);
+    reading.read(view({ walking: "right" }), BODY, drawn(5, 0));
+    const lift = { kind: "lift", whom: "anna", progress: 0.5 } as const;
+    const state = reading.read(
+      view({ helping: lift, haulHeld: true, facing: -1 }),
+      BODY,
+      drawn(5, 0),
+    );
+    // Hauling on a rescue line, they stand to it, turned to the casualty.
+    const haul = { kind: "line-haul", whom: "anna", progress: 0.5 } as const;
+    const hauling = reading.read(
+      view({ helping: haul, haulHeld: true, hauling: true, facing: 1 }),
+      BODY,
+      drawn(5, 0),
+    );
+
+    expect(state.tending).toEqual({ what: "aid", at: null });
+    expect(hauling).toMatchObject({ tending: null, hauling: true });
+    expect(reading.facing).toBe(1);
+  });
+
+  it("kneels a rescuer at a rescue line's anchor, turned to the screw going in", () => {
+    const reading = new ClimberReading(withLine(0.2));
+    reading.read(view({ walking: "right" }), BODY, drawn(20.9, 5));
+    const anchor = { kind: "anchor", whom: "anna", progress: 0.2 } as const;
+    const state = reading.read(
+      view({ helping: anchor, haulHeld: true, facing: -1 }),
+      BODY,
+      drawn(20.9, 5),
+    );
+
+    expect(reading.facing).toBe(-1);
+    expect(state.tending?.what).toBe("anchor");
+    // The first screw, 0.16 m back from the lip, its head still well out of the ice.
+    expect(state.tending?.at?.x).toBeCloseTo(0.74, 9);
+    expect(state.tending?.at?.y).toBeGreaterThan(0.1);
+    expect(state.tending?.at?.y).toBeLessThan(0.2);
+  });
+
+  it("puts a casualty on their rescuer's back: facing their way, where their hips are drawn", () => {
+    const reading = new ClimberReading(slope);
+    const carried = view({ down: true, carriedBy: "boris", injuries: [BROKEN_LEG] });
+    const mount = { facing: -1, hips: { x: 5.1, y: 0.8 }, lean: 0.4 } as const;
+    const state = reading.read(carried, BODY, drawn(5, 0), { mount, wound: null });
+    // Nobody drawn to ride on: they sit where they are.
+    const alone = new ClimberReading(slope).read(carried, BODY, drawn(5, 0));
+
+    expect(reading.facing).toBe(-1);
+    expect(state.riding?.hips.x).toBeCloseTo(-0.1, 9);
+    expect(state.riding?.hips.y).toBeCloseTo(0.8, 9);
+    expect(state.riding?.lean).toBe(0.4);
+    expect(state).toMatchObject({ falling: false, hurt: "leg" });
+    expect(alone.riding).toBeNull();
+  });
+
+  it("tells a rescuer with a casualty on their back", () => {
+    const reading = new ClimberReading(slope);
+
+    expect(reading.read(view({ carrying: "anna" }), BODY, drawn(5, 0)).carrying).toBe(true);
+    expect(reading.read(view(), BODY, drawn(5, 0)).carrying).toBe(false);
   });
 });

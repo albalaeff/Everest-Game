@@ -1121,3 +1121,273 @@ describe("ClimberPose", () => {
     expect(Math.max(...nearHands) - Math.min(...nearHands)).toBeLessThan(0.01);
   });
 });
+
+/** The pose after `seconds` of the same state, a frame a sixtieth of a second, from standing. */
+function settled(over: Partial<PoseState>, seconds = 3): { pose: Pose; frames: Pose[] } {
+  const climber = new ClimberPose();
+  climber.advance(5, state());
+  const frames: Pose[] = [];
+  for (let frame = 0; frame < seconds * 60; frame += 1) {
+    frames.push(climber.advance(FRAME, state(over)));
+  }
+  const pose = frames.at(-1);
+  if (pose === undefined) {
+    throw new Error("No frame was drawn");
+  }
+  return { pose, frames };
+}
+
+describe("ClimberPose: a casualty and their rescuer (#241)", () => {
+  it("sits on the snow with a broken leg: the leg out straight ahead, its toes up, a hand on the thigh, the other propped behind", () => {
+    const { pose } = settled({ hurt: "leg" });
+    const [broken, sound] = pose.legs;
+    const [near, far] = pose.arms;
+
+    expect(pose.pelvis.y).toBeCloseTo(ClimberPose.SEAT, 2);
+    // The broken leg, nearly straight: its ankle a leg's length ahead, low, its toes up.
+    expect(broken.end.x - broken.root.x).toBeGreaterThan(0.75);
+    expect(broken.end.y).toBeLessThan(0.15);
+    expect(length(broken.root, broken.end)).toBeGreaterThan(0.78);
+    expect(pose.soles[0]).toBeGreaterThan(1);
+    // The other knee up, its boot on the snow.
+    expect(sound.middle.y).toBeGreaterThan(pose.pelvis.y + 0.25);
+    expect(sound.end.y).toBeCloseTo(ClimberPose.ANKLE, 1);
+    // Leaning back on the far hand, on the snow behind them; the near one on the thigh.
+    expect(pose.lean).toBeLessThan(-0.3);
+    expect(far.end.x).toBeLessThan(pose.pelvis.x - 0.25);
+    expect(far.end.y).toBeLessThan(0.08);
+    expect(near.end.x).toBeGreaterThan(broken.root.x + 0.1);
+    expect(near.end.x).toBeLessThan(broken.middle.x);
+    expect(pose.tilt).toBe(0);
+  });
+
+  it("sits hunched over a broken arm, held across the body, the other hand under it, both knees up", () => {
+    const { pose } = settled({ hurt: "arm" });
+    const [near, far] = pose.arms;
+
+    expect(pose.pelvis.y).toBeCloseTo(ClimberPose.SEAT, 2);
+    expect(pose.lean).toBeGreaterThan(0.2);
+    for (const leg of pose.legs) {
+      expect(leg.middle.y).toBeGreaterThan(pose.pelvis.y + 0.25);
+      expect(leg.end.y).toBeCloseTo(ClimberPose.ANKLE, 1);
+    }
+    // The forearm across the belly, over the hips; the other hand just under it.
+    expect(near.end.y).toBeGreaterThan(pose.pelvis.y + 0.25);
+    expect(near.end.y).toBeLessThan(pose.shoulder.y);
+    expect(length(near.end, far.end)).toBeLessThan(0.12);
+    expect(far.end.y).toBeLessThan(near.end.y);
+  });
+
+  it("rocks a little with the pain, and no joint jumps as they go down from their feet", () => {
+    const { frames } = settled({ hurt: "leg" }, 8);
+    const leans = frames.slice(120).map(({ lean }) => lean);
+
+    expect(Math.max(...leans) - Math.min(...leans)).toBeGreaterThan(0.03);
+    expect(Math.max(...leans) - Math.min(...leans)).toBeLessThan(0.08);
+    frames.slice(1).forEach((frame, index) => {
+      const before = frames[index];
+      if (before === undefined) {
+        return;
+      }
+      const moved = joints(frame).map((joint, at) => length(joint, joints(before)[at] ?? joint));
+      expect(Math.max(...moved)).toBeLessThan(0.12);
+    });
+  });
+
+  it("sits cramped in a crevasse's narrow foot: the broken leg as far out as the ice ahead lets it, the knee up, the back to the ice behind", () => {
+    // A slot 0.5 m wide: a wall 0.3 m ahead of them and 0.2 m behind.
+    const slot = (x: number): number => (x > 0.3 || x < -0.2 ? 4 : 0);
+    const { pose } = settled({ hurt: "leg", terrain: slot });
+    const open = settled({ hurt: "leg" }).pose;
+    const [broken] = pose.legs;
+
+    expect(broken.end.x).toBeLessThan(0.32);
+    expect(broken.middle.y).toBeGreaterThan(open.legs[0].middle.y + 0.2);
+    expect(pose.lean).toBeGreaterThan(open.lean + 0.25);
+    expect(pose.arms[1].end.x).toBeGreaterThan(-0.25);
+  });
+
+  it("hauled up a rescue line, hangs in the harness clear of the ice, no boot on the wall beside them", () => {
+    const hold = { x: 0, y: 0.7 };
+    const held = { falling: true, hanging: true, ground: () => -3, jumar: hold, face: 0.05 };
+    const { pose } = settled({ ...held, hurt: "leg" });
+    const whole = settled(held).pose;
+    const frame = { x: 0, y: 0, pose };
+
+    // The body off the face, upright, the legs hanging below the harness.
+    expect(inWorld(frame, pose.pelvis).x).toBeLessThan(0.05 - 0.25);
+    expect(Math.abs(pose.tilt)).toBeLessThan(0.4);
+    for (const leg of LEGS) {
+      expect(inWorld(frame, pose.legs[leg].end).y).toBeLessThan(-0.6);
+      expect(inWorld(frame, ofTheBoot(pose, leg, 0)).x).toBeLessThan(0);
+    }
+    // The cowstail runs to the line, and the near hand is up on it.
+    expect(pose.jumar).not.toBeNull();
+    expect(inWorld(frame, pose.jumar ?? { x: Number.NaN, y: Number.NaN }).x).toBeCloseTo(hold.x, 1);
+    expect(inWorld(frame, pose.arms[0].end).y).toBeGreaterThan(0.3);
+    // Unhurt, hanging there, they'd have their boots on the wall.
+    expect(inWorld({ x: 0, y: 0, pose: whole }, ofTheBoot(whole, 0, 0)).x).toBeCloseTo(0.05, 1);
+  });
+
+  it("kneels over a casualty, bent to the hurt limb, the hands working at it where it is", () => {
+    const wound = { x: 0.55, y: 0.2 };
+    const { pose, frames } = settled({ tending: { what: "aid", at: wound } });
+    const standing = settled({}).pose;
+    const hands = frames.slice(60).map(({ arms }) => arms[0].end);
+
+    expect(pose.pelvis.y).toBeLessThan(standing.pelvis.y - 0.25);
+    expect(pose.lean).toBeGreaterThan(0.7);
+    expect(pose.lean).toBeLessThanOrEqual(1.2);
+    // A boot ahead, the other knee down behind.
+    expect(pose.legs[0].end.x).toBeGreaterThan(pose.pelvis.x + 0.2);
+    expect(pose.legs[1].middle.y).toBeLessThan(0.2);
+    for (const hand of hands) {
+      expect(length(hand, wound)).toBeLessThan(0.08);
+    }
+    expect(
+      Math.max(...hands.map(({ x }) => x)) - Math.min(...hands.map(({ x }) => x)),
+    ).toBeGreaterThan(0.04);
+    expect(length(pose.arms[1].end, wound)).toBeLessThan(0.15);
+  });
+
+  it("bends less over a limb held high, an arm at the chest, and reaches as far as the arms go to one out of reach", () => {
+    const high = settled({ tending: { what: "aid", at: { x: 0.6, y: 0.55 } } }).pose;
+    const low = settled({ tending: { what: "aid", at: { x: 0.6, y: 0.2 } } }).pose;
+    const far = settled({ tending: { what: "aid", at: { x: 1.6, y: 0.2 } } }).pose;
+    const reach = ClimberPose.UPPER_ARM + ClimberPose.FOREARM;
+
+    expect(high.lean).toBeLessThan(low.lean - 0.2);
+    expect(far.arms[0].end.x).toBeGreaterThan(low.arms[0].end.x);
+    expect(length(far.arms[0].root, far.arms[0].end)).toBeLessThanOrEqual(reach);
+    expect(far.arms[0].end.x).toBeLessThan(1.2);
+  });
+
+  it("kneels at an anchor, the near hand turning a screw into the ice, the far one steadying it", () => {
+    const { frames } = settled({ tending: { what: "anchor", at: null } });
+    const turning = frames.slice(60).map(({ arms }) => arms[0].end);
+    const steady = frames.slice(60).map(({ arms }) => arms[1].end);
+    const span = (values: number[]): number => Math.max(...values) - Math.min(...values);
+
+    // Down at the ice ahead of the knee, round and round.
+    expect(Math.max(...turning.map(({ y }) => y))).toBeLessThan(0.25);
+    expect(Math.min(...turning.map(({ x }) => x))).toBeGreaterThan(0.35);
+    expect(span(turning.map(({ x }) => x))).toBeGreaterThan(0.07);
+    expect(span(turning.map(({ y }) => y))).toBeGreaterThan(0.07);
+    expect(span(steady.map(({ x }) => x))).toBeLessThan(0.01);
+  });
+
+  it("carries a casualty bent forward under them, sunk in the knees, the hands back at the hips, and walks so", () => {
+    const frames = through([
+      { frames: 60, over: {} },
+      { frames: 240, over: { carrying: true, moving: true } },
+    ]);
+    const sound = through([
+      { frames: 60, over: {} },
+      { frames: 240, over: { moving: true } },
+    ]);
+    const carrying = frames.slice(-120).map(({ pose }) => pose);
+    const walking = sound.slice(-120).map(({ pose }) => pose);
+    const mean = (values: number[]): number =>
+      values.reduce((sum, value) => sum + value, 0) / values.length;
+
+    for (const pose of carrying) {
+      expect(pose.lean).toBeGreaterThanOrEqual(0.44 - 1e-9);
+      for (const arm of pose.arms) {
+        expect(length(arm.end, pose.pelvis)).toBeLessThan(0.2);
+      }
+    }
+    expect(mean(carrying.map(({ pelvis }) => pelvis.y))).toBeLessThan(
+      mean(walking.map(({ pelvis }) => pelvis.y)) - 0.03,
+    );
+    // The legs stride on under the load.
+    const ankles = carrying.map(({ legs }) => legs[0].end.x);
+    expect(Math.max(...ankles) - Math.min(...ankles)).toBeGreaterThan(0.25);
+  });
+
+  it("rides on a rescuer's back: behind their hips, leaning on them, the arms over their shoulders, the boots ahead of their hips", () => {
+    const hips = { x: -0.05, y: 0.8 };
+    const { pose } = settled({ hurt: "leg", riding: { hips, lean: 0.45 } });
+    const rescuer = {
+      x: hips.x + ClimberPose.SPINE * Math.sin(0.45),
+      y: hips.y + ClimberPose.SPINE * Math.cos(0.45),
+    };
+
+    expect(pose.pelvis.x).toBeLessThan(hips.x - 0.2);
+    expect(pose.pelvis.y).toBeGreaterThan(hips.y);
+    expect(pose.lean).toBeGreaterThan(0.45);
+    // Their shoulders behind the rescuer's and over them; their hands past them, on the chest.
+    expect(pose.shoulder.x).toBeLessThan(rescuer.x - 0.1);
+    for (const arm of pose.arms) {
+      expect(arm.end.x).toBeGreaterThan(rescuer.x);
+      expect(arm.end.y).toBeLessThan(rescuer.y);
+    }
+    // The thighs round the rescuer's waist: the knees by their hips, the boots hanging ahead.
+    for (const leg of pose.legs) {
+      expect(length(leg.middle, hips)).toBeLessThan(0.3);
+      expect(leg.end.x).toBeGreaterThan(hips.x + 0.2);
+      expect(leg.end.y).toBeLessThan(hips.y - 0.15);
+    }
+  });
+
+  it("goes with the rescuer's hips as they stride, and takes a moment to get onto their back", () => {
+    const climber = new ClimberPose();
+    climber.advance(5, state({ hurt: "leg" }));
+    const first = climber.advance(
+      FRAME,
+      state({ hurt: "leg", riding: { hips: { x: 0, y: 0.8 }, lean: 0.45 } }),
+    );
+    let pose = first;
+    for (let frame = 0; frame < 90; frame += 1) {
+      pose = climber.advance(
+        FRAME,
+        state({ hurt: "leg", riding: { hips: { x: 0, y: 0.8 }, lean: 0.45 } }),
+      );
+    }
+    const lower = climber.advance(
+      FRAME,
+      state({ hurt: "leg", riding: { hips: { x: 0, y: 0.74 }, lean: 0.45 } }),
+    );
+
+    expect(first.pelvis.y).toBeLessThan(0.3);
+    expect(pose.pelvis.y).toBeGreaterThan(0.85);
+    expect(lower.pelvis.y).toBeCloseTo(pose.pelvis.y - 0.06, 6);
+  });
+
+  it("limps on a sprained leg: the hips drop onto it and the body lurches over it as it takes the weight", () => {
+    const walk = (limp: number): Pose[] =>
+      through([
+        { frames: 60, over: {} },
+        { frames: 360, over: { moving: true, limp } },
+      ])
+        .slice(-240)
+        .map(({ pose }) => pose);
+    const sound = walk(0);
+    const sore = walk(1);
+    const wrapped = walk(0.45);
+    const lowest = (poses: Pose[]): number => Math.min(...poses.map(({ pelvis }) => pelvis.y));
+    const most = (poses: Pose[]): number => Math.max(...poses.map(({ lean }) => lean));
+
+    expect(lowest(sore)).toBeLessThan(lowest(sound) - 0.02);
+    expect(most(sore)).toBeGreaterThan(most(sound) + 0.06);
+    expect(lowest(wrapped)).toBeGreaterThan(lowest(sore));
+    expect(lowest(wrapped)).toBeLessThan(lowest(sound));
+    // Standing still, a sprain doesn't show.
+    expect(settled({ limp: 1 }).pose.pelvis.y).toBeCloseTo(settled({}).pose.pelvis.y, 6);
+  });
+
+  it("puts the axe away at once at a rescue's work, and a casualty's: the hands are needed", () => {
+    // Off a face of ice, the axe in the near hand: a second on.
+    const pick = { swing: 1, at: { x: 0, y: 1.9 }, into: { x: 1, y: 0 } };
+    const onTheIce = { ladder: upAWall(1), onIce: true, picks: [pick] };
+    const after = (over: Partial<PoseState>): Pose | undefined =>
+      through([
+        { frames: 120, over: onTheIce },
+        { frames: 60, over },
+      ]).at(-1)?.pose;
+
+    expect(after({})?.tools[0]?.hand).toBe(0);
+    expect(after({ tending: { what: "aid", at: null } })?.tools[0]?.hand).toBeNull();
+    expect(after({ carrying: true })?.tools[0]?.hand).toBeNull();
+    expect(after({ hurt: "leg" })?.tools[0]?.hand).toBeNull();
+  });
+});

@@ -115,14 +115,16 @@ export class GodMode implements GodHooks {
    * Puts `who`, the player unless it says, on their feet at `where`: a place's id, or metres along
    * the ground. Under a ladder, they stand at its nearer end; on a step of ice, at its foot or its
    * top, the nearer; past the ground's ends, at the end. They're alive, still and clipped to the
-   * rope there; the player's Sherpa comes with them, and takes the climb afresh. Where they stand,
-   * in metres along the ground.
+   * rope there; the player's Sherpa comes with them, unless he lies with a bone broken (#241),
+   * and takes the climb afresh. Where they stand, in metres along the ground.
    */
   teleport(where: string | number, who: ClimberId = this.player): number {
     const along = this.spot(typeof where === "number" ? where : this.lookup.along(where));
     const { physics, sherpa } = this.rules;
     physics.stand(who, along, true);
-    if (who === this.player && this.sherpa !== null) {
+    // Their Sherpa comes with them on his feet: one who lies with a bone broken stays where he
+    // lies, for the player to go to (#241).
+    if (who === this.player && this.sherpa !== null && !physics.climber(this.sherpa).down) {
       physics.stand(this.sherpa, along, true);
     }
     if (this.sherpa !== null) {

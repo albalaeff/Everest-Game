@@ -24,6 +24,10 @@ import { ClimberPose } from "./climber-pose";
 import { ClimberReading } from "./climber-reading";
 import { Crevasse } from "./crevasse";
 import { Abreast } from "./abreast";
+import type { Beside } from "./climber-reading";
+import { LineAnchor } from "./line-anchor";
+import { RescueLines } from "./rescue-lines";
+import type { LineLoad } from "./rescue-lines";
 import { Crowd } from "./crowd";
 import { Drift } from "./drift";
 import { Glacier } from "./glacier";
@@ -321,11 +325,19 @@ export class SlopeLayer extends ParallaxLayer {
   private readonly ladders: readonly DrawnLadder[];
   private readonly ropes: readonly DrawnRope[];
   private static readonly NOT_ASIDE: Point = { x: 0, y: 0 };
+  /** Where a rescuer kneels at a casualty's hurt limb (#241), in metres at the figures' size:
+   * this far from it, the arms' reach from the kneel, and no nearer the casualty than `clear`
+   * of their knees; or this far behind the casualty's back, where they came up behind them. */
+  private static readonly KNEEL_AT = { from: 0.62, clear: 0.95, behind: 0.45 };
   private readonly figures: readonly DrawnClimber[];
   /** The climbers in the order they keep their places at one spot, the player's first, and
    * their steps aside from each other (#243). */
   private readonly inPlace: readonly DrawnClimber[];
   private readonly abreast: Abreast;
+  /** The rescue lines, drawn under the climbers (#241); and who is carried by whom and who
+   * kneels at a rescue's work, as the figures were last put in order. */
+  private readonly rescueLines = new RescueLines();
+  private ordered = "";
   private readonly playerFigure: ClimberFigure | null;
   private readonly mark = new PlayerMark();
   private readonly puffs = new SnowPuffs();
@@ -549,6 +561,7 @@ export class SlopeLayer extends ParallaxLayer {
       ...this.figures.filter(({ id }) => id === player),
       ...this.figures.filter(({ id }) => id !== player),
     ];
+    this.addChild(this.rescueLines);
     for (const { figure } of [...this.inPlace].reverse()) {
       this.addChild(figure);
     }
@@ -653,15 +666,23 @@ export class SlopeLayer extends ParallaxLayer {
     this.load();
     this.standAbreast(seconds, size);
     this.beams.length = 0;
-    for (const { id, figure, view: climber } of this.figures) {
-      const sag = this.sagUnder(climber, figure.at);
+    this.orderFigures();
+    // Each rescuer before the casualty on their back, who is drawn where they are (#241).
+    const carriedLast = [
+      ...this.figures.filter(({ view: climber }) => climber?.carriedBy == null),
+      ...this.figures.filter(({ view: climber }) => climber?.carriedBy != null),
+    ];
+    for (const { id, figure, view: climber } of carriedLast) {
+      const beside = this.beside(climber);
+      const sag = beside.mount === null ? this.sagUnder(climber, figure.at) : 0;
       const masked = this.oxygen.flow(id) > 0;
       const lit = this.lamps.lit(id);
-      figure.show(this.body.climber(id), masked, atmosphere, seconds, size, sag, lit);
+      figure.show(this.body.climber(id), masked, atmosphere, seconds, size, sag, lit, beside);
       if (figure.beam !== null) {
         this.beams.push(figure.beam);
       }
     }
+    this.drawRescueLines(size);
     this.markPlayer(camera, size);
     this.elapsed = atmosphere.elapsed;
     for (const ladder of this.ladders) {
@@ -732,18 +753,118 @@ export class SlopeLayer extends ParallaxLayer {
     this.tentGlow.visible = this.tentGlow.alpha > 0.01;
   }
 
+  /** Whom a climber is drawn with in a rescue this frame (#241): the rescuer who carries them, as
+   * drawn; and the hurt limb of the casualty they work on, where it's drawn. */
+  private beside(climber: ClimberView | null): Beside {
+    const figureOf = (id: ClimberId | null | undefined): ClimberFigure | null =>
+      id == null ? null : (this.figures.find((drawn) => drawn.id === id)?.figure ?? null);
+    return {
+      mount: figureOf(climber?.carriedBy)?.mount ?? null,
+      wound: figureOf(climber?.helping?.whom)?.wound ?? null,
+    };
+  }
+
+  /** Where across the slope a rescuer kneels at their work for a casualty (#241, `KNEEL_AT`): by
+   * the hurt limb as it was last drawn, past its end, where they're on its side of the casualty
+   * or at their spot; and close behind the casualty's back where they came up behind them. At
+   * an anchor, where `LineAnchor` has them kneel. None at no such work. */
+  private kneelsAt(view: ClimberView | null, figure: ClimberFigure, grown: number): number | null {
+    const helping = view?.helping ?? null;
+    if (helping?.kind === "anchor") {
+      // At an anchor, back from its screws, facing the lip: the nearest that isn't done.
+      const away = (x: number): number => Math.abs(x - figure.stands.x);
+      const [nearest] = this.physics.lines
+        .filter(({ built }) => built < 1)
+        .map((line) => new LineAnchor(this.physics.terrain, line, grown).kneels)
+        .sort((one, other) => away(one) - away(other));
+      return nearest ?? null;
+    }
+    if (helping === null || (helping.kind !== "aid" && helping.kind !== "lift")) {
+      return null;
+    }
+    const casualty = this.figures.find(({ id }) => id === helping.whom)?.figure ?? null;
+    const wound = casualty?.wound ?? null;
+    if (casualty === null || wound === null) {
+      return null;
+    }
+    const { from, clear, behind } = SlopeLayer.KNEEL_AT;
+    const theirs = casualty.at.x;
+    const limb = wound.x >= theirs ? 1 : -1;
+    const onItsSide = (figure.stands.x - theirs) * limb >= -behind * grown;
+    if (!onItsSide) {
+      return theirs - limb * behind * grown;
+    }
+    const reach = Math.abs(wound.x - theirs) + from * grown;
+    return theirs + limb * Math.max(reach, clear * grown);
+  }
+
+  /** The order the figures are drawn in, the last on top (#241): the player's own over the
+   * others, as ever; a casualty on a rescuer's back just under the rescuer, who shows whole,
+   * bent under them; and a rescuer on their knees over everyone, their hands on the limb they
+   * work at. Put in order again when any of that changes. */
+  private orderFigures(): void {
+    const kneels = (view: ClimberView | null): boolean =>
+      view?.helping != null && view.helping.kind !== "line-haul";
+    const key = this.figures
+      .map(({ view }) => `${view?.carriedBy ?? ""}${kneels(view) ? "+" : ""}`)
+      .join(",");
+    if (key === this.ordered) {
+      return;
+    }
+    this.ordered = key;
+    const plain = [...this.inPlace].reverse();
+    const afoot = plain.filter(({ view }) => view?.carriedBy == null);
+    const order = [
+      ...afoot.filter(({ view }) => !kneels(view)),
+      ...afoot.filter(({ view }) => kneels(view)),
+    ].flatMap((drawn) => [
+      ...plain.filter(({ view }) => view?.carriedBy != null && view.carriedBy === drawn.id),
+      drawn,
+    ]);
+    const first = this.getChildIndex(this.rescueLines) + 1;
+    order.forEach(({ figure }, index) => {
+      this.setChildIndex(figure, first + index);
+    });
+  }
+
+  /** The rescue lines this frame (#241): each one's anchor and its cord, taut to a casualty
+   * hauled up it, and back to the hands that haul. */
+  private drawRescueLines(size: LeastSize): void {
+    const loads = new Map<string, LineLoad>();
+    for (const { id, figure, view } of this.figures) {
+      const on = figure.onLine;
+      if (view?.hauled === true && on !== null) {
+        const hauler = this.figures.find(
+          ({ view: other }) => other?.helping?.kind === "line-haul" && other.helping.whom === id,
+        );
+        loads.set(on.line, { taut: on.taut, hands: hauler?.figure.hands ?? null });
+      }
+    }
+    const grown = size.climber(ClimberFigure.HEIGHT_METRES);
+    this.rescueLines.show(this.physics.lines, this.physics.terrain, loads, size, grown);
+  }
+
   /** Climbers at one spot of the slope stand a step apart along the ground (`Abreast`, #243): each
    * one's step aside, for the frames to come. On the ice, lowering or off their feet, a climber
-   * is where the physics has them, as one out on a ladder or up one is. */
+   * is where the physics has them, as one out on a ladder or up one is; so is one down with a
+   * bone broken, whom the others stand beside, and one on a rescuer's back, who is nowhere on
+   * the ground to stand beside (#241). */
   private standAbreast(seconds: number, size: LeastSize): void {
     const grown = size.climber(ClimberFigure.HEIGHT_METRES);
     const aside = this.abreast.advance(
       seconds,
       this.inPlace.map(({ figure, view }) => ({
         at: figure.stands,
-        free: view !== null && !view.dead && !view.falling && !view.onIce && !view.lowering,
-        there: view !== null && !view.dead,
+        free:
+          view !== null &&
+          !view.dead &&
+          !view.falling &&
+          !view.onIce &&
+          !view.lowering &&
+          !view.down,
+        there: view !== null && !view.dead && view.carriedBy === null,
         grown,
+        beside: this.kneelsAt(view, figure, grown),
       })),
     );
     this.inPlace.forEach(({ figure }, index) => {

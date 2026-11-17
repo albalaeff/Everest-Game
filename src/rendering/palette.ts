@@ -72,6 +72,23 @@ export class Palette {
   static readonly ANCHOR = 0x3a3f47;
   static readonly LADDER = 0xc9d3dd;
   static readonly LADDER_SHADE = 0x4a5560;
+  /** A rescue line (#241), a thin cord from a rescue kit: yellow, so the fixed line keeps its
+   * orange, with the screws it hangs from and the sling that joins them. */
+  static readonly RESCUE_LINE = 0xf2d23c;
+  static readonly RESCUE_LINE_SHADE = 0x5a4708;
+  static readonly SCREW = 0xc3ccd9;
+  static readonly SCREW_HANGER = 0xd8452e;
+  static readonly ANCHOR_SLING = 0x7a3fc4;
+  /** First aid on a limb (#241): the blood on a bone broken through the skin, the tourniquet's
+   * strap and its rod, the splint's foam and its edge, and the wrap that holds it, a sprain's
+   * bandage and a broken arm's sling. */
+  static readonly BLOOD = 0x8a1420;
+  static readonly TOURNIQUET = 0x14161b;
+  static readonly TOURNIQUET_ROD = 0xd9dee6;
+  static readonly SPLINT = 0xf08a3c;
+  static readonly SPLINT_EDGE = 0x2c5fa8;
+  static readonly BANDAGE = 0xefe6d2;
+  static readonly BANDAGE_SHADE = 0xb9ad94;
   /** The cord lashing a long ladder's sections end to end: muted, so the rope keeps its orange. */
   static readonly LASHING = 0x7d6a4f;
   /** The camps' tents, lit from inside at night. */
