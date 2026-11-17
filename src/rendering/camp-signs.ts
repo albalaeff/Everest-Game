@@ -394,11 +394,11 @@ export class CampSigns {
     };
   }
 
-  /** The fly's outline in the tent's own frame, smoothed: from the ground at the door's end over
-   * the vestibule's hoop and the room's top to the ground behind. */
-  private fly(): readonly Local[] {
-    const { length, vestibule, tail } = this.sizes;
-    const { tall } = this;
+  /** A tent's fly cut through from end to end, in its own frame: metres from its door's end
+   * along its length, and up. The picture of its inside is drawn on it (`TentPicture`). */
+  static profile(sizes: TentSizes): readonly (readonly [along: number, up: number])[] {
+    const { length, vestibule, tail, height } = sizes;
+    const tall = height + CampSigns.FLY_METRES;
     const end = vestibule + length;
     const corners: readonly Local[] = [
       [0, 0],
@@ -415,6 +415,12 @@ export class CampSigns {
       [end + tail, 0],
     ];
     return CampSigns.smooth(corners, CampSigns.SMOOTH);
+  }
+
+  /** The fly's outline in the tent's own frame, smoothed: from the ground at the door's end over
+   * the vestibule's hoop and the room's top to the ground behind. */
+  private fly(): readonly Local[] {
+    return CampSigns.profile(this.sizes);
   }
 
   /** The vestibule in front, in the tent's own frame: the fly from the ground at the door's end

@@ -33,6 +33,8 @@ export interface SeenClimber {
    * they've turned to face the player (#235). */
   readonly facing: 1 | -1;
   readonly towardViewer: boolean;
+  /** Whether they're in a tent, under cover (#258). */
+  readonly sheltered: boolean;
 }
 
 /** A climber on the slope as the device saves them (src/physics → ClimberSave), as far as the

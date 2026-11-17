@@ -29,7 +29,7 @@ const THE_CLIMB = [
   "check-self",
   "panel radio",
   "panel inventory",
-  "tent",
+  "tent in",
   "view farther",
   "view closer",
 ];

@@ -5,7 +5,8 @@ import { KNOWLEDGE_FILES } from "./knowledge-files";
 import { TentFacts } from "./tent-facts";
 
 const knowledge = new KnowledgeBase(KNOWLEDGE_FILES);
-const { numbers, sizes } = new TentFacts(knowledge);
+const facts = new TentFacts(knowledge);
+const { numbers, sizes } = facts;
 const range = (id: string) => knowledge.range(id);
 const fact = (id: string): number => knowledge.number(id);
 
@@ -60,6 +61,11 @@ describe("TentFacts: sleep and the tents' sizes", () => {
     const slept = fact("body.acute-sleep-loss");
 
     expect(fact("body.sleep-restores") * slept).toBeCloseTo(fact("body.sleepy-after"), 9);
+  });
+
+  it("counts a canister's gas in grams, as the camps' gas is counted", () => {
+    expect(facts.canister).toBe(fact("gear.gas-canister") * 1000);
+    expect(facts.canister).toBe(227);
   });
 
   it("draws an expedition dome at its floor's length and its peak, lower than a climber, with a vestibule that covers its ground", () => {

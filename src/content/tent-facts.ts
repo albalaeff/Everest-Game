@@ -33,6 +33,8 @@ export class TentFacts {
 
   readonly numbers: TentNumbers;
   readonly sizes: TentSizes;
+  /** The grams of gas a full canister holds. */
+  readonly canister: number;
 
   constructor(knowledge: KnowledgeBase) {
     const number = (name: string): number => knowledge.number(name);
@@ -55,6 +57,7 @@ export class TentFacts {
       nap: number("time.nap") * hour,
       wake: (number("time.base-camp-departure") - number("time.breakfast")) * hour,
     };
+    this.canister = number("gear.gas-canister") * gram;
     const vestibule = (2 * number("gear.tent-vestibule")) / number("gear.tent-width");
     this.sizes = {
       length: number("gear.tent-length"),

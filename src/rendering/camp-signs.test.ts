@@ -180,4 +180,24 @@ describe("CampSigns: Base Camp's big dome and the tents behind (#258)", () => {
       expect(Math.min(...ys(outline))).toBe(20);
     }
   });
+  it("cuts a tent through from end to end: from the ground at its door's end over its peak to the ground behind", () => {
+    const profile = CampSigns.profile(SIZES);
+    const [first] = profile;
+    const last = profile.at(-1);
+    const top = Math.max(...profile.map(([, up]) => up));
+    const peak = profile.find(([, up]) => up === top);
+
+    expect(first).toEqual([0, 0]);
+    expect(last?.[0]).toBeCloseTo(SIZES.vestibule + SIZES.length + SIZES.tail, 9);
+    expect(last?.[1]).toBeCloseTo(0, 9);
+    // The fly stands a hand's width over the tent's own peak, over the middle of the room.
+    expect(top).toBeGreaterThanOrEqual(SIZES.height);
+    expect(top).toBeLessThan(SIZES.height + 0.1);
+    expect(peak?.[0]).toBeGreaterThan(SIZES.vestibule + 0.3 * SIZES.length);
+    expect(peak?.[0]).toBeLessThan(SIZES.vestibule + 0.7 * SIZES.length);
+    // Along it goes on from the door to the tail, never back.
+    expect(
+      profile.every(([along], index) => index === 0 || along >= (profile[index - 1]?.[0] ?? 0)),
+    ).toBe(true);
+  });
 });

@@ -1,6 +1,6 @@
 import { Application, Rectangle } from "pixi.js";
 
-import type { Lamps, SlopePhysics } from "../physics";
+import type { Point, Lamps, SlopePhysics } from "../physics";
 import type {
   Body,
   Breathing,
@@ -73,6 +73,8 @@ export class SlopeScene {
 
   private readonly app = new Application();
   private opened = false;
+  /** Whether a screen covers the whole slope: nothing's drawn under it. */
+  private covered = false;
   private layers: readonly ParallaxLayer[] = [];
   private sky: SkyLayer | null = null;
   private skylines: readonly SkylineLayer[] = [];
@@ -138,7 +140,7 @@ export class SlopeScene {
    * clock, the player's altitude and the weather, and every layer is placed by the camera and
    * lit. */
   draw(seconds: number, between: BetweenSteps): void {
-    if (!this.opened) {
+    if (!this.opened || this.covered) {
       return;
     }
     const { width, height } = this.app.screen;
@@ -197,6 +199,29 @@ export class SlopeScene {
   screenAt(x: number, y: number): readonly number[] {
     const at = this.camera.toScreen({ x, y });
     return [at.x, at.y];
+  }
+
+  /** Stops drawing the slope while a screen covers all of it, as the tent's inside does (#258),
+   * and draws it again once it shows: the game goes on either way. */
+  cover(covered: boolean): void {
+    if (covered !== this.covered) {
+      this.covered = covered;
+      if (this.opened) {
+        this.app.stage.visible = !covered;
+      }
+    }
+  }
+
+  /** Where the player is on their way through a tent's door (#258): outside before the scene
+   * draws. */
+  get passage(): "outside" | "going-in" | "inside" | "coming-out" {
+    return this.slope?.playerPassage ?? "outside";
+  }
+
+  /** The point over a camp's tent, above its door, in the slope's metres: where its button is
+   * pinned (#258). None before the scene draws, or for no such tent. */
+  tentOver(camp: string, tent: number): Point | null {
+    return this.slope?.tentOver(camp, tent) ?? null;
   }
 
   /** The colour drawn at a point of the screen, red, green, blue and alpha, 0 to 255. */

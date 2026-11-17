@@ -311,6 +311,9 @@ export class SlopeLayer extends ParallaxLayer {
   private readonly wallEdges = new Graphics();
   private readonly surface = new Graphics();
   /** The camps' tents, behind the climbers and, for one somebody goes into, over them (#258). */
+  /** Where a tent's button is pinned: so far along its body from its door, and above its fly,
+   * in metres. */
+  private static readonly OVER_TENT = { along: 1.3, above: 0.35 };
   private readonly tentDrawing: TentDrawing;
   private readonly flags: PrayerFlags | null;
   private readonly flagGraphics = new Graphics();
@@ -617,6 +620,21 @@ export class SlopeLayer extends ParallaxLayer {
 
   /** Where the player is of a tent's door, as they're drawn (#258): outside, on their way in
    * through it or out, or inside, nothing of them to see. */
+  /** The point over a camp's tent, a little above its fly over its door (#258). */
+  tentOver(camp: string, tent: number): Point | null {
+    const shape = this.tentDrawing.tents.find(
+      (pitched) => pitched.camp === camp && pitched.index === tent,
+    );
+    if (shape === undefined) {
+      return null;
+    }
+    const { door, lies, tall } = shape;
+    return {
+      x: door.x + lies * SlopeLayer.OVER_TENT.along,
+      y: door.y + tall + SlopeLayer.OVER_TENT.above,
+    };
+  }
+
   get playerPassage(): "outside" | "going-in" | "inside" | "coming-out" {
     const passage = this.playerFigure?.passage ?? null;
     if (passage?.way === "in") {
