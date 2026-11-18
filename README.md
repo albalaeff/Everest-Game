@@ -48,7 +48,7 @@ A page served on this machine finds the room server on its own host; `npm run ro
 
 `?god` in the address (`http://localhost:4173/?god`, or the live site's) gives the climb alone a tester's powers (#245): go anywhere on the route and set a scenario up there, rather than walk from Base Camp for minutes. It keeps a climb of its own on the device, so the player's own climb isn't touched; a room has none. To look at a part of the route or a scenario, by hand or as Claude in a browser, use it.
 
-- **The panel:** `[God mode]`, beside `[Graphics]`, opens it. Go to a place of the list (the camps, the parts of the route, the ladders, the steps of ice, the hazards' stretches and where the seed staged its training), to metres along the ground, or to where the next click on the slope lands: you arrive on your feet, clipped to the rope there, Pemba with you; under a ladder you stand at its nearer end, on a step of ice at its foot or its top. Set the clock on to a time of day, the speed (×1, ×5, ×20) and the weather; stage a serac collapse over you, the ladder ahead breaking, a gust, a twist on a lashed ladder or a slip; stay immortal.
+- **The panel:** `[God mode]`, beside `[Graphics]`, opens it. Go to a place of the list (the camps, the parts of the route, the ladders, the steps of ice, the hazards' stretches and where the seed staged its training), to metres along the ground, or to where the next click on the slope lands: you arrive on your feet, clipped to the rope there, Pemba with you; under a ladder you stand at its nearer end, on a step of ice at its foot or its top. Set the clock on to a time of day, the speed (×1, ×5, ×20) and the weather; stage a serac collapse over you, the ladder ahead breaking, a gust, a twist on a lashed ladder, a slip or a broken leg, for Pemba to rescue you; stay immortal.
 - **A script** (a story, Claude in a browser) has the same on `window.everest.god`:
 
   ```js
@@ -64,6 +64,8 @@ A page served on this machine finds the room server on its own host; `npm run ro
   god.ladder(); // the next ladder long enough to break, or god.ladder("big-crevasse")
   god.jolt("gust"); // or "twist", on a lashed ladder
   god.slip();
+  god.injure(); // your leg breaks where you stand, and Pemba comes to you
+  god.injure({ part: "arm", kind: "open-fracture" }, "pemba", 52); // his arm, on a crevasse's floor
   god.immortal(true);
   ```
 

@@ -125,7 +125,7 @@ You can also turn around earlier: symptoms, strong wind or a queue at any stage 
 | Pace: rest step or faster | Hold C / hold Shift | Joystick: a small push is the rest step, the outer ring is faster |
 | Clip a cowstail onto the next rope | E (first cowstail), R (second) | [Clip 1], [Clip 2] |
 | Slide the jumar along the fixed rope | Hold Space | Hold [Jumar] |
-| Pull a partner who hangs on the rope out, from the edge above them | Hold F | Hold [Pull out] |
+| Help a partner, where you stand: pull one who hangs on the rope out, from the edge above them; first aid for one who's hurt, then take them on your back; a rope down to one who lies in a crevasse, and the haul back out | Hold F | Hold [Help] |
 | Ice axe and crampons on steep ice | Click the slope: above the climber the ice axe, below it the crampons | Tap the slope, the same way |
 | Oxygen flow | + / − | [O2 +], [O2 -] |
 | Check yourself: symptoms, pulse oximeter, fingers | Tab or its button | [Check yourself] |

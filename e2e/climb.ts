@@ -33,6 +33,21 @@ export interface SeenClimber {
    * they've turned to face the player (#235). */
   readonly facing: 1 | -1;
   readonly towardViewer: boolean;
+  /** What their hard landings have left them, and what first aid has done for each; whether a
+   * broken bone has them down; who carries them and whom they carry; the rescue line they're
+   * on, and whether they're hauled up it; and what they do for a casualty, the haul held (#241). */
+  readonly injuries: readonly {
+    readonly part: "leg" | "arm";
+    readonly kind: "sprain" | "fracture" | "open-fracture";
+    readonly tourniquet: boolean;
+    readonly splinted: boolean;
+  }[];
+  readonly down: boolean;
+  readonly carriedBy: string | null;
+  readonly carrying: string | null;
+  readonly onLine: string | null;
+  readonly hauled: boolean;
+  readonly helping: { readonly kind: string; readonly whom: string } | null;
 }
 
 /** A climber on the slope as the device saves them (src/physics → ClimberSave), as far as the
@@ -96,6 +111,7 @@ export interface SeenGod {
   ladder(id?: string): string | null;
   jolt(kind?: string): boolean;
   slip(): void;
+  injure(injury?: { part: string; kind: string }, who?: string, at?: number): void;
   immortal(on: boolean): void;
 }
 
