@@ -106,12 +106,9 @@ test("at Base Camp the button over a tent's door takes the climber in: the tent 
 
   // The stove: lit with the door open for its fumes, and out again when the chore is stopped.
   // The litre it melts is the core's story (src/content/tent.story.test.ts).
+  // What a press does shows on the next frames, which WebKit draws in software slowly on CI.
   await press(chore(page, "melt"));
-  const pressed = Date.now();
   await expect(chore(page, "melt")).toHaveAttribute("data-state", "doing", WALKING);
-  console.log(
-    `Melting began ${Date.now() - pressed} ms after the press (${test.info().project.name})`,
-  );
   await expect(chore(page, "melt")).toHaveAttribute(
     "aria-label",
     /^Melt snow: \d+ min left\. Press to stop$/,
@@ -122,13 +119,13 @@ test("at Base Camp the button over a tent's door takes the climber in: the tent 
   await expect(picture(page)).toHaveAttribute("data-flame", "on");
   await expect(picture(page)).toHaveAttribute("data-door", "open");
   await press(chore(page, "melt"));
-  await expect(chore(page, "melt")).toHaveAttribute("data-state", "ready");
+  await expect(chore(page, "melt")).toHaveAttribute("data-state", "ready", WALKING);
   await expect(note(page)).toBeHidden();
   await expect(picture(page)).toHaveAttribute("data-flame", "off", WALKING);
 
   // A drink is the pack's, and [Pack] opens its card over the tent, with the camp's store.
   await press(tent(page).getByRole("button", { name: "Drink" }));
-  await expect(stock(page, "water")).toHaveText("1.5/3 L");
+  await expect(stock(page, "water")).toHaveText("1.5/3 L", WALKING);
   await press(tent(page).getByRole("button", { name: "Pack" }));
   const inventory = page.locator("#inventory");
   await expect(inventory).toBeVisible();
