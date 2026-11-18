@@ -22,6 +22,7 @@ export interface GodHooks {
   teleport(where: string | number, who?: ClimberId): number;
   hour(time: string): void;
   weather(weather: HazardWeather): void;
+  calm(): void;
   speed(times: number): void;
   serac(): HazardEvent;
   ladder(id?: string): string | null;
@@ -46,7 +47,7 @@ export interface GodState {
  * rather than walk from Base Camp. It stages the climb between steps, as a scenario's start state
  * does, through the powers each rule has for it (docs/conventions/simulation-core.md → The only
  * door): it puts a climber on their feet anywhere, clipped to the rope there, their Sherpa with
- * them; sets the clock on to a time of day, the weather and the speed; stages a serac collapse over
+ * them; sets the clock on to a time of day, the weather and the speed, and calms the gusts; stages a serac collapse over
  * the player, the next ladder breaking, a gust or a twist, a slip, an injury to rescue a climber
  * from (#241); and, immortal, stands the player up again where their body comes to rest. Each power saves the climb, in the god mode's own slot.
  * The panel and `window.everest.god` are the page's.
@@ -147,6 +148,14 @@ export class GodMode implements GodHooks {
   weather(weather: HazardWeather): void {
     this.rules.hazards.changeWeather(weather);
     this.rules.jolts.changeWeather(weather);
+    this.game.save();
+  }
+
+  /** Calms the mountain: no gust nor twist comes from now on, and none can be staged. For a
+   * long scenario that must run with no chance of its own, a rescue's haul at a crevasse's edge
+   * (#241). */
+  calm(): void {
+    this.rules.jolts.calm();
     this.game.save();
   }
 

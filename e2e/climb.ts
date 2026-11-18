@@ -115,6 +115,7 @@ export interface SeenGod {
   serac(): { readonly id: string; readonly from: number; readonly to: number };
   ladder(id?: string): string | null;
   jolt(kind?: string): boolean;
+  calm(): void;
   slip(): void;
   injure(injury?: { part: string; kind: string }, who?: string, at?: number): void;
   immortal(on: boolean): void;

@@ -171,6 +171,27 @@ describe("GodMode: the clock, the weather and the speed", () => {
     expect(store.stored.at(-1)?.rules["jolts"]).toMatchObject({ weather: "snow" });
   });
 
+  it("calms the mountain: no gust comes on the open ground from then on, and none can be staged", () => {
+    // Twenty minutes of play on the Popcorn in a wind, twelve hours of the mountain's.
+    const windy = (calmed: boolean) => {
+      const climb = aClimb();
+      climb.god.teleport(250);
+      climb.god.weather("wind");
+      if (calmed) {
+        climb.god.calm();
+      }
+      climb.god.speed(20);
+      play(climb.game, 60);
+      return climb;
+    };
+    const { god, rules, store } = windy(true);
+
+    expect(windy(false).rules.jolts.jolts.length).toBeGreaterThan(0);
+    expect(rules.jolts.jolts).toEqual([]);
+    expect(god.jolt("gust")).toBe(false);
+    expect(store.stored.at(-1)?.rules["jolts"]).toMatchObject({ zones: [] });
+  });
+
   it("runs the climb as many times faster as it's told", () => {
     const { god, game } = aClimb();
 

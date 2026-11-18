@@ -64,6 +64,7 @@ A page served on this machine finds the room server on its own host; `npm run ro
   god.ladder(); // the next ladder long enough to break, or god.ladder("big-crevasse")
   god.jolt("gust"); // or "twist", on a lashed ladder
   god.slip();
+  god.calm(); // no gust nor twist from now on: for a long scenario with no chance of its own
   god.injure(); // your leg breaks where you stand, and Pemba comes to you
   god.injure({ part: "arm", kind: "open-fracture" }, "pemba", 52); // his arm, on a crevasse's floor
   god.immortal(true);

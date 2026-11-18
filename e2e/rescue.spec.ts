@@ -59,8 +59,10 @@ test("a broken leg ends the climb: Pemba splints it where the player lies and ca
 }) => {
   test.setTimeout(240_000);
   await openTheGameAsGod(page);
-  // On the first slope of the Popcorn, Pemba beside them.
+  // On the first slope of the Popcorn, Pemba beside them, and no gust to knock him over on the
+  // way down: the story is the rescue's.
   await page.evaluate(() => {
+    window.everest.god?.calm();
     window.everest.god?.teleport(24);
     window.everest.god?.injure();
   });
@@ -118,7 +120,10 @@ test("a player with a rescue kit gets a rope down to Pemba on a crevasse's floor
   );
   await setOffChecked(page);
   await page.waitForFunction(() => "everest" in window && window.everest.god !== undefined);
+  // No gust comes: over the haul's hours at the edge one would put the rescuer on their own
+  // rope now and then, and the story is the rescue's.
   await page.evaluate(({ floor, byTheLip }) => {
+    window.everest.god?.calm();
     window.everest.god?.injure(undefined, "pemba", floor);
     window.everest.god?.teleport(byTheLip);
   }, CREVASSE);

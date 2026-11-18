@@ -211,6 +211,19 @@ describe("Jolts: brought between steps, by the god mode (#245)", () => {
     expect(jolted.jolts.warnings).toHaveLength(1);
   });
 
+  it("is calmed between steps: the jolt on its way never comes, none can be brought, and a save keeps it", () => {
+    const jolted = new Jolted(new TestGround({ first: 30 }), { weather: "wind", zones: [OPEN] });
+    jolted.jolts.bring("gust", "first", 0);
+
+    jolted.jolts.calm();
+    jolted.play(72_000);
+
+    expect(jolted.jolts.warnings).toEqual([]);
+    expect(jolted.jolts.jolts).toEqual([]);
+    expect(jolted.jolts.bring("gust", "first", jolted.expedition.step)).toBe(false);
+    expect(jolted.expedition.save().rules[Jolts.NAME]).toMatchObject({ zones: [], warnings: [] });
+  });
+
   it("changes the weather between steps, and a save keeps it", () => {
     const jolted = new Jolted(new TestGround({ first: 0 }), { weather: "clear", zones: [OPEN] });
 
