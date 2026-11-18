@@ -69,7 +69,7 @@ A page served on this machine finds the room server on its own host; `npm run ro
   god.immortal(true);
   ```
 
-- **In a story:** `openTheGameAsGod` in `e2e/climb.ts` sets off with it, and `e2e/god.spec.ts` uses it.
+- **In a story:** `openTheGameAsGod` in `e2e/climb.ts` sets off with it, and `e2e/god.spec.ts` uses it; `e2e/rescue.spec.ts` stages an injury with it and runs a rescue's long waits faster.
 
 ## Agents
 

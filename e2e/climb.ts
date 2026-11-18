@@ -19,7 +19,12 @@ export interface SeenClimber {
   readonly falls: readonly { readonly held?: boolean; readonly broke?: boolean }[];
   readonly dead: boolean;
   /** What they carry of the gear the slope's techniques need: their pack's. */
-  readonly gear: { readonly jumar: boolean; readonly tools: number };
+  readonly gear: {
+    readonly jumar: boolean;
+    readonly tools: number;
+    readonly firstAid: boolean;
+    readonly rescueKit: boolean;
+  };
   /** Whether a crampon they didn't check has come loose (#196). */
   readonly cramponLoose: boolean;
   /** Whether they're on the ice on their tools, and whether the pick they hang from bites
