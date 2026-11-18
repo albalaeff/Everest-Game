@@ -90,6 +90,30 @@
           "checked": "2026-11-04"
         }
       ]
+    },
+    {
+      "id": "rules.tracking-device",
+      "kind": "fact",
+      "claim": "Since spring 2024 Nepal requires every climber and guide on Everest to carry a tracking device, which the expedition's organiser provides: in practice, a RECCO reflector.",
+      "status": "source only",
+      "versions": [
+        {
+          "note": "Compulsory for climbers and guides, for prompt search and rescue, after bodies couldn't be found in 2023; the organisers manage the devices. The department named no device; operators say RECCO's are common in Nepal.",
+          "source": {
+            "title": "The Kathmandu Post: Tracking chip now mandatory for Everest aspirants",
+            "url": "https://kathmandupost.com/money/2024/03/07/tracking-chip-now-mandatory-for-everest-aspirants"
+          },
+          "checked": "2026-11-17"
+        },
+        {
+          "note": "The “rescue chip” turned out to be a RECCO radar reflector, not a GPS tracker; that season nobody was checking that every climber carried one.",
+          "source": {
+            "title": "Explorersweb: Everest's New Rules: One Thumbs Up, One Needs Improvement",
+            "url": "https://explorersweb.com/everest-new-regulations-gps-recco-devices-poo-bags/"
+          },
+          "checked": "2026-11-17"
+        }
+      ]
     }
   ]
 }

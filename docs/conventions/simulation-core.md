@@ -73,6 +73,18 @@ A camp's tents are a rule, `Tents` (`src/simulation/tents.ts`, #258): who's in w
 - **The numbers are the knowledge base's** (`content/facts/gear.json` and `time.json`, read by `TentFacts`): the tent's sizes, a three-person expedition dome's (`gear.tent-*`) and Base Camp's big dome's; the gas and the minutes a litre of snow and a meal take (`gear.melt-*`, `gear.meal-*`), coefficients fitted to the stove's records; the meal's water and energy; a canister's gas. A section's file pitches each camp's tents and stocks it (`tents`, `larder`, `guitar`).
 - **The tent's screens are the page's** ([rendering.md](rendering.md) → the tent's inside). Their words are `content/tent.json`'s.
 
+## Devices
+
+The electronics a climber carries are a rule, `Devices` (`src/simulation/devices.ts`, #260): a handheld radio and a satellite tracker. The GPS watch and the weather meter keep nothing, so they aren't in the core: the page reads them off the climb (`src/interface/gps-watch.ts`; the meter's `wind-meter.ts`, `air-temperature.ts` and `wind-chill.ts`).
+
+- **The weather meter's numbers are the knowledge base's too** (`content/facts/weather.json` and `cold.json`, read by `Mountain.windSpeeds`, `airSettings` and `windChill`), fitted to what the Everest weather stations and the climbers measured: the wind's speeds, named by the Beaufort scale's forces; the air's day at Base Camp's station in each weather, coldest as the sun comes up and warmest at midday, `weather.premonsoon-lapse-rate` colder for every kilometre higher; the wind chill index's terms, with the meter's factor for the wind 10 m up; and Canada's bands of the risk of frostbite. The air has the core's four operations only, so the core can take it when the body feels the cold; the wind chill raises the wind to a power, so it stays the meter's.
+
+- **Two actions.** `radio` is a call with a ready phrase on a channel; `tracker` starts or stops its tracking, sends a check-in or raises its SOS. Both are a living climber's: a dead one's are ignored, and a tracker goes on tracking for them.
+- **A call is kept, heard or not.** It gets out unless the climber hangs on their rope, in a crevasse or under a lip, where ice stands between the radio and Base Camp (`DeviceGround`, the slope physics). The rule keeps the call; the page gives Base Camp its words (`src/interface/base-camp.ts`), from the mountain as it was when the phrase was said.
+- **A tracker needs the sky**, the same way: tracking, it sends a point every `interval` and its battery runs down over `life`; a check-in or an SOS takes `delivery` seconds of sky to leave. An SOS turns the tracking on, and is raised once.
+- **The numbers are the knowledge base's** (`content/facts/gear.json`, read by `Mountain.deviceNumbers`): `gear.tracker-interval`, `gear.tracker-battery`, `gear.messenger-delivery-time`. The rule runs after the slope physics and draws nothing from chance.
+- **Not yet:** the radio's guide and group channels, a radio's own battery and one left in the tent (#79), the forecast (#39), the body feeling the cold and the wind chill (frostbite, hypothermia), and anyone setting out from Base Camp on an SOS: the rescue on the route is the team's own (#241).
+
 ## Scenarios, saves and replays
 
 - **A scenario** is a seed, the climbers and each rule's start state, in the form of that rule's save. Conditions set in advance, such as harsh weather, are in the start state, and hold on every seed.

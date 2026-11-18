@@ -345,6 +345,561 @@
           "checked": "2026-11-03"
         }
       ]
+    },
+    {
+      "id": "weather.beaufort-light-breeze",
+      "kind": "fact",
+      "claim": "A light breeze, force 2 on the Beaufort scale, blows at this speed: the wind is felt on the face.",
+      "status": "source only",
+      "versions": [
+        {
+          "range": {
+            "min": 6,
+            "max": 11
+          },
+          "unit": "km/h",
+          "note": "The scale's speeds are for 10 m above the ground; at 2 m the wind may be only 50 to 70% of them.",
+          "source": {
+            "title": "Royal Meteorological Society: The Beaufort Wind Scale",
+            "url": "https://www.rmets.org/metmatters/beaufort-scale"
+          },
+          "checked": "2026-11-17"
+        }
+      ]
+    },
+    {
+      "id": "weather.beaufort-fresh-breeze",
+      "kind": "fact",
+      "claim": "A fresh breeze, force 5 on the Beaufort scale, blows at this speed: small trees in leaf begin to sway.",
+      "status": "source only",
+      "versions": [
+        {
+          "range": {
+            "min": 29,
+            "max": 38
+          },
+          "unit": "km/h",
+          "note": "The scale's speeds are for 10 m above the ground; a strong breeze, force 6, blows from 38 to 49 km/h.",
+          "source": {
+            "title": "Royal Meteorological Society: The Beaufort Wind Scale",
+            "url": "https://www.rmets.org/metmatters/beaufort-scale"
+          },
+          "checked": "2026-11-18"
+        }
+      ]
+    },
+    {
+      "id": "weather.beaufort-near-gale",
+      "kind": "fact",
+      "claim": "A near gale, force 7 on the Beaufort scale, blows at this speed: walking against the wind is an effort.",
+      "status": "source only",
+      "versions": [
+        {
+          "range": {
+            "min": 50,
+            "max": 61
+          },
+          "unit": "km/h",
+          "note": "Inconvenience felt when walking against the wind.",
+          "source": {
+            "title": "Royal Meteorological Society: The Beaufort Wind Scale",
+            "url": "https://www.rmets.org/metmatters/beaufort-scale"
+          },
+          "checked": "2026-11-17"
+        }
+      ]
+    },
+    {
+      "id": "weather.beaufort-gale",
+      "kind": "fact",
+      "claim": "A gale, force 8 on the Beaufort scale, blows at this speed: it generally impedes progress on foot.",
+      "status": "source only",
+      "versions": [
+        {
+          "range": {
+            "min": 62,
+            "max": 74
+          },
+          "unit": "km/h",
+          "note": "Twigs break off trees; generally impedes progress.",
+          "source": {
+            "title": "Royal Meteorological Society: The Beaufort Wind Scale",
+            "url": "https://www.rmets.org/metmatters/beaufort-scale"
+          },
+          "checked": "2026-11-17"
+        }
+      ]
+    },
+    {
+      "id": "weather.icefall-drone-wind",
+      "kind": "fact",
+      "claim": "In spring 2025 the cargo drones that carried the Icefall Doctors' ropes and ladders over the Khumbu Icefall flew in winds up to this speed.",
+      "status": "source only",
+      "versions": [
+        {
+          "value": 45,
+          "unit": "km/h",
+          "note": "Two DJI FlyCart 30 drones flew in winds up to 45 km/h and temperatures down to −25 °C, as high as 6,130 m, and carried 444 kg of rope and ladders for the Icefall Doctors.",
+          "source": {
+            "title": "Mark Horrell: What will drone transport on Everest mean for Sherpa mountaineers?",
+            "url": "https://www.markhorrell.com/blog/2025/what-will-drone-transport-on-everest-mean-for-sherpa-mountaineers/"
+          },
+          "checked": "2026-11-17"
+        }
+      ]
+    },
+    {
+      "id": "weather.icefall-wind-still",
+      "kind": "coefficient",
+      "claim": "The wind a pocket wind meter reads in the Icefall in the still of a clear or cloudy night (#260): the valley's weak night winds, under the light breeze a climber feels on the face.",
+      "status": "source only",
+      "value": 4,
+      "unit": "km/h",
+      "fitted_to": ["route.icefall-wind", "weather.khumbu-valley-winds", "weather.beaufort-light-breeze"],
+      "fitted": "2026-11-18"
+    },
+    {
+      "id": "weather.icefall-wind-thermal",
+      "kind": "coefficient",
+      "claim": "How much the sun's warmth adds to that wind by the warmest hour of a clear day (#260): the valley's up-valley wind and the morning's cross wind over the ladders, to about Camp II's usual wind.",
+      "status": "source only",
+      "value": 12,
+      "unit": "km/h",
+      "fitted_to": ["route.icefall-wind", "weather.khumbu-valley-winds", "weather.camp-2-wind"],
+      "fitted": "2026-11-18"
+    },
+    {
+      "id": "weather.icefall-wind-snow",
+      "kind": "coefficient",
+      "claim": "The wind a pocket wind meter reads in the Icefall while snow falls (#260): over Camp II's usual wind and well short of a near gale.",
+      "status": "source only",
+      "value": 20,
+      "unit": "km/h",
+      "fitted_to": ["weather.camp-2-wind", "weather.beaufort-near-gale"],
+      "fitted": "2026-11-18"
+    },
+    {
+      "id": "weather.icefall-wind-strong",
+      "kind": "coefficient",
+      "claim": "The wind a pocket wind meter reads in the Icefall in the weather the scenarios call a strong wind (#260): the strongest the drones flew in over it, half the storm that wrecks Camp II above, just short of a near gale.",
+      "status": "source only",
+      "value": 45,
+      "unit": "km/h",
+      "fitted_to": [
+        "weather.icefall-drone-wind",
+        "weather.camp-2-storm-wind",
+        "weather.beaufort-near-gale"
+      ],
+      "fitted": "2026-11-18"
+    },
+    {
+      "id": "weather.icefall-gust",
+      "kind": "coefficient",
+      "claim": "The speed of a gust that can take a climber off balance on a ladder or blue ice (#260, hazards.gust-slip): the low end of the storm winds that wreck Camp II's tents, a gale.",
+      "status": "source only",
+      "value": 70,
+      "unit": "km/h",
+      "fitted_to": ["weather.camp-2-storm-wind", "weather.beaufort-gale"],
+      "fitted": "2026-11-18"
+    },
+    {
+      "id": "weather.base-camp-station-altitude",
+      "kind": "fact",
+      "claim": "The weather station at Everest's Base Camp stands at this altitude, on the moraine across from the Khumbu Icefall.",
+      "status": "source only",
+      "versions": [
+        {
+          "value": 5315,
+          "unit": "m",
+          "source": {
+            "title": "Khadka et al.: Weather station data from the Mount Everest region, Nepal: 3810–8810 m above sea level (Earth System Science Data, 2026)",
+            "url": "https://essd.copernicus.org/articles/18/7253/2026/"
+          },
+          "checked": "2026-11-18"
+        },
+        {
+          "value": 5315,
+          "unit": "m",
+          "source": {
+            "title": "The Himalayan Times: weather stations installed on Everest",
+            "url": "https://thehimalayantimes.com/ampArticle/1012258"
+          },
+          "checked": "2026-11-18"
+        }
+      ]
+    },
+    {
+      "id": "weather.base-camp-mean-temperature",
+      "kind": "fact",
+      "claim": "At the Base Camp weather station the air's mean temperature over the year is this.",
+      "status": "source only",
+      "versions": [
+        {
+          "value": -3.1,
+          "unit": "°C",
+          "note": "Over December 2019 to November 2022; the station at Camp II's is −10.2 °C, 4.1 °C at Phortse's.",
+          "source": {
+            "title": "Khadka et al.: Weather station data from the Mount Everest region, Nepal: 3810–8810 m above sea level (Earth System Science Data, 2026)",
+            "url": "https://essd.copernicus.org/articles/18/7253/2026/"
+          },
+          "checked": "2026-11-18"
+        }
+      ]
+    },
+    {
+      "id": "weather.camp-2-mean-temperature",
+      "kind": "fact",
+      "claim": "At the weather station at Camp II, 6,464 m, in the Western Cwm, the air's mean temperature over the year is this.",
+      "status": "source only",
+      "versions": [
+        {
+          "value": -10.2,
+          "unit": "°C",
+          "source": {
+            "title": "Khadka et al.: Weather station data from the Mount Everest region, Nepal: 3810–8810 m above sea level (Earth System Science Data, 2026)",
+            "url": "https://essd.copernicus.org/articles/18/7253/2026/"
+          },
+          "checked": "2026-11-18"
+        }
+      ]
+    },
+    {
+      "id": "weather.base-camp-premonsoon-temperature",
+      "kind": "fact",
+      "claim": "At the Base Camp weather station the air's mean temperature over the spring, March to May, is this.",
+      "status": "source only",
+      "versions": [
+        {
+          "value": -4.5,
+          "unit": "°C",
+          "note": "The station's seasonal means from December 2019 to November 2022 (Khadka et al. 2026): −8.8 °C in winter, 2.4 °C in the monsoon.",
+          "source": {
+            "title": "Magical Nepal: Everest Base Camp Weather and Temperature by Month and Altitude",
+            "url": "https://www.magicalnepal.com/travel-guide/everest/everest-base-camp-trek-weather/"
+          },
+          "checked": "2026-11-18"
+        }
+      ]
+    },
+    {
+      "id": "weather.base-camp-april-temperatures",
+      "kind": "fact",
+      "claim": "In April, Base Camp's nights fall to the low end of this range in the shade, and its afternoons rise to the high end.",
+      "status": "source only",
+      "versions": [
+        {
+          "range": {
+            "min": -9,
+            "max": 0
+          },
+          "unit": "°C",
+          "note": "Night low and afternoon high in the shade, derived from the station's seasonal means.",
+          "source": {
+            "title": "Magical Nepal: Everest Base Camp Weather and Temperature by Month and Altitude",
+            "url": "https://www.magicalnepal.com/travel-guide/everest/everest-base-camp-trek-weather/"
+          },
+          "checked": "2026-11-18"
+        },
+        {
+          "range": {
+            "min": -15,
+            "max": 5
+          },
+          "unit": "°C",
+          "note": "Overnight lows and daytime highs in April and May; the page gives no source.",
+          "source": {
+            "title": "Nepal Intrepid Treks: How Cold Is Mount Everest?",
+            "url": "https://www.nepalintrepidtreks.com/how-cold-is-mount-everest/"
+          },
+          "checked": "2026-11-18"
+        }
+      ]
+    },
+    {
+      "id": "weather.premonsoon-lapse-rate",
+      "kind": "fact",
+      "claim": "In spring the air on Everest's south side cools by this much for every kilometre higher.",
+      "status": "source only",
+      "versions": [
+        {
+          "value": 6.5,
+          "unit": "°C/km",
+          "note": "The gradient from four stations, Phortse to the South Col, in the pre-monsoon season; −6.0 °C a kilometre over the year.",
+          "source": {
+            "title": "Khadka et al.: Weather station data from the Mount Everest region, Nepal: 3810–8810 m above sea level (Earth System Science Data, 2026)",
+            "url": "https://essd.copernicus.org/articles/18/7253/2026/"
+          },
+          "checked": "2026-11-18"
+        },
+        {
+          "value": 6.7,
+          "unit": "°C/km",
+          "note": "The region's lapse rate in the pre-monsoon season.",
+          "source": {
+            "title": "Jalawaayu (NepJOL), article 52069: the five Everest weather stations, June 2019 to May 2020",
+            "url": "https://nepjol.info/index.php/jalawaayu/article/download/52069/39003"
+          },
+          "checked": "2026-11-18"
+        }
+      ]
+    },
+    {
+      "id": "weather.base-camp-daily-cycle",
+      "kind": "fact",
+      "claim": "At the Base Camp weather station the air is coldest around sunrise and warmest around midday: it warms fast in the morning sun, cools fast through the late afternoon, and slowly through the night.",
+      "status": "source only",
+      "versions": [
+        {
+          "range": {
+            "min": -9.7,
+            "max": -0.8
+          },
+          "unit": "°C",
+          "note": "A clear day, 17–18 Nov 2026: −2.6 °C at 13:45, −5.9 °C at 17:45, −7.4 °C at 00:45, −9.7 °C at 06:45, −5.3 °C at 08:45, −2.2 °C at 09:45 and −0.8 °C at 12:45.",
+          "source": {
+            "title": "Appalachian State University: Everest Weather Portal, the stations' hourly readings",
+            "url": "https://datadash.appstate.edu/high-altitude-climate/lb"
+          },
+          "checked": "2026-11-18"
+        }
+      ]
+    },
+    {
+      "id": "weather.base-camp-spring-lowest",
+      "kind": "fact",
+      "claim": "The lowest temperature measured at Base Camp in the spring of 1953 was this; night temperatures were usually well above it.",
+      "status": "source only",
+      "versions": [
+        {
+          "value": -23,
+          "unit": "°C",
+          "note": "At 18,000 ft; usually night temperatures were considerably higher.",
+          "source": {
+            "title": "L. G. C. E. Pugh: Notes on temperature and snow conditions in the Everest region in spring 1952 and 1953 (Journal of Glaciology)",
+            "url": "https://resolve.cambridge.org/core/product/E895474FE6DD9C0B32F0C765D29EA100/core-reader"
+          },
+          "checked": "2026-11-18"
+        }
+      ]
+    },
+    {
+      "id": "weather.western-cwm-may-night",
+      "kind": "fact",
+      "claim": "In the Western Cwm in the second half of May 1953, the coldest night temperature observed was this.",
+      "status": "source only",
+      "versions": [
+        {
+          "value": -10,
+          "unit": "°C",
+          "source": {
+            "title": "L. G. C. E. Pugh: Notes on temperature and snow conditions in the Everest region in spring 1952 and 1953 (Journal of Glaciology)",
+            "url": "https://resolve.cambridge.org/core/product/E895474FE6DD9C0B32F0C765D29EA100/core-reader"
+          },
+          "checked": "2026-11-18"
+        }
+      ]
+    },
+    {
+      "id": "weather.icefall-shade-high",
+      "kind": "fact",
+      "claim": "The warmest shade temperature recorded at 18,500 ft in the spring of 1953 was this, probably too high: the high sun and the light thrown back by the snow make a shade reading hard.",
+      "status": "source only",
+      "versions": [
+        {
+          "value": 7,
+          "unit": "°C",
+          "note": "In the sun, the tents reached 37.8 °C during the day.",
+          "source": {
+            "title": "L. G. C. E. Pugh: Notes on temperature and snow conditions in the Everest region in spring 1952 and 1953 (Journal of Glaciology)",
+            "url": "https://resolve.cambridge.org/core/product/E895474FE6DD9C0B32F0C765D29EA100/core-reader"
+          },
+          "checked": "2026-11-18"
+        }
+      ]
+    },
+    {
+      "id": "weather.camp-2-wind",
+      "kind": "fact",
+      "claim": "At the weather station at Camp II, in the Western Cwm, the wind blows at this speed on a usual day; it is strongest in winter, and at the stations below it, around midday.",
+      "status": "source only",
+      "versions": [
+        {
+          "value": 3,
+          "unit": "m/s",
+          "note": "The mean daily wind is over 3 m/s, its highest over 17 m/s in winter; the lower stations' wind peaks between 12:00 and 14:00.",
+          "source": {
+            "title": "Jalawaayu (NepJOL), article 52069: the five Everest weather stations, June 2019 to May 2020",
+            "url": "https://nepjol.info/index.php/jalawaayu/article/download/52069/39003"
+          },
+          "checked": "2026-11-18"
+        },
+        {
+          "range": {
+            "min": 4.1,
+            "max": 10.2
+          },
+          "unit": "m/s",
+          "note": "Hourly readings over 17–18 Nov 2026.",
+          "source": {
+            "title": "Appalachian State University: Everest Weather Portal, the stations' hourly readings",
+            "url": "https://datadash.appstate.edu/high-altitude-climate/lb"
+          },
+          "checked": "2026-11-18"
+        }
+      ]
+    },
+    {
+      "id": "weather.khumbu-valley-winds",
+      "kind": "fact",
+      "claim": "In the Khumbu valley the wind blows up the valley by day, and its winds at night are weak.",
+      "status": "source only",
+      "versions": [
+        {
+          "note": "Well-defined daytime up-valley winds; night-time along-valley winds weak in magnitude.",
+          "source": {
+            "title": "Atmospheric Chemistry and Physics 23, 821 (2023): the winds of four Himalayan valleys, the Khumbu among them",
+            "url": "https://acp.copernicus.org/articles/23/821/2023/"
+          },
+          "checked": "2026-11-18"
+        }
+      ]
+    },
+    {
+      "id": "weather.camp-2-storm-wind",
+      "kind": "fact",
+      "claim": "When the jet stream comes down on the Western Cwm in spring, its winds blow at this speed and wreck Camp II's tents.",
+      "status": "source only",
+      "versions": [
+        {
+          "range": {
+            "min": 70,
+            "max": 90
+          },
+          "unit": "km/h",
+          "note": "Most of Camp 2's tents damaged or destroyed by winds of 70 to 90 km/h.",
+          "source": {
+            "title": "ExplorersWeb: High Winds Partly Destroy Camps 1 and 2 on Everest",
+            "url": "https://explorersweb.com/high-winds-destroy-everest-tents"
+          },
+          "checked": "2026-11-18"
+        },
+        {
+          "range": {
+            "min": 80,
+            "max": 90
+          },
+          "unit": "km/h",
+          "note": "Wind gusting at 80 to 90 km/h blew most tents away; the roar was heard at Base Camp.",
+          "source": {
+            "title": "The Himalayan Times: Jet stream winds wreck tents at Camp II on Everest",
+            "url": "https://thehimalayantimes.com/nepal/jet-stream-winds-wreck-tents-at-camp-ii-on-everest"
+          },
+          "checked": "2026-11-18"
+        },
+        {
+          "value": 90,
+          "unit": "km/h",
+          "note": "Tents blown off Camp 2 at 6,500 m, the wind estimated at 90 km/h.",
+          "source": {
+            "title": "Gripped: Strong Winds Blow Several Tents Off Everest",
+            "url": "https://gripped.com/news/strong-winds-blow-several-tents-off-everest/"
+          },
+          "checked": "2026-11-18"
+        }
+      ]
+    },
+    {
+      "id": "weather.icefall-air-clear",
+      "kind": "coefficient",
+      "claim": "The air at the Base Camp weather station on a clear day in late April (#260), coldest at sunrise and warmest at midday: a clear night is colder and a clear day warmer than April's usual nights and afternoons, its coldest well above the spring's lowest and its warmest under the shade high of 1953; carried up to the summit by the spring's lapse rate, it spans the summit's mid-May temperatures.",
+      "status": "source only",
+      "range": {
+        "min": -10,
+        "max": 2
+      },
+      "unit": "°C",
+      "fitted_to": [
+        "weather.base-camp-april-temperatures",
+        "weather.base-camp-premonsoon-temperature",
+        "weather.base-camp-daily-cycle",
+        "weather.base-camp-spring-lowest",
+        "weather.icefall-shade-high",
+        "weather.summit-temperature"
+      ],
+      "fitted": "2026-11-18"
+    },
+    {
+      "id": "weather.icefall-air-cloud",
+      "kind": "coefficient",
+      "claim": "The air at the Base Camp weather station on a cloudy day in late April (#260): cloud keeps the night warmer and the day cooler, about half a clear day's range, inside April's usual range.",
+      "status": "source only",
+      "range": {
+        "min": -7,
+        "max": -2
+      },
+      "unit": "°C",
+      "fitted_to": [
+        "weather.base-camp-april-temperatures",
+        "weather.base-camp-premonsoon-temperature",
+        "weather.base-camp-daily-cycle"
+      ],
+      "fitted": "2026-11-18"
+    },
+    {
+      "id": "weather.icefall-air-snow",
+      "kind": "coefficient",
+      "claim": "The air at the Base Camp weather station while snow falls in late April (#260): a few degrees under freezing, with the least change through the day.",
+      "status": "source only",
+      "range": {
+        "min": -6,
+        "max": -3
+      },
+      "unit": "°C",
+      "fitted_to": [
+        "weather.base-camp-april-temperatures",
+        "weather.base-camp-premonsoon-temperature",
+        "weather.base-camp-daily-cycle"
+      ],
+      "fitted": "2026-11-18"
+    },
+    {
+      "id": "weather.icefall-air-wind",
+      "kind": "coefficient",
+      "claim": "The air at the Base Camp weather station on a day of strong wind in late April (#260): the colder air the jet stream brings down, a few degrees under a clear day's, its coldest well above the spring's lowest.",
+      "status": "source only",
+      "range": {
+        "min": -13,
+        "max": -6
+      },
+      "unit": "°C",
+      "fitted_to": [
+        "weather.base-camp-april-temperatures",
+        "weather.base-camp-premonsoon-temperature",
+        "weather.base-camp-daily-cycle",
+        "weather.base-camp-spring-lowest",
+        "weather.camp-2-storm-wind"
+      ],
+      "fitted": "2026-11-18"
+    },
+    {
+      "id": "weather.icefall-coldest-hour",
+      "kind": "coefficient",
+      "claim": "The hour at which the air is coldest in late April (#260): around sunrise, as the station's hourly readings show, which comes earlier in April than in November.",
+      "status": "source only",
+      "value": 6,
+      "unit": "h",
+      "fitted_to": ["weather.base-camp-daily-cycle"],
+      "fitted": "2026-11-18"
+    },
+    {
+      "id": "weather.icefall-warmest-hour",
+      "kind": "coefficient",
+      "claim": "The hour at which the air is warmest (#260): around midday, as the station's hourly readings show.",
+      "status": "source only",
+      "value": 13,
+      "unit": "h",
+      "fitted_to": ["weather.base-camp-daily-cycle"],
+      "fitted": "2026-11-18"
     }
   ]
 }

@@ -11,6 +11,8 @@ import type { ControlTexts } from "../input/controls-page";
 import { PageElements } from "../input/page-elements";
 import type { ActionSink } from "../input/player-action";
 import { ReceivedActions } from "../input/received-actions";
+import { AirTemperature } from "../interface/air-temperature";
+import { BaseCamp } from "../interface/base-camp";
 import { CampNotice } from "../interface/camp-notice";
 import { Coach } from "../interface/coach";
 import { CoachArrow } from "../interface/coach-arrow";
@@ -22,12 +24,16 @@ import { CoachMark } from "../interface/coach-mark";
 import type { MarkTextName } from "../interface/coach-mark";
 import type { StepTextName } from "../interface/coach-steps";
 import { Debrief } from "../interface/debrief";
+import type { DeviceTextName } from "../interface/device-texts";
+import { GpsWatch } from "../interface/gps-watch";
 import type { DebriefTextName } from "../interface/debrief";
 import { SherpaBubble } from "../interface/sherpa-bubble";
 import { SherpaVoice } from "../interface/sherpa-voice";
 import type { SherpaTextName } from "../interface/sherpa-voice";
 import { SunClock } from "../interface/sun-clock";
 import type { Texts } from "../interface/texts";
+import { WindChill } from "../interface/wind-chill";
+import { WindMeter } from "../interface/wind-meter";
 import type { ClimberView } from "../physics";
 import {
   Camera,
@@ -48,6 +54,8 @@ import { ActionQueue, EverySink, ZoomSink } from "./action-queue";
 import { BrowserSockets } from "./browser-sockets";
 import { CarriedPace } from "./carried-pace";
 import { ClimberScreen } from "./climber-screen";
+import { DeviceReadings } from "./device-readings";
+import { DevicesPanel } from "./devices-panel";
 import { GearCheck } from "./gear-check";
 import { GodMode } from "./god-mode";
 import type { GodHooks } from "./god-mode";
@@ -102,6 +110,8 @@ export interface PageTexts {
   readonly pack: Texts<PackTextName>;
   /** Pemba's lines (#212). */
   readonly sherpa: Texts<SherpaTextName>;
+  /** The devices' words: the radio, the GPS watch, the wind meter and the tracker (#260). */
+  readonly devices: Texts<DeviceTextName>;
   /** The god mode's panel (#245). */
   readonly god: Texts<GodTextName>;
   /** The tent's words: its panel, its chores and the button at its door (#258). */
@@ -374,6 +384,7 @@ export class GamePage {
     const sink = new EverySink([climb.sink, new ZoomSink(zoom), received]);
     new ControlsPage(window, texts.controls, player, camera, sink);
     const { warmth } = this.mountain.hazardSettings();
+    const sunClock = new SunClock(warmth);
     /** Whether the scene draws: before it does, and without WebGL, nothing's pinned to it. */
     let drawn = false;
     const climbInterface = new ClimbInterface(
@@ -383,7 +394,7 @@ export class GamePage {
       rules.oxygen,
       physics,
       player,
-      new SunClock(warmth),
+      sunClock,
     );
     const inventory = new InventoryPanel(
       window,
@@ -423,6 +434,47 @@ export class GamePage {
       (camp, index) => scene.tentOver(camp, index),
       passage,
     );
+    // The devices on the harness and the wrist (#260): the radio, the GPS watch, the weather
+    // meter and the tracker, which read the climb as the rules have it.
+    const { route } = this.mountain;
+    const devices = new DevicesPanel(
+      window,
+      texts.devices,
+      sink,
+      player,
+      new DeviceReadings(
+        rules,
+        player,
+        new GpsWatch({
+          length: route.length,
+          from: route.camps[0]?.to ?? 0,
+          to: route.destination.from,
+          foot: route.camps[0]?.altitude ?? 0,
+          top: route.destination.altitude,
+          parts: route.parts,
+        }),
+        {
+          wind: new WindMeter(this.mountain.windSpeeds(), this.mountain.dayWarmth()),
+          air: new AirTemperature(this.mountain.airSettings()),
+          chill: new WindChill(this.mountain.windChill()),
+        },
+        sunClock,
+      ),
+      new BaseCamp(texts.devices),
+      {
+        profile: route.layout.terrain,
+        camp: route.destination.id,
+        ground: physics.terrain.length,
+        minutes: this.knowledge.number("gear.tracker-interval"),
+        sunrise: warmth.from * 3600,
+      },
+    );
+    devices.whenOpened(() => {
+      inventory.close();
+    });
+    inventory.whenOpened(() => {
+      devices.close();
+    });
     const coached = new CoachedClimb(
       physics,
       rules.hazards,
@@ -508,6 +560,7 @@ export class GamePage {
       tent.update(seconds);
       scene.cover(tent.covering);
       tentDoor.update();
+      devices.update(seconds);
       arrival.update(seconds);
       coach.update(seconds);
       arrow.update(coach.tip, coach.changeover);

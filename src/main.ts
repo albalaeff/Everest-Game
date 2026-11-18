@@ -2,6 +2,7 @@ import campTexts from "../content/camps.json";
 import climberTexts from "../content/climber.json";
 import coachTexts from "../content/coach.json";
 import debriefTexts from "../content/debrief.json";
+import deviceTexts from "../content/devices.json";
 import gearTexts from "../content/gear.json";
 import godTexts from "../content/god.json";
 import menuTexts from "../content/menu.json";
@@ -38,6 +39,7 @@ new Disclaimer(document, disclaimerTexts.en, new ExpertReview(facts)).show(() =>
     sherpa: new Texts(sherpaTexts.en),
     god: new Texts(godTexts.en),
     tent: new Texts(tentTexts.en),
+    devices: new Texts(deviceTexts.en),
   };
   void new GamePage(window, texts, facts, build).open();
 });

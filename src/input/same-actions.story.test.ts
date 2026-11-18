@@ -37,6 +37,7 @@ const THE_CLIMB = [
   { kind: "oxygen", climber: "anna", change: "down" },
   { kind: "check-self", climber: "anna" },
   { kind: "panel", panel: "radio" },
+  { kind: "panel", panel: "devices" },
   { kind: "panel", panel: "inventory" },
   { kind: "tent", climber: "anna", go: "in" },
   { kind: "view", change: "farther" },
@@ -68,6 +69,7 @@ function playedOnAPc(): HeardActions {
   keyboard.tap("Minus");
   keyboard.tap("Tab");
   keyboard.tap("KeyQ");
+  keyboard.tap("KeyG");
   keyboard.tap("KeyI");
   keyboard.tap("KeyT");
   keyboard.tap("KeyZ");
@@ -106,6 +108,7 @@ function playedOnAPhone(): HeardActions {
   tapTheButton("oxygen-down");
   tapTheButton("check-self");
   tapTheButton("radio");
+  tapTheButton("devices");
   tapTheButton("inventory");
   tapTheButton("tent");
   tapTheButton("view-farther");
@@ -140,6 +143,7 @@ function playedOnAGamepad(): HeardActions {
   tap(13);
   tap(8);
   tap(1);
+  tap(10);
   tap(9);
   tap(5);
   tap(14);

@@ -130,6 +130,7 @@ You can also turn around earlier: symptoms, strong wind or a queue at any stage 
 | Oxygen flow | + / − | [O2 +], [O2 -] |
 | Check yourself: symptoms, pulse oximeter, fingers | Tab or its button | [Check yourself] |
 | Radio: guide, Base Camp, your group | Q or its button | [Radio] |
+| Devices: the radio, the GPS watch, the weather meter, the satellite tracker | G or its button | [Devices] |
 | Inventory | I or its button | [Inventory] |
 | Go into a tent, at its door in camp, and out of it | T or its button | [Tent], or the button over the tent |
 | See more or less of the slope: 10, 20, 50 or 100 m on the screen | Mouse wheel, Z / X | [-], [+] |

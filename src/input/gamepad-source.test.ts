@@ -15,6 +15,7 @@ const LEFT_TRIGGER = 6;
 const RIGHT_TRIGGER = 7;
 const VIEW = 8;
 const MENU = 9;
+const LEFT_STICK = 10;
 const DPAD_UP = 12;
 const DPAD_DOWN = 13;
 const DPAD_LEFT = 14;
@@ -34,6 +35,7 @@ const ONE_PRESS_BUTTONS = [
   ["X", X, { kind: "clip", climber: "anna", cowstail: "first" }],
   ["Y", Y, { kind: "clip", climber: "anna", cowstail: "second" }],
   ["B", B, { kind: "panel", panel: "radio" }],
+  ["the left stick, pressed in", LEFT_STICK, { kind: "panel", panel: "devices" }],
   ["the D-pad's up", DPAD_UP, { kind: "oxygen", climber: "anna", change: "up" }],
   ["the D-pad's down", DPAD_DOWN, { kind: "oxygen", climber: "anna", change: "down" }],
   ["the D-pad's left", DPAD_LEFT, { kind: "view", change: "farther" }],

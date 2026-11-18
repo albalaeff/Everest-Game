@@ -4,6 +4,8 @@ import { Lamplight, Logbook, SlopePhysics } from "../physics";
 import type { Kit } from "../physics";
 import {
   Body,
+  DayWarmth,
+  Devices,
   Jolts,
   MountainClock,
   ObjectiveHazards,
@@ -12,7 +14,9 @@ import {
   Tents,
 } from "../simulation";
 import type {
+  DeviceNumbers,
   HazardKind,
+  HazardWeather,
   HazardOdds,
   HazardSettings,
   JoltKind,
@@ -50,7 +54,59 @@ export interface ExpeditionRules {
   readonly tents: Tents;
   /** The climbers' Sherpa, Pemba, who guides them (#212). */
   readonly sherpa: Sherpa;
+  /** The radios and the satellite trackers the climbers carry (#260). */
+  readonly devices: Devices;
   readonly all: readonly Rule[];
+}
+
+/** The wind's speeds in the Icefall, in km/h, as the wind meter reads them (#260), and where its
+ * names start on the Beaufort scale. */
+export interface WindSpeeds {
+  readonly still: number;
+  readonly thermal: number;
+  readonly snow: number;
+  readonly strong: number;
+  readonly gust: number;
+  readonly scale: {
+    readonly breeze: number;
+    readonly fresh: number;
+    readonly strong: number;
+    readonly gale: number;
+  };
+}
+
+/** The air's temperatures, as the weather meter's thermometer and Base Camp's station read them
+ * (#260): a day's coldest and warmest at the station in each weather, in °C; the hours they come
+ * at; the degrees it cools a kilometre higher; and the station's altitude. */
+export interface AirSettings {
+  readonly days: Readonly<Record<HazardWeather, { readonly min: number; readonly max: number }>>;
+  readonly coldest: number;
+  readonly warmest: number;
+  readonly lapse: number;
+  readonly station: number;
+}
+
+/** A band of the risk of frostbite: the wind chill it starts at, and the minutes bare skin can
+ * freeze in, where a source gives them. */
+interface FrostbiteBand {
+  readonly from: number;
+  readonly freezes: { readonly min: number; readonly max: number } | null;
+}
+
+/** The wind chill index's terms and limits, the weather meter's factor for the wind 10 m up, and
+ * the bands of the risk of frostbite over low (#260). */
+export interface WindChillSettings {
+  readonly constant: number;
+  readonly air: number;
+  readonly wind: number;
+  readonly airInWind: number;
+  readonly power: number;
+  readonly warmest: number;
+  readonly calmest: number;
+  readonly factor: number;
+  readonly risks: Readonly<
+    Record<"moderate" | "high" | "very-high" | "severe" | "extreme", FrostbiteBand>
+  >;
 }
 
 /**
@@ -63,6 +119,8 @@ export class Mountain {
   /** The record the mountain's clock runs at: how many times faster than play. */
   static readonly COMPRESSION = "time.compression";
   private static readonly SECONDS_AN_HOUR = 60 * 60;
+  private static readonly SECONDS_A_MINUTE = 60;
+  private static readonly SECONDS_A_DAY = 24 * 60 * 60;
 
   /** What the player's answers make of their climber. */
   readonly climbers: ClimberFacts;
@@ -107,6 +165,7 @@ export class Mountain {
       start: {
         ...scenario.start,
         [Logbook.NAME]: Logbook.start(scenario.climbers),
+        [Devices.NAME]: Devices.start({ climbers: scenario.climbers }),
       },
     };
   }
@@ -141,6 +200,8 @@ export class Mountain {
       this.route.logged,
       this.route.base?.to ?? null,
     );
+    // The devices after the physics: a climber who hangs in a crevasse this step has no contact.
+    const devices = new Devices(this.deviceNumbers(), clock, physics);
     // The Sherpa acts at the start of each step, from where the last left everyone (#212).
     const sherpa = new Sherpa(this.sherpaSettings(), physics, hazards, clock);
     return {
@@ -155,7 +216,8 @@ export class Mountain {
       packs,
       tents,
       sherpa,
-      all: [clock, packs, tents, oxygen, body, hazards, jolts, physics, logbook, sherpa],
+      devices,
+      all: [clock, packs, tents, oxygen, body, hazards, jolts, physics, logbook, devices, sherpa],
     };
   }
 
@@ -163,6 +225,101 @@ export class Mountain {
    * (`gear.fixed-rope-stretch`, #232): the picture draws a loaded rope's give by it. */
   get ropeStretch(): number {
     return this.knowledge.number("gear.fixed-rope-stretch");
+  }
+
+  /** The devices' numbers (#260), from their records in content/facts/gear.json, in the
+   * mountain's seconds: a tracker's minutes between two points (`gear.tracker-interval`), the
+   * days its battery lasts tracking (`gear.tracker-battery`) and the minutes a message takes to
+   * leave it (`gear.messenger-delivery-time`). */
+  deviceNumbers(): DeviceNumbers {
+    return {
+      interval: this.knowledge.number("gear.tracker-interval") * Mountain.SECONDS_A_MINUTE,
+      life: this.knowledge.number("gear.tracker-battery") * Mountain.SECONDS_A_DAY,
+      delivery: this.knowledge.number("gear.messenger-delivery-time") * Mountain.SECONDS_A_MINUTE,
+    };
+  }
+
+  /** The wind's speeds a wind meter reads in the Icefall (#260), from their records in
+   * content/facts/weather.json: `weather.icefall-wind-still`, `-thermal`, `-snow` and `-strong`,
+   * and `weather.icefall-gust`; and where the names it gives them start, the lowest speed of
+   * `weather.beaufort-light-breeze`, `-fresh-breeze`, `-near-gale` and `-gale`. */
+  windSpeeds(): WindSpeeds {
+    const number = (name: string) => this.knowledge.number(`weather.icefall-${name}`);
+    const force = (name: string) => this.knowledge.range(`weather.beaufort-${name}`).min;
+    return {
+      still: number("wind-still"),
+      thermal: number("wind-thermal"),
+      snow: number("wind-snow"),
+      strong: number("wind-strong"),
+      gust: number("gust"),
+      scale: {
+        breeze: force("light-breeze"),
+        fresh: force("fresh-breeze"),
+        strong: force("near-gale"),
+        gale: force("gale"),
+      },
+    };
+  }
+
+  /** The air's temperatures (#260), from their records in content/facts/weather.json: a day's
+   * coldest and warmest at Base Camp's weather station in each weather
+   * (`weather.icefall-air-<weather>`), the hours they come at (`weather.icefall-coldest-hour`
+   * and `-warmest-hour`), the degrees it cools a kilometre higher
+   * (`weather.premonsoon-lapse-rate`), and the station's altitude
+   * (`weather.base-camp-station-altitude`). */
+  airSettings(): AirSettings {
+    const day = (weather: HazardWeather) => {
+      const { min, max } = this.knowledge.range(`weather.icefall-air-${weather}`);
+      return { min, max };
+    };
+    return {
+      days: { clear: day("clear"), cloud: day("cloud"), snow: day("snow"), wind: day("wind") },
+      coldest: this.knowledge.number("weather.icefall-coldest-hour"),
+      warmest: this.knowledge.number("weather.icefall-warmest-hour"),
+      lapse: this.knowledge.number("weather.premonsoon-lapse-rate"),
+      station: this.knowledge.number("weather.base-camp-station-altitude"),
+    };
+  }
+
+  /** The wind chill a weather meter works out (#260), from the records in
+   * content/facts/cold.json and gear.json: the index's terms and limits in °C
+   * (`cold.wind-chill-constant`, `-air`, `-wind`, `-air-in-wind`, `-power`, `-warmest` and
+   * `-calmest`), the meter's factor for the wind 10 m up (`gear.wind-meter-chill-factor`), and
+   * Canada's bands of the risk of frostbite: the warmest chill of each
+   * (`cold.wind-chill-<risk>`) and the minutes bare skin can freeze in it
+   * (`cold.freeze-time-<risk>`). */
+  windChill(): WindChillSettings {
+    const term = (name: string) => this.knowledge.number(`cold.wind-chill-${name}`);
+    const band = (risk: string, freezes: boolean): FrostbiteBand => {
+      const minutes = freezes ? this.knowledge.range(`cold.freeze-time-${risk}`) : null;
+      return {
+        from: this.knowledge.range(`cold.wind-chill-${risk}`).max,
+        freezes: minutes === null ? null : { min: minutes.min, max: minutes.max },
+      };
+    };
+    return {
+      constant: term("constant"),
+      air: term("air"),
+      wind: term("wind"),
+      airInWind: term("air-in-wind"),
+      power: term("power"),
+      warmest: term("warmest"),
+      calmest: term("calmest"),
+      factor: this.knowledge.number("gear.wind-meter-chill-factor"),
+      risks: {
+        moderate: band("moderate", false),
+        high: band("high", true),
+        "very-high": band("very-high", true),
+        severe: band("severe", true),
+        extreme: band("extreme", true),
+      },
+    };
+  }
+
+  /** The day's warmth on the ice, as the hazards have it: what the thermals blow by (#260). */
+  dayWarmth(): DayWarmth {
+    const { warmth, sun } = this.hazardSettings();
+    return new DayWarmth(warmth, sun);
   }
 
   /** The Sherpa's numbers, from their records in content/facts/technique.json: how far ahead he

@@ -610,6 +610,385 @@
       "unit": "kg",
       "fitted_to": ["gear.tourniquet-weight", "gear.splint-weight"],
       "fitted": "2026-11-17"
+    },
+    {
+      "id": "gear.radio-each-climber",
+      "kind": "fact",
+      "claim": "On a commercial expedition the climbers carry handheld VHF radios, and Base Camp talks to the mountain by radio.",
+      "status": "source only",
+      "versions": [
+        {
+          "note": "Each climber has a radio of their own, to their guides and the team.",
+          "source": {
+            "title": "Alpenglow Expeditions: Climbing Everest with Us: What Sets Our Expeditions Apart → Constant Communication",
+            "url": "https://alpenglowexpeditions.com/blog/climbing-everest-with-us-what-sets-our-expeditions-apart"
+          },
+          "checked": "2026-11-17"
+        },
+        {
+          "note": "Two-way VHF radios, and VHF communications between Base Camp and the mountain.",
+          "source": {
+            "title": "Mountain Professionals: Everest Expedition 2026, trip information packet → Included",
+            "url": "https://www.mtnprofessionals.com/_files/ugd/6d9d36_7199943a9ae84ba7a0faf7bbc249850e.pdf"
+          },
+          "checked": "2026-11-17"
+        },
+        {
+          "note": "Commercial expeditions often use handheld VHF/UHF radios. One leader at Base Camp radioed each Sherpa and member through the summit push, and kept a written journal of where each was.",
+          "source": {
+            "title": "Alan Arnette: Everest 2024: Nepal's “GPS Chip” Plan has Major Problems",
+            "url": "https://www.alanarnette.com/2024/03/05/everest-2024-nepals-gps-chip-plan-has-major-problems/"
+          },
+          "checked": "2026-11-17"
+        }
+      ]
+    },
+    {
+      "id": "gear.radio-limits",
+      "kind": "fact",
+      "claim": "A handheld radio reaches only someone who is listening on its frequency, and works by line of sight: terrain between two radios cuts their range.",
+      "status": "source only",
+      "versions": [
+        {
+          "note": "Someone has to be available to monitor the frequency at all times; the radios depend on line of sight, and work to a degree in rugged terrain.",
+          "source": {
+            "title": "Alan Arnette: Everest 2024: Nepal's “GPS Chip” Plan has Major Problems",
+            "url": "https://www.alanarnette.com/2024/03/05/everest-2024-nepals-gps-chip-plan-has-major-problems/"
+          },
+          "checked": "2026-11-17"
+        }
+      ]
+    },
+    {
+      "id": "gear.radio-range-mountains",
+      "kind": "fact",
+      "claim": "In the mountains a handheld radio reaches about this far, against tens of kilometres in a clear line of sight.",
+      "status": "source only",
+      "versions": [
+        {
+          "range": {
+            "min": 1.6,
+            "max": 8
+          },
+          "unit": "km",
+          "note": "A maker's own figures for its handheld mountain radio: 1 to 5 miles in mountains, 35 miles and more in a line of sight.",
+          "source": {
+            "title": "Alan Arnette: Everest 2024: Nepal's “GPS Chip” Plan has Major Problems",
+            "url": "https://www.alanarnette.com/2024/03/05/everest-2024-nepals-gps-chip-plan-has-major-problems/"
+          },
+          "checked": "2026-11-17"
+        }
+      ]
+    },
+    {
+      "id": "gear.recco-reflector",
+      "kind": "fact",
+      "claim": "A RECCO reflector is passive: a small tag with no battery, never switched on, that a searcher's detector finds by radar.",
+      "status": "source only",
+      "versions": [
+        {
+          "note": "A tag of 13 by 51 by 1.5 mm, two pieces of foil and a diode: no battery, no activation, no subscription. The detector weighs about 1 kg; one carried under a helicopter searches corridors 100 m wide.",
+          "source": {
+            "title": "Alan Arnette: Everest 2024: Nepal's “GPS Chip” Plan has Major Problems",
+            "url": "https://www.alanarnette.com/2024/03/05/everest-2024-nepals-gps-chip-plan-has-major-problems/"
+          },
+          "checked": "2026-11-17"
+        },
+        {
+          "note": "A radar reflector of the sort used at ski resorts for avalanche rescue; useful when the searchers already know about where the missing person is.",
+          "source": {
+            "title": "Explorersweb: Everest's New Rules: One Thumbs Up, One Needs Improvement",
+            "url": "https://explorersweb.com/everest-new-regulations-gps-recco-devices-poo-bags/"
+          },
+          "checked": "2026-11-17"
+        }
+      ]
+    },
+    {
+      "id": "gear.recco-range-air",
+      "kind": "fact",
+      "claim": "A RECCO detector finds a reflector up to this far away through the air.",
+      "status": "source only",
+      "versions": [
+        {
+          "value": 80,
+          "unit": "m",
+          "note": "The handheld detector, through the air.",
+          "source": {
+            "title": "Alan Arnette: Everest 2024: Nepal's “GPS Chip” Plan has Major Problems",
+            "url": "https://www.alanarnette.com/2024/03/05/everest-2024-nepals-gps-chip-plan-has-major-problems/"
+          },
+          "checked": "2026-11-17"
+        },
+        {
+          "value": 80,
+          "unit": "m",
+          "note": "The detector carried by a helicopter, at the most.",
+          "source": {
+            "title": "Explorersweb: Everest's New Rules: One Thumbs Up, One Needs Improvement",
+            "url": "https://explorersweb.com/everest-new-regulations-gps-recco-devices-poo-bags/"
+          },
+          "checked": "2026-11-17"
+        }
+      ]
+    },
+    {
+      "id": "gear.recco-range-snow",
+      "kind": "fact",
+      "claim": "A RECCO detector finds a reflector up to this far away through snow.",
+      "status": "source only",
+      "versions": [
+        {
+          "value": 20,
+          "unit": "m",
+          "note": "The handheld detector, through packed snow.",
+          "source": {
+            "title": "Alan Arnette: Everest 2024: Nepal's “GPS Chip” Plan has Major Problems",
+            "url": "https://www.alanarnette.com/2024/03/05/everest-2024-nepals-gps-chip-plan-has-major-problems/"
+          },
+          "checked": "2026-11-17"
+        },
+        {
+          "value": 20,
+          "unit": "m",
+          "note": "The handheld detector's reach; the helicopter's finds a person under two metres of snow.",
+          "source": {
+            "title": "Explorersweb: Everest's New Rules: One Thumbs Up, One Needs Improvement",
+            "url": "https://explorersweb.com/everest-new-regulations-gps-recco-devices-poo-bags/"
+          },
+          "checked": "2026-11-17"
+        }
+      ]
+    },
+    {
+      "id": "gear.satellite-messenger",
+      "kind": "fact",
+      "claim": "A satellite messenger sends and receives short texts, shares its position and calls for rescue through the Iridium satellites, where no phone has a signal.",
+      "status": "source only",
+      "versions": [
+        {
+          "note": "Garmin's inReach Mini 2 fits in a palm, alerts search and rescue, and sends and receives texts by the Iridium satellites, not by the phone network, on a subscription.",
+          "source": {
+            "title": "Alan Arnette: Everest 2024: Nepal's “GPS Chip” Plan has Major Problems",
+            "url": "https://www.alanarnette.com/2024/03/05/everest-2024-nepals-gps-chip-plan-has-major-problems/"
+          },
+          "checked": "2026-11-17"
+        }
+      ]
+    },
+    {
+      "id": "gear.tracker-interval",
+      "kind": "fact",
+      "claim": "A satellite tracker that's tracking sends its position every this many minutes, by default.",
+      "status": "source only",
+      "versions": [
+        {
+          "value": 10,
+          "unit": "min",
+          "note": "The default tracking mode sends a point every 10 minutes.",
+          "source": {
+            "title": "Sports Basement: Garmin inReach Mini 2 → Battery life",
+            "url": "https://www.sportsbasement.com/products/inreach-mini-2"
+          },
+          "checked": "2026-11-17"
+        },
+        {
+          "value": 10,
+          "unit": "min",
+          "source": {
+            "title": "Guidefitter, Garmin's shop: inReach Mini 2 → Specifications",
+            "url": "https://i.guidefitter.com/garmin/shop/inreach-mini-2"
+          },
+          "checked": "2026-11-17"
+        }
+      ]
+    },
+    {
+      "id": "gear.tracker-battery",
+      "kind": "fact",
+      "claim": "A satellite tracker's battery lasts up to this many days tracking at its default interval, under an open sky.",
+      "status": "source only",
+      "versions": [
+        {
+          "value": 14,
+          "unit": "days",
+          "source": {
+            "title": "Sports Basement: Garmin inReach Mini 2 → Battery life",
+            "url": "https://www.sportsbasement.com/products/inreach-mini-2"
+          },
+          "checked": "2026-11-17"
+        },
+        {
+          "value": 14,
+          "unit": "days",
+          "note": "With a full view of the sky; fewer days where the view is partly blocked.",
+          "source": {
+            "title": "Guidefitter, Garmin's shop: inReach Mini 2 → Specifications",
+            "url": "https://i.guidefitter.com/garmin/shop/inreach-mini-2"
+          },
+          "checked": "2026-11-17"
+        }
+      ]
+    },
+    {
+      "id": "gear.messenger-delivery",
+      "kind": "fact",
+      "claim": "A message from a satellite messenger typically leaves and arrives within a few minutes.",
+      "status": "source only",
+      "versions": [
+        {
+          "note": "Messages typically send and arrive within a few minutes.",
+          "source": {
+            "title": "Section Hiker: Garmin inReach Mini 2 Review → Durability",
+            "url": "https://sectionhiker.com/garmin-inreach-mini-2-review-communication-beyond-cell-service/"
+          },
+          "checked": "2026-11-17"
+        }
+      ]
+    },
+    {
+      "id": "gear.messenger-delivery-time",
+      "kind": "coefficient",
+      "claim": "How many of the mountain's minutes a check-in or an SOS takes to leave a satellite tracker that sees the sky (#260): the few minutes gear.messenger-delivery gives.",
+      "status": "source only",
+      "value": 3,
+      "unit": "min",
+      "fitted_to": ["gear.messenger-delivery"],
+      "fitted": "2026-11-17"
+    },
+    {
+      "id": "gear.gps-limits",
+      "kind": "fact",
+      "claim": "A GPS device needs a clear view of the sky: steep terrain and bad weather block its signal, signals that bounce off mountain walls give wrong positions, and its battery runs out, or its owner forgets to switch it on or drops it.",
+      "status": "source only",
+      "versions": [
+        {
+          "note": "Climbers have used GPS devices for years, but they aren't fully reliable: batteries run out, users forget to turn them on or drop them, signals bounce off the walls, and a clear view of the sky is needed.",
+          "source": {
+            "title": "Alan Arnette: Everest 2024: Nepal's “GPS Chip” Plan has Major Problems",
+            "url": "https://www.alanarnette.com/2024/03/05/everest-2024-nepals-gps-chip-plan-has-major-problems/"
+          },
+          "checked": "2026-11-17"
+        }
+      ]
+    },
+    {
+      "id": "gear.cold-battery",
+      "kind": "fact",
+      "claim": "At about −18 °C a battery delivers only about this share of the capacity it has at 27 °C; the loss is temporary, and comes back as the battery warms.",
+      "status": "source only",
+      "versions": [
+        {
+          "value": 50,
+          "unit": "%",
+          "note": "About half at −18 °C, and about the same for most batteries at −20 °C; the reduced capacity recovers at room temperature, and warming a nearly flat battery adds runtime.",
+          "source": {
+            "title": "Battery University: BU-502: Discharging at High and Low Temperatures",
+            "url": "https://batteryuniversity.com/article/bu-502-discharging-at-high-and-low-temperatures"
+          },
+          "checked": "2026-11-17"
+        }
+      ]
+    },
+    {
+      "id": "gear.watch-altimeter",
+      "kind": "fact",
+      "claim": "A GPS watch reads its altitude from a barometric altimeter, from the air's pressure: the reading drifts as the weather changes the pressure, and the watch is calibrated at a known elevation or from its GPS.",
+      "status": "source only",
+      "versions": [
+        {
+          "note": "The watch shows an approximate elevation based on pressure changes, and is calibrated by hand at a known elevation, from a digital elevation model or from its GPS position.",
+          "source": {
+            "title": "Garmin: Descent Mk3 owner's manual → Altimeter and Barometer",
+            "url": "https://www8.garmin.com/manuals-apac/webhelp/descentmk3series/EN-SG/GUID-9B5861AC-26E7-439E-A0A0-E133C3C4FD50-2313.html"
+          },
+          "checked": "2026-11-17"
+        },
+        {
+          "note": "On the trek to Base Camp, the altitude on the watch's main screen, from its barometric altimeter, was the feature used most.",
+          "source": {
+            "title": "Advnture: I wore the Garmin Fenix 8 on the trek to Everest Base Camp",
+            "url": "https://www.advnture.com/tech/watches-wearable-tech/i-wore-the-garmin-fenix-8-on-the-trek-to-everest-base-camp-and-there-were-4-features-i-loved-plus-2-i-didnt"
+          },
+          "checked": "2026-11-17"
+        }
+      ]
+    },
+    {
+      "id": "gear.wind-meter",
+      "kind": "fact",
+      "claim": "A pocket weather meter reads the wind's speed as it is now, on average and at its strongest, with the air's temperature and the wind chill; climbers have carried them on Everest.",
+      "status": "source only",
+      "versions": [
+        {
+          "note": "It measures the wind speed, instant, average and maximum, the air temperature and the wind chill.",
+          "source": {
+            "title": "Trailspace: Kestrel 2000 Weather Meter",
+            "url": "https://www.trailspace.com/gear/kestrel/2000/"
+          },
+          "checked": "2026-11-17"
+        },
+        {
+          "note": "Climbers have used the meters while climbing Everest; one team's member watched the barometric pressure and its three-hour trend on hers.",
+          "source": {
+            "title": "Kestrel Instruments: Altitude and Mountain Climbing: Kestrel 2500 and Kestrel 4000",
+            "url": "https://kestrelmeters.com/blog/altitude-and-mountain-climbing-kestrel-2500-and-kestrel-4000"
+          },
+          "checked": "2026-11-17"
+        }
+      ]
+    },
+    {
+      "id": "gear.client-electronics",
+      "kind": "question",
+      "question": "Which electronics does a client carry through the Icefall today, and which stay with the guide or at Base Camp: a radio of their own, a satellite messenger, a GPS watch, a wind meter, an avalanche transceiver? At which places does a team call Base Camp from the Icefall, and where in it does a handheld radio lose Base Camp? The game gives the client all four devices, and loses the radio and the sky only where a climber hangs in a crevasse (#260).",
+      "about": ["gear.radio-each-climber", "gear.radio-limits", "gear.gps-limits", "gear.wind-meter"]
+    },
+    {
+      "id": "gear.wind-meter-readings",
+      "kind": "fact",
+      "claim": "A pocket weather meter reads the air's temperature to a tenth of a degree, within a degree, and keeps the average wind and the strongest 3-second gust since it was switched on.",
+      "status": "source only",
+      "versions": [
+        {
+          "value": 0.1,
+          "unit": "°C",
+          "note": "Current, maximum (the strongest 3-second gust since power on) and average wind; temperature and wind chill, ±1 °C; an external thermistor, so the temperature answers fast.",
+          "source": {
+            "title": "Kestrel 2000 Thermo-Anemometer data sheet",
+            "url": "https://static.chipdip.ru/lib/386/DOC033386569.pdf"
+          },
+          "checked": "2026-11-18"
+        },
+        {
+          "value": 0.1,
+          "unit": "°C",
+          "note": "Temperature resolution 0.1 °C.",
+          "source": {
+            "title": "RS Components: Kestrel 2000 specifications",
+            "url": "https://uk.rs-online.com/web/p/anemometers/3144282"
+          },
+          "checked": "2026-11-18"
+        }
+      ]
+    },
+    {
+      "id": "gear.wind-meter-chill-factor",
+      "kind": "fact",
+      "claim": "A pocket weather meter works out the wind chill from the wind it reads in the hand multiplied by this, to stand for the wind 10 m above the ground that the index takes.",
+      "status": "source only",
+      "versions": [
+        {
+          "value": 1.5,
+          "unit": "1",
+          "note": "The NWS Wind Chill Temperature index, revised 2001, with the wind speed adjusted by a factor of 1.5.",
+          "source": {
+            "title": "TEquipment: Kestrel 2500NV specifications → Wind Chill",
+            "url": "https://www.tequipment.net/KestrelK2500NV.html"
+          },
+          "checked": "2026-11-18"
+        }
+      ]
     }
   ]
 }

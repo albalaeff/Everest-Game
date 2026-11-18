@@ -21,6 +21,7 @@ export class InventoryPanel {
   private readonly weight: HTMLElement;
   private readonly meter: HTMLElement;
   private readonly list: PackList;
+  private whenOpen: () => void = () => undefined;
 
   constructor(
     window: Window,
@@ -71,6 +72,11 @@ export class InventoryPanel {
         this.close();
       }
     });
+  }
+
+  /** What to do as the card opens: close the card it would lie over (#260). */
+  whenOpened(callback: () => void): void {
+    this.whenOpen = callback;
   }
 
   /** The pack as it is this frame, while the card is open. */
@@ -128,12 +134,13 @@ export class InventoryPanel {
       this.close();
       return;
     }
+    this.whenOpen();
     this.panel.hidden = false;
     this.button.setAttribute("aria-expanded", "true");
     this.update();
   }
 
-  private close(): void {
+  close(): void {
     this.panel.hidden = true;
     this.button.setAttribute("aria-expanded", "false");
   }
