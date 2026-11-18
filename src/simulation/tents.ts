@@ -81,7 +81,14 @@ export interface Campground {
   /** Every living climber on the slope. */
   readonly climbers: readonly ClimberId[];
   along(id: ClimberId): number;
-  climber(id: ClimberId): { readonly falling: boolean; readonly dead: boolean };
+  /** As the slope has them: off their feet, dead, down with a bone broken, and whom they carry
+   * on their back (#241). */
+  climber(id: ClimberId): {
+    readonly falling: boolean;
+    readonly dead: boolean;
+    readonly down: boolean;
+    readonly carrying: ClimberId | null;
+  };
   /** Takes a climber in under cover, where they stay put whatever their keys say, or lets them
    * out again. */
   shelter(id: ClimberId, inside: boolean): void;
@@ -253,10 +260,12 @@ export class Tents implements Rule {
   }
 
   /** The door a climber could go in at now: the nearest within reach of where they stand, on
-   * their feet and outside; none for one inside, off their feet or away from every door. */
+   * their feet and outside; none for one inside, off their feet or away from every door, nor for
+   * one who lies with a bone broken or has a casualty on their back (#241): nobody crawls
+   * through a tent's door so. */
   door(id: ClimberId): TentDoor | null {
-    const { falling, dead } = this.ground.climber(id);
-    if (falling || dead || this.inside.has(id)) {
+    const { falling, dead, down, carrying } = this.ground.climber(id);
+    if (falling || dead || down || carrying !== null || this.inside.has(id)) {
       return null;
     }
     const at = this.ground.along(id);

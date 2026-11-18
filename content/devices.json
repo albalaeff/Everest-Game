@@ -93,7 +93,7 @@
     "tracker.sos-hold": "Hold SOS for 3 seconds",
     "tracker.sos-sending": "SOS sending…",
     "tracker.sos-sent": "SOS sent: Base Camp has your position",
-    "tracker.sos-note": "Today an SOS only reaches Base Camp. The rescue itself comes with a later update.",
+    "tracker.sos-note": "An SOS reaches Base Camp, and nobody sets out from there yet: on the Icefall the rescue is your own team's.",
     "tracker.note": "Cold halves a battery. Keep the tracker inside your suit."
   },
   "ru": {
@@ -190,7 +190,7 @@
     "tracker.sos-hold": "Держи SOS 3 секунды",
     "tracker.sos-sending": "SOS отправляется…",
     "tracker.sos-sent": "SOS отправлен: базовый лагерь знает, где ты",
-    "tracker.sos-note": "Пока SOS только доходит до базового лагеря. Сама спасательная операция появится в одном из обновлений.",
+    "tracker.sos-note": "SOS доходит до базового лагеря, но оттуда пока никто не выходит: на ледопаде спасает твоя же команда.",
     "tracker.note": "На холоде батарея отдаёт вдвое меньше. Носи трекер под пуховым костюмом."
   }
 }

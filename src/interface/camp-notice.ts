@@ -1,4 +1,4 @@
-import type { Fall, Kit, LogPage } from "../physics";
+import type { Fall, Injury, Kit, LogPage } from "../physics";
 import type { ClimberId, MountainClock, Strike } from "../simulation";
 import type { Debrief, DebriefTextName } from "./debrief";
 import { Readings } from "./readings";
@@ -23,6 +23,8 @@ export interface Arriving {
     readonly falls: readonly Fall[];
     /** What they checked before setting off (#196). */
     readonly kit: Kit;
+    /** What their hard landings left them (#241). */
+    readonly injuries: readonly Injury[];
   };
 }
 
@@ -50,7 +52,9 @@ export interface ClimbRecord {
  * Esc, closes it, and the climb goes on behind it; after a death, [Start over] sets off a new one,
  * where there's one to set off. It shows once each time the camp is reached, and once on a death;
  * the camp itself, with its rest and its choices, comes with #53. On the arrival it opens with
- * the line of the climbers' Sherpa, if they have one and he's alive (#212).
+ * the line of the climbers' Sherpa, if they have one and he's alive (#212). A player carried down
+ * with a bone broken and set down in the camp they set off from is told so, once (#241): the
+ * climb is over, evacuated, and the debrief says how it came to that.
  */
 export class CampNotice {
   /** How long after a death the notice waits for the body to come to rest, at the most. */
@@ -71,6 +75,7 @@ export class CampNotice {
   private inside = false;
   private deadFor = 0;
   private mourned = false;
+  private evacuated = false;
 
   constructor(
     window: Window,
@@ -123,6 +128,10 @@ export class CampNotice {
       }
       return;
     }
+    if (!this.evacuated && (this.record.page(this.player).evacuated ?? null) !== null) {
+      this.evacuated = true;
+      this.showEvacuation();
+    }
     const arrived = this.climbers.along(this.player) >= this.section.destination.from;
     if (arrived && !this.inside) {
       this.show();
@@ -163,6 +172,21 @@ export class CampNotice {
     (this.startOver === null ? this.button : this.startOverButton).focus();
   }
 
+  /** The player set down in the camp they set off from, carried down hurt (#241): where and
+   * when, and the debrief, with [Start over] where there is one. */
+  private showEvacuation(): void {
+    const { readings, clock } = this;
+    const { altitude } = this.climbers.climber(this.player);
+    this.title.textContent = this.debriefTexts.say("evacuated");
+    this.where.textContent = `${readings.altitude(altitude)} · ${readings.clock(clock.timeOfDay)}`;
+    this.took.hidden = true;
+    this.sherpaSaid.hidden = true;
+    this.startOverButton.hidden = this.startOver === null;
+    this.say();
+    this.notice.hidden = false;
+    (this.startOver === null ? this.button : this.startOverButton).focus();
+  }
+
   /** The debrief: its verdict, and a line for each thing it counts, each with its tone. */
   private say(): void {
     const { player, record } = this;
@@ -173,6 +197,7 @@ export class CampNotice {
       player,
       kit: this.climbers.climber(player).kit,
       sherpa: this.sherpa?.climber ?? null,
+      injuries: this.climbers.climber(player).injuries,
     });
     this.verdict.textContent = said.verdict.text;
     this.verdict.dataset.tone = said.verdict.tone;

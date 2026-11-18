@@ -257,6 +257,42 @@
           "checked": "2026-11-15"
         }
       ]
+    },
+    {
+      "id": "sherpas.carried-down-metres",
+      "kind": "fact",
+      "claim": "On 18 May 2023 Gelje Sherpa, a guide, gave up his client's summit to bring down a climber he found clinging to a rope in the death zone: this many metres of height, from the Balcony to the South Col, the climber wrapped in a sleeping mat, dragged on the snow or carried in turns on the rescuers' backs.",
+      "status": "source only",
+      "versions": [
+        {
+          "value": 600,
+          "unit": "m",
+          "note": "600 m down from the Balcony area to the South Col; wrapped in a sleeping mat, dragged on the snow or carried in turns on their backs to Camp 3, where a helicopter on a long line lifted him down to Base Camp.",
+          "source": {
+            "title": "Al Jazeera (Reuters): Sherpa saves Malaysian climber in Everest 'death zone' rescue (1 June 2023)",
+            "url": "https://www.aljazeera.com/news/2023/6/1/sherpa-saves-malaysian-climber-in-everest-death-zone-rescue"
+          },
+          "checked": "2026-11-17"
+        }
+      ]
+    },
+    {
+      "id": "sherpas.carried-down-hours",
+      "kind": "fact",
+      "claim": "Bringing the climber down from the Balcony to the South Col on 18 May 2023 took Gelje Sherpa about this many hours.",
+      "status": "source only",
+      "versions": [
+        {
+          "value": 6,
+          "unit": "h",
+          "note": "Over about six hours; another guide, Nima Tahi Sherpa, joined the rescue at the South Col.",
+          "source": {
+            "title": "Al Jazeera (Reuters): Sherpa saves Malaysian climber in Everest 'death zone' rescue (1 June 2023)",
+            "url": "https://www.aljazeera.com/news/2023/6/1/sherpa-saves-malaysian-climber-in-everest-death-zone-rescue"
+          },
+          "checked": "2026-11-17"
+        }
+      ]
     }
   ]
 }

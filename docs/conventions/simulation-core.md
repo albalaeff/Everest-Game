@@ -19,7 +19,7 @@ The game is real-time, not turn-based: "step" here means a twentieth of a second
 
 An agent is a rule with an `act` (#212, [agents.md](agents.md)): at the start of each step, before any rule advances, the expedition asks it what its NPCs do, from what the last step left, and every rule hears those actions with the players', in the scenario's order of climbers. The log keeps the players' alone, since the agents' come again from their state, on a replay too. The scenario names the climbers an agent steers (`Scenario.npcs`), which a room seats no player on.
 
-The god mode (#245, [rendering.md](rendering.md)) is the one way round it, a tester's, alone and never in a room: between steps, it stages the climb as a scenario's start state does, through powers the rules keep for it and no step calls (`SlopePhysics.stand` and `stageBreak`, `ObjectiveHazards.stageEvent` and `changeWeather`, `Jolts.bring` and `changeWeather`, `Sherpa.afresh`), and sets the clock on by camp's `MountainClock.skip`. The save it makes goes on from there; a climb it touched doesn't replay from its scenario and its log.
+The god mode (#245, [rendering.md](rendering.md)) is the one way round it, a tester's, alone and never in a room: between steps, it stages the climb as a scenario's start state does, through powers the rules keep for it and no step calls (`SlopePhysics.stand`, `stageBreak` and `injure`, `ObjectiveHazards.stageEvent` and `changeWeather`, `Jolts.bring`, `calm` and `changeWeather`, `Sherpa.afresh`), and sets the clock on by camp's `MountainClock.skip`. The save it makes goes on from there; a climb it touched doesn't replay from its scenario and its log.
 
 ## Rules
 
@@ -54,11 +54,11 @@ The game's rules are classes behind the `Rule` interface: `load`, `save` and `ad
 
 ## Packs
 
-What a climber chooses to carry is a rule, `Packs` (`src/simulation/packs.ts`): the jumar, a second ice tool, litres of water, bars of food and bottles of oxygen. What everyone wears and carries anyway is the body's own load.
+What a climber chooses to carry is a rule, `Packs` (`src/simulation/packs.ts`): the jumar, a second ice tool, litres of water, bars of food, bottles of oxygen, a first-aid kit and a rescue kit (#241). What everyone wears and carries anyway is the body's own load.
 
 - **A pack changes at a camp only.** `pack` (an item, `take` or `leave`) moves one of an item between the pack and the store of the camp the climber stands in, on their feet, up to the most of it one climber carries (`PackNumbers.most`). A camp's store keeps what's left there for whoever comes back, and never runs out of its `endless` items: everything at Base Camp. Higher up, water is snow melted on a tent's stove (Tents, below). Anywhere else the action does nothing.
 - **`use` drinks and eats anywhere**: `water` takes `PackNumbers.sip` litres off what the body is short of, `food` a bar's kcal, and the pack is that much lighter.
-- **The rule runs first after the clock**, and each step tells the body its load (`Shoulders.carry`: what they carry besides, plus the pack's weight) and the slope physics its gear (`Harness.equip`), so the body's stride and the physics' techniques read this step what the pack holds. The bottles are the oxygen system's to count (`Bottles.stock`): the pack shows and weighs what it has.
+- **The rule runs first after the clock**, and each step tells the body its load (`Shoulders.carry`: what they carry besides, plus the pack's weight) and the slope physics its gear (`Harness.equip`: the jumar, the tools, and whether a first-aid kit and a rescue kit are in it), so the body's stride and the physics' techniques read this step what the pack holds. A kit a rescue used up (`Harness.kitsSpent`: one first-aid kit a casualty treated, one rescue kit a line anchored) comes off the pack the step after, and a pack saved before the kits has none. The bottles are the oxygen system's to count (`Bottles.stock`): the pack shows and weighs what it has.
 - **The numbers are the knowledge base's** (`content/facts/gear.json`, read by `PackFacts`): each item's weight with its source, the most of each, the drink and the bar. A section's file has each climber's pack as they set off (`packs`) and its camps' `endless` stores; the player's own choice at Base Camp replaces theirs (`Mountain.scenario`'s `pack`).
 - **The pack's screens** are the page's: `PackScreen` at Base Camp, between Your climber and the gear check, and `InventoryPanel` on the climb, both drawing `PackList`'s tiles with index.html's `#art-…` symbols. Their words are `content/pack.json`'s.
 
@@ -81,7 +81,7 @@ The electronics a climber carries are a rule, `Devices` (`src/simulation/devices
 - **A call is kept, heard or not.** It gets out unless the climber hangs on their rope, in a crevasse or under a lip, where ice stands between the radio and Base Camp (`DeviceGround`, the slope physics). The rule keeps the call; the page gives Base Camp its words (`src/interface/base-camp.ts`), from the mountain as it was when the phrase was said.
 - **A tracker needs the sky**, the same way: tracking, it sends a point every `interval` and its battery runs down over `life`; a check-in or an SOS takes `delivery` seconds of sky to leave. An SOS turns the tracking on, and is raised once.
 - **The numbers are the knowledge base's** (`content/facts/gear.json`, read by `Mountain.deviceNumbers`): `gear.tracker-interval`, `gear.tracker-battery`, `gear.messenger-delivery-time`. The rule runs after the slope physics and draws nothing from chance.
-- **Not yet:** the radio's guide and group channels, a radio's own battery and one left in the tent (#79), the forecast (#39), and what an SOS sets in motion (#241).
+- **Not yet:** the radio's guide and group channels, a radio's own battery and one left in the tent (#79), the forecast (#39), and anyone setting out from Base Camp on an SOS: the rescue on the route is the team's own (#241).
 
 ## Scenarios, saves and replays
 

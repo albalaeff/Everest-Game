@@ -267,6 +267,11 @@ describe("Mountain", () => {
       rest: knowledge.number("technique.sherpa-rest") * 60,
       pass: knowledge.number("technique.sherpa-pass"),
       reach: knowledge.number("technique.haul-reach"),
+      aid: knowledge.number("technique.rescue-reach"),
+    });
+    // He carries a client who can't walk down to the camp the section sets off from (#241).
+    expect(together.start[Sherpa.NAME]).toMatchObject({
+      base: { from: mountain.route.camps[0]?.from, to: mountain.route.camps[0]?.to },
     });
     expect(settings.lead.near).toBeLessThan(settings.lead.far);
     expect(settings.lead.far).toBeLessThan(settings.wait);

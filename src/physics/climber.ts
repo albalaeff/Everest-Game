@@ -1,9 +1,13 @@
 import { SimulationClock } from "../simulation";
 import type { ClimberId, GameAction, Moment, Tool, Walk } from "../simulation";
 import type { Face } from "./faces";
+import { Injuries } from "./injuries";
+import type { AidSeconds, Injury } from "./injuries";
 import type { Ladder } from "./ladder";
 import { Particle } from "./particle";
 import type { ParticleSave } from "./particle";
+import type { RescueLine } from "./rescue-line";
+import type { RescueTask, RescueTasks } from "./rescue-work";
 import type { Rope, Slide } from "./rope";
 import { Slope } from "./slope";
 import { Steepness } from "./steepness";
@@ -45,6 +49,19 @@ export type Kit = {
 export type Gear = {
   readonly jumar: boolean;
   readonly tools: number;
+  /** Whether they carry a first-aid kit, a tourniquet, a splint and dressings in it, and a rescue
+   * kit, a rope, two ice screws and pulleys (#241): missing where they carry neither. */
+  readonly firstAid?: boolean;
+  readonly rescueKit?: boolean;
+};
+
+/** What a climber does for a casualty in a step (#241), the haul held: first aid, lifting them
+ * onto their back or setting them down, building the anchor of a rescue line, or hauling them up
+ * one; for whom, and how far that piece of the work has come, 0 to 1. */
+export type Helping = {
+  readonly kind: RescueTask["kind"];
+  readonly whom: ClimberId;
+  readonly progress: number;
 };
 
 /** A climber as the rest of the game sees them: the rendering, the rules above and the tests. */
@@ -117,6 +134,20 @@ export interface ClimberView {
    * and whether they've turned out of it to face the viewer, standing (#235). */
   readonly facing: Way;
   readonly towardViewer: boolean;
+  /** What their hard landings have left them, and what first aid has done for each (#241). */
+  readonly injuries: readonly Injury[];
+  /** Down: a bone broken, they lie where they came to rest and take no step, until someone
+   * carries them (#241). */
+  readonly down: boolean;
+  /** Who carries them on their back, and whom they carry, or none (#241). */
+  readonly carriedBy: ClimberId | null;
+  readonly carrying: ClimberId | null;
+  /** The rescue line they're on, going down it or back up it, or hauled up it, or none; and
+   * whether they're hauled up it, a casualty on the rope (#241). */
+  readonly onLine: string | null;
+  readonly hauled: boolean;
+  /** What they did for a casualty in the last step, the haul held, or none (#241). */
+  readonly helping: Helping | null;
 }
 
 /** A cowstail's carabiner going onto a rope (#197), as saves keep it: which cowstail, the rope
@@ -172,6 +203,10 @@ type FallingSave = {
   readonly lip?: number;
   /** Who has hauled them so far (#212): missing where nobody has. */
   readonly pullers?: readonly ClimberId[];
+  /** The hardest landing judged for what it injured so far, and whether the hardest was onto a
+   * face of ice (#241): missing from the saves of falls before it, and where none was judged. */
+  readonly judged?: number;
+  readonly onFace?: boolean;
 };
 
 /** Who hauls whom this step (#209): the speed a hanging climber is hauled up at, in m/s, who
@@ -238,9 +273,28 @@ export type ClimberSave = {
    * and not turned. */
   readonly facing?: Way;
   readonly towardViewer?: boolean;
+  /** Missing from the saves of builds before a landing injured (#241), and where there's nothing
+   * to keep: unhurt, carried by nobody and carrying nobody, on no rescue line, nobody lifting
+   * them, and no kit spent. */
+  readonly injuries?: readonly Injury[];
+  readonly carriedBy?: ClimberId;
+  readonly carrying?: ClimberId;
+  readonly onLine?: string;
+  readonly lift?: LiftSave;
+  readonly spent?: KitsSpent;
+  /** Whether the haul they hold has lifted a casualty or set one down already (#241). */
+  readonly holdSpent?: boolean;
   /** Missing from the saves of builds before the tents (#258), and where they're not in one. */
   readonly sheltered?: boolean;
 };
+
+/** A casualty being lifted onto a rescuer's back, or set down off it: by whom, and the seconds of
+ * it so far. */
+type LiftSave = { readonly by: ClimberId; readonly seconds: number };
+
+/** How many first-aid kits and rescue kits a climber has used up (#241): the packs take them out
+ * of the pack. */
+export type KitsSpent = { readonly firstAid: number; readonly rescueKit: number };
 
 /** A cowstail's carabiner, or its jumar, on a rope: it runs along it, or grips it where it is. */
 class Carabiner {
@@ -376,6 +430,10 @@ class Falling {
   pullers: readonly ClimberId[] = [];
   /** Where along the ground the lip they climb back to is, off a ladder that broke. */
   lip: number | null = null;
+  /** The hardest landing judged for what it injured so far (#241), and whether the hardest
+   * landing was onto a face of ice, not ground they could stand on. */
+  judged = 0;
+  onFace = false;
   /** Where the body was when the step began. */
   private startX: number;
   private startY: number;
@@ -408,6 +466,8 @@ class Falling {
     falling.pulled = save.pulled ?? false;
     falling.pullers = save.pullers ?? [];
     falling.lip = save.lip ?? null;
+    falling.judged = save.judged ?? 0;
+    falling.onFace = save.onFace ?? false;
     return falling;
   }
 
@@ -427,6 +487,8 @@ class Falling {
       ...(pulled ? { pulled } : {}),
       ...(this.lip === null ? {} : { lip: this.lip }),
       ...(this.pullers.length === 0 ? {} : { pullers: this.pullers }),
+      ...(this.judged > 0 ? { judged: this.judged } : {}),
+      ...(this.onFace ? { onFace: true } : {}),
     };
   }
 
@@ -535,6 +597,25 @@ export class Climber {
   private facing: Way = 1;
   private towardViewer = false;
   private took = false;
+  /** What their hard landings have left them (#241). */
+  private injuries = new Injuries();
+  /** Who carries them on their back, and whom they carry (#241): each the other's. */
+  private carrier: Climber | null = null;
+  private passenger: Climber | null = null;
+  /** The rescue line they're on: going down it or up it, or hauled up it, a casualty. */
+  private onLine: RescueLine | null = null;
+  /** Whether the haul they hold has lifted a casualty onto their back or set one down already
+   * (#241): it does neither again until it's let go and held anew, so a long hold doesn't put a
+   * casualty down the moment they're up. */
+  private holdSpent = false;
+  /** Who is lifting them onto their back, or setting them down, and the seconds of it so far. */
+  private lift: LiftSave | null = null;
+  /** The kits they've used up, and what they did for a casualty in the last step. */
+  private spent: KitsSpent = { firstAid: 0, rescueKit: 0 };
+  private helping: Helping | null = null;
+  /** As a save has them until `link` finds the climbers and the line: who carries them, whom
+   * they carry and the rescue line they're on. */
+  private linked: Pick<ClimberSave, "carriedBy" | "carrying" | "onLine"> = {};
   /** Whether they're in a tent, under cover (#258). */
   private sheltered = false;
 
@@ -555,6 +636,11 @@ export class Climber {
     to: () => null,
     by: () => false,
   };
+  /** Nobody rescues anybody. */
+  static readonly NO_RESCUES: RescueTasks = { of: () => null };
+  /** How near a rescue line's anchor a climber stands to go down it, in metres along the ground:
+   * the engine's number, a lip's. */
+  private static readonly AT_AN_ANCHOR = 0.6;
 
   /** A climber standing at `along`, still, clipped to nothing, going at `technique`'s share of
    * the speed in crampons and of the pace of a clip, with what they checked of their `kit`. */
@@ -625,7 +711,13 @@ export class Climber {
       this.gear,
       null,
       null,
-    );
+    ).keeping(this.spent);
+  }
+
+  /** The same climber with the kits they've used up: what the packs have counted stays so. */
+  private keeping(spent: KitsSpent): this {
+    this.spent = spent;
+    return this;
   }
 
   static load(save: ClimberSave, slope: Slope): Climber {
@@ -662,8 +754,28 @@ export class Climber {
     climber.heldBack = save.heldBack ?? null;
     climber.facing = save.facing ?? 1;
     climber.towardViewer = save.towardViewer ?? false;
+    climber.injuries = new Injuries(save.injuries);
+    climber.lift = save.lift ?? null;
+    climber.spent = save.spent ?? { firstAid: 0, rescueKit: 0 };
+    climber.holdSpent = save.holdSpent ?? false;
+    const { carriedBy, carrying, onLine } = save;
+    climber.linked = {
+      ...(carriedBy === undefined ? {} : { carriedBy }),
+      ...(carrying === undefined ? {} : { carrying }),
+      ...(onLine === undefined ? {} : { onLine }),
+    };
     climber.sheltered = save.sheltered ?? false;
     return climber;
+  }
+
+  /** Once every climber of a save is loaded: who carries them and whom they carry, among
+   * `others`, and the rescue line they're on (#241). */
+  link(others: ReadonlyMap<ClimberId, Climber>, slope: Slope): void {
+    const { carriedBy, carrying, onLine } = this.linked;
+    this.carrier = carriedBy === undefined ? null : (others.get(carriedBy) ?? null);
+    this.passenger = carrying === undefined ? null : (others.get(carrying) ?? null);
+    this.onLine = onLine === undefined ? null : (slope.lines.get(onLine) ?? null);
+    this.linked = {};
   }
 
   save(): ClimberSave {
@@ -697,6 +809,13 @@ export class Climber {
       ...(this.heldBack === null ? {} : { heldBack: this.heldBack }),
       ...(this.facing === 1 ? {} : { facing: this.facing }),
       ...(this.towardViewer ? { towardViewer: true } : {}),
+      ...(this.injuries.all.length === 0 ? {} : { injuries: this.injuries.all }),
+      ...(this.carrier === null ? {} : { carriedBy: this.carrier.id }),
+      ...(this.passenger === null ? {} : { carrying: this.passenger.id }),
+      ...(this.onLine === null ? {} : { onLine: this.onLine.id }),
+      ...(this.holdSpent ? { holdSpent: true } : {}),
+      ...(this.lift === null ? {} : { lift: this.lift }),
+      ...(this.spent.firstAid + this.spent.rescueKit === 0 ? {} : { spent: this.spent }),
       ...(this.sheltered ? { sheltered: true } : {}),
     };
   }
@@ -707,6 +826,7 @@ export class Climber {
 
   view(slope: Slope): ClimberView {
     const where = this.where(slope);
+    const { down } = this;
     return {
       x: where.x,
       y: where.y,
@@ -733,13 +853,21 @@ export class Climber {
       onIce: this.onIce !== null,
       picks: this.onIce?.picks.map((along) => slope.terrain.point(along)) ?? [],
       pickPoor: this.onIce?.poor ?? false,
-      lowering: this.lowering !== null,
+      // Down a rescue line or back up it, they go as down a fixed rope: held by it, on the ice.
+      lowering: this.lowering !== null || (this.onLine !== null && !down),
       gear: this.gear,
       clipping: this.clipping[0]?.cowstail ?? null,
       stillChance: this.stillChance,
       heldBack: this.heldBack,
       facing: this.facing,
       towardViewer: this.towardViewer,
+      injuries: this.injuries.all,
+      down,
+      carriedBy: this.carrier?.id ?? null,
+      carrying: this.passenger?.id ?? null,
+      onLine: this.onLine?.id ?? null,
+      hauled: this.onLine !== null && down,
+      helping: this.helping,
       sheltered: this.sheltered,
     };
   }
@@ -751,6 +879,11 @@ export class Climber {
       return;
     }
 
+    // Down with a bone broken, or on a rescuer's back, they take no step and swing no tool (#241).
+    const helpless = this.down || this.carrier !== null;
+    if (helpless && (action.kind === "walk" || action.kind === "turn" || action.kind === "tool")) {
+      return;
+    }
     if (action.kind === "walk") {
       this.walking = action.direction;
       // A walk turns them side-on, the way it points across the slope (#235).
@@ -764,7 +897,8 @@ export class Climber {
       this.falling === null &&
       this.onLadder === null &&
       this.onIce === null &&
-      this.lowering === null;
+      this.lowering === null &&
+      this.onLine === null;
     if (action.kind === "turn" && afoot) {
       this.towardViewer = true;
       this.walking = "stop";
@@ -774,6 +908,8 @@ export class Climber {
     }
     if (action.kind === "haul") {
       this.haulHeld = action.held;
+      // Let go, the next hold lifts a casualty or sets one down again (#241).
+      this.holdSpent = this.holdSpent && action.held;
     }
     const going = (cowstail: "first" | "second"): boolean =>
       this.clipping.some((clip) => clip.cowstail === cowstail);
@@ -808,6 +944,10 @@ export class Climber {
     if (action.kind !== "tool") {
       return;
     }
+    if (this.injuries.noGrip) {
+      // A broken arm swings no axe, and refits no crampon.
+      return;
+    }
     const sliding = this.falling !== null && this.falling.grounded && !this.hangs(slope);
     // Their crampons, on their feet on the ground with one loose: they kneel to refit it.
     const refits =
@@ -817,6 +957,7 @@ export class Climber {
       this.onLadder === null &&
       this.onIce === null &&
       this.lowering === null &&
+      this.onLine === null &&
       this.refitting <= 0;
     if (action.tool === "ice-axe" && sliding) {
       this.arrest(action, slope);
@@ -876,7 +1017,12 @@ export class Climber {
    * one, and along the ground otherwise. Each goes as far as their ropes let them, and may slip.
    * One who takes no step stands, where a stance can be hard (#197).
    */
-  walk(slope: Slope, moment: Moment, hauls: Hauls = Climber.NO_HAULS): void {
+  walk(
+    slope: Slope,
+    moment: Moment,
+    hauls: Hauls = Climber.NO_HAULS,
+    rescues: RescueTasks = Climber.NO_RESCUES,
+  ): void {
     this.moving = false;
     this.exertion = 0;
     this.slipChance = 0;
@@ -884,9 +1030,15 @@ export class Climber {
     this.heldBack = null;
     this.pulling = false;
     this.took = false;
+    this.helping = null;
     const { swing } = this;
     this.swing = null;
     if (this.killed) {
+      return;
+    }
+    if (this.carrier !== null) {
+      // On a rescuer's back: where they go, the casualty goes.
+      this.clipping = [];
       return;
     }
     if (swing !== null) {
@@ -895,6 +1047,11 @@ export class Climber {
     if (this.falling !== null) {
       this.clipping = [];
       this.climbBack(this.falling, slope, hauls.of(this), hauls.who(this), hauls.to(this));
+      return;
+    }
+    if (this.down) {
+      // A bone broken: they lie where they are, until they're hauled or carried (#241).
+      this.walking = "stop";
       return;
     }
     if (this.sheltered) {
@@ -908,16 +1065,29 @@ export class Climber {
       this.exertion = 1;
       return;
     }
+    const task = rescues.of(this);
+    if (task !== null) {
+      this.help(task, slope);
+      return;
+    }
     this.step(slope, moment);
+    this.bearUp();
     if (this.standingStill) {
       this.standStill(slope, moment);
+    }
+  }
+
+  /** A casualty on their back (#241): every step they took takes all they have. */
+  private bearUp(): void {
+    if (this.passenger !== null && this.moving) {
+      this.exertion = 1;
     }
   }
 
   /** Whether they're on their feet and took no step this step: not lowering on a rope, which holds
    * them, and not in a fall. */
   private get standingStill(): boolean {
-    return !this.took && this.falling === null && this.lowering === null;
+    return !this.took && this.falling === null && this.lowering === null && this.onLine === null;
   }
 
   /** This step's step, on their feet: none while their hands are at a clip or a crampon. */
@@ -950,9 +1120,22 @@ export class Climber {
       this.lower(this.lowering, slope, moment);
       return;
     }
+    if (this.onLine !== null) {
+      this.rideLine(this.onLine, slope);
+      return;
+    }
     if (this.stride > 0) {
       const onLadder = this.onLadder ?? this.ladderAhead(slope);
-      if (onLadder === null) {
+      const line = onLadder === null ? this.lineHere(slope) : null;
+      if (line !== null) {
+        // Onto the rescue line, and off the route's ropes: its rope holds them from here.
+        this.onLine = line;
+        this.first = null;
+        this.second = null;
+        this.clipping = [];
+        this.towardViewer = false;
+        this.rideLine(line, slope);
+      } else if (onLadder === null) {
         this.walkGround(slope, moment);
       } else {
         this.climb(onLadder, slope, moment);
@@ -1022,7 +1205,7 @@ export class Climber {
    * braced for it; divided by how sure-footed they are.
    */
   unsteadiness(slope: Slope): number {
-    if (this.killed || this.falling !== null || this.lowering !== null) {
+    if (this.killed || this.falling !== null || this.lowering !== null || !this.afoot) {
       return 0;
     }
     if (this.onIce !== null && this.onTheRope(this.onIce, slope)) {
@@ -1053,7 +1236,7 @@ export class Climber {
   /** A jolt slips them, from where they stand: a fall, which their rope holds if they're
    * clipped. Their hands let go of any clip. */
   upset(slope: Slope, step: number): void {
-    if (this.killed || this.falling !== null) {
+    if (this.killed || this.falling !== null || !this.afoot) {
       return;
     }
     this.clipping = [];
@@ -1063,7 +1246,11 @@ export class Climber {
   /** Where they stand along the ground, on their feet off a ladder and off the ice; none
    * otherwise. */
   get onTheGround(): number | null {
-    return this.falling === null && this.onLadder === null && this.onIce === null
+    return this.falling === null &&
+      this.onLadder === null &&
+      this.onIce === null &&
+      this.onLine === null &&
+      this.carrier === null
       ? this.along
       : null;
   }
@@ -1115,9 +1302,12 @@ export class Climber {
       return;
     }
     const { body } = falling;
-    const impact = body.into(slope.terrain, slope.substepSeconds);
+    const { speed: impact, fromBelow } = body.landing(slope.terrain, slope.substepSeconds);
     if (impact > falling.impact) {
       falling.impact = impact;
+      // Ground that comes up under them, they come down on; a face of ice, they're thrown
+      // against (#241).
+      falling.onFace = !fromBelow;
       if (impact >= slope.settings.lethalLanding) {
         this.killed = true;
         this.walking = "stop";
@@ -1182,6 +1372,10 @@ export class Climber {
     this.falls.push(falling.record(this.carabiners.length > 0, this.cramponLoose));
     this.along = along;
     this.falling = null;
+    if (this.injuries.broken) {
+      // A bone broken, they stay down where the fall left them (#241).
+      this.walking = "stop";
+    }
   }
 
   /** Whether they hang on their rope off the ground, to climb back up it to where they slipped:
@@ -1214,9 +1408,9 @@ export class Climber {
   ): void {
     const up = this.walking === "up" || this.walking.startsWith("up-");
     const { from } = falling;
-    const jumar = this.first !== null && this.gear.jumar;
-    const own =
-      up && jumar && this.stride > 0 ? slope.settings.climbBack * this.stride * this.technique : 0;
+    const jumar = this.first !== null && this.gear.jumar && !this.injuries.broken;
+    const pace = this.gait(slope) * this.injuries.grip(slope.settings.injury);
+    const own = up && jumar && pace > 0 ? slope.settings.climbBack * pace * this.technique : 0;
     if (own + hauled <= 0 || !this.hangs(slope) || from === null) {
       return;
     }
@@ -1343,14 +1537,23 @@ export class Climber {
   /** Whether they can haul someone now: holding the haul, on their feet on the ground, alive and
    * with a stride to brace on; and where they stand. */
   hauler(slope: Slope): Point | null {
+    return this.passenger === null ? this.helper(slope) : null;
+  }
+
+  /** Whether they can work for a casualty now (#241), and where they stand: as a hauler can, the
+   * haul held, on their feet on the ground, their arms whole; a casualty on their back, they can
+   * still set them down. */
+  helper(slope: Slope): Point | null {
     const able =
       this.haulHeld &&
       !this.killed &&
+      this.afoot &&
       this.falling === null &&
       this.onLadder === null &&
       this.onIce === null &&
       this.lowering === null &&
       this.refitting <= 0 &&
+      !this.injuries.noGrip &&
       this.stride > 0;
     return able ? slope.terrain.point(this.along) : null;
   }
@@ -1379,13 +1582,321 @@ export class Climber {
     }
   }
 
+  /** Down (#241): a bone broken, off the rope and off anyone's back, they lie where they came to
+   * rest, and take no step until they're carried. */
+  get down(): boolean {
+    return !this.killed && this.injuries.broken && this.falling === null && this.carrier === null;
+  }
+
+  /** Whether they're on their own feet, or could be: not down with a bone broken, not on a
+   * rescuer's back, and not on a rescue line. */
+  private get afoot(): boolean {
+    return !this.down && this.carrier === null && this.onLine === null;
+  }
+
+  /** How far their strides go now: the body's share, less on a sprained leg (`Injuries.legs`),
+   * and the carry's share of it with a casualty on their back (#241). */
+  private gait(slope: Slope): number {
+    const { injury, rescue } = slope.settings;
+    return this.stride * this.injuries.legs(injury) * (this.passenger === null ? 1 : rescue.carry);
+  }
+
+  /**
+   * After the step's sub-steps, the fall's hardest landing so far is judged for what it did to
+   * them (#241), once for each landing harder than the last judged: from the speed that sprains
+   * up to the one that kills, chance draws how they came down (`Injuries.land`); slower than
+   * that, nothing is drawn. A casualty on their back takes the same landing, to the death.
+   */
+  judge(slope: Slope, moment: Moment): void {
+    const { falling } = this;
+    if (falling === null || falling.impact <= falling.judged) {
+      return;
+    }
+    const { impact, onFace } = falling;
+    falling.judged = impact;
+    this.hurt(impact, onFace, slope, moment);
+    const { passenger } = this;
+    if (passenger !== null) {
+      if (impact >= slope.settings.lethalLanding) {
+        passenger.killed = true;
+      }
+      passenger.hurt(impact, onFace, slope, moment);
+    }
+  }
+
+  /** A landing at `impact` into the ground hurts them, or doesn't, as chance has it. */
+  private hurt(impact: number, onFace: boolean, slope: Slope, moment: Moment): void {
+    const { injury, lethalLanding } = slope.settings;
+    if (this.killed || !(impact >= injury.sprain) || impact >= lethalLanding) {
+      return;
+    }
+    const drawn = moment.random.fraction();
+    this.injuries.land(impact, onFace, drawn, moment.step, injury, lethalLanding);
+  }
+
+  /** Injures them as a landing would have, between steps: the god mode's (#245), to stage a
+   * rescue. On their feet, they go down where they stand if it breaks a bone. */
+  injure(injury: Pick<Injury, "part" | "kind">, step: number): void {
+    const hurt: Injury = { ...injury, step, tourniquet: false, splinted: false, aid: 0 };
+    const kept = this.injuries.all.filter(({ part }) => part !== injury.part);
+    this.injuries = new Injuries([...kept, hurt]);
+    if (this.injuries.broken && this.falling === null) {
+      this.walking = "stop";
+      this.onLadder = null;
+      this.onIce = null;
+      this.lowering = null;
+      this.clipping = [];
+    }
+  }
+
+  /** Whether there may be rescue work to do for them (#241): hurt, on someone's back or on a
+   * rescue line, or on the ground where the route doesn't reach. Nobody looks for any otherwise. */
+  needsHelp(slope: Slope): boolean {
+    if (this.killed) {
+      return this.carrier !== null;
+    }
+    if (this.injuries.all.length > 0 || this.carrier !== null || this.onLine !== null) {
+      return true;
+    }
+    return this.falling === null && this.onLadder === null && slope.faces.deadEnd(this.along);
+  }
+
+  /** Where a rescuer finds them, for first aid or to lift them: on the ground, standing or
+   * lying, alive, off any ladder, ice, rope and back; none otherwise. */
+  get reachable(): number | null {
+    return this.killed || this.lowering !== null ? null : this.onTheGround;
+  }
+
+  /** Where they are if they're where the route doesn't reach, a dead end (`Faces.deadEnd`), on
+   * the ground there and alive: a rescue line can be thrown to them. None otherwise. */
+  strandedAt(slope: Slope): number | null {
+    const at = this.reachable;
+    return at !== null && slope.faces.deadEnd(at) ? at : null;
+  }
+
+  /** What first aid they're due next, or none. */
+  aidDue(seconds: AidSeconds): ReturnType<Injuries["due"]> {
+    return this.killed ? null : this.injuries.due(seconds);
+  }
+
+  /** Whether they can be moved: nothing bleeds, and what's broken is splinted. */
+  get movable(): boolean {
+    return this.injuries.movable;
+  }
+
+  /** What they carry of the gear, their kits among it. */
+  get carries(): Gear {
+    return this.gear;
+  }
+
+  /** Whom they carry on their back, or none. */
+  get carrying(): Climber | null {
+    return this.passenger;
+  }
+
+  /** Whether their key is let go: they stand where they are. */
+  get standsStill(): boolean {
+    return this.walking === "stop";
+  }
+
+  /** The rescue line they're hauled up, or none. */
+  get hauledOn(): RescueLine | null {
+    return this.down ? this.onLine : null;
+  }
+
+  /** How many kits they've used up so far (#241). */
+  get kitsSpent(): KitsSpent {
+    return this.spent;
+  }
+
+  /** `given` seconds more of first aid on what they're due next. Whether that was the last of
+   * it: nothing more is due. */
+  treated(given: number, seconds: AidSeconds): boolean {
+    return this.injuries.treat(given, seconds) && this.injuries.due(seconds) === null;
+  }
+
+  /** `given` seconds more of `by` lifting them onto their back, or setting them down off it.
+   * Whether that makes the `takes` seconds it takes. Another's hands start it over. */
+  lifted(by: ClimberId, given: number, takes: number): boolean {
+    const before = this.lift?.by === by ? this.lift.seconds : 0;
+    this.lift = { by, seconds: before + given };
+    return this.lift.seconds >= takes - Climber.EXACT;
+  }
+
+  /** How far a lift of theirs has come, as a share of the `takes` seconds it takes. */
+  liftProgress(takes: number): number {
+    return this.lift === null || !(takes > 0) ? 0 : Math.min(1, this.lift.seconds / takes);
+  }
+
+  /** Nobody's hands are on them in this step: a lift half done is let go. */
+  letGo(): void {
+    this.lift = null;
+  }
+
+  /** Whether the haul they hold can lift a casualty onto their back, or set one down: it hasn't
+   * done either yet (#241). */
+  get liftsAnew(): boolean {
+    return !this.holdSpent;
+  }
+
+  /** The haul they hold has lifted a casualty or set one down: it does neither again until
+   * it's let go. */
+  spendHold(): void {
+    this.holdSpent = true;
+  }
+
+  /** Takes a casualty onto their back (#241): off their own ropes and any rescue line, they go
+   * where their carrier goes from now on. */
+  shoulder(casualty: Climber): void {
+    this.passenger = casualty;
+    casualty.carrier = this;
+    casualty.lift = null;
+    casualty.onLine = null;
+    casualty.first = null;
+    casualty.second = null;
+    casualty.clipping = [];
+    casualty.walking = "stop";
+  }
+
+  /** Sets the casualty on their back down where they stand, or where their body lies. */
+  setDown(slope: Slope): void {
+    const casualty = this.passenger;
+    if (casualty === null) {
+      return;
+    }
+    casualty.along = this.alongNow(slope);
+    casualty.carrier = null;
+    casualty.lift = null;
+    this.passenger = null;
+  }
+
+  /** At the end of a step, the casualty on their back is where they are; and if either of the
+   * two has died, the one carried lies where the carrier came to rest. */
+  bring(slope: Slope): void {
+    const { passenger } = this;
+    if (passenger === null) {
+      return;
+    }
+    passenger.along = this.alongNow(slope);
+    const atRest = this.falling === null && this.onLadder === null && this.onIce === null;
+    if ((this.killed || passenger.killed) && atRest) {
+      this.setDown(slope);
+    }
+  }
+
+  /** Off anyone's back, and nobody on theirs: the god mode's, before it stands them elsewhere
+   * (#245). */
+  unlink(slope: Slope): void {
+    this.carrier?.setDown(slope);
+    this.setDown(slope);
+  }
+
+  /** Hauled `metres` up a rescue line toward its anchor, a casualty clipped to it (#241): along
+   * the ground's line, up the wall's face and over its lip, where they lie on the ground. Let
+   * go, they stay where they've come to: the pulley holds the rope. */
+  hauledUp(line: RescueLine, metres: number): void {
+    const room = Math.abs(line.top - this.along);
+    if (metres >= room - Climber.EXACT) {
+      this.along = line.top;
+      this.onLine = null;
+      return;
+    }
+    this.onLine = line;
+    this.along += line.top > this.along ? metres : -metres;
+  }
+
+  /** A kit of theirs is used up. */
+  spend(kit: keyof KitsSpent): void {
+    this.spent = { ...this.spent, [kit]: this.spent[kit] + 1 };
+  }
+
+  /** What they did for a casualty in this step, for their view. */
+  helped(helping: Helping): void {
+    this.helping = helping;
+  }
+
+  /** This step's work for a casualty, the haul held (#241), and no step of their own: hauling on
+   * a rescue line they pull as on any haul, and a lift takes all their power too; at first aid
+   * and at an anchor only their hands work. */
+  private help(task: RescueTask, slope: Slope): void {
+    const heavy = task.kind === "line-haul" || task.kind === "lift" || task.kind === "set-down";
+    this.pulling = task.kind === "line-haul";
+    this.moving = heavy;
+    this.exertion = heavy ? 1 : 0;
+    this.towardViewer = false;
+    // They turn to whom they work for.
+    const theirs = task.casualty.alongNow(slope);
+    if (task.kind !== "set-down" && theirs !== this.along) {
+      this.facing = theirs > this.along ? 1 : -1;
+    }
+  }
+
+  /** The rescue line they go onto from where they stand, on their feet on the ground (#241):
+   * down it from its anchor on the key straight down, and up it from by its foot, in the dead end
+   * there, on the key straight up, their arms whole and nobody on their back. None on any other
+   * key, a diagonal's too, which walks the route. */
+  private lineHere(slope: Slope): RescueLine | null {
+    const down = this.walking === "down";
+    const up = this.walking === "up" && this.passenger === null && !this.injuries.noGrip;
+    if (!down && !up) {
+      return null;
+    }
+    const { reach } = slope.settings.rescue;
+    for (const line of slope.lines.values()) {
+      if (!line.ready) {
+        continue;
+      }
+      if (down && Math.abs(this.along - line.top) <= Climber.AT_AN_ANCHOR) {
+        return line;
+      }
+      const byFoot = Math.abs(this.along - line.foot) <= reach && slope.faces.deadEnd(this.along);
+      if (up && byFoot) {
+        return line;
+      }
+    }
+    return null;
+  }
+
+  /**
+   * On a rescue line (#241): a key that points down takes them down the ground's line to the
+   * line's foot at the rappel's speed, and one that points up back up it to its anchor at the
+   * climb back's, as fast as their arms let them; at either end they're on their feet. The line
+   * holds them all the way: nothing slips them off it. Nobody goes up it with a casualty on
+   * their back.
+   */
+  private rideLine(line: RescueLine, slope: Slope): void {
+    const { settings } = slope;
+    const up = this.upward && this.passenger === null && !this.injuries.noGrip;
+    const down = this.downward;
+    this.exertion = settings.iceClimb.hang;
+    const pace = this.gait(slope) * (up ? this.injuries.grip(settings.injury) : 1);
+    if ((!up && !down) || pace <= 0) {
+      return;
+    }
+    const speed = (down ? settings.rappel : settings.climbBack) * pace * this.technique;
+    const end = down ? line.foot : line.top;
+    const room = Math.abs(end - this.along);
+    const metres = Math.min(speed * SimulationClock.STEP_SECONDS, room);
+    this.moving = true;
+    this.exertion = up ? 1 : settings.iceClimb.hang;
+    if (metres >= room - Climber.EXACT) {
+      // At its foot, or back at its anchor: on their feet.
+      this.along = end;
+      this.onLine = null;
+      return;
+    }
+    this.along += end > this.along ? metres : -metres;
+  }
+
   /** Straight down. */
   private static readonly DOWN: Point = { x: 0, y: -1 };
 
   /** Off their feet, thrown down the section, toward its start, at the knock's speed: what a
    * hazard does when it goes. One already falling falls on. */
   knock(slope: Slope, step: number): void {
-    if (this.falling === null) {
+    if (this.falling === null && this.carrier === null) {
+      // From where their feet are, or their body lies: a rescue line's hold is gone.
+      this.along = this.alongNow(slope);
       this.fall(slope, slope.terrain.ahead(this.along, -1), slope.settings.knock, step);
     }
   }
@@ -1416,7 +1927,7 @@ export class Climber {
    */
   private walkGround(slope: Slope, moment: Moment): void {
     const way = Climber.WAYS[this.walking];
-    const roped = this.down ? this.ropedDown(slope, way) : null;
+    const roped = this.downward ? this.ropedDown(slope, way) : null;
     if (roped !== null) {
       this.lowering = new Lowering(roped);
       this.lower(this.lowering, slope, moment);
@@ -1428,7 +1939,7 @@ export class Climber {
     const { terrain, walking } = slope;
     const ahead = terrain.ahead(this.along, way);
     const steepness = Steepness.ofWay(ahead.x, ahead.y);
-    const step = walking.step(steepness, this.stride);
+    const step = walking.step(steepness, this.gait(slope));
     // Their technique's share, clipped or not, and never past the fastest walk (#197).
     const speed = Math.min(step.speed * this.technique, slope.settings.fastestWalk);
     if (walking.steeperUp(steepness)) {
@@ -1457,8 +1968,13 @@ export class Climber {
   }
 
   /** Whether their key points down: straight down, or down and to a side. */
-  private get down(): boolean {
+  private get downward(): boolean {
     return this.walking === "down" || this.walking.startsWith("down-");
+  }
+
+  /** Whether their key points up: straight up, or up and to a side. */
+  private get upward(): boolean {
+    return this.walking === "up" || this.walking.startsWith("up-");
   }
 
   /** The face of ice that drops from the lip they stand at, the way along the ground `way` points
@@ -1497,11 +2013,12 @@ export class Climber {
     const up = this.walking === "up" || this.walking.startsWith("up-");
     const jumar = this.first !== null && this.gear.jumar;
     this.exertion = settings.iceClimb.hang;
-    if ((!this.down && !(up && jumar)) || this.stride <= 0) {
+    const pace = this.gait(slope);
+    if ((!this.downward && !(up && jumar)) || pace <= 0) {
       return;
     }
-    const speed = (this.down ? settings.rappel : settings.climbBack) * this.stride * this.technique;
-    const end = this.down ? face.foot : face.top;
+    const speed = (this.downward ? settings.rappel : settings.climbBack) * pace * this.technique;
+    const end = this.downward ? face.foot : face.top;
     const way: Way = end > this.along ? 1 : -1;
     const room = Math.abs(end - this.along);
     const metres = Math.min(speed * SimulationClock.STEP_SECONDS, room);
@@ -1527,7 +2044,7 @@ export class Climber {
       return;
     }
     const steepness = ladder.steepness(way);
-    const share = this.stride * this.technique;
+    const share = this.gait(slope) * this.technique;
     const speed = slope.ladderSpeed.at(steepness) * share;
     const end = ladder.end(way);
     const climbed = rung + way * speed * SimulationClock.STEP_SECONDS;
@@ -1629,6 +2146,9 @@ export class Climber {
 
   /** Their feet, on the ground or on a ladder, or their body in a fall. */
   private where(slope: Slope): Point {
+    if (this.carrier !== null) {
+      return this.carrier.where(slope);
+    }
     return this.falling?.body ?? this.onLadder?.point ?? slope.terrain.point(this.along);
   }
 
@@ -1712,6 +2232,8 @@ export class Climber {
       this.gear.tools <= 0 ||
       this.onLadder !== null ||
       this.lowering !== null ||
+      this.onLine !== null ||
+      this.down ||
       this.refitting > 0
     ) {
       return;
@@ -1835,7 +2357,8 @@ export class Climber {
     this.exertion = ice.hang;
     const up = this.walking === "up" || this.walking.startsWith("up-");
     const down = this.walking === "down" || this.walking.startsWith("down-");
-    if ((!up && !down) || this.stride <= 0) {
+    const pace = this.gait(slope) * this.injuries.grip(settings.injury);
+    if ((!up && !down) || pace <= 0) {
       return;
     }
     const hold = terrain.point(onIce.hold).y;
@@ -1849,7 +2372,7 @@ export class Climber {
       return;
     }
     const twoTools = this.gear.tools >= 2;
-    const speed = ice.speed * this.stride * this.technique * (twoTools ? 1 : ice.oneTool);
+    const speed = ice.speed * pace * this.technique * (twoTools ? 1 : ice.oneTool);
     const metres = Math.min(speed * SimulationClock.STEP_SECONDS, room);
     const next = this.along + way * metres;
     if (!this.mayStep(terrain.point(next), slope)) {

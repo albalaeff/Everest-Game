@@ -257,6 +257,20 @@ export class Footwork {
     return this.clipLoose(view, along);
   }
 
+  /** Holds a key of the agent's own choosing, off the route: down a rescue line, back up it, or
+   * let go beside a casualty (#241). Its walk, if that isn't the key held already; the route's
+   * footwork takes over from it at the next `actions`. */
+  hold(direction: Walk["direction"]): readonly GameAction[] {
+    this.started = true;
+    this.reclipping = 0;
+    this.freedAt = null;
+    if (direction === this.walking) {
+      return [];
+    }
+    this.walking = direction;
+    return [{ kind: "walk", climber: this.climber, direction }];
+  }
+
   /** Takes up a new way, or standing, once the climber is on their feet on the ground: what was
    * half done of the old one is dropped. */
   private turn(way: RouteWay | null, view: ClimberView): void {

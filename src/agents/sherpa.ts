@@ -6,6 +6,7 @@ import type {
   HazardZone,
   Json,
   Rule,
+  Walk,
   Warning,
 } from "../simulation";
 import { Footwork } from "./footwork";
@@ -29,6 +30,9 @@ export interface SherpaSettings {
   readonly pass: number;
   /** How near the point a hanging climber is hauled up to he has to stand: the haul's reach. */
   readonly reach: number;
+  /** How near a casualty he kneels to treat them or take them on his back: the rescue's reach
+   * (#241). */
+  readonly aid: number;
 }
 
 /** What the Sherpa is doing now, for his voice. */
@@ -45,6 +49,19 @@ export type SherpaDoing =
   | "holding"
   /** Going to a client who hangs on the rope, or hauling them out. */
   | "rescuing"
+  /** Going to a client who lies hurt (#241): along the route to them, or to the edge over them,
+   * down his rescue line and back up it. */
+  | "reaching"
+  /** Building the anchor of a rescue line at the edge over a client who lies in a crevasse. */
+  | "anchoring"
+  /** Kneeling by a client who lies hurt, at first aid: the tourniquet, the splint, the wrap. */
+  | "treating"
+  /** At his rescue line's anchor, hauling a client up it. */
+  | "hauling-out"
+  /** Taking a client who can't walk onto his back, and carrying them down the route. */
+  | "carrying"
+  /** In Base Camp with a client he carried down: the evacuation is over. */
+  | "evacuated"
   /** At the lip of a ladder that broke and fell into its crevasse, holding its rope to haul it
    * back up with a client, or on his way there (#228). */
   | "raising"
@@ -87,6 +104,9 @@ export type SherpaStart = {
   readonly climber: ClimberId;
   readonly clients: readonly ClimberId[];
   readonly arrival: { readonly from: number; readonly to: number };
+  /** The stretch of the camp the section sets off from, where he carries a client who can't
+   * walk (#241): missing from the saves of builds before it, the ground's start. */
+  readonly base?: { readonly from: number; readonly to: number };
 };
 
 /** A rest with a client he went to pull out: where along the ground, and when it ends on the
@@ -117,12 +137,14 @@ type SherpaSave = SherpaStart & {
   readonly stillSince?: number | null;
 };
 
-/** What he does this step: which way he goes, or none to stand, and whether he holds the haul. */
+/** What he does this step: which way he goes, or none to stand, and whether he holds the haul;
+ * or, off the route's footwork, down a rescue line or back up it, the key he holds (#241). */
 type Plan = {
   readonly way: RouteWay | null;
   readonly haul: boolean;
   readonly doing: SherpaDoing;
   readonly client: ClimberId | null;
+  readonly key?: Walk["direction"];
 };
 
 /**
@@ -145,6 +167,13 @@ type Plan = {
  * with them on the nearest safe ground for `rest` of the mountain's seconds, or until they go on.
  * A hazard going over him he backs out from under. In the camp the section ends at, he stops.
  * The same hazards threaten him as anyone.
+ *
+ * A client who lies hurt comes before all of it (#241). One who can't walk, a bone broken, he
+ * goes to: along the route, or, where they lie in a crevasse, to the edge over them, where he
+ * builds an anchor from his rescue kit and goes down the rope. He treats what he finds, the
+ * tourniquet first, then the splint; goes back up and hauls them out; takes them on his back,
+ * and carries them down the route to Base Camp, where he sets them down. A sprain he wraps, where
+ * the client stands still by the route.
  */
 export class Sherpa implements Rule {
   /** Its key in scenarios and saves: never change it once saves exist. */
@@ -162,6 +191,9 @@ export class Sherpa implements Rule {
    * are to be the same. */
   private static readonly LEVEL = 0.5;
   private static readonly EXACT = 1e-6;
+  /** The share of the rescue's reach he comes within of a casualty before he kneels: well
+   * within it, so the work begins where he stops. */
+  private static readonly WELL_WITHIN = 0.8;
 
   readonly name = Sherpa.NAME;
 
@@ -178,7 +210,7 @@ export class Sherpa implements Rule {
 
   /** A scenario's start state for a Sherpa: standing, nobody set off yet. */
   static start(start: SherpaStart): Json {
-    const { climber, clients, arrival } = start;
+    const { climber, clients, arrival, base } = start;
     if (clients.includes(climber)) {
       throw new RangeError(`${climber} can't guide himself`);
     }
@@ -189,6 +221,7 @@ export class Sherpa implements Rule {
       climber,
       clients,
       arrival,
+      ...(base === undefined ? {} : { base }),
       footwork: Footwork.STANDING,
       setOff: [],
       doing: "waiting",
@@ -219,8 +252,9 @@ export class Sherpa implements Rule {
    * footwork and his plans as a scenario starts him, and the clients who've set off: the god
    * mode's, once it has put him or them somewhere else (#245). */
   afresh(): void {
-    const { climber, clients, arrival, setOff } = this.loaded;
-    const fresh = Sherpa.start({ climber, clients, arrival }) as unknown as SherpaSave;
+    const { climber, clients, arrival, base, setOff } = this.loaded;
+    const start = { climber, clients, arrival, ...(base === undefined ? {} : { base }) };
+    const fresh = Sherpa.start(start) as unknown as SherpaSave;
     const save: SherpaSave = { ...fresh, setOff };
     this.load(save);
   }
@@ -255,7 +289,8 @@ export class Sherpa implements Rule {
       client: plan.client,
       walking: plan.way !== null,
     };
-    const moves = this.steps.actions(plan.way);
+    // Off the route, on a rescue line or in a crevasse, the key is his plan's own (#241).
+    const moves = plan.key === undefined ? this.steps.actions(plan.way) : this.steps.hold(plan.key);
     const haul: readonly GameAction[] =
       plan.haul === me.haulHeld ? [] : [{ kind: "haul", climber, held: plan.haul }];
     return [...moves, ...haul];
@@ -308,6 +343,7 @@ export class Sherpa implements Rule {
   /** What he does now, most pressing first. */
   private plan(me: ClimberView, along: number): Plan {
     return (
+      this.casualty(me, along) ??
       this.rescue(me, along) ??
       this.rested(along) ??
       this.retreat(along) ??
@@ -355,6 +391,130 @@ export class Sherpa implements Rule {
     const here = this.physics.terrain.point(along);
     const inReach = client.points.some((point) => this.within(point, here));
     return { ...plan, way, haul: way === null && afoot && inReach };
+  }
+
+  /**
+   * A client who lies hurt (#241), or the one on his back: what a rescuer does next for them.
+   * On his back: down the route to Base Camp, and the haul held there, standing, to set them
+   * down. In Base Camp, the evacuation is over, and he stays with them. A client who can't walk,
+   * or one with a sprain who stands still within his `wait`: where the route reaches them, to
+   * them, and the haul held by them, which treats them and then takes one who can't walk onto
+   * his back; where it doesn't, the rope (`stranded`). None with nobody hurt.
+   */
+  private casualty(me: ClimberView, along: number): Plan | null {
+    const state = this.loaded;
+    const base = state.base ?? { from: 0, to: 0 };
+    if (me.carrying !== null) {
+      const plan = { doing: "carrying" as const, client: me.carrying };
+      if (along <= base.to - Sherpa.AT && this.onTheGround(me)) {
+        return { ...plan, way: null, haul: true };
+      }
+      return { ...plan, way: this.move("down", along), haul: false };
+    }
+    const hurt = state.clients
+      .map((id) => ({ id, view: this.physics.climber(id), theirs: this.physics.along(id) }))
+      .filter(({ view }) => !view.dead && view.carriedBy === null)
+      .filter(({ id, view, theirs }) => {
+        const sprained = this.physics.aidDue(id) !== null && !view.moving && !view.falling;
+        return view.down || (sprained && Math.abs(theirs - along) <= this.settings.wait);
+      })
+      .sort((a, b) => Math.abs(a.theirs - along) - Math.abs(b.theirs - along));
+    const evacuated = hurt.find(({ view, theirs }) => view.down && theirs <= base.to);
+    const [client] = hurt.filter((one) => one !== evacuated);
+    if (client === undefined) {
+      return evacuated === undefined
+        ? null
+        : { way: null, haul: false, doing: "evacuated", client: evacuated.id };
+    }
+    this.state = { ...state, rescue: null, rest: null, holding: false, ladder: null };
+    const { id, view, theirs } = client;
+    const spots = this.physics.anchorSpots(id);
+    if (spots.length > 0 || view.hauled || me.onLine !== null || this.physics.deadEnd(along)) {
+      return this.stranded(me, along, id, theirs, spots);
+    }
+    // Where the route reaches them: to them, and the haul held by them.
+    const reach = this.settings.aid * Sherpa.WELL_WITHIN;
+    const here = this.physics.terrain.point(along);
+    const [x, y] = [view.x - here.x, view.y - here.y];
+    const near = Math.sqrt(x * x + y * y) <= reach;
+    if (near && this.onTheGround(me)) {
+      const lifting = this.physics.aidDue(id) === null;
+      return { way: null, haul: true, doing: lifting ? "carrying" : "treating", client: id };
+    }
+    return {
+      way: near ? this.forward(me) : this.move(this.toward(theirs, along), along),
+      haul: false,
+      doing: "reaching",
+      client: id,
+    };
+  }
+
+  /**
+   * A client who lies where the route doesn't reach, a crevasse's floor or a ledge down its wall
+   * (#241). From the route: to the edge over them, on Base Camp's side where he can get there,
+   * and the haul held there, which builds the anchor and throws the rope down; then down it, the
+   * key straight down. Beside them: the haul held, for the first aid they're due; then back up
+   * the rope, the key straight up. At the anchor again, the haul held hauls them up to the edge.
+   */
+  private stranded(
+    me: ClimberView,
+    along: number,
+    client: ClimberId,
+    theirs: number,
+    spots: readonly number[],
+  ): Plan {
+    const { physics } = this;
+    const treated = physics.aidDue(client) === null;
+    const plan = { way: null, client };
+    if (me.onLine !== null) {
+      // On the rope: down it to them, or back up it once they're treated.
+      return { ...plan, haul: false, doing: "reaching", key: treated ? "up" : "down" };
+    }
+    if (physics.deadEnd(along) && this.onTheGround(me)) {
+      // Down beside them: the first aid, then the rope back up.
+      const kit = me.gear.firstAid === true;
+      return treated || !kit
+        ? { ...plan, haul: false, doing: "reaching", key: "up" }
+        : { ...plan, haul: true, doing: "treating", key: "stop" };
+    }
+    const line = physics.lines.find(({ top, foot }) => {
+      const reaches = (theirs - top) * (foot - top) > 0 || Math.abs(foot - theirs) <= Sherpa.AT;
+      return spots.includes(top) || (physics.climber(client).hauled && reaches);
+    });
+    const spot = line?.top ?? this.anchorSpot(along, theirs, spots);
+    if (spot === null) {
+      return { ...plan, haul: false, doing: "reaching" };
+    }
+    // At the edge, as near as a ladder that's down lets him stand: a lip's reach of it.
+    if (Math.abs(spot - along) > Sherpa.AT_LADDER || !this.onTheGround(me)) {
+      const way = this.move(this.toward(spot, along), along);
+      return { ...plan, way, haul: false, doing: "reaching" };
+    }
+    if (line === undefined || line.built < 1) {
+      return { ...plan, haul: true, doing: "anchoring" };
+    }
+    // The rope is down: to them, if they're still to treat and he has what it takes; else the
+    // haul, which brings up whoever can be moved.
+    const goesDown = !treated && me.gear.firstAid === true && !physics.climber(client).hauled;
+    return goesDown
+      ? { ...plan, haul: false, doing: "reaching", key: "down" }
+      : { ...plan, haul: true, doing: "hauling-out" };
+  }
+
+  /** The edge he anchors a rescue line at, of those over a client who lies at `theirs`: the one
+   * on Base Camp's side, unless a ladder that's down bars his way to it from where he is; none if
+   * there's none. */
+  private anchorSpot(along: number, theirs: number, spots: readonly number[]): number | null {
+    const lower = spots.find((spot) => spot < theirs) ?? null;
+    const upper = spots.find((spot) => spot > theirs) ?? null;
+    const barred =
+      along > theirs &&
+      this.physics.ladders.some((id) => {
+        const [from, to] = this.ends(id);
+        const over = from !== undefined && to !== undefined && from <= theirs && to >= theirs;
+        return over && this.physics.ladderCondition(id) === "broken";
+      });
+    return barred ? (upper ?? lower) : (lower ?? upper);
   }
 
   /** With a client he pulled out: to the safe spot, and there until the rest is over, or until
@@ -686,7 +846,7 @@ export class Sherpa implements Rule {
 
   /** On his feet on the ground: not on a ladder, on the ice, down a rope or in a fall. */
   private onTheGround(me: ClimberView): boolean {
-    return !me.falling && me.ladder === null && !me.onIce && !me.lowering;
+    return !me.falling && me.ladder === null && !me.onIce && !me.lowering && me.onLine === null;
   }
 
   /** The stretch of the hazard going over `along`, a zone's or a training event's with its lead,

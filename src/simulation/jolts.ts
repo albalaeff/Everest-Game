@@ -169,6 +169,13 @@ export class Jolts implements Rule {
     return true;
   }
 
+  /** Calms the mountain between steps, as a scenario with no stretch of theirs has it: the god
+   * mode's, for a long scenario that must run without a chance of its own (#241). No jolt comes
+   * from now on, the ones on their way included, and none can be brought. */
+  calm(): void {
+    this.state = { ...this.loaded, zones: [], warnings: [] };
+  }
+
   /** Changes the weather between steps, as a scenario sets it: the god mode's (#245). */
   changeWeather(weather: HazardWeather): void {
     if (!HazardChance.knows(weather)) {

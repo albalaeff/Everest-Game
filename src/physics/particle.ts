@@ -9,6 +9,10 @@ export type ParticleSave = readonly [x: number, y: number, oldX: number, oldY: n
  * ground or a rope, changes its speed too.
  */
 export class Particle implements Point {
+  /** Nearer the surface than this, in metres, a point is on it, not in the ground: the engine's
+   * number, far below what a body moves in a sub-step and above what rounding leaves (#241). */
+  private static readonly ON_THE_SURFACE = 1e-9;
+
   constructor(
     private ownX: number,
     private ownY: number,
@@ -62,18 +66,28 @@ export class Particle implements Point {
    * in m/s: its speed toward the surface's inside, nought along it, as down a wall's face, and
    * nought out of the ground. */
   into(terrain: Terrain, seconds: number): number {
+    return this.landing(terrain, seconds).speed;
+  }
+
+  /** How it lands on the ground it has gone into (#241): its speed into it, as `into` has it,
+   * and whether the ground pushes it back up more than across, which is ground it came down on,
+   * and not a wall's face it was thrown against. On the surface, or out of the ground, neither. */
+  landing(
+    terrain: Terrain,
+    seconds: number,
+  ): { readonly speed: number; readonly fromBelow: boolean } {
     if (!terrain.holds(this)) {
-      return 0;
+      return { speed: 0, fromBelow: false };
     }
     const surface = terrain.nearest(this);
     const outX = surface.x - this.ownX;
     const outY = surface.y - this.ownY;
     const depth = Math.sqrt(outX * outX + outY * outY);
-    if (depth === 0) {
-      return 0;
+    if (depth <= Particle.ON_THE_SURFACE) {
+      return { speed: 0, fromBelow: false };
     }
     const along = ((this.ownX - this.oldX) * outX + (this.ownY - this.oldY) * outY) / depth;
-    return Math.max(0, -along / seconds);
+    return { speed: Math.max(0, -along / seconds), fromBelow: outY >= Math.abs(outX) };
   }
 
   /** Puts it at a point, still: where a climber holding on has pulled themselves to. */

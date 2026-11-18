@@ -151,7 +151,13 @@ export class Mountain {
     const tents = new Tents(this.tents.numbers, clock, physics, packs, body, this.route.tents);
     const hazards = new ObjectiveHazards(this.hazardSettings(), clock, physics);
     const jolts = new Jolts(this.joltSettings(), clock, physics);
-    const logbook = new Logbook(physics, hazards, clock, this.route.logged);
+    const logbook = new Logbook(
+      physics,
+      hazards,
+      clock,
+      this.route.logged,
+      this.route.base?.to ?? null,
+    );
     // The devices after the physics: a climber who hangs in a crevasse this step has no contact.
     const devices = new Devices(this.deviceNumbers(), clock, physics);
     // The Sherpa acts at the start of each step, from where the last left everyone (#212).
@@ -226,6 +232,7 @@ export class Mountain {
       rest: this.knowledge.number("technique.sherpa-rest") * 60,
       pass: this.knowledge.number("technique.sherpa-pass"),
       reach: this.knowledge.number("technique.haul-reach"),
+      aid: this.knowledge.number("technique.rescue-reach"),
     };
   }
 

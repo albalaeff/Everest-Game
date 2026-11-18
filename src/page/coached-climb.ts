@@ -1,5 +1,5 @@
 import { Footwork } from "../agents";
-import type { CoachWorld } from "../interface/coach";
+import type { CasualtyStage, CoachWorld } from "../interface/coach";
 import type { PointerWorld } from "../interface/coach-pointer";
 import type { ClimberView, LadderCondition, Lamps, Point, SlopePhysics } from "../physics";
 import type {
@@ -15,7 +15,8 @@ import type {
  * blue ice and hazard zones, the player's lamp (#196), and the jolts on their way to them (#197),
  * from the physics, the hazards, the lamps and the jolts, which it only reads; and as the coach's
  * arrow reads it (#233): the face of ice the player is at, where their next pick bites well, as
- * a careful climber's footwork has it, and the edge a hanging partner comes up at. */
+ * a careful climber's footwork has it, and the edge a hanging partner comes up at; and what a
+ * partner who lies hurt needs of the player next, as a rescuer goes about it (#241). */
 export class CoachedClimb implements CoachWorld, PointerWorld {
   /** How near behind the player, along the ground, someone coming past them on their rope is
    * said to be passing them: a few steps. */
@@ -27,6 +28,9 @@ export class CoachedClimb implements CoachWorld, PointerWorld {
     private readonly lamps: Lamps,
     private readonly climberId: ClimberId,
     private readonly jolts: Pick<Jolts, "comingTo"> | null = null,
+    /** How far along the ground the camp the section sets off from reaches: a casualty set down
+     * there is safe, and needs nobody (#241). */
+    private readonly safeBelow = 0,
   ) {}
 
   player(): ClimberView {
@@ -57,6 +61,34 @@ export class CoachedClimb implements CoachWorld, PointerWorld {
     return this.physics.climbers.some(
       (id) => id !== this.climberId && this.physics.climber(id).hanging,
     );
+  }
+
+  casualty(): CasualtyStage | null {
+    const { physics } = this;
+    const me = physics.climber(this.climberId);
+    const hurt = physics.climbers.find((id) => {
+      const lies = id === this.climberId ? null : physics.climber(id);
+      return lies !== null && lies.down && physics.along(id) > this.safeBelow;
+    });
+    if (hurt === undefined || me.down || me.carriedBy !== null) {
+      return null;
+    }
+    const treated = physics.aidDue(hurt) === null;
+    const aid: CasualtyStage = me.gear.firstAid === true ? "aid" : "no-first-aid";
+    const mine = physics.along(this.climberId);
+    if (me.onLine !== null || (physics.deadEnd(mine) && !me.falling)) {
+      // Down the rope beside them, or on it: the first aid, then back up.
+      return treated ? "rope-up" : me.onLine !== null ? "rope-down" : aid;
+    }
+    const spots = physics.anchorSpots(hurt);
+    if (spots.length === 0 && !physics.climber(hurt).hauled) {
+      return treated ? "carry" : aid;
+    }
+    const thrown = physics.lines.some(({ top, built }) => built >= 1 && spots.includes(top));
+    if (!thrown && !physics.climber(hurt).hauled) {
+      return me.gear.rescueKit === true ? "anchor" : "no-rescue-kit";
+    }
+    return treated ? "haul" : me.gear.firstAid === true ? "rope-down" : "no-first-aid";
   }
 
   along(): number {

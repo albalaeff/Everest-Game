@@ -3,9 +3,19 @@ import type { Json } from "./json";
 import type { Moment, Rule } from "./rule";
 
 /** What a climber chooses to carry or leave: the jumar, a second ice tool, litres of water, bars
- * of food and bottles of oxygen. What every climber wears and carries anyway, the ice axe among
- * it, is their body's own load. */
-export const PACK_ITEMS = ["jumar", "ice-tool", "water", "food", "oxygen"] as const;
+ * of food and bottles of oxygen; and the kits a rescue takes (#241), a first-aid kit, with a
+ * tourniquet, a splint and dressings for one casualty, and a rescue kit, a rope with its pulleys
+ * and two ice screws for one rescue line. What every climber wears and carries anyway, the ice
+ * axe among it, is their body's own load. */
+export const PACK_ITEMS = [
+  "jumar",
+  "ice-tool",
+  "water",
+  "food",
+  "oxygen",
+  "first-aid",
+  "rescue-kit",
+] as const;
 export type PackItem = (typeof PACK_ITEMS)[number];
 
 /** How many of each: units of the jumar, the tool, the bars and the bottles, litres of water. */
@@ -58,12 +68,28 @@ export interface Shoulders {
   eat(id: ClimberId, kcal: number): void;
 }
 
+/** How many first-aid kits and rescue kits a climber has used up since they set off (#241). */
+export interface KitsUsed {
+  readonly firstAid: number;
+  readonly rescueKit: number;
+}
+
 /** Where the climbers are and what's on their harness: the slope physics, which uses the jumar
- * and the ice tools. */
+ * and the ice tools, and the kits a rescue takes, and says how many of them each climber has
+ * used up so far (#241). */
 export interface Harness {
   along(id: ClimberId): number;
   climber(id: ClimberId): { readonly falling: boolean; readonly dead: boolean };
-  equip(id: ClimberId, gear: { readonly jumar: boolean; readonly tools: number }): void;
+  equip(
+    id: ClimberId,
+    gear: {
+      readonly jumar: boolean;
+      readonly tools: number;
+      readonly firstAid: boolean;
+      readonly rescueKit: boolean;
+    },
+  ): void;
+  kitsSpent(id: ClimberId): KitsUsed;
 }
 
 /** The bottles of oxygen a climber carries: the oxygen system counts them, and breathes them. */
@@ -72,10 +98,17 @@ export interface Bottles {
   stock(id: ClimberId, bottles: number): void;
 }
 
+/** A climber's pack as saves keep it: with the kits the pack has counted as used up so far
+ * (#241), missing from a scenario's start and from the saves of builds before them. */
+type PackSave = PackOf & { readonly used?: KitsUsed };
+
 type PacksSave = {
-  readonly climbers: readonly PackOf[];
+  readonly climbers: readonly PackSave[];
   readonly camps: readonly CampStore[];
 };
+
+/** A climber's pack as the rule keeps it. */
+type Pack = { base: number; items: Record<PackItem, number>; used: KitsUsed };
 
 /**
  * The packs: what each climber chose to carry, and what the camps hold. A climber packs at Base
@@ -85,14 +118,21 @@ type PacksSave = {
  * slope physics what's on the harness, so a litre drunk is a kilogram less to carry, a jumar left
  * in the tent climbs no rope, and a second ice tool is a second pick in the ice. It runs before
  * the oxygen, the body and the physics, which read this step what it set. The bottles of oxygen
- * are the oxygen system's to count: the pack weighs what it shows.
+ * are the oxygen system's to count: the pack weighs what it shows. A kit a rescue has used up,
+ * the first-aid kit on a casualty or the rescue kit left on the ice as a rescue line, is out of
+ * the pack: the physics says how many each climber has used, and the pack takes them out (#241).
  */
 export class Packs implements Rule {
   /** Its key in scenarios and saves: never change it once saves exist. */
   static readonly NAME = "packs";
 
   readonly name = Packs.NAME;
-  private readonly packs = new Map<ClimberId, { base: number; items: Record<PackItem, number> }>();
+  private readonly packs = new Map<ClimberId, Pack>();
+  /** Nothing of anything: what a pack saved before an item existed holds of it. */
+  private static readonly NOTHING = Object.fromEntries(
+    PACK_ITEMS.map((item) => [item, 0]),
+  ) as PackCounts;
+  private static readonly NONE_USED: KitsUsed = { firstAid: 0, rescueKit: 0 };
   private camps: { store: CampStore; stock: Record<PackItem, number> }[] = [];
 
   constructor(
@@ -126,15 +166,20 @@ export class Packs implements Rule {
   load(state: Json): void {
     const save = state as unknown as PacksSave;
     this.packs.clear();
-    for (const { id, base, items } of save.climbers) {
-      this.packs.set(id, { base, items: { ...items } });
+    for (const { id, base, items, used = Packs.NONE_USED } of save.climbers) {
+      this.packs.set(id, { base, items: { ...Packs.NOTHING, ...items }, used });
     }
     this.camps = save.camps.map((store) => ({ store, stock: { ...store.stock } }));
   }
 
   save(): Json {
     const save: PacksSave = {
-      climbers: [...this.packs].map(([id, { base, items }]) => ({ id, base, items: { ...items } })),
+      climbers: [...this.packs].map(([id, { base, items, used }]) => ({
+        id,
+        base,
+        items: { ...items },
+        ...(used.firstAid + used.rescueKit === 0 ? {} : { used }),
+      })),
       camps: this.camps.map(({ store, stock }) => ({ ...store, stock: { ...stock } })),
     };
     return save as unknown as Json;
@@ -149,10 +194,25 @@ export class Packs implements Rule {
       }
     }
     for (const [id, pack] of this.packs) {
+      this.spend(id, pack);
       const items = this.counted(id, pack.items);
       this.shoulders.carry(id, pack.base + Packs.weight(items, this.numbers));
-      this.harness.equip(id, { jumar: items.jumar > 0, tools: 1 + items["ice-tool"] });
+      this.harness.equip(id, {
+        jumar: items.jumar > 0,
+        tools: 1 + items["ice-tool"],
+        firstAid: items["first-aid"] > 0,
+        rescueKit: items["rescue-kit"] > 0,
+      });
     }
+  }
+
+  /** The kits a climber has used up since the pack last counted come out of it (#241). */
+  private spend(id: ClimberId, pack: Pack): void {
+    const used = this.harness.kitsSpent(id);
+    const { items } = pack;
+    items["first-aid"] = Math.max(0, items["first-aid"] - (used.firstAid - pack.used.firstAid));
+    items["rescue-kit"] = Math.max(0, items["rescue-kit"] - (used.rescueKit - pack.used.rescueKit));
+    pack.used = used;
   }
 
   /** A climber's pack: what's in it and what it weighs, and the camp they stand in. */
@@ -267,7 +327,7 @@ export class Packs implements Rule {
     return this.camps.find(({ store }) => along >= store.from && along <= store.to) ?? null;
   }
 
-  private packOf(id: ClimberId): { base: number; items: Record<PackItem, number> } {
+  private packOf(id: ClimberId): Pack {
     const pack = this.packs.get(id);
     if (pack === undefined) {
       throw new RangeError(`${id} has no pack on this expedition`);

@@ -114,4 +114,26 @@ describe("Abreast", () => {
 
     expect(aside[1]).toBeCloseTo(2 * Abreast.APART, 6);
   });
+
+  it("draws a rescuer at the hurt limb they work on, a step from where they stand, and back when the work is done (#241)", () => {
+    const abreast = new Abreast(ground);
+    // A casualty down at 4 m, who stays where they lie, and their rescuer at the same spot.
+    const casualty = on(4, { free: false });
+
+    const [lies, kneels] = settled(abreast, [casualty, on(4, { beside: 5.1 })]);
+
+    expect(lies).toBe(0);
+    expect(kneels).toBeCloseTo(1.1, 6);
+    expect(settled(abreast, [casualty, on(5.2, { beside: 5.1 })])[1]).toBeCloseTo(-0.1, 6);
+    expect(settled(abreast, [on(4, { there: false, free: false }), on(4)])[1]).toBe(0);
+  });
+
+  it("never draws a rescuer over a lip to a limb: they keep a step from the casualty instead", () => {
+    const aside = settled(new Abreast(ground), [
+      on(9.6, { free: false }),
+      on(9.6, { beside: 10.4 }),
+    ]);
+
+    expect(aside[1]).toBeCloseTo(-Abreast.APART, 6);
+  });
 });

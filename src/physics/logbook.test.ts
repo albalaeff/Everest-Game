@@ -48,7 +48,8 @@ class Logged {
 
   constructor() {
     const hazards = new ObjectiveHazards(SETTINGS, this.clock, this.physics);
-    this.logbook = new Logbook(this.physics, hazards, this.clock, { from: 10, to: 90 });
+    // Base Camp is the ground's first 8 m.
+    this.logbook = new Logbook(this.physics, hazards, this.clock, { from: 10, to: 90 }, 8);
     const scenario: Scenario = {
       seed: 1,
       climbers: ["anna"],
@@ -152,5 +153,37 @@ describe("Logbook: what the climb was, step by step (#194)", () => {
     resumed.logbook.load(saved as Parameters<Logbook["load"]>[0]);
 
     expect(resumed.logbook.page("anna")).toEqual(log.logbook.page("anna"));
+  });
+});
+
+describe("Logbook: a climber carried down hurt (#241)", () => {
+  it("writes the hour a climber with a broken leg lies in the camp they set off from, and no more", () => {
+    const log = new Logged();
+    log.play(20, [walk("anna", "right")]);
+    log.physics.injure("anna", { part: "leg", kind: "fracture" }, 20);
+    log.play(20);
+    const hurt = log.logbook.page("anna");
+    const saved = log.expedition.step;
+    log.play(200);
+    const later = log.logbook.page("anna");
+
+    expect(log.physics.along("anna")).toBeLessThan(8);
+    expect(hurt.evacuated).toBeCloseTo(3 * 3600 + (21 / 20) * MOUNTAIN_SECONDS, 0);
+    expect(hurt).toMatchObject({ arrived: null, died: null });
+    expect(saved).toBe(40);
+    expect(later).toEqual(hurt);
+  });
+
+  it("writes none for one who lies hurt on the route, nor for one on their feet in the camp", () => {
+    const log = new Logged();
+    log.play(40, [walk("anna", "right")]);
+    const inCamp = log.logbook.page("anna");
+    log.walkTo(20);
+    log.physics.injure("anna", { part: "leg", kind: "fracture" }, 1);
+    log.play(40);
+
+    expect(inCamp.evacuated ?? null).toBeNull();
+    expect(log.logbook.page("anna").evacuated ?? null).toBeNull();
+    expect(log.physics.climber("anna").down).toBe(true);
   });
 });

@@ -44,22 +44,43 @@ const take = (item: PackItem): GameAction => ({
  * shoulders, its jumar and its tools on their harness, its bottles their oxygen.
  */
 describe("The pack on the Icefall", () => {
-  it("sets the player off with the route's pack: the jumar, water and food, the ice axe alone, no oxygen, 10 kg in all", () => {
+  it("sets the player off with the route's pack: the jumar, water, food and a first-aid kit, the ice axe alone, no oxygen, 10 kg in all", () => {
     const { rules } = climb();
 
     expect(rules.packs.pack(PLAYER)).toMatchObject({
-      items: { jumar: 1, "ice-tool": 0, water: 2, food: 2, oxygen: 0 },
+      items: {
+        jumar: 1,
+        "ice-tool": 0,
+        water: 2,
+        food: 2,
+        oxygen: 0,
+        "first-aid": 1,
+        "rescue-kit": 0,
+      },
       camp: "base-camp",
     });
     expect(body(rules).load).toBeCloseTo(10, 6);
-    expect(rules.physics.climber(PLAYER).gear).toEqual({ jumar: true, tools: 1 });
+    expect(rules.physics.climber(PLAYER).gear).toEqual({
+      jumar: true,
+      tools: 1,
+      firstAid: true,
+      rescueKit: false,
+    });
     expect(rules.oxygen.climber(PLAYER)).toMatchObject({ bottles: 0, pressure: 0 });
   });
 
   it("puts the pack they chose on them: a second tool is a second pick, a bottle is 4 kg, and no jumar climbs no rope", () => {
-    const { rules } = climb({ jumar: 0, "ice-tool": 1, water: 1, food: 0, oxygen: 1 });
+    const { rules } = climb({
+      jumar: 0,
+      "ice-tool": 1,
+      water: 1,
+      food: 0,
+      oxygen: 1,
+      "first-aid": 0,
+      "rescue-kit": 0,
+    });
 
-    expect(rules.physics.climber(PLAYER).gear).toEqual({ jumar: false, tools: 2 });
+    expect(rules.physics.climber(PLAYER).gear).toMatchObject({ jumar: false, tools: 2 });
     expect(rules.oxygen.climber(PLAYER)).toMatchObject({ bottles: 1, pressure: 300 });
     expect(body(rules).load).toBeGreaterThan(12);
   });

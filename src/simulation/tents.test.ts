@@ -41,6 +41,9 @@ class World implements Campground, Flasks, Sleeper {
   ]);
   readonly sheltered = new Set<ClimberId>();
   readonly fallen = new Set<ClimberId>();
+  /** Who lies with a bone broken, and whom each rescuer carries on their back (#241). */
+  readonly hurt = new Set<ClimberId>();
+  readonly carried = new Map<ClimberId, ClimberId>();
   readonly bottles = new Map<ClimberId, number>([
     ["anna", 1],
     ["boris", 1],
@@ -57,8 +60,18 @@ class World implements Campground, Flasks, Sleeper {
     return this.places.get(id) ?? 0;
   }
 
-  climber(id: ClimberId): { falling: boolean; dead: boolean } {
-    return { falling: this.fallen.has(id), dead: false };
+  climber(id: ClimberId): {
+    falling: boolean;
+    dead: boolean;
+    down: boolean;
+    carrying: ClimberId | null;
+  } {
+    return {
+      falling: this.fallen.has(id),
+      dead: false,
+      down: this.hurt.has(id),
+      carrying: this.carried.get(id) ?? null,
+    };
   }
 
   shelter(id: ClimberId, inside: boolean): void {
@@ -165,6 +178,20 @@ describe("Tents: going in and out", () => {
 
     expect(tents.tent("anna")).toBeNull();
     expect(tents.tent("boris")).toBeNull();
+  });
+
+  it("takes nobody in who lies with a bone broken, or has a casualty on their back (#241)", () => {
+    const { expedition, tents, world } = camp();
+    world.hurt.add("anna");
+    world.carried.set("boris", "anna");
+
+    expect(tents.door("anna")).toBeNull();
+    expect(tents.door("boris")).toBeNull();
+    expedition.advance([goIn("anna"), goIn("boris")]);
+
+    expect(tents.tent("anna")).toBeNull();
+    expect(tents.tent("boris")).toBeNull();
+    expect(world.sheltered.size).toBe(0);
   });
 
   it("puts out whoever is knocked off their feet, or stood somewhere else", () => {

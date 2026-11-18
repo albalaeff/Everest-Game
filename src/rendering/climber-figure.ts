@@ -8,9 +8,10 @@ import { Breathing } from "./breathing";
 import { ClimberPose } from "./climber-pose";
 import type { Joint, Pose, PoseState } from "./climber-pose";
 import { ClimberReading } from "./climber-reading";
+import type { Beside, Mount, ReadSlope } from "./climber-reading";
+import { Dressing } from "./dressing";
 import { FacingTurn } from "./facing-turn";
 import { FrontRig } from "./front-rig";
-import type { ReadSlope } from "./climber-reading";
 import type { IceChips } from "./ice-chips";
 import type { LeastSize } from "./least-size";
 import { Palette } from "./palette";
@@ -53,9 +54,11 @@ interface Grip {
  * each boot that comes down on the snow kicks up a puff. On a face of ice, each pick that strikes
  * in knocks chips off it, more and bigger where it bites poorly, and so do the front points as
  * they kick in. A dead climber lies dim, with no words on the screen (#24). Beside a climber at
- * the same spot, they're drawn a step aside (`Abreast`, #243). It keeps only the picture's own:
- * the points between the steps, the step aside, the pose, the breath, the turn and the lamp's
- * beam.
+ * the same spot, they're drawn a step aside (`Abreast`, #243). Hurt, their limb shows it and
+ * what first aid has put on it (`Dressing`, #241); carried, they're drawn on their rescuer's
+ * back, where the rescuer is drawn. It keeps only the picture's own: the points between the
+ * steps, the step aside, the pose, the breath, the turn, the lamp's beam, and where their hips,
+ * their hands and their hurt limb were drawn last.
  */
 export class ClimberFigure extends Container {
   /** From the soles to the top of the head. */
@@ -121,6 +124,16 @@ export class ClimberFigure extends Container {
   private readonly glow = ClimberFigure.drawGlow();
   private readonly rim = new RimRig(ClimberFigure.RIM_METRES);
   private readonly figure: SuitRig;
+  /** What a hard landing left on a limb, and what first aid has put on it (#241). */
+  private readonly dressing = new Dressing();
+  /** Where their hips, the middle of their hands and their hurt limb are drawn this frame, in
+   * the layer, and how far they lean (#241): what a casualty on their back rides on, where a
+   * rope they haul runs to, and where their rescuer's hands work. */
+  private readonly hipsAt: Spot = { x: 0, y: 0 };
+  private readonly handsAt: Spot = { x: 0, y: 0 };
+  private readonly woundAt: Spot = { x: 0, y: 0 };
+  private wounded = false;
+  private leaning = 0;
   /** The figure from the front, while they face the viewer, and how far round they've turned
    * (#235). */
   private readonly front: FrontRig;
@@ -209,6 +222,7 @@ export class ClimberFigure extends Container {
       this.lit,
       this.rim,
       this.figure,
+      this.dressing,
       this.front,
       this.halo,
       this.glow,
@@ -230,6 +244,30 @@ export class ClimberFigure extends Container {
   /** Where the climber is drawn this frame, between the steps. */
   get at(): Point {
     return this.point;
+  }
+
+  /** As they're drawn this frame, for a casualty they carry to ride on (#241): the way they
+   * face, where their hips are and how far they lean. */
+  get mount(): Mount {
+    return { facing: this.reading.facing, hips: this.hipsAt, lean: this.leaning };
+  }
+
+  /** Where first aid goes on them, as they're drawn this frame, in the layer (#241): on their
+   * hurt limb; none unhurt, or seen from the front. */
+  get wound(): Point | null {
+    return this.wounded ? this.woundAt : null;
+  }
+
+  /** The middle of their hands as they're drawn this frame, in the layer: a rescue line they
+   * haul on runs to them (#241). */
+  get hands(): Point {
+    return this.handsAt;
+  }
+
+  /** The rescue line that holds them this frame, and its rope from the anchor down to where
+   * they're tied in, in the layer; none off a line (#241). */
+  get onLine(): { readonly line: string; readonly taut: readonly Point[] } | null {
+    return this.reading.onLine;
   }
 
   /** Where the physics has the climber this frame, between the steps: where they're drawn, but
@@ -300,7 +338,8 @@ export class ClimberFigure extends Container {
    * on while their oxygen flows (`masked`), in the frame's light, no smaller than `size` allows,
    * `sag` lower where a ladder gives under them, and their headlamp shining if it's `lit`. In a
    * tent, `doorway`'s, they're not drawn: on their way through its door they go down on hands and
-   * knees and crawl, and are gone behind its fly (#258). */
+   * knees and crawl, and are gone behind its fly (#258). `beside` is whom a rescue has them with
+   * (#241): on their rescuer's back, or at their casualty's limb. */
   show(
     body: BodyView,
     masked: boolean,
@@ -310,6 +349,7 @@ export class ClimberFigure extends Container {
     sag = 0,
     lit = true,
     doorway: Doorway | null = null,
+    beside: Beside = ClimberReading.ALONE,
   ): void {
     const { climber, drawn } = this;
     if (climber === null) {
@@ -326,13 +366,20 @@ export class ClimberFigure extends Container {
     drawn.grown = grown;
     drawn.jumar = climber.first === null ? null : this.first;
     drawn.carabiner = climber.second === null ? null : this.second;
-    const state = this.reading.read(climber, body, drawn);
+    const state = this.reading.read(climber, body, drawn, beside);
     const pose = this.pose.advance(seconds, state);
     const { facing } = this.reading;
     // Turning round, the figure narrows to its edge and opens the other way; turning to face
     // the viewer, it narrows a quarter turn and the picture from the front opens in its place
-    // (#235).
-    const towardViewer = climber.towardViewer && !climber.falling && !climber.dead;
+    // (#235): on their feet only, and at no rescue's work.
+    const afoot = !climber.falling && !climber.dead && !climber.down;
+    const atWork = climber.helping !== null || climber.carrying !== null;
+    const towardViewer = climber.towardViewer && afoot && !atWork;
+    // A rescuer leaves their pack to carry a casualty on their back, and the casualty's stays
+    // where they lay (#241).
+    const packed = climber.carrying === null && climber.carriedBy === null;
+    this.figure.packOn(packed);
+    this.rim.packOn(packed);
     const turned = this.turning.advance(seconds, facing, towardViewer);
     const fromTheFront = turned.front > 0;
     this.fromTheFront = fromTheFront;
@@ -355,7 +402,11 @@ export class ClimberFigure extends Container {
     this.alpha = climber.dead ? ClimberFigure.DEAD_ALPHA : entry.shown;
     // Hanging with both cowstails on the one rope, they hang from one point of it (#243).
     const together = borne !== null && climber.first !== null && climber.second === climber.first;
-    this.draw(pose, masked, atmosphere, climber.dead, grown, size, together);
+    // Down on the snow, the cowstails that are off lie on it beside them (#241).
+    const sat = climber.down && !climber.falling && !climber.hauled && climber.carriedBy === null;
+    const floor = sat && !climber.dead ? pose.pelvis.y - ClimberPose.SEAT : null;
+    this.draw(pose, masked, atmosphere, climber.dead, grown, size, together, floor);
+    this.dress(pose, climber);
     // On hands and knees through a tent's door, the lamp lights the ground under their nose.
     const upright = !climber.dead && !climber.falling && entry.down < 0.5;
     this.drawLamp(pose, atmosphere, upright && lit ? state : null, seconds);
@@ -386,6 +437,29 @@ export class ClimberFigure extends Container {
       this.kick(pose, grown);
     }
     this.knock(pose, state.onIce === true && upright, grown);
+  }
+
+  /** What their injuries show on the near limbs, and where their hips, their hands and their
+   * hurt limb are drawn, in the layer (#241). From the front, a figure on their feet, nothing
+   * shows: a sprain's wrap is under the gaiter's line there. */
+  private dress(pose: Pose, climber: ClimberView): void {
+    const { dressing, fromTheFront } = this;
+    dressing.visible = !fromTheFront;
+    if (!fromTheFront) {
+      dressing.show(pose, climber.injuries);
+    }
+    this.inLayer(pose.pelvis, this.hipsAt);
+    this.leaning = pose.lean;
+    const [near, far] = pose.arms;
+    this.inLayer(
+      { x: (near.end.x + far.end.x) / 2, y: (near.end.y + far.end.y) / 2 },
+      this.handsAt,
+    );
+    const wound = fromTheFront || climber.dead ? null : Dressing.wound(pose, climber.injuries);
+    this.wounded = wound !== null;
+    if (wound !== null) {
+      this.inLayer(wound, this.woundAt);
+    }
   }
 
   /** How much rope bears the climber's weight, in metres, from the cowstail that holds them to
@@ -515,7 +589,8 @@ export class ClimberFigure extends Container {
 
   /** The kit on the pose, the chest swollen with the breath, the mask on the face or on the chest,
    * the far limbs in the hour's cold light; the cowstails no thinner than a line can be drawn,
-   * however small the figure, both to one point of the rope `together`; and the rim behind it. */
+   * however small the figure, both to one point of the rope `together`, lying on the snow
+   * `floor` high where they sit on it; and the rim behind it. */
   private draw(
     pose: Pose,
     masked: boolean,
@@ -524,6 +599,7 @@ export class ClimberFigure extends Container {
     grown: number,
     size: LeastSize,
     together = false,
+    floor: number | null = null,
   ): void {
     const { figure, front } = this;
     const swell = ClimberFigure.CHEST_SWELL * this.breathing.chest;
@@ -551,6 +627,7 @@ export class ClimberFigure extends Container {
       },
       thin,
       together,
+      floor,
     );
     this.drawRim(pose, swell, masked, atmosphere, dead);
   }

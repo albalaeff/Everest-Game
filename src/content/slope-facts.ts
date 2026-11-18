@@ -9,7 +9,10 @@ import type { KnowledgeBase } from "./knowledge-base";
  * lethal landing and the climb back, coefficients fitted to the Icefall's hours and the chronicle
  * (content/facts/technique.json). The ground walked
  * runs from the steepest down to the steepest up, the Icefall's; a ladder, from down a wall to
- * across to up one.
+ * across to up one. And how a hard landing injures and a casualty is rescued (#241): the speeds
+ * that sprain, break a bone and break it open, the chance of walking away and the limb that takes
+ * it, and a sprain's pace (content/facts/medicine.json), a rescue's reach, the minutes of its
+ * anchor and of each piece of first aid, the haul up a rescue line, the lift and the carry.
  *
  * The records are life's numbers. The mountain's clock runs faster than the route is drawn
  * (`time.compression` over `route.drawn-scale`), so the climber walks and climbs that many
@@ -28,9 +31,11 @@ export class SlopeFacts {
     const number = (name: string): number => knowledge.number(`technique.${name}`);
     const speedUp = knowledge.number("time.compression") / knowledge.number("route.drawn-scale");
     const fast = (name: string): number => number(name) * speedUp;
+    const medicine = (name: string): number => knowledge.number(`medicine.${name}`);
     // The mountain's minutes as seconds of play: the clock runs `time.compression` times faster.
-    const minutes = (name: string): number =>
-      (number(name) * 60) / knowledge.number("time.compression");
+    const mountainMinutes = (value: number): number =>
+      (value * 60) / knowledge.number("time.compression");
+    const minutes = (name: string): number => mountainMinutes(number(name));
     const seconds = (name: string): number => number(name) / knowledge.number("time.compression");
     // A chance a second of the mountain's as one a second of play: the clock runs that much faster.
     const perSecond = (name: string): number => number(name) * knowledge.number("time.compression");
@@ -104,6 +109,32 @@ export class SlopeFacts {
         poor: number("poor-pick-slip"),
         swingSlip: number("axe-swing-slip"),
         hang: number("ice-hang-effort"),
+      },
+      // A landing's speeds are life's, as the falls are (#241); a rescue's minutes are the
+      // mountain's, and its haul goes over the drawn ground as the others do.
+      injury: {
+        sprain: medicine("sprain-landing"),
+        fracture: medicine("fracture-landing"),
+        open: medicine("open-fracture-landing"),
+        unhurt: {
+          soft: medicine("landing-unhurt-soft"),
+          hard: medicine("landing-unhurt-hard"),
+        },
+        leg: { flat: medicine("landing-leg-flat"), steep: medicine("landing-leg-steep") },
+        sore: medicine("sprain-pace"),
+        wrapped: medicine("sprain-wrapped-pace"),
+      },
+      rescue: {
+        reach: number("rescue-reach"),
+        anchor: minutes("rescue-anchor-minutes"),
+        aid: {
+          tourniquet: mountainMinutes(medicine("tourniquet-minutes")),
+          splint: mountainMinutes(medicine("splint-minutes")),
+          wrap: mountainMinutes(medicine("wrap-minutes")),
+        },
+        haul: fast("rescue-haul-speed"),
+        lift: minutes("carry-lift-minutes"),
+        carry: number("carry-pace"),
       },
     };
   }

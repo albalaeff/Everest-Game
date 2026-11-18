@@ -174,7 +174,15 @@ describe("The steps of ice on the tools: a second tool against the ice axe alone
   const hours = (tools: number): number => {
     const mountain = new Mountain(knowledge);
     const rules = mountain.rules();
-    const pack = { jumar: 1, "ice-tool": tools - 1, water: 2, food: 2, oxygen: 0 };
+    const pack = {
+      jumar: 1,
+      "ice-tool": tools - 1,
+      water: 2,
+      food: 2,
+      oxygen: 0,
+      "first-aid": 1,
+      "rescue-kit": 0,
+    };
     const expedition = Expedition.start(
       mountain.scenario(SEED, undefined, undefined, false, pack),
       rules.all,

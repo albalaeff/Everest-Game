@@ -6,6 +6,20 @@ import { Changeover } from "./changeover";
  * but the ropes', said whenever the player is stuck on them, and the warnings, said whenever they
  * matter. */
 export type CoachTip =
+  | "broken-leg"
+  | "broken-arm"
+  | "carried"
+  | "hauled-up"
+  | "carrying"
+  | "casualty-aid"
+  | "casualty-no-first-aid"
+  | "casualty-anchor"
+  | "casualty-no-rescue-kit"
+  | "casualty-rope-down"
+  | "casualty-rope-up"
+  | "casualty-haul"
+  | "casualty-carry"
+  | "sprained"
   | "walk"
   | "clip"
   | "anchor"
@@ -40,6 +54,13 @@ export type CoachTip =
   | "ladder-bounced"
   | "front-points";
 
+/** What a rescuer does next for a partner who lies hurt and can't walk (#241), as the coach
+ * says it: first aid by them, with a first-aid kit or none; where they lie in a crevasse, the
+ * anchor at its edge, with a rescue kit or none, down the rope to them, back up it and the haul;
+ * and, once they can be moved, onto the rescuer's back. */
+export type CasualtyStage =
+  "aid" | "no-first-aid" | "anchor" | "no-rescue-kit" | "rope-down" | "rope-up" | "haul" | "carry";
+
 /** What the coach reads of the climb: the player's climber, the route's ropes, ladders, blue ice
  * and hazards, and whether the player is in the dark. The page hands it the physics', the
  * hazards' and the lamps' views of them. */
@@ -57,6 +78,9 @@ export interface CoachWorld {
   ladderCondition(id: string): LadderCondition;
   /** Whether someone else hangs on the rope (#209), for the player to pull out. */
   partnerHangs(): boolean;
+  /** What the player does next for a partner who lies hurt and can't walk, or none while nobody
+   * does, or while someone else carries them (#241). */
+  casualty(): CasualtyStage | null;
   /** How far along the ground the player is. */
   along(): number;
   /** The wall of ice with no ladder the player stands at: at its foot, to climb on their tools;
@@ -102,7 +126,10 @@ export interface CoachStorage {
  * a partner hanging to pull out; and a ladder fallen into its crevasse, to haul back up with a
  * partner (#228); and what jolts them (#197): a gust
  * coming, their lashed ladder twisting, someone passing them on their rope, their ladder bouncing
- * under someone else's steps, and a stand on the front points held too long. It holds the
+ * under someone else's steps, and a stand on the front points held too long. And a hard landing
+ * (#241): a bone broken, to lie still for the rescue, and the haul and the carry as they come; a
+ * sprain, to go on gently; and, by a partner who lies hurt, what a rescuer does next, the first
+ * aid, the rope into a crevasse and back, the haul, and the carry to Base Camp. It holds the
  * screen's own state alone, as the rendering does: what's been learnt, and what it shows.
  */
 export class Coach {
@@ -117,6 +144,8 @@ export class Coach {
   /** How long a player stands still on their front points before the coach says so: longer than
    * the pause before each pick (#197). */
   static readonly STANCE_SECONDS = 2;
+  /** How long the coach says what a sprain means, once it's there (#241). */
+  static readonly SPRAIN_SECONDS = 8;
   /** How far a climber walks before the walk is learnt; how near a ladder's end, an anchor and
    * the ice ahead have to be for their tips; how far from a crevasse's ladder an unclipped
    * climber is warned; and the chance a metre of slipping past which their steps are careless. */
@@ -132,6 +161,19 @@ export class Coach {
   private static readonly CARELESS = 0.025;
   /** The tips, most pressing first: the warnings, then the tutorial in the route's order. */
   private static readonly ORDER: readonly CoachTip[] = [
+    "carried",
+    "hauled-up",
+    "broken-leg",
+    "broken-arm",
+    "carrying",
+    "casualty-aid",
+    "casualty-no-first-aid",
+    "casualty-anchor",
+    "casualty-no-rescue-kit",
+    "casualty-rope-down",
+    "casualty-rope-up",
+    "casualty-haul",
+    "casualty-carry",
     "hanging",
     "hanging-carabiner",
     "hanging-no-jumar",
@@ -148,6 +190,7 @@ export class Coach {
     "ladder-bounced",
     "front-points",
     "careless",
+    "sprained",
     "crampon-loose",
     "lamp",
     "ladder-broken",
@@ -167,6 +210,20 @@ export class Coach {
     "walk",
   ];
   private static readonly WARNINGS: ReadonlySet<CoachTip> = new Set([
+    "carried",
+    "hauled-up",
+    "broken-leg",
+    "broken-arm",
+    "carrying",
+    "casualty-aid",
+    "casualty-no-first-aid",
+    "casualty-anchor",
+    "casualty-no-rescue-kit",
+    "casualty-rope-down",
+    "casualty-rope-up",
+    "casualty-haul",
+    "casualty-carry",
+    "sprained",
     "hanging",
     "hanging-carabiner",
     "hanging-no-jumar",
@@ -208,6 +265,10 @@ export class Coach {
   private still = 0;
   private dark = 0;
   private stance = 0;
+  /** How long the player has had a sprain nobody has wrapped, and what a partner who lies hurt
+   * needs of them now (#241). */
+  private sprained = 0;
+  private casualty: CasualtyStage | null = null;
 
   constructor(private readonly storage: CoachStorage | null) {
     this.done = new Set(Coach.kept(storage));
@@ -294,6 +355,9 @@ export class Coach {
     this.dark = world.inTheDark() ? this.dark + seconds : 0;
     const hard = view.stillChance > 0 && view.ladder === null && !view.falling;
     this.stance = hard ? this.stance + seconds : 0;
+    const sprain = view.injuries.some(({ kind, splinted }) => kind === "sprain" && !splinted);
+    this.sprained = sprain ? this.sprained + seconds : 0;
+    this.casualty = view.down || view.carriedBy !== null ? null : world.casualty();
   }
 
   /** Whether a tip is wanted where the player is now. */
@@ -302,7 +366,29 @@ export class Coach {
       return false;
     }
     const clipped = view.first !== null || view.second !== null;
+    const brokenLeg = view.injuries.some(({ part, kind }) => part === "leg" && kind !== "sprain");
     switch (tip) {
+      case "carried":
+        return view.carriedBy !== null;
+      case "hauled-up":
+        return view.hauled;
+      case "broken-leg":
+        return view.down && brokenLeg;
+      case "broken-arm":
+        return view.down && !brokenLeg;
+      case "carrying":
+        return view.carrying !== null;
+      case "casualty-aid":
+      case "casualty-no-first-aid":
+      case "casualty-anchor":
+      case "casualty-no-rescue-kit":
+      case "casualty-rope-down":
+      case "casualty-rope-up":
+      case "casualty-haul":
+      case "casualty-carry":
+        return this.casualty !== null && tip === `casualty-${this.casualty}`;
+      case "sprained":
+        return this.sprained > 0 && this.sprained < Coach.SPRAIN_SECONDS && !view.falling;
       case "hanging":
         return view.hanging && view.first !== null && view.gear.jumar;
       case "hanging-carabiner":

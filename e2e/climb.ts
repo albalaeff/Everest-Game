@@ -19,7 +19,12 @@ export interface SeenClimber {
   readonly falls: readonly { readonly held?: boolean; readonly broke?: boolean }[];
   readonly dead: boolean;
   /** What they carry of the gear the slope's techniques need: their pack's. */
-  readonly gear: { readonly jumar: boolean; readonly tools: number };
+  readonly gear: {
+    readonly jumar: boolean;
+    readonly tools: number;
+    readonly firstAid: boolean;
+    readonly rescueKit: boolean;
+  };
   /** Whether a crampon they didn't check has come loose (#196). */
   readonly cramponLoose: boolean;
   /** Whether they're on the ice on their tools, and whether the pick they hang from bites
@@ -33,6 +38,21 @@ export interface SeenClimber {
    * they've turned to face the player (#235). */
   readonly facing: 1 | -1;
   readonly towardViewer: boolean;
+  /** What their hard landings have left them, and what first aid has done for each; whether a
+   * broken bone has them down; who carries them and whom they carry; the rescue line they're
+   * on, and whether they're hauled up it; and what they do for a casualty, the haul held (#241). */
+  readonly injuries: readonly {
+    readonly part: "leg" | "arm";
+    readonly kind: "sprain" | "fracture" | "open-fracture";
+    readonly tourniquet: boolean;
+    readonly splinted: boolean;
+  }[];
+  readonly down: boolean;
+  readonly carriedBy: string | null;
+  readonly carrying: string | null;
+  readonly onLine: string | null;
+  readonly hauled: boolean;
+  readonly helping: { readonly kind: string; readonly whom: string } | null;
   /** Whether they're in a tent, under cover (#258). */
   readonly sheltered: boolean;
 }
@@ -97,7 +117,9 @@ export interface SeenGod {
   serac(): { readonly id: string; readonly from: number; readonly to: number };
   ladder(id?: string): string | null;
   jolt(kind?: string): boolean;
+  calm(): void;
   slip(): void;
+  injure(injury?: { part: string; kind: string }, who?: string, at?: number): void;
   immortal(on: boolean): void;
 }
 
