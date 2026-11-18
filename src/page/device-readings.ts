@@ -8,6 +8,7 @@ import type { SlopePhysics } from "../physics";
 import type {
   ClimberId,
   Devices,
+  HandView,
   Jolts,
   MountainClock,
   ObjectiveHazards,
@@ -131,6 +132,11 @@ export class DeviceReadings {
 
   get tracker(): TrackerView {
     return this.rules.devices.tracker(this.player);
+  }
+
+  /** The player's hand: the device they took out, if any (#271). */
+  get hand(): HandView {
+    return this.rules.devices.hand(this.player);
   }
 
   /** The player's own calls on the radio, in order. */

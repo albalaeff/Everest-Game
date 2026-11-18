@@ -2,6 +2,12 @@ import type { ClimberId, GameAction } from "./game-action";
 import type { Json } from "./json";
 import type { MountainClock } from "./mountain-clock";
 import type { Moment, Rule } from "./rule";
+import { SimulationClock } from "./simulation-clock";
+
+/** The devices a climber carries, in the order their card has them: the handheld radio, the GPS
+ * watch, the pocket weather meter and the satellite tracker. */
+export const DEVICE_KINDS = ["radio", "gps", "wind", "tracker"] as const;
+export type DeviceKind = (typeof DEVICE_KINDS)[number];
 
 /** The devices' numbers, from the knowledge base, in the mountain's seconds: how long a tracker
  * that's tracking waits between two points, how long its full battery lasts tracking, and how
@@ -48,6 +54,20 @@ export interface TrackerView {
   readonly sky: boolean;
 }
 
+/** A climber's hand as the picture shows it (#271): the device in it, if any; the one that was in
+ * it before, which is on its way back while this one comes out, or the hand comes down; the
+ * seconds of play since it was taken out or put away; and the seconds since they last spoke on
+ * the radio, if they have. */
+export interface HandView {
+  readonly device: DeviceKind | null;
+  readonly was: DeviceKind | null;
+  readonly seconds: number;
+  readonly spoke: number | null;
+}
+
+/** A hand, as saves keep it: the device in it, the one before, and the step it changed on. */
+type Hand = { device: DeviceKind | null; was: DeviceKind | null; at: number };
+
 /** A message on its way out of a tracker: which, and the seconds of sky it still needs. */
 type Outgoing = { readonly kind: "check-in" | "sos"; left: number };
 
@@ -64,9 +84,13 @@ type TrackerSave = {
   outgoing: Outgoing[];
 };
 
+/** The hands and the step are missing from the saves of builds before a device was seen in the
+ * hand (#271): every hand is empty then. */
 type DevicesSave = {
   readonly trackers: readonly TrackerSave[];
   readonly calls: readonly RadioCall[];
+  readonly hands?: Readonly<Record<ClimberId, Hand>>;
+  readonly step?: number;
 };
 
 /** Who carries the devices as a scenario starts: every climber, each tracker charged and off. */
@@ -80,7 +104,9 @@ export interface DeviceStart {
  * in a crevasse; every call is kept, heard or not, and the page gives Base Camp its answer. A
  * tracker that's tracking sends a point each `interval` while it sees the sky, and its battery
  * runs down as it does; a check-in or an SOS takes `delivery` seconds of sky to leave. A tracker
- * goes on tracking when its climber can't work it any more: that is what it's carried for. The
+ * goes on tracking when its climber can't work it any more: that is what it's carried for. A
+ * device is in the hand from the `device` action that takes it out to the one that puts it away
+ * (#271), so a teammate and a replay see it: the picture shows it while a hand is free. The
  * rule runs after the slope physics, which says who hangs where, and draws nothing from chance.
  */
 export class Devices implements Rule {
@@ -90,6 +116,9 @@ export class Devices implements Rule {
   readonly name = Devices.NAME;
   private trackers = new Map<ClimberId, TrackerSave>();
   private kept: RadioCall[] = [];
+  private hands = new Map<ClimberId, Hand>();
+  /** The step the rule last lived through: what the hands' seconds are counted to. */
+  private step = 0;
 
   constructor(
     private readonly numbers: DeviceNumbers,
@@ -132,6 +161,8 @@ export class Devices implements Rule {
       ]),
     );
     this.kept = [...save.calls];
+    this.hands = new Map(Object.entries(save.hands ?? {}).map(([id, hand]) => [id, { ...hand }]));
+    this.step = save.step ?? 0;
   }
 
   save(): Json {
@@ -141,16 +172,21 @@ export class Devices implements Rule {
         outgoing: tracker.outgoing.map((message) => ({ ...message })),
       })),
       calls: [...this.kept],
+      hands: Object.fromEntries([...this.hands].map(([id, hand]) => [id, { ...hand }])),
+      step: this.step,
     };
     return save as unknown as Json;
   }
 
   advance(moment: Moment): void {
+    this.step = moment.step;
     for (const action of moment.actions) {
       if (action.kind === "radio") {
         this.call(moment.step, action);
       } else if (action.kind === "tracker") {
         this.work(action);
+      } else if (action.kind === "device") {
+        this.hold(action);
       }
     }
     for (const tracker of this.trackers.values()) {
@@ -183,6 +219,28 @@ export class Devices implements Rule {
       sos: raising ? "sending" : sos ? "sent" : "none",
       sky: this.sees(id),
     };
+  }
+
+  /** A climber's hand: what's in it, what was, and for how long. */
+  hand(id: ClimberId): HandView {
+    this.trackerOf(id);
+    const { device = null, was = null, at = this.step } = this.hands.get(id) ?? {};
+    const last = this.kept.findLast(({ climber }) => climber === id);
+    const since = (step: number): number => (this.step - step) * SimulationClock.STEP_SECONDS;
+    return { device, was, seconds: since(at), spoke: last === undefined ? null : since(last.step) };
+  }
+
+  /** A device taken out, in place of the one in the hand, or put away: by a climber who can
+   * still do it. The one in the hand already stays as it is. */
+  private hold(action: Extract<GameAction, { kind: "device" }>): void {
+    const { climber } = action;
+    this.trackerOf(climber);
+    const device = action.device === "none" ? null : action.device;
+    const held = this.hands.get(climber)?.device ?? null;
+    if (this.ground.climber(climber).dead || held === device) {
+      return;
+    }
+    this.hands.set(climber, { device, was: held, at: this.step });
   }
 
   /** A call on the radio, by a climber who can still make one. */

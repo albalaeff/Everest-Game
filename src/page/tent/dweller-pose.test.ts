@@ -29,6 +29,19 @@ const SEEN: Readonly<Record<Act, number>> = {
   pack: 2.4,
   lie: 1.2,
   wake: 1.8,
+  radio: 9,
+  watch: 9,
+  meter: 7,
+  tracker: 8,
+  "radio-out": 1.4,
+  "radio-away": 1.2,
+  "radio-talk": 1.7,
+  "watch-out": 1.6,
+  "watch-away": 1.3,
+  "meter-out": 1.7,
+  "meter-away": 1.5,
+  "tracker-out": 1.5,
+  "tracker-away": 1.3,
 };
 const ACTS = Object.keys(SEEN) as Act[];
 /** The frames of an act, `rate` a second, each with the second it's at and its joints. */
@@ -155,6 +168,10 @@ describe("DwellerPose: the arms and the hands (#269)", () => {
       "pouch",
       "sealed",
       "pot",
+      "radio",
+      "tracker",
+      "meter",
+      "watch",
     ];
     for (const act of ACTS) {
       for (const { look, joints } of frames(act, 30)) {
@@ -530,5 +547,135 @@ describe("DwellerPose: the person in the tent (#258)", () => {
     );
     expect(packing[0]?.look).toMatchObject({ shift: 0, turned: false });
     expect(packing.at(-1)?.look).toMatchObject({ shift: 0, turned: false });
+  });
+});
+
+describe("DwellerPose: the devices (#271)", () => {
+  const at = (act: Act, seconds: number): Frame => {
+    const look = pose.look(act, seconds);
+    return { at: seconds, look, joints: pose.joints(look) };
+  };
+  /** The first frame of `act` in which hand `side` holds `thing`. */
+  const first = (act: Act, side: 0 | 1, thing: Held): Frame => {
+    const found = frames(act).find(({ look }) => look.hands[side].holds === thing);
+    if (found === undefined) {
+      throw new Error(`${thing} is never held in ${act}`);
+    }
+    return found;
+  };
+  /** How far apart two frames' arms are, at the most, in pixels. */
+  const apart = (one: Frame, other: Frame): number =>
+    Math.max(
+      ...([0, 1] as const).flatMap((side) => [
+        far(one.joints.hands[side], other.joints.hands[side]),
+        far(one.joints.elbows[side], other.joints.elbows[side]),
+      ]),
+      far(one.joints.head, other.joints.head),
+    );
+  const DEVICES = [
+    ["radio", "radio"],
+    ["watch", "watch"],
+    ["meter", "meter"],
+    ["tracker", "tracker"],
+  ] as const;
+
+  it("takes the radio from where it lies on the pad, the hand along it, turns it upright and holds it by the shoulder, the eyes on it", () => {
+    const taken = first("radio-out", 1, "radio");
+    expect(far(taken.joints.hands[1], DwellerPose.RADIO)).toBeLessThan(2.5);
+    expect(turn(taken.joints.aims[1] - DwellerPose.RADIO_LIES)).toBeLessThan(3);
+
+    const held = at("radio", 2);
+    expect(held.look.hands[1].holds).toBe("radio");
+    expect(held.joints.hands[1].y).toBeLessThan(held.joints.shoulders[1].y);
+    expect(held.joints.hands[1].x).toBeGreaterThan(held.joints.shoulders[1].x - 20);
+    expect(turn(held.joints.aims[1])).toBeLessThan(20);
+    expect(held.look.gaze.x).toBeGreaterThan(0.3);
+    expect(held.look.hands[0].holds).toBe("nothing");
+  });
+
+  it("talks into the radio: its top to the lips, the mouth moving with the words, and back to the shoulder", () => {
+    const reach = DwellerHands.REACH.radio;
+    const spoken = at("radio-talk", 0.8);
+    expect(far(end(spoken, 1, reach), spoken.joints.mouth)).toBeLessThan(14);
+    const mouths = frames("radio-talk").map(({ look }) => look.mouth);
+    expect(Math.max(...mouths)).toBeGreaterThan(0.3);
+    expect(mouths[0]).toBe(0);
+    expect(mouths.at(-1)).toBe(0);
+
+    expect(apart(at("radio-talk", 0), at("radio", 0))).toBeLessThan(1.5);
+    expect(apart(at("radio-talk", 1.7), at("radio", 0))).toBeLessThan(1.5);
+  });
+
+  it("turns the wrist up for the watch, across the chest, the head down to it, and the other hand's finger presses its button", () => {
+    const held = at("watch", 2);
+    const [left, right] = held.joints.shoulders;
+    expect(held.look.hands[1].holds).toBe("watch");
+    expect(held.joints.hands[1].x).toBeGreaterThan(left.x);
+    expect(held.joints.hands[1].x).toBeLessThan(right.x);
+    expect(held.joints.hands[1].y).toBeLessThan(-80);
+    expect(held.look.tilt).toBeGreaterThan(10);
+    expect(held.look.gaze.y).toBeGreaterThan(0.8);
+
+    const pressing = at("watch-out", 0.95);
+    expect(far(pressing.joints.hands[0], held.joints.wrists[1])).toBeLessThan(40);
+    expect(far(at("watch-out", 1.6).joints.hands[0], at("idle", 0).joints.hands[0])).toBeLessThan(
+      2,
+    );
+  });
+
+  it("takes the weather meter from the chest pocket and holds it out toward the door, which is open for it", () => {
+    const taken = first("meter-out", 0, "meter");
+    expect(far(taken.joints.hands[0], DwellerPose.CHEST_POCKET)).toBeLessThan(2.5);
+    expect(turn(taken.joints.aims[0])).toBeLessThan(12);
+    expect(taken.look.door ?? false).toBe(false);
+
+    const held = at("meter", 2);
+    expect(held.look.hands[0].holds).toBe("meter");
+    expect(held.joints.hands[0].x).toBeLessThan(-230);
+    expect(held.joints.hands[0].y).toBeLessThan(held.joints.shoulders[0].y);
+    expect(held.look.lean).toBeGreaterThan(15);
+    expect(held.look.door).toBe(true);
+    expect(held.look.gaze.x).toBeLessThan(-0.8);
+  });
+
+  it("takes the tracker from the pocket on the wall and holds it over the lap, the other hand's thumb on its keys, the head down to it", () => {
+    const taken = first("tracker-out", 0, "tracker");
+    expect(far(taken.joints.hands[0], DwellerPose.TRACKER)).toBeLessThan(2.5);
+    expect(turn(taken.joints.aims[0])).toBeLessThan(3);
+
+    const held = at("tracker", 2);
+    expect(held.look.hands[0].holds).toBe("tracker");
+    expect(far(held.joints.hands[0], held.joints.hands[1])).toBeLessThan(40);
+    expect(held.joints.hands[0].y).toBeGreaterThan(held.joints.shoulders[0].y);
+    expect(held.look.tilt).toBeGreaterThan(10);
+    const taps = frames("tracker").map(({ joints }) => joints.hands[1].y);
+    expect(Math.max(...taps) - Math.min(...taps)).toBeGreaterThan(2);
+  });
+
+  it.each(DEVICES)("holds the %s as it was when it came out, with no jump", (device) => {
+    expect(apart(at(`${device}-out`, SEEN[`${device}-out`]), at(device, 0))).toBeLessThan(1.5);
+  });
+
+  it.each(DEVICES)("puts the %s back the way it came, and sits as before", (device, thing) => {
+    const back = frames(`${device}-away`);
+    const [begins, ends] = [back[0], back.at(-1)];
+    if (begins === undefined || ends === undefined) {
+      throw new Error("no frames");
+    }
+    expect(apart(begins, at(device, 0))).toBeLessThan(1.5);
+    expect(apart(ends, at(`${device}-out`, 0))).toBeLessThan(1.5);
+    for (const side of [0, 1] as const) {
+      expect(far(ends.joints.hands[side], at("idle", 0).joints.hands[side])).toBeLessThan(2);
+      expect(ends.look.hands[side].holds === thing && thing !== "watch").toBe(false);
+    }
+  });
+
+  it("names the device each of the climber's is in the tent", () => {
+    expect(DwellerPose.DEVICES).toEqual({
+      radio: "radio",
+      gps: "watch",
+      wind: "meter",
+      tracker: "tracker",
+    });
   });
 });

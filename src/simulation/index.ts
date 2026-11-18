@@ -49,11 +49,13 @@ export type {
   Warning,
 } from "./objective-hazards";
 export { DayWarmth } from "./day-warmth";
-export { Devices } from "./devices";
+export { DEVICE_KINDS, Devices } from "./devices";
 export type {
   DeviceGround,
+  DeviceKind,
   DeviceNumbers,
   DeviceStart,
+  HandView,
   RadioCall,
   RadioView,
   TrackerView,

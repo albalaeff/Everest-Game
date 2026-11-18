@@ -1,7 +1,7 @@
 import { Container, FillGradient, Graphics } from "pixi.js";
 
 import type { ClimberView, Point } from "../physics";
-import type { BodyView } from "../simulation";
+import type { BodyView, HandView } from "../simulation";
 import type { Atmosphere } from "./atmosphere";
 import { Beam } from "./beam";
 import { Breathing } from "./breathing";
@@ -161,7 +161,8 @@ export class ClimberFigure extends Container {
     carabiner: Spot | null;
     grown: number;
     through: { facing: 1 | -1; down: number } | null;
-  } = { at: this.point, jumar: null, carabiner: null, grown: 1, through: null };
+    hand: HandView | null;
+  } = { at: this.point, jumar: null, carabiner: null, grown: 1, through: null, hand: null };
   /** The jumar, where the physics has it on the rope and where the hand holds it, this frame, and
    * how much of the climber's weight the rope bears there (#232). */
   private readonly holding: Grip = {
@@ -339,7 +340,8 @@ export class ClimberFigure extends Container {
    * `sag` lower where a ladder gives under them, and their headlamp shining if it's `lit`. In a
    * tent, `doorway`'s, they're not drawn: on their way through its door they go down on hands and
    * knees and crawl, and are gone behind its fly (#258). `beside` is whom a rescue has them with
-   * (#241): on their rescuer's back, or at their casualty's limb. */
+   * (#241): on their rescuer's back, or at their casualty's limb. `hand` is the device they
+   * took out, as the rule has it (#271), or none. */
   show(
     body: BodyView,
     masked: boolean,
@@ -350,6 +352,7 @@ export class ClimberFigure extends Container {
     lit = true,
     doorway: Doorway | null = null,
     beside: Beside = ClimberReading.ALONE,
+    hand: HandView | null = null,
   ): void {
     const { climber, drawn } = this;
     if (climber === null) {
@@ -366,6 +369,7 @@ export class ClimberFigure extends Container {
     drawn.grown = grown;
     drawn.jumar = climber.first === null ? null : this.first;
     drawn.carabiner = climber.second === null ? null : this.second;
+    drawn.hand = hand;
     const state = this.reading.read(climber, body, drawn, beside);
     const pose = this.pose.advance(seconds, state);
     const { facing } = this.reading;
@@ -374,7 +378,8 @@ export class ClimberFigure extends Container {
     // (#235): on their feet only, and at no rescue's work.
     const afoot = !climber.falling && !climber.dead && !climber.down;
     const atWork = climber.helping !== null || climber.carrying !== null;
-    const towardViewer = climber.towardViewer && afoot && !atWork;
+    // With a device out they're seen from the side, where the hand that holds it shows (#271).
+    const towardViewer = climber.towardViewer && afoot && !atWork && state.device == null;
     // A rescuer leaves their pack to carry a casualty on their back, and the casualty's stays
     // where they lay (#241).
     const packed = climber.carrying === null && climber.carriedBy === null;

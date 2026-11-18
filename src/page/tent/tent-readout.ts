@@ -41,6 +41,8 @@ export type TentTextName =
   | "eat"
   | "eat.label"
   | "pack"
+  | "devices"
+  | "devices.label"
   | "stove"
   | "stove.label"
   | "asleep"

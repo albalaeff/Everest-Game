@@ -28,7 +28,10 @@ const THE_CLIMB = [
   "oxygen down",
   "check-self",
   "panel radio",
+  // The radio comes out into the hand as its card opens, and goes back as the card closes (#271).
+  "device radio",
   "panel devices",
+  "device none",
   "panel inventory",
   "tent in",
   "view farther",
@@ -328,6 +331,7 @@ test("a click on a PC's button does what its key does", async ({ page, hasTouch 
 
   await expectReceived(page, [
     "panel radio",
+    "device radio",
     "jumar true",
     "jumar false",
     "haul true",
