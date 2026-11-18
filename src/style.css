@@ -3176,6 +3176,14 @@ main:has(#tent:not([hidden])) #inventory {
   max-height: calc(100vh - var(--edge-top) - var(--edge-bottom));
 }
 
+/* So do the devices, from its [Devices] (#271): over the picture's far end, clear of the person
+ * who takes up the one it shows. */
+main:has(#tent:not([hidden])) #devices {
+  top: var(--edge-top);
+  z-index: 6;
+  max-height: calc(100vh - var(--edge-top) - var(--edge-bottom));
+}
+
 main:has(#tent:not([hidden])) #self-check {
   z-index: 6;
 }
@@ -3341,6 +3349,10 @@ main:has(#tent:not([hidden])) #self-check {
 
 #tent [data-mark="pack"] {
   --mark: var(--icon-pack);
+}
+
+#tent [data-mark="radio"] {
+  --mark: var(--icon-radio);
 }
 
 /* What keeps a chore from beginning is crossed out, its mark struck through: a shape, not a
@@ -4075,8 +4087,10 @@ main:has(#tent:not([hidden])) #self-check {
 }
 
 /* What a hand has taken isn't standing where it was (#269): the nearest bottle, the pot, the
- * nearest meal. The spoon stands in the pot while snow is melted, unless it's in the hand. */
+ * nearest meal; the radio on the pad and the tracker in the wall's pocket (#271). The spoon stands in the pot while snow is melted, unless it's in the hand. */
 [data-holds~="bottle"] .tent-props [data-bottle="0"],
+[data-holds~="radio"] .tent-props .tent-radio,
+[data-holds~="tracker"] .tent-tracker,
 [data-holds~="pot"] .tent-pot-all,
 [data-holds~="pouch"] .tent-props [data-meal="0"],
 [data-holds~="sealed"] .tent-props [data-meal="0"] {

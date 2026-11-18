@@ -211,8 +211,9 @@ export class TentPicture {
     if (dataset.asleep !== asleep) {
       dataset.asleep = asleep;
     }
-    // The door's open while the stove burns, for the fumes, and on the way in and out.
-    const door = look.flame > 0.02 || look.shift < -40 ? "open" : "shut";
+    // The door's open while the stove burns, for the fumes, on the way in and out, and for a
+    // weather meter held out at it (#271).
+    const door = look.flame > 0.02 || look.shift < -40 || look.door === true ? "open" : "shut";
     if (dataset.door !== door) {
       dataset.door = door;
     }

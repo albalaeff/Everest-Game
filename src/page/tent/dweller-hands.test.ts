@@ -5,7 +5,7 @@ import { TentArt } from "./tent-art";
 
 const hands = new DwellerHands("near");
 const HELD = Object.keys(DwellerHands.SHAPES) as Held[];
-const SHAPES: readonly Shape[] = ["open", "wide", "flat", "tight", "pinch"];
+const SHAPES: readonly Shape[] = ["open", "wide", "flat", "tight", "pinch", "cradle"];
 /** The shapes a layer draws. */
 const drawn = (layer: string): string[] =>
   [...layer.matchAll(/data-shape="(\w+)"/gu)].map(([, shape = ""]) => shape);
@@ -14,7 +14,7 @@ const shape = (layer: string, name: Shape): string =>
   layer.split(`data-shape="${name}">`)[1]?.split('<g class="dw-shape"')[0] ?? "";
 
 describe("DwellerHands: the hands of the person in the tent (#264, #269)", () => {
-  it("shapes the hand for each thing it holds: round a bottle, across a pouch, tight on a lighter, pinching a spoon", () => {
+  it("shapes the hand for each thing it holds: round a bottle, across a pouch, tight on a lighter, pinching a spoon, cradling a device", () => {
     expect(DwellerHands.SHAPES).toMatchObject({
       nothing: "open",
       bottle: "wide",
@@ -31,14 +31,19 @@ describe("DwellerHands: the hands of the person in the tent (#264, #269)", () =>
       bar: "pinch",
       pick: "pinch",
       seal: "pinch",
+      radio: "cradle",
+      tracker: "cradle",
+      meter: "cradle",
+      watch: "open",
     });
-    // Across what it wraps, along what it pinches or points at.
+    // Across what it wraps, along what it pinches, points at or cradles.
     expect(DwellerHands.GRIPS).toEqual({
       open: "along",
       pinch: "along",
       wide: "across",
       flat: "across",
       tight: "across",
+      cradle: "along",
     });
   });
 
@@ -48,7 +53,7 @@ describe("DwellerHands: the hands of the person in the tent (#264, #269)", () =>
     // A wrapping hand's palm is behind a bottle and a pouch, and its fingers across the front
     // of them; a pinching hand's other fingers are under a spoon, its thumb and first finger over
     // it; the open hand and the fist are whole, in front.
-    expect(drawn(back).sort()).toEqual(["flat", "pinch", "wide"]);
+    expect(drawn(back).sort()).toEqual(["cradle", "flat", "pinch", "wide"]);
     expect(drawn(front).sort()).toEqual([...SHAPES].sort());
     expect(shape(front, "wide")).toContain('class="dw-knuckles"');
     expect(shape(front, "wide")).not.toContain('class="dw-nail"');
@@ -59,6 +64,10 @@ describe("DwellerHands: the hands of the person in the tent (#264, #269)", () =>
     expect(shape(front, "tight")).toContain('class="dw-creases"');
     expect(shape(front, "pinch").match(/class="dw-nail"/gu)).toHaveLength(2);
     expect(shape(back, "pinch").match(/class="dw-hand-skin"/gu)).toHaveLength(4);
+    // A cradling hand's palm and fingers are behind a device, the fingers' ends round its far
+    // edge and the thumb on its near one in front (#271).
+    expect(shape(back, "cradle").match(/class="dw-hand-skin"/gu)).toHaveLength(5);
+    expect(shape(front, "cradle").match(/class="dw-nail"/gu)).toHaveLength(5);
   });
 
   it("puts the wrist a real hand's length behind where each shape grips, and lets what's held turn in the fingers a little", () => {

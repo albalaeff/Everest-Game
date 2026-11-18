@@ -406,35 +406,6 @@ export class GamePage {
       player,
       this.playersPack().base,
     );
-    // The tent's inside (#258): open once the slope has shown the player in through the door, or
-    // at once where there's no picture; and the button over the door they stand at.
-    const passage = () => (drawn ? scene.passage : "inside");
-    const tent = new TentScreen(
-      window,
-      texts.tent,
-      rules,
-      new TentReadout(texts.tent, this.mountain.tents.numbers, this.mountain.tents.canister, (id) =>
-        texts.camps.say(id),
-      ),
-      this.mountain.tents.sizes,
-      this.mountain.tents.canister,
-      sink,
-      player,
-      passage,
-      () => {
-        inventory.toggle();
-      },
-    );
-    const tentDoor = new TentDoorPin(
-      window,
-      texts.tent,
-      rules.tents,
-      player,
-      sink,
-      (x, y) => (drawn ? scene.screenAt(x, y) : null),
-      (camp, index) => scene.tentOver(camp, index),
-      passage,
-    );
     // The devices on the harness and the wrist (#260): the radio, the GPS watch, the weather
     // meter and the tracker, which read the climb as the rules have it.
     const { route } = this.mountain;
@@ -469,6 +440,36 @@ export class GamePage {
         minutes: this.knowledge.number("gear.tracker-interval"),
         sunrise: warmth.from * 3600,
       },
+    );
+    // The tent's inside (#258): open once the slope has shown the player in through the door, or
+    // at once where there's no picture; and the button over the door they stand at.
+    const passage = () => (drawn ? scene.passage : "inside");
+    const tent = new TentScreen(
+      window,
+      texts.tent,
+      rules,
+      new TentReadout(texts.tent, this.mountain.tents.numbers, this.mountain.tents.canister, (id) =>
+        texts.camps.say(id),
+      ),
+      this.mountain.tents.sizes,
+      this.mountain.tents.canister,
+      sink,
+      player,
+      passage,
+      () => {
+        inventory.toggle();
+      },
+      devices,
+    );
+    const tentDoor = new TentDoorPin(
+      window,
+      texts.tent,
+      rules.tents,
+      player,
+      sink,
+      (x, y) => (drawn ? scene.screenAt(x, y) : null),
+      (camp, index) => scene.tentOver(camp, index),
+      passage,
     );
     devices.whenOpened(() => {
       inventory.close();

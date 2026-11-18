@@ -46,6 +46,18 @@ export class TentArt {
   static readonly SNOW = { into: 14, top: 68 };
   static readonly FLAME = 62;
   static readonly SPOON = { handle: 24, neck: 31, tip: 52 };
+  /** The devices (#271), life size: the handheld radio's body and its antenna, and how far into
+   * the room its base is, lying on the pad with its antenna away from the seat; the mesh pocket
+   * on the wall by the door, from the room's front and up from the floor; the satellite
+   * tracker's case and its antenna's cap, and where it stands in the pocket, from its corner;
+   * the pocket weather meter's body and its impeller's ring; and the GPS watch's face. */
+  static readonly RADIO = { width: 19, height: 38, antenna: 27 };
+  static readonly RADIO_IN = 305;
+  static readonly POCKET = { into: 44, up: 214, width: 96, height: 58 };
+  static readonly TRACKER = { width: 16, height: 30, cap: 8 };
+  static readonly TRACKER_IN = { x: 50, y: 53 };
+  static readonly METER = { width: 13, height: 27, ring: 7 };
+  static readonly WATCH = { face: 8, strap: 12 };
 
   /** The fly's outline in pixels; where the room begins and ends along the floor; and the top
    * of the fly over a point of the floor. */
@@ -196,7 +208,7 @@ ${sleeve(to - 190, [to - 330, 400], 610)}
 </g>
 <path class="tent-inner-door" d="M${from} ${FLOOR}C${from + 2} ${FLOOR - 160} ${from + 14} ${FLOOR - 250} ${from + 40} ${roofAt(from + 40).toFixed(1)}"/>
 <path class="tent-door-roll" d="M${from + 14} ${roofAt(from + 30) + 26}q16 -10 30 2q4 12 -8 18q-16 2 -22 -20z"/>
-<g class="tent-pocket" transform="translate(${from + 44} ${FLOOR - 214})"><rect width="96" height="58" rx="6" fill="#d19a36"/><rect width="96" height="58" rx="6" fill="url(#tent-mesh)"/><rect x="10" y="14" width="16" height="38" rx="5" fill="#f2f2ee"/><rect x="10" y="14" width="16" height="9" rx="3" fill="#e08a2c"/><rect x="36" y="22" width="34" height="22" rx="6" fill="#2b2f39"/><circle cx="53" cy="33" r="7" fill="#dfe8f2"/><path d="M74 20l12 26" stroke="#3f9488" stroke-width="5" stroke-linecap="round"/></g>
+<g class="tent-pocket" transform="translate(${from + TentArt.POCKET.into} ${FLOOR - TentArt.POCKET.up})"><rect width="${TentArt.POCKET.width}" height="${TentArt.POCKET.height}" rx="6" fill="#d19a36"/><rect x="10" y="14" width="16" height="38" rx="5" fill="#f2f2ee"/><rect x="10" y="14" width="16" height="9" rx="3" fill="#e08a2c"/><g class="tent-tracker" transform="translate(${TentArt.TRACKER_IN.x} ${TentArt.TRACKER_IN.y})">${TentArt.tracker()}</g><rect y="22" width="${TentArt.POCKET.width}" height="${TentArt.POCKET.height - 22}" rx="6" fill="#d19a36" opacity="0.5"/><rect width="${TentArt.POCKET.width}" height="${TentArt.POCKET.height}" rx="6" fill="url(#tent-mesh)"/><path d="M76 20l10 26" stroke="#3f9488" stroke-width="5" stroke-linecap="round"/></g>
 <g class="tent-pocket" transform="translate(${to - 132} ${FLOOR - 190})"><rect width="92" height="54" rx="6" fill="#d19a36"/><rect width="92" height="54" rx="6" fill="url(#tent-mesh)"/><path d="M12 30q14 -16 28 0q14 -16 28 0" stroke="#17181d" stroke-width="7" fill="none" stroke-linecap="round"/><rect x="72" y="12" width="12" height="34" rx="3" fill="#b9372c"/></g>
 <g class="tent-loft"><path d="M${loft.from} ${roofAt(loft.from) + 6}L${loft.to} ${roofAt(loft.to) + 6}L${loft.to - 16} ${roofAt(loft.to) + 54}Q${(loft.from + loft.to) / 2} ${roofAt(960) + 78} ${loft.from + 16} ${roofAt(loft.from) + 54}Z" fill="url(#tent-mesh)" stroke="#2a2d36" stroke-width="2"/><path d="M${loft.from + 34} ${roofAt(loft.from) + 50}q14 -22 34 -16q16 8 8 24q-22 10 -42 -8z" fill="#c23b30"/><path d="M${loft.from + 96} ${roofAt(loft.from) + 58}q10 -24 36 -18q12 10 4 24q-22 8 -40 -6z" fill="#27323f"/></g>
 <path class="tent-line" d="M${lineFrom[0]} ${lineFrom[1]}Q${lineMid[0]} ${lineMid[1]} ${lineTo[0]} ${lineTo[1]}"/>
@@ -241,7 +253,7 @@ ${sleeve(to - 190, [to - 330, 400], 610)}
 <g class="tent-guitar-rest" transform="translate(${from + 352} ${pad - 80}) rotate(-80) scale(0.84)">${TentArt.guitar()}</g>
 ${[0, 1, 2].map((index) => oxygen(from + 618 + index * 36, index)).join("")}
 <g class="tent-pack" transform="translate(${from + 536} ${pad})"><path d="M-52 0Q-64 -110 -50 -186Q-40 -214 0 -216Q42 -214 50 -186Q64 -110 54 0Z" fill="#262e47"/><path d="M-50 -186Q-40 -214 0 -216Q42 -214 50 -186Q40 -160 0 -158Q-40 -160 -50 -186Z" fill="#313a59"/><path d="M-34 -150V-20M34 -150V-20" stroke="#15171f" stroke-width="7"/><rect x="-26" y="-112" width="52" height="62" rx="8" fill="#1d2338"/><path d="M-20 -80H20" stroke="#ff8f45" stroke-width="4"/><path d="M-58 -120q-14 40 -4 110" stroke="#15171f" stroke-width="8" fill="none" stroke-linecap="round"/><g class="tent-pack-axe"><path d="M62 -8L44 -228" stroke="#b8c2d0" stroke-width="7" stroke-linecap="round"/><path d="M20 -214L44 -228L70 -238" stroke="#c3ccd9" stroke-width="8" fill="none" stroke-linecap="round" stroke-linejoin="round"/></g><g class="tent-pack-tool"><path d="M-66 -12L-50 -204" stroke="#5c84b8" stroke-width="7" stroke-linecap="round"/><path d="M-74 -196L-50 -204L-26 -196" stroke="#c3ccd9" stroke-width="7" fill="none" stroke-linecap="round" stroke-linejoin="round"/></g><g class="tent-pack-jumar" transform="translate(0 -140)"><rect x="-10" y="-6" width="20" height="36" rx="6" fill="#b5bdca"/><rect x="-10" y="14" width="20" height="16" rx="5" fill="#c9332c"/></g></g>
-<g class="tent-radio" transform="translate(${to - 24} ${pad})"><rect x="-10" y="-44" width="20" height="44" rx="4" fill="#17181d"/><path d="M-4 -44V-78" stroke="#17181d" stroke-width="4" stroke-linecap="round"/><rect x="-6" y="-36" width="12" height="9" fill="#8fd18a"/></g>
+<g class="tent-radio" transform="translate(${from + TentArt.RADIO_IN} ${pad - TentArt.RADIO.width / 2}) rotate(90)">${TentArt.radio()}</g>
 ${[
   [2, 55, 10],
   [1, 38, 0],
@@ -281,6 +293,40 @@ ${[0, 1, 2].map((index) => canister(to + 22 + (index === 2 ? 17 : index * 34), i
   static pot(inside = ""): string {
     const { half, bottom, rim, handle } = TentArt.POT;
     return `<path class="tent-pot" d="M${-half} ${-bottom}H${half}V${-rim + 4}Q${half} ${-rim} ${half - 4} ${-rim}H${-half + 4}Q${-half} ${-rim} ${-half} ${-rim + 4}Z"/><path d="M${-half} ${-bottom - 16}H${half}M${-half} ${-bottom - 8}H${half}" stroke="#6b7385" stroke-width="2"/><rect class="tent-pot-handle" x="-10" y="${-handle - 5}" width="20" height="10" rx="4"/><path d="M-13 ${-handle}h3M10 ${-handle}h3" stroke="#4b5262" stroke-width="3" stroke-linecap="round"/>${inside}<path class="tent-pot-rim" d="M${-half - 2} ${-rim}H${half + 2}" stroke="#dfe6f0" stroke-width="4" stroke-linecap="round"/>`;
+  }
+
+  /** The handheld radio (#271), standing on its base at the origin: its black body, the
+   * speaker's grille, its amber display, the channel knob and the antenna at its corner. On the
+   * pad and in a hand it's the same radio. */
+  static radio(): string {
+    const { width, height, antenna } = TentArt.RADIO;
+    const half = width / 2;
+    const grille = [10, 14, 18, 22].map((up) => `M${-half + 4} ${-up}H${half - 4}`).join("");
+    return `<path d="M${-half + 3.5} ${-height}V${-height - antenna}" stroke="#101216" stroke-width="4.4" stroke-linecap="round" fill="none"/><rect x="${half - 8}" y="${-height - 5}" width="6" height="6" rx="1.5" fill="#6b7385"/><rect x="${-half}" y="${-height}" width="${width}" height="${height}" rx="4" fill="#1b1e26"/><rect x="${-half}" y="${-height}" width="4" height="${height}" rx="2" fill="#2b303c"/><rect class="tent-radio-lcd" x="${-half + 3.5}" y="${-height + 5}" width="${width - 7}" height="8" rx="1.5" fill="#f0b040"/><path d="${grille}" stroke="#07080a" stroke-width="1.6" stroke-linecap="round" fill="none"/><rect x="${-half - 1.6}" y="${-height + 12}" width="2.6" height="9" rx="1.2" fill="#e2671e"/>`;
+  }
+
+  /** The satellite tracker (#271), standing on its base at the origin: its orange case, its
+   * screen and keys, and the black cap of its antenna. */
+  static tracker(): string {
+    const { width, height, cap } = TentArt.TRACKER;
+    const half = width / 2;
+    return `<rect x="${-half + 2.5}" y="${-height - cap}" width="${width - 5}" height="${cap + 3}" rx="3" fill="#15171d"/><rect x="${-half}" y="${-height}" width="${width}" height="${height}" rx="3.5" fill="#e2671e"/><rect x="${-half}" y="${-height}" width="3.4" height="${height}" rx="1.7" fill="#f08a45"/><rect x="${-half + 2.8}" y="${-height + 4}" width="${width - 5.6}" height="11" rx="1.5" fill="#cfdcd6"/><path d="M${-half + 4} ${-height + 7.5}h5M${-half + 4} ${-height + 11}h7" stroke="#2b2f39" stroke-width="1.2" stroke-linecap="round" fill="none"/><rect x="${-half + 3}" y="${-height + 19}" width="${width - 6}" height="6" rx="1.5" fill="#15171d"/>`;
+  }
+
+  /** The pocket weather meter (#271), standing on its base at the origin: its yellow body, its
+   * grey display and keys, and the impeller in its ring at the top, open to the wind. */
+  static meter(): string {
+    const { width, height, ring } = TentArt.METER;
+    const half = width / 2;
+    const hub = -height - ring + 1;
+    return `<rect x="${-half}" y="${-height}" width="${width}" height="${height}" rx="3.5" fill="#e7b43a"/><rect x="${-half}" y="${-height}" width="3" height="${height}" rx="1.5" fill="#f3cd6a"/><rect x="${-half + 2.4}" y="${-height + 4}" width="${width - 4.8}" height="10" rx="1.5" fill="#cfdcd6"/><circle cx="-2.6" cy="${-height + 19.5}" r="1.7" fill="#2b2f39"/><circle cx="2.6" cy="${-height + 19.5}" r="1.7" fill="#2b2f39"/><circle cx="0" cy="${hub}" r="${ring}" fill="#2b2f39"/><circle cx="0" cy="${hub}" r="${ring - 2.4}" fill="#9db0c6"/><path d="M0 ${hub - ring + 2.6}V${hub + ring - 2.6}M${-ring + 2.6} ${hub}H${ring - 2.6}" stroke="#2b2f39" stroke-width="1.5" fill="none"/>`;
+  }
+
+  /** The GPS watch (#271) on a wrist, the hand ahead along -y from the origin: its strap round
+   * the sleeve's cuff and its round face, the display lit. */
+  static watch(): string {
+    const { face, strap } = TentArt.WATCH;
+    return `<rect x="-17" y="${-strap / 2}" width="34" height="${strap}" rx="3" fill="#15171d"/><circle r="${face + 2}" fill="#15171d"/><circle r="${face}" fill="#2f3541"/><circle class="tent-watch-face" r="${face - 2}" fill="#d9ece2"/><path d="M-3 -1.5h6M-2 2h4" stroke="#2b2f39" stroke-width="1.2" stroke-linecap="round" fill="none"/>`;
   }
 
   /** A long spoon, its bowl up, from where the fingers pinch it at the origin. */

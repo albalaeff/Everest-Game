@@ -2,7 +2,9 @@ import { TentArt } from "./tent-art";
 
 /** What a hand holds: a spoon, empty or with a spoonful on it, or in the fist to stir with; a
  * bottle; an energy bar; a meal's pouch, open or sealed, or its seal between finger and thumb; a
- * lump of snow; a lighter, or one lit; the guitar's pick, or its neck; the pot, by its handle. */
+ * lump of snow; a lighter, or one lit; the guitar's pick, or its neck; the pot, by its handle;
+ * and the devices (#271): the radio, the tracker, the weather meter, and the watch, which is on
+ * the wrist of the open hand that's turned up to read it. */
 export type Held =
   | "nothing"
   | "spoon"
@@ -18,11 +20,17 @@ export type Held =
   | "lit"
   | "pick"
   | "neck"
-  | "pot";
+  | "pot"
+  | "radio"
+  | "tracker"
+  | "meter"
+  | "watch";
 
 /** How a hand is shaped: open; wrapped round something wide, a bottle; laid across something
- * flat, a pouch; closed tight round something thin; or pinching, as a pen is held. */
-export type Shape = "open" | "wide" | "flat" | "tight" | "pinch";
+ * flat, a pouch; closed tight round something thin; pinching, as a pen is held; or cradling a
+ * device that lies along it (#271), as a radio or a phone is held: the palm behind it, the
+ * fingers round one edge and the thumb on the other. */
+export type Shape = "open" | "wide" | "flat" | "tight" | "pinch" | "cradle";
 
 /** How a hand lies to what it holds: its fingers across it, or along it. */
 export type Grip = "across" | "along";
@@ -63,6 +71,10 @@ export class DwellerHands {
     lit: "tight",
     neck: "tight",
     pot: "tight",
+    radio: "cradle",
+    tracker: "cradle",
+    meter: "cradle",
+    watch: "open",
   };
   /** How each shape lies to what it holds, the open hand to where it points. */
   static readonly GRIPS: Readonly<Record<Shape, Grip>> = {
@@ -71,6 +83,7 @@ export class DwellerHands {
     wide: "across",
     flat: "across",
     tight: "across",
+    cradle: "along",
   };
   /** How far behind where each shape grips its wrist is, in the tent's pixels. */
   static readonly WRIST: Readonly<Record<Shape, number>> = {
@@ -79,6 +92,7 @@ export class DwellerHands {
     flat: 118 * DwellerHands.SCALE,
     tight: 80 * DwellerHands.SCALE,
     pinch: 105 * DwellerHands.SCALE,
+    cradle: 96 * DwellerHands.SCALE,
   };
   /** How far what each shape holds can turn in it, off square or off straight, in degrees: a
    * spoon lies along the finger that pinches it, so hardly at all. */
@@ -88,6 +102,7 @@ export class DwellerHands {
     flat: 30,
     tight: 40,
     pinch: 24,
+    cradle: 30,
   };
   /** What swings freely in the hand, whichever way the hand is turned: the pot, on its
    * handle. */
@@ -96,6 +111,8 @@ export class DwellerHands {
    * side it pours to, upright. */
   static readonly POUCH_HELD = 12;
   static readonly POT_LIP = { x: TentArt.POT.half, y: TentArt.POT.handle - TentArt.POT.rim };
+  /** How far behind an open hand's middle its watch is, on the sleeve's cuff. */
+  static readonly WATCH_WORN = 72 * DwellerHands.SCALE + 9;
   /** How much nearer its handle's end a spoon is held in the fist than pinched. */
   static readonly STIRRER_HELD = 12;
   /** How far from where it's held each thing's working end is, in the tent's pixels: a bottle's
@@ -108,6 +125,8 @@ export class DwellerHands {
     bar: 24,
     lighter: 17,
     pouch: TentArt.POUCH.height - DwellerHands.POUCH_HELD - 3,
+    radio: TentArt.RADIO.height / 2,
+    meter: TentArt.METER.height / 2 + TentArt.METER.ring,
   } as const;
 
   /** `id` names the hand's shading, so each hand's can be told apart. */
@@ -125,6 +144,7 @@ export class DwellerHands {
       wide: DwellerHands.palm(88, 50),
       flat: DwellerHands.palm(118, 84),
       pinch: DwellerHands.pinchBack(),
+      cradle: DwellerHands.cradleBack(),
     });
   }
 
@@ -137,6 +157,7 @@ export class DwellerHands {
       flat: DwellerHands.across([-16, -7, -10, -22], -92, true),
       tight: DwellerHands.fist(),
       pinch: DwellerHands.pinchFront(),
+      cradle: DwellerHands.cradleFront(),
     });
   }
 
@@ -184,6 +205,22 @@ export class DwellerHands {
       ),
       held("lighter", lighter(false)),
       held("lit", lighter(true)),
+      held(
+        "radio",
+        `<g transform="translate(0 ${TentArt.RADIO.height / 2})">${TentArt.radio()}</g>`,
+      ),
+      held(
+        "tracker",
+        `<g transform="translate(0 ${TentArt.TRACKER.height / 2})">${TentArt.tracker()}</g>`,
+      ),
+      held(
+        "meter",
+        `<g transform="translate(0 ${TentArt.METER.height / 2})">${TentArt.meter()}</g>`,
+      ),
+      held(
+        "watch",
+        `<g transform="translate(0 ${DwellerHands.WATCH_WORN})">${TentArt.watch()}</g>`,
+      ),
       held(
         "pick",
         `<path class="dw-pick" d="M-0.6 2C3.6 1.4 7.8 3.2 7.2 5.6C6 8.6 2.4 11.6 0.6 12.2C-1.2 9.8 -3 6.8 -3.6 5C-3.6 3.2 -2.4 2.3 -0.6 2Z"/>`,
@@ -280,6 +317,32 @@ ${curled}
 <path class="dw-creases" d="M-18 -12V17M0 -12V20M18 -12V16"/>
 <path class="dw-tendons" d="M-20-66L-22-20M-6-68L-6-18M8-68L10-18M22-66L26-20"/>
 <path class="dw-knuckles" d="M-34 -14Q-27 -21 -20 -14M-16 -12Q-9 -19 -2 -12M2 -12Q9 -19 16 -12M20 -14Q27 -20 34 -15"/>`;
+  }
+
+  /** A cradling hand, behind the device that lies along it (#271): the palm from the wrist to
+   * the fingers' roots, and the fingers on behind the device. */
+  private static cradleBack(): string {
+    const palm =
+      "M-27-96C-30-74-37-44-39-18C-40-6-38 6-34 16L34 18C39 8 41-6 40-18C38-44 31-74 28-96Z";
+    const behind = [-27, -9, 9, 27].map(
+      (x, index) =>
+        DwellerHands.finger({ x, y: 12 }, { x, y: [56, 66, 64, 52][index] ?? 56 }, 17).shape,
+    );
+    return `<path class="dw-hand-shadow" d="${palm}" transform="translate(-5 6)"/>
+${behind.join("")}
+<path class="dw-hand-skin" fill="SKIN" d="${palm}"/>`;
+  }
+
+  /** A cradling hand, in front of the device: the fingers' ends come round its far edge onto
+   * its face, and the thumb lies on its near edge, where a radio's key is. */
+  private static cradleFront(): string {
+    const tips = [-34, -16, 2, 20].map((y) =>
+      DwellerHands.finger({ x: -40, y: y + 3 }, { x: -17, y }, 15.5, 0.8),
+    );
+    const thumb = DwellerHands.finger({ x: 37, y: -58 }, { x: 21, y: -4 }, 19, 0.8);
+    return `${tips.map(({ shape }) => shape).join("")}${thumb.shape}
+<path class="dw-knuckles" d="M30 -60Q37 -66 43 -59"/>
+${tips.map(({ nail }) => nail).join("")}${thumb.nail}`;
   }
 
   /** A pinching hand, behind what it holds: its back, and the three fingers curled under the

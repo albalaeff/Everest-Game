@@ -1,7 +1,10 @@
+import { FrontShapes } from "../../rendering/front-shapes";
+import type { DeviceKind } from "../../simulation";
 import { DwellerHands } from "./dweller-hands";
 import type { Held } from "./dweller-hands";
 import { DwellerHead } from "./dweller-head";
 import { DwellerShapes } from "./dweller-shapes";
+import { TentArt } from "./tent-art";
 
 export type { Held } from "./dweller-hands";
 
@@ -16,12 +19,23 @@ export interface Point extends Spot {
   readonly z: number;
 }
 
+/** A device as the person in the tent has it in hand (#271): the radio held by the shoulder,
+ * the wrist turned up for the watch, the weather meter held out at the door, the tracker in both
+ * hands. */
+export const DEVICE_ACTS = ["radio", "watch", "meter", "tracker"] as const;
+export type DeviceAct = (typeof DEVICE_ACTS)[number];
+
 /** What the person in the tent is seen doing: sitting; at the stove melting snow; cooking, which
  * is lighting the stove, pouring the bottle's water into the pot, warming the hands while it
  * boils, filling the meal's pouch from the pot, letting it stand, and eating; asleep in the bag;
  * playing the guitar; and, once each, crawling in and out, a drink, a bar, a hand in the pack,
- * lying down and sitting up again. */
+ * lying down and sitting up again; and with a device (#271): holding it, and, once each, taking
+ * it from where it's kept, putting it back, and talking into the radio. */
 export type Act =
+  | DeviceAct
+  | `${DeviceAct}-out`
+  | `${DeviceAct}-away`
+  | "radio-talk"
   | "idle"
   | "melt"
   | "light"
@@ -95,6 +109,9 @@ export interface DwellerLook {
   /** What the first hand's thing goes into, out of sight: the pot on the stove, or the pouch in
    * the other hand. */
   readonly dips: "pot" | "pouch" | null;
+  /** Whether the door is held open for what they do (#271): a weather meter reads the wind
+   * outside. Not said, it's as the stove and the way in have it. */
+  readonly door?: boolean;
 }
 
 /** The person's joints this frame, in the picture's pixels from their hips: the shoulders,
@@ -180,9 +197,31 @@ export class DwellerPose {
     pack: 2.4,
     lie: 1.2,
     wake: 1.8,
+    "radio-out": 1.4,
+    "radio-away": 1.2,
+    "radio-talk": 1.7,
+    "watch-out": 1.6,
+    "watch-away": 1.3,
+    "meter-out": 1.7,
+    "meter-away": 1.5,
+    "tracker-out": 1.5,
+    "tracker-away": 1.3,
+  };
+  /** The device each of the climber's is, as the person in the tent has it in hand (#271). */
+  static readonly DEVICES: Readonly<Record<DeviceKind, DeviceAct>> = {
+    radio: "radio",
+    gps: "watch",
+    wind: "meter",
+    tracker: "tracker",
   };
   /** What's done aside from a chore, and leaves the stove as it burns. */
-  static readonly ASIDE: readonly Act[] = ["drink", "bar", "pack"];
+  static readonly ASIDE: readonly Act[] = [
+    "drink",
+    "bar",
+    "pack",
+    "radio-talk",
+    ...DEVICE_ACTS.flatMap((device): Act[] => [device, `${device}-out`, `${device}-away`]),
+  ];
   /** How long each part of a chore's movement takes, in seconds: after it, they wait by the
    * stove, or hold what they hold. Melting and eating go round: a round of each. */
   static readonly LASTS = {
@@ -206,6 +245,39 @@ export class DwellerPose {
   static readonly BOTTLE: Spot = { x: -123, y: 22 };
   static readonly MEAL: Spot = { x: 217.3, y: 15.6 };
   static readonly MEAL_LEANS = -8;
+  /** The suit's chest pocket, from the hips on the seat: where a bar is kept, and the pocket
+   * weather meter (#271). */
+  static readonly CHEST_POCKET: Spot = { x: -34, y: -98 };
+  /** The devices where they're kept (#271), from the hips on the seat, by their middles: the
+   * radio lying on the pad on the pack's side, its antenna away from the seat; and the tracker
+   * standing in the mesh pocket on the wall by the door. The weather meter is in the suit's
+   * chest pocket, and the watch on the wrist. */
+  private static readonly PAD = FrontShapes.CROTCH * DwellerShapes.SCALE + 2;
+  static readonly RADIO: Spot = {
+    x: TentArt.RADIO_IN - TentArt.SEAT_IN + TentArt.RADIO.height / 2,
+    y: DwellerPose.PAD - TentArt.RADIO.width / 2,
+  };
+  static readonly RADIO_LIES = 90;
+  static readonly TRACKER: Spot = {
+    x: TentArt.POCKET.into - TentArt.SEAT_IN + TentArt.TRACKER_IN.x,
+    y:
+      DwellerPose.PAD +
+      TentArt.SEAT -
+      2 -
+      TentArt.POCKET.up +
+      TentArt.TRACKER_IN.y -
+      TentArt.TRACKER.height / 2,
+  };
+  /** Where each device is held (#271): the radio by the shoulder, to listen; the hand of the
+   * wrist that's turned up for the watch, and where the other hand's finger presses its button;
+   * the weather meter, out at arm's length toward the open door; and the tracker over the lap,
+   * with the other hand's thumb on its keys. */
+  private static readonly RADIO_HELD: Spot = { x: 62, y: -160 };
+  private static readonly WRIST_UP: Spot = { x: 8, y: -118 };
+  private static readonly AT_WATCH: Spot = { x: 26, y: -96 };
+  private static readonly METER_OUT: Spot = { x: -250, y: -180 };
+  private static readonly TRACKER_HELD: Spot = { x: -14, y: -92 };
+  private static readonly AT_KEYS: Spot = { x: 12, y: -84 };
   /** How far along the floor from the seat the door is, and the pack's seat. */
   static readonly FROM_DOOR = -330;
   static readonly AT_PACK = 190;
@@ -298,6 +370,26 @@ export class DwellerPose {
         return DwellerPose.lyingDown(DwellerPose.share(act, t));
       case "wake":
         return DwellerPose.waking(DwellerPose.share(act, t));
+      case "radio":
+        return DwellerPose.listening(t);
+      case "watch":
+        return DwellerPose.checking(t);
+      case "meter":
+        return DwellerPose.metering(t);
+      case "tracker":
+        return DwellerPose.reading(t);
+      case "radio-talk":
+        return DwellerPose.talking(t);
+      case "radio-out":
+      case "watch-out":
+      case "meter-out":
+      case "tracker-out":
+        return DwellerPose.taking(act, t);
+      case "radio-away":
+      case "watch-away":
+      case "meter-away":
+      case "tracker-away":
+        return DwellerPose.puttingBack(act, t);
       default:
         return DwellerPose.sitting(t);
     }
@@ -1252,7 +1344,7 @@ export class DwellerPose {
     const { KNEES } = DwellerPose;
     const glide = DwellerPose.glide;
     const reach = DwellerHands.REACH.bar;
-    const pocket = { x: -34, y: -98 };
+    const pocket = DwellerPose.CHEST_POCKET;
     const held = { x: -54, y: -132 };
     const tilt = glide(t, [
       [0, 0],
@@ -1519,6 +1611,497 @@ export class DwellerPose {
       mouth: stretch,
       eyes: 1 - 0.8 * stretch,
       gaze: { x: 0, y: -0.5 * stretch },
+    };
+  }
+
+  // The devices (#271).
+
+  /** A device taken from where it's kept, to where it's held: `act`'s, `t` seconds in. Each ends
+   * as its holding begins. */
+  private static taking(act: `${DeviceAct}-out`, t: number): DwellerLook {
+    switch (act) {
+      case "radio-out":
+        return DwellerPose.takingRadio(t);
+      case "watch-out":
+        return DwellerPose.turningWrist(t);
+      case "meter-out":
+        return DwellerPose.takingMeter(t);
+      case "tracker-out":
+        return DwellerPose.takingTracker(t);
+    }
+  }
+
+  /** A device put back where it's kept: the way it came out, the other way round, in the time
+   * putting it back takes. */
+  private static puttingBack(act: `${DeviceAct}-away`, t: number): DwellerLook {
+    const device = act.slice(0, -"-away".length) as DeviceAct;
+    const out: `${DeviceAct}-out` = `${device}-out`;
+    const back = 1 - DwellerPose.share(act, t);
+    return DwellerPose.taking(out, back * (DwellerPose.ONCE[out] ?? 0));
+  }
+
+  /** The radio by the shoulder, to listen: cradled in the hand, its antenna up, the eyes on it. */
+  private static listening(t: number): DwellerLook {
+    const breath = Math.sin((2 * Math.PI * t) / 4.2);
+    const { RADIO_HELD } = DwellerPose;
+    return {
+      ...DwellerPose.STILL,
+      lean: 3 + breath,
+      tilt: 5,
+      sway: 3,
+      hands: [
+        DwellerPose.resting(0, -1.5 * breath),
+        {
+          at: { x: RADIO_HELD.x, y: RADIO_HELD.y - 1.5 * breath },
+          ahead: DwellerPose.AT_CHEST,
+          elbow: DwellerPose.DOWN,
+          holds: "radio",
+          aim: -10,
+          firm: 1,
+          side: 1,
+        },
+      ],
+      eyes: DwellerPose.blink(t),
+      gaze: { x: 0.55, y: 0.3 },
+    };
+  }
+
+  /** The radio from the pad to the shoulder: a lean to it, the hand along it as it lies, and up,
+   * turning it upright. */
+  private static takingRadio(t: number): DwellerLook {
+    const { KNEES, RADIO, RADIO_LIES, RADIO_HELD } = DwellerPose;
+    const glide = DwellerPose.glide;
+    return {
+      ...DwellerPose.STILL,
+      lean: glide(t, [
+        [0, 4],
+        [0.55, -9],
+        [0.7, -9],
+        [1.4, 3],
+      ]),
+      tilt: glide(t, [
+        [0, 0],
+        [0.5, 10],
+        [0.75, 10],
+        [1.4, 5],
+      ]),
+      sway: glide(t, [
+        [0, 0],
+        [0.5, 5],
+        [1.4, 3],
+      ]),
+      hands: [
+        DwellerPose.resting(0),
+        {
+          at: DwellerPose.along(t, [
+            [0, KNEES[1]],
+            [0.55, RADIO],
+            [0.68, RADIO],
+            [1, { x: 126, y: -72 }],
+            [1.4, RADIO_HELD],
+          ]),
+          ahead: glide(t, [
+            [0, DwellerPose.AT_KNEES],
+            [0.55, 70],
+            [1, 60],
+            [1.4, DwellerPose.AT_CHEST],
+          ]),
+          elbow: DwellerPose.swing(t, [
+            [0, DwellerPose.OUT],
+            [0.28, DwellerPose.FORE],
+            [0.5, DwellerPose.IN],
+            [0.78, DwellerPose.IN],
+            [1.4, DwellerPose.DOWN],
+          ]),
+          holds: t >= 0.62 ? "radio" : "nothing",
+          aim: glide(t, [
+            [0.1, 30],
+            [0.5, RADIO_LIES],
+            [0.68, RADIO_LIES],
+            [1, 44],
+            [1.4, -10],
+          ]),
+          firm: glide(t, [
+            [0.15, 0],
+            [0.5, 1],
+          ]),
+          side: 1,
+        },
+      ],
+      gaze: {
+        x: glide(t, [
+          [0, -0.3],
+          [0.4, 0.9],
+          [0.8, 0.8],
+          [1.4, 0.55],
+        ]),
+        y: glide(t, [
+          [0, 0.25],
+          [0.4, 1],
+          [0.9, 0.6],
+          [1.4, 0.3],
+        ]),
+      },
+    };
+  }
+
+  /** A phrase into the radio: up to the lips, its top to the mouth, the words, and back to the
+   * shoulder to hear the answer. */
+  private static talking(t: number): DwellerLook {
+    const { RADIO_HELD } = DwellerPose;
+    const reach = DwellerHands.REACH.radio;
+    const up = DwellerPose.ease(t / 0.35) * (1 - DwellerPose.ease((t - 1.3) / 0.4));
+    const tilt = 5 - 4 * up;
+    const sway = 3 + 3 * up;
+    const aim = -10 - 26 * up;
+    const way = DwellerPose.pointing(aim);
+    const lips = DwellerPose.mouthAt(3, tilt, sway);
+    const spoken = { x: lips.x + 7 - way.x * reach, y: lips.y + 8 - way.y * reach };
+    const words = DwellerPose.ease((t - 0.36) / 0.1) * (1 - DwellerPose.ease((t - 1.18) / 0.1));
+    return {
+      ...DwellerPose.STILL,
+      lean: 3,
+      tilt,
+      sway,
+      hands: [
+        DwellerPose.resting(0),
+        {
+          at: DwellerPose.mix(RADIO_HELD, spoken, up),
+          ahead: DwellerPose.AT_CHEST + (DwellerPose.AT_MOUTH - DwellerPose.AT_CHEST) * up,
+          elbow: DwellerPose.DOWN,
+          holds: "radio",
+          aim,
+          firm: 1,
+          side: 1,
+        },
+      ],
+      mouth: words * (0.1 + 0.3 * Math.abs(Math.sin(2 * Math.PI * 3.1 * t))),
+      gaze: { x: 0.55 - 0.45 * up, y: 0.3 - 0.2 * up },
+    };
+  }
+
+  /** The watch read on the wrist turned up across the chest, the head down to it. */
+  private static checking(t: number): DwellerLook {
+    const breath = Math.sin((2 * Math.PI * t) / 4.2);
+    return {
+      ...DwellerPose.STILL,
+      lean: 5 + breath,
+      tilt: 15,
+      hands: [DwellerPose.resting(0, -1.5 * breath), DwellerPose.wristUp(1)],
+      eyes: 0.8 * DwellerPose.blink(t),
+      gaze: { x: 0.2, y: 1 },
+    };
+  }
+
+  /** The hand of the wrist that's turned up, `share` of the way from the knee. */
+  private static wristUp(share: number): HandLook {
+    const { KNEES, WRIST_UP } = DwellerPose;
+    const up = DwellerPose.ease(share);
+    return {
+      at: DwellerPose.mix(KNEES[1], WRIST_UP, up),
+      ahead: DwellerPose.AT_KNEES + (DwellerPose.AT_CHEST + 6 - DwellerPose.AT_KNEES) * up,
+      elbow: DwellerPose.swing(up, [
+        [0, DwellerPose.OUT],
+        [1, DwellerPose.DOWN],
+      ]),
+      holds: "watch",
+      aim: -58 * up,
+      firm: up,
+      side: 1,
+    };
+  }
+
+  /** The wrist turned up for the watch: it comes up across the chest, the other hand's finger
+   * presses its button, and goes back to its knee. */
+  private static turningWrist(t: number): DwellerLook {
+    const { KNEES, AT_WATCH } = DwellerPose;
+    const glide = DwellerPose.glide;
+    const over = DwellerPose.ease((t - 0.45) / 0.4) * (1 - DwellerPose.ease((t - 1.1) / 0.5));
+    const press = DwellerPose.bump(t, 0.95, 0.1);
+    return {
+      ...DwellerPose.STILL,
+      lean: glide(t, [
+        [0, 4],
+        [0.7, 5],
+      ]),
+      tilt: glide(t, [
+        [0, 0],
+        [0.7, 15],
+      ]),
+      hands: [
+        {
+          ...DwellerPose.resting(0),
+          at: DwellerPose.mix(KNEES[0], { x: AT_WATCH.x, y: AT_WATCH.y + 3 * press }, over),
+          ahead:
+            DwellerPose.AT_KNEES + (DwellerPose.AT_CHEST + 14 - DwellerPose.AT_KNEES) * over,
+          elbow: DwellerPose.swing(over, [
+            [0, DwellerPose.OUT],
+            [1, DwellerPose.DOWN],
+          ]),
+          aim: 96 * over,
+          firm: 0.5 * over,
+        },
+        DwellerPose.wristUp(t / 0.7),
+      ],
+      eyes: glide(t, [
+        [0.3, 1],
+        [0.7, 0.8],
+      ]),
+      gaze: {
+        x: glide(t, [
+          [0, -0.3],
+          [0.6, 0.2],
+        ]),
+        y: glide(t, [
+          [0, 0.25],
+          [0.6, 1],
+        ]),
+      },
+    };
+  }
+
+  /** The weather meter held out at arm's length toward the open door, upright, its impeller in
+   * the wind that comes in, the eyes on its display. */
+  private static metering(t: number): DwellerLook {
+    const { METER_OUT } = DwellerPose;
+    const sway = Math.sin((2 * Math.PI * t) / 2.3);
+    return {
+      ...DwellerPose.STILL,
+      lean: 20,
+      tilt: -5,
+      hands: [
+        {
+          at: { x: METER_OUT.x + 1.5 * sway, y: METER_OUT.y + Math.cos((2 * Math.PI * t) / 3.1) },
+          ahead: 44,
+          elbow: DwellerPose.OVER,
+          holds: "meter",
+          aim: -8,
+          firm: 1,
+          side: 1,
+        },
+        DwellerPose.resting(1),
+      ],
+      eyes: DwellerPose.blink(t),
+      gaze: { x: -1, y: -0.45 },
+      door: true,
+    };
+  }
+
+  /** A hand up to the pocket on the wall for what stands in it at `kept`, and away with it to
+   * `held` by way of `past`, over `whole` seconds: its elbow out and down under the hand as it
+   * goes up, and `elbow`'s way as it ends; what it holds, `thing`, upright as it leaves the pocket and aimed `aim` as it
+   * ends, `ahead` of the shoulders. */
+  private static fromThePocket(
+    t: number,
+    whole: number,
+    thing: Held,
+    kept: Spot,
+    past: Spot,
+    held: { readonly at: Spot; readonly aim: number; readonly ahead: number; readonly elbow: Point },
+  ): HandLook {
+    const glide = DwellerPose.glide;
+    return {
+      at: DwellerPose.along(t, [
+        [0, DwellerPose.KNEES[0]],
+        [0.52, kept],
+        [0.68, kept],
+        [1.05, past],
+        [whole, held.at],
+      ]),
+      ahead: glide(t, [
+        [0, DwellerPose.AT_KNEES],
+        [0.52, 34],
+        [1.05, 40],
+        [whole, held.ahead],
+      ]),
+      elbow: DwellerPose.swing(t, [
+        [0, DwellerPose.OUT],
+        [0.68, DwellerPose.OUT],
+        [whole, held.elbow],
+      ]),
+      holds: t >= 0.6 ? thing : "nothing",
+      aim: glide(t, [
+        [0.68, 0],
+        [whole, held.aim],
+      ]),
+      firm: glide(t, [
+        [0.15, 0],
+        [0.48, 1],
+      ]),
+      side: 1,
+    };
+  }
+
+  /** The weather meter from the chest pocket out to the door: a hand to the pocket, the meter
+   * out of it, and a lean to the door with the arm out. */
+  private static takingMeter(t: number): DwellerLook {
+    const { KNEES, CHEST_POCKET, METER_OUT } = DwellerPose;
+    const glide = DwellerPose.glide;
+    return {
+      ...DwellerPose.STILL,
+      lean: glide(t, [
+        [0, 4],
+        [0.6, 4],
+        [1.7, 20],
+      ]),
+      tilt: glide(t, [
+        [0, 0],
+        [0.45, 9],
+        [0.65, 8],
+        [1.7, -5],
+      ]),
+      hands: [
+        {
+          at: DwellerPose.along(t, [
+            [0, KNEES[0]],
+            [0.45, CHEST_POCKET],
+            [0.58, CHEST_POCKET],
+            [1.05, { x: -128, y: -146 }],
+            [1.7, { x: METER_OUT.x, y: METER_OUT.y + 1 }],
+          ]),
+          ahead: glide(t, [
+            [0, DwellerPose.AT_KNEES],
+            [0.45, 70],
+            [1.05, 56],
+            [1.7, 44],
+          ]),
+          elbow: DwellerPose.swing(t, [
+            [0, DwellerPose.OUT],
+            [0.3, DwellerPose.DOWN],
+            [0.7, DwellerPose.DOWN],
+            [1.7, DwellerPose.OVER],
+          ]),
+          holds: t >= 0.5 ? "meter" : "nothing",
+          aim: glide(t, [
+            [0.45, 8],
+            [0.7, 6],
+            [1.7, -8],
+          ]),
+          firm: glide(t, [
+            [0.15, 0],
+            [0.45, 1],
+          ]),
+          side: 1,
+        },
+        DwellerPose.resting(1),
+      ],
+      gaze: {
+        x: glide(t, [
+          [0, -0.3],
+          [0.45, -0.4],
+          [1.7, -1],
+        ]),
+        y: glide(t, [
+          [0, 0.25],
+          [0.45, 0.9],
+          [0.7, 0.7],
+          [1.7, -0.45],
+        ]),
+      },
+      door: t > 0.85,
+    };
+  }
+
+  /** The tracker over the lap in one hand, the other's thumb on its keys now and then, the head
+   * down to its screen. */
+  private static reading(t: number): DwellerLook {
+    const { TRACKER_HELD, AT_KEYS } = DwellerPose;
+    const tap = DwellerPose.pulse(t, 1.3, 0.3);
+    return {
+      ...DwellerPose.STILL,
+      lean: 7,
+      tilt: 17,
+      hands: [
+        {
+          at: TRACKER_HELD,
+          ahead: DwellerPose.AT_CHEST + 12,
+          elbow: DwellerPose.DOWN,
+          holds: "tracker",
+          aim: DwellerPose.TRACKER_AIM,
+          firm: 1,
+          side: 1,
+        },
+        DwellerPose.atKeys(1, AT_KEYS.y + 3 * tap),
+      ],
+      eyes: 0.8 * DwellerPose.blink(t),
+      gaze: { x: -0.1, y: 1 },
+    };
+  }
+
+  /** How the tracker leans in the hand over the lap, its screen to the face. */
+  private static readonly TRACKER_AIM = 22;
+
+  /** The hand whose thumb works the tracker's keys, `share` of the way there from its knee, its
+   * thumb `y` down. */
+  private static atKeys(share: number, y = DwellerPose.AT_KEYS.y): HandLook {
+    const { KNEES, AT_KEYS } = DwellerPose;
+    const over = DwellerPose.ease(share);
+    return {
+      ...DwellerPose.resting(1),
+      at: DwellerPose.mix(KNEES[1], { x: AT_KEYS.x, y }, over),
+      ahead: DwellerPose.AT_KNEES + (DwellerPose.AT_CHEST + 16 - DwellerPose.AT_KNEES) * over,
+      elbow: DwellerPose.swing(over, [
+        [0, DwellerPose.OUT],
+        [1, DwellerPose.DOWN],
+      ]),
+      aim: -72 * over,
+      firm: 0.5 * over,
+    };
+  }
+
+  /** The tracker from the wall's pocket to the lap: a hand up to the pocket, round the tracker,
+   * down to the lap, and the other hand over to its keys. */
+  private static takingTracker(t: number): DwellerLook {
+    const { TRACKER, TRACKER_HELD, TRACKER_AIM } = DwellerPose;
+    const glide = DwellerPose.glide;
+    return {
+      ...DwellerPose.STILL,
+      lean: glide(t, [
+        [0, 4],
+        [0.5, 6],
+        [0.7, 6],
+        [1.5, 7],
+      ]),
+      tilt: glide(t, [
+        [0, 0],
+        [0.45, -3],
+        [0.8, -2],
+        [1.5, 17],
+      ]),
+      hands: [
+        DwellerPose.fromThePocket(
+          t,
+          1.5,
+          "tracker",
+          TRACKER,
+          { x: TRACKER.x + 6, y: TRACKER.y - 34 },
+          {
+            at: TRACKER_HELD,
+            aim: TRACKER_AIM,
+            ahead: DwellerPose.AT_CHEST + 12,
+            elbow: DwellerPose.DOWN,
+          },
+        ),
+        DwellerPose.atKeys((t - 0.95) / 0.55),
+      ],
+      eyes: glide(t, [
+        [0.9, 1],
+        [1.5, 0.8],
+      ]),
+      gaze: {
+        x: glide(t, [
+          [0, -0.3],
+          [0.4, -0.9],
+          [0.9, -0.7],
+          [1.5, -0.1],
+        ]),
+        y: glide(t, [
+          [0, 0.25],
+          [0.4, -0.3],
+          [0.9, 0],
+          [1.5, 1],
+        ]),
+      },
     };
   }
 

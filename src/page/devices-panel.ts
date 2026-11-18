@@ -136,6 +136,11 @@ export class DevicesPanel {
     return !this.panel.hidden;
   }
 
+  /** Opens the card at the device used last, or closes it: the tent's [Devices] (#271). */
+  toggle(): void {
+    this.toggleAt(this.shown);
+  }
+
   /** The devices as they are this frame, `seconds` of play after the last. */
   update(seconds: number): void {
     this.hear(seconds);
@@ -194,10 +199,10 @@ export class DevicesPanel {
   private listen(): void {
     const { window } = this;
     this.buttons.devices.addEventListener("click", () => {
-      this.toggle(this.shown);
+      this.toggle();
     });
     this.buttons.radio.addEventListener("click", () => {
-      this.toggle("radio");
+      this.toggleAt("radio");
     });
     this.find("[data-act='close']").addEventListener("click", () => {
       this.close();
@@ -275,9 +280,9 @@ export class DevicesPanel {
       return;
     }
     if (event.code === "KeyG" && !event.repeat) {
-      this.toggle(this.shown);
+      this.toggle();
     } else if (event.code === "KeyQ" && !event.repeat) {
-      this.toggle("radio");
+      this.toggleAt("radio");
     } else if (this.panel.hidden) {
       return;
     } else if (event.code === "Escape") {
@@ -305,7 +310,7 @@ export class DevicesPanel {
   }
 
   /** Opens at `device`, or closes if that's what's open; from another device, goes to it. */
-  private toggle(device: DeviceName): void {
+  private toggleAt(device: DeviceName): void {
     if (!this.panel.hidden && this.shown === device) {
       this.close();
       return;

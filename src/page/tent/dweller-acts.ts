@@ -1,12 +1,16 @@
+import type { DeviceKind } from "../../simulation";
 import { DwellerPose } from "./dweller-pose";
-import type { Act } from "./dweller-pose";
+import { DEVICE_ACTS } from "./dweller-pose";
+import type { Act, DeviceAct } from "./dweller-pose";
 
-/** What the tent's rule says of whoever is in the tent, as the acts read it: the chore in hand
- * and how far through it is, and the mountain's second their last sleep here ended at. */
+/** What the rules say of whoever is in the tent, as the acts read it: the chore in hand and how
+ * far through it is, the mountain's second their last sleep here ended at, and the device they
+ * have out (#271), which the devices' card shows. */
 export interface TentWork {
   readonly chore: "melt" | "cook" | "nap" | "sleep" | "guitar" | null;
   readonly progress: number;
   readonly sleptTo: number | null;
+  readonly device: DeviceKind | null;
 }
 
 /** What the person is seen doing this frame: the act, and how long they've been at it. */
@@ -26,7 +30,10 @@ export interface Acting {
  * first, sleep, and sit up with a stretch when it ends. A sleep the clock skipped, alone, is over
  * in the core before a frame shows it: it's seen by the second their last sleep ended at moving
  * on, and plays as lying down, a moment asleep and waking. On the way out they crawl to the door.
- * It reads the tent's rule and keeps only what it's showing.
+ * A device the card shows (#271) is taken from where it's kept and held, over a chore too, which
+ * goes on; a phrase on the radio is talked into it once; and it's put back before another is
+ * taken, before a drink, a bar, a hand in the pack or a sleep, and when the card closes.
+ * It reads the rules and keeps only what it's showing.
  */
 export class DwellerActs {
   /** How long a sleep is seen for at the least, in seconds: a skipped night's whole show. */
@@ -39,6 +46,8 @@ export class DwellerActs {
     "pack",
     "lie",
     "wake",
+    "radio-talk",
+    ...DEVICE_ACTS.flatMap((device): Act[] => [`${device}-out`, `${device}-away`]),
   ];
 
   /** A chore's parts, and how far through the chore each begins: the mountain's time runs 36
@@ -67,6 +76,10 @@ export class DwellerActs {
   private readonly next: Act[] = [];
   private sleptTo: number | null;
   private leaving = false;
+  /** The device in the hand, once it's out and until it's back (#271); and whether a phrase
+   * waits to be said into the radio. */
+  private held: DeviceAct | null = null;
+  private toSay = false;
 
   /** `sleptTo` is the second their last sleep here ended at as they come in: nothing to show. */
   constructor(sleptTo: number | null = null) {
@@ -76,6 +89,12 @@ export class DwellerActs {
   /** Whether they're asleep or on the way into or out of the bag: nothing else begins then. */
   get asleep(): boolean {
     return this.lying || this.act === "lie" || this.next.includes("lie");
+  }
+
+  /** The device they have in the hand, from when it's out of where it's kept until it's back
+   * there (#271). */
+  get holding(): DeviceAct | null {
+    return this.held;
   }
 
   /** Whether the way out has been shown to its end. */
@@ -92,11 +111,18 @@ export class DwellerActs {
     this.next.push(act);
   }
 
-  /** They're leaving: to the door, from wherever they are. */
+  /** A phrase is said on the radio (#271): they talk into it once, as soon as it's in the hand. */
+  talk(): void {
+    this.toSay = true;
+  }
+
+  /** They're leaving: to the door, from wherever they are, with nothing in the hand. */
   leave(): void {
     if (!this.leaving) {
       this.leaving = true;
       this.next.length = 0;
+      this.held = null;
+      this.toSay = false;
       this.begin("leave");
     }
   }
@@ -127,6 +153,19 @@ export class DwellerActs {
       this.lying = true;
     } else if (this.act === "wake") {
       this.lying = false;
+    } else if (DwellerActs.away(this.act)) {
+      this.held = null;
+    } else if (this.act.endsWith("-out")) {
+      this.held = this.act.slice(0, -"-out".length) as DeviceAct;
+    }
+    // A device goes back before anything else is taken up, or another device (#271).
+    const wanted =
+      work.device === null || this.asleep ? null : DwellerPose.DEVICES[work.device];
+    const held = this.held;
+    if (held !== null && (this.next.length > 0 || held !== wanted)) {
+      this.toSay = this.toSay && wanted === "radio";
+      this.begin(`${held}-away`);
+      return;
     }
     const queued = this.next.shift();
     if (queued !== undefined) {
@@ -142,10 +181,31 @@ export class DwellerActs {
       }
       return;
     }
+    if (wanted !== null && held === null) {
+      this.begin(`${wanted}-out`);
+      return;
+    }
+    if (held !== null) {
+      // A phrase waits for the radio: said once, it's listened to again.
+      const say = this.toSay && held === "radio";
+      this.toSay = false;
+      if (say) {
+        this.begin("radio-talk");
+      } else if (this.act !== held) {
+        this.begin(held);
+      }
+      return;
+    }
+    this.toSay = false;
     const steady = DwellerActs.steady(work);
     if (this.act !== steady) {
       this.begin(steady);
     }
+  }
+
+  /** Whether an act is a device going back where it's kept. */
+  private static away(act: Act): boolean {
+    return act.endsWith("-away");
   }
 
   /** What they're at while nothing plays once: the part of the chore it has got to, the guitar,
