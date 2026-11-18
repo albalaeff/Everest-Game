@@ -4684,16 +4684,17 @@ main:has(#tent:not([hidden])) #self-check {
   stroke-width: 7;
 }
 
+/* A freeze-dried meal's pouch, foil with its label, as the panel draws it (#art-meal). */
 .dw-pouch {
-  fill: #e7b24a;
+  fill: #b9c4d0;
 }
 
 .dw-pouch-top {
-  fill: #b8822a;
+  fill: #8e9aa8;
 }
 
 .dw-pouch-label {
-  fill: #7a4a1c;
+  fill: #e8742c;
 }
 
 .dw-pouch-light {
