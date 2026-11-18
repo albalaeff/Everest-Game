@@ -53,9 +53,9 @@ export class TentArt {
    * the pocket weather meter's body and its impeller's ring; and the GPS watch's face. */
   static readonly RADIO = { width: 19, height: 38, antenna: 27 };
   static readonly RADIO_IN = 305;
-  static readonly POCKET = { into: 44, up: 214, width: 96, height: 58 };
+  static readonly POCKET = { into: 44, up: 272, width: 96, height: 58 };
   static readonly TRACKER = { width: 16, height: 30, cap: 8 };
-  static readonly TRACKER_IN = { x: 50, y: 53 };
+  static readonly TRACKER_IN = { x: 39, y: 32 };
   static readonly METER = { width: 13, height: 27, ring: 7 };
   static readonly WATCH = { face: 8, strap: 12 };
 
@@ -208,7 +208,7 @@ ${sleeve(to - 190, [to - 330, 400], 610)}
 </g>
 <path class="tent-inner-door" d="M${from} ${FLOOR}C${from + 2} ${FLOOR - 160} ${from + 14} ${FLOOR - 250} ${from + 40} ${roofAt(from + 40).toFixed(1)}"/>
 <path class="tent-door-roll" d="M${from + 14} ${roofAt(from + 30) + 26}q16 -10 30 2q4 12 -8 18q-16 2 -22 -20z"/>
-<g class="tent-pocket" transform="translate(${from + TentArt.POCKET.into} ${FLOOR - TentArt.POCKET.up})"><rect width="${TentArt.POCKET.width}" height="${TentArt.POCKET.height}" rx="6" fill="#d19a36"/><rect x="10" y="14" width="16" height="38" rx="5" fill="#f2f2ee"/><rect x="10" y="14" width="16" height="9" rx="3" fill="#e08a2c"/><g class="tent-tracker" transform="translate(${TentArt.TRACKER_IN.x} ${TentArt.TRACKER_IN.y})">${TentArt.tracker()}</g><rect y="22" width="${TentArt.POCKET.width}" height="${TentArt.POCKET.height - 22}" rx="6" fill="#d19a36" opacity="0.5"/><rect width="${TentArt.POCKET.width}" height="${TentArt.POCKET.height}" rx="6" fill="url(#tent-mesh)"/><path d="M76 20l10 26" stroke="#3f9488" stroke-width="5" stroke-linecap="round"/></g>
+<g class="tent-pocket" transform="translate(${from + TentArt.POCKET.into} ${FLOOR - TentArt.POCKET.up})"><rect width="${TentArt.POCKET.width}" height="${TentArt.POCKET.height}" rx="6" fill="#d19a36"/><rect x="8" y="14" width="16" height="38" rx="5" fill="#f2f2ee"/><rect x="8" y="14" width="16" height="9" rx="3" fill="#e08a2c"/><g class="tent-tracker" transform="translate(${TentArt.TRACKER_IN.x} ${TentArt.TRACKER_IN.y})">${TentArt.tracker()}</g><rect y="22" width="${TentArt.POCKET.width}" height="${TentArt.POCKET.height - 22}" rx="6" fill="#d19a36" opacity="0.5"/><rect width="${TentArt.POCKET.width}" height="${TentArt.POCKET.height}" rx="6" fill="url(#tent-mesh)"/><rect x="58" y="26" width="30" height="20" rx="6" fill="#2b2f39"/><circle cx="73" cy="36" r="6.5" fill="#dfe8f2"/></g>
 <g class="tent-pocket" transform="translate(${to - 132} ${FLOOR - 190})"><rect width="92" height="54" rx="6" fill="#d19a36"/><rect width="92" height="54" rx="6" fill="url(#tent-mesh)"/><path d="M12 30q14 -16 28 0q14 -16 28 0" stroke="#17181d" stroke-width="7" fill="none" stroke-linecap="round"/><rect x="72" y="12" width="12" height="34" rx="3" fill="#b9372c"/></g>
 <g class="tent-loft"><path d="M${loft.from} ${roofAt(loft.from) + 6}L${loft.to} ${roofAt(loft.to) + 6}L${loft.to - 16} ${roofAt(loft.to) + 54}Q${(loft.from + loft.to) / 2} ${roofAt(960) + 78} ${loft.from + 16} ${roofAt(loft.from) + 54}Z" fill="url(#tent-mesh)" stroke="#2a2d36" stroke-width="2"/><path d="M${loft.from + 34} ${roofAt(loft.from) + 50}q14 -22 34 -16q16 8 8 24q-22 10 -42 -8z" fill="#c23b30"/><path d="M${loft.from + 96} ${roofAt(loft.from) + 58}q10 -24 36 -18q12 10 4 24q-22 8 -40 -6z" fill="#27323f"/></g>
 <path class="tent-line" d="M${lineFrom[0]} ${lineFrom[1]}Q${lineMid[0]} ${lineMid[1]} ${lineTo[0]} ${lineTo[1]}"/>

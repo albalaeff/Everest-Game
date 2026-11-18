@@ -168,7 +168,9 @@ export class TentPicture {
       set(`held${side}`, "transform", frame.held[side]);
       set(`carried${side}`, "transform", frame.held[side]);
       for (const held of this.held[side] ?? []) {
-        TentPicture.show(held, held.dataset.held === frame.holds[side]);
+        // The watch is on the wrist all along (#271): on the open hand that wears it, too.
+        const worn = held.dataset.held === "watch" && side === 1 && frame.holds[side] === "nothing";
+        TentPicture.show(held, held.dataset.held === frame.holds[side] || worn);
       }
       for (const shape of this.shapes[side] ?? []) {
         TentPicture.show(shape, shape.dataset.shape === frame.shapes[side]);
