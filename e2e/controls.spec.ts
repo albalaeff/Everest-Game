@@ -28,6 +28,7 @@ const THE_CLIMB = [
   "oxygen down",
   "check-self",
   "panel radio",
+  "panel devices",
   "panel inventory",
   "set-up-tent",
   "view farther",
@@ -129,6 +130,7 @@ test.describe("on a screen of 640 by 360", () => {
     await page.keyboard.press("Minus");
     await page.keyboard.press("Tab");
     await page.keyboard.press("KeyQ");
+    await page.keyboard.press("KeyG");
     await page.keyboard.press("KeyI");
     await page.keyboard.press("KeyT");
     await page.keyboard.press("KeyZ");
@@ -139,7 +141,7 @@ test.describe("on a screen of 640 by 360", () => {
 
   test("a player climbs the same way by touch", async ({ page, hasTouch }) => {
     test.skip(!hasTouch, "a phone's story");
-    // Fourteen touches, over a hundred round trips: half a minute on CI's slowest runners.
+    // Fifteen touches, over a hundred round trips: half a minute on CI's slowest runners.
     test.slow();
     await openTheGame(page);
 
@@ -155,6 +157,7 @@ test.describe("on a screen of 640 by 360", () => {
     await tapButton(page, "oxygen-down");
     await tapButton(page, "check-self");
     await tapButton(page, "radio");
+    await tapButton(page, "devices");
     await tapButton(page, "inventory");
     await tapButton(page, "set-up-tent");
     await tapButton(page, "view-farther");
@@ -265,7 +268,7 @@ test.describe("on a screen of 640 by 360", () => {
 
     const buttons = await page.locator(".action-button").all();
 
-    expect(buttons).toHaveLength(12);
+    expect(buttons).toHaveLength(13);
     // All in one go: each check waits for a frame, and CI's frames are seconds apart.
     await Promise.all(buttons.map((found) => expect(found).toBeInViewport({ ratio: 1 })));
     for (const box of await boxesOf(page, ".action-button")) {

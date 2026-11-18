@@ -22,6 +22,7 @@ export type {
   Radio,
   SetUpTent,
   Tool,
+  Tracker,
   Unclip,
   UseItem,
   Walk,
@@ -47,6 +48,15 @@ export type {
   Warning,
 } from "./objective-hazards";
 export { DayWarmth } from "./day-warmth";
+export { Devices } from "./devices";
+export type {
+  DeviceGround,
+  DeviceNumbers,
+  DeviceStart,
+  RadioCall,
+  RadioView,
+  TrackerView,
+} from "./devices";
 export type { SunShares, WarmthHours } from "./day-warmth";
 export { Jolts } from "./jolts";
 export type {

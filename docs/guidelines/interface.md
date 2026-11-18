@@ -19,7 +19,7 @@ The screen around the slope: where things go, the HUD, the buttons, the text, co
 ## The HUD
 
 - **Only what a climber knows at a glance stays on the screen:** the clock, the altimeter and the bottle's pressure gauge ([../../spec.md](../../spec.md) → Graphics, sound and interface). The body is on Tab, in words, with no health bars. A display in the world or on the gear comes first, one at the screen's edges (as hypoxia's narrowing view) next, and a plain overlay last ([Fagerholt and Lorentzon, Beyond the HUD](https://www2.slideshare.net/DICEStudio/beyond-the-hud-user-interfaces-for-increased-player-immersion-in-fps-games)).
-  - *In Everest:* `#readouts` (#25), the turnaround mark on the clock (#36), hypoxia's edges (#43). A new readout first asks whether a climber would know it: the forecast comes by radio and in camp (#39, #79), not in a corner of the screen.
+  - *In Everest:* `#readouts` (#25), the turnaround mark on the clock (#36), hypoxia's edges (#43). A new readout first asks whether a climber would know it: the forecast comes by radio and in camp (#39, #79), not in a corner of the screen. What a device reads is asked for, on the device: the GPS watch's distance and pace, the wind meter's speed and the tracker's points are in [Devices], each on a screen drawn as the thing's own (#260).
   - *Check:* a screen's preview lists what stays on it during the climb, and how a climber would know each.
 - **A readout is read in one glance.** It's always in the same place and order, with its unit, in figures that don't shift as they change (`font-variant-numeric: tabular-nums`). A change that matters shows twice: the turnaround time is a red mark on the clock and a shape, and passing it is said in words.
   - *In Everest:* `#readouts`; the turnaround mark (#36).
@@ -69,7 +69,7 @@ The screen around the slope: where things go, the HUD, the buttons, the text, co
 
 ## Panels and dialogs
 
-- **A panel opens and closes with the same control,** and Esc closes it too: the self-check on Tab, the radio on Q, the inventory on I, each also on its button and its gamepad button ([../../spec.md](../../spec.md) → Gameplay).
+- **A panel opens and closes with the same control,** and Esc closes it too: the self-check on Tab, the devices on G and at the radio on Q (#260), the inventory on I, each also on its button and its gamepad button ([../../spec.md](../../spec.md) → Gameplay).
   - *In Everest:* the `menu` rows of `CONTROLS`; the panels themselves come with #25 and #79.
   - *Check:* a story opens and closes each panel by key, by button and by gamepad.
 - **A panel works with the keys alone, and with a gamepad alone** ([WCAG 2.2, 2.1.1](https://www.w3.org/TR/WCAG22/#keyboard)), and the focus shows ([2.4.7](https://www.w3.org/TR/WCAG22/#focus-visible)). While it's open, the keys it needs to move between its choices are its own, and the climb's keys it doesn't need still work. Tab is the self-check's key during the climb (`KeyboardSource` takes it from the browser), so a panel moves between its choices with the arrows, or the gamepad's d-pad.

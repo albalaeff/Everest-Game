@@ -33,6 +33,7 @@
   /* The marks drawn on the buttons and the coach's card, each a line drawing used as a mask. */
   --icon-pulse: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23000' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M2 13h4l2.5-6 4 11 2.5-5H22'/%3E%3C/svg%3E");
   --icon-radio: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23000' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M8 8h8a1 1 0 0 1 1 1v11a1 1 0 0 1-1 1H8a1 1 0 0 1-1-1V9a1 1 0 0 1 1-1zM10 8V3M10 12h4M10 16h4'/%3E%3C/svg%3E");
+  --icon-devices: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23000' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Ccircle cx='12' cy='12' r='5.5'/%3E%3Cpath d='M9 6.9 9.6 3h4.8l.6 3.9M9 17.1l.6 3.9h4.8l.6-3.9M12 9.5V12l1.8 1.2'/%3E%3C/svg%3E");
   --icon-pack: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23000' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M7 9a5 5 0 0 1 10 0v10a2 2 0 0 1-2 2H9a2 2 0 0 1-2-2zM10 5V4a2 2 0 0 1 4 0v1M9 14h6v3H9z'/%3E%3C/svg%3E");
   --icon-tent: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23000' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M2 20 12 4l10 16zM12 4v6M9 20l3-6 3 6'/%3E%3C/svg%3E");
   --icon-peak: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23000' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M2 20 9 7l4 6 2.5-3.5L22 20zM9 7l1.5 4.5'/%3E%3C/svg%3E");
@@ -938,6 +939,7 @@ main:has(#coach:not([hidden])) #hint-tap {
 #climber button,
 #pack button,
 #inventory button,
+#devices button,
 #self-check button,
 #gear button {
   display: inline-flex;
@@ -969,6 +971,7 @@ main:has(#coach:not([hidden])) #hint-tap {
 #climber button:hover,
 #pack button:hover:not(:disabled),
 #inventory button:hover:not(:disabled),
+#devices button:hover:not(:disabled),
 #self-check button:hover,
 #gear button:hover,
 #camp button:hover {
@@ -982,6 +985,7 @@ main:has(#coach:not([hidden])) #hint-tap {
 #climber button:active,
 #pack button:active:not(:disabled),
 #inventory button:active:not(:disabled),
+#devices button:active:not(:disabled),
 #gear button:active,
 #camp button:active {
   translate: 0 1px;
@@ -1026,6 +1030,10 @@ main button:focus-visible,
 
 [data-control="radio"] {
   --icon: var(--icon-radio);
+}
+
+[data-control="devices"] {
+  --icon: var(--icon-devices);
 }
 
 [data-control="inventory"] {
@@ -3041,4 +3049,675 @@ kbd {
 .touch #god input:not([type="checkbox"]),
 .touch .god__button {
   min-height: 48px;
+}
+
+/* The devices (#260): a card of glass like the pack's, on the right under the coach's tip, with
+ * each device drawn as the thing itself: the radio's amber screen, the watch's grey one that
+ * reads in the sun, the wind meter's impeller, the tracker's orange case. Their colours are the
+ * gear's own; the rope's orange still marks what's in hand, and red means danger alone. */
+#devices {
+  position: absolute;
+  top: calc(var(--edge-top) + 9.5rem);
+  right: var(--edge-right);
+  z-index: 3;
+  width: min(33rem, calc(100vw - var(--edge-left) - var(--edge-right)));
+  /* Down to the controls along the bottom, wherever the window's width has wrapped them to: the
+   * panel measures their top as it opens (--floor). Never so short that nothing shows. */
+  max-height: max(
+    12rem,
+    calc(var(--floor, 100vh - var(--edge-bottom) - 4rem) - var(--edge-top) - 10rem)
+  );
+  container: devices / inline-size;
+  box-sizing: border-box;
+  padding: 1rem 1.1rem;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  border: 1px solid var(--glass-edge);
+  border-top: 0.25rem solid var(--rope);
+  border-radius: 0.5rem 0.5rem 1.1rem 1.1rem;
+  /* Solid under the card's glass: a screen is read, and nothing behind it shows through. */
+  background: var(--card), rgb(10 20 42);
+  box-shadow: 0 1rem 2.5rem rgb(0 0 0 / 38%);
+  pointer-events: auto;
+  touch-action: pan-y;
+}
+
+#devices[hidden],
+#devices [hidden] {
+  display: none;
+}
+
+#devices h2 {
+  margin: 0.15rem 0 0;
+  font-size: 1.35rem;
+}
+
+#devices button {
+  touch-action: manipulation;
+}
+
+#devices button:disabled {
+  opacity: 0.45;
+}
+
+.devices__tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin: 0.9rem 0 1rem;
+}
+
+.devices__tabs button {
+  flex: 1 1 auto;
+}
+
+/* The device in hand, and a button held on: the rope's orange. */
+#devices .devices__tabs button[aria-selected="true"],
+#devices .devices__tabs button[aria-selected="true"]:hover,
+#devices button[aria-pressed="true"],
+#devices button[aria-pressed="true"]:hover:not(:disabled) {
+  border-color: var(--rope);
+  background: linear-gradient(180deg, var(--rope), var(--rope-deep));
+  color: var(--rope-ink);
+}
+
+.device {
+  display: grid;
+  grid-template-columns: 11.5rem 1fr;
+  gap: 1.1rem;
+  align-items: start;
+}
+
+.device[data-device="gps"] {
+  grid-template-columns: 1fr;
+}
+
+.device__note {
+  margin: 0.6rem 0 0;
+  color: var(--muted);
+  font-size: 0.875rem;
+  line-height: 1.35;
+}
+
+#devices dl {
+  display: grid;
+  gap: 0.35rem;
+  margin: 0;
+}
+
+#devices dl div {
+  display: flex;
+  gap: 0.75rem;
+  align-items: baseline;
+  justify-content: space-between;
+}
+
+#devices dd {
+  margin: 0;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+}
+
+/* The handheld radio: a black case with its antenna and channel knob, an amber screen, and the
+ * speaker's grille. */
+.radio {
+  position: relative;
+  box-sizing: border-box;
+  margin-top: 2.6rem;
+  padding: 0.8rem 0.7rem 0.9rem;
+  border: 1px solid #3a4048;
+  border-radius: 0.7rem 0.7rem 1.1rem 1.1rem;
+  background: linear-gradient(160deg, #2a2f36, #14171b 60%);
+  box-shadow:
+    inset 0 1px 0 rgb(255 255 255 / 12%),
+    0 0.5rem 1rem rgb(0 0 0 / 35%);
+}
+
+.radio__antenna,
+.radio__knob {
+  position: absolute;
+  bottom: 100%;
+  background: linear-gradient(90deg, #0e1013, #2c3138 45%, #0e1013);
+}
+
+.radio__antenna {
+  left: 1rem;
+  width: 0.7rem;
+  height: 2.5rem;
+  border-radius: 0.35rem 0.35rem 0 0;
+}
+
+.radio__knob {
+  right: 1.1rem;
+  width: 1.3rem;
+  height: 0.8rem;
+  border-radius: 0.2rem 0.2rem 0 0;
+}
+
+.radio__lcd {
+  display: flex;
+  gap: 0.4rem;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.55rem 0.5rem;
+  border: 2px solid #0b0d10;
+  border-radius: 0.3rem;
+  background: linear-gradient(180deg, #f6c15a, #e59c2a);
+  box-shadow: inset 0 0 0.6rem rgb(120 60 0 / 45%);
+  color: #221203;
+  font-size: 0.75rem;
+  font-weight: 800;
+  letter-spacing: 0.02em;
+  line-height: 1.2;
+}
+
+/* The signal's bars, as a radio draws them: four that rise, empty with no contact. */
+.radio__bars {
+  display: inline-flex;
+  flex: none;
+  gap: 2px;
+  align-items: end;
+  height: 1rem;
+}
+
+.radio__bars i {
+  width: 3px;
+  border: 1px solid #221203;
+  background: #221203;
+}
+
+.radio__bars i:nth-child(1) {
+  height: 35%;
+}
+
+.radio__bars i:nth-child(2) {
+  height: 55%;
+}
+
+.radio__bars i:nth-child(3) {
+  height: 78%;
+}
+
+.radio__bars i:nth-child(4) {
+  height: 100%;
+}
+
+.radio__lcd[data-contact="no"] {
+  background: linear-gradient(180deg, #b98f4a, #94692a);
+}
+
+.radio__lcd[data-contact="no"] .radio__bars i {
+  background: none;
+}
+
+.radio__grille {
+  display: block;
+  height: 4.2rem;
+  margin-top: 0.8rem;
+  border-radius: 0.4rem;
+  background: repeating-linear-gradient(180deg, #07090b 0 3px, #23282e 3px 7px);
+}
+
+.radio__contact {
+  margin: 0.5rem 0 0;
+  color: var(--muted);
+  font-size: 0.875rem;
+  line-height: 1.3;
+}
+
+.radio__log {
+  display: grid;
+  gap: 0.4rem;
+  max-height: 6rem;
+  margin: 0 0 0.75rem;
+  padding: 0.6rem 0.7rem;
+  overflow-y: auto;
+  border: 1px solid rgb(255 255 255 / 14%);
+  border-radius: 0.6rem;
+  background: rgb(4 12 26 / 55%);
+  list-style: none;
+  font-size: 0.9375rem;
+  line-height: 1.35;
+}
+
+.radio__log:empty::before {
+  color: var(--muted);
+  content: attr(data-empty);
+}
+
+.radio__log strong {
+  color: var(--accent);
+}
+
+.radio__log [data-who="you"] strong {
+  color: var(--rope);
+}
+
+.radio__log [data-who="static"] {
+  color: var(--muted);
+  font-style: italic;
+}
+
+/* The ready phrases, two abreast, and the call for help across the foot. */
+.radio__phrases {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.5rem;
+}
+
+#devices .radio__phrases button {
+  padding: 0 0.5rem;
+  white-space: normal;
+}
+
+.radio__phrases [data-phrase="help"] {
+  grid-column: 1 / -1;
+}
+
+/* The GPS watch: a dark bezel with its strap's ends, round its screen, which is grey with dark
+ * figures, as a screen made to read in the sun is. */
+.watch {
+  position: relative;
+  max-width: 26rem;
+  margin: 0.7rem auto;
+  padding: 0.7rem;
+  border: 1px solid #454b54;
+  border-radius: 1.6rem;
+  background: linear-gradient(150deg, #353b44, #111418 65%);
+  box-shadow:
+    inset 0 1px 0 rgb(255 255 255 / 16%),
+    0 0.5rem 1rem rgb(0 0 0 / 35%);
+}
+
+.watch::before,
+.watch::after {
+  position: absolute;
+  left: 22%;
+  width: 56%;
+  height: 0.7rem;
+  background: #0d0f12;
+  content: "";
+}
+
+.watch::before {
+  bottom: 100%;
+  border-radius: 0.5rem 0.5rem 0 0;
+}
+
+.watch::after {
+  top: 100%;
+  border-radius: 0 0 0.5rem 0.5rem;
+}
+
+.watch__screen {
+  padding: 0.6rem 0.8rem 0.7rem;
+  border: 2px solid #07090b;
+  border-radius: 1.05rem;
+  background: linear-gradient(180deg, #e2e9dc, #cdd6c8);
+  color: #0d1b22;
+}
+
+.watch__map {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+
+.watch__route {
+  fill: none;
+  stroke: #0d1b22;
+  stroke-opacity: 0.4;
+  stroke-width: 1.6;
+  stroke-linejoin: round;
+}
+
+/* The track so far: the rope's orange, darkened to read on the grey. */
+.watch__track {
+  fill: none;
+  stroke: #c64f0c;
+  stroke-width: 2.6;
+  stroke-linejoin: round;
+  stroke-dasharray: 0 1;
+}
+
+.watch__dot {
+  fill: #0d1b22;
+  stroke: #e2e9dc;
+  stroke-width: 1.5;
+}
+
+.watch__where {
+  margin: 0.2rem 0 0.5rem;
+  font-weight: 800;
+}
+
+#devices .watch__fields {
+  grid-template-columns: 1fr 1fr;
+  gap: 0.3rem 1.2rem;
+}
+
+.watch__fields dt {
+  opacity: 0.75;
+}
+
+.watch__sun,
+.watch__verdict {
+  display: flex;
+  gap: 0.75rem;
+  justify-content: space-between;
+  margin: 0.5rem 0 0;
+  padding-top: 0.45rem;
+  border-top: 1px solid rgb(13 27 34 / 30%);
+}
+
+.watch__verdict {
+  font-weight: 800;
+}
+
+/* Late for the sun: red, and a triangle, so the colour isn't the only cue. */
+.watch__verdict[data-late="yes"] {
+  color: #a01414;
+}
+
+.watch__verdict[data-late="yes"]::before {
+  flex: none;
+  width: 1.1rem;
+  height: 1.1rem;
+  background: currentcolor;
+  content: "";
+  -webkit-mask: var(--icon-warning) center / contain no-repeat;
+  mask: var(--icon-warning) center / contain no-repeat;
+}
+
+/* No fix: the last one stays on the screen, faded, under the words that say so. */
+.watch__screen[data-fix="no"] > :not(.watch__where) {
+  opacity: 0.4;
+}
+
+/* The pocket wind meter: a yellow case, its impeller in a ring at the top, and a grey screen. */
+.meter {
+  box-sizing: border-box;
+  padding: 0.7rem 0.7rem 0.9rem;
+  border: 1px solid #8a6a12;
+  border-radius: 2.6rem 2.6rem 1rem 1rem;
+  background: linear-gradient(160deg, #f4c94a, #d9a31c 70%);
+  box-shadow:
+    inset 0 1px 0 rgb(255 255 255 / 35%),
+    0 0.5rem 1rem rgb(0 0 0 / 35%);
+}
+
+.meter__impeller {
+  width: 4.6rem;
+  height: 4.6rem;
+  margin: 0 auto 0.7rem;
+  border: 0.35rem solid #14171b;
+  border-radius: 50%;
+  background: #2a2f36;
+  overflow: hidden;
+}
+
+/* Its vanes, which turn as fast as the wind blows. */
+.meter__impeller i {
+  display: block;
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+  background: repeating-conic-gradient(#aeb7c2 0 18deg, #2a2f36 18deg 45deg);
+  animation: meter-turn var(--turn, 0s) linear infinite;
+}
+
+@keyframes meter-turn {
+  to {
+    rotate: 1turn;
+  }
+}
+
+.meter__lcd {
+  padding: 0.45rem 0.6rem 0.5rem;
+  border: 2px solid #14171b;
+  border-radius: 0.35rem;
+  background: linear-gradient(180deg, #d9e0d2, #c3ccbd);
+  color: #0d1b22;
+}
+
+.meter__lcd span {
+  font-size: 0.75rem;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.meter__lcd p {
+  display: flex;
+  gap: 0.3rem;
+  align-items: baseline;
+  justify-content: end;
+  margin: 0;
+}
+
+.meter__lcd strong {
+  font-size: 2.3rem;
+  font-variant-numeric: tabular-nums;
+  line-height: 1;
+}
+
+.meter__lcd em {
+  display: block;
+  min-height: 1.2em;
+  font-size: 0.875rem;
+  font-style: normal;
+  font-weight: 800;
+}
+
+/* A gust: its words, and the screen's frame in red. */
+.meter[data-gust="yes"] .meter__lcd {
+  border-color: #a01414;
+}
+
+.meter[data-gust="yes"] .meter__lcd em {
+  color: #a01414;
+}
+
+.meter__side button {
+  margin-top: 0.8rem;
+}
+
+/* The satellite tracker: an orange case with its antenna on top and a small grey screen. */
+.tracker {
+  position: relative;
+  box-sizing: border-box;
+  margin-top: 1.3rem;
+  padding: 0.7rem 0.7rem 2.2rem;
+  border: 1px solid #a3400a;
+  border-radius: 0.9rem;
+  background: linear-gradient(180deg, #ff7a26 0 62%, #1b1e23 62%);
+  box-shadow:
+    inset 0 1px 0 rgb(255 255 255 / 30%),
+    0 0.5rem 1rem rgb(0 0 0 / 35%);
+}
+
+.tracker__antenna {
+  position: absolute;
+  bottom: 100%;
+  left: 50%;
+  width: 3.4rem;
+  height: 1.2rem;
+  border-radius: 0.6rem 0.6rem 0 0;
+  background: #1b1e23;
+  translate: -50% 0;
+}
+
+.tracker__screen {
+  padding: 0.5rem 0.55rem;
+  border: 2px solid #0b0d10;
+  border-radius: 0.35rem;
+  background: linear-gradient(180deg, #e2e9dc, #cdd6c8);
+  color: #0d1b22;
+  font-size: 0.875rem;
+}
+
+.tracker__screen strong {
+  display: block;
+  margin-bottom: 0.4rem;
+  line-height: 1.25;
+}
+
+/* Tracking: a mark that it's on, beside the words. */
+.tracker__screen[data-tracking="yes"] strong::before {
+  display: inline-block;
+  width: 0.6rem;
+  height: 0.6rem;
+  margin-right: 0.4rem;
+  border-radius: 50%;
+  background: #0d1b22;
+  content: "";
+}
+
+.tracker__screen p {
+  min-height: 1.3em;
+  margin: 0.4rem 0 0;
+  font-weight: 800;
+  line-height: 1.3;
+}
+
+.tracker__side {
+  display: grid;
+  gap: 0.5rem;
+}
+
+#devices .tracker__side button {
+  white-space: normal;
+}
+
+/* The SOS: red, the one danger's colour, with its word, and a bar that fills while it's held. */
+#devices .tracker__sos {
+  position: relative;
+  flex-direction: column;
+  gap: 0.1rem;
+  padding: 0.45rem 0.95rem 0.6rem;
+  overflow: hidden;
+  border-color: #ff8f8f;
+  background: linear-gradient(180deg, #c62222, #8a1010);
+  color: #fff;
+}
+
+.tracker__sos small {
+  font-weight: 600;
+  opacity: 0.9;
+}
+
+.tracker__hold {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  width: 0;
+  height: 0.3rem;
+  background: #fff;
+}
+
+.tracker__sos--held .tracker__hold {
+  width: 100%;
+  transition: width 3s linear;
+}
+
+/* On a phone, the devices are on the left under the instruments, as the pack is, clear of the
+ * menu along the top and of the right thumb's buttons. */
+.touch #devices {
+  top: calc(var(--edge-top) + 3.75rem);
+  right: auto;
+  left: var(--edge-left);
+  z-index: 4;
+  width: min(33rem, calc(100vw - var(--edge-left) - var(--edge-right) - 15rem));
+  max-height: calc(100vh - var(--edge-top) - var(--edge-bottom) - 3.75rem);
+  padding: 0.7rem 0.8rem;
+}
+
+/* A narrow card, as a phone held sideways has: what's read and pressed comes first. The radio
+ * keeps its screen alone, the wind meter lies on its side, the tracker's screen fills the card's
+ * width, and the title gives its line to the devices' tabs. */
+@container devices (max-width: 27rem) {
+  .device {
+    grid-template-columns: 1fr;
+    gap: 0.6rem;
+  }
+
+  .radio,
+  .tracker {
+    margin-top: 0;
+    padding: 0.35rem;
+    border-radius: 0.5rem;
+  }
+
+  .tracker {
+    background: #ff7a26;
+  }
+
+  .radio__antenna,
+  .radio__knob,
+  .radio__grille,
+  .tracker__antenna,
+  .watch::before,
+  .watch::after {
+    display: none;
+  }
+
+  .watch {
+    margin: 0;
+    padding: 0.35rem;
+    border-radius: 1rem;
+  }
+
+  .watch__screen {
+    border-radius: 0.75rem;
+  }
+
+  .meter {
+    display: flex;
+    gap: 0.6rem;
+    align-items: center;
+    padding: 0.5rem;
+    border-radius: 2.2rem 0.8rem 0.8rem 2.2rem;
+  }
+
+  .meter__impeller {
+    flex: none;
+    width: 3.4rem;
+    height: 3.4rem;
+    margin: 0;
+  }
+
+  .meter__lcd {
+    flex: 1;
+  }
+
+  .meter__side button {
+    margin-top: 0.5rem;
+  }
+
+  .radio__contact {
+    margin: 0.3rem 0 0;
+  }
+
+  .radio__log {
+    max-height: 5.5rem;
+  }
+}
+
+.touch #devices .eyebrow {
+  display: none;
+}
+
+.touch .devices__tabs {
+  margin: 0.5rem 0 0.6rem;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .meter__impeller i {
+    animation: none;
+  }
+
+  .tracker__sos--held .tracker__hold {
+    transition: none;
+  }
 }

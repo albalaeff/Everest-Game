@@ -5,6 +5,7 @@ import type { SeenClimber } from "./slope-view";
 export type ControlName =
   | "check-self"
   | "radio"
+  | "devices"
   | "inventory"
   | "set-up-tent"
   | "oxygen-down"
@@ -49,6 +50,15 @@ export const CONTROLS: readonly Control[] = [
     gamepadButton: 1,
     group: "menu",
     press: () => ({ kind: "panel", panel: "radio" }),
+  },
+  {
+    // The devices on the harness and the wrist (#260): the radio's key opens them at the radio.
+    name: "devices",
+    keys: ["KeyG"],
+    keyName: "G",
+    gamepadButton: 10,
+    group: "menu",
+    press: () => ({ kind: "panel", panel: "devices" }),
   },
   {
     name: "inventory",

@@ -61,6 +61,16 @@ What a climber chooses to carry is a rule, `Packs` (`src/simulation/packs.ts`): 
 - **The numbers are the knowledge base's** (`content/facts/gear.json`, read by `PackFacts`): each item's weight with its source, the most of each, the drink and the bar. A section's file has each climber's pack as they set off (`packs`) and its camps' `endless` stores; the player's own choice at Base Camp replaces theirs (`Mountain.scenario`'s `pack`).
 - **The pack's screens** are the page's: `PackScreen` at Base Camp, between Your climber and the gear check, and `InventoryPanel` on the climb, both drawing `PackList`'s tiles with index.html's `#art-…` symbols. Their words are `content/pack.json`'s.
 
+## Devices
+
+The electronics a climber carries are a rule, `Devices` (`src/simulation/devices.ts`, #260): a handheld radio and a satellite tracker. The GPS watch and the wind meter keep nothing, so they aren't in the core: the page reads them off the climb (`src/interface/gps-watch.ts`, `wind-meter.ts`).
+
+- **Two actions.** `radio` is a call with a ready phrase on a channel; `tracker` starts or stops its tracking, sends a check-in or raises its SOS. Both are a living climber's: a dead one's are ignored, and a tracker goes on tracking for them.
+- **A call is kept, heard or not.** It gets out unless the climber hangs on their rope, in a crevasse or under a lip, where ice stands between the radio and Base Camp (`DeviceGround`, the slope physics). The rule keeps the call; the page gives Base Camp its words (`src/interface/base-camp.ts`), from the mountain as it was when the phrase was said.
+- **A tracker needs the sky**, the same way: tracking, it sends a point every `interval` and its battery runs down over `life`; a check-in or an SOS takes `delivery` seconds of sky to leave. An SOS turns the tracking on, and is raised once.
+- **The numbers are the knowledge base's** (`content/facts/gear.json`, read by `Mountain.deviceNumbers`): `gear.tracker-interval`, `gear.tracker-battery`, `gear.messenger-delivery-time`. The rule runs after the slope physics and draws nothing from chance.
+- **Not yet:** the radio's guide and group channels, a radio's own battery and one left in the tent (#79), the forecast (#39), and what an SOS sets in motion (#241).
+
 ## Scenarios, saves and replays
 
 - **A scenario** is a seed, the climbers and each rule's start state, in the form of that rule's save. Conditions set in advance, such as harsh weather, are in the start state, and hold on every seed.

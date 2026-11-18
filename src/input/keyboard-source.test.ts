@@ -22,6 +22,7 @@ const ONE_PRESS_KEYS = [
   ["Tab", { kind: "check-self", climber: "anna" }],
   ["KeyT", { kind: "set-up-tent", climber: "anna" }],
   ["KeyQ", { kind: "panel", panel: "radio" }],
+  ["KeyG", { kind: "panel", panel: "devices" }],
   ["KeyI", { kind: "panel", panel: "inventory" }],
   ["KeyZ", { kind: "view", change: "farther" }],
   ["KeyX", { kind: "view", change: "closer" }],

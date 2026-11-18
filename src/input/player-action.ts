@@ -6,7 +6,7 @@ import type { GameAction } from "../simulation";
  */
 export interface PanelRequest {
   readonly kind: "panel";
-  readonly panel: "radio" | "inventory";
+  readonly panel: "radio" | "devices" | "inventory";
 }
 
 /** Shows more of the slope, or less: the player's own view, which the simulation, the room and

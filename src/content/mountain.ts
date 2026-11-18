@@ -2,8 +2,18 @@ import { Sherpa } from "../agents";
 import type { SherpaSettings } from "../agents";
 import { Lamplight, Logbook, SlopePhysics } from "../physics";
 import type { Kit } from "../physics";
-import { Body, Jolts, MountainClock, ObjectiveHazards, OxygenSystem, Packs } from "../simulation";
+import {
+  Body,
+  DayWarmth,
+  Devices,
+  Jolts,
+  MountainClock,
+  ObjectiveHazards,
+  OxygenSystem,
+  Packs,
+} from "../simulation";
 import type {
+  DeviceNumbers,
   HazardKind,
   HazardOdds,
   HazardSettings,
@@ -39,7 +49,18 @@ export interface ExpeditionRules {
   readonly packs: Packs;
   /** The climbers' Sherpa, Pemba, who guides them (#212). */
   readonly sherpa: Sherpa;
+  /** The radios and the satellite trackers the climbers carry (#260). */
+  readonly devices: Devices;
   readonly all: readonly Rule[];
+}
+
+/** The wind's speeds in the Icefall, in km/h, as the wind meter reads them (#260). */
+export interface WindSpeeds {
+  readonly still: number;
+  readonly thermal: number;
+  readonly snow: number;
+  readonly strong: number;
+  readonly gust: number;
 }
 
 /**
@@ -52,6 +73,8 @@ export class Mountain {
   /** The record the mountain's clock runs at: how many times faster than play. */
   static readonly COMPRESSION = "time.compression";
   private static readonly SECONDS_AN_HOUR = 60 * 60;
+  private static readonly SECONDS_A_MINUTE = 60;
+  private static readonly SECONDS_A_DAY = 24 * 60 * 60;
 
   /** What the player's answers make of their climber. */
   readonly climbers: ClimberFacts;
@@ -93,6 +116,7 @@ export class Mountain {
       start: {
         ...scenario.start,
         [Logbook.NAME]: Logbook.start(scenario.climbers),
+        [Devices.NAME]: Devices.start({ climbers: scenario.climbers }),
       },
     };
   }
@@ -118,6 +142,8 @@ export class Mountain {
     const hazards = new ObjectiveHazards(this.hazardSettings(), clock, physics);
     const jolts = new Jolts(this.joltSettings(), clock, physics);
     const logbook = new Logbook(physics, hazards, clock, this.route.logged);
+    // The devices after the physics: a climber who hangs in a crevasse this step has no contact.
+    const devices = new Devices(this.deviceNumbers(), clock, physics);
     // The Sherpa acts at the start of each step, from where the last left everyone (#212).
     const sherpa = new Sherpa(this.sherpaSettings(), physics, hazards, clock);
     return {
@@ -131,7 +157,8 @@ export class Mountain {
       lamps,
       packs,
       sherpa,
-      all: [clock, packs, oxygen, body, hazards, jolts, physics, logbook, sherpa],
+      devices,
+      all: [clock, packs, oxygen, body, hazards, jolts, physics, logbook, devices, sherpa],
     };
   }
 
@@ -139,6 +166,38 @@ export class Mountain {
    * (`gear.fixed-rope-stretch`, #232): the picture draws a loaded rope's give by it. */
   get ropeStretch(): number {
     return this.knowledge.number("gear.fixed-rope-stretch");
+  }
+
+  /** The devices' numbers (#260), from their records in content/facts/gear.json, in the
+   * mountain's seconds: a tracker's minutes between two points (`gear.tracker-interval`), the
+   * days its battery lasts tracking (`gear.tracker-battery`) and the minutes a message takes to
+   * leave it (`gear.messenger-delivery-time`). */
+  deviceNumbers(): DeviceNumbers {
+    return {
+      interval: this.knowledge.number("gear.tracker-interval") * Mountain.SECONDS_A_MINUTE,
+      life: this.knowledge.number("gear.tracker-battery") * Mountain.SECONDS_A_DAY,
+      delivery: this.knowledge.number("gear.messenger-delivery-time") * Mountain.SECONDS_A_MINUTE,
+    };
+  }
+
+  /** The wind's speeds a wind meter reads in the Icefall (#260), from their records in
+   * content/facts/weather.json: `weather.icefall-wind-still`, `-thermal`, `-snow` and `-strong`,
+   * and `weather.icefall-gust`. */
+  windSpeeds(): WindSpeeds {
+    const number = (name: string) => this.knowledge.number(`weather.icefall-${name}`);
+    return {
+      still: number("wind-still"),
+      thermal: number("wind-thermal"),
+      snow: number("wind-snow"),
+      strong: number("wind-strong"),
+      gust: number("gust"),
+    };
+  }
+
+  /** The day's warmth on the ice, as the hazards have it: what the thermals blow by (#260). */
+  dayWarmth(): DayWarmth {
+    const { warmth, sun } = this.hazardSettings();
+    return new DayWarmth(warmth, sun);
   }
 
   /** The Sherpa's numbers, from their records in content/facts/technique.json: how far ahead he

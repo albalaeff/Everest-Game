@@ -2,6 +2,7 @@
   "en": {
     "check-self": "Check yourself",
     "radio": "Radio",
+    "devices": "Devices",
     "inventory": "Inventory",
     "set-up-tent": "Set up tent",
     "oxygen-up": "O2 +",
@@ -19,6 +20,7 @@
   "ru": {
     "check-self": "Проверить себя",
     "radio": "Рация",
+    "devices": "Приборы",
     "inventory": "Снаряжение",
     "set-up-tent": "Поставить палатку",
     "oxygen-up": "O2 +",

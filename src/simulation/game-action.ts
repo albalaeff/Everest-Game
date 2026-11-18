@@ -94,6 +94,13 @@ export interface Radio extends ClimberAction {
   readonly phrase: string;
 }
 
+/** Works the satellite tracker a climber carries (#260): starts its tracking or stops it, sends a
+ * check-in to Base Camp, or raises its SOS. */
+export interface Tracker extends ClimberAction {
+  readonly kind: "tracker";
+  readonly do: "track" | "stop" | "check-in" | "sos";
+}
+
 /** Sets up a tent where the climber stands, in camp. */
 export interface SetUpTent extends ClimberAction {
   readonly kind: "set-up-tent";
@@ -118,6 +125,7 @@ export type GameAction =
   | Oxygen
   | CheckSelf
   | Radio
+  | Tracker
   | SetUpTent;
 
 /**

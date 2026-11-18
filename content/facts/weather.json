@@ -345,6 +345,149 @@
           "checked": "2026-11-03"
         }
       ]
+    },
+    {
+      "id": "weather.beaufort-light-breeze",
+      "kind": "fact",
+      "claim": "A light breeze, force 2 on the Beaufort scale, blows at this speed: the wind is felt on the face.",
+      "status": "source only",
+      "versions": [
+        {
+          "range": {
+            "min": 6,
+            "max": 11
+          },
+          "unit": "km/h",
+          "note": "The scale's speeds are for 10 m above the ground; at 2 m the wind may be only 50 to 70% of them.",
+          "source": {
+            "title": "Royal Meteorological Society: The Beaufort Wind Scale",
+            "url": "https://www.rmets.org/metmatters/beaufort-scale"
+          },
+          "checked": "2026-11-17"
+        }
+      ]
+    },
+    {
+      "id": "weather.beaufort-near-gale",
+      "kind": "fact",
+      "claim": "A near gale, force 7 on the Beaufort scale, blows at this speed: walking against the wind is an effort.",
+      "status": "source only",
+      "versions": [
+        {
+          "range": {
+            "min": 50,
+            "max": 61
+          },
+          "unit": "km/h",
+          "note": "Inconvenience felt when walking against the wind.",
+          "source": {
+            "title": "Royal Meteorological Society: The Beaufort Wind Scale",
+            "url": "https://www.rmets.org/metmatters/beaufort-scale"
+          },
+          "checked": "2026-11-17"
+        }
+      ]
+    },
+    {
+      "id": "weather.beaufort-gale",
+      "kind": "fact",
+      "claim": "A gale, force 8 on the Beaufort scale, blows at this speed: it generally impedes progress on foot.",
+      "status": "source only",
+      "versions": [
+        {
+          "range": {
+            "min": 62,
+            "max": 74
+          },
+          "unit": "km/h",
+          "note": "Twigs break off trees; generally impedes progress.",
+          "source": {
+            "title": "Royal Meteorological Society: The Beaufort Wind Scale",
+            "url": "https://www.rmets.org/metmatters/beaufort-scale"
+          },
+          "checked": "2026-11-17"
+        }
+      ]
+    },
+    {
+      "id": "weather.icefall-drone-wind",
+      "kind": "fact",
+      "claim": "In spring 2025 the cargo drones that carried the Icefall Doctors' ropes and ladders over the Khumbu Icefall flew in winds up to this speed.",
+      "status": "source only",
+      "versions": [
+        {
+          "value": 45,
+          "unit": "km/h",
+          "note": "Two DJI FlyCart 30 drones flew in winds up to 45 km/h and temperatures down to −25 °C, as high as 6,130 m, and carried 444 kg of rope and ladders for the Icefall Doctors.",
+          "source": {
+            "title": "Mark Horrell: What will drone transport on Everest mean for Sherpa mountaineers?",
+            "url": "https://www.markhorrell.com/blog/2025/what-will-drone-transport-on-everest-mean-for-sherpa-mountaineers/"
+          },
+          "checked": "2026-11-17"
+        }
+      ]
+    },
+    {
+      "id": "weather.icefall-wind-still",
+      "kind": "coefficient",
+      "claim": "The wind a pocket wind meter reads in the Icefall in the still of a clear or cloudy night (#260): the calm nights of route.icefall-wind, under the light breeze a climber feels on the face.",
+      "status": "source only",
+      "value": 4,
+      "unit": "km/h",
+      "fitted_to": ["route.icefall-wind", "weather.beaufort-light-breeze"],
+      "fitted": "2026-11-17"
+    },
+    {
+      "id": "weather.icefall-wind-thermal",
+      "kind": "coefficient",
+      "claim": "How much the sun's thermals add to that wind at the warmest hour of a clear day (#260): the morning's cross wind of route.icefall-wind, a breeze felt on the face and a little over.",
+      "status": "source only",
+      "value": 10,
+      "unit": "km/h",
+      "fitted_to": ["route.icefall-wind", "weather.beaufort-light-breeze"],
+      "fitted": "2026-11-17"
+    },
+    {
+      "id": "weather.icefall-wind-snow",
+      "kind": "coefficient",
+      "claim": "The wind a pocket wind meter reads in the Icefall while snow falls (#260): a storm's wind, well over a breeze and well short of a near gale.",
+      "status": "source only",
+      "value": 25,
+      "unit": "km/h",
+      "fitted_to": ["weather.beaufort-light-breeze", "weather.beaufort-near-gale"],
+      "fitted": "2026-11-17"
+    },
+    {
+      "id": "weather.icefall-wind-strong",
+      "kind": "coefficient",
+      "claim": "The wind a pocket wind meter reads in the Icefall in the weather the scenarios call a strong wind (#260): the strongest the drones flew in over it, just short of a near gale.",
+      "status": "source only",
+      "value": 45,
+      "unit": "km/h",
+      "fitted_to": ["weather.icefall-drone-wind", "weather.beaufort-near-gale"],
+      "fitted": "2026-11-17"
+    },
+    {
+      "id": "weather.icefall-gust",
+      "kind": "coefficient",
+      "claim": "The speed of a gust that can take a climber off balance on a ladder or blue ice (#260, hazards.gust-slip): a gale, which impedes progress on foot.",
+      "status": "source only",
+      "value": 65,
+      "unit": "km/h",
+      "fitted_to": ["weather.beaufort-gale"],
+      "fitted": "2026-11-17"
+    },
+    {
+      "id": "weather.icefall-wind-speeds",
+      "kind": "question",
+      "question": "What wind speeds do climbers meet in the Khumbu Icefall: in a still night, in the morning's thermals, while snow falls and on a windy day, and how hard is a gust that takes a climber off balance on a ladder? No source read gives the Icefall's wind in numbers: the game's wind meter reads coefficients fitted to the Beaufort scale and to the wind the drones flew in (#260).",
+      "about": [
+        "weather.icefall-wind-still",
+        "weather.icefall-wind-thermal",
+        "weather.icefall-wind-snow",
+        "weather.icefall-wind-strong",
+        "weather.icefall-gust"
+      ]
     }
   ]
 }

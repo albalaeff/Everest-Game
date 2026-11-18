@@ -180,6 +180,7 @@ describe("Mountain", () => {
     expect(first.logbook).not.toBe(second.logbook);
     expect(first.packs).not.toBe(second.packs);
     expect(first.sherpa).not.toBe(second.sherpa);
+    expect(first.devices).not.toBe(second.devices);
     expect(first.all[1]).toBe(first.packs);
     expect([...first.all.slice(0, 1), ...first.all.slice(2)]).toEqual([
       first.clock,
@@ -189,8 +190,50 @@ describe("Mountain", () => {
       first.jolts,
       first.physics,
       first.logbook,
+      first.devices,
       first.sherpa,
     ]);
+  });
+
+  it("gives every climber a radio and a tracker (#260), on the knowledge base's numbers", () => {
+    const mountain = new Mountain(knowledge);
+    const scenario = mountain.scenario(1);
+    const rules = mountain.rules();
+    const expedition = Expedition.start(scenario, rules.all);
+
+    // A point every 10 minutes, a battery of 14 days, and a message out in a few minutes.
+    expect(mountain.deviceNumbers()).toEqual({
+      interval: 10 * 60,
+      life: 14 * 24 * 3600,
+      delivery: 3 * 60,
+    });
+    for (const climber of scenario.climbers) {
+      expect(rules.devices.tracker(climber)).toMatchObject({ tracking: false, charge: 1 });
+      expect(rules.devices.radio(climber)).toEqual({ contact: true });
+    }
+
+    expedition.advance([
+      { kind: "radio", climber: Section.PLAYER, channel: "base-camp", phrase: "radio-check" },
+      { kind: "tracker", climber: Section.PLAYER, do: "track" },
+    ]);
+    expect(rules.devices.calls).toMatchObject([{ phrase: "radio-check", heard: true }]);
+    expect(rules.devices.tracker(Section.PLAYER)).toMatchObject({ tracking: true, points: 1 });
+  });
+
+  it("reads the Icefall's wind from its records (#260): still at night, a gale in a gust", () => {
+    const mountain = new Mountain(knowledge);
+    const { still, thermal, snow, strong, gust } = mountain.windSpeeds();
+
+    expect([still, thermal, snow, strong, gust]).toEqual([4, 10, 25, 45, 65]);
+    // Each is held to the fact it was fitted to: under the breeze felt on the face, at the
+    // strongest the drones flew in, and within a gale.
+    expect(still).toBeLessThan(knowledge.range("weather.beaufort-light-breeze").min);
+    expect(strong).toBe(knowledge.number("weather.icefall-drone-wind"));
+    expect(strong).toBeLessThan(knowledge.range("weather.beaufort-near-gale").min);
+    const gale = knowledge.range("weather.beaufort-gale");
+    expect(gust).toBeGreaterThanOrEqual(gale.min);
+    expect(gust).toBeLessThanOrEqual(gale.max);
+    expect(mountain.dayWarmth().at(14 * 3600, "clear")).toBe(1);
   });
 
   it("gives the climbers their Sherpa, Pemba (#212): an NPC who guides the players, on the knowledge base's numbers", () => {
