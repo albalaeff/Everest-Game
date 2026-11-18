@@ -4525,12 +4525,14 @@ main:has(#tent:not([hidden])) #self-check {
   font-weight: 800;
 }
 
-/* Late for the sun: red, and a triangle, so the colour isn't the only cue. */
+/* Late for the sun: red, and a triangle, so the colour isn't the only cue; the same triangle
+ * marks the meter's risk of frostbite. */
 .watch__verdict[data-late="yes"] {
   color: #a01414;
 }
 
-.watch__verdict[data-late="yes"]::before {
+.watch__verdict[data-late="yes"]::before,
+.meter__risk[data-warn="yes"]::before {
   flex: none;
   width: 1.1rem;
   height: 1.1rem;
@@ -4627,6 +4629,48 @@ main:has(#tent:not([hidden])) #self-check {
 
 .meter[data-gust="yes"] .meter__lcd em {
   color: #a01414;
+}
+
+/* Under the wind, a weather meter's second line: the air its thermometer reads, and the wind
+ * chill it works out. */
+#devices .meter__air {
+  gap: 0.1rem;
+  margin-top: 0.3rem;
+  padding-top: 0.3rem;
+  border-top: 1px solid rgb(13 27 34 / 30%);
+}
+
+#devices .meter__air div {
+  gap: 0.5rem;
+}
+
+.meter__air dt {
+  font-size: 0.6875rem;
+  font-weight: 800;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+#devices .meter__air dd {
+  font-weight: 800;
+  white-space: nowrap;
+}
+
+/* The risk of frostbite in that chill, first beside the meter: red, and a triangle, once bare
+ * skin can freeze within the half hour. */
+.meter__risk {
+  display: flex;
+  gap: 0.5rem;
+  align-items: start;
+  margin: 0 0 0.6rem;
+  font-size: 0.9375rem;
+  font-weight: 700;
+  line-height: 1.35;
+}
+
+.meter__risk[data-warn="yes"] {
+  color: var(--danger);
 }
 
 .meter__side button {
@@ -4797,8 +4841,24 @@ main:has(#tent:not([hidden])) #self-check {
     margin: 0;
   }
 
+  /* The wind on the screen's left, the air and the chill on its right. */
   .meter__lcd {
+    display: flex;
     flex: 1;
+    gap: 0.8rem;
+    align-items: center;
+  }
+
+  .meter__wind {
+    flex: 1;
+  }
+
+  #devices .meter__air {
+    flex: 1;
+    margin: 0;
+    padding: 0 0 0 0.8rem;
+    border-top: 0;
+    border-left: 1px solid rgb(13 27 34 / 30%);
   }
 
   .meter__side button {

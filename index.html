@@ -226,15 +226,28 @@
           <div class="meter">
             <div class="meter__impeller" aria-hidden="true"><i></i></div>
             <div class="meter__lcd">
-              <span data-text="wind.now"></span>
-              <p>
-                <strong data-read="now"></strong>
-                <small data-text="wind.unit"></small>
-              </p>
-              <em data-read="name" role="status"></em>
+              <div class="meter__wind">
+                <span data-text="wind.now"></span>
+                <p>
+                  <strong data-read="now"></strong>
+                  <small data-text="wind.unit"></small>
+                </p>
+                <em data-read="name" role="status"></em>
+              </div>
+              <dl class="meter__air">
+                <div>
+                  <dt data-text="wind.air"></dt>
+                  <dd data-read="air"></dd>
+                </div>
+                <div>
+                  <dt data-text="wind.chill"></dt>
+                  <dd data-read="chill"></dd>
+                </div>
+              </dl>
             </div>
           </div>
           <div class="meter__side">
+            <p class="meter__risk" data-read="risk" data-warn="no"></p>
             <dl>
               <div>
                 <dt data-text="wind.average"></dt>

@@ -11,6 +11,7 @@ import type { ControlTexts } from "../input/controls-page";
 import { PageElements } from "../input/page-elements";
 import type { ActionSink } from "../input/player-action";
 import { ReceivedActions } from "../input/received-actions";
+import { AirTemperature } from "../interface/air-temperature";
 import { BaseCamp } from "../interface/base-camp";
 import { CampNotice } from "../interface/camp-notice";
 import { Coach } from "../interface/coach";
@@ -31,6 +32,7 @@ import { SherpaVoice } from "../interface/sherpa-voice";
 import type { SherpaTextName } from "../interface/sherpa-voice";
 import { SunClock } from "../interface/sun-clock";
 import type { Texts } from "../interface/texts";
+import { WindChill } from "../interface/wind-chill";
 import { WindMeter } from "../interface/wind-meter";
 import type { ClimberView } from "../physics";
 import {
@@ -432,8 +434,8 @@ export class GamePage {
       (camp, index) => scene.tentOver(camp, index),
       passage,
     );
-    // The devices on the harness and the wrist (#260): the radio, the GPS watch, the wind meter
-    // and the tracker, which read the climb as the rules have it.
+    // The devices on the harness and the wrist (#260): the radio, the GPS watch, the weather
+    // meter and the tracker, which read the climb as the rules have it.
     const { route } = this.mountain;
     const devices = new DevicesPanel(
       window,
@@ -451,7 +453,11 @@ export class GamePage {
           top: route.destination.altitude,
           parts: route.parts,
         }),
-        new WindMeter(this.mountain.windSpeeds(), this.mountain.dayWarmth()),
+        {
+          wind: new WindMeter(this.mountain.windSpeeds(), this.mountain.dayWarmth()),
+          air: new AirTemperature(this.mountain.airSettings()),
+          chill: new WindChill(this.mountain.windChill()),
+        },
         sunClock,
       ),
       new BaseCamp(texts.devices),

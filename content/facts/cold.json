@@ -25,6 +25,182 @@
       ]
     },
     {
+      "id": "cold.wind-chill-constant",
+      "kind": "fact",
+      "claim": "The same wind chill index in °C, as Canada and the United States have used it since 2001, from the air temperature T in °C and the wind V in km/h at 10 m: 13.12 + 0.6215 T − 11.37 V^0.16 + 0.3965 T V^0.16. It starts from this many degrees.",
+      "status": "source only",
+      "versions": [
+        {
+          "value": 13.12,
+          "unit": "°C",
+          "note": "C = 13.12 + 0.6215 T − 11.37 V^0.16 + 0.3965 T V^0.16, for T in °C and V, the wind at 10 m (the standard anemometer height), in km/h; the constants correlate it to the wind at 1.5 m, a face's height.",
+          "source": {
+            "title": "Tourigny and Shaykewich (Meteorological Service of Canada): Clinical trials for a new Canadian wind chill program",
+            "url": "https://ams.confex.com/ams/pdfpapers/27725.pdf"
+          },
+          "checked": "2026-11-18"
+        },
+        {
+          "value": 13.12,
+          "unit": "°C",
+          "note": "WC = 13.12 + 0.6215 T − 11.37 V^0.16 + 0.3965 T V^0.16, in °C and km/h.",
+          "source": {
+            "title": "Caltrx: Wind Chill Calculator",
+            "url": "https://caltrx.pages.dev/engineering/wind-chill-calculator/"
+          },
+          "checked": "2026-11-18"
+        }
+      ]
+    },
+    {
+      "id": "cold.wind-chill-air",
+      "kind": "fact",
+      "claim": "In the wind chill index in °C the air's temperature counts this many times.",
+      "status": "source only",
+      "versions": [
+        {
+          "value": 0.6215,
+          "unit": "1",
+          "note": "C = 13.12 + 0.6215 T − 11.37 V^0.16 + 0.3965 T V^0.16, for T in °C and V, the wind at 10 m (the standard anemometer height), in km/h; the constants correlate it to the wind at 1.5 m, a face's height.",
+          "source": {
+            "title": "Tourigny and Shaykewich (Meteorological Service of Canada): Clinical trials for a new Canadian wind chill program",
+            "url": "https://ams.confex.com/ams/pdfpapers/27725.pdf"
+          },
+          "checked": "2026-11-18"
+        },
+        {
+          "value": 0.6215,
+          "unit": "1",
+          "note": "WC = 13.12 + 0.6215 T − 11.37 V^0.16 + 0.3965 T V^0.16, in °C and km/h.",
+          "source": {
+            "title": "Caltrx: Wind Chill Calculator",
+            "url": "https://caltrx.pages.dev/engineering/wind-chill-calculator/"
+          },
+          "checked": "2026-11-18"
+        }
+      ]
+    },
+    {
+      "id": "cold.wind-chill-wind",
+      "kind": "fact",
+      "claim": "In the wind chill index in °C the wind takes off this many degrees, times its speed in km/h raised to the index's power.",
+      "status": "source only",
+      "versions": [
+        {
+          "value": 11.37,
+          "unit": "°C",
+          "note": "C = 13.12 + 0.6215 T − 11.37 V^0.16 + 0.3965 T V^0.16, for T in °C and V, the wind at 10 m (the standard anemometer height), in km/h; the constants correlate it to the wind at 1.5 m, a face's height.",
+          "source": {
+            "title": "Tourigny and Shaykewich (Meteorological Service of Canada): Clinical trials for a new Canadian wind chill program",
+            "url": "https://ams.confex.com/ams/pdfpapers/27725.pdf"
+          },
+          "checked": "2026-11-18"
+        },
+        {
+          "value": 11.37,
+          "unit": "°C",
+          "note": "WC = 13.12 + 0.6215 T − 11.37 V^0.16 + 0.3965 T V^0.16, in °C and km/h.",
+          "source": {
+            "title": "Caltrx: Wind Chill Calculator",
+            "url": "https://caltrx.pages.dev/engineering/wind-chill-calculator/"
+          },
+          "checked": "2026-11-18"
+        }
+      ]
+    },
+    {
+      "id": "cold.wind-chill-air-in-wind",
+      "kind": "fact",
+      "claim": "In the wind chill index in °C the air's temperature counts this many times more, times the wind's speed in km/h raised to the index's power: the colder the air, the harder the wind chills it.",
+      "status": "source only",
+      "versions": [
+        {
+          "value": 0.3965,
+          "unit": "1",
+          "note": "C = 13.12 + 0.6215 T − 11.37 V^0.16 + 0.3965 T V^0.16, for T in °C and V, the wind at 10 m (the standard anemometer height), in km/h; the constants correlate it to the wind at 1.5 m, a face's height.",
+          "source": {
+            "title": "Tourigny and Shaykewich (Meteorological Service of Canada): Clinical trials for a new Canadian wind chill program",
+            "url": "https://ams.confex.com/ams/pdfpapers/27725.pdf"
+          },
+          "checked": "2026-11-18"
+        },
+        {
+          "value": 0.3965,
+          "unit": "1",
+          "note": "WC = 13.12 + 0.6215 T − 11.37 V^0.16 + 0.3965 T V^0.16, in °C and km/h.",
+          "source": {
+            "title": "Caltrx: Wind Chill Calculator",
+            "url": "https://caltrx.pages.dev/engineering/wind-chill-calculator/"
+          },
+          "checked": "2026-11-18"
+        }
+      ]
+    },
+    {
+      "id": "cold.wind-chill-power",
+      "kind": "fact",
+      "claim": "In the wind chill index the wind's speed is raised to this power.",
+      "status": "source only",
+      "versions": [
+        {
+          "value": 0.16,
+          "unit": "1",
+          "note": "C = 13.12 + 0.6215 T − 11.37 V^0.16 + 0.3965 T V^0.16, for T in °C and V, the wind at 10 m (the standard anemometer height), in km/h; the constants correlate it to the wind at 1.5 m, a face's height.",
+          "source": {
+            "title": "Tourigny and Shaykewich (Meteorological Service of Canada): Clinical trials for a new Canadian wind chill program",
+            "url": "https://ams.confex.com/ams/pdfpapers/27725.pdf"
+          },
+          "checked": "2026-11-18"
+        },
+        {
+          "value": 0.16,
+          "unit": "1",
+          "note": "WC = 13.12 + 0.6215 T − 11.37 V^0.16 + 0.3965 T V^0.16, in °C and km/h.",
+          "source": {
+            "title": "Caltrx: Wind Chill Calculator",
+            "url": "https://caltrx.pages.dev/engineering/wind-chill-calculator/"
+          },
+          "checked": "2026-11-18"
+        }
+      ]
+    },
+    {
+      "id": "cold.wind-chill-warmest",
+      "kind": "fact",
+      "claim": "The wind chill index holds for air at this temperature or colder.",
+      "status": "source only",
+      "versions": [
+        {
+          "value": 10,
+          "unit": "°C",
+          "note": "Valid for T ≤ 10 °C and V ≥ 4.8 km/h.",
+          "source": {
+            "title": "Caltrx: Wind Chill Calculator",
+            "url": "https://caltrx.pages.dev/engineering/wind-chill-calculator/"
+          },
+          "checked": "2026-11-18"
+        }
+      ]
+    },
+    {
+      "id": "cold.wind-chill-calmest",
+      "kind": "fact",
+      "claim": "The wind chill index holds for a wind of this speed or more, 10 m above the ground; in a calmer wind the chill is the air's own temperature.",
+      "status": "source only",
+      "versions": [
+        {
+          "value": 4.8,
+          "unit": "km/h",
+          "note": "Below 3 mph (4.8 km/h), calm conditions apply and the wind chill equals the air's temperature.",
+          "source": {
+            "title": "Caltrx: Wind Chill Calculator",
+            "url": "https://caltrx.pages.dev/engineering/wind-chill-calculator/"
+          },
+          "checked": "2026-11-18"
+        }
+      ]
+    },
+    {
       "id": "cold.summit-wind-chill",
       "kind": "fact",
       "claim": "With the summit wind above 30 mph (48 km/h), the wind chill there falls to about this.",
@@ -48,15 +224,102 @@
     {
       "id": "cold.wind-chill-moderate",
       "kind": "fact",
-      "claim": "At a wind chill of −10 to −27, the cold brings a risk of hypothermia and frostbite after long periods outdoors without adequate protection.",
+      "claim": "At a wind chill in this range, Canada calls the risk moderate: the cold brings a risk of hypothermia and frostbite after long periods outdoors without adequate protection.",
       "status": "source only",
       "versions": [
         {
+          "range": {
+            "min": -27,
+            "max": -10
+          },
+          "unit": "°C",
+          "note": "Moderate risk exposure, −10 to −27; low risk from 0 to −9.",
           "source": {
             "title": "Environment and Climate Change Canada: Wind chill and the Wind Chill Index → Your safety risk for wind chill exposure",
             "url": "https://www.canada.ca/en/services/environment/weather/severeweather/wind-chill-index.html"
           },
-          "checked": "2026-11-03"
+          "checked": "2026-11-18"
+        }
+      ]
+    },
+    {
+      "id": "cold.wind-chill-high",
+      "kind": "fact",
+      "claim": "At a wind chill in this range, Canada calls the risk of frostnip and frostbite high.",
+      "status": "source only",
+      "versions": [
+        {
+          "range": {
+            "min": -39,
+            "max": -28
+          },
+          "unit": "°C",
+          "note": "High risk exposure, −28 to −39.",
+          "source": {
+            "title": "Environment and Climate Change Canada: Wind chill and the Wind Chill Index → Your safety risk for wind chill exposure",
+            "url": "https://www.canada.ca/en/services/environment/weather/severeweather/wind-chill-index.html"
+          },
+          "checked": "2026-11-18"
+        }
+      ]
+    },
+    {
+      "id": "cold.wind-chill-very-high",
+      "kind": "fact",
+      "claim": "At a wind chill in this range, Canada calls the risk of frostbite very high.",
+      "status": "source only",
+      "versions": [
+        {
+          "range": {
+            "min": -47,
+            "max": -40
+          },
+          "unit": "°C",
+          "note": "Very high risk exposure, −40 to −47.",
+          "source": {
+            "title": "Environment and Climate Change Canada: Wind chill and the Wind Chill Index → Your safety risk for wind chill exposure",
+            "url": "https://www.canada.ca/en/services/environment/weather/severeweather/wind-chill-index.html"
+          },
+          "checked": "2026-11-18"
+        }
+      ]
+    },
+    {
+      "id": "cold.wind-chill-severe",
+      "kind": "fact",
+      "claim": "At a wind chill in this range, Canada calls the risk of frostbite severe.",
+      "status": "source only",
+      "versions": [
+        {
+          "range": {
+            "min": -54,
+            "max": -48
+          },
+          "unit": "°C",
+          "note": "Severe risk exposure, −48 to −54.",
+          "source": {
+            "title": "Environment and Climate Change Canada: Wind chill and the Wind Chill Index → Your safety risk for wind chill exposure",
+            "url": "https://www.canada.ca/en/services/environment/weather/severeweather/wind-chill-index.html"
+          },
+          "checked": "2026-11-18"
+        }
+      ]
+    },
+    {
+      "id": "cold.wind-chill-extreme",
+      "kind": "fact",
+      "claim": "At a wind chill this cold or colder, Canada calls the risk of frostbite extreme: outdoor conditions are hazardous.",
+      "status": "source only",
+      "versions": [
+        {
+          "value": -55,
+          "unit": "°C",
+          "note": "Extreme risk exposure, −55 or colder.",
+          "source": {
+            "title": "Environment and Climate Change Canada: Wind chill and the Wind Chill Index → Your safety risk for wind chill exposure",
+            "url": "https://www.canada.ca/en/services/environment/weather/severeweather/wind-chill-index.html"
+          },
+          "checked": "2026-11-18"
         }
       ]
     },

@@ -1,5 +1,6 @@
 import type { HazardWeather } from "../simulation";
 import type { SunReading } from "./sun-clock";
+import type { FrostbiteRisk } from "./wind-chill";
 import type { WindName } from "./wind-meter";
 
 /** The devices a climber carries (#260), in the order the panel's tabs have them. */
@@ -32,6 +33,7 @@ export type DeviceTextName =
   | "reply.radio-check"
   | "reply.position"
   | `reply.conditions.${HazardWeather}`
+  | "reply.air"
   | `reply.sun.${SunReading["state"]}`
   | "reply.route.open"
   | "reply.route.ladder"
@@ -62,6 +64,9 @@ export type DeviceTextName =
   | "wind.unit"
   | `wind.name.${WindName}`
   | "wind.gust"
+  | "wind.air"
+  | "wind.chill"
+  | `wind.risk.${FrostbiteRisk}`
   | "wind.reset"
   | "wind.note"
   | "tracker.off"

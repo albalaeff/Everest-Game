@@ -5,7 +5,12 @@ import { WindMeter } from "./wind-meter";
 
 /** The sun warms the ice from 06:00 to 14:00, and none of it comes through falling snow. */
 const warmth = new DayWarmth({ from: 6, peak: 14, until: 20 }, { cloud: 0.3, snow: 0 });
-const meter = new WindMeter({ still: 4, thermal: 10, snow: 25, strong: 45, gust: 65 }, warmth);
+/** The Beaufort scale's names: a breeze from 6 km/h, fresh from 29, strong from 50, a gale from 62. */
+const scale = { breeze: 6, fresh: 29, strong: 50, gale: 62 };
+const meter = new WindMeter(
+  { still: 4, thermal: 10, snow: 25, strong: 45, gust: 65, scale },
+  warmth,
+);
 const HOUR = 3600;
 
 describe("the wind meter", () => {
@@ -29,18 +34,29 @@ describe("the wind meter", () => {
   });
 
   it("names a wind by the Beaufort scale", () => {
-    expect([4, 14, 45, 55, 65].map((speed) => WindMeter.named(speed))).toEqual([
+    expect([4, 6, 14, 29, 45, 50, 55, 62, 65].map((speed) => meter.named(speed))).toEqual([
       "calm",
       "breeze",
+      "breeze",
+      "fresh",
       "fresh",
       "strong",
+      "strong",
+      "gale",
       "gale",
     ]);
   });
 
-  it("refuses speeds that don't rise to a gust", () => {
+  it("refuses speeds that don't rise to a gust, and names that don't rise to a gale", () => {
     expect(
-      () => new WindMeter({ still: 4, thermal: 10, snow: 25, strong: 20, gust: 65 }, warmth),
+      () => new WindMeter({ still: 4, thermal: 10, snow: 25, strong: 20, gust: 65, scale }, warmth),
+    ).toThrow(RangeError);
+    expect(
+      () =>
+        new WindMeter(
+          { still: 4, thermal: 10, snow: 25, strong: 45, gust: 65, scale: { ...scale, fresh: 60 } },
+          warmth,
+        ),
     ).toThrow(RangeError);
   });
 });

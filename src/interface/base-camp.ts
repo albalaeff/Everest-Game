@@ -6,12 +6,13 @@ import type { SunReading } from "./sun-clock";
 import type { Texts } from "./texts";
 
 /** The mountain as Base Camp knows it when a call comes in: the part of the route the caller is
- * on and their altitude, the weather, where the sun is on the ice, how many ladders are down, and
- * the metres of route the caller has left. */
+ * on and their altitude, the weather, what Base Camp's weather station reads, in °C, where the sun
+ * is on the ice, how many ladders are down, and the metres of route the caller has left. */
 export interface CallScene {
   readonly part: string;
   readonly altitude: number;
   readonly weather: HazardWeather;
+  readonly air: number;
   readonly sun: SunReading;
   readonly laddersDown: number;
   readonly left: number;
@@ -20,9 +21,9 @@ export interface CallScene {
 /**
  * Base Camp on the radio (#260): whoever listens on the team's channel there (gear.radio-limits)
  * and answers a climber's ready phrase from what the mountain is doing, as a base camp manager
- * does: a radio check, a position logged with its time, the conditions and the sun's hour, the
- * route above, a call for help. A call that didn't get out gets static. The words are
- * content/devices.json's; nothing here is a number of the mountain's.
+ * does: a radio check, a position logged with its time, the conditions with what its weather
+ * station reads and the sun's hour, the route above, a call for help. A call that didn't get out
+ * gets static. The words are content/devices.json's; nothing here is a number of the mountain's.
  */
 export class BaseCamp {
   private static readonly METRES_A_KILOMETRE = 1000;
@@ -60,7 +61,11 @@ export class BaseCamp {
           }),
         ];
       case "conditions":
-        return [texts.say(`reply.conditions.${scene.weather}`), this.sun(scene.sun)];
+        return [
+          texts.say(`reply.conditions.${scene.weather}`),
+          texts.say("reply.air", { air: this.readings.temperature(scene.air, 1) }),
+          this.sun(scene.sun),
+        ];
       case "route":
         return [
           scene.laddersDown > 0

@@ -943,6 +943,52 @@
       "kind": "question",
       "question": "Which electronics does a client carry through the Icefall today, and which stay with the guide or at Base Camp: a radio of their own, a satellite messenger, a GPS watch, a wind meter, an avalanche transceiver? At which places does a team call Base Camp from the Icefall, and where in it does a handheld radio lose Base Camp? The game gives the client all four devices, and loses the radio and the sky only where a climber hangs in a crevasse (#260).",
       "about": ["gear.radio-each-climber", "gear.radio-limits", "gear.gps-limits", "gear.wind-meter"]
+    },
+    {
+      "id": "gear.wind-meter-readings",
+      "kind": "fact",
+      "claim": "A pocket weather meter reads the air's temperature to a tenth of a degree, within a degree, and keeps the average wind and the strongest 3-second gust since it was switched on.",
+      "status": "source only",
+      "versions": [
+        {
+          "value": 0.1,
+          "unit": "°C",
+          "note": "Current, maximum (the strongest 3-second gust since power on) and average wind; temperature and wind chill, ±1 °C; an external thermistor, so the temperature answers fast.",
+          "source": {
+            "title": "Kestrel 2000 Thermo-Anemometer data sheet",
+            "url": "https://static.chipdip.ru/lib/386/DOC033386569.pdf"
+          },
+          "checked": "2026-11-18"
+        },
+        {
+          "value": 0.1,
+          "unit": "°C",
+          "note": "Temperature resolution 0.1 °C.",
+          "source": {
+            "title": "RS Components: Kestrel 2000 specifications",
+            "url": "https://uk.rs-online.com/web/p/anemometers/3144282"
+          },
+          "checked": "2026-11-18"
+        }
+      ]
+    },
+    {
+      "id": "gear.wind-meter-chill-factor",
+      "kind": "fact",
+      "claim": "A pocket weather meter works out the wind chill from the wind it reads in the hand multiplied by this, to stand for the wind 10 m above the ground that the index takes.",
+      "status": "source only",
+      "versions": [
+        {
+          "value": 1.5,
+          "unit": "1",
+          "note": "The NWS Wind Chill Temperature index, revised 2001, with the wind speed adjusted by a factor of 1.5.",
+          "source": {
+            "title": "TEquipment: Kestrel 2500NV specifications → Wind Chill",
+            "url": "https://www.tequipment.net/KestrelK2500NV.html"
+          },
+          "checked": "2026-11-18"
+        }
+      ]
     }
   ]
 }

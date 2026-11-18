@@ -11,11 +11,13 @@ import { Texts } from "./texts";
 
 const baseCamp = new BaseCamp(new Texts<DeviceTextName>(deviceTexts.en));
 
-/** On the Popcorn at 5,480 m in the cold of a clear night, the sun 1 h 05 away, 2.4 km to go. */
+/** On the Popcorn at 5,480 m in the cold of a clear night, −9.8 °C at Base Camp, the sun 1 h 05
+ * away, 2.4 km to go. */
 const SCENE: CallScene = {
   part: "popcorn",
   altitude: 5480,
   weather: "clear",
+  air: -9.84,
   sun: { state: "cold", hours: 1, minutes: 5, warmth: 0 },
   laddersDown: 0,
   left: 2400,
@@ -38,14 +40,21 @@ describe("Base Camp on the radio", () => {
     ]);
   });
 
-  it("gives the conditions as the weather has them, and the sun's hour", () => {
+  it("gives the conditions as the weather has them, the air at Base Camp, and the sun's hour", () => {
     expect(baseCamp.answer(call("conditions"), SCENE)).toEqual([
       "Clear over the Icefall, hardly any wind.",
+      "It's −9.8 °C here at Base Camp.",
       "The sun reaches the ice in 1 h 05 min. Be out of the Icefall before it.",
     ]);
-    const windy: CallScene = { ...SCENE, weather: "wind", sun: { state: "warming", warmth: 0.5 } };
+    const windy: CallScene = {
+      ...SCENE,
+      weather: "wind",
+      air: -7.5,
+      sun: { state: "warming", warmth: 0.5 },
+    };
     expect(baseCamp.answer(call("conditions"), windy)).toEqual([
       "Strong wind today, gusting on the ladders. Clip both, and brace when it comes.",
+      "It's −7.5 °C here at Base Camp.",
       "The sun is on the ice and it's warming. Don't stop under the seracs.",
     ]);
   });

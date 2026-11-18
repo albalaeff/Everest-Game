@@ -224,18 +224,83 @@ describe("Mountain", () => {
 
   it("reads the Icefall's wind from its records (#260): still at night, a gale in a gust", () => {
     const mountain = new Mountain(knowledge);
-    const { still, thermal, snow, strong, gust } = mountain.windSpeeds();
+    const { still, thermal, snow, strong, gust, scale } = mountain.windSpeeds();
 
-    expect([still, thermal, snow, strong, gust]).toEqual([4, 10, 25, 45, 65]);
-    // Each is held to the fact it was fitted to: under the breeze felt on the face, at the
-    // strongest the drones flew in, and within a gale.
+    expect([still, thermal, snow, strong, gust]).toEqual([4, 12, 20, 45, 70]);
+    // Each is held to the facts it was fitted to: under the breeze felt on the face at night, at
+    // the warmest of a clear day about Camp II's usual wind (in m/s), the strongest the drones
+    // flew in, and a gust at the low end of the storms that wreck Camp II's tents, a gale.
+    const kilometresAnHour = 3.6;
+    const campTwo = knowledge.range("weather.camp-2-wind");
     expect(still).toBeLessThan(knowledge.range("weather.beaufort-light-breeze").min);
+    expect(still + thermal).toBeGreaterThanOrEqual(campTwo.min * kilometresAnHour);
+    expect(still + thermal).toBeLessThanOrEqual(campTwo.max * kilometresAnHour);
+    expect(snow).toBeGreaterThan(campTwo.min * kilometresAnHour);
+    expect(snow).toBeLessThan(knowledge.range("weather.beaufort-near-gale").min);
     expect(strong).toBe(knowledge.number("weather.icefall-drone-wind"));
     expect(strong).toBeLessThan(knowledge.range("weather.beaufort-near-gale").min);
     const gale = knowledge.range("weather.beaufort-gale");
     expect(gust).toBeGreaterThanOrEqual(gale.min);
     expect(gust).toBeLessThanOrEqual(gale.max);
+    expect(gust).toBe(knowledge.range("weather.camp-2-storm-wind").min);
     expect(mountain.dayWarmth().at(14 * 3600, "clear")).toBe(1);
+    // The names the meter gives a wind start where the Beaufort scale's forces do.
+    expect(scale).toEqual({ breeze: 6, fresh: 29, strong: 50, gale: 62 });
+  });
+
+  it("reads the air from its records (#260): Base Camp's April, colder a kilometre higher", () => {
+    const mountain = new Mountain(knowledge);
+    const { days, coldest, warmest, lapse, station } = mountain.airSettings();
+
+    expect(days).toEqual({
+      clear: { min: -10, max: 2 },
+      cloud: { min: -7, max: -2 },
+      snow: { min: -6, max: -3 },
+      wind: { min: -13, max: -6 },
+    });
+    expect([coldest, warmest]).toEqual([6, 13]);
+    expect(lapse).toBeCloseTo(6.6, 9);
+    expect(station).toBe(5315);
+    // Held to what the station and the climbers measured: within April's nights and afternoons,
+    // never as cold as the spring's lowest or as warm as the shade's highest of 1953; coldest as
+    // the sun comes onto the ice.
+    const april = knowledge.range("weather.base-camp-april-temperatures");
+    for (const { min, max } of Object.values(days)) {
+      expect(min).toBeGreaterThanOrEqual(april.min);
+      expect(max).toBeLessThanOrEqual(april.max);
+      expect(min).toBeGreaterThan(knowledge.number("weather.base-camp-spring-lowest"));
+      expect(max).toBeLessThan(knowledge.number("weather.icefall-shade-high"));
+    }
+    expect(coldest).toBe(mountain.hazardSettings().warmth.from);
+    expect(lapse).toBe(knowledge.number("weather.premonsoon-lapse-rate"));
+    // Carried up to the summit by the lapse rate, a clear day spans what the summit measured in
+    // mid-May.
+    const colder = (lapse * (knowledge.number("route.summit-altitude") - station)) / 1000;
+    const summit = knowledge.range("weather.summit-temperature");
+    expect(days.clear.min - colder).toBeLessThanOrEqual(summit.min);
+    expect(days.clear.max - colder).toBeGreaterThanOrEqual(summit.max);
+  });
+
+  it("reads the wind chill from its records (#260): the index, the meter's factor and Canada's bands", () => {
+    const { risks, ...index } = new Mountain(knowledge).windChill();
+
+    expect(index).toEqual({
+      constant: 13.12,
+      air: 0.6215,
+      wind: 11.37,
+      airInWind: 0.3965,
+      power: 0.16,
+      warmest: 10,
+      calmest: 4.8,
+      factor: 1.5,
+    });
+    expect(risks).toEqual({
+      moderate: { from: -10, freezes: null },
+      high: { from: -28, freezes: { min: 10, max: 30 } },
+      "very-high": { from: -40, freezes: { min: 5, max: 10 } },
+      severe: { from: -48, freezes: { min: 2, max: 5 } },
+      extreme: { from: -55, freezes: { min: 2, max: 2 } },
+    });
   });
 
   it("gives the climbers their Sherpa, Pemba (#212): an NPC who guides the players, on the knowledge base's numbers", () => {

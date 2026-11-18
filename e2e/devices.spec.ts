@@ -4,9 +4,10 @@ import type { Locator, Page } from "@playwright/test";
 import { SURE_FOOTED, WALKING, climbFrom, openTheGame, savedPlayer, seen, stage } from "./climb";
 
 /**
- * The devices a climber carries (#260): a handheld radio to Base Camp, a GPS watch, a pocket wind
- * meter and a satellite tracker, in one card that [Devices] opens, and [Radio] at the radio. The
- * player sets off alone from Base Camp at night, in clear weather, and uses each where they stand.
+ * The devices a climber carries (#260): a handheld radio to Base Camp, a GPS watch, a pocket
+ * weather meter and a satellite tracker, in one card that [Devices] opens, and [Radio] at the
+ * radio. The player sets off alone from Base Camp at night, in clear weather, and uses each where
+ * they stand.
  */
 
 // A small screen held sideways, which a slow machine draws sooner.
@@ -35,10 +36,11 @@ test("a climber uses each device where they stand: the radio, the watch, the met
   await (hasTouch ? radio.tap() : radio.click());
   await expect(reading(page, "radio", "contact")).toHaveText("Base Camp in range");
 
-  // Base Camp answers from what the mountain is doing: a clear night, the sun hours away.
+  // Base Camp answers from what the mountain is doing: a clear night, well under freezing at
+  // its weather station, the sun hours away.
   await panel(page).getByRole("button", { name: "Conditions?" }).click();
   await expect(panel(page).locator(".radio__log")).toContainText(
-    /Clear over the Icefall.*The sun reaches the ice in \d h \d\d min\./,
+    /Clear over the Icefall.*It's −\d+\.\d °C here at Base Camp\. The sun reaches the ice in \d h \d\d min\./,
     WALKING,
   );
   // The phrase went to the game as the player's action.
@@ -67,10 +69,16 @@ test("a climber uses each device where they stand: the radio, the watch, the met
   await expect(reading(page, "gps", "sun")).toHaveText("06:00");
   await expect(reading(page, "gps", "arrival")).toHaveText("--");
 
-  // The meter: the still of a clear night.
-  await show(page, "Wind");
+  // The weather meter: the still of a clear night, around −10 °C, which the little wind there is
+  // makes feel like −14 on bare skin.
+  await show(page, "Weather");
   await expect(reading(page, "wind", "name")).toHaveText("Calm");
   await expect(reading(page, "wind", "now")).toHaveText(/^[345]$/);
+  await expect(reading(page, "wind", "air")).toHaveText(/^−1[01]\.\d °C$/);
+  await expect(reading(page, "wind", "chill")).toHaveText(/^−1[3-5] °C$/);
+  await expect(reading(page, "wind", "risk")).toHaveText(
+    "Frostbite risk: moderate. Keep your face and hands covered.",
+  );
 });
 
 test("the keys open the devices, go between them, and close them", async ({ page, hasTouch }) => {

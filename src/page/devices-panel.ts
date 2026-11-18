@@ -6,7 +6,6 @@ import type { DeviceName, DeviceTextName, RadioPhrase } from "../interface/devic
 import type { GpsFix } from "../interface/gps-watch";
 import { Readings } from "../interface/readings";
 import type { Texts } from "../interface/texts";
-import { WindMeter } from "../interface/wind-meter";
 import type { ClimberId } from "../simulation";
 import type { DeviceReadings } from "./device-readings";
 
@@ -28,7 +27,7 @@ type Answer = { readonly line: HTMLElement; readonly words: string; left: number
 
 /**
  * The devices a climber carries (#260), in one card of glass: the handheld radio, the GPS watch,
- * the pocket wind meter and the satellite tracker, each drawn as the thing itself with its own
+ * the pocket weather meter and the satellite tracker, each drawn as the thing itself with its own
  * screen. [Devices] or the G key opens it at the device used last, [Radio] or Q at the radio;
  * the same control or Esc closes it, the arrows left and right go from device to device, and up
  * and down through a device's buttons. A phrase on the radio, a press on the tracker: each is an
@@ -499,8 +498,9 @@ export class DevicesPanel {
     );
   }
 
-  /** The wind meter in the hand: its number settles on the wind and flutters about it, jumps to
-   * a gust as one comes, and keeps its average and its strongest since it was taken out. */
+  /** The weather meter in the hand: its number settles on the wind and flutters about it, jumps
+   * to a gust as one comes, and keeps its average and its strongest since it was taken out; under
+   * it, the air and the wind chill. */
   private drawMeter(seconds: number): void {
     const { texts, wind } = this;
     const now = this.climb.wind;
@@ -525,8 +525,22 @@ export class DevicesPanel {
     this.set("strongest", `${Math.round(wind.strongest)} ${unit}`);
     this.set(
       "name",
-      gusting ? texts.say("wind.gust") : texts.say(`wind.name.${WindMeter.named(wind.shown)}`),
+      gusting ? texts.say("wind.gust") : texts.say(`wind.name.${this.climb.named(wind.shown)}`),
     );
+    // The air where the climber stands, to a tenth of a degree as a pocket meter reads it
+    // (gear.wind-meter-readings), and the wind chill it works out from the wind it shows, in
+    // whole degrees as the index is given, with Canada's risk of frostbite: red from a high one,
+    // when bare skin can freeze within the half hour.
+    const { readings } = this;
+    const chill = this.climb.chill(wind.shown);
+    this.set("air", readings.temperature(this.climb.air, 1));
+    this.set("chill", readings.temperature(chill.chill));
+    this.set("risk", texts.say(`wind.risk.${chill.risk}`, chill.freezes ?? {}));
+    const risk = this.find(".meter__risk");
+    const warn = chill.freezes === null ? "no" : "yes";
+    if (risk.dataset.warn !== warn) {
+      risk.dataset.warn = warn;
+    }
     const meter = this.find(".meter");
     const gust = gusting ? "yes" : "no";
     if (meter.dataset.gust !== gust) {
