@@ -303,6 +303,9 @@ test.describe("the graphics setting", () => {
     hasTouch,
   }) => {
     test.skip(hasTouch, "a PC's story");
+    // Two levels' layers built anew and the game opened twice: over half a minute of CI's
+    // frames on a good runner, and past the minute on a slow one (#258).
+    test.slow();
     await openTheGame(page);
     await waitForFrames(page, 1);
 
