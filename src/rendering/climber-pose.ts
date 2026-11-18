@@ -175,7 +175,7 @@ export interface Pose {
    * on the flat, going down, at a halt or on a ladder, whose rungs bear the weight (#250). The
    * rope above it comes taut by it. */
   readonly pull: number;
-  /** The device in the far hand (#271), once it's out of where it's carried: none with empty
+  /** The device in the near hand (#271), once it's out of where it's carried: none with empty
    * hands, or where the hands are needed. */
   readonly device: DrawnDevice | null;
 }
@@ -389,7 +389,7 @@ export class ClimberPose {
    * the speed the stride grows with takes to follow the climber's, slower, so a boot down hardly
    * slides as the stride changes under it (#222). */
   private static readonly SETTLE_SECONDS = 0.25;
-  /** A device in the far hand (#271): where it's carried, from the shoulder, on the pack's
+  /** A device in the near hand (#271): where it's carried, from the shoulder, on the pack's
    * strap or in the chest pocket, and none for the watch, which is on the wrist; where it's
    * used, from the shoulder, or from the head for the radio, held to the mouth; how far the head
    * turns to it, in radians, down above 0; and which way its top points held so, in radians
@@ -408,7 +408,7 @@ export class ClimberPose {
     >
   > = {
     radio: {
-      carried: { x: 0.08, y: -0.09 },
+      carried: { x: 0.15, y: -0.12 },
       used: { x: 0.14, y: -0.08 },
       from: "head",
       nod: 0.1,
@@ -416,14 +416,14 @@ export class ClimberPose {
     },
     gps: { carried: null, used: { x: 0.2, y: -0.17 }, from: "shoulder", nod: 0.5, angle: 1.4 },
     wind: {
-      carried: { x: 0.1, y: -0.2 },
+      carried: { x: 0.18, y: -0.24 },
       used: { x: 0.27, y: 0.37 },
       from: "shoulder",
       nod: -0.3,
       angle: 0,
     },
     tracker: {
-      carried: { x: 0.1, y: -0.2 },
+      carried: { x: 0.18, y: -0.24 },
       used: { x: 0.25, y: -0.07 },
       from: "shoulder",
       nod: 0.42,
@@ -966,7 +966,10 @@ export class ClimberPose {
     const grip = ClimberPose.smooth(1 + (state.slack - this.lift) / ClimberPose.LET_GO);
     const [nearFree, farFree] = this.tools.handsFree;
     const free = nearFree || farFree;
-    this.jumarSide += ((nearFree ? 0 : farFree ? 1 : this.jumarSide) - this.jumarSide) * share;
+    // A device comes out in the near hand (#271), and the far one takes the jumar from it.
+    const { device = null } = state;
+    const nearHolds = nearFree && device === null;
+    this.jumarSide += ((nearHolds ? 0 : farFree ? 1 : this.jumarSide) - this.jumarSide) * share;
     // Carrying, the hands are under the casualty's knees: the jumar rides on its cowstail.
     const holds = state.jumar !== null && upright && free && state.carrying !== true;
     this.holding += ((holds ? grip : 0) - this.holding) * share;
@@ -974,9 +977,8 @@ export class ClimberPose {
     this.pushing += ((pushing ? 1 : 0) - this.pushing) * share;
     const resting = state.pace === "rest-step" && mode === "walk";
     this.resting += ((resting ? 1 : 0) - this.resting) * share;
-    // A device is out while a hand is free for it (#271): on their feet on the ground, at no
-    // rope's work and no rescue's, the far hand off the jumar.
-    const { device = null } = state;
+    // A device is out while the near hand is free for it (#271): on their feet on the ground, at
+    // no rope's work and no rescue's, the axe strapped on and the jumar gone to the far hand.
     const handFree =
       mode === "walk" &&
       state.ladder === null &&
@@ -984,10 +986,12 @@ export class ClimberPose {
       state.bracing !== true &&
       !ClimberPose.rescue(state) &&
       (state.crawling ?? 0) === 0 &&
-      this.jumarSide < 0.5;
+      nearFree;
     this.device = device ?? this.device;
     this.handFree += ((handFree ? 1 : 0) - this.handFree) * share;
-    this.inHand = device === null ? 0 : Math.min(Math.max(device.out, 0), 1) * this.handFree;
+    const offTheJumar = this.holding > 0.01 ? ClimberPose.smooth(this.jumarSide) : 1;
+    this.inHand =
+      device === null ? 0 : Math.min(Math.max(device.out, 0), 1) * this.handFree * offTheJumar;
     const clipped = state.carabiner !== null;
     this.reaching =
       this.clipped !== null && clipped !== this.clipped
@@ -1196,14 +1200,12 @@ export class ClimberPose {
     return { ...made, targets: { ...targets, pelvis, lean, hands } };
   }
 
-  /** The targets of a climber with a device out (#271): the far hand goes to where it's carried,
+  /** The targets of a climber with a device out (#271): the near hand goes to where it's carried,
    * takes it, and holds it where it's used, the radio at the mouth, the wrist turned up for the
    * watch, the weather meter up into the wind, the tracker in front of the chest, the head turned
-   * to it; the legs and the near arm go on as they went. With empty hands, as made. */
+   * to it; the legs and the far arm go on as they went. With empty hands, as made. */
   private withDevice(made: Made): Made {
-    const { device, inHand } = this;
-    // The hand that clips the second carabiner is the one that would hold it.
-    const share = inHand * (1 - this.reach());
+    const { device, inHand: share } = this;
     if (device === null || share < 1e-4) {
       return made;
     }
@@ -1227,10 +1229,10 @@ export class ClimberPose {
     const [near, far] = targets.hands;
     const hand =
       carried === null
-        ? ClimberPose.between(far, use, using)
+        ? ClimberPose.between(near, use, using)
         : share < TAKEN
           ? ClimberPose.between(
-              far,
+              near,
               { x: shoulder.x + carried.x, y: shoulder.y + carried.y },
               ClimberPose.smooth(share / TAKEN),
             )
@@ -1240,7 +1242,7 @@ export class ClimberPose {
               using,
             );
     this.deviceAngle = angle * using;
-    return { ...made, targets: { ...targets, nod: turned, hands: [near, hand] } };
+    return { ...made, targets: { ...targets, nod: turned, hands: [hand, far] } };
   }
 
   /** Mixes the targets with the last mode's, as the blend into this one goes on. */
@@ -2006,8 +2008,7 @@ export class ClimberPose {
     // A device is in the hand once it's out of where it's carried; the watch shows its face as
     // the wrist turns up (#271).
     const { device } = this;
-    const taken =
-      device !== null && this.mode === "walk" && this.inHand * (1 - this.reach()) >= ClimberPose.TAKEN;
+    const taken = device !== null && this.mode === "walk" && this.inHand >= ClimberPose.TAKEN;
     return {
       pelvis,
       shoulder,
@@ -2032,7 +2033,7 @@ export class ClimberPose {
       device: taken
         ? {
             kind: device.kind,
-            at: farArm.end,
+            at: nearArm.end,
             angle: this.deviceAngle + lean,
             talking: device.talking,
           }

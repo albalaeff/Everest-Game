@@ -1409,20 +1409,20 @@ describe("ClimberPose: a device in the hand (#271)", () => {
   };
   const empty = new ClimberPose().advance(5, state());
 
-  it("holds the radio at the mouth in the far hand, the near arm at the side", () => {
+  it("holds the radio at the mouth in the near hand, the far arm at the side", () => {
     const pose = holding("radio");
     const [near, far] = pose.arms;
 
     expect(pose.device).toMatchObject({ kind: "radio" });
-    expect(length(far.end, pose.head)).toBeLessThan(0.22);
-    expect(far.end.x).toBeGreaterThan(pose.head.x);
-    expect(length(pose.device?.at ?? pose.pelvis, far.end)).toBeLessThan(1e-9);
-    expect(near.end.y).toBeLessThan(pose.pelvis.y + 0.1);
+    expect(length(near.end, pose.head)).toBeLessThan(0.22);
+    expect(near.end.x).toBeGreaterThan(pose.head.x);
+    expect(length(pose.device?.at ?? pose.pelvis, near.end)).toBeLessThan(1e-9);
+    expect(far.end.y).toBeLessThan(pose.pelvis.y + 0.1);
   });
 
   it("turns the wrist up for the watch, across the chest, the head down to it", () => {
     const pose = holding("gps");
-    const hand = pose.arms[1].end;
+    const hand = pose.arms[0].end;
 
     expect(pose.device).toMatchObject({ kind: "gps" });
     expect(hand.x).toBeGreaterThan(pose.shoulder.x + 0.1);
@@ -1433,7 +1433,7 @@ describe("ClimberPose: a device in the hand (#271)", () => {
 
   it("holds the weather meter up into the wind, over the head, and looks up at it", () => {
     const pose = holding("wind");
-    const hand = pose.arms[1].end;
+    const hand = pose.arms[0].end;
 
     expect(pose.device).toMatchObject({ kind: "wind" });
     expect(hand.y).toBeGreaterThan(pose.head.y);
@@ -1443,7 +1443,7 @@ describe("ClimberPose: a device in the hand (#271)", () => {
 
   it("holds the tracker in front of the chest, the head down to its screen", () => {
     const pose = holding("tracker");
-    const hand = pose.arms[1].end;
+    const hand = pose.arms[0].end;
 
     expect(pose.device).toMatchObject({ kind: "tracker" });
     expect(hand.x).toBeGreaterThan(pose.shoulder.x + 0.15);
@@ -1452,7 +1452,7 @@ describe("ClimberPose: a device in the hand (#271)", () => {
     expect(pose.nod).toBeGreaterThan(empty.nod + 0.2);
   });
 
-  it("goes on walking with it: the legs stride and the near arm swings, the hand that holds it steady by the body", () => {
+  it("goes on walking with it: the legs stride and the far arm swings, the hand that holds it steady by the body", () => {
     const frames = through([
       { frames: 60, over: held("radio") },
       { frames: 240, over: { ...held("radio"), moving: true } },
@@ -1468,8 +1468,8 @@ describe("ClimberPose: a device in the hand (#271)", () => {
     const strides = frames.map(({ pose }) => pose.legs[0].end.x - pose.legs[1].end.x);
 
     expect(Math.max(...strides) - Math.min(...strides)).toBeGreaterThan(0.4);
-    expect(spread(0)).toBeGreaterThan(0.15);
-    expect(spread(1)).toBeLessThan(0.05);
+    expect(spread(1)).toBeGreaterThan(0.15);
+    expect(spread(0)).toBeLessThan(0.05);
     for (const { pose } of frames) {
       expect(pose.device).toMatchObject({ kind: "radio" });
     }
@@ -1539,6 +1539,29 @@ describe("ClimberPose: a device in the hand (#271)", () => {
 
       expect(pose.device).toBeNull();
     }
+  });
+
+  it("gives the jumar to the far hand while a device is out, and takes it back after", () => {
+    const climber = new ClimberPose();
+    const onTheRope: Partial<PoseState> = { jumar: { x: 0.35, y: 0.75 }, moving: true };
+    climber.advance(5, state(onTheRope));
+    let pose = climber.advance(FRAME, state(onTheRope));
+    const near = (): number => length(pose.arms[0].end, pose.jumar ?? pose.pelvis);
+    const far = (): number => length(pose.arms[1].end, pose.jumar ?? pose.pelvis);
+    expect(near()).toBeLessThan(0.02);
+
+    for (let frame = 0; frame < 120; frame += 1) {
+      pose = climber.advance(FRAME, state({ ...onTheRope, ...held("radio") }));
+    }
+    expect(far()).toBeLessThan(0.02);
+    expect(pose.device).toMatchObject({ kind: "radio" });
+    expect(length(pose.arms[0].end, pose.head)).toBeLessThan(0.22);
+
+    for (let frame = 0; frame < 120; frame += 1) {
+      pose = climber.advance(FRAME, state(onTheRope));
+    }
+    expect(near()).toBeLessThan(0.02);
+    expect(pose.device).toBeNull();
   });
 
   it("keeps its bones' lengths with a device out", () => {

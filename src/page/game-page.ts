@@ -371,6 +371,7 @@ export class GamePage {
         seed: scenario.seed,
         ropeStretch: this.mountain.ropeStretch,
         jolts: rules.jolts,
+        devices: rules.devices,
       },
       choice.chosen,
     );

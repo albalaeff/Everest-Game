@@ -8,6 +8,7 @@ import type {
   Body,
   Breathing,
   ClimberId,
+  HandView,
   JoltWarning,
   JoltZone,
   ObjectiveHazards,
@@ -115,6 +116,11 @@ interface DrawnClimber {
 interface InView {
   readonly left: number;
   readonly right: number;
+}
+
+/** The climbers' hands, as the `Devices` rule has them (#271): the device each took out. */
+export interface Hands {
+  hand(id: ClimberId): HandView;
 }
 
 /**
@@ -431,6 +437,8 @@ export class SlopeLayer extends ParallaxLayer {
       readonly zones: readonly JoltZone[];
       readonly warnings: readonly JoltWarning[];
     } | null = null,
+    /** The devices in the climbers' hands (#271), or none: a picture of the slope alone. */
+    private readonly hands: Hands | null = null,
   ) {
     super("slope", { x: 1, y: 1 });
     this.chips = new IceChips(seed + SlopeLayer.CHIP_SEED);
@@ -728,6 +736,7 @@ export class SlopeLayer extends ParallaxLayer {
         lit,
         doorway,
         beside,
+        this.hands?.hand(id) ?? null,
       );
       const passage = figure.passage;
       if (climber?.sheltered !== true && passage?.passing !== true) {
