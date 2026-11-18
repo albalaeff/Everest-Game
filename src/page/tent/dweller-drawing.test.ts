@@ -42,7 +42,7 @@ describe("DwellerDrawing: the person in the tent as a drawing (#258, #264)", () 
       "all",
       "torso",
       ...LIMBS,
-      "upper0-drop",
+      "fore0-drop",
       "fore1-drop",
       "hand0",
       "hand1",
@@ -71,6 +71,19 @@ describe("DwellerDrawing: the person in the tent as a drawing (#258, #264)", () 
     for (const held of ["spoon", "bottle", "bar", "pouch", "snow", "lighter", "pick"]) {
       expect(markup.match(new RegExp(`data-held="${held}"`, "gu"))).toHaveLength(2);
     }
+  });
+
+  it("draws the upper arms behind the body, so an arm never comes away from the shoulder, and the forearms and the hands in front of it", () => {
+    const markup = drawing.markup();
+    const at = (part: string): number => markup.indexOf(`data-part="${part}"`);
+
+    for (const side of [0, 1]) {
+      expect(at(`upper${side}`)).toBeLessThan(at("torso"));
+      expect(at(`fore${side}`)).toBeGreaterThan(at("torso"));
+      expect(at(`hand${side}`)).toBeGreaterThan(at(`fore${side}`));
+    }
+    // The near forearm in front of the face, for the spoon to come to the mouth.
+    expect(at("fore0")).toBeGreaterThan(at("head"));
   });
 
   it("sits them on their seat, whole, their eyes open, their mouth shut and their hands open", () => {

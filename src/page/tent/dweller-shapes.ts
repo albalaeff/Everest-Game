@@ -129,17 +129,8 @@ export class DwellerShapes {
     ],
   };
 
-  /** How much of the upper arm's round end at the shoulder is left. */
-  private static readonly ROOT_ROUND = 0.15;
-  /** Up the picture, whose y runs down. */
-  private static readonly ABOVE = { x: 0, y: -1 };
-  /** How far above the hips the body's shoulders begin, in pixels. */
-  static readonly SHOULDERS_FROM = 112;
-
   readonly body: DwellerBody = DwellerShapes.dressed();
-  /** The upper arm, its round end at the shoulder flattened: the sleeve's top tucks behind the
-   * body's shoulders, and a full round would stand up over a leaning body's far shoulder. */
-  readonly upperArm = DwellerShapes.tucked(DwellerShapes.part("upperArm", DwellerShapes.UPPER_ARM));
+  readonly upperArm = DwellerShapes.part("upperArm", DwellerShapes.UPPER_ARM);
   readonly forearm = DwellerShapes.part("forearm", DwellerShapes.FOREARM);
   readonly thigh = DwellerShapes.part("thigh", DwellerShapes.THIGH);
   readonly shin = DwellerShapes.part("shin", DwellerShapes.SHIN);
@@ -149,14 +140,6 @@ export class DwellerShapes {
     FigureShapes.AHEAD,
     DwellerShapes.FOREARM - DwellerShapes.CUFF.from,
     DwellerShapes.FOREARM - DwellerShapes.CUFF.to,
-  );
-  /** The body's shoulders, from the top of its sides up over the yoke: where a sleeve's top
-   * tucks behind the body, so its round end never shows over it. */
-  readonly shoulders: Outline = FigureShapes.band(
-    this.body.outline,
-    DwellerShapes.ABOVE,
-    DwellerShapes.SHOULDERS_FROM,
-    Infinity,
   );
   /** The dark panel down the shin, as the slope's suit has, from `FigureShapes.SHIN_PANEL`
    * below the knee to the ankle. */
@@ -216,13 +199,6 @@ export class DwellerShapes {
       seams,
     );
     return DwellerShapes.inPixels(quilted, length, { x: 0, y: 0 });
-  }
-
-  /** A part with its round end behind its root flattened to `ROOT_ROUND` of itself. */
-  private static tucked(part: SuitPart): SuitPart {
-    const flat = (point: { readonly x: number; readonly y: number }) =>
-      point.x < 0 ? { x: point.x * DwellerShapes.ROOT_ROUND, y: point.y } : point;
-    return { ...part, outline: part.outline.map(flat) };
   }
 
   /** A down bootie: a rounded puff along +x from the ankle, quilted across in three. */
