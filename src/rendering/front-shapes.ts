@@ -132,9 +132,10 @@ export class FrontShapes {
   /** How far the down bulges out between two seams, in metres. */
   static readonly PUFF = 0.007;
   /** How far apart, each side of the middle, the hips, knees and ankles are; the shoulders, elbows
-   * and hands; and where a hanging mitt's middle is from the hand, in metres. */
-  private static readonly LEGS = { hip: 0.098, knee: 0.113, ankle: 0.136 };
-  private static readonly ARMS = { shoulder: 0.222, elbow: 0.262, hand: 0.284 };
+   * and hands; and where a hanging mitt's middle is from the hand, in metres. The person in a
+   * tent sits on the same hips and shoulders (#264). */
+  static readonly LEGS = { hip: 0.098, knee: 0.113, ankle: 0.136 };
+  static readonly ARMS = { shoulder: 0.222, elbow: 0.262, hand: 0.284 };
   /** Where the hose leaves the regulator, in the pack's frame from the pelvis: under it. */
   private static readonly REGULATOR: Joint = { x: -0.15, y: 0.638 };
   /** How far in from an arm's inner side the body is in its shade. */
@@ -150,8 +151,8 @@ export class FrontShapes {
     [FigureShapes.YOKE, 0.203],
   ];
   /** How far below the pelvis the crotch is, and above the shoulders the collar ends. */
-  private static readonly CROTCH = 0.085;
-  private static readonly NECK = 0.052;
+  static readonly CROTCH = 0.085;
+  static readonly NECK = 0.052;
   /** How many corners each side of a quilted limb is cut into. */
   private static readonly QUILT_CORNERS = 28;
   /** The climber standing still on the flat, fresh: how the side figure stands. */
@@ -657,7 +658,7 @@ export class FrontShapes {
   /** A limb seen from the front from `root` to `end`, as thick as its `down` round each, bulging
    * `PUFF` between the seams at `seams`, shares of the way along it. Its sides come round its ends,
    * so it reads as a sleeve of down rather than a stick. */
-  private static quilted(
+  static quilted(
     root: Joint,
     end: Joint,
     down: { readonly root: number; readonly end: number },

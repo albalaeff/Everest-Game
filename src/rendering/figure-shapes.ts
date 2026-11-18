@@ -61,6 +61,9 @@ export class FigureShapes {
     forearm: [0.45],
     torso: [0.1, 0.185, 0.27, 0.355],
   };
+  /** How wide a seam between two baffles is, in metres: the slope's (`KitShading.SEAM`) and the
+   * tent's (#264). */
+  static readonly SEAM_WIDTH = 0.012;
   /** How far up the torso from the pelvis its dark yoke begins, and down a shin from the knee its
    * dark panel, in metres. */
   static readonly YOKE = 0.43;

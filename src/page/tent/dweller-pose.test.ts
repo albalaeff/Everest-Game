@@ -35,12 +35,15 @@ describe("DwellerPose: the person in the tent (#258)", () => {
           for (const side of [0, 1] as const) {
             const upper = far(joints.shoulders[side], joints.elbows[side]);
             const lower = far(joints.elbows[side], joints.hands[side]);
-            // An elbow swinging from one side to the other comes toward the viewer: shorter
-            // on the picture, never longer.
+            // A bone that points toward the viewer is drawn shorter, never longer.
             expect(upper).toBeLessThan(DwellerPose.UPPER_ARM + 1e-6);
             expect(lower).toBeLessThan(DwellerPose.FOREARM + 0.05);
-            const reach = far(joints.shoulders[side], look.hands[side]);
-            if (reach < DwellerPose.UPPER_ARM + DwellerPose.FOREARM - 1 && reach > 6) {
+            const reach = Math.hypot(
+              far(joints.shoulders[side], look.hands[side]),
+              look.ahead[side],
+            );
+            const nearest = Math.abs(DwellerPose.UPPER_ARM - DwellerPose.FOREARM) + 0.02;
+            if (reach < DwellerPose.UPPER_ARM + DwellerPose.FOREARM - 1 && reach > nearest) {
               expect(far(joints.hands[side], look.hands[side])).toBeLessThan(0.01);
             }
           }
@@ -49,19 +52,42 @@ describe("DwellerPose: the person in the tent (#258)", () => {
     }
   });
 
-  it("keeps the bones their lengths with the hands low: sitting, at the stove, on hands and knees", () => {
+  it("bends the elbows out from the body, never up past the shoulders, with the hands low: sitting, at the stove, on hands and knees", () => {
     for (const act of ["idle", "melt", "enter"] as const) {
       for (const look of looks(act, 3)) {
         const joints = pose.joints(look);
         for (const side of [0, 1] as const) {
-          expect(far(joints.shoulders[side], joints.elbows[side])).toBeCloseTo(
-            DwellerPose.UPPER_ARM,
-            6,
-          );
-          expect(far(joints.elbows[side], joints.hands[side])).toBeCloseTo(DwellerPose.FOREARM, 1);
+          const [shoulder, elbow, hand] = [
+            joints.shoulders[side],
+            joints.elbows[side],
+            joints.hands[side],
+          ];
+          expect((elbow.x - shoulder.x) * (side === 0 ? -1 : 1)).toBeGreaterThan(-10);
+          expect(elbow.y).toBeGreaterThan(shoulder.y - 5);
+          // An elbow swings round behind its arm as the hand moves, the arm shorter on the
+          // picture for a moment; folded toward the viewer, it would be a stub.
+          expect(far(shoulder, elbow)).toBeGreaterThan(DwellerPose.UPPER_ARM * 0.35);
+          expect(far(elbow, hand)).toBeGreaterThan(DwellerPose.FOREARM * 0.35);
         }
       }
     }
+  });
+
+  it("brings the arms toward the viewer for the hands in front of the body: the elbows down by the sides, the forearms shorter", () => {
+    const holding = pose.joints(pose.look("cook", 2, 0.5));
+    const eating = pose.joints(pose.look("cook", 0.7, 0.8));
+
+    for (const side of [0, 1] as const) {
+      expect(holding.elbows[side].y).toBeGreaterThan(holding.hands[side].y + 10);
+      expect(far(holding.shoulders[side], holding.elbows[side])).toBeGreaterThan(
+        DwellerPose.UPPER_ARM * 0.9,
+      );
+      expect(far(holding.elbows[side], holding.hands[side])).toBeLessThan(
+        DwellerPose.FOREARM * 0.75,
+      );
+    }
+    // The spoon up at the mouth, the elbow low.
+    expect(eating.elbows[0].y).toBeGreaterThan(eating.shoulders[0].y + 50);
   });
 
   it("hangs the elbow under the hand on the guitar's neck, and swings both out for a stretch", () => {
@@ -112,16 +138,22 @@ describe("DwellerPose: the person in the tent (#258)", () => {
     expect(pouring).toMatchObject({ holds: ["bottle", "nothing"], flame: 1 });
     expect(standing).toMatchObject({ holds: ["nothing", "pouch"], flame: 0 });
     expect(eating.every(({ holds }) => holds[0] === "spoon" && holds[1] === "pouch")).toBe(true);
-    // The spoon comes to the mouth, which opens for it, and goes back to the pouch.
-    const nearest = eating.reduce((best, look) => {
+    // The spoon's bowl comes to the mouth, which opens for it, and goes back to the pouch: the
+    // bowl is as far beyond the hand as the spoon is long, along the forearm.
+    const bowl = (look: DwellerLook): Spot => {
       const joints = pose.joints(look);
-      return Math.min(best, far(joints.hands[0], joints.mouth));
-    }, Infinity);
-    expect(nearest).toBeLessThan(26);
-    const atTheMouth = eating.find((look) => {
-      const joints = pose.joints(look);
-      return far(joints.hands[0], joints.mouth) < 26;
-    });
+      const angle = (joints.forearms[0] * Math.PI) / 180;
+      return {
+        x: joints.hands[0].x - DwellerPose.SPOON * Math.sin(angle),
+        y: joints.hands[0].y + DwellerPose.SPOON * Math.cos(angle),
+      };
+    };
+    const nearest = eating.reduce(
+      (best, look) => Math.min(best, far(bowl(look), pose.joints(look).mouth)),
+      Infinity,
+    );
+    expect(nearest).toBeLessThan(10);
+    const atTheMouth = eating.find((look) => far(bowl(look), pose.joints(look).mouth) < 10);
     expect(atTheMouth?.mouth).toBeGreaterThan(0.5);
     expect(eating.some(({ mouth }) => mouth === 0)).toBe(true);
   });

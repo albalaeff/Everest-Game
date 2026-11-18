@@ -1,6 +1,33 @@
+import type { Outline } from "../../rendering/figure-shapes";
+import { DwellerHands } from "./dweller-hands";
+import { DwellerHead } from "./dweller-head";
 import { DwellerPose } from "./dweller-pose";
 import type { DwellerLook, Held, Spot } from "./dweller-pose";
+import { DwellerShapes } from "./dweller-shapes";
+import type { SuitPart } from "./dweller-shapes";
 import { TentArt } from "./tent-art";
+
+/** The suit's parts that move: each arm's upper arm and forearm, each leg's thigh and shin, and
+ * each bootie, the arm or the leg on the viewer's left first. */
+export type LimbName =
+  | "upper0"
+  | "fore0"
+  | "upper1"
+  | "fore1"
+  | "thigh0"
+  | "shin0"
+  | "foot0"
+  | "thigh1"
+  | "shin1"
+  | "foot1";
+
+/** A limb this frame: where it is, along its bone from its root; which of its sides the light is
+ * on, its own +y or -y; and which end of each baffle of its down is the top, toward the light. */
+export interface LimbFrame {
+  readonly transform: string;
+  readonly lit: "plus" | "minus";
+  readonly puff: "end" | "root";
+}
 
 /** The person's drawing this frame: what each of its parts is set to. Transforms and paths are
  * SVG's own text; the rest are numbers. */
@@ -9,19 +36,19 @@ export interface DwellerFrame {
    * shows. */
   readonly all: string;
   readonly shown: number;
+  /** The body, leaning about the hips. */
   readonly torso: string;
-  /** Each leg from the hip over the knee to the ankle, the nearer the stove first, and its
-   * bootie. */
-  readonly legs: readonly [string, string];
-  readonly feet: readonly [string, string];
-  /** Each sleeve, from the shoulder over the elbow to the wrist. */
-  readonly arms: readonly [string, string];
-  /** Where each hand is, turned as what it holds lies. */
+  readonly limbs: Readonly<Record<LimbName, LimbFrame>>;
+  /** Where each hand is, turned as its forearm or what it holds, and whether it's a fist round
+   * something or open. */
   readonly hands: readonly [string, string];
+  readonly fists: readonly [boolean, boolean];
   readonly holds: readonly [Held, Held];
   readonly head: string;
-  /** How far down the eyelids are, and how far open the mouth, in the head's pixels. */
-  readonly lids: number;
+  /** How far open the eyes are, 1 to 0; where they look, in the head's millimetres; how far open
+   * the mouth is, 0 to 1. */
+  readonly eyes: number;
+  readonly gaze: Spot;
   readonly mouth: number;
   readonly guitar: boolean;
   /** The water poured from the bottle into the pot, or nothing. */
@@ -29,145 +56,247 @@ export interface DwellerFrame {
 }
 
 /**
- * The person in the tent as a drawing (#258): the figure's parts as SVG, and what a pose sets each
- * of them to. They sit cross-legged on the mats in down trousers, booties and a down jacket,
- * turned a little toward the stove; on hands and knees their legs are under them. The sleeves are
- * lines from the shoulder over the elbow to the wrist, quilted across; a hand holds what the pose
- * says, a spoon or a bar along the forearm, a bottle tipped as it's drunk from or poured. The
- * colours are the style sheet's, by the look's variables (`--skin`, `--hair`, `--jacket`, ...), so
- * a climber's own look is a matter of setting them. It holds nothing: the same look gives the same
- * frame.
+ * The person in the tent as a drawing (#264): the climber of the slope, sitting. The suit's parts
+ * are `DwellerShapes`' outlines, painted as the slope paints the kit (`FrontRig`): each part
+ * shaded across from its dark side to its lit one, each baffle of down puffed between its seams,
+ * dark at the seams and lit over its top, the yoke dark; the light comes from above and the right,
+ * where the lamp hangs, so a pose that turns a limb turns its shading with it. The arms and the
+ * legs are drawn each in its own frame along its bone, and a pose only moves those frames: an arm
+ * whose elbow comes toward the viewer is drawn shorter, as a foreshortened limb is. The head is
+ * `DwellerHead`'s, the hands `DwellerHands'`, open or a fist round what they hold. The colours are
+ * the picture's variables (`Appearance`). It holds nothing: the same look gives the same frame.
  */
 export class DwellerDrawing {
-  /** How far under the hips the mats are, sitting; a leg's joints sitting, from the hips: the
-   * hip, the knee, the ankle and the toes, the nearer the stove first. */
-  private static readonly MATS = 24;
-  private static readonly SITTING: readonly [Limb, Limb] = [
-    [
-      { x: -14, y: -4 },
-      { x: -96, y: -18 },
-      { x: -40, y: 10 },
-      { x: -6, y: 13 },
-    ],
-    [
-      { x: 14, y: -4 },
-      { x: 88, y: -14 },
-      { x: 30, y: 12 },
-      { x: -2, y: 16 },
-    ],
-  ];
-  /** On hands and knees: each knee, ankle and toes, from the hips, as far down as the mats. */
-  private static readonly KNEELING: readonly [Knelt, Knelt] = [
-    [
-      { x: -24, y: -14 },
-      { x: 70, y: -11 },
-      { x: 102, y: -8 },
-    ],
-    [
-      { x: -4, y: -14 },
-      { x: 88, y: -11 },
-      { x: 120, y: -8 },
-    ],
-  ];
-  /** The lean the legs begin to come under the figure at, and the one they're under it by. */
+  /** The names of the parts with a shadow of their own, on what's under them. */
+  static readonly DROPPED: readonly LimbName[] = ["upper0", "fore0", "upper1", "fore1"];
+  /** The light, from above and the right, as the figure faces; and how far each arm's shadow
+   * falls on what's under it, down and to the left. */
+  private static readonly LIGHT: Spot = { x: 0.55, y: -0.83 };
+  private static readonly DROP: Spot = { x: -3, y: 4 };
+  /** The lean the legs begin to come under the figure at, and the one they're under it by; how
+   * far the foot that keeps time turns, in degrees. */
   private static readonly CRAWL = { from: 24, to: 52 };
-  /** How far short of the hand's middle the sleeve ends, the eyelids' and the mouth's reach, and
-   * how far the foot that keeps time lifts, in degrees. */
-  private static readonly WRIST = 9;
-  private static readonly LIDS = 5.4;
-  private static readonly MOUTH = 5.5;
-  private static readonly TAP = 16;
+  private static readonly TAP = 14;
   /** How far the bottle tips before it pours, and where the pot's water is, from the hips. */
   private static readonly POURS = -80;
   private static readonly POT_WATER = -46;
+  /** The guitar on the lap: its body on the right thigh, its neck rising to the left hand. */
+  static readonly LAP = { x: -20, y: -40, turn: -25, size: 0.84 };
+  /** The puff over a baffle of down, from one seam to the other: dark at the seams, lit over its
+   * top, as the slope's (`FrontRig`). */
+  private static readonly PUFF: readonly (readonly [number, string, number])[] = [
+    [0, "#000", 0.26],
+    [0.2, "#000", 0.06],
+    [0.45, "#000", 0],
+    [0.7, "#fff", 0.1],
+    [0.86, "#fff", 0.03],
+    [1, "#000", 0.16],
+  ];
 
+  private readonly shapes = new DwellerShapes();
   private readonly pose = new DwellerPose();
 
   /** `seat` is where the figure's hips are in the picture, sitting. */
   constructor(private readonly seat: Spot) {}
 
-  /** The figure's parts, in the order they're drawn: the body, the legs over it, the guitar on
-   * the lap, the further arm, the head, the nearer arm, and the water it pours. */
+  /** The figure's parts, in the order they're drawn: the hood behind the neck, the body, the
+   * legs, the guitar on the lap, the further arm and its hand, the head, the nearer arm and its
+   * hand, and the water it pours. */
   markup(): string {
-    const arm = (side: 0 | 1, held: string): string =>
-      `<g class="dw-arm"><path class="dw-sleeve" data-part="arm${side}"/><path class="dw-quilt" data-part="quilt${side}"/><g data-part="hand${side}">${held}<circle class="dw-hand" r="10.5"/><path class="dw-knuckles" d="M-6 3q6 4 12 0"/></g></g>`;
-    const nearer = `<g class="dw-held" data-held="spoon"><path d="M0 -8V42" stroke="#c9d0dc" stroke-width="4.5" stroke-linecap="round"/><ellipse cx="0" cy="50" rx="6.5" ry="9.5" fill="#e6ebf2"/></g>
-<g class="dw-held" data-held="bar"><rect x="-7.5" y="-6" width="15" height="38" rx="3" fill="#6b3d17"/><path d="M-9 -8H9V14L5 11L1 14L-3 11L-7 14L-9 12Z" fill="#e7b24a"/></g>
-<g class="dw-held" data-held="lighter"><rect x="-5.5" y="-2" width="11" height="26" rx="2.5" fill="#c9332c"/><rect x="-4.5" y="22" width="9" height="6" fill="#b5bdca"/><path class="dw-spark" d="M0 28q-5 8 0 15q5 -7 0 -15z"/></g>
-<g class="dw-held" data-held="snow"><path d="M-15 5q-3 -17 10 -19q15 -2 17 10q3 13 -12 15q-12 1 -15 -6z" fill="#f4f8fc"/><path d="M-8 -6q6 -5 13 -2" stroke="#c7d6e8" stroke-width="2.5" fill="none" stroke-linecap="round"/></g>
-<g class="dw-held" data-held="bottle"><rect x="-16" y="-34" width="32" height="72" rx="9" fill="#27323f"/><rect class="tent-water" x="-13" y="-24" width="26" height="58" rx="7"/><rect x="-16" y="-10" width="32" height="28" fill="#3f9488" opacity="0.92"/><rect x="-10" y="-46" width="20" height="13" rx="4" fill="#dfe6f0"/></g>`;
-    const further = `<g class="dw-held" data-held="pouch"><path d="M-21 20L-24 -40L24 -40L21 20Z" fill="#e7b24a"/><path d="M-24 -40L24 -40L23 -30L-23 -30Z" fill="#b8822a"/><rect x="-13" y="-22" width="26" height="17" rx="3" fill="#7a4a1c"/><path d="M-9 6h18" stroke="#7a4a1c" stroke-width="3"/></g>`;
-    return `<g class="dw" data-part="all">
-<g class="dw-torso" data-part="torso"><path class="dw-hood" d="M-34 -138C-30 -166 26 -168 34 -136C20 -146 -18 -148 -34 -138Z"/><path class="dw-jacket" d="M-50 6C-60 -40 -64 -100 -54 -128C-46 -152 -22 -158 -2 -158C20 -158 46 -152 54 -124C62 -96 60 -40 52 6Z"/><path class="dw-jacket-seams" d="M-57 -28Q-2 -19 56 -28M-60 -58Q-2 -49 59 -58M-60 -88Q-2 -79 59 -88M-56 -118Q-2 -109 56 -116"/><path class="dw-zip" d="M-7 -150L-9 4"/><path class="dw-collar" d="M-27 -150Q-3 -136 23 -148"/><rect class="dw-badge" x="16" y="-108" width="20" height="12" rx="2"/></g>
-<g class="dw-legs"><path class="dw-leg" data-part="leg1"/><path class="dw-bootie" data-part="foot1"/><path class="dw-leg" data-part="leg0"/><path class="dw-bootie" data-part="foot0"/></g>
-<g class="dw-lap" data-part="guitar" transform="translate(30 -58) rotate(-30)">${TentArt.guitar()}</g>
-${arm(1, further)}
-<g class="dw-head" data-part="head">${TentArt.head()}</g>
-${arm(0, nearer)}
+    const { shapes } = this;
+    const { LAP } = DwellerDrawing;
+    const p = (outline: Outline, kind = ""): string => DwellerDrawing.path(outline, kind);
+    const arm = (side: 0 | 1): string =>
+      `<g class="dw-drop" data-part="upper${side}-drop">${p(shapes.upperArm.outline)}</g>
+<g class="dw-drop" data-part="fore${side}-drop">${p(shapes.forearm.outline)}</g>
+${DwellerDrawing.limb(`upper${side}`, shapes.upperArm, "suit")}
+${DwellerDrawing.limb(`fore${side}`, shapes.forearm, "suit", shapes.cuff, "dw-cuff")}
+<g class="dw-hand" data-part="hand${side}">${DwellerHands.held()}<g class="dw-fist">${new DwellerHands(`dw-hand${side}`).markup("fist")}</g><g class="dw-open">${new DwellerHands(`dw-hand${side}`).markup("open")}</g></g>`;
+    const thigh = (side: 0 | 1): string =>
+      DwellerDrawing.limb(`thigh${side}`, shapes.thigh, "suit");
+    const shin = (side: 0 | 1): string =>
+      `${DwellerDrawing.limb(`shin${side}`, shapes.shin, "suit", shapes.shinPanel, "dw-panel")}${DwellerDrawing.limb(`foot${side}`, shapes.bootie, "booties", shapes.soles[side], "dw-sole")}`;
+    return `<defs>${DwellerDrawing.defs()}</defs>
+<g class="dw" data-part="all">
+<g class="dw-torso" data-part="torso">${this.body()}</g>
+<g class="dw-legs">${thigh(0)}${thigh(1)}${shin(0)}${shin(1)}</g>
+<g class="dw-lap" data-part="guitar" transform="translate(${LAP.x} ${LAP.y}) rotate(${LAP.turn}) scale(${LAP.size})">${TentArt.guitar()}</g>
+${arm(1)}
+<g class="dw-head" data-part="head">${new DwellerHead("dw-face").markup()}</g>
+${arm(0)}
 <path class="dw-stream" data-part="stream"/>
 </g>`;
   }
 
   /** What `look` sets the figure's parts to. */
   frame(look: DwellerLook): DwellerFrame {
-    const { seat } = this;
-    const joints = this.pose.joints(look);
-    const at = `translate(${DwellerDrawing.text(seat.x + look.shift)} ${DwellerDrawing.text(seat.y - look.rise)})`;
-    const arms = [0, 1].map((side) => {
-      const shoulder = joints.shoulders[side] ?? joints.shoulders[0];
-      const elbow = joints.elbows[side] ?? joints.elbows[0];
-      const hand = joints.hands[side] ?? joints.hands[0];
-      const wrist = DwellerDrawing.towards(hand, elbow, DwellerDrawing.WRIST);
-      return DwellerDrawing.line([shoulder, elbow, wrist]);
-    });
+    const { seat, pose, shapes } = this;
+    const joints = pose.joints(look);
+    const text = (value: number): string => DwellerDrawing.text(value);
+    const at = `translate(${text(seat.x + look.shift)} ${text(seat.y - look.rise)})`;
+    const light = look.turned
+      ? { x: -DwellerDrawing.LIGHT.x, y: DwellerDrawing.LIGHT.y }
+      : DwellerDrawing.LIGHT;
+    const limb = (from: Spot, to: Spot, length: number): LimbFrame =>
+      DwellerDrawing.along(from, to, length, light);
+    const arm = (side: 0 | 1): { readonly upper: LimbFrame; readonly fore: LimbFrame } => {
+      const elbow = joints.elbows[side];
+      // The wrist its share of the way along the forearm, as the arm is drawn flat.
+      const grip = DwellerShapes.GRIP / (DwellerShapes.FOREARM + DwellerShapes.GRIP);
+      const hand = joints.hands[side];
+      const wrist = {
+        x: hand.x + (elbow.x - hand.x) * grip,
+        y: hand.y + (elbow.y - hand.y) * grip,
+      };
+      return {
+        upper: limb(joints.shoulders[side], elbow, DwellerShapes.UPPER_ARM),
+        fore: limb(elbow, wrist, DwellerShapes.FOREARM),
+      };
+    };
+    const [near, far] = [arm(0), arm(1)];
     const tip = look.holds[0] === "bottle" ? (look.tip ?? 0) : joints.forearms[0];
-    const hands = [0, 1].map((side) => {
-      const hand = joints.hands[side] ?? joints.hands[0];
-      const turn = side === 0 ? tip : 0;
-      return `translate(${DwellerDrawing.text(hand.x)} ${DwellerDrawing.text(hand.y)}) rotate(${DwellerDrawing.text(turn)})`;
-    });
-    const legs = DwellerDrawing.legs(look);
+    const hand = (side: 0 | 1, turn: number): string =>
+      `translate(${text(joints.hands[side].x)} ${text(joints.hands[side].y)}) rotate(${text(turn)})${side === 1 ? " scale(-1 1)" : ""}`;
+    const { CRAWL } = DwellerDrawing;
+    const under = DwellerDrawing.smooth((look.lean - CRAWL.from) / (CRAWL.to - CRAWL.from));
+    const legs = shapes.legs(under, look.rise);
+    const tapped = DwellerDrawing.about(
+      legs.ankles[1],
+      legs.toes[1],
+      -DwellerDrawing.TAP * look.tap,
+    );
     return {
       all: look.turned ? `${at} scale(-1 1)` : at,
       shown: Math.min(1, Math.max(0, look.shown * (1 - look.lying))),
-      torso: `rotate(${DwellerDrawing.text(joints.torso)})`,
-      legs: [legs[0].leg, legs[1].leg],
-      feet: [legs[0].foot, legs[1].foot],
-      arms: [arms[0] ?? "", arms[1] ?? ""],
-      hands: [hands[0] ?? "", hands[1] ?? ""],
+      torso: `rotate(${text(joints.torso)})`,
+      limbs: {
+        upper0: near.upper,
+        fore0: near.fore,
+        upper1: far.upper,
+        fore1: far.fore,
+        thigh0: limb(legs.hips[0], legs.knees[0], DwellerShapes.THIGH),
+        shin0: limb(legs.knees[0], legs.ankles[0], DwellerShapes.SHIN),
+        foot0: limb(legs.ankles[0], legs.toes[0], DwellerShapes.BOOTIE.length),
+        thigh1: limb(legs.hips[1], legs.knees[1], DwellerShapes.THIGH),
+        shin1: limb(legs.knees[1], legs.ankles[1], DwellerShapes.SHIN),
+        foot1: limb(legs.ankles[1], tapped, DwellerShapes.BOOTIE.length),
+      },
+      hands: [hand(0, tip), hand(1, joints.forearms[1])],
+      fists: [look.holds[0] !== "nothing", look.holds[1] !== "nothing"],
       holds: look.holds,
-      head: `translate(${DwellerDrawing.text(joints.head.x)} ${DwellerDrawing.text(joints.head.y)}) rotate(${DwellerDrawing.text(joints.headAngle)}) scale(${DwellerPose.HEAD_SCALE})`,
-      lids: DwellerDrawing.LIDS * (1 - Math.min(1, Math.max(0, look.eyes))),
-      mouth: DwellerDrawing.MOUTH * Math.min(1, Math.max(0, look.mouth)),
+      head: `translate(${text(joints.head.x)} ${text(joints.head.y)}) rotate(${text(joints.headAngle)})`,
+      eyes: Math.min(1, Math.max(0, look.eyes)),
+      gaze: {
+        x: Math.max(-1, Math.min(1, look.gaze.x)) * DwellerHead.GAZE.x,
+        y: Math.max(-1, Math.min(1, look.gaze.y)) * DwellerHead.GAZE.y,
+      },
+      mouth: Math.min(1, Math.max(0, look.mouth)),
       guitar: look.guitar,
       stream: DwellerDrawing.stream(look, joints.hands[0]),
     };
   }
 
-  /** The legs: crossed on the mats sitting, under the hips on hands and knees, and between the
-   * two as the figure leans down onto its hands. The further foot lifts with the beat. */
-  private static legs(look: DwellerLook): readonly [Leg, Leg] {
-    const { CRAWL, SITTING, KNEELING, MATS } = DwellerDrawing;
-    const share = Math.min(1, Math.max(0, (look.lean - CRAWL.from) / (CRAWL.to - CRAWL.from)));
-    const under = share * share * (3 - 2 * share);
-    const floor = MATS + look.rise;
-    const mix = (from: Spot, to: Spot): Spot => ({
-      x: from.x + (to.x - from.x) * under,
-      y: from.y + (to.y + floor - from.y) * under,
-    });
-    const made = (
-      [hip, knee, ankle, toes]: readonly [Spot, Spot, Spot, Spot],
-      [kneel, heel, tip]: readonly [Spot, Spot, Spot],
-      tap: number,
-    ): Leg => {
-      const end = mix(ankle, heel);
-      const point = DwellerDrawing.about(end, mix(toes, tip), -DwellerDrawing.TAP * tap);
-      return {
-        leg: DwellerDrawing.line([hip, mix(knee, kneel), end]),
-        foot: DwellerDrawing.line([end, point]),
-      };
+  /** Where an arm's shadow is: where the arm is, moved down and to the left. */
+  static drop(limb: LimbFrame): string {
+    const { DROP } = DwellerDrawing;
+    return `translate(${DROP.x} ${DROP.y}) ${limb.transform}`;
+  }
+
+  /** The body: the hood down behind the neck, the neck, the suit's body quilted with its yoke and
+   * its zip, the base layer in the opening and round the neck, and the collar laid open. */
+  private body(): string {
+    const { body } = this.shapes;
+    const { NECK, HEAD } = DwellerShapes;
+    const head = NECK.y + HEAD.y;
+    const p = (outline: Outline, kind = ""): string => DwellerDrawing.path(outline, kind);
+    const neck = `M-12 ${head + 24}C-13 ${head + 40} -15 ${NECK.y - 12} -15 ${NECK.y + 6}L14 ${NECK.y + 6}C13 ${NECK.y - 12} 12 ${head + 40} 13 ${head + 14}Z`;
+    return `<g class="dw-hood">${p(body.hood, "dw-hood-down")}<path class="dw-hood-rim" d="${DwellerDrawing.line(body.hood.slice(2, -2))}"/></g>
+<g class="dw-body-suit">${p(body.outline, "dw-body-base")}${body.baffles.map((baffle) => p(baffle, "dw-body-baffle")).join("")}${body.seams.map((seam) => p(seam, "dw-seam")).join("")}${p(body.yoke, "dw-yoke")}</g>
+${p(body.opening, "dw-base-layer")}
+<path class="dw-neck" d="${neck}"/>
+<path class="dw-neck-shade" d="${neck}"/>
+${p(body.baseLayer, "dw-base-layer")}
+<path class="dw-base-layer-zip" d="M0 ${NECK.y - 12}V${NECK.y + 30}"/>
+${p(body.collar[0], "dw-collar")}${p(body.collar[1], "dw-collar")}
+<path class="dw-zip" d="${DwellerDrawing.line(body.zip)}"/>
+<path class="dw-zip-light" d="${DwellerDrawing.line(body.zip.map(({ x, y }) => ({ x: x + 2, y })))}"/>`;
+  }
+
+  /** A part of the suit, in its own frame: its outline painted in `paint`, its baffles puffed,
+   * its seams; and a band of it, as a sleeve's cuff, darker. */
+  private static limb(
+    name: string,
+    part: SuitPart,
+    paint: "suit" | "booties",
+    band: Outline | null = null,
+    kind = "",
+  ): string {
+    const p = (outline: Outline, kind = ""): string => DwellerDrawing.path(outline, kind);
+    const baffles = part.baffles.map((baffle) => p(baffle, "dw-baffle")).join("");
+    const seams = part.seams.map((seam) => p(seam, "dw-seam")).join("");
+    const cuff = band === null ? "" : p(band, kind);
+    return `<g class="dw-limb" data-part="${name}" data-paint="${paint}" data-lit="plus" data-puff="end">${p(part.outline, "dw-limb-base")}${baffles}${seams}${cuff}</g>`;
+  }
+
+  /** The shadings the suit's parts are painted with: across a part, lit on its +y side or its
+   * -y one, in the suit's colour, the booties' and the cuff's; the puff of a baffle, its top at
+   * the part's end or its root; and the body's, lit from the right and above. */
+  private static defs(): string {
+    const across = (name: string, lit: "plus" | "minus"): string => {
+      const [from, to] = lit === "plus" ? [0, 1] : [1, 0];
+      return `<linearGradient id="dw-${name}-${lit}" x1="0" y1="${from}" x2="0" y2="${to}">${DwellerDrawing.tones(name)}</linearGradient>`;
     };
-    return [made(SITTING[0], KNEELING[0], 0), made(SITTING[1], KNEELING[1], look.tap)];
+    const side = (id: string, name: string): string =>
+      `<linearGradient id="${id}" x1="0" y1="0.5" x2="1" y2="0.5">${DwellerDrawing.tones(name)}</linearGradient>`;
+    const puffStops = DwellerDrawing.PUFF.map(
+      ([offset, colour, alpha]) =>
+        `<stop offset="${offset}" stop-color="${colour}" stop-opacity="${alpha}"/>`,
+    ).join("");
+    const puff = (id: string, x1: number, y1: number, x2: number, y2: number): string =>
+      `<linearGradient id="${id}" x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}">${puffStops}</linearGradient>`;
+    return [
+      across("suit", "plus"),
+      across("suit", "minus"),
+      across("booties", "plus"),
+      across("booties", "minus"),
+      across("cuff", "plus"),
+      across("cuff", "minus"),
+      across("yoke", "plus"),
+      across("yoke", "minus"),
+      side("dw-body-side", "suit"),
+      side("dw-yoke-side", "yoke"),
+      side("dw-base-side", "base-layer"),
+      `<linearGradient id="dw-neck-side" x1="0" y1="0.5" x2="1" y2="0.5"><stop offset="0" style="stop-color:var(--skin-shade)"/><stop offset="0.6" style="stop-color:var(--skin)"/><stop offset="1" style="stop-color:var(--skin-light)"/></linearGradient>`,
+      `<linearGradient id="dw-neck-top" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#1a0c06" stop-opacity="0.62"/><stop offset="0.45" stop-color="#1a0c06" stop-opacity="0.18"/><stop offset="1" stop-color="#1a0c06" stop-opacity="0"/></linearGradient>`,
+      puff("dw-puff-end", 0, 0.5, 1, 0.5),
+      puff("dw-puff-root", 1, 0.5, 0, 0.5),
+      puff("dw-puff-up", 0.5, 1, 0.5, 0),
+    ].join("");
+  }
+
+  /** A colour's shading as the slope paints the kit (`KitShading.of`): its dark side, itself,
+   * its lit side, and itself again at the edge, where the light glances off. */
+  private static tones(name: string): string {
+    return `<stop offset="0" style="stop-color:var(--${name}-dark)"/><stop offset="0.45" style="stop-color:var(--${name})"/><stop offset="0.8" style="stop-color:var(--${name}-light)"/><stop offset="1" style="stop-color:var(--${name})"/>`;
+  }
+
+  /** A part from `from` to `to`, its bone `length` long: where its frame is, drawn shorter if
+   * the two are nearer than that, and which way it's lit. */
+  private static along(from: Spot, to: Spot, length: number, light: Spot): LimbFrame {
+    const dx = to.x - from.x;
+    const dy = to.y - from.y;
+    const far = Math.hypot(dx, dy);
+    const angle = far < 1e-9 ? 0 : Math.atan2(dy, dx);
+    const short = Math.min(1, far / length);
+    const cos = Math.cos(angle);
+    const sin = Math.sin(angle);
+    const text = (value: number): string => DwellerDrawing.text(value);
+    const degrees = (angle * 180) / Math.PI;
+    return {
+      transform: `translate(${text(from.x)} ${text(from.y)}) rotate(${text(degrees)}) scale(${short.toFixed(3)} 1)`,
+      lit: -sin * light.x + cos * light.y > 0 ? "plus" : "minus",
+      puff: cos * light.x + sin * light.y > 0 ? "end" : "root",
+    };
   }
 
   /** The water from a bottle tipped over the pot, down to the water in it. */
@@ -178,22 +307,12 @@ ${arm(0, nearer)}
     }
     const angle = (tip * Math.PI) / 180;
     const from = {
-      x: hand.x + DwellerPose.BOTTLE_NECK * Math.sin(angle),
-      y: hand.y - DwellerPose.BOTTLE_NECK * Math.cos(angle),
+      x: hand.x + DwellerHands.BOTTLE_NECK * Math.sin(angle),
+      y: hand.y - DwellerHands.BOTTLE_NECK * Math.cos(angle),
     };
     const to = { x: from.x - 7, y: Math.max(from.y + 4, DwellerDrawing.POT_WATER) };
     const text = (value: number): string => DwellerDrawing.text(value);
     return `M${text(from.x)} ${text(from.y)}Q${text(from.x - 6)} ${text((from.y + to.y) / 2)} ${text(to.x)} ${text(to.y)}`;
-  }
-
-  /** A point so far from `from` on the way to `to`. */
-  private static towards(from: Spot, to: Spot, far: number): Spot {
-    const dx = to.x - from.x;
-    const dy = to.y - from.y;
-    const length = Math.hypot(dx, dy);
-    return length < 1e-9
-      ? from
-      : { x: from.x + (dx / length) * far, y: from.y + (dy / length) * far };
   }
 
   /** `point` turned about `centre` by `degrees`, clockwise on the screen. */
@@ -207,6 +326,19 @@ ${arm(0, nearer)}
     };
   }
 
+  /** 0 to 1 with an easy start and end. */
+  private static smooth(share: number): number {
+    const t = Math.min(1, Math.max(0, share));
+    return t * t * (3 - 2 * t);
+  }
+
+  /** An outline as a closed path, with a class. */
+  private static path(outline: Outline, kind = ""): string {
+    const points = DwellerDrawing.line(outline);
+    return `<path${kind === "" ? "" : ` class="${kind}"`} d="${points}Z"/>`;
+  }
+
+  /** Points as an open line. */
   private static line(points: readonly Spot[]): string {
     return points
       .map(
@@ -221,15 +353,4 @@ ${arm(0, nearer)}
     const rounded = Math.round(value * 10) / 10;
     return String(rounded === 0 ? 0 : rounded);
   }
-}
-
-/** A leg sitting: its hip, knee, ankle and toes; and on hands and knees: its knee, ankle and
- * toes. */
-type Limb = readonly [Spot, Spot, Spot, Spot];
-type Knelt = readonly [Spot, Spot, Spot];
-
-/** A leg's lines: from the hip over the knee to the ankle, and the bootie from there. */
-interface Leg {
-  readonly leg: string;
-  readonly foot: string;
 }

@@ -1,5 +1,6 @@
 import type { ActionSink } from "../../input/player-action";
 import { PageElements } from "../../input/page-elements";
+import { GearDrawing } from "../../interface/gear-drawing";
 import type { Texts } from "../../interface/texts";
 import { Atmosphere } from "../../rendering/atmosphere";
 import type { TentSizes } from "../../rendering/camp-signs";
@@ -17,7 +18,16 @@ import { DwellerActs } from "./dweller-acts";
 import { DwellerPose } from "./dweller-pose";
 import { TentPicture } from "./tent-picture";
 import type { TentStock } from "./tent-picture";
-import type { ChoreRow, StockRow, TentReadout, TentState, TentTextName } from "./tent-readout";
+import type {
+  Chip,
+  ChoreRow,
+  Note,
+  StockName,
+  StockRow,
+  TentReadout,
+  TentState,
+  TentTextName,
+} from "./tent-readout";
 
 /** The climb as the tent's screen reads it: the tents' rule, the packs, the body, the clock, the
  * weather and the altimeter. The expedition's rules are this. */
@@ -37,17 +47,37 @@ export type Passage = "outside" | "going-in" | "inside" | "coming-out";
  * The tent's inside, over the slope (#258): once the player's climber has gone in at a tent's
  * door, and the slope has shown them through it, the screen opens on the tent cut open from end
  * to end (`TentPicture`), the person in it doing what they do (`DwellerActs`, `DwellerPose`), and
- * a panel under it: where and when, how they feel, the water, gas, meals, bars and oxygen there
- * are, and the chores, each a button with what it takes and gives (`TentReadout`). A chore's
- * button begins it, and stops the one in hand; [Drink] and [Eat a bar] use the pack; [Pack] opens
- * the pack's card, to take from the camp's store or leave things in it; [Leave the tent], or the
- * tent's key, goes out, and the screen closes as they crawl to the door. Every button is an
- * action of the game's, so a room and a replay see the tent as the player's own climb does. It
- * reads the rules each frame while it's open, and changes the page only where something changed.
+ * a panel under it, in pictures and few words (#264): where and when, how they feel, a mark and a
+ * word each; the water, gas, meals, bars and oxygen there are, each drawn as the pack draws it
+ * (`GearDrawing`) with its number; and the chores, each a button with its mark and its word, and
+ * what it takes and gives as marks with numbers (`TentReadout`): the mark of what it lacks crossed
+ * out, and in hand a ring of its progress round its mark, the time left and its stop. Each says
+ * the whole of it in a sentence, as its tooltip and to a screen reader. A chore's button begins
+ * it, and stops the one in hand; [Drink] and [Eat] use the pack; [Pack] opens the pack's card, to
+ * take from the camp's store or leave things in it; [Leave], or the tent's key, goes out, and the
+ * screen closes as they crawl to the door. The stove's warning shows while it burns, and the sleep
+ * slept by the clock until the next chore. Every button is an action of the game's, so a room and
+ * a replay see the tent as the player's own climb does. It reads the rules each frame while it's
+ * open, and changes the page only where something changed.
  */
 export class TentScreen {
   /** The camp whose tents stand on rubble, with what came up on a yak. */
   private static readonly BASE_CAMP = "base-camp";
+  /** What the tent has, each drawn as the pack draws it (`#art-…`); and each chore's mark. */
+  private static readonly ART: Readonly<Record<StockName, string>> = {
+    water: "water",
+    gas: "gas",
+    meals: "meal",
+    bars: "food",
+    oxygen: "oxygen",
+  };
+  private static readonly MARKS: Readonly<Record<Chore, string>> = {
+    melt: "snow",
+    cook: "pot",
+    nap: "nap",
+    sleep: "bag",
+    guitar: "guitar",
+  };
   /** How long the screen takes to close behind someone leaving, at the most, in seconds. */
   private static readonly CLOSING = 1.4;
   /** How long it takes to fade in over the slope, in seconds: the style sheet's, and a little. */
@@ -61,7 +91,10 @@ export class TentScreen {
   private readonly stage: HTMLElement;
   private readonly picture: TentPicture;
   private readonly rows = new Map<Chore, ChoreElements>();
-  private readonly stocks = new Map<string, StockElements>();
+  private readonly stocks = new Map<StockName, StockElements>();
+  private readonly feel: HTMLElement;
+  private readonly slept: HTMLElement;
+  private readonly note: HTMLElement;
   private readonly drink: HTMLButtonElement;
   private readonly eat: HTMLButtonElement;
   private readonly pack: HTMLButtonElement;
@@ -100,7 +133,11 @@ export class TentScreen {
     this.screen = elements.find("#tent");
     this.stage = elements.find("#tent .tent-stage");
     this.picture = new TentPicture(this.stage, sizes);
+    const { document } = window;
     elements.find('#tent [data-text="title"]').textContent = texts.say("title");
+    this.feel = elements.find('#tent [data-text="feel"]');
+    this.slept = elements.find("#tent .tent-slept");
+    this.note = elements.find("#tent .tent-note");
     for (const stock of ["water", "gas", "meals", "bars", "oxygen"] as const) {
       const row = elements.find(`#tent [data-stock="${stock}"]`);
       const name = row.querySelector("span");
@@ -109,35 +146,48 @@ export class TentScreen {
         throw new RangeError(`The tent's ${stock} needs its name and its amount`);
       }
       name.textContent = texts.say(`stock.${stock}`);
+      const { svg } = new GearDrawing(document, TentScreen.ART[stock]);
+      svg.setAttribute("class", "art");
+      svg.setAttribute("aria-hidden", "true");
+      row.prepend(svg);
       this.stocks.set(stock, { row, amount, gauge: row.querySelector<HTMLElement>("b") });
     }
     const list = elements.find("#tent .tent-chores");
-    const { document } = window;
     list.replaceChildren(
       ...CHORES.map((chore) => {
         const item = document.createElement("li");
         const button = document.createElement("button");
         button.type = "button";
         button.dataset.chore = chore;
+        const ring = document.createElement("span");
+        ring.className = "tent-ring";
+        ring.dataset.mark = TentScreen.MARKS[chore];
+        ring.append(TentScreen.mark(document));
         const name = document.createElement("strong");
         name.textContent = texts.say(`chore.${chore}`);
-        const note = document.createElement("small");
-        const bar = document.createElement("i");
-        bar.className = "tent-progress";
-        const done = document.createElement("b");
-        bar.append(done);
-        button.append(name, note, bar);
+        const chips = document.createElement("span");
+        chips.className = "tent-chips";
+        button.append(ring, name, chips);
         button.addEventListener("click", () => {
           this.choose(chore);
         });
         item.append(button);
-        this.rows.set(chore, { button, note, done });
+        this.rows.set(chore, { button, ring, chips });
         return item;
       }),
     );
     const act = (name: "leave" | "drink" | "eat" | "pack", heard: () => void) => {
       const button = elements.find(`#tent [data-act="${name}"]`) as HTMLButtonElement;
-      button.textContent = texts.say(name);
+      const words = button.querySelector("span");
+      if (words === null) {
+        throw new RangeError(`The tent's [${name}] needs its words`);
+      }
+      words.textContent = texts.say(name);
+      const label = name === "leave" || name === "eat" ? texts.say(`${name}.label`) : null;
+      if (label !== null) {
+        button.setAttribute("aria-label", label);
+        button.title = label;
+      }
       button.addEventListener("click", heard);
       return button;
     };
@@ -296,10 +346,12 @@ export class TentScreen {
     const panel = this.readout.of(state);
     this.write('[data-text="where"]', panel.where);
     this.write('[data-text="clock"]', panel.clock);
-    this.write('[data-text="feel"]', panel.feel);
-    this.write('[data-text="advice"]', panel.advice);
-    for (const [name, row] of Object.entries(panel.stock)) {
-      this.showStock(name, row);
+    TentScreen.show(this.slept, panel.slept);
+    TentScreen.show(this.note, panel.note);
+    TentScreen.chips(this.feel, panel.feel, "li");
+    TentScreen.label(this.feel, panel.feeling);
+    for (const name of ["water", "gas", "meals", "bars", "oxygen"] as const) {
+      this.showStock(name, panel.stock[name]);
     }
     for (const row of panel.chores) {
       this.showChore(row, asleep);
@@ -309,12 +361,15 @@ export class TentScreen {
     this.pack.disabled = asleep;
   }
 
-  private showStock(name: string, row: StockRow): void {
+  private showStock(name: StockName, row: StockRow): void {
     const elements = this.stocks.get(name);
     if (elements === undefined) {
       return;
     }
     TentScreen.set(elements.amount, row.text);
+    if (elements.row.title !== row.label) {
+      elements.row.title = row.label;
+    }
     if (elements.gauge !== null && row.share !== null) {
       const width = `${Math.round(row.share * 100)}%`;
       if (elements.gauge.style.width !== width) {
@@ -328,8 +383,9 @@ export class TentScreen {
     if (elements === undefined) {
       return;
     }
-    const { button, note, done } = elements;
-    TentScreen.set(note, row.note);
+    const { button, ring, chips } = elements;
+    TentScreen.chips(chips, row.chips, "span");
+    TentScreen.label(button, row.label);
     const state = row.doing ? "doing" : row.able ? "ready" : "lacking";
     if (button.dataset.state !== state) {
       button.dataset.state = state;
@@ -340,9 +396,9 @@ export class TentScreen {
     if (button.disabled !== disabled) {
       button.disabled = disabled;
     }
-    const width = `${(row.progress * 100).toFixed(1)}%`;
-    if (done.style.width !== width) {
-      done.style.width = width;
+    const done = row.progress.toFixed(3);
+    if (ring.style.getPropertyValue("--done") !== done) {
+      ring.style.setProperty("--done", done);
     }
   }
 
@@ -370,13 +426,71 @@ export class TentScreen {
       element.textContent = text;
     }
   }
+
+  /** What an element says in full: its tooltip, and its name to a screen reader. */
+  private static label(element: HTMLElement, label: string): void {
+    if (element.getAttribute("aria-label") !== label) {
+      element.setAttribute("aria-label", label);
+      element.title = label;
+    }
+  }
+
+  /** A mark and its words, shown, or hidden when there's none. */
+  private static show(element: HTMLElement, note: Note | null): void {
+    if (element.hidden !== (note === null)) {
+      element.hidden = note === null;
+    }
+    if (note === null) {
+      return;
+    }
+    if (element.dataset.mark !== note.mark) {
+      element.dataset.mark = note.mark;
+    }
+    const words = element.querySelector("span");
+    if (words !== null) {
+      TentScreen.set(words, note.text);
+    }
+    TentScreen.label(element, note.label);
+  }
+
+  /** `list`'s chips, written again when they changed: each a mark and its words, crossed out
+   * when it's what's lacking. */
+  private static chips(list: HTMLElement, chips: readonly Chip[], tag: "li" | "span"): void {
+    const key = chips.map(({ mark, text, lacking }) => `${mark} ${text} ${lacking}`).join("|");
+    if (list.dataset.chips === key) {
+      return;
+    }
+    list.dataset.chips = key;
+    const { ownerDocument } = list;
+    list.replaceChildren(
+      ...chips.map(({ mark, text, lacking }) => {
+        const chip = ownerDocument.createElement(tag);
+        chip.className = "tent-chip";
+        chip.dataset.mark = mark;
+        if (lacking) {
+          chip.dataset.lacking = "yes";
+        }
+        const words = ownerDocument.createElement("span");
+        words.textContent = text;
+        chip.append(TentScreen.mark(ownerDocument), words);
+        return chip;
+      }),
+    );
+  }
+
+  /** A mark's element: the mask of its parent's `data-mark`, which a screen reader skips. */
+  private static mark(document: Document): HTMLElement {
+    const mark = document.createElement("i");
+    mark.setAttribute("aria-hidden", "true");
+    return mark;
+  }
 }
 
-/** A chore's button, its line and its bar. */
+/** A chore's button, the ring round its mark, and its chips. */
 interface ChoreElements {
   readonly button: HTMLButtonElement;
-  readonly note: HTMLElement;
-  readonly done: HTMLElement;
+  readonly ring: HTMLElement;
+  readonly chips: HTMLElement;
 }
 
 /** A stock's row: its amount, and its gauge if it has one. */
