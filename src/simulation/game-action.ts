@@ -48,7 +48,9 @@ export interface Jumar extends ClimberAction {
   readonly held: boolean;
 }
 
-/** Hauls a partner who hangs on the rope below up to the edge, while held, or lets go (#209). */
+/** Hauls a partner who hangs on the rope below up to the edge, while held, or lets go (#209);
+ * and, held by a casualty, helps them as a rescuer does (#241): first aid, the anchor of a rescue
+ * line, the haul up it, onto the back and off it (docs/conventions/slope-physics.md → Rescue). */
 export interface Haul extends ClimberAction {
   readonly kind: "haul";
   readonly held: boolean;
@@ -63,10 +65,11 @@ export interface Tool extends ClimberAction {
 }
 
 /** In a camp: takes one of an item from its store into the pack, or leaves one there: a jumar, a
- * second ice tool, a litre of water, a bar of food or a bottle of oxygen (`Packs`). */
+ * second ice tool, a litre of water, a bar of food, a bottle of oxygen, a first-aid kit or a
+ * rescue kit (`Packs`). */
 export interface PackChange extends ClimberAction {
   readonly kind: "pack";
-  readonly item: "jumar" | "ice-tool" | "water" | "food" | "oxygen";
+  readonly item: "jumar" | "ice-tool" | "water" | "food" | "oxygen" | "first-aid" | "rescue-kit";
   readonly change: "take" | "leave";
 }
 

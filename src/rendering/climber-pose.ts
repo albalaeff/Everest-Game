@@ -84,6 +84,33 @@ export interface PoseState {
   /** Going into a tent or coming out of it (#258), how far down on their hands and knees they
    * are: 0 on their feet, 1 crawling. Not said, they're on their feet. */
   readonly crawling?: number;
+  /** Down with a bone broken, which limb (#241): they sit where they came to rest, a broken leg
+   * out straight ahead of them, a broken arm held to the chest. None on their feet. Hauled up a
+   * rescue line they hang in the harness, their boots off the wall. */
+  readonly hurt?: "leg" | "arm" | null;
+  /** Kneeling at their work for a casualty, the hands at it (#241): first aid, or lifting them
+   * (`aid`), at the hurt limb where the picture has it, from the climber's point, if it's known;
+   * or the screws of a rescue line's anchor, turned into the ice (`anchor`). */
+  readonly tending?: Tending | null;
+  /** Whether they carry a casualty on their back (#241). */
+  readonly carrying?: boolean;
+  /** Carried on a rescuer's back (#241): where the rescuer's hips are drawn, from the climber's
+   * point, and how far the rescuer leans. */
+  readonly riding?: Mounted | null;
+  /** How much they limp on a sprained leg, 0 to 1 (#241). */
+  readonly limp?: number;
+}
+
+/** A rescuer's work on their knees (`PoseState.tending`). */
+export interface Tending {
+  readonly what: "aid" | "anchor";
+  readonly at: Joint | null;
+}
+
+/** Whom a carried climber rides on (`PoseState.riding`). */
+export interface Mounted {
+  readonly hips: Joint;
+  readonly lean: number;
 }
 
 /** The figure's joints this frame, in its metres from where it stands, facing +x: the whole of it
@@ -131,7 +158,7 @@ export interface Pose {
 }
 
 /** What the figure is doing, as the pose draws it: from one to the next, it blends. */
-type Mode = "walk" | "rungs" | "wall" | "rise" | "fall" | "hang" | "dead";
+type Mode = "walk" | "rungs" | "wall" | "rise" | "fall" | "hang" | "dead" | "sit" | "tend" | "ride";
 
 /** The points a boot turns on as its stiff ankle needs, in its frame from the point of the sole
  * under the ankle, x along the sole and y up off it: as the shin leans too far forward over it,
@@ -223,8 +250,13 @@ interface Lying {
  * are swung in and out as `IceTools` moves them, the axe in the near hand; with one tool, the far
  * hand holds the jumar on the rope or braces on the ice, and the weight sinks onto each pick as it
  * settles. A fall takes them over face down, tumbling in the air, or hangs them below the rope;
- * they get up through a kneel; a dead climber lies still. From each to the next the pose blends,
- * in about a quarter of a second. It keeps only the picture's own: where in the stride, the
+ * they get up through a kneel; a dead climber lies still. A climber down with a bone broken
+ * (#241) sits where they came to rest, a broken leg out straight and a hand on it, or a broken arm
+ * held to the chest, rocking a little with the pain; hauled up a rescue line they hang in the
+ * harness, clear of the ice; on a sprained leg they limp. Their rescuer kneels over them, the
+ * hands at the hurt limb, or at the ice with an anchor's screws; and carries them on their back,
+ * bent under them, the hands under their knees, the casualty's arms over the rescuer's shoulders.
+ * From each to the next the pose blends, in about a quarter of a second. It keeps only the picture's own: where in the stride, the
  * blends, the clocks of the fall and the reach, the hand on the jumar, and the tools.
  */
 export class ClimberPose {
@@ -304,6 +336,8 @@ export class ClimberPose {
   /** How long a climber takes to go over in a fall, and to get up after it. */
   static readonly FALL_SECONDS = 0.4;
   static readonly RISE_SECONDS = 1.2;
+  /** How high over the snow the hips of a climber sat on it are (#241). */
+  static readonly SEAT = 0.15;
   /** How long a blend into each takes. */
   static readonly BLEND_SECONDS: Readonly<Record<Mode, number>> = {
     walk: 0.3,
@@ -313,6 +347,9 @@ export class ClimberPose {
     fall: ClimberPose.FALL_SECONDS,
     hang: 0.5,
     dead: 0.6,
+    sit: 0.9,
+    tend: 0.5,
+    ride: 0.7,
   };
   /** By tiredness: the stride's and the lift's share, the arms' swing's, and the head's drop. */
   static readonly TIRED: Readonly<
@@ -524,6 +561,96 @@ export class ClimberPose {
     lean: 0.45,
     toes: -1.1,
   };
+  /** Down with a bone broken (#241), sitting on the snow: where the hips are, from the climber's
+   * point and off the snow; and how the pain rocks them, this far, so many times a second. With
+   * a broken leg, leaning back on the far hand, propped behind them (`prop`): the leg out
+   * straight ahead, this far from the hip, its heel on the snow and its toes up; the other knee
+   * up, its boot this far ahead; the near hand on the thigh, this share of the way to the knee;
+   * the head down to it. With a broken arm, hunched over it: both knees up, the forearm across
+   * the body (`held`, from the hips) and the other hand under it. In a crevasse's narrow foot
+   * (`room`: a wall's face this much over the seat, looked for this far to each side, this
+   * finely) they sit `cramped`: the broken leg as far out as the ice ahead lets its boot, this
+   * far at the least, the knee up; the back to the ice behind, nearly upright, the hand against
+   * it, this high. */
+  private static readonly SAT = {
+    hips: { x: -0.06, y: ClimberPose.SEAT },
+    rock: { radians: 0.03, hz: 0.28 },
+    leg: {
+      lean: -0.4,
+      nod: 0.4,
+      out: 0.79,
+      heel: 0.11,
+      toes: 1.22,
+      knee: 0.44,
+      thigh: 0.55,
+      prop: { x: -0.36, y: 0.03 },
+    },
+    arm: {
+      lean: 0.26,
+      nod: 0.42,
+      knees: [0.5, 0.4] as readonly [number, number],
+      held: { x: 0.21, y: 0.33 },
+      under: { x: 0.14, y: 0.27 },
+    },
+    room: { reach: 1.2, step: 0.05, wall: 0.35 },
+    cramped: { boot: 0.1, least: 0.3, ease: 0.3, prop: 0.12, lean: -0.08, hand: 0.25 },
+  };
+  /** Hauled up a rescue line (#241), hurt: how far off a wall's face beside them they hang, in
+   * the harness, their boots off it. */
+  private static readonly HAULED_OFF = 0.34;
+  /** On their knees at a casualty (#241): the kneel, bent this far over them, the head down; the
+   * hands at the hurt limb where the picture has it, as far as the arms reach, or this far ahead
+   * and this high off the snow (`aid`), working, this far round, so many times a second, one
+   * against the other. Over work as low as `low` off the snow they bend all the way (`lean`),
+   * and no further than `upright` over work as high as `high`: an arm held to the chest; and
+   * further still, `step` by `step` up to `most`, till the hands reach it. At an anchor (`anchor`), down at the ice, the near hand turning a screw
+   * in, this far round, so many turns a second, the far one steadying it. */
+  private static readonly TEND = {
+    lean: 0.8,
+    upright: 0.5,
+    low: 0.25,
+    high: 0.55,
+    most: 1.2,
+    step: 0.05,
+    nod: 0.55,
+    ahead: 0.52,
+    aid: { up: 0.3, round: 0.035, hz: 1.3 },
+    anchor: { up: 0.1, round: 0.05, hz: 1.8 },
+  };
+  /** Carrying a casualty on their back (#241): bent forward under them this far at the least,
+   * sunk this far into the knees, the hips this far back under the load, and each hand back at
+   * the hips, under the casualty's knees. */
+  private static readonly CARRY = {
+    lean: 0.44,
+    sink: 0.05,
+    back: 0.04,
+    hands: [
+      { x: 0.13, y: -0.03 },
+      { x: 0.09, y: -0.05 },
+    ] as readonly [Joint, Joint],
+  };
+  /** Carried on a rescuer's back (#241), as in a pack carry: sat this far behind their hips and
+   * above them, leaning on their back this much further than they lean, the head on their
+   * shoulder; the arms over their shoulders, each hand this far from the rescuer's shoulder, on
+   * their chest; the thighs round their waist, each boot hanging this far ahead of their hips
+   * and below them, its toes down. */
+  private static readonly RIDE = {
+    seat: { x: -0.3, y: 0.1 },
+    lean: 0.12,
+    nod: 0.3,
+    hands: [
+      { x: 0.12, y: -0.1 },
+      { x: 0.16, y: -0.14 },
+    ] as readonly [Joint, Joint],
+    boots: [
+      { x: 0.34, y: -0.28 },
+      { x: 0.28, y: -0.32 },
+    ] as readonly [Joint, Joint],
+    soles: [-0.38, -0.32] as readonly [number, number],
+  };
+  /** A limp on a sprained leg (#241): how far the hips drop onto it and the body lurches over it
+   * as it takes the weight, at the most. */
+  private static readonly LIMP = { drop: 0.045, lurch: 0.09 };
   /** On hands and knees, through a tent's door (#258): the pelvis over the knees, the back near
    * level, the head up to see ahead; where the ankles lie behind, the shins along the ground and
    * the toes down, and where the hands are planted ahead; how far along the ground a crawl's
@@ -646,8 +773,10 @@ export class ClimberPose {
       poor: state.pickPoor ?? false,
       carried: state.tools ?? 1,
       upright: !state.falling && !state.dead,
-      // On a ladder, lowering down a face on its rope, or hauling, the hands are needed.
-      free: !state.hauling && (state.ladder === null || picks.length > 0),
+      // On a ladder, lowering down a face on its rope, or hauling, the hands are needed; so are
+      // a rescuer's, and a casualty has put their axe away (#241).
+      free:
+        !state.hauling && !ClimberPose.rescue(state) && (state.ladder === null || picks.length > 0),
     });
     this.keepTime(frame, share, state, mode);
     // On the ice, down towards a tool out of reach below, as far as it is, and up off it again.
@@ -657,8 +786,12 @@ export class ClimberPose {
     const gait = this.gait(state, mode, share, frame);
     this.time += frame;
     this.pulling = 0;
-    const made = this.hauling(
-      this.wobbling(this.made(mode, state, gait), state, mode),
+    const made = this.carrying(
+      this.hauling(
+        this.wobbling(this.limping(this.made(mode, state, gait), state, mode, gait), state, mode),
+        state,
+        mode,
+      ),
       state,
       mode,
     );
@@ -699,19 +832,33 @@ export class ClimberPose {
     };
   }
 
+  /** Whether their hands are a rescue's (#241): at a casualty or an anchor, under the knees of
+   * one they carry; or they're a casualty, down or carried. */
+  private static rescue(state: PoseState): boolean {
+    return (
+      state.tending != null || state.carrying === true || state.riding != null || state.hurt != null
+    );
+  }
+
   private modeOf(state: PoseState): Mode {
     if (state.dead) {
       return "dead";
     }
+    if (state.riding != null) {
+      return "ride";
+    }
     if (state.falling) {
       return this.heldUp(state) || this.hangingFrom(state) !== null ? "hang" : "fall";
+    }
+    if (state.hurt != null) {
+      return "sit";
     }
     if (this.rising < 1) {
       return "rise";
     }
     const { ladder } = state;
     if (ladder === null) {
-      return "walk";
+      return state.tending == null ? "walk" : "tend";
     }
     return Math.abs(ladder.way.y) >= 0.5 ? "wall" : "rungs";
   }
@@ -741,7 +888,8 @@ export class ClimberPose {
     const [nearFree, farFree] = this.tools.handsFree;
     const free = nearFree || farFree;
     this.jumarSide += ((nearFree ? 0 : farFree ? 1 : this.jumarSide) - this.jumarSide) * share;
-    const holds = state.jumar !== null && upright && free;
+    // Carrying, the hands are under the casualty's knees: the jumar rides on its cowstail.
+    const holds = state.jumar !== null && upright && free && state.carrying !== true;
     this.holding += ((holds ? grip : 0) - this.holding) * share;
     const pushing = state.sliding && state.moving && upright;
     this.pushing += ((pushing ? 1 : 0) - this.pushing) * share;
@@ -757,7 +905,10 @@ export class ClimberPose {
     const face = mode === "hang" ? (state.face ?? null) : null;
     this.faceAhead = face ?? this.faceAhead;
     const { BRACED } = ClimberPose;
-    const brace = face === null ? 0 : ClimberPose.smooth((BRACED.reach - face) / BRACED.ease);
+    // A casualty hauled up hangs in the harness: no broken limb braces on the ice (#241).
+    const able = state.hurt == null;
+    const brace =
+      face === null || !able ? 0 : ClimberPose.smooth((BRACED.reach - face) / BRACED.ease);
     this.braced += (brace - this.braced) * share;
     const inTheAir = !upright && -state.ground(0) > ClimberPose.AIR_METRES;
     this.aloft += ((inTheAir ? 1 : 0) - this.aloft) * share;
@@ -872,6 +1023,15 @@ export class ClimberPose {
     }
     if (mode === "hang") {
       return { targets: this.hanging(state), down: ClimberPose.NONE_DOWN };
+    }
+    if (mode === "ride" && state.riding != null) {
+      return { targets: ClimberPose.riding(state.riding), down: ClimberPose.NONE_DOWN };
+    }
+    if (mode === "sit") {
+      return { targets: this.sitting(state), down: ClimberPose.NONE_DOWN };
+    }
+    if (mode === "tend" && state.tending != null) {
+      return { targets: this.tending(state, state.tending), down: ClimberPose.NONE_DOWN };
     }
     if (mode === "wall") {
       return this.wall(state, gait);
@@ -1361,13 +1521,18 @@ export class ClimberPose {
     const lifted =
       drawn === null ? null : { x: drawn.x, y: Math.max(drawn.y, ClimberPose.HELD_ABOVE) };
     const hold = this.hangingFrom(state) ?? (this.heldUp(state) ? lifted : null) ?? ClimberPose.UP;
+    // Hauled up beside a wall's face, hurt, they hang clear of it, no boot on the ice (#241).
+    const clear = state.hurt != null && state.face != null;
+    const offset: Joint = clear
+      ? { x: Math.min(0, this.faceAhead - ClimberPose.HAULED_OFF), y: 0 }
+      : ClimberPose.ORIGIN;
     const most = ClimberPose.HANG_LEAN;
-    const leant = Math.min(Math.max(Math.atan2(hold.x, hold.y), -most), most);
+    const leant = Math.min(Math.max(Math.atan2(hold.x - offset.x, hold.y), -most), most);
     // Level with the carabiner or under it, the lean eases to half: the rope pulls them along,
     // not over; it comes on as the carabiner comes up over them, with no jump (#243).
     const over = drawn === null ? 1 : ClimberPose.smooth(drawn.y / ClimberPose.HELD_ABOVE);
     const tilt = leant * (0.5 + 0.5 * over);
-    const above = ClimberPose.turned(hold, -tilt);
+    const above = ClimberPose.inside(hold, offset, tilt);
     const shoulder = ClimberPose.shoulderOf(ClimberPose.ORIGIN, -0.08);
     const reach = ClimberPose.UPPER_ARM + ClimberPose.FOREARM - 0.02;
     const away = Math.hypot(above.x - shoulder.x, above.y - shoulder.y);
@@ -1393,7 +1558,7 @@ export class ClimberPose {
         { x: 0.1, y: 0.45 },
       ],
       tilt,
-      offset: ClimberPose.ORIGIN,
+      offset,
     };
     return this.braced > 1e-3
       ? ClimberPose.mix(free, this.bracedOn(state, hold), this.braced)
@@ -1444,6 +1609,139 @@ export class ClimberPose {
     };
   }
 
+  /** Down with a bone broken (#241), sitting on the snow where they came to rest (`SAT`), as the
+   * ground lies under them. */
+  private sitting(state: PoseState): Targets {
+    const { SAT, ANKLE, THIGH, SHIN } = ClimberPose;
+    const pelvis: Joint = { x: SAT.hips.x, y: SAT.hips.y + state.ground(SAT.hips.x) };
+    const rock = SAT.rock.radians * Math.sin(2 * Math.PI * SAT.rock.hz * this.time);
+    const onSnow = (x: number): Joint => ({ x, y: state.ground(x) + ANKLE });
+    const lie = (x: number): number =>
+      Math.atan((state.ground(x + 0.1) - state.ground(x - 0.1)) / 0.2);
+    const rest = { tilt: 0, offset: ClimberPose.ORIGIN };
+    if (state.hurt === "arm") {
+      const { arm } = SAT;
+      const [near, far] = [pelvis.x + arm.knees[0], pelvis.x + arm.knees[1]];
+      return {
+        ...rest,
+        pelvis,
+        lean: arm.lean + rock,
+        nod: arm.nod,
+        ankles: [onSnow(near), onSnow(far)],
+        soles: [lie(near), lie(far)],
+        pivots: [ClimberPose.ON_SNOW, ClimberPose.ON_SNOW],
+        hands: [
+          { x: pelvis.x + arm.held.x, y: pelvis.y + arm.held.y },
+          { x: pelvis.x + arm.under.x, y: pelvis.y + arm.under.y },
+        ],
+      };
+    }
+    const { leg } = SAT;
+    const hip = ClimberPose.hipOf(pelvis.x, 0, pelvis.y);
+    // In a crevasse's narrow foot there's no room to lie a leg out, nor to lean back: the heel
+    // against the ice ahead, the knee up, and the back to the ice behind.
+    const ahead = this.roomBeside(state, 1);
+    const behind = this.roomBeside(state, -1);
+    const reach = Math.min(leg.out, Math.max(ahead - hip.x - SAT.cramped.boot, SAT.cramped.least));
+    const cramped = ClimberPose.smooth((leg.out - reach) / SAT.cramped.ease);
+    const out = hip.x + reach;
+    const heel: Joint = { x: out, y: state.ground(out) + leg.heel };
+    const knee = ClimberPose.bend(hip, heel, THIGH, SHIN, 1).middle;
+    const onThigh = ClimberPose.between(hip, knee, leg.thigh);
+    const up = pelvis.x + Math.min(leg.knee, reach - 0.06);
+    const back = Math.min(-leg.prop.x, Math.max(behind - 0.05, SAT.cramped.prop));
+    const upright = ClimberPose.smooth((-leg.prop.x - back) / SAT.cramped.ease);
+    const prop = pelvis.x - back;
+    return {
+      ...rest,
+      pelvis,
+      lean: leg.lean * (1 - upright) + SAT.cramped.lean * upright + rock,
+      nod: leg.nod,
+      ankles: [heel, onSnow(up)],
+      soles: [leg.toes * (1 - cramped) + lie(out), lie(up)],
+      pivots: [ClimberPose.OFF_THE_GROUND, ClimberPose.ON_SNOW],
+      hands: [
+        { x: onThigh.x, y: onThigh.y + 0.07 },
+        { x: prop, y: state.ground(prop) + leg.prop.y + SAT.cramped.hand * upright },
+      ],
+    };
+  }
+
+  /** How far to a side of a climber sitting on the snow, ahead of them (1) or behind (-1), the
+   * ground runs on before a wall's face stands over it, in the figure's metres: as far as a leg
+   * lies, or further, in the open. */
+  private roomBeside(state: PoseState, side: 1 | -1): number {
+    const { reach, step, wall } = ClimberPose.SAT.room;
+    const seat = state.terrain(0);
+    for (let away = step; away <= reach; away += step) {
+      if (state.terrain(side * away) - seat > wall) {
+        return away - step;
+      }
+    }
+    return reach;
+  }
+
+  /** On their knees at a casualty or an anchor (#241, `TEND`): the kneel, bent over the work, the
+   * hands at it. */
+  private tending(state: PoseState, tending: Tending): Targets {
+    const { TEND, UPPER_ARM, FOREARM } = ClimberPose;
+    const kneel = this.kneel(state);
+    const work = tending.what === "anchor" ? TEND.anchor : TEND.aid;
+    const to: Joint = tending.at ?? {
+      x: TEND.ahead,
+      y: state.ground(TEND.ahead) + work.up,
+    };
+    const over = to.y - state.ground(to.x);
+    const bent = ClimberPose.smooth((TEND.high - over) / (TEND.high - TEND.low));
+    const reach = UPPER_ARM + FOREARM - 0.04;
+    const short = (lean: number): number => {
+      const from = ClimberPose.shoulderOf(kneel.pelvis, lean);
+      return Math.hypot(to.x - from.x, to.y - from.y) - reach;
+    };
+    // Further over still, as far as a back bends, where the hands don't reach it yet.
+    let lean = TEND.upright + (TEND.lean - TEND.upright) * bent;
+    while (short(lean) > 0 && lean < TEND.most) {
+      lean = Math.min(lean + TEND.step, TEND.most);
+    }
+    const shoulder = ClimberPose.shoulderOf(kneel.pelvis, lean);
+    // As far towards it as the arms reach from the kneel, and never under the snow.
+    const away = Math.hypot(to.x - shoulder.x, to.y - shoulder.y);
+    const share = away > reach ? reach / away : 1;
+    const x = shoulder.x + (to.x - shoulder.x) * share;
+    const y = Math.max(shoulder.y + (to.y - shoulder.y) * share, state.ground(x) + 0.05);
+    const turn = 2 * Math.PI * work.hz * this.time;
+    const [cos, sin] = [work.round * Math.cos(turn), work.round * Math.sin(turn)];
+    const far: Joint =
+      tending.what === "anchor"
+        ? { x: x - 0.07, y: y + 0.03 }
+        : { x: x - 0.06 - cos, y: y + 0.02 - sin / 2 };
+    return {
+      ...kneel,
+      lean,
+      nod: TEND.nod,
+      hands: [{ x: x + cos, y: y + sin }, far],
+    };
+  }
+
+  /** Carried on the back of the rescuer `on` (#241, `RIDE`). */
+  private static riding(on: Mounted): Targets {
+    const { RIDE } = ClimberPose;
+    const { hips } = on;
+    const shoulder = ClimberPose.shoulderOf(hips, on.lean);
+    const from = (joint: Joint, by: Joint): Joint => ({ x: joint.x + by.x, y: joint.y + by.y });
+    return {
+      pelvis: from(hips, RIDE.seat),
+      lean: on.lean + RIDE.lean,
+      nod: RIDE.nod,
+      ankles: [from(hips, RIDE.boots[0]), from(hips, RIDE.boots[1])],
+      soles: RIDE.soles,
+      pivots: [ClimberPose.OFF_THE_GROUND, ClimberPose.OFF_THE_GROUND],
+      hands: [from(shoulder, RIDE.hands[0]), from(shoulder, RIDE.hands[1])],
+      tilt: 0,
+      offset: ClimberPose.ORIGIN,
+    };
+  }
+
   /** On hands and knees (#258): the knees under the hips and the hands under the shoulders, on
    * the ground as it lies; crawling, a hand goes forward with the knee across from it, by the
    * ground covered. */
@@ -1464,6 +1762,39 @@ export class ClimberPose {
       hands: [limb(hands[0], Math.PI), limb(hands[1], 0)],
       tilt: 0,
       offset: ClimberPose.ORIGIN,
+    };
+  }
+
+  /** The targets of a climber carrying a casualty on their back, on their feet (#241, `CARRY`):
+   * bent forward under them, sunk into the knees, the hands back under the casualty's knees. Not
+   * carrying, as made. */
+  private carrying(made: Made, state: PoseState, mode: Mode): Made {
+    if (state.carrying !== true || (mode !== "walk" && mode !== "rungs")) {
+      return made;
+    }
+    const { CARRY } = ClimberPose;
+    const { targets } = made;
+    const lean = Math.max(targets.lean, CARRY.lean);
+    const pelvis: Joint = { x: targets.pelvis.x - CARRY.back, y: targets.pelvis.y - CARRY.sink };
+    const hand = (by: Joint): Joint => ({ x: pelvis.x + by.x, y: pelvis.y + by.y });
+    const hands: readonly [Joint, Joint] = [hand(CARRY.hands[0]), hand(CARRY.hands[1])];
+    return { ...made, targets: { ...targets, pelvis, lean, nod: lean, hands } };
+  }
+
+  /** The targets of a climber limping on a sprained leg, the near one (#241, `LIMP`): as it takes
+   * the weight, the hips drop onto it and the body lurches over it. Sound, as made. */
+  private limping(made: Made, state: PoseState, mode: Mode, gait: Gait): Made {
+    const limp = Math.min(Math.max(state.limp ?? 0, 0), 1) * (1 - this.standing);
+    if (limp <= 0 || mode !== "walk") {
+      return made;
+    }
+    const { LIMP, STANCE } = ClimberPose;
+    const { targets } = made;
+    const onIt = gait.phase < STANCE ? Math.sin((Math.PI * gait.phase) / STANCE) ** 2 : 0;
+    const pelvis: Joint = { x: targets.pelvis.x, y: targets.pelvis.y - LIMP.drop * limp * onIt };
+    return {
+      ...made,
+      targets: { ...targets, pelvis, lean: targets.lean + LIMP.lurch * limp * onIt },
     };
   }
 

@@ -206,6 +206,25 @@ export class Faces {
     return run !== undefined && !this.open.has(run);
   }
 
+  /** Where the route's ground begins again `way` along the ground from a dead end at `along`
+   * (#241): the nearer end of the first run the route reaches that way, the lip a rescuer stands
+   * at over a climber who lies in the dead end. None from ground that's no dead end, or where the
+   * ground ends first. */
+  wayOut(along: number, way: Way): number | null {
+    const index = this.runs.findIndex(({ from, to }) => along >= from && along <= to);
+    const run = this.runs[index];
+    if (run === undefined || this.open.has(run)) {
+      return null;
+    }
+    for (let next = index + way; next >= 0 && next < this.runs.length; next += way) {
+      const other = this.runs[next];
+      if (other !== undefined && this.open.has(other)) {
+        return way > 0 ? other.from : other.to;
+      }
+    }
+    return null;
+  }
+
   private nearest(along: number, reach: number, end: (face: Face) => number): Face | null {
     let found: Face | null = null;
     let away = reach;

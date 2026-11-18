@@ -3614,6 +3614,342 @@
       "kind": "question",
       "question": "How long do bare or gloved fingers take to freeze at −30 °C in a 50 km/h wind, at 8,000 m?",
       "about": ["medicine.frostbite-temperature", "medicine.frostbite-risk"]
+    },
+    {
+      "id": "medicine.fall-great-height",
+      "kind": "fact",
+      "claim": "In trauma medicine a fall from more than this height is a fall from a great height.",
+      "status": "source only",
+      "versions": [
+        {
+          "value": 3,
+          "unit": "m",
+          "note": "Falls higher than 3 m were included, grouped as 3 to 7 m, 7 to 9 m and over 9 m; a storey counted as 3 m.",
+          "source": {
+            "title": "Nau et al. 2021, Falls from Great Heights: Risk to Sustain Severe Thoracic and Pelvic Injuries Increases with Height of the Fall → 2. Materials and Methods",
+            "url": "https://doi.org/10.3390/jcm10112307"
+          },
+          "checked": "2026-11-17"
+        }
+      ]
+    },
+    {
+      "id": "medicine.fall-leg-fractures",
+      "kind": "fact",
+      "claim": "Of the injured who reached a trauma centre after falling 3 to 7 m, about this share had broken a leg; the share is no higher from greater heights.",
+      "status": "source only",
+      "versions": [
+        {
+          "value": 26.1,
+          "unit": "%",
+          "note": "Fractures of the lower extremity in 26.1 % of 120 patients who fell 3 to 7 m (4.4 m on average), 41.7 % from 7 to 9 m and 40.9 % from over 9 m, a difference that isn't significant.",
+          "source": {
+            "title": "Nau et al. 2021, Falls from Great Heights: Risk to Sustain Severe Thoracic and Pelvic Injuries Increases with Height of the Fall → 3. Results, Table 1",
+            "url": "https://doi.org/10.3390/jcm10112307"
+          },
+          "checked": "2026-11-17"
+        }
+      ]
+    },
+    {
+      "id": "medicine.fall-arm-fractures",
+      "kind": "fact",
+      "claim": "Of the injured who reached a trauma centre after falling 3 to 7 m, about this share had broken an arm.",
+      "status": "source only",
+      "versions": [
+        {
+          "value": 29.4,
+          "unit": "%",
+          "note": "Fractures of the upper extremity in 29.4 % of the patients who fell 3 to 7 m, 33.3 % from 7 to 9 m and 45.5 % from over 9 m, a difference that isn't significant.",
+          "source": {
+            "title": "Nau et al. 2021, Falls from Great Heights: Risk to Sustain Severe Thoracic and Pelvic Injuries Increases with Height of the Fall → 3. Results, Table 1",
+            "url": "https://doi.org/10.3390/jcm10112307"
+          },
+          "checked": "2026-11-17"
+        }
+      ]
+    },
+    {
+      "id": "medicine.fall-landing-decides",
+      "kind": "fact",
+      "claim": "What a fall injures depends on the surface the body lands on and on its position as it lands, not on the height alone: the height acts partly by turning the body in the air.",
+      "status": "source only",
+      "versions": [
+        {
+          "note": "The distribution of the injuries and their severity depend on the landing surface and the patient's position on landing; a surface that doesn't give breaks the pelvis and the legs.",
+          "source": {
+            "title": "Nau et al. 2021, Falls from Great Heights: Risk to Sustain Severe Thoracic and Pelvic Injuries Increases with Height of the Fall → 4. Discussion",
+            "url": "https://doi.org/10.3390/jcm10112307"
+          },
+          "checked": "2026-11-17"
+        }
+      ]
+    },
+    {
+      "id": "medicine.fall-feet-first",
+      "kind": "fact",
+      "claim": "A fall that lands feet first breaks the feet and the lower legs: the impact drives the bones of the foot into the tibia, which breaks, and usually the fibula with it; sprains and torn ligaments of the ankle and the knee come with it.",
+      "status": "source only",
+      "versions": [
+        {
+          "note": "A case of a fall landed on the feet: every bone of the feet and both tibiae and fibulae broken, the knee and the hip at risk too, and the spine by the load along it.",
+          "source": {
+            "title": "Amadasi et al. 2025, Injury pattern of feet and lower limbs in a feet-first fall from height → Discussion",
+            "url": "https://doi.org/10.1007/s12024-025-00939-3"
+          },
+          "checked": "2026-11-17"
+        },
+        {
+          "note": "Those who jump land feet first for the most part, and break their legs more often.",
+          "source": {
+            "title": "Nau et al. 2021, Falls from Great Heights: Risk to Sustain Severe Thoracic and Pelvic Injuries Increases with Height of the Fall → 1. Introduction",
+            "url": "https://doi.org/10.3390/jcm10112307"
+          },
+          "checked": "2026-11-17"
+        }
+      ]
+    },
+    {
+      "id": "medicine.fall-other-injuries",
+      "kind": "fact",
+      "claim": "A fall from a great height injures more than the limbs: of the injured who fell 3 to 7 m, about this share had broken the spine; the chest, the pelvis and the head are hurt too, the chest and the pelvis more often the higher the fall.",
+      "status": "source only",
+      "versions": [
+        {
+          "value": 36.1,
+          "unit": "%",
+          "note": "Spine fractures in 36.1 % of those who fell 3 to 7 m; chest trauma in 41.2 %, pelvic fractures in 13.4 %, a traumatic brain injury in 43.7 %.",
+          "source": {
+            "title": "Nau et al. 2021, Falls from Great Heights: Risk to Sustain Severe Thoracic and Pelvic Injuries Increases with Height of the Fall → 3. Results, Table 1",
+            "url": "https://doi.org/10.3390/jcm10112307"
+          },
+          "checked": "2026-11-17"
+        }
+      ]
+    },
+    {
+      "id": "medicine.tourniquet-use",
+      "kind": "fact",
+      "claim": "A tourniquet is the first choice for life-threatening bleeding from an arm or a leg, put on above the wound; a purpose-made one stops severe bleeding far better than an improvised one.",
+      "status": "source only",
+      "versions": [
+        {
+          "note": "The primary option for life-threatening extremity bleeding; replaced, it goes on bare skin 2 to 3 inches above the bleeding site; the recommended purpose-made tourniquets are far superior to improvised ones for stopping severe bleeding.",
+          "source": {
+            "title": "WMS Magazine: Tourniquet Replacement (vol. 41, issue 1)",
+            "url": "https://wms.imiscloud.com/magazine/1424/Tourniquet-Replacement/default.aspx"
+          },
+          "checked": "2026-11-17"
+        }
+      ]
+    },
+    {
+      "id": "medicine.tourniquet-limit",
+      "kind": "fact",
+      "claim": "A tourniquet is replaced, or converted to a packed wound and a pressure dressing, no later than this many hours after it goes on: left longer, it damages the limb more and more, up to the loss of it.",
+      "status": "source only",
+      "versions": [
+        {
+          "value": 2,
+          "unit": "h",
+          "note": "Ideally converted or replaced no later than 2 hours after being applied; past that, progressive damage: muscle necrosis, kidney failure, amputation, death.",
+          "source": {
+            "title": "WMS Magazine: Tourniquet Replacement (vol. 41, issue 1)",
+            "url": "https://wms.imiscloud.com/magazine/1424/Tourniquet-Replacement/default.aspx"
+          },
+          "checked": "2026-11-17"
+        }
+      ]
+    },
+    {
+      "id": "medicine.tourniquet-cold",
+      "kind": "fact",
+      "claim": "A limb under a tourniquet frostbites more easily: it's insulated well, and never warmed with direct heat.",
+      "status": "source only",
+      "versions": [
+        {
+          "note": "Limb tourniquets raise the risk of frostbite: extra insulation, and no direct source of heat on tissue without blood.",
+          "source": {
+            "title": "WMS Magazine: Tourniquet Replacement (vol. 41, issue 1)",
+            "url": "https://wms.imiscloud.com/magazine/1424/Tourniquet-Replacement/default.aspx"
+          },
+          "checked": "2026-11-17"
+        }
+      ]
+    },
+    {
+      "id": "medicine.splint-qualities",
+      "kind": "fact",
+      "claim": "A splint is rigid enough to support the injury, padded, insulated from the cold and light, and leaves the fingers or the toes free, so that circulation, sensation and movement can be checked; trekking poles give it rigidity, a sleeping pad its padding, and a wrap holds it together.",
+      "status": "source only",
+      "versions": [
+        {
+          "note": "Five qualities: rigid enough to support the injury, padded and immobilising, insulating, light, and the hands or feet left accessible; improvised from a jacket, trekking poles, a sleeping pad, a tarp, cord and an elastic wrap.",
+          "source": {
+            "title": "NOLS: 7 Materials That Can Be Used To Improvise a Splint (2016)",
+            "url": "https://www.nols.edu/?p=745352"
+          },
+          "checked": "2026-11-17"
+        }
+      ]
+    },
+    {
+      "id": "medicine.sprain-landing",
+      "kind": "coefficient",
+      "claim": "The speed a falling climber hits the ice at, in metres a second, from which the landing can sprain an ankle or a wrist (#241): a drop of about 1.3 m through the air, in crampons, with a pack. Fitted so that a slip the rope holds, which lands at about 1 m/s, hurts nobody, and a drop of a metre and a half off a block can.",
+      "status": "source only",
+      "value": 5,
+      "unit": "m/s",
+      "fitted_to": ["medicine.fall-feet-first", "medicine.fall-landing-decides"],
+      "fitted": "2026-11-17"
+    },
+    {
+      "id": "medicine.fracture-landing",
+      "kind": "coefficient",
+      "claim": "The speed a falling climber hits the ice at, in metres a second, from which the landing can break a bone (#241): a drop of about 3 m, where trauma medicine's falls from a great height begin (medicine.fall-great-height).",
+      "status": "source only",
+      "value": 7.7,
+      "unit": "m/s",
+      "fitted_to": [
+        "medicine.fall-great-height",
+        "medicine.fall-leg-fractures",
+        "medicine.fall-arm-fractures"
+      ],
+      "fitted": "2026-11-17"
+    },
+    {
+      "id": "medicine.open-fracture-landing",
+      "kind": "coefficient",
+      "claim": "The speed a falling climber hits the ice at, in metres a second, from which a bone it breaks can come through the skin, and bleed (#241): a drop of about 5 m, between the height from which bones break (medicine.fracture-landing) and the one that kills (technique.lethal-landing).",
+      "status": "source only",
+      "value": 9.9,
+      "unit": "m/s",
+      "fitted_to": ["medicine.fall-great-height", "medicine.fall-landing-decides"],
+      "fitted": "2026-11-17"
+    },
+    {
+      "id": "medicine.landing-unhurt-soft",
+      "kind": "coefficient",
+      "claim": "The chance a climber walks away unhurt from a landing just hard enough to hurt (medicine.sprain-landing), as the way they came down has it (#241). Fitted with medicine.landing-unhurt-hard, a straight line between the two, so that of the falls of 3 to 7 m about a third leave the limbs whole, as about a quarter to a third of the injured in hospital had broken a leg and as many an arm (medicine.fall-leg-fractures, medicine.fall-arm-fractures), and those who walked away never came to one.",
+      "status": "source only",
+      "value": 0.6,
+      "unit": "1",
+      "fitted_to": [
+        "medicine.fall-landing-decides",
+        "medicine.fall-leg-fractures",
+        "medicine.fall-arm-fractures"
+      ],
+      "fitted": "2026-11-17"
+    },
+    {
+      "id": "medicine.landing-unhurt-hard",
+      "kind": "coefficient",
+      "claim": "The chance a climber walks away unhurt from a landing just short of the one that kills (technique.lethal-landing): now and then, by a miracle (#241).",
+      "status": "source only",
+      "value": 0.05,
+      "unit": "1",
+      "fitted_to": [
+        "medicine.fall-landing-decides",
+        "medicine.fall-leg-fractures",
+        "medicine.fall-arm-fractures"
+      ],
+      "fitted": "2026-11-17"
+    },
+    {
+      "id": "medicine.landing-leg-flat",
+      "kind": "coefficient",
+      "claim": "Of the landings that hurt, the share that hurt a leg where the climber comes down on ground they could stand on, feet first for the most part (#241); the rest hurt an arm, thrown out to break the fall.",
+      "status": "source only",
+      "value": 0.7,
+      "unit": "1",
+      "fitted_to": [
+        "medicine.fall-feet-first",
+        "medicine.fall-leg-fractures",
+        "medicine.fall-arm-fractures"
+      ],
+      "fitted": "2026-11-17"
+    },
+    {
+      "id": "medicine.landing-leg-steep",
+      "kind": "coefficient",
+      "claim": "Of the landings that hurt, the share that hurt a leg where the climber is thrown against a face of ice, a crevasse's wall or a step's (#241): there the arm and the shoulder take it more often than the feet.",
+      "status": "source only",
+      "value": 0.35,
+      "unit": "1",
+      "fitted_to": [
+        "medicine.fall-landing-decides",
+        "medicine.fall-leg-fractures",
+        "medicine.fall-arm-fractures"
+      ],
+      "fitted": "2026-11-17"
+    },
+    {
+      "id": "medicine.sprain-pace",
+      "kind": "coefficient",
+      "claim": "The share of their stride a sprained ankle leaves a climber, and of their hands' work on a rope and the tools a sprained wrist (#241): they go on, limping, at half their pace.",
+      "status": "source only",
+      "value": 0.5,
+      "unit": "1",
+      "fitted_to": ["medicine.fall-feet-first"],
+      "fitted": "2026-11-17"
+    },
+    {
+      "id": "medicine.sprain-wrapped-pace",
+      "kind": "coefficient",
+      "claim": "The share of their stride, or of their hands' work, a sprain leaves a climber once it's wrapped (#241): the wrap supports the joint, and some of the pace comes back.",
+      "status": "source only",
+      "value": 0.75,
+      "unit": "1",
+      "fitted_to": ["medicine.fall-feet-first", "medicine.splint-qualities"],
+      "fitted": "2026-11-17"
+    },
+    {
+      "id": "medicine.tourniquet-minutes",
+      "kind": "coefficient",
+      "claim": "The mountain's minutes a rescuer takes to put a tourniquet on a limb that bleeds, over the down suit's leg or sleeve, in mitts (#241): the first thing done, before any splint (medicine.tourniquet-use).",
+      "status": "source only",
+      "value": 2,
+      "unit": "min",
+      "fitted_to": ["medicine.tourniquet-use"],
+      "fitted": "2026-11-17"
+    },
+    {
+      "id": "medicine.splint-minutes",
+      "kind": "coefficient",
+      "claim": "The mountain's minutes a rescuer takes to splint a broken leg or arm on the ice (#241): the splint moulded to the limb, padded, wrapped and tied, the fingers or the toes left free (medicine.splint-qualities).",
+      "status": "source only",
+      "value": 10,
+      "unit": "min",
+      "fitted_to": ["medicine.splint-qualities"],
+      "fitted": "2026-11-17"
+    },
+    {
+      "id": "medicine.wrap-minutes",
+      "kind": "coefficient",
+      "claim": "The mountain's minutes a rescuer takes to wrap a sprained ankle or wrist with an elastic bandage, the boot or the mitt off and on again (#241).",
+      "status": "source only",
+      "value": 5,
+      "unit": "min",
+      "fitted_to": ["medicine.splint-qualities"],
+      "fitted": "2026-11-17"
+    },
+    {
+      "id": "medicine.bleed-untreated",
+      "kind": "question",
+      "question": "How long can a climber with an open fracture of the leg bleed, with no tourniquet on, before the bleeding kills them, at 5,500 to 6,000 m in the cold? The game lets it bleed until the tourniquet is on, and nothing follows from the wait (#241).",
+      "about": ["medicine.tourniquet-use", "medicine.open-fracture-landing"]
+    },
+    {
+      "id": "medicine.fall-trunk-injuries",
+      "kind": "question",
+      "question": "A fall of 3 to 7 m injures the spine, the chest, the pelvis and the head about as often as the limbs (medicine.fall-other-injuries). The game's landings injure a leg or an arm alone (#241): how should a suspected spinal injury change the first aid, the haul out of a crevasse and the carry down, and when is a casualty not moved at all?",
+      "about": ["medicine.fall-other-injuries", "medicine.splint-qualities"]
+    },
+    {
+      "id": "medicine.tourniquet-carry",
+      "kind": "question",
+      "question": "A tourniquet is converted or replaced within 2 hours (medicine.tourniquet-limit), and a carry down the Icefall takes longer. What does a Sherpa or a guide do with it on the way down?",
+      "about": ["medicine.tourniquet-limit", "medicine.tourniquet-cold"]
     }
   ]
 }

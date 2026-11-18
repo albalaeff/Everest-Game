@@ -31,6 +31,7 @@ export const GOD_TEXTS = [
   "gust",
   "twist",
   "slip",
+  "injure",
   "immortal",
   "camp",
   "part",
@@ -92,6 +93,7 @@ export class GodPanel {
     "gust",
     "twist",
     "slip",
+    "injure",
   ];
 
   private readonly elements: PageElements;
@@ -265,6 +267,8 @@ export class GodPanel {
       if (!this.god.jolt(kind)) {
         this.tell("none", "no-jolt");
       }
+    } else if (stage === "injure") {
+      this.god.injure();
     } else {
       this.god.slip();
     }

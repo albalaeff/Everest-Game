@@ -1072,6 +1072,106 @@
       "unit": "s",
       "fitted_to": ["technique.passing-on-ropes", "technique.sherpa-leads"],
       "fitted": "2026-11-15"
+    },
+    {
+      "id": "technique.crevasse-rescue-order",
+      "kind": "fact",
+      "claim": "A crevasse rescue goes in this order: an anchor of two pieces in the snow or the ice, the second equalised with the first; to the lip, to see whether the partner answers; the lip cleared and padded; and the haul. A partner who doesn't answer is reached by rappelling down into the crevasse.",
+      "status": "source only",
+      "versions": [
+        {
+          "note": "The first piece is very strong, the second equalised with it by a sling or a cordelette; at the lip the rescuer checks the partner is conscious, clears and pads the lip, and hauls on a 3:1; if the partner doesn't answer, the rescuer has to rappel down into the crevasse.",
+          "source": {
+            "title": "American Alpine Institute: Crevasse Rescue, an introduction",
+            "url": "https://www.alpineinstitute.com/articles/skills/crevasse-rescue/crevasse-rescue-introduction"
+          },
+          "checked": "2026-11-17"
+        }
+      ]
+    },
+    {
+      "id": "technique.haul-three-to-one",
+      "kind": "fact",
+      "claim": "On the simple haul system of a crevasse rescue, the Z-pulley, the rescuer pulls this many metres of rope for each metre the casualty rises, and bears a third of their weight; it's used wherever it can be, being the fastest.",
+      "status": "source only",
+      "versions": [
+        {
+          "value": 3,
+          "unit": "1",
+          "note": "For every 3 feet pulled, the victim rises 1 foot; the 3:1 is used whenever possible because it's faster than the 6:1.",
+          "source": {
+            "title": "American Alpine Institute: Crevasse Rescue, an introduction",
+            "url": "https://www.alpineinstitute.com/articles/skills/crevasse-rescue/crevasse-rescue-introduction"
+          },
+          "checked": "2026-11-17"
+        },
+        {
+          "value": 3,
+          "unit": "1",
+          "note": "The simple haul system: the victim's weight divided by 3, quick and simple to set up, suited to a victim who can help on the wall or is light enough; a victim who can't help, or a heavy one, takes the double Mariner, 7 to 1, and a lot of rope.",
+          "source": {
+            "title": "Petzl: Crevasse rescue no. 3, haul systems for crevasse rescue",
+            "url": "https://www.petzl.com/INT/en/Sport/Crevasse-rescue-no--3--haul-systems-for-crevasse-rescue"
+          },
+          "checked": "2026-11-17"
+        }
+      ]
+    },
+    {
+      "id": "technique.rescue-anchor-minutes",
+      "kind": "coefficient",
+      "claim": "The mountain's minutes a rescuer at a whole stride takes to build the anchor of a rescue line at a crevasse's lip and throw the rope down (#241): two ice screws, equalised, the lip cleared and padded (technique.crevasse-rescue-order).",
+      "status": "source only",
+      "value": 8,
+      "unit": "min",
+      "fitted_to": ["technique.crevasse-rescue-order"],
+      "fitted": "2026-11-17"
+    },
+    {
+      "id": "technique.rescue-haul-speed",
+      "kind": "coefficient",
+      "claim": "How fast a rescuer at a whole stride hauls a casualty who can't help up a rescue line on its pulleys, in metres a second (#241): a third of the haul of a partner who climbs with them (technique.haul-speed), three metres of rope pulled for each one risen (technique.haul-three-to-one).",
+      "status": "source only",
+      "value": 0.05,
+      "unit": "m/s",
+      "fitted_to": ["technique.haul-three-to-one", "technique.crevasse-rescue-order"],
+      "fitted": "2026-11-17"
+    },
+    {
+      "id": "technique.rescue-reach",
+      "kind": "coefficient",
+      "claim": "How near a casualty a rescuer kneels to treat them or to take them onto their back, in metres (#241): within arm's reach of where they lie.",
+      "status": "source only",
+      "value": 1.5,
+      "unit": "m",
+      "fitted_to": ["technique.crevasse-rescue-order"],
+      "fitted": "2026-11-17"
+    },
+    {
+      "id": "technique.carry-lift-minutes",
+      "kind": "coefficient",
+      "claim": "The mountain's minutes it takes to get a casualty onto a rescuer's back, tied on with a sling for the carry, or to set them down off it (#241).",
+      "status": "source only",
+      "value": 3,
+      "unit": "min",
+      "fitted_to": ["sherpas.carried-down-metres", "sherpas.carried-down-hours"],
+      "fitted": "2026-11-17"
+    },
+    {
+      "id": "technique.carry-pace",
+      "kind": "coefficient",
+      "claim": "The share of their stride a rescuer keeps with a casualty on their back (#241). Fitted to the rescue of 18 May 2023, when Gelje Sherpa and those who helped him brought a climber 600 m down from the Balcony in about six hours, dragged on the snow or carried in turns on their backs (sherpas.carried-down-metres, sherpas.carried-down-hours): a third of a pace, on the Icefall's lower, thicker air.",
+      "status": "source only",
+      "value": 0.35,
+      "unit": "1",
+      "fitted_to": ["sherpas.carried-down-metres", "sherpas.carried-down-hours"],
+      "fitted": "2026-11-17"
+    },
+    {
+      "id": "technique.rescue-alone",
+      "kind": "question",
+      "question": "Does one Sherpa alone haul a casualty who can't help out of a crevasse on a 3:1, or does he rig the double Mariner (technique.haul-three-to-one) or wait for more hands? And how is a casualty with a broken leg carried through the Icefall's ladders: on the back, in a rope seat, on a sled, lowered at each step?",
+      "about": ["technique.haul-three-to-one", "technique.crevasse-rescue-order"]
     }
   ]
 }

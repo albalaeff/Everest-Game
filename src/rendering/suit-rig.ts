@@ -137,32 +137,43 @@ export class SuitRig extends FigureRig<SuitParts> {
    * sling holds the carabiner up off it, and the rope is lifted to it (#202). `together`, a
    * climber who hangs with both on one rope: the carabiner rides on the rope by the jumar, both
    * at the point the rope holds them from, so the rope runs down to one point over them and up
-   * again, never across itself between the two (#243). Drawn each frame, once the parts are
-   * placed. */
+   * again, never across itself between the two (#243). Sat on the snow, `floor` high in the
+   * figure's metres, a cowstail that's off lies on it (#241). Drawn each frame, once the parts
+   * are placed. */
   hold(
     pose: Pose,
     lengths: { readonly jumar: number; readonly carabiner: number },
     width: number,
     together = false,
+    floor: number | null = null,
   ): void {
     const { parts, lines } = this;
     const { torso, mask, jumar } = parts;
     lines.clear();
-    const regulator = SuitRig.at(torso, SuitRig.HOSE.from);
-    const round = SuitRig.at(torso, SuitRig.HOSE.round);
-    const valve = SuitRig.at(mask, SuitRig.VALVE);
-    lines
-      .moveTo(regulator.x, regulator.y)
-      .quadraticCurveTo(round.x, round.y, valve.x, valve.y)
-      .stroke({ width: SuitRig.HOSE.width, color: Palette.HOSE, cap: "round" });
+    // The hose runs from the bottle in the pack: none with the pack off their back (#241).
+    if (parts.pack.visible) {
+      const regulator = SuitRig.at(torso, SuitRig.HOSE.from);
+      const round = SuitRig.at(torso, SuitRig.HOSE.round);
+      const valve = SuitRig.at(mask, SuitRig.VALVE);
+      lines
+        .moveTo(regulator.x, regulator.y)
+        .quadraticCurveTo(round.x, round.y, valve.x, valve.y)
+        .stroke({ width: SuitRig.HOSE.width, color: Palette.HOSE, cap: "round" });
+    }
     const tie = SuitRig.at(torso, SuitRig.TIE);
     // Down, in the figure's turned frame: what a slack cowstail sags toward.
     const down = { x: Math.sin(pose.tilt), y: -Math.cos(pose.tilt) };
     const { HANGING } = SuitRig;
-    const off = (ahead: number): Joint => ({
-      x: tie.x + down.x * HANGING.down + ahead,
-      y: tie.y + down.y * HANGING.down,
-    });
+    // Sat on the snow, `floor` high, a cowstail that's off lies on it ahead of them, as far as
+    // it would have hung below it (#241).
+    const lowest = floor === null ? -Infinity : floor + SuitRig.CARABINER;
+    const off = (ahead: number): Joint => {
+      const x = tie.x + down.x * HANGING.down + ahead;
+      const y = tie.y + down.y * HANGING.down;
+      return y >= lowest ? { x, y } : { x: x + (lowest - y), y: lowest };
+    };
+    const slack = (to: Joint): number =>
+      floor === null ? HANGING.down * 2 : Math.hypot(to.x - tie.x, to.y - tie.y);
     const first = pose.jumar ?? off(HANGING.ahead);
     const sling = lengths.carabiner;
     this.carabinerAt =
@@ -176,11 +187,19 @@ export class SuitRig extends FigureRig<SuitParts> {
       lines,
       tie,
       first,
-      pose.jumar === null ? HANGING.down * 2 : lengths.jumar,
+      pose.jumar === null ? slack(first) : lengths.jumar,
       down,
+      floor,
     );
     const slung = together ? lengths.jumar : sling;
-    SuitRig.cowstail(lines, tie, second, pose.carabiner === null ? HANGING.down * 2 : slung, down);
+    SuitRig.cowstail(
+      lines,
+      tie,
+      second,
+      pose.carabiner === null ? slack(second) : slung,
+      down,
+      floor,
+    );
     lines.stroke({ width, color: Palette.SLING, cap: "round", join: "round" });
     lines
       .circle(second.x, second.y, SuitRig.CARABINER)
@@ -201,19 +220,25 @@ export class SuitRig extends FigureRig<SuitParts> {
   }
 
   /** A cowstail `length` long from the harness to `to`: a curve that sags `down` between them as
-   * far as its slack lets it, straight when it's taut. In pieces: a curve's own are too few at the
-   * figure's metres. */
+   * far as its slack lets it, straight when it's taut; no lower than the snow they sit on,
+   * `floor` high, where the rest of its slack lies ahead of them (#241). In pieces: a curve's own
+   * are too few at the figure's metres. */
   private static cowstail(
     lines: Graphics,
     from: Joint,
     to: Joint,
     length: number,
     down: Joint,
+    floor: number | null = null,
   ): void {
     const apart = Math.hypot(to.x - from.x, to.y - from.y);
     const sag = Math.sqrt(Math.max(length * length - apart * apart, 0)) / 2;
-    const controlX = (from.x + to.x) / 2 + down.x * 2 * sag;
-    const controlY = (from.y + to.y) / 2 + down.y * 2 * sag;
+    const hungX = (from.x + to.x) / 2 + down.x * 2 * sag;
+    const hungY = (from.y + to.y) / 2 + down.y * 2 * sag;
+    // The curve's lowest point is halfway from its ends' middle to its control point.
+    const lowest = floor === null ? -Infinity : 2 * floor - (from.y + to.y) / 2;
+    const controlX = hungY < lowest ? hungX + (lowest - hungY) / 2 : hungX;
+    const controlY = Math.max(hungY, lowest);
     const pieces = 8;
     lines.moveTo(from.x, from.y);
     for (let piece = 1; piece <= pieces; piece += 1) {

@@ -35,10 +35,11 @@ function aClimb(seed = 7) {
   const scenario = mountain.scenario(seed, undefined, undefined, true, undefined, true);
   const expedition = Expedition.start(scenario, rules.all);
   const store = new MemoryStore();
-  const game = new SoloGame(expedition, new ActionQueue(), store, PLAYER);
+  const queue = new ActionQueue();
+  const game = new SoloGame(expedition, queue, store, PLAYER);
   const sherpa = scenario.npcs?.[0] ?? null;
   const god = new GodMode(game, rules, mountain.route, PLAYER, sherpa, seed);
-  return { god, rules, game, store, expedition, sherpa: sherpa ?? "" };
+  return { god, rules, game, queue, store, expedition, sherpa: sherpa ?? "" };
 }
 
 /** Where a climber stands at a place of the god mode's. */
@@ -170,6 +171,27 @@ describe("GodMode: the clock, the weather and the speed", () => {
     expect(store.stored.at(-1)?.rules["jolts"]).toMatchObject({ weather: "snow" });
   });
 
+  it("calms the mountain: no gust comes on the open ground from then on, and none can be staged", () => {
+    // Twenty minutes of play on the Popcorn in a wind, twelve hours of the mountain's.
+    const windy = (calmed: boolean) => {
+      const climb = aClimb();
+      climb.god.teleport(250);
+      climb.god.weather("wind");
+      if (calmed) {
+        climb.god.calm();
+      }
+      climb.god.speed(20);
+      play(climb.game, 60);
+      return climb;
+    };
+    const { god, rules, store } = windy(true);
+
+    expect(windy(false).rules.jolts.jolts.length).toBeGreaterThan(0);
+    expect(rules.jolts.jolts).toEqual([]);
+    expect(god.jolt("gust")).toBe(false);
+    expect(store.stored.at(-1)?.rules["jolts"]).toMatchObject({ zones: [] });
+  });
+
   it("runs the climb as many times faster as it's told", () => {
     const { god, game } = aClimb();
 
@@ -269,5 +291,59 @@ describe("GodMode: scenarios staged on the spot", () => {
 
     expect(lying).toBe(true);
     expect(rules.physics.climber(PLAYER).dead).toBe(false);
+  });
+});
+
+describe("GodMode: an injury to rescue a climber from (#241)", () => {
+  it("breaks the player's leg where they stand: down, taking no step, and their Sherpa comes to them", () => {
+    const { god, rules, game, queue, sherpa } = aClimb();
+    god.teleport(250);
+    god.teleport(240, sherpa);
+
+    god.injure();
+    queue.send({ kind: "walk", climber: PLAYER, direction: "right" });
+    play(game, 6);
+
+    const player = rules.physics.climber(PLAYER);
+    expect(player).toMatchObject({ down: true, dead: false, moving: false });
+    expect(player.injuries).toMatchObject([{ part: "leg", kind: "fracture", splinted: false }]);
+    expect(rules.physics.along(PLAYER)).toBe(250);
+    expect(rules.sherpa.view).toMatchObject({ client: PLAYER });
+    expect(rules.physics.along(sherpa)).toBeGreaterThan(240);
+  });
+
+  it("stages the injury asked for, on the climber asked for", () => {
+    const { god, rules, sherpa } = aClimb();
+    god.teleport(250);
+
+    god.injure({ part: "arm", kind: "open-fracture" }, sherpa);
+
+    expect(rules.physics.climber(sherpa).injuries).toMatchObject([
+      { part: "arm", kind: "open-fracture", tourniquet: false },
+    ]);
+    expect(rules.physics.climber(sherpa).down).toBe(true);
+    expect(rules.physics.climber(PLAYER).injuries).toEqual([]);
+  });
+
+  it("lays them where it's told first, off the rope: a crevasse's floor, as a fall would have", () => {
+    const { god, rules } = aClimb();
+    const floor = 52;
+
+    god.injure(undefined, PLAYER, floor);
+
+    const player = rules.physics.climber(PLAYER);
+    expect(rules.physics.along(PLAYER)).toBe(floor);
+    expect(player).toMatchObject({ down: true, first: null, second: null });
+    expect(rules.physics.deadEnd(floor)).toBe(true);
+  });
+
+  it("leaves a Sherpa who lies with a bone broken where he lies when the player goes elsewhere", () => {
+    const { god, rules, sherpa } = aClimb();
+    god.injure(undefined, sherpa, 52);
+
+    god.teleport(39.3);
+
+    expect(rules.physics.along(sherpa)).toBe(52);
+    expect(rules.physics.along(PLAYER)).toBe(39.3);
   });
 });

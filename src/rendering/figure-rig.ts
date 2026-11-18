@@ -29,7 +29,8 @@ export interface RigParts {
  * frame to where `ClimberPose` has its bones, so a stride costs no drawing. A limb is shaded from
  * one side of it to the other, and turned over to keep its lit side towards the light as it
  * swings. The mask is on the face while the oxygen flows, and hangs from its strap on the chest
- * while it doesn't (#87). Each ice tool is where `IceTools` has it, in the hand or on the pack.
+ * while it doesn't (#87). Each ice tool is where `IceTools` has it, in the hand or on the pack;
+ * the pack is on their back, or off it with the tools strapped to it (#241).
  * What the parts look like is the subclass's: the climber in their kit, or the rim of light round
  * them.
  */
@@ -49,8 +50,17 @@ export abstract class FigureRig<Parts extends RigParts = RigParts> extends Conta
     turn: -0.9,
   };
 
+  /** Whether the pack is on their back, with the tools strapped to it. */
+  private packed = true;
+
   constructor(protected readonly parts: Parts) {
     super();
+  }
+
+  /** The pack on their back, or off it (#241): a rescuer leaves theirs to carry a casualty
+   * there, and the casualty's is left where they lay. From the next time the parts are placed. */
+  packOn(on: boolean): void {
+    this.packed = on;
   }
 
   /** Moves the parts to the pose, the chest swollen by `swell` of its depth with the breath, the
@@ -77,19 +87,24 @@ export abstract class FigureRig<Parts extends RigParts = RigParts> extends Conta
     parts.head.position.set(head.x, head.y);
     // The head nods down by `nod`: its x ahead turns towards its -y.
     parts.head.rotation = -pose.nod;
+    parts.pack.visible = this.packed;
     FigureRig.wear(parts, masked);
-    FigureRig.carry(parts, pose.tools);
+    FigureRig.carry(parts, pose.tools, this.packed);
   }
 
   /** Each ice tool where it's drawn: the part that's held where a hand has it, or the one on the
-   * pack where it's strapped; neither for a tool they don't carry. */
-  private static carry({ tools, strapped }: RigParts, drawn: readonly DrawnTool[]): void {
+   * pack where it's strapped, while the pack is `on`; neither for a tool they don't carry. */
+  private static carry(
+    { tools, strapped }: RigParts,
+    drawn: readonly DrawnTool[],
+    on: boolean,
+  ): void {
     for (const index of [0, 1] as const) {
       const tool = drawn[index];
       const held = tools[index];
       const packed = strapped[index];
       held.visible = tool !== undefined && tool.hand !== null;
-      packed.visible = tool !== undefined && tool.hand === null;
+      packed.visible = on && tool !== undefined && tool.hand === null;
       if (tool !== undefined) {
         const part = tool.hand === null ? packed : held;
         part.position.set(tool.grip.x, tool.grip.y);

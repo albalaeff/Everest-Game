@@ -37,14 +37,17 @@ test("the pack at Base Camp draws each thing, weighs what's packed, and sets the
   await toThePack(page);
   const screen = packScreen(page);
 
-  // The guide's list to begin with: the jumar, two litres and two bars; no second tool, no oxygen.
+  // The guide's list to begin with: the jumar, two litres, two bars and a first-aid kit (#241); no
+  // second tool, no oxygen, no rescue kit.
   await expect(tile(page, "pack", "jumar")).toHaveAttribute("data-packed", "yes");
+  await expect(tile(page, "pack", "first-aid")).toHaveAttribute("data-packed", "yes");
+  await expect(tile(page, "pack", "rescue-kit")).toHaveAttribute("data-packed", "no");
   await expect(tile(page, "pack", "ice-tool")).toHaveAttribute("data-packed", "no");
   await expect(tile(page, "pack", "water").locator("output")).toHaveText("2 L");
   await expect(tile(page, "pack", "water").locator('use[data-state="packed"]')).toHaveCount(2);
   await expect(tile(page, "pack", "water").locator('use[data-state="left"]')).toHaveCount(1);
   await expect(tile(page, "pack", "oxygen").locator('use[data-state="left"]')).toHaveCount(3);
-  await expect(screen.locator("#pack-weight")).toHaveText("Pack 2.3 kg · you carry 10 kg in all");
+  await expect(screen.locator("#pack-weight")).toHaveText("Pack 2.7 kg · you carry 10 kg in all");
   await expect(screen.locator("#pack-worn li")).toHaveCount(5);
   await expect(screen.getByRole("button", { name: "More: Jumar" })).toBeDisabled();
 
@@ -55,7 +58,12 @@ test("the pack at Base Camp draws each thing, weighs what's packed, and sets the
   await expect(tile(page, "pack", "ice-tool")).toHaveAttribute("data-packed", "yes");
   await expect(tile(page, "pack", "ice-tool")).toContainText("0.55 kg");
   await expect(tile(page, "pack", "jumar")).toContainText("Left in the tent");
-  await expect(screen.locator("#pack-weight")).toHaveText("Pack 6.4 kg · you carry 14.1 kg in all");
+  await expect(screen.locator("#pack-weight")).toHaveText("Pack 6.8 kg · you carry 14.1 kg in all");
+
+  // The rope, the screws and the pulleys to reach a partner down a crevasse (#241).
+  await screen.getByRole("button", { name: "More: Rescue kit" }).click();
+  await expect(tile(page, "pack", "rescue-kit")).toHaveAttribute("data-packed", "yes");
+  await expect(tile(page, "pack", "rescue-kit")).toContainText("1.17 kg");
 
   await screen.getByRole("button", { name: "Next: the gear check" }).click();
   await expect(gearCheck(page)).toBeVisible();
@@ -66,6 +74,8 @@ test("the pack at Base Camp draws each thing, weighs what's packed, and sets the
     .toEqual({
       jumar: false,
       tools: 2,
+      firstAid: true,
+      rescueKit: true,
     });
 });
 
@@ -97,6 +107,8 @@ test("on the climb the pack opens on I: a drink anywhere, and Base Camp's store 
     .toEqual({
       jumar: true,
       tools: 2,
+      firstAid: true,
+      rescueKit: false,
     });
 
   await page.keyboard.press("Escape");

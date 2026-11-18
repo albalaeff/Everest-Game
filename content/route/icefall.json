@@ -297,7 +297,7 @@
       "id": "base-camp",
       "from": 0,
       "to": 8,
-      "endless": ["jumar", "ice-tool", "water", "food", "oxygen", "gas", "meals"],
+      "endless": ["jumar", "ice-tool", "water", "food", "oxygen", "gas", "meals", "first-aid", "rescue-kit"],
       "tents": [
         { "door": 3.625, "lies": -1 },
         { "door": 8.25, "lies": -1 }
@@ -342,7 +342,7 @@
     {
       "id": "player",
       "mass": 75,
-      "load": 7.699,
+      "load": 7.299,
       "fitness": 1,
       "fatigue": 0,
       "awake": 1,
@@ -352,7 +352,7 @@
     {
       "id": "teammate",
       "mass": 68,
-      "load": 9.699,
+      "load": 9.299,
       "fitness": 1,
       "fatigue": 0,
       "awake": 1,
@@ -362,7 +362,7 @@
     {
       "id": "pemba",
       "mass": 62,
-      "load": 12.699,
+      "load": 11.129,
       "fitness": 1.35,
       "fatigue": 0,
       "awake": 1,
@@ -371,8 +371,8 @@
     }
   ],
   "packs": [
-    { "id": "player", "jumar": 1, "ice-tool": 0, "water": 2, "food": 2, "oxygen": 0 },
-    { "id": "teammate", "jumar": 1, "ice-tool": 0, "water": 2, "food": 2, "oxygen": 0 },
-    { "id": "pemba", "jumar": 1, "ice-tool": 1, "water": 3, "food": 3, "oxygen": 0 }
+    { "id": "player", "jumar": 1, "ice-tool": 0, "water": 2, "food": 2, "oxygen": 0, "first-aid": 1, "rescue-kit": 0 },
+    { "id": "teammate", "jumar": 1, "ice-tool": 0, "water": 2, "food": 2, "oxygen": 0, "first-aid": 1, "rescue-kit": 0 },
+    { "id": "pemba", "jumar": 1, "ice-tool": 1, "water": 3, "food": 3, "oxygen": 0, "first-aid": 1, "rescue-kit": 1 }
   ]
 }

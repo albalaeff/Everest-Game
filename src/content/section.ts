@@ -315,6 +315,22 @@ export class Section {
     return { from: first?.id === "moraine" ? first.to : 0, to: this.destination.from };
   }
 
+  /** The camp the section sets off from, for its Sherpa, who carries a client who can't walk
+   * down to it (#241): the first of its camps, if it's not the one it ends at. */
+  private get sherpaBase(): { readonly base?: { readonly from: number; readonly to: number } } {
+    const [first] = this.camps;
+    return first === undefined || first === this.destination
+      ? {}
+      : { base: { from: first.from, to: first.to } };
+  }
+
+  /** The stretch of the camp the section sets off from, along the ground: where a climber who
+   * can't walk is carried down to, and the climb ends, evacuated (#241). None if the section has
+   * the one camp. */
+  get base(): { readonly from: number; readonly to: number } | null {
+    return this.sherpaBase.base ?? null;
+  }
+
   /** The camp the section ends at: reaching its stretch is the arrival. */
   get destination(): Camp {
     const camp = this.camps.at(-1);
@@ -360,7 +376,13 @@ export class Section {
       ...checked.layout,
       climbers: checked.layout.climbers.map((climber) => {
         const { items } = packOf(climber.id);
-        return { ...climber, gear: { jumar: items.jumar > 0, tools: 1 + items["ice-tool"] } };
+        const gear = {
+          jumar: items.jumar > 0,
+          tools: 1 + items["ice-tool"],
+          firstAid: items["first-aid"] > 0,
+          rescueKit: items["rescue-kit"] > 0,
+        };
+        return { ...climber, gear };
       }),
     };
     const climbers = layout.climbers.map((climber) => climber.id);
@@ -383,6 +405,7 @@ export class Section {
         ? {}
         : {
             [Sherpa.NAME]: Sherpa.start({
+              ...this.sherpaBase,
               climber: sherpa,
               clients: trainees,
               arrival: { from: this.destination.from, to: this.destination.to },

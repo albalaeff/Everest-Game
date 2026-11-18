@@ -9,6 +9,9 @@ export interface Standing {
   readonly free: boolean;
   readonly there: boolean;
   readonly grown: number;
+  /** Where across the slope they kneel at their work for a casualty, by the hurt limb (#241):
+   * they're drawn there, as far as the ground runs on to it. None at no such work. */
+  readonly beside?: number | null;
 }
 
 /**
@@ -21,8 +24,10 @@ export interface Standing {
  * if they're level, and never over a lip or into a wall, where they step back the other way
  * instead. Only a climber on their feet on the ground steps aside, at a ladder's end on a lip
  * too, onto the ground by it; one out on a ladder, up a wall, on the ice or hanging on the rope
- * is where they are. The step takes a moment, there and back. It's the
- * picture's alone: nobody's place on the slope changes, and it keeps only each one's step now.
+ * is where they are. A rescuer at a casualty's side (#241) is within reach of them on the route's
+ * line, and kneels at the hurt limb in the picture: a step that way. The step takes a moment,
+ * there and back. It's the picture's alone: nobody's place on the slope changes, and it keeps
+ * only each one's step now.
  */
 export class Abreast {
   /** How far apart two climbers are drawn at the least, a figure's width or so, and how fast one
@@ -52,7 +57,7 @@ export class Abreast {
     return standing.map((climber, index) => {
       const { at, grown } = climber;
       const onTheGround = Math.abs(at.y - this.ground(at.x)) < Abreast.ON_IT * grown;
-      const want = climber.free && onTheGround ? this.wanted(climber, drawn) : 0;
+      const want = climber.free && onTheGround ? this.wantedBy(climber, drawn) : 0;
       const last = this.stepped[index] ?? 0;
       const most = Abreast.SPEED * grown * Math.max(seconds, 0);
       const aside = last + Math.min(Math.max(want - last, -most), most);
@@ -62,6 +67,16 @@ export class Abreast {
       }
       return { x: aside, y: aside === 0 ? 0 : this.ground(at.x + aside) - this.ground(at.x) };
     });
+  }
+
+  /** How far aside a climber on their feet wants to be drawn: at the limb they work on, where
+   * the ground runs on to it (#241); or a step from whoever stands at their spot. */
+  private wantedBy(climber: Standing, before: readonly Point[]): number {
+    const { at, beside } = climber;
+    if (beside != null && this.standable(at.x, beside - at.x)) {
+      return beside - at.x;
+    }
+    return this.wanted(climber, before);
   }
 
   /** How far aside a climber wants to stand, to be `APART` from the nearest of those `before`

@@ -44,6 +44,13 @@ const standing = (over: Partial<ClimberView> = {}): ClimberView => ({
   heldBack: null,
   facing: 1,
   towardViewer: false,
+  injuries: [],
+  down: false,
+  carriedBy: null,
+  carrying: null,
+  onLine: null,
+  hauled: false,
+  helping: null,
   sheltered: false,
   ...over,
 });
@@ -65,6 +72,7 @@ class FakeWorld implements SherpaWorld {
   seracs = false;
   sun = false;
   coach: CoachTip | null = null;
+  due: "tourniquet" | "splint" | "wrap" | null = null;
 
   sherpa(): SherpaView {
     return this.view;
@@ -93,6 +101,10 @@ class FakeWorld implements SherpaWorld {
   clock(): string {
     return "03:00";
   }
+  aidDue(): "tourniquet" | "splint" | "wrap" | null {
+    return this.due;
+  }
+
   tip(): CoachTip | null {
     return this.coach;
   }
@@ -503,5 +515,67 @@ describe("SherpaVoice: Pemba's lines, for the moment (#212)", () => {
       voice.arrival(),
     );
     expect(voice.name).toBe("Pemba");
+  });
+});
+
+/** A client who lies hurt (#241): he says he's coming, and each thing he does as he does it. */
+describe("Pemba's voice, by a client who lies hurt", () => {
+  it("says he's coming as he sets off to them, and nothing of the place meanwhile", () => {
+    const { world, cues, play } = listening();
+    play(8);
+    world.inPart = "popcorn";
+    world.view = { ...world.view, doing: "reaching", client: "player" };
+    play(30);
+
+    expect(cues()).toContain("hurt-coming");
+    expect(cues()).not.toContain("popcorn");
+  });
+
+  it("says the anchor, the tourniquet, the splint, the haul, the carry and Base Camp as each begins", () => {
+    const { world, cues, play } = listening();
+    play(8);
+    world.view = { ...world.view, doing: "reaching", client: "player" };
+    play(4);
+    world.view = { ...world.view, doing: "anchoring" };
+    world.pembaView = standing({ helping: { kind: "anchor", whom: "player", progress: 0.1 } });
+    play(8);
+    world.view = { ...world.view, doing: "treating" };
+    world.due = "tourniquet";
+    world.pembaView = standing({ helping: { kind: "aid", whom: "player", progress: 0.1 } });
+    play(8);
+    world.due = "splint";
+    play(8);
+    world.view = { ...world.view, doing: "hauling-out" };
+    world.due = null;
+    world.pembaView = standing({
+      hauling: true,
+      helping: { kind: "line-haul", whom: "player", progress: 0.1 },
+    });
+    play(8);
+    world.view = { ...world.view, doing: "carrying" };
+    world.pembaView = standing({ carrying: "player" });
+    play(8);
+    world.view = { ...world.view, doing: "evacuated" };
+    world.pembaView = standing();
+    play(8);
+
+    expect(cues()).toEqual([
+      "set-off",
+      "hurt-coming",
+      "anchor",
+      "tourniquet",
+      "splint",
+      "haul-out",
+      "on-my-back",
+      "base-camp",
+    ]);
+  });
+
+  it("says each of those lines in Russian too", () => {
+    const russian = new Texts<SherpaTextName>(sherpaTexts.ru);
+    for (const cue of ["hurt-coming", "anchor", "tourniquet", "splint", "wrap", "haul-out"]) {
+      expect(russian.say(`${cue}.1` as SherpaTextName)).toMatch(/[а-яё]/u);
+    }
+    expect(russian.say("on-my-back.1")).toBe("На спину. Идём вниз.");
   });
 });

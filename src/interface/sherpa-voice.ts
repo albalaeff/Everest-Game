@@ -1,6 +1,7 @@
 import type { SherpaDoing, SherpaView } from "../agents";
-import type { ClimberView } from "../physics";
+import type { AidDue, ClimberView } from "../physics";
 import { SeededRandom } from "../simulation";
+import type { ClimberId } from "../simulation";
 import type { CoachTip } from "./coach";
 import type { TextFills, Texts } from "./texts";
 
@@ -17,6 +18,14 @@ export type SherpaCue =
   | "overtaken"
   | "waiting"
   | "rescue-coming"
+  | "hurt-coming"
+  | "anchor"
+  | "tourniquet"
+  | "splint"
+  | "wrap"
+  | "haul-out"
+  | "on-my-back"
+  | "base-camp"
   | "pulling"
   | "climb-yourself"
   | "safe"
@@ -99,6 +108,9 @@ export interface SherpaWorld {
   clock(): string;
   /** The coach's tip on the screen now, or none. */
   tip(): CoachTip | null;
+  /** The first aid a climber is due next, the tourniquet, the splint or the wrap, or none
+   * (#241). */
+  aidDue(climber: ClimberId): AidDue["what"] | null;
 }
 
 /** A line he says: its cue, its text's name, its words, and whether it cuts in at once. */
@@ -139,7 +151,9 @@ interface Place {
  * he goes to a client hanging on the rope or hauls them out, raises a fallen ladder or backs out
  * from under a hazard (#244). A cue's lines take turns. He thinks as a Sherpa (#218): the mountain
  * is Chomolungma, its goddess asked for leave at the puja, the Icefall crossed fast and often,
- * the family at home. The climb's seed picks which of a part's facts and stories he tells, the
+ * the family at home. A client who lies hurt he tells he's coming, and then what he does as he
+ * does it (#241): the anchor, the tourniquet that will hurt, the splint, the haul up his rope,
+ * the carry on his back, and Base Camp; nothing else while that lasts. The climb's seed picks which of a part's facts and stories he tells, the
  * jokes' order and which of a cue's lines comes first, so no two climbs sound alike. It holds
  * what's on the screen and what's been said, as the coach does, and nothing of the game's.
  */
@@ -166,12 +180,22 @@ export class SherpaVoice {
   private static readonly NEAR = 6;
   /** How many good crossings he says so of, at most. */
   private static readonly GOOD_CROSSINGS = 2;
+  /** What he does for a client who lies hurt (#241), from going to them to setting them down. */
+  private static readonly WITH_A_CASUALTY: readonly SherpaDoing[] = [
+    "reaching",
+    "anchoring",
+    "treating",
+    "hauling-out",
+    "carrying",
+    "evacuated",
+  ];
   /** What leaves him no breath for small talk (#244): going to a client on the rope and hauling
    * them out, raising a fallen ladder hand over hand, backing out from under a hazard. */
   private static readonly BUSY: ReadonlySet<SherpaDoing> = new Set<SherpaDoing>([
     "rescuing",
     "raising",
     "retreating",
+    ...SherpaVoice.WITH_A_CASUALTY,
   ]);
   /** The coach's warnings, as his cues. */
   private static readonly WARNINGS: Partial<Readonly<Record<CoachTip, SherpaCue>>> = {
@@ -283,6 +307,10 @@ export class SherpaVoice {
     readonly sun: boolean;
     readonly onLadder: string | null;
     readonly pembaOnLadder: boolean;
+    /** What he does for a casualty, the first aid he's at, and whether one is on his back. */
+    readonly helping: string | null;
+    readonly aid: AidDue["what"] | null;
+    readonly carrying: boolean;
   } | null = null;
   private holds = 0;
   private onALadderFor = 0;
@@ -380,6 +408,9 @@ export class SherpaVoice {
       sun: world.firstLight(),
       onLadder: player.ladder,
       pembaOnLadder: pemba.ladder !== null,
+      helping: pemba.helping?.kind ?? null,
+      aid: pemba.helping?.kind === "aid" ? world.aidDue(pemba.helping.whom) : null,
+      carrying: pemba.carrying !== null,
     };
     const before = this.before ?? now;
     if (!this.started) {
@@ -397,10 +428,11 @@ export class SherpaVoice {
       const near = Math.abs(world.pembaAlong() - world.along()) <= SherpaVoice.NEAR;
       this.wait(near ? "rescue-coming" : "climb-yourself", "now");
     }
-    if (now.hauling && !before.hauling) {
+    if (now.hauling && !before.hauling && now.helping !== "line-haul") {
       // Hauling a fallen ladder back up with the player, or the player out (#228).
       this.wait(now.sherpa.doing === "raising" ? "raising" : "pulling", "now");
     }
+    this.noticeCasualty(now, before);
     if (player.falling && before.onLadder !== null) {
       this.slippedOnIt = true;
     }
@@ -433,6 +465,35 @@ export class SherpaVoice {
       this.wait("sun", "quiet", Infinity);
     }
     this.before = now;
+  }
+
+  /** A client who lies hurt (#241): that he's coming, as he sets off to them; and each thing he
+   * does for them as he begins it, the anchor, each piece of first aid, the haul up his rope, the
+   * carry, and Base Camp, which he says however long the line up takes to read. */
+  private noticeCasualty(
+    now: NonNullable<SherpaVoice["before"]>,
+    before: NonNullable<SherpaVoice["before"]>,
+  ): void {
+    const withOne = (doing: SherpaDoing): boolean => SherpaVoice.WITH_A_CASUALTY.includes(doing);
+    const { doing } = now.sherpa;
+    if (doing === "reaching" && !withOne(before.sherpa.doing)) {
+      this.wait("hurt-coming", "now");
+    }
+    if (now.helping === "anchor" && before.helping !== "anchor") {
+      this.wait("anchor", "now");
+    }
+    if (now.aid !== null && now.aid !== before.aid) {
+      this.wait(now.aid, "now");
+    }
+    if (now.helping === "line-haul" && before.helping !== "line-haul") {
+      this.wait("haul-out", "now");
+    }
+    if (now.carrying && !before.carrying) {
+      this.wait("on-my-back", "now");
+    }
+    if (doing === "evacuated" && before.sherpa.doing !== "evacuated") {
+      this.wait("base-camp", "soon", SherpaVoice.LONGEST + SherpaVoice.FRESH);
+    }
   }
 
   /** What he does now, against the last frame: a rest begun and over, a client who went ahead,

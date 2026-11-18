@@ -65,6 +65,7 @@ export type {
   Bottles,
   CampStore,
   Harness,
+  KitsUsed,
   PackCounts,
   PackItem,
   PackNumbers,

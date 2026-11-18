@@ -1,4 +1,4 @@
-import type { Fall, Kit, LogPage } from "../physics";
+import type { Fall, Injury, Kit, LogPage } from "../physics";
 import type { ClimberId, Strike } from "../simulation";
 import { Readings } from "./readings";
 import type { DayWarmth } from "./sun-clock";
@@ -20,6 +20,8 @@ export interface DebriefFacts {
   readonly player: ClimberId;
   readonly kit: Kit;
   readonly sherpa?: ClimberId | null;
+  /** What their hard landings left them (#241): none, if not said. */
+  readonly injuries?: readonly Injury[];
 }
 
 /** The debrief said: whether the climber died, a verdict, and its lines. */
@@ -41,8 +43,10 @@ export interface DebriefSaid {
  * they died; the checks they skipped at Base Camp (#196); and how the training events went, a
  * serac collapse ahead and a ladder breaking under them (#209). Even a climber who made it sees how
  * lucky they were, and a death is traced back to the mistake it came from, a crampon they didn't
- * check too (docs/guidelines/usability.md → A consequence that comes late is traced back). Its
- * words are content/debrief.json's.
+ * check too (docs/guidelines/usability.md → A consequence that comes late is traced back). What
+ * a hard landing left them is named (#241), a sprain, a fracture, an open one, and a climb that
+ * ended on a rescuer's back in Base Camp is traced back to the fall with no rope that broke the
+ * bone. Its words are content/debrief.json's.
  */
 export class Debrief {
   private static readonly HOUR = 3600;
@@ -64,7 +68,15 @@ export class Debrief {
   ];
 
   /** The debrief of a climb. */
-  of({ page, falls, strikes, player, kit, sherpa = null }: DebriefFacts): DebriefSaid {
+  of({
+    page,
+    falls,
+    strikes,
+    player,
+    kit,
+    sherpa = null,
+    injuries = [],
+  }: DebriefFacts): DebriefSaid {
     const caught = falls.filter((fall) => fall.held === true).length;
     const unroped = falls.filter((fall) => fall.held === false);
     const near = strikes.filter((strike) => strike.climbers.includes(player));
@@ -73,8 +85,11 @@ export class Debrief {
     const line = (label: DebriefTextName, value: string, tone: Tone): void => {
       lines.push({ label: this.texts.say(label), value, tone });
     };
+    const evacuated = page.evacuated ?? null;
     if (page.died !== null) {
       line("died-at", this.readings.clock(page.died), "bad");
+    } else if (evacuated !== null) {
+      line("evacuated-at", this.readings.clock(evacuated), "bad");
     } else if (page.arrived !== null) {
       const beforeSun = page.arrived < this.warmth.from * Debrief.HOUR;
       const time = this.readings.clock(page.arrived);
@@ -92,6 +107,9 @@ export class Debrief {
       this.texts.say("count", { count: unroped.length }),
       unroped.length > 0 ? "bad" : "good",
     );
+    if (injuries.length > 0) {
+      line("injuries", this.hurt(injuries), "bad");
+    }
     line("under-seracs", this.duration(page.underSeracs), "plain");
     line("stopped", this.duration(page.stopped), page.stopped > 0 ? "bad" : "good");
     line(
@@ -132,7 +150,16 @@ export class Debrief {
               : "training-ladder.pulled";
       line("training-ladder", this.texts.say(said), broke.held === true ? "good" : "bad");
     }
-    return { dead, verdict: this.verdict(page, caught, unroped, strikes, player), lines };
+    const verdict = this.verdict(page, caught, unroped, strikes, player, injuries);
+    return { dead, verdict, lines };
+  }
+
+  /** What a climber's landings left them, in words: each injury, the worst limb first as they
+   * came. */
+  private hurt(injuries: readonly Injury[]): string {
+    return injuries
+      .map(({ kind, part }) => this.texts.say(`injury.${kind}.${part}` as DebriefTextName))
+      .join(", ");
   }
 
   /** What the climb comes to: the cause of a death, or how well the climber did. */
@@ -142,6 +169,7 @@ export class Debrief {
     unroped: readonly Fall[],
     strikes: readonly Strike[],
     player: ClimberId,
+    injuries: readonly Injury[],
   ): DebriefSaid["verdict"] {
     const { texts } = this;
     if (page.died !== null) {
@@ -161,6 +189,14 @@ export class Debrief {
             ? "died.fall-crampon"
             : "died.fall";
       return { text: texts.say(cause, { drop }), tone: "bad" };
+    }
+    if (injuries.length > 0) {
+      // A hard landing: carried down with a bone broken, or on to the camp on a sprain (#241).
+      const worst = unroped.reduce((most, fall) => Math.max(most, fall.drop), 0);
+      const said = { drop: Math.round(worst), injuries: this.hurt(injuries) };
+      return (page.evacuated ?? null) !== null || injuries.some(({ kind }) => kind !== "sprain")
+        ? { text: texts.say("verdict.evacuated", said), tone: "bad" }
+        : { text: texts.say("verdict.hurt", said), tone: "warn" };
     }
     if (page.exposed > 0) {
       return {

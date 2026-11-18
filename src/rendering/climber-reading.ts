@@ -1,13 +1,33 @@
-import type { ClimberView, Point, Terrain, Way } from "../physics";
+import type { ClimberView, Point, RescueLineView, Terrain, Way } from "../physics";
 import type { BodyView } from "../simulation";
-import type { Joint, LadderFooting, PoseState } from "./climber-pose";
+import type { Joint, LadderFooting, PoseState, Tending } from "./climber-pose";
 import type { PickIn } from "./ice-tools";
+import { LineAnchor } from "./line-anchor";
+import { LineHold } from "./line-hold";
 
-/** What a figure reads the ground, the ladders and the ropes from: the slope physics. */
+/** What a figure reads the ground, the ladders, the ropes and the rescue lines from: the slope
+ * physics. */
 export interface ReadSlope {
   readonly terrain: Terrain;
   ladder(id: string): readonly Point[];
   rope(id: string): readonly Point[];
+  readonly lines: readonly RescueLineView[];
+}
+
+/** The rescuer a carried climber rides on, as drawn this frame (#241): which way they face,
+ * where their hips are in the layer, and how far they lean. */
+export interface Mount {
+  readonly facing: 1 | -1;
+  readonly hips: Point;
+  readonly lean: number;
+}
+
+/** Whom a figure is drawn with in a rescue (#241), as the slope layer has them this frame: the
+ * rescuer who carries them, or none; and where the hurt limb of the casualty they work on is
+ * drawn, in the layer, or none. */
+export interface Beside {
+  readonly mount: Mount | null;
+  readonly wound: Point | null;
 }
 
 /** Where a figure's climber is drawn this frame, between the steps: their point and each
@@ -29,8 +49,13 @@ export interface DrawnAt {
  * drawn, x the way they face. On the ground they face the way they last walked; on a ladder up a
  * wall, the wall, going up or down it by the key. A wall's face or a crevasse's edge beside them
  * is no ground for a boot, which stands level there. On the ice, each pick is told by the swing
- * that put it there and the way into the ice where it is. It keeps only the picture's own: the
- * way they face and go, how far they've come, where they were drawn last, and the picks seen.
+ * that put it there and the way into the ice where it is. In a rescue (#241): a climber down
+ * with a bone broken is told by the limb; one on a rescue line holds it a reach above them, going
+ * down it and back up it as down a fixed rope, and hangs from there hauled up it; a rescuer
+ * faces whom they work for, their hands at the hurt limb where it's drawn; and one carried faces
+ * the way their rescuer does, on their back. It keeps only the picture's own: the way they face
+ * and go, how far they've come, where they were drawn last, the picks seen, and where a rescue
+ * line holds them.
  */
 export class ClimberReading {
   /** A ladder's rungs, as the slope layer draws them: every 30 cm, from 15 cm off its `from` end. */
@@ -61,6 +86,14 @@ export class ClimberReading {
    * and how much the ground rises at it, to be one, so they're on it till they're level with its
    * lip; and how finely they look, all in metres at life size. */
   private static readonly BESIDE = { reach: 0.9, over: 0.05, rise: 0.25, step: 0.05 };
+  /** How far to a side of them a rescue's work is for a climber to turn to it (#241): a hurt
+   * limb, or an anchor's screws. */
+  private static readonly TURN_METRES = 0.1;
+  /** With nobody in a rescue. */
+  static readonly ALONE: Beside = { mount: null, wound: null };
+  /** How much a sprained leg limps, of the most a figure does (#241): until it's wrapped, and
+   * once it is. */
+  private static readonly LIMP = { sore: 1, wrapped: 0.45 };
 
   private facingNow: 1 | -1 = 1;
   private upward = true;
@@ -77,6 +110,9 @@ export class ClimberReading {
   private y = 0;
   private from = 0;
   private grown = 1;
+  /** Where the rescue line they're on holds them this frame, in the layer, and the rope that
+   * bears them from its anchor down to there; none off a line (#241). */
+  private tied: { readonly line: string; readonly taut: readonly Point[] } | null = null;
   private readonly ground = (ahead: number): number => {
     const across = this.facingNow * this.grown * ahead;
     const rise = this.slope.terrain.height(this.x + across) - this.from;
@@ -96,11 +132,25 @@ export class ClimberReading {
     return this.facingNow;
   }
 
+  /** The rescue line that holds them this frame and its rope from the anchor down to where
+   * they're tied in, taut, in the layer; none off a line (#241). */
+  get onLine(): { readonly line: string; readonly taut: readonly Point[] } | null {
+    return this.tied;
+  }
+
   /** The pose's state this frame, for the climber the physics and the body show, drawn at
-   * `drawn`. */
-  read(view: ClimberView, body: BodyView, drawn: DrawnAt): PoseState {
+   * `drawn`, `beside` whom the rescue has them. */
+  read(
+    view: ClimberView,
+    body: BodyView,
+    drawn: DrawnAt,
+    beside: Beside = ClimberReading.ALONE,
+  ): PoseState {
     const { at, grown } = drawn;
-    const upright = !view.falling && !view.dead;
+    // Hauled up a rescue line, a casualty hangs on it as one who fell hangs on their rope.
+    const hauled = view.hauled && !view.dead;
+    const offFeet = view.falling || hauled;
+    const upright = !offFeet && !view.dead && !view.down;
     // On the tools, or lowering down a face on its rope: the face is their ladder.
     const onIce = upright && (view.onIce || view.lowering);
     const [start, finish] = onIce
@@ -130,39 +180,55 @@ export class ClimberReading {
         this.travelled += (wall ? Math.hypot(dx, dy) : Math.abs(dx)) / grown;
       }
     }
+    const mount = view.carriedBy === null || view.dead ? null : beside.mount;
+    if (mount !== null) {
+      this.facingNow = mount.facing;
+    }
     this.started = true;
     this.x = at.x;
     this.y = at.y;
-    this.from = view.falling ? this.under(at) : at.y;
+    this.from = offFeet ? this.under(at) : at.y;
     this.grown = grown;
+    const line =
+      view.onLine === null || view.dead
+        ? null
+        : (this.slope.lines.find(({ id }) => id === view.onLine) ?? null);
+    const hold = line === null ? null : new LineHold(line.shape, at, grown);
+    this.tied = line === null || hold === null ? null : { line: line.id, taut: hold.taut };
     // Hanging on their rope, they turn to a wall's face within a leg's reach, to put their
     // boots on it (#243).
-    const held = view.falling && view.hanging && !view.dead;
+    const held = ((view.falling && view.hanging) || hauled) && !view.dead;
     if (held && this.faceBeside(at, this.facingNow) === null) {
       const behind = this.facingNow === 1 ? -1 : 1;
       this.facingNow = this.faceBeside(at, behind) === null ? this.facingNow : behind;
     }
     const face = held ? this.faceBeside(at, this.facingNow) : null;
+    const tending = upright ? this.tending(view, at, beside) : null;
     return {
       travelled: this.travelled,
-      // Hauling, they stand braced: the body tires, the legs don't stride (#209).
-      moving: view.moving && !view.hauling,
-      falling: view.falling,
+      // Hauling, they stand braced: the body tires, the legs don't stride (#209); nor at a
+      // casualty's side, at an anchor, or lifting them (#241).
+      moving: view.moving && !view.hauling && view.helping === null,
+      falling: offFeet,
       dead: view.dead,
       tiredness: body.tiredness,
       hauling: view.hauling,
-      bracing: view.haulHeld && !view.hauling && !view.falling && !view.dead,
-      hanging: view.hanging,
+      bracing:
+        view.haulHeld && !view.hauling && view.helping === null && !view.falling && !view.dead,
+      hanging: view.hanging || hauled,
       pace: body.pace,
       ground: this.ground,
       terrain: this.terrain,
-      jumar: this.local(drawn.jumar, at),
+      // On a rescue line, their hold on it: the rope they go down and up by, or hang from.
+      jumar: this.local(hold === null ? drawn.jumar : hold.point, at),
       carabiner: this.local(drawn.carabiner, at),
-      sliding: view.jumarHeld,
+      sliding: view.jumarHeld || (hold !== null && view.moving),
       slack:
-        view.first === null || drawn.jumar === null
-          ? 0
-          : ClimberReading.toAnchor(this.slope.rope(view.first), drawn.jumar) / grown,
+        hold !== null
+          ? hold.fromTop / grown
+          : view.first === null || drawn.jumar === null
+            ? 0
+            : ClimberReading.toAnchor(this.slope.rope(view.first), drawn.jumar) / grown,
       ladder:
         along === null || heading === null
           ? null
@@ -173,8 +239,70 @@ export class ClimberReading {
       tools: view.gear.tools,
       onIce,
       face: face === null ? null : face / grown,
+      hurt: view.down && !view.dead ? ClimberReading.broken(view) : null,
+      tending,
+      carrying: view.carrying !== null && upright,
+      riding:
+        mount === null
+          ? null
+          : { hips: this.local(mount.hips, at) ?? { x: 0, y: 0 }, lean: mount.lean },
+      limp: upright ? ClimberReading.limp(view) : 0,
       crawling: upright ? (drawn.through?.down ?? 0) : 0,
     };
+  }
+
+  /** The limb a climber down with a bone broken sits by: the leg, if one is, or the arm. */
+  private static broken(view: ClimberView): "leg" | "arm" {
+    const leg = view.injuries.some(({ part, kind }) => part === "leg" && kind !== "sprain");
+    return leg ? "leg" : "arm";
+  }
+
+  /** How much a climber on their feet limps: on a sprained leg, less once it's wrapped. */
+  private static limp(view: ClimberView): number {
+    const sprain = view.injuries.find(({ part, kind }) => part === "leg" && kind === "sprain");
+    if (sprain === undefined) {
+      return 0;
+    }
+    return sprain.splinted ? ClimberReading.LIMP.wrapped : ClimberReading.LIMP.sore;
+  }
+
+  /** A rescuer's work on their knees this frame, the haul held (#241): first aid, or lifting a
+   * casualty or setting them down, at the hurt limb where it's drawn; or an anchor's screws. None
+   * hauling on a rescue line, which they stand to. */
+  private tending(view: ClimberView, at: Point, beside: Beside): Tending | null {
+    const kind = view.helping?.kind ?? null;
+    if (kind === null || kind === "line-haul") {
+      return null;
+    }
+    if (kind === "anchor") {
+      return { what: "anchor", at: this.local(this.anchorWork(at), at) };
+    }
+    // They turn to the hurt limb where it's drawn: beside a casualty at their own spot too,
+    // where the picture stands them a step apart.
+    const { wound } = beside;
+    if (wound !== null && Math.abs(wound.x - at.x) > ClimberReading.TURN_METRES) {
+      this.facingNow = wound.x > at.x ? 1 : -1;
+    }
+    return { what: "aid", at: this.local(wound, at) };
+  }
+
+  /** Where the hands work at the anchor a climber drawn `at` builds: at the nearest rescue
+   * line's that isn't done, the way they turn to; none with no such line. */
+  private anchorWork(at: Point): Point | null {
+    const { terrain, lines } = this.slope;
+    const away = (point: Point): number => Math.hypot(point.x - at.x, point.y - at.y);
+    const works = lines
+      .filter(({ built }) => built < 1)
+      .map((line) => new LineAnchor(terrain, line, this.grown).working)
+      .sort((one, other) => away(one) - away(other));
+    const [nearest] = works;
+    if (nearest === undefined) {
+      return null;
+    }
+    if (Math.abs(nearest.x - at.x) > ClimberReading.TURN_METRES) {
+      this.facingNow = nearest.x > at.x ? 1 : -1;
+    }
+    return nearest;
   }
 
   /** The ground under a climber off their feet, drawn `at`: on a wall's line the ground's height
@@ -309,6 +437,11 @@ export class ClimberReading {
           this.facingNow = far.x > at.x ? 1 : -1;
         }
       }
+    }
+    // At a rescue's work, they face whom they work for, as the physics turns them (#241),
+    // whatever rope they're clipped to.
+    if (view.helping !== null && view.helping.kind !== "set-down") {
+      this.facingNow = view.facing;
     }
   }
 

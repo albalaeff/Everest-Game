@@ -3,7 +3,11 @@ import type { ClimberId, Moment, Walk } from "../simulation";
 import type { Climber, Hauls } from "./climber";
 import { Faces } from "./faces";
 import type { Face } from "./faces";
+import type { InjurySettings } from "./injuries";
 import type { Ladder } from "./ladder";
+import { RescueLine } from "./rescue-line";
+import { RescueWork } from "./rescue-work";
+import type { RescueSettings } from "./rescue-work";
 import type { Rope, Slide } from "./rope";
 import { SectionScale } from "./section-scale";
 import type { SectionAltitude } from "./section-scale";
@@ -165,6 +169,9 @@ export interface SlopeSettings {
   readonly axeReach: number;
   /** Climbing ice too steep to walk, on the tools. */
   readonly iceClimb: IceClimbSettings;
+  /** How a hard landing injures, and how a casualty is rescued (#241). */
+  readonly injury: InjurySettings;
+  readonly rescue: RescueSettings;
 }
 
 /**
@@ -197,6 +204,8 @@ export class Slope {
   readonly scale: SectionScale;
   /** The ground's faces, too steep to walk, and its dead ends. */
   readonly faces: Faces;
+  /** The rescue lines thrown on it, built or half built, in the order they were begun (#241). */
+  readonly lines = new Map<string, RescueLine>();
 
   constructor(
     readonly settings: SlopeSettings,
@@ -269,6 +278,40 @@ export class Slope {
       }
     }
     return null;
+  }
+
+  /**
+   * Where a rescuer anchors a line over a climber who lies at `along`, where the route doesn't
+   * reach, `way` along the ground from them (#241): the edge of the ground the route reaches that
+   * way, or the end of the ladder that crosses over it, since nobody stands under a ladder; and
+   * only an edge above them, since a rope goes down to a casualty. None from ground the route
+   * reaches, or where there's no such edge that way.
+   */
+  anchorSpot(along: number, way: Way): number | null {
+    const out = this.faces.wayOut(along, way);
+    if (out === null) {
+      return null;
+    }
+    let spot = out;
+    for (const ladder of this.ladders.values()) {
+      const [from, to] = ladder.ends;
+      if (from !== undefined && to !== undefined && spot > from && spot < to) {
+        spot = way > 0 ? to : from;
+      }
+    }
+    return this.terrain.point(spot).y > this.terrain.point(along).y ? spot : null;
+  }
+
+  /** A new rescue line from an anchor at `top` down to `foot`, `by`'s, its anchor still to
+   * build. */
+  throwLine(top: number, foot: number, by: ClimberId): RescueLine {
+    let number = this.lines.size + 1;
+    while (this.lines.has(`rescue-${number}`)) {
+      number += 1;
+    }
+    const line = new RescueLine(`rescue-${number}`, top, foot, by);
+    this.lines.set(line.id, line);
+    return line;
   }
 
   /** The steps in `seconds` of play. */
@@ -502,11 +545,17 @@ export class Slope {
       by: (climber) => hauling.by(climber) || raisers.has(climber),
     };
     this.steady(climbers, hauls);
+    // Whoever holds the haul by a casualty, their hands free, works for them (#241): with
+    // nobody hurt, stranded or carried, there's no such work to look for.
+    const rescues = climbers.some((climber) => climber.needsHelp(this))
+      ? new RescueWork(this, climbers, (climber) => hauls.by(climber))
+      : null;
     const before = climbers.map((climber) => climber.onTheGround);
     for (const climber of climbers) {
-      climber.walk(this, moment, hauls);
+      climber.walk(this, moment, hauls, rescues ?? undefined);
       climber.beginStep();
     }
+    rescues?.carryOut();
     this.pass(climbers, before, moment);
     for (const ladder of this.ladders.values()) {
       ladder.settle(SimulationClock.STEP_SECONDS, footing.bounce.damp);
@@ -531,6 +580,10 @@ export class Slope {
         climber.note(this);
       }
     }
+    // What the step's hardest landings did to those who fell (#241).
+    for (const climber of climbers) {
+      climber.judge(this, moment);
+    }
     for (const rope of ropes) {
       rope.integrate(gravity, SimulationClock.STEP_SECONDS);
     }
@@ -549,6 +602,9 @@ export class Slope {
     for (const climber of climbers) {
       climber.slide(this);
       climber.settle(this);
+    }
+    for (const climber of climbers) {
+      climber.bring(this);
     }
   }
 }
