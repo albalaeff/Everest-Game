@@ -4079,7 +4079,9 @@ main:has(#tent:not([hidden])) #self-check {
 [data-holds~="bottle"] .tent-props [data-bottle="0"],
 [data-holds~="pot"] .tent-pot-all,
 [data-holds~="pouch"] .tent-props [data-meal="0"],
-[data-holds~="sealed"] .tent-props [data-meal="0"] {
+[data-holds~="sealed"] .tent-props [data-meal="0"],
+[data-holds~="lifted"] .tent-props [data-meal="0"],
+[data-set="pouch"] .tent-props [data-meal="0"] {
   visibility: hidden;
 }
 

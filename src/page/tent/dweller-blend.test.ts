@@ -91,6 +91,53 @@ describe("DwellerBlend: the person in the tent between one act and the next (#26
     expect(middle.hands[0].aim).toBeCloseTo(180, 6);
   });
 
+  it("lets a hand go slack from one grip before it takes up the next, so neither it nor its arm jumps (#274)", () => {
+    for (const [from, at, to] of [
+      ["melt", 9.3, "idle"],
+      ["melt", 4, "drink"],
+      ["boil", 2, "drink"],
+      ["eat", 3, "bar"],
+      ["guitar", 4, "idle"],
+      ["fill", 5.5, "steep"],
+    ] as const) {
+      const blend = new DwellerBlend();
+      shown(blend, from, at);
+      const looks = shown(blend, to, DwellerBlend.LASTS + 0.1);
+      const joints = looks.map((look) => pose.joints(look));
+      // Halfway, slack: open, and turned no way but the forearm's.
+      const half = looks[Math.round(DwellerBlend.LASTS / 2 / FRAME)];
+      expect(half?.hands[0].firm).toBeLessThan(0.05);
+      expect(half?.hands[0].shut ?? 0).toBeLessThan(0.05);
+      joints.slice(1).forEach((now, index) => {
+        const before = joints[index] ?? now;
+        for (const side of [0, 1] as const) {
+          const [a, b] = [before.grips[side].turn, now.grips[side].turn];
+          expect(Math.max(a.along.angle(b.along), a.back.angle(b.back))).toBeLessThan(35);
+          expect(far(now.wrists[side], before.wrists[side])).toBeLessThan(30);
+        }
+      });
+    }
+  });
+
+  it("turns an elbow's way and a hand's back round from the one pose's to the next, never through nothing", () => {
+    const blend = new DwellerBlend();
+    const from = pose.look("idle", 0);
+    const way = (x: number, y: number, z: number): DwellerLook => ({
+      ...from,
+      hands: [
+        { ...from.hands[0], elbow: { x, y, z }, back: { x: -x, y: -y, z: -z } },
+        from.hands[1],
+      ],
+    });
+    blend.next(way(0.7, -0.45, -0.2), "idle", 0);
+    blend.next(way(-0.7, 0.45, 0.25), "light", 0);
+    const { elbow, back } = blend.next(way(-0.7, 0.45, 0.25), "light", DwellerBlend.LASTS / 2)
+      .hands[0];
+
+    expect(Math.hypot(elbow.x, elbow.y, elbow.z)).toBeCloseTo(1, 6);
+    expect(Math.hypot(back?.x ?? 0, back?.y ?? 0, back?.z ?? 0)).toBeCloseTo(1, 6);
+  });
+
   it("doesn't blend into or out of the sleeping bag, at the door, or turning to the pack: those run on by themselves", () => {
     const cut = (from: Act, at: number, to: Act): boolean => {
       const blend = new DwellerBlend();

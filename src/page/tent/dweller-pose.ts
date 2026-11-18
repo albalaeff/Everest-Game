@@ -2,6 +2,8 @@ import { DwellerHands } from "./dweller-hands";
 import type { Held } from "./dweller-hands";
 import { DwellerHead } from "./dweller-head";
 import { DwellerShapes } from "./dweller-shapes";
+import { HandBones, HandTurn, Vector3 } from "./hand-bones";
+import type { HandShape } from "./hand-bones";
 
 export type { Held } from "./dweller-hands";
 
@@ -49,6 +51,12 @@ export type Act =
  * straight up, or, for an empty hand, its fingers; how firmly the hand is set to that, 0 lying
  * along the forearm as it falls to 1; and, for a hand across what it holds, which side of it the
  * wrist is on: 1 as the hand reaches out from the body, -1 from the other side.
+ *
+ * And, for the hand's own shape (#274): what an empty hand is ready to take, or has just let go,
+ * shaped and turned for it; how far it's closed on that, 0 open to 1, closed by itself on what it
+ * holds; how far an open hand is spread out flat, 0 relaxed to 1, as on the mats or to a stove's
+ * warmth; and which way the back of an empty hand faces, as the nearer the stove's does (the
+ * other's is mirrored), up and toward the viewer by itself.
  */
 export interface HandLook {
   readonly at: Spot;
@@ -58,6 +66,20 @@ export interface HandLook {
   readonly aim: number;
   readonly firm: number;
   readonly side: 1 | -1;
+  readonly ready?: Held;
+  readonly shut?: number;
+  readonly spread?: number;
+  readonly back?: Point;
+}
+
+/** A hand in three dimensions this frame (#274): how it's posed and turned, where its wrist is,
+ * from the hips and toward the viewer from the shoulders, and how far toward the viewer what it
+ * holds is, `null` for nothing or what's carried behind the arm. */
+export interface HandPlace {
+  readonly shape: HandShape;
+  readonly turn: HandTurn;
+  readonly wrist: Vector3;
+  readonly thing: number | null;
 }
 
 /**
@@ -92,6 +114,9 @@ export interface DwellerLook {
   readonly stream: readonly [Spot, Spot] | null;
   /** A lump of snow on its way down into the pot. */
   readonly lump: Spot | null;
+  /** A meal's pouch set down to stand on the lap, where it's held from and how it leans, while
+   * the hand that brought it takes it again another way. */
+  readonly pouch: { readonly at: Spot; readonly aim: number } | null;
   /** What the first hand's thing goes into, out of sight: the pot on the stove, or the pouch in
    * the other hand. */
   readonly dips: "pot" | "pouch" | null;
@@ -114,10 +139,15 @@ export interface DwellerJoints {
   readonly forearms: readonly [number, number];
   readonly palms: readonly [number, number];
   readonly aims: readonly [number, number];
+  /** How far toward the viewer each elbow is, from the shoulders; and each hand in three
+   * dimensions. */
+  readonly elbowsAhead: readonly [number, number];
+  readonly grips: readonly [HandPlace, HandPlace];
 }
 
 /** An arm as it reaches: its elbow and its wrist, where the hand grips, the forearm's angle and
- * the hand's, and which way what it holds points. */
+ * the hand's, which way what it holds points, how far toward the viewer the elbow is, and the
+ * hand in three dimensions. */
 interface Reach {
   readonly elbow: Spot;
   readonly wrist: Spot;
@@ -125,6 +155,8 @@ interface Reach {
   readonly forearm: number;
   readonly palm: number;
   readonly aim: number;
+  readonly elbowAhead: number;
+  readonly place: HandPlace;
 }
 
 /** A value at each of some times, in order. */
@@ -161,10 +193,12 @@ export class DwellerPose {
    * forearm to the wrist. */
   static readonly UPPER_ARM = DwellerShapes.UPPER_ARM;
   static readonly FOREARM = DwellerShapes.FOREARM;
-  /** How far a wrist bends either way as it's seen, in degrees; and how much further it seems
-   * to, the forearm coming straight toward the viewer. */
-  static readonly WRIST_BEND = 48;
-  static readonly WRIST_LOOSE = 110;
+  /** How far a wrist bends, in degrees: an empty hand's way from its forearm's, and, in the
+   * tests, a hand's from its forearm's whatever it holds. */
+  static readonly WRIST_BEND = 75;
+  /** The way the back of an empty hand faces, unless a pose says: up and toward the viewer, as a
+   * hand lies on a knee. */
+  static readonly BACK_UP: Point = { x: 0, y: -0.6, z: 0.8 };
   /** From the hips, sitting upright: each shoulder, the nearer the stove first, the neck, the
    * head's middle over the neck, and the mouth from the head's middle. */
   static readonly SHOULDERS: readonly [Spot, Spot] = DwellerShapes.SHOULDERS;
@@ -206,9 +240,13 @@ export class DwellerPose {
   static readonly BOTTLE: Spot = { x: -123, y: 22 };
   static readonly MEAL: Spot = { x: 217.3, y: 15.6 };
   static readonly MEAL_LEANS = -8;
-  /** How far along the floor from the seat the door is, and the pack's seat. */
+  /** How the pouch leans toward the pot as it's filled. */
+  static readonly FILL_LEANS = -18;
+  /** How far along the floor from the seat the door is, and the pack's seat; and how far over
+   * toward the meals they shift to take one from the pile. */
   static readonly FROM_DOOR = -330;
   static readonly AT_PACK = 190;
+  static readonly TO_MEALS = 45;
   /** Where the hands rest, on the knees; and the pack, from the seat they move to for it. */
   private static readonly KNEES: readonly [Spot, Spot] = [
     { x: -84, y: -24 },
@@ -223,26 +261,47 @@ export class DwellerPose {
     { x: 149, y: -119 },
   ];
   private static readonly BEAT = 2.6;
-  /** The ways an elbow points, as the nearer the stove's does (the other's is mirrored): out to
-   * the side, for a hand on its knee; down, for a hand held up in front of the body; out and up,
-   * toward the viewer, over an arm that reaches to the stove; in under the arm, for a hand that
-   * takes a bottle standing by the body from its near side; back toward the knees, on hands and
-   * knees; up, for a hand that tips a bottle over; and out level, for a hand that reaches down
-   * into something held at the chest. An elbow that goes from the outer side of its arm to the
-   * inner, or back, swings round in front of the arm, toward the viewer or down and out toward
-   * them, never behind it: behind it the forearm points at the viewer, a sleeve seen end on. */
-  private static readonly OUT: Point = { x: -0.7, y: 0.7, z: -0.3 };
-  private static readonly DOWN: Point = { x: -0.25, y: 1, z: -0.3 };
-  private static readonly OVER: Point = { x: -0.55, y: -0.45, z: 0.7 };
-  private static readonly IN: Point = { x: 0.5, y: 0.5, z: -0.7 };
-  private static readonly BACK: Point = { x: 0.7, y: -0.45, z: -0.3 };
-  private static readonly FORE: Point = { x: 0, y: 0.3, z: 0.95 };
-  private static readonly LIFT: Point = { x: -0.58, y: 0.58, z: 0.58 };
-  private static readonly RAISED: Point = { x: -0.3, y: -0.75, z: 0.3 };
-  private static readonly SIDE: Point = { x: -0.9, y: 0.2, z: -0.35 };
-  /** The least of a forearm's length that's seen, however the arm is bent: an elbow that would
-   * be so far round behind its arm that less was, is only as far round as leaves that much. */
-  private static readonly SEEN = 0.5;
+  /** The ways an elbow points, as the nearer the stove's does (the other's is mirrored), as a
+   * person's hang: out to the side, for a hand on its knee; down, for a hand held up in front
+   * of the body; out and down, for a hand that reaches out to the stove; out, down and back,
+   * for one that reaches down beside the body to the floor; out level, for a hand that reaches
+   * down into something held at the chest; and back toward the knees, on hands and knees; under
+   * the arm, for one that reaches out and up beside the shoulder, and back behind it, as it
+   * turns from the one way to the other; out level, for one that carries something
+   * from the side round to the front. Each pose keeps its elbow's way well off the arm's line,
+   * where it's clear which side of the arm the elbow is: turning from the one side to the
+   * other, round behind it. Never up over the shoulder, as a wing, nor round behind the arm for
+   * long, where the forearm points at the viewer, a sleeve seen end on. */
+  private static readonly OUT: Point = { x: -0.7, y: 0.7, z: 0 };
+  private static readonly DOWN: Point = { x: -0.25, y: 1, z: 0 };
+  private static readonly WIDE: Point = { x: -0.85, y: 0.5, z: 0.05 };
+  private static readonly BEHIND: Point = { x: -0.6, y: 0.8, z: -0.1 };
+  private static readonly SIDE: Point = { x: -0.9, y: 0.2, z: 0 };
+  private static readonly BACK: Point = { x: 0.7, y: -0.45, z: -0.2 };
+  private static readonly UNDER: Point = { x: 0.35, y: 1, z: 0 };
+  private static readonly REAR: Point = { x: -0.35, y: 0.35, z: -0.87 };
+  private static readonly CARRY: Point = { x: -1, y: 0, z: 0 };
+  /** How far each elbow is drawn from its pose's way toward where it leaves the wrist straight,
+   * from none to all: the hand turned to what it holds, the forearm follows it. */
+  private static readonly STRAIGHT = 0.8;
+  /** How far off the arm's line, in pixels, that elbow is before its way counts in full. */
+  private static readonly OFF_LINE = 28;
+  /** How much of how far off its line the arm's bend puts the elbow that way must be off it to
+   * count in full: near the line, it's not clear which side of the arm it's on. */
+  private static readonly FOLDED = 0.6;
+  /** How much less that elbow draws it the further up it is: an arm that holds something up
+   * bends at the wrist, its elbow down, not out like a wing. */
+  private static readonly UP = 0.6;
+  /** How much of the hand's way toward or from the viewer that elbow follows: a hand turned to
+   * the viewer doesn't draw the elbow back behind the body, the forearm end on. */
+  private static readonly KEEP = 0.2;
+  /** How much of the forearm's way toward or from the viewer the hand follows. */
+  private static readonly FLAT = 0.4;
+  /** How much an elbow is pulled out from the body and down, besides its pose's way. */
+  private static readonly HANG = { OUTWARD: 0.45, DOWNWARD: 0.3 };
+  /** How far toward the viewer a hand reaches at the most, for how far across the picture it
+   * is from its shoulder: a little more than that far, the arm no steeper toward the viewer. */
+  private static readonly FORWARD = 1.3;
   /** How far in front of the shoulders the hands are on the knees, which the thighs bring
    * toward the viewer, at the chest and at the mouth. */
   private static readonly AT_KNEES = 80;
@@ -253,8 +312,10 @@ export class DwellerPose {
   private static readonly TO_BED = 130;
   private static readonly LAID_BACK = 64;
   private static readonly ON_KNEES = 46;
+  /** The way the back of the fist on the stirring spoon faces: to the stove's side, and up. */
+  private static readonly ON_SPOON: Point = { x: 0.85, y: -0.5, z: 0.1 };
   /** By the stove: how far they lean to it and how far the head bows. */
-  private static readonly TENDING = { lean: 24, tilt: 9 };
+  private static readonly TENDING = { lean: 26, tilt: 12 };
   /** The meal's pouch as it's held to eat from: where, and how it leans to the spoon. */
   private static readonly SUPPER = { at: { x: 12, y: -38 }, aim: -8 };
   /** How far a bottle tips before its water runs, in degrees; and how far a lump of snow falls
@@ -330,6 +391,8 @@ export class DwellerPose {
       forearms: [first.forearm, second.forearm],
       palms: [first.palm, second.palm],
       aims: [first.aim, second.aim],
+      elbowsAhead: [first.elbowAhead, second.elbowAhead],
+      grips: [first.place, second.place],
     };
   }
 
@@ -377,7 +440,8 @@ export class DwellerPose {
     };
   }
 
-  /** The lighter to the burner: two strikes, the second catches, and the flame comes up. */
+  /** The lighter to the burner: leant right over to the stove, two strikes of the thumb, the
+   * second catches, and the flame comes up. */
   private static lighting(t: number): DwellerLook {
     const { BURNER, KNEES, TENDING } = DwellerPose;
     const glide = DwellerPose.glide;
@@ -391,8 +455,10 @@ export class DwellerPose {
     const strike = DwellerPose.bump(t, 0.87, 0.1) + DwellerPose.bump(t, 1.1, 0.1);
     const at = DwellerPose.along(t, [
       [0, KNEES[0]],
-      [0.7, there],
+      [0.35, { x: -138, y: -28 }],
+      [0.75, there],
       [1.5, there],
+      [1.85, { x: -150, y: -18 }],
       [2.2, KNEES[0]],
     ]);
     const holds = DwellerPose.pick<Held>(t, [
@@ -408,37 +474,44 @@ export class DwellerPose {
       ...DwellerPose.STILL,
       lean: glide(t, [
         [0, 4],
-        [0.7, 27],
-        [1.5, 27],
+        [0.75, 31],
+        [1.5, 31],
         [2.2, TENDING.lean],
       ]),
       tilt: glide(t, [
         [0, 0],
-        [0.7, 12],
-        [1.5, 12],
+        [0.75, 14],
+        [1.5, 14],
         [2.2, TENDING.tilt],
       ]),
       hands: [
         {
           at: { x: at.x, y: at.y + 2 * strike },
           holds,
-          aim: holds === "nothing" ? aim - 90 : aim,
+          aim,
           firm: glide(t, [
-            [0.15, 0],
-            [0.6, 1],
+            [0.1, 0],
+            [0.5, 1],
             [1.6, 1],
             [2, 0],
           ]),
+          ready: "lighter",
+          shut: glide(t, [
+            [0.22, 0],
+            [0.32, 1],
+            [1.8, 1],
+            [1.95, 0],
+          ]),
           ahead: glide(t, [
             [0, DwellerPose.AT_KNEES],
-            [0.7, 30],
-            [1.5, 30],
+            [0.75, 26],
+            [1.5, 26],
             [2.2, DwellerPose.AT_KNEES],
           ]),
           elbow: DwellerPose.swing(t, [
             [0, DwellerPose.OUT],
-            [0.7, DwellerPose.OVER],
-            [1.5, DwellerPose.OVER],
+            [0.6, DwellerPose.BEHIND],
+            [1.6, DwellerPose.BEHIND],
             [2.2, DwellerPose.OUT],
           ]),
           side: 1,
@@ -454,14 +527,15 @@ export class DwellerPose {
     };
   }
 
-  /** The bottle from the floor, its water into the pot, and back to where it stood. */
+  /** The bottle from the floor, its water into the pot, and back to where it stood: leant over to
+   * the stove, the bottle tipped over the pot from under it, the elbow out and down. */
   private static pouring(t: number): DwellerLook {
     const { BOTTLE, POT, KNEES, TENDING } = DwellerPose;
     const glide = DwellerPose.glide;
     const reach = DwellerHands.REACH.bottle;
     const standing = { x: BOTTLE.x, y: BOTTLE.y - reach };
-    const carried = { x: -170, y: -128 };
-    const over = { x: POT.x + 5, y: POT.y - 24 };
+    const carried = { x: -158, y: -118 };
+    const over = { x: POT.x + 4, y: POT.y - 22 };
     // The bottle's mouth leads: up from where it stood, over the pot, and back.
     const mouth = DwellerPose.along(t, [
       [0.65, standing],
@@ -475,10 +549,10 @@ export class DwellerPose {
     const aim =
       glide(t, [
         [0.82, 0],
-        [1.4, -8],
-        [2, -98],
-        [3.25, -112],
-        [3.75, -6],
+        [1.4, -14],
+        [2, -100],
+        [3.25, -114],
+        [3.75, -10],
         [4.3, 0],
       ]) + (t > 2 && t < 3.25 ? 1.5 * Math.sin(2 * Math.PI * 2.2 * t) : 0);
     const way = DwellerPose.pointing(aim);
@@ -488,63 +562,69 @@ export class DwellerPose {
       ? held
       : DwellerPose.along(t, [
           [0, KNEES[0]],
+          [0.4, { x: BOTTLE.x - 6, y: BOTTLE.y - 34 }],
           [0.65, BOTTLE],
           [0.74, BOTTLE],
           [4.36, BOTTLE],
           [4.45, BOTTLE],
+          [4.62, { x: BOTTLE.x - 4, y: BOTTLE.y - 30 }],
           [4.8, KNEES[0]],
         ]);
     const running = taken && aim < -DwellerPose.RUNS;
     return {
       ...DwellerPose.STILL,
-      // Up off the lean to pour, the elbow lifting as the bottle tips.
+      // Down to the bottle, then right over to the pot to pour.
       lean: glide(t, [
         [0, TENDING.lean],
-        [0.65, 20],
-        [1.9, 3],
-        [3.3, 1],
-        [4.3, 20],
+        [0.65, 22],
+        [1.95, 30],
+        [3.3, 30],
+        [4.3, 22],
         [4.8, TENDING.lean],
       ]),
       tilt: glide(t, [
         [0, TENDING.tilt],
-        [1.9, 20],
-        [3.3, 20],
+        [0.65, 14],
+        [1.9, 16],
+        [3.3, 16],
         [4.8, TENDING.tilt],
       ]),
       hands: [
         {
           at,
           holds: taken ? "bottle" : "nothing",
-          aim: taken ? aim : aim - 90,
+          aim,
           firm: glide(t, [
-            [0.2, 0],
-            [0.6, 1],
+            [0.1, 0],
+            [0.5, 1],
             [4.45, 1],
             [4.75, 0],
           ]),
+          ready: "bottle",
+          shut: glide(t, [
+            [0.45, 0],
+            [0.65, 0.2],
+            [0.76, 1],
+            [4.34, 1],
+            [4.48, 0.2],
+            [4.7, 0],
+          ]),
           ahead: glide(t, [
             [0, DwellerPose.AT_KNEES],
-            [0.65, 70],
+            [0.65, 34],
             [1.95, 30],
             [3.3, 30],
-            [4.3, 70],
+            [4.3, 34],
             [4.8, DwellerPose.AT_KNEES],
           ]),
-          // The elbow comes round the front of the arm to be in under it as the hand goes
-          // down for the bottle, and lifts as the bottle tips.
           elbow: DwellerPose.swing(t, [
             [0, DwellerPose.OUT],
-            [0.3, DwellerPose.FORE],
-            [0.6, DwellerPose.IN],
-            [1.1, DwellerPose.IN],
-            [1.5, DwellerPose.LIFT],
-            [1.95, DwellerPose.RAISED],
-            [3.3, DwellerPose.RAISED],
-            [3.6, DwellerPose.LIFT],
-            [3.9, DwellerPose.IN],
-            [4.4, DwellerPose.IN],
-            [4.6, DwellerPose.FORE],
+            [0.45, DwellerPose.BEHIND],
+            [1.1, DwellerPose.BEHIND],
+            [1.8, DwellerPose.WIDE],
+            [3.4, DwellerPose.WIDE],
+            [4.0, DwellerPose.BEHIND],
+            [4.5, DwellerPose.BEHIND],
             [4.8, DwellerPose.OUT],
           ]),
           side: 1,
@@ -568,7 +648,8 @@ export class DwellerPose {
     };
   }
 
-  /** The hands held out to the flame while the water comes to the boil. */
+  /** The hands held out to the flame while the water comes to the boil, spread to its warmth,
+   * the palms to it, the fingers working. */
   private static boiling(t: number): DwellerLook {
     const { KNEES, TENDING } = DwellerPose;
     const glide = DwellerPose.glide;
@@ -582,18 +663,20 @@ export class DwellerPose {
     const rub = (2 * Math.PI * t) / 0.95;
     const near = DwellerPose.along(t, [
       [0, KNEES[0]],
-      [0.75, { x: -184, y: -26 }],
-      [2.45, { x: -184, y: -26 }],
+      [0.75, { x: -190, y: -34 }],
+      [2.45, { x: -190, y: -34 }],
       [3.2, KNEES[0]],
     ]);
     const far = DwellerPose.along(t, [
       [0, KNEES[1]],
-      [0.85, { x: -132, y: -52 }],
-      [2.35, { x: -132, y: -52 }],
+      [0.85, { x: -142, y: -58 }],
+      [2.35, { x: -142, y: -58 }],
       [3.2, KNEES[1]],
     ]);
     // A look up at the door, where the steam goes.
     const glance = DwellerPose.bump(t, 1.9, 0.45);
+    // The palms down to the flame, the backs up and to the viewer.
+    const palmsDown = { x: 0.3, y: -0.75, z: 0.6 };
     return {
       ...DwellerPose.STILL,
       lean: TENDING.lean + 3 * warm,
@@ -602,13 +685,15 @@ export class DwellerPose {
         {
           at: { x: near.x + 3 * warm * Math.sin(rub), y: near.y + 2 * warm * Math.cos(rub) },
           holds: "nothing",
-          aim: -96 + 7 * Math.sin(rub),
+          aim: -100 + 7 * Math.sin(rub),
           firm: warm,
-          ahead: DwellerPose.AT_KNEES - 65 * warm,
+          spread: 0.75 * warm,
+          back: palmsDown,
+          ahead: DwellerPose.AT_KNEES - 55 * warm,
           elbow: DwellerPose.swing(t, [
             [0, DwellerPose.OUT],
-            [0.75, DwellerPose.OVER],
-            [2.45, DwellerPose.OVER],
+            [0.75, DwellerPose.WIDE],
+            [2.45, DwellerPose.WIDE],
             [3.2, DwellerPose.OUT],
           ]),
           side: 1,
@@ -616,13 +701,16 @@ export class DwellerPose {
         {
           at: { x: far.x - 3 * warm * Math.sin(rub), y: far.y + 2 * warm * Math.sin(rub) },
           holds: "nothing",
-          aim: -104 - 7 * Math.sin(rub),
+          aim: -106 - 7 * Math.sin(rub),
           firm: warm,
-          ahead: DwellerPose.AT_KNEES - 45 * warm,
+          spread: 0.75 * warm,
+          // As the nearer hand's, seen in a mirror: the same way in the picture.
+          back: { x: -palmsDown.x, y: palmsDown.y, z: palmsDown.z },
+          ahead: DwellerPose.AT_KNEES - 30 * warm,
           elbow: DwellerPose.swing(t, [
             [0, DwellerPose.OUT],
-            [0.85, DwellerPose.OVER],
-            [2.35, DwellerPose.OVER],
+            [0.85, DwellerPose.DOWN],
+            [2.35, DwellerPose.DOWN],
             [3.2, DwellerPose.OUT],
           ]),
           side: 1,
@@ -634,26 +722,53 @@ export class DwellerPose {
     };
   }
 
-  /** A pouch from the pile, the pot off the stove by its handle, and the pot's water into the
-   * pouch; the pot goes back, the stove out. */
+  /** A pouch from the pile, lifted by its top and set down to stand on the lap, taken again by
+   * its side and held low by the stove's side of the lap; the pot off the stove by its handle,
+   * its water poured into the pouch just over it; the pot back, the stove out. */
   private static filling(t: number): DwellerLook {
     const { MEAL, MEAL_LEANS, HANDLE, KNEES, TENDING, SUPPER } = DwellerPose;
     const glide = DwellerPose.glide;
-    // The pouch: taken from the pile, held by the stove's side of the lap to be filled, and
-    // brought to the lap.
-    const filled = { x: -22, y: -40 };
-    const taken = t >= 0.82;
+    // The pouch: taken from the pile by its top, the fingers over its face, and set down on the
+    // lap, held there by its top while the other hand takes the pot and leans back up with it;
+    // let go, and taken again by its side, leant to the pot to be filled, and brought up to the
+    // lap.
+    const filled = { x: -14, y: -16 };
+    const [set, letGo, freed, retaken] = [1.42, 2.0, 2.1, 2.32];
+    const byTop = t >= 0.82 && t < letGo;
     const pouchAim = glide(t, [
       [0.82, MEAL_LEANS],
-      [1.7, -3],
-      [4.1, -3],
+      [set, -3],
+      [retaken, -3],
+      [2.5, DwellerPose.FILL_LEANS],
+      [4.1, DwellerPose.FILL_LEANS],
       [5.3, SUPPER.aim],
     ]);
+    // Over toward the pile on the hips to reach it, and back.
+    const shifts: Keys<number> = [
+      [0.1, 0],
+      [0.65, DwellerPose.TO_MEALS],
+      [0.95, DwellerPose.TO_MEALS],
+      [1.55, 0],
+    ];
+    const shift = glide(t, shifts);
+    // Where the hand goes, from the seat: from the knee over the pile and down to the pouch's
+    // top; up out of the pile with it, and down onto the lap; then up off its top, and down to
+    // its side. The pile doesn't move with them: where it is from the seat is where it is along the
+    // floor less how far over they've shifted.
+    const floor = (time: number, spot: Spot): readonly [number, Spot] => [
+      time,
+      { x: spot.x - glide(time, shifts), y: spot.y },
+    ];
     const pouch = DwellerPose.along(t, [
       [0, KNEES[1]],
-      [0.75, MEAL],
-      [0.9, MEAL],
-      [1.75, filled],
+      floor(0.5, { x: MEAL.x - 14, y: MEAL.y - 34 }),
+      floor(0.75, MEAL),
+      floor(0.9, MEAL),
+      floor(1.12, { x: MEAL.x - 34, y: MEAL.y - 26 }),
+      [set, filled],
+      [letGo, filled],
+      [freed, { x: filled.x + 8, y: filled.y - 58 }],
+      [retaken - 0.02, filled],
       [4.1, filled],
       [5.3, SUPPER.at],
     ]);
@@ -670,14 +785,19 @@ export class DwellerPose {
       [3.75, 74],
       [4.15, 0],
     ]);
-    const over = { x: filled.x - 9, y: filled.y - DwellerHands.REACH.pouch - 20 };
+    // Just over the pouch's opening as it leans to the pot, a little to the stove's side.
+    const leant = DwellerPose.pointing(DwellerPose.FILL_LEANS);
+    const over = {
+      x: filled.x + leant.x * DwellerHands.REACH.pouch - 9,
+      y: filled.y + leant.y * DwellerHands.REACH.pouch - 16,
+    };
     const upright = DwellerPose.lip({ x: 0, y: 0 }, 0);
     const lip = DwellerPose.along(t, [
       [1.78, { x: HANDLE.x + upright.x, y: HANDLE.y + upright.y }],
-      [2.5, { x: over.x - 2, y: over.y + 6 }],
+      [2.5, { x: over.x - 4, y: over.y + 4 }],
       [3.1, over],
       [3.75, over],
-      [4.15, { x: over.x - 2, y: over.y + 6 }],
+      [4.15, { x: over.x - 4, y: over.y + 4 }],
       [4.82, { x: HANDLE.x + upright.x, y: HANDLE.y + upright.y }],
     ]);
     const tipped = DwellerPose.lip({ x: 0, y: 0 }, potAim);
@@ -687,6 +807,7 @@ export class DwellerPose {
       : DwellerPose.along(t, [
           [0, KNEES[0]],
           [0.95, KNEES[0]],
+          [1.45, { x: HANDLE.x + 30, y: HANDLE.y - 20 }],
           [1.72, HANDLE],
           [1.78, HANDLE],
           [4.82, HANDLE],
@@ -696,70 +817,87 @@ export class DwellerPose {
     const running = lifted && potAim > 52;
     return {
       ...DwellerPose.STILL,
+      shift,
       lean: glide(t, [
         [0, TENDING.lean],
-        [0.75, -5],
-        [1.72, 23],
+        [0.75, -10],
+        [1.72, 30],
         [2.6, 10],
         [4.1, 10],
-        [4.82, 22],
+        [4.82, 30],
         [5.3, 6],
       ]),
       tilt: glide(t, [
         [0, TENDING.tilt],
-        [0.75, 2],
-        [1.72, 10],
-        [3.1, 14],
-        [4.1, 12],
+        [0.75, 4],
+        [1.72, 14],
+        [3.1, 16],
+        [4.1, 14],
         [5.3, 9],
       ]),
       hands: [
         {
           at: hand,
           holds: lifted ? "pot" : "nothing",
-          aim: lifted ? potAim : potAim - 90,
+          aim: potAim,
           firm: glide(t, [
-            [1.2, 0],
-            [1.7, 1],
+            [1.0, 0],
+            [1.6, 1],
             [4.9, 1],
             [5.2, 0],
           ]),
+          ready: "pot",
+          shut: glide(t, [
+            [1.5, 0],
+            [1.7, 0.2],
+            [1.8, 1],
+            [4.8, 1],
+            [4.92, 0.2],
+            [5.1, 0],
+          ]),
           ahead: glide(t, [
             [0.95, DwellerPose.AT_KNEES],
-            [1.72, 30],
-            [2.6, DwellerPose.AT_CHEST],
-            [4.15, DwellerPose.AT_CHEST],
-            [4.82, 30],
+            [1.72, 24],
+            [2.6, 62],
+            [4.15, 62],
+            [4.82, 24],
             [5.3, DwellerPose.AT_KNEES],
           ]),
-          elbow: DwellerPose.swing(t, [
-            [0.95, DwellerPose.OUT],
-            [1.72, DwellerPose.OVER],
-            [2.6, DwellerPose.SIDE],
-            [4.15, DwellerPose.SIDE],
-            [4.82, DwellerPose.OVER],
-            [5.3, DwellerPose.OUT],
-          ]),
+          // Out, a little up, from the knee to the handle and round in front to the pouch and
+          // back: the one side of the arm the whole way, never along it.
+          elbow: DwellerPose.CARRY,
           side: 1,
         },
         {
           at: pouch,
-          holds: taken ? "pouch" : "nothing",
+          holds: byTop ? "lifted" : t >= retaken ? "pouch" : "nothing",
           aim: pouchAim,
-          // Loose in the fingers while the arm comes round from the pile.
           firm: glide(t, [
-            [0.9, 0],
-            [1.35, 0.15],
-            [1.75, 1],
+            [0.2, 0],
+            [0.7, 1],
+            [letGo, 1],
+            [freed, 0],
+            [retaken - 0.04, 1],
+          ]),
+          ready: t < freed ? "lifted" : "pouch",
+          shut: glide(t, [
+            [0.55, 0],
+            [0.74, 0.2],
+            [0.86, 1],
+            [letGo, 1],
+            [freed - 0.02, 0],
+            [retaken - 0.12, 0],
+            [retaken, 1],
           ]),
           ahead: glide(t, [
             [0, DwellerPose.AT_KNEES],
-            [0.75, 20],
-            [1.75, DwellerPose.AT_CHEST],
+            [0.75, 34],
+            [set, DwellerPose.AT_CHEST],
           ]),
           elbow: DwellerPose.swing(t, [
-            [0.9, DwellerPose.OUT],
-            [1.75, DwellerPose.SIDE],
+            [0, DwellerPose.OUT],
+            [0.75, DwellerPose.BEHIND],
+            [set, DwellerPose.DOWN],
           ]),
           side: 1,
         },
@@ -769,10 +907,12 @@ export class DwellerPose {
         x: glide(t, [
           [0, -1],
           [0.6, 1],
-          [1.1, 1],
-          [1.7, -1],
-          [2.6, -0.4],
-          [4.1, -0.4],
+          [1.05, 1],
+          [1.4, 0.1],
+          [1.72, 0.1],
+          [2.05, -1],
+          [2.6, -0.2],
+          [4.1, -0.2],
           [4.6, -1],
           [5.3, 0],
         ]),
@@ -783,10 +923,11 @@ export class DwellerPose {
         [1.9, 0],
       ]),
       stream: running ? [lip, { x: opening.x, y: opening.y + 6 }] : null,
+      pouch: t >= letGo && t < retaken ? { at: filled, aim: -3 } : null,
     };
   }
 
-  /** The pouch sealed, finger and thumb run along its top, and left to stand. */
+  /** The pouch sealed, finger and thumb run along its top from above, and left to stand. */
   private static steeping(t: number): DwellerLook {
     const { KNEES, SUPPER } = DwellerPose;
     const glide = DwellerPose.glide;
@@ -801,7 +942,7 @@ export class DwellerPose {
       [0, KNEES[0]],
       [0.55, edge(-19)],
       [1.2, edge(19)],
-      [1.4, { x: edge(19).x + 2, y: edge(19).y - 7 }],
+      [1.4, { x: edge(19).x + 2, y: edge(19).y - 9 }],
       [2.2, KNEES[0]],
     ]);
     const glance = DwellerPose.bump(t, 1.75, 0.4);
@@ -815,10 +956,17 @@ export class DwellerPose {
           holds: t >= 0.5 && t < 1.3 ? "seal" : "nothing",
           aim: 180 + SUPPER.aim,
           firm: glide(t, [
-            [0.15, 0],
-            [0.5, 1],
+            [0.1, 0],
+            [0.45, 1],
             [1.35, 1],
             [1.8, 0],
+          ]),
+          ready: "seal",
+          shut: glide(t, [
+            [0.35, 0],
+            [0.52, 1],
+            [1.28, 1],
+            [1.45, 0],
           ]),
           ahead: DwellerPose.AT_CHEST,
           elbow: DwellerPose.swing(t, [
@@ -928,8 +1076,13 @@ export class DwellerPose {
           holds: t < 0.2 ? "nothing" : loaded ? "spoonful" : "spoon",
           aim,
           firm: glide(t, [
+            [0.05, 0],
+            [0.4, 1],
+          ]),
+          ready: "spoon",
+          shut: glide(t, [
             [0.1, 0],
-            [0.45, 1],
+            [0.22, 1],
           ]),
           ahead: glide(round, [
             [0, DwellerPose.AT_CHEST],
@@ -989,13 +1142,13 @@ export class DwellerPose {
       aim: SUPPER.aim,
       firm: 1,
       ahead: DwellerPose.AT_CHEST,
-      elbow: DwellerPose.SIDE,
+      elbow: DwellerPose.DOWN,
       side: 1,
     };
   }
 
   /** Melting snow: the spoon round the pot, in the fist; then it's left there, a lump comes
-   * from the sack and is let fall in, and the spoon goes round again. */
+   * from the sack in the cupped hand and is let fall in, and the spoon goes round again. */
   private static melting(t: number): DwellerLook {
     const { POT, SNOW, KNEES, TENDING, LASTS } = DwellerPose;
     const glide = DwellerPose.glide;
@@ -1008,8 +1161,8 @@ export class DwellerPose {
     const turn = round < 2.6 ? round / 1.3 : round >= taken ? (round - taken) / 1.4 : 0;
     const stirs = t >= begins && (round < 2.6 || round >= taken);
     const spoon = DwellerPose.stirring(turn);
-    const above = { x: left.at.x + 8, y: left.at.y - 8 };
-    const drop = { x: POT.x + 6, y: POT.y - 24 };
+    const above = { x: left.at.x + 10, y: left.at.y - 12 };
+    const drop = { x: POT.x + 6, y: POT.y - 26 };
     const at =
       t < begins
         ? DwellerPose.along(t, [
@@ -1022,7 +1175,7 @@ export class DwellerPose {
           : DwellerPose.along(round, [
               [2.6, left.at],
               [2.8, above],
-              [3.5, { x: SNOW.x + 2, y: SNOW.y - 32 }],
+              [3.5, { x: SNOW.x + 2, y: SNOW.y - 30 }],
               [3.82, { x: SNOW.x, y: SNOW.y - 12 }],
               [4.1, { x: SNOW.x, y: SNOW.y - 24 }],
               [4.85, drop],
@@ -1038,17 +1191,18 @@ export class DwellerPose {
           : round >= 3.86 && round < 5
             ? "snow"
             : "nothing";
-    // The hand's own turn: across the spoon, down into the sack, and down over the pot.
-    const palm = glide(round, [
-      [2.6, left.aim - 90],
-      [3.5, 8],
-      [4.1, 8],
-      [4.85, 34],
-      [5.15, 34],
-      [5.68, left.aim - 90],
-      [taken, left.aim - 90],
+    // The hand's own way when it holds no spoon: from the spoon's, the fingers down into the
+    // sack; up and out toward the pot with the lump in the palm, the palm turned down over it to
+    // let the lump fall, and back to the spoon's.
+    const fingers = glide(round, [
+      [2.66, left.aim],
+      [3.5, 180],
+      [4.1, 180],
+      [4.4, 282],
+      [5.2, 282],
+      [5.76, left.aim],
     ]);
-    const aim = holds === "stirrer" ? spoon.aim : holds === "snow" ? palm - 90 : palm - 180;
+    const aim = holds === "stirrer" ? spoon.aim : t < begins ? left.aim : fingers;
     const falling = round >= 5 && round < 5.42 ? round - 5 : null;
     const sack = glide(round, [
       [2.7, 0],
@@ -1056,34 +1210,95 @@ export class DwellerPose {
       [4.1, 1],
       [4.85, 0],
     ]);
+    // The wrist goes slack between the spoon and the snow, as the hand turns from the one to the
+    // other.
+    const slack = glide(round, [
+      [2.66, 1],
+      [2.9, 0],
+      [3.4, 0],
+      [3.65, 1],
+      [5.05, 1],
+      [5.35, 0],
+      [5.56, 0],
+      [5.74, 1],
+    ]);
+    // The hand's back: to the stove's side on the spoon; to the viewer down into the sack; down
+    // with the lump in the palm, and up as the palm turns over above the pot.
+    const [palmUp, palmDown] = [
+      { x: 0, y: 1, z: 0.35 },
+      { x: 0.1, y: -1, z: 0.35 },
+    ];
+    const backs: Keys<Point> = [
+      [2.66, DwellerPose.ON_SPOON],
+      [3.5, { x: 0.3, y: 0, z: 1 }],
+      [4.1, { x: 0.3, y: 0, z: 1 }],
+      [4.4, palmUp],
+      [4.85, palmUp],
+      [5.0, palmDown],
+      [5.2, palmDown],
+      [5.76, DwellerPose.ON_SPOON],
+    ];
     return {
       ...DwellerPose.STILL,
       lean:
         t < begins
           ? glide(t, [
               [0, TENDING.lean],
-              [begins, 15],
+              [begins, 27],
             ])
-          : 15 + 8 * sack + (stirs ? 1.2 * Math.sin(2 * Math.PI * turn) : 0),
-      tilt: 12 + 2 * sack,
+          : 27 + 3 * sack + (stirs ? 1.2 * Math.sin(2 * Math.PI * turn) : 0),
+      tilt: 13 + 2 * sack,
       hands: [
         {
           at,
           holds,
           aim,
-          firm: glide(t, [
-            [0.25, 0],
-            [0.62, 1],
-          ]),
-          ahead: 25 + 20 * sack,
+          firm: Math.min(
+            glide(t, [
+              [0.2, 0],
+              [0.55, 1],
+            ]),
+            t < begins ? 1 : slack,
+          ),
+          ready: t < begins || round < 3.3 || round > 5.5 ? "stirrer" : "snow",
+          // Open from the knee, closing on the spoon as it's reached.
+          shut:
+            t < begins
+              ? glide(t, [
+                  [0.48, 0],
+                  [0.64, 1],
+                ])
+              : holds === "stirrer"
+                ? 1
+                : glide(round, [
+                    [2.66, 1],
+                    [2.8, 0],
+                    [3.62, 0],
+                    [3.86, 1],
+                    [4.98, 1],
+                    [5.08, 0],
+                    [5.62, 0],
+                    [5.76, 1],
+                  ]),
+          back: t < begins ? DwellerPose.ON_SPOON : DwellerPose.swing(round, backs),
+          ahead:
+            t < begins
+              ? glide(t, [
+                  [0, DwellerPose.AT_KNEES],
+                  [0.58, 26],
+                ])
+              : 26 + 14 * sack,
+          // Under the arm held out to stir, and down to the sack and back: out from the knee,
+          // turning round behind the arm to under it.
           elbow:
             t < begins
               ? DwellerPose.swing(t, [
                   [0, DwellerPose.OUT],
-                  [begins, DwellerPose.OVER],
+                  [0.25, DwellerPose.REAR],
+                  [begins, DwellerPose.UNDER],
                 ])
-              : DwellerPose.OVER,
-          side: holds === "stirrer" ? -1 : 1,
+              : DwellerPose.UNDER,
+          side: 1,
         },
         DwellerPose.resting(1),
       ],
@@ -1113,63 +1328,71 @@ export class DwellerPose {
 
   // A drink and a bar.
 
-  /** A drink: the bottle up from the floor, tipped at the lips with the head back, and down. */
+  /** A drink: leant to the bottle beside them, the arm down the side and the hand round it from
+   * the side; up in front with the elbow down, tipped at the lips with the head back, and down
+   * again to stand where it stood. */
   private static drinking(t: number): DwellerLook {
     const { BOTTLE, KNEES } = DwellerPose;
     const glide = DwellerPose.glide;
     const reach = DwellerHands.REACH.bottle;
     const lean = glide(t, [
       [0, 4],
-      [0.6, 14],
+      [0.62, 20],
+      [1.05, 8],
       [1.3, 3],
       [2.45, 1],
-      [2.95, 10],
-      [3.22, 13],
+      [2.85, 8],
+      [3.12, 18],
       [3.5, 4],
     ]);
     const swallow = t > 1.45 && t < 2.4 ? Math.sin((2 * Math.PI * (t - 1.45)) / 0.34) : 0;
     const tilt =
       glide(t, [
         [0, 0],
-        [0.6, 10],
+        [0.6, 12],
         [1.3, -3],
         [1.75, -12],
         [2.4, -16],
         [2.8, 0],
-        [3.22, 9],
+        [3.15, 11],
         [3.5, 0],
       ]) - swallow;
     const aim =
       glide(t, [
         [0.7, 0],
-        [0.95, 4],
-        [1.3, 74],
+        [0.9, 4],
+        [1.12, 52],
+        [1.3, 76],
         [1.75, 96],
         [2.4, 113],
-        [2.75, 28],
-        [2.92, 0],
+        [2.62, 70],
+        [2.8, 30],
+        [2.95, 0],
         [3.2, 0],
       ]) +
       1.5 * swallow;
     const way = DwellerPose.pointing(aim);
     const lips = DwellerPose.mouthAt(lean, tilt);
-    // At the lips, the bottle is where they are; on its way, it swings out round the knee.
+    // At the lips, the bottle is where they are; on its way, it comes up the side and round in
+    // front of the chest.
     const sipping = { x: lips.x - 1 - way.x * reach, y: lips.y + 1 - way.y * reach };
     const moving = DwellerPose.along(t, [
       [0, KNEES[0]],
-      [0.6, BOTTLE],
+      [0.4, { x: BOTTLE.x - 8, y: BOTTLE.y - 36 }],
+      [0.62, BOTTLE],
       [0.72, BOTTLE],
-      [1, { x: -150, y: -58 }],
-      [1.3, { x: -74, y: -196 }],
-      [2.45, { x: -62, y: -214 }],
-      [2.75, { x: -112, y: -120 }],
-      [2.92, { x: -140, y: -44 }],
-      [3.1, BOTTLE],
-      [3.18, BOTTLE],
+      [0.98, { x: -126, y: -62 }],
+      [1.3, { x: -76, y: -190 }],
+      [2.45, { x: -62, y: -212 }],
+      [2.75, { x: -112, y: -118 }],
+      [2.95, { x: -128, y: -50 }],
+      [3.12, BOTTLE],
+      [3.2, BOTTLE],
+      [3.36, { x: BOTTLE.x - 6, y: BOTTLE.y - 32 }],
       [3.5, KNEES[0]],
     ]);
     const share = DwellerPose.ease((t - 1.12) / 0.2) * (1 - DwellerPose.ease((t - 2.42) / 0.22));
-    const taken = t >= 0.66 && t < 3.14;
+    const taken = t >= 0.66 && t < 3.16;
     return {
       ...DwellerPose.STILL,
       lean,
@@ -1178,33 +1401,42 @@ export class DwellerPose {
         {
           at: DwellerPose.mix(moving, sipping, share),
           holds: taken ? "bottle" : "nothing",
-          aim: taken ? aim : aim - 90,
+          aim,
           firm: glide(t, [
-            [0.15, 0],
-            [0.55, 1],
-            [3.18, 1],
+            [0.08, 0],
+            [0.45, 1],
+            [3.2, 1],
             [3.45, 0],
+          ]),
+          ready: "bottle",
+          shut: glide(t, [
+            [0.42, 0],
+            [0.6, 0.2],
+            [0.7, 1],
+            [3.14, 1],
+            [3.24, 0.2],
+            [3.42, 0],
           ]),
           ahead: glide(t, [
             [0, DwellerPose.AT_KNEES],
-            [0.6, 70],
-            [1, 55],
+            [0.62, 34],
+            [0.98, 46],
             [1.3, DwellerPose.AT_MOUTH],
             [2.45, DwellerPose.AT_MOUTH],
-            [2.92, 55],
-            [3.1, 70],
+            [2.95, 46],
+            [3.12, 34],
             [3.5, DwellerPose.AT_KNEES],
           ]),
+          // Back and out down the side to the floor; down under the bottle to lift it to the
+          // lips.
           elbow: DwellerPose.swing(t, [
             [0, DwellerPose.OUT],
-            [0.28, DwellerPose.FORE],
-            [0.55, DwellerPose.IN],
-            [0.9, DwellerPose.IN],
+            [0.4, DwellerPose.BEHIND],
+            [0.8, DwellerPose.BEHIND],
             [1.3, DwellerPose.DOWN],
             [2.6, DwellerPose.DOWN],
-            [2.95, DwellerPose.IN],
-            [3.15, DwellerPose.IN],
-            [3.32, DwellerPose.FORE],
+            [3.0, DwellerPose.BEHIND],
+            [3.25, DwellerPose.BEHIND],
             [3.5, DwellerPose.OUT],
           ]),
           side: 1,
@@ -1228,32 +1460,33 @@ export class DwellerPose {
       gaze: {
         x: glide(t, [
           [0, -0.3],
-          [0.45, -0.9],
+          [0.3, -0.9],
           [1.3, -0.2],
           [2.6, -0.3],
-          [3.05, -0.9],
+          [2.95, -0.9],
           [3.5, -0.3],
         ]),
         y: glide(t, [
           [0, 0.25],
-          [0.45, 1],
+          [0.3, 1],
           [1.3, -0.2],
           [1.75, -0.8],
           [2.6, 0.3],
-          [3.05, 1],
+          [2.95, 1],
           [3.5, 0.25],
         ]),
       },
     };
   }
 
-  /** A bar: out of the chest pocket, two bites with chewing between, and back into it. */
+  /** A bar: out of the chest pocket, held between the thumb and the fingers, two bites with
+   * chewing between, and back into it. */
   private static biting(t: number): DwellerLook {
     const { KNEES } = DwellerPose;
     const glide = DwellerPose.glide;
     const reach = DwellerHands.REACH.bar;
     const pocket = { x: -34, y: -98 };
-    const held = { x: -54, y: -132 };
+    const held = { x: -50, y: -136 };
     const tilt = glide(t, [
       [0, 0],
       [0.45, 8],
@@ -1269,12 +1502,12 @@ export class DwellerPose {
     const lips = DwellerPose.mouthAt(lean, tilt);
     const aim = glide(t, [
       [0.45, 8],
-      [1, 38],
-      [1.25, 42],
-      [1.6, 16],
-      [2.15, 16],
-      [2.55, 38],
-      [2.8, 42],
+      [1, 34],
+      [1.25, 38],
+      [1.6, 18],
+      [2.15, 18],
+      [2.55, 34],
+      [2.8, 38],
       [3.12, 8],
     ]);
     const way = DwellerPose.pointing(aim);
@@ -1325,10 +1558,19 @@ export class DwellerPose {
           holds: t >= 0.5 && t < 3.16 ? "bar" : "nothing",
           aim,
           firm: glide(t, [
-            [0.15, 0],
-            [0.5, 1],
+            [0.1, 0],
+            [0.45, 1],
             [3.2, 1],
             [3.5, 0],
+          ]),
+          ready: "bar",
+          // Its back to the viewer's left, the thumb toward the viewer, as it holds the bar.
+          back: { x: -0.9, y: -0.2, z: 0.3 },
+          shut: glide(t, [
+            [0.36, 0],
+            [0.52, 1],
+            [3.14, 1],
+            [3.3, 0],
           ]),
           ahead: glide(t, [
             [0, DwellerPose.AT_KNEES],
@@ -1338,7 +1580,12 @@ export class DwellerPose {
             [3.1, 70],
             [3.6, DwellerPose.AT_KNEES],
           ]),
-          elbow: DwellerPose.DOWN,
+          elbow: DwellerPose.swing(t, [
+            [0, DwellerPose.OUT],
+            [0.45, DwellerPose.DOWN],
+            [3.2, DwellerPose.DOWN],
+            [3.6, DwellerPose.OUT],
+          ]),
           side: 1,
         },
         DwellerPose.resting(1),
@@ -1381,12 +1628,18 @@ export class DwellerPose {
           ...DwellerPose.resting(0),
           at: { x: STRUM.x + 10 * Math.sin(beat), y: STRUM.y + 17 * Math.sin(beat) },
           holds: "pick",
+          // The pick down to the strings, the wrist swinging it through them.
+          aim: 160 + 14 * Math.sin(beat),
+          firm: 1,
           ahead: 50,
         },
         {
           ...DwellerPose.resting(1),
           at: DwellerPose.mix(FRETS[0], FRETS[1], at),
           holds: "neck",
+          // Along the neck, toward its head.
+          aim: 65,
+          firm: 1,
           ahead: 40,
           elbow: DwellerPose.DOWN,
         },
@@ -1414,11 +1667,24 @@ export class DwellerPose {
       hands: [
         {
           ...DwellerPose.resting(0),
-          at: DwellerPose.mix(KNEES[0], { x: PACK.x + 18 * reach, y: PACK.y - 12 * reach }, over),
-          ahead: AT_KNEES * (1 - over),
+          // Out round the shoulder and up over its top, the arm well out from the shoulder,
+          // and down into it.
+          at: DwellerPose.curve(
+            KNEES[0],
+            { x: PACK.x - 60, y: PACK.y + 64 },
+            { x: PACK.x - 20 + 8 * reach, y: PACK.y - 34 + 24 * reach },
+            over,
+          ),
+          // Fingers first into the pack.
+          aim: 200,
+          firm: 0,
+          ahead: AT_KNEES * (1 - over) - 26 * over,
+          // From out over the knee to under the arm as it goes out and up, turning round
+          // behind it on the way rather than ever along it.
           elbow: DwellerPose.swing(over, [
             [0, DwellerPose.OUT],
-            [1, DwellerPose.OVER],
+            [0.4, DwellerPose.REAR],
+            [1, DwellerPose.UNDER],
           ]),
         },
         {
@@ -1428,6 +1694,8 @@ export class DwellerPose {
             { x: PACK.x + 60 - 20 * reach, y: PACK.y + 30 * reach },
             over,
           ),
+          aim: 190,
+          firm: 0,
           ahead: AT_KNEES * (1 - over),
         },
       ],
@@ -1435,7 +1703,7 @@ export class DwellerPose {
   }
 
   /** In from the door, `inward`, or out to it: on hands and knees, facing the way they go, the
-   * palms flat on the mats. */
+   * palms flat on the mats, the fingers spread. */
   private static entering(share: number, inward: boolean): DwellerLook {
     // In from the door on hands and knees, and up onto the seat.
     const along = DwellerPose.ease(share / 0.7);
@@ -1446,12 +1714,17 @@ export class DwellerPose {
       ...DwellerPose.resting(side),
       at: DwellerPose.mix(at, KNEES[side], up),
       aim: -90,
-      firm: 1 - up,
+      // Off the mats, the hand goes slack before the elbow turns round to the knee.
+      firm: Math.max(0, 1 - 2 * up),
+      spread: 1 - up,
+      // The palm down on the mats, its back up.
+      back: { x: 0, y: -1, z: 0.15 },
       ahead: AT_KNEES * up,
-      // On hands and knees the elbows bend back, toward the knees.
+      // On hands and knees the elbows bend back, toward the knees; out as the hands come up
+      // onto them, turning round behind the arm.
       elbow: DwellerPose.swing(up, [
         [0, DwellerPose.BACK],
-        [0.5, DwellerPose.FORE],
+        [0.5, DwellerPose.REAR],
         [1, DwellerPose.OUT],
       ]),
     });
@@ -1494,10 +1767,18 @@ export class DwellerPose {
   }
 
   private static waking(share: number): DwellerLook {
-    // Up out of the bag, a stretch with both arms over the head and a yawn.
+    // Up out of the bag, a stretch with both arms over the head, the fingers spread, and a yawn.
     const up = DwellerPose.ease(share / 0.4);
     const stretch = DwellerPose.arc((share - 0.3) / 0.6);
     const { KNEES, AT_KNEES } = DwellerPose;
+    // The palms turning forward as the arms go up, the backs round by the little finger's side
+    // until they face away from the viewer.
+    const turning = Math.PI * DwellerPose.ease((stretch - 0.2) / 0.6);
+    const back = {
+      x: -0.9 * Math.sin(turning),
+      y: -0.6 * Math.cos(turning),
+      z: 0.8 * Math.cos(turning),
+    };
     return {
       ...DwellerPose.STILL,
       shift: DwellerPose.TO_BED * (1 - up),
@@ -1508,11 +1789,19 @@ export class DwellerPose {
         {
           ...DwellerPose.resting(0),
           at: DwellerPose.mix(KNEES[0], { x: -86, y: -268 }, stretch),
+          aim: -10,
+          firm: stretch,
+          spread: stretch,
+          back,
           ahead: AT_KNEES * (1 - stretch),
         },
         {
           ...DwellerPose.resting(1),
           at: DwellerPose.mix(KNEES[1], { x: 92, y: -262 }, stretch),
+          aim: 10,
+          firm: stretch,
+          spread: stretch,
+          back,
           ahead: AT_KNEES * (1 - stretch),
         },
       ],
@@ -1555,6 +1844,7 @@ export class DwellerPose {
     gaze: { x: -0.3, y: 0.25 },
     stream: null,
     lump: null,
+    pouch: null,
     dips: null,
   };
 
@@ -1565,160 +1855,149 @@ export class DwellerPose {
 
   // The arms.
 
-  /** An arm from `shoulder` to where `hand` grips: the hand set to what it holds as firmly as it
-   * is, the wrist bent no further than a wrist bends, and what's left of the thing's aim taken
-   * up in the fingers as far as they give. */
+  /** An arm from `shoulder` to where `hand` grips, in three dimensions (#274): the hand posed for
+   * what it holds (`HandBones`) and turned to hold it as the pose aims it, round a thing that can
+   * turn in it as near the forearm's way as it goes, a flat thing's face to the viewer, as firmly
+   * as it's set, lying along the forearm as it falls; an empty hand's fingers the pose's way, no
+   * further from the forearm's than a wrist bends; the wrist where the hand's pose puts it; and
+   * the upper arm and the forearm bent to the wrist, the elbow the pose's way. The forearm's way
+   * and the hand's settle each other over a few rounds. The further arm is the nearer's mirror
+   * image. */
   private static reach(shoulder: Spot, hand: HandLook, side: 0 | 1): Reach {
-    const { FOREARM, WRIST_BEND, WRIST_LOOSE } = DwellerPose;
-    const shape = DwellerHands.SHAPES[hand.holds];
-    const length = DwellerHands.WRIST[shape];
-    // Which way the elbow is off the arm is settled once, for the forearm to where the hand
-    // grips, and kept as the wrist is set.
-    const pole = DwellerPose.elbowed(
-      shoulder,
-      hand.at,
-      hand.ahead,
-      side === 0 ? hand.elbow : { ...hand.elbow, x: -hand.elbow.x },
-      FOREARM,
+    const { SCALE } = HandBones;
+    const flip = (way: Vector3): Vector3 => (side === 1 ? way.mirrored() : way);
+    const from = flip(new Vector3(shoulder.x, shoulder.y, 0));
+    // No further toward the viewer than the arm can reach without its forearm pointing at the
+    // viewer, a sleeve seen end on: the nearer the hand is to the shoulder across the picture,
+    // the less; smoothly, so nothing jumps. How far toward the viewer a hand is doesn't show.
+    const across = Math.hypot(hand.at.x - shoulder.x, hand.at.y - shoulder.y);
+    const most = DwellerPose.FORWARD * across + DwellerPose.UPPER_ARM / 4;
+    const ahead = hand.ahead / Math.sqrt(1 + (hand.ahead / most) ** 2);
+    const grip = flip(new Vector3(hand.at.x, hand.at.y, ahead));
+    const aimed = DwellerPose.way(side === 1 ? -hand.aim : hand.aim);
+    const holds = hand.holds === "nothing" ? (hand.ready ?? "nothing") : hand.holds;
+    const shut = hand.shut ?? (hand.holds === "nothing" ? 0 : 1);
+    const shape = HandBones.shape(DwellerHands.GRIPS[holds], shut, hand.spread ?? 0);
+    const back = hand.back ?? DwellerPose.BACK_UP;
+    const facing = new Vector3(back.x, back.y, back.z);
+    const firm = Math.min(1, Math.max(0, hand.firm));
+    // An empty hand, or one round a lump of snow, points its fingers the pose's way; the pot
+    // hangs from its handle in the fist whichever way the hand is turned.
+    const loose = holds === "nothing" || holds === "snow";
+    const hangs = DwellerHands.CARRIED.includes(holds);
+    const turnFor = (seen: Vector3): HandTurn => {
+      // A hand lies across the picture rather than pointing at the viewer, as far as its
+      // forearm lets it: so the wrist it puts behind or before what it holds doesn't push the
+      // forearm round toward the viewer in turn.
+      const forearm = new Vector3(seen.x, seen.y, seen.z * DwellerPose.FLAT).unit();
+      if (loose) {
+        return HandTurn.of(DwellerPose.bent(forearm, forearm.toward(aimed, firm)), facing);
+      }
+      if (hangs) {
+        return HandTurn.of(forearm, facing);
+      }
+      const relaxed = HandTurn.of(forearm, facing);
+      return relaxed.toward(HandBones.turned(shape, aimed, forearm), firm);
+    };
+    // Where the hand is put by: what it holds, where it's held in it; an empty hand, by the
+    // middle of its palm as it rests, and by where what it's ready for will be as firmly as it
+    // reaches for it: so what it's ready for can change while it rests, and nothing jumps.
+    const hold = hand.holds === "nothing" ? HandBones.MIDDLE.toward(shape.hold, firm) : shape.hold;
+    const wristFor = (turn: HandTurn): Vector3 => grip.minus(turn.of(hold).times(SCALE));
+    // The hand turns to the forearm of an arm bent straight to where it grips, its forearm as
+    // long as the forearm and the hand, a way that moves as smoothly as the pose; then the arm
+    // bends to the wrist the hand so turned puts where it is. No rounds of the hand's turn and
+    // the arm's, which could settle one way in one frame and another in the next.
+    const straight = DwellerPose.bent3(from, grip, hand.elbow, hold.size * SCALE);
+    const turn = turnFor(straight.end.minus(straight.elbow).unit());
+    const wristAt = wristFor(turn);
+    // The elbow goes the pose's way, and toward where it would leave the wrist straight, a
+    // forearm's length back along the hand: as far as that's off the arm's line, where the
+    // elbow's way round it counts.
+    const line = wristAt.minus(from).unit();
+    const kept = new Vector3(turn.along.x, turn.along.y, turn.along.z * DwellerPose.KEEP).unit();
+    const off = wristAt.minus(kept.times(DwellerPose.FOREARM)).minus(from).across(line);
+    const { STRAIGHT, OFF_LINE, UPPER_ARM, FOREARM } = DwellerPose;
+    const raised = Math.max(0, -off.unit().y) * DwellerPose.UP;
+    // How far off the line the elbow is, as bent as the arm is: a way to it no further off than
+    // that counts for as little.
+    const reach = wristAt.minus(from).size;
+    const cos = (UPPER_ARM ** 2 + reach ** 2 - FOREARM ** 2) / (2 * UPPER_ARM * reach || 1);
+    const bentOff = UPPER_ARM * Math.sqrt(Math.max(0, 1 - Math.min(1, cos) ** 2));
+    const pull = off.times(
+      (STRAIGHT * (1 - raised)) / Math.max(off.size, OFF_LINE, DwellerPose.FOLDED * bentOff),
     );
-    const square = DwellerHands.GRIPS[shape] === "across" ? 90 * hand.side : 180;
-    // The hand lying along the forearm, one bone to where it grips: how it falls when nothing
-    // sets it.
-    const loose = DwellerPose.bend(shoulder, hand.at, hand.ahead, pole, FOREARM + length);
-    const fallen = DwellerPose.angle(loose.elbow, loose.end);
-    // What swings freely in the hand leaves the hand as it falls, and points its own way.
-    const swings = DwellerHands.TURNS[hand.holds] !== undefined;
-    if (hand.firm <= 0 || swings) {
-      return {
-        elbow: loose.elbow,
-        wrist: DwellerPose.mix(loose.elbow, loose.end, FOREARM / (FOREARM + length)),
-        at: loose.end,
-        forearm: fallen,
-        palm: fallen,
-        aim: swings ? hand.aim : fallen - square,
-      };
-    }
-    // The arm to the wrist of a hand turned so.
-    const to = (palm: number): { readonly elbow: Spot; readonly end: Spot } => {
-      const fingers = DwellerPose.fingers(palm);
-      return DwellerPose.bend(
-        shoulder,
-        { x: hand.at.x - fingers.x * length, y: hand.at.y - fingers.y * length },
-        hand.ahead,
-        pole,
-        FOREARM,
-      );
-    };
-    // The hand turns toward what it holds as far as the wrist bends, and the wrist moves with
-    // it: a few rounds settle them.
-    const wanted = hand.aim + square;
-    let palm = fallen + hand.firm * DwellerPose.turn(wanted - fallen) * 0.5;
-    for (let pass = 0; pass < 8; pass += 1) {
-      const arm = to(palm);
-      const forearm = DwellerPose.angle(arm.elbow, arm.end);
-      const short = Math.min(1, DwellerPose.far(arm.elbow, arm.end) / FOREARM);
-      const limit = WRIST_BEND + (1 - short) * WRIST_LOOSE;
-      const need = DwellerPose.turn(wanted - forearm);
-      const set = forearm + hand.firm * Math.min(limit, Math.max(-limit, need));
-      palm += DwellerPose.turn(set - palm) * 0.5;
-    }
-    const arm = to(palm);
-    const fingers = DwellerPose.fingers(palm);
-    // What the hand holds keeps its aim as far as it turns in the fingers; held loosely, it
-    // turns with the hand.
-    const cant = DwellerHands.CANT[shape];
-    const spare = DwellerPose.turn(wanted - palm);
-    const kept = hand.aim - (spare - Math.min(cant, Math.max(-cant, spare)));
-    const carried = palm - square;
+    const posed = new Vector3(hand.elbow.x, hand.elbow.y, hand.elbow.z).unit();
+    const pole = posed.times(1 - pull.size).plus(pull);
+    const arm = DwellerPose.bent3(from, wristAt, pole);
+    const at = arm.end.plus(turn.of(hold).times(SCALE));
+    const pointed = hangs ? aimed : turn.of(loose ? new Vector3(0, 1, 0) : shape.aim);
+    const placed = side === 1 ? turn.mirrored() : turn;
+    const [elbow, wrist, held] = [flip(arm.elbow), flip(arm.end), flip(at)];
+    const fingers = placed.along;
+    const carried = DwellerHands.CARRIED.includes(holds) || hand.holds === "nothing";
     return {
-      elbow: arm.elbow,
-      wrist: arm.end,
-      at: { x: arm.end.x + fingers.x * length, y: arm.end.y + fingers.y * length },
-      forearm: DwellerPose.angle(arm.elbow, arm.end),
-      palm,
-      aim: carried + DwellerPose.turn(kept - carried) * Math.min(1, hand.firm),
+      elbow: { x: elbow.x, y: elbow.y },
+      wrist: { x: wrist.x, y: wrist.y },
+      at: { x: held.x, y: held.y },
+      forearm: DwellerPose.angle(elbow, wrist),
+      palm: DwellerPose.angle({ x: 0, y: 0 }, fingers),
+      aim: (Math.atan2(pointed.x * (side === 1 ? -1 : 1), -pointed.y) * 180) / Math.PI,
+      elbowAhead: elbow.z,
+      place: { shape, turn: placed, wrist, thing: carried ? null : held.z },
     };
   }
 
-  /** Two bones from `shoulder` toward `target`, `ahead` of it toward the viewer, the upper arm
-   * and one `lower` long, the elbow off the arm's line `side`'s way, which is square to it: the
-   * end as near the target as they reach, the bones their lengths in three dimensions, and
-   * drawn flat, so a bone that points toward the viewer is shorter. */
-  private static bend(
-    shoulder: Spot,
-    target: Spot,
-    ahead: number,
-    side: Point,
-    lower: number,
-  ): { readonly elbow: Spot; readonly end: Spot } {
-    const upper = DwellerPose.UPPER_ARM;
-    const { along, reach, cos, sin } = DwellerPose.toward(shoulder, target, ahead, lower);
-    // Square to this arm, should it point a little otherwise than the one the side was for.
-    const dot = side.x * along.x + side.y * along.y + side.z * along.z;
-    const across = { x: side.x - dot * along.x, y: side.y - dot * along.y };
-    const size = Math.hypot(across.x, across.y, side.z - dot * along.z) || 1;
-    return {
-      elbow: {
-        x: shoulder.x + upper * (along.x * cos + (across.x / size) * sin),
-        y: shoulder.y + upper * (along.y * cos + (across.y / size) * sin),
-      },
-      end: { x: shoulder.x + along.x * reach, y: shoulder.y + along.y * reach },
-    };
+  /** Which way something points that's aimed so, in degrees clockwise from straight up, in three
+   * dimensions: in the picture's plane. */
+  private static way(aim: number): Vector3 {
+    const angle = (aim * Math.PI) / 180;
+    return new Vector3(Math.sin(angle), -Math.cos(angle), 0);
   }
 
-  /** Which way the elbow is off the line of an arm that reaches from `shoulder` to `target`,
-   * `ahead` of it, with one bone `lower` long below the elbow: `pole`'s way, square to the arm;
-   * but no further round behind the arm than leaves `SEEN` of the lower bone to be seen, since
-   * an elbow straight behind its arm points the forearm at the viewer, a sleeve seen end on. */
-  private static elbowed(
-    shoulder: Spot,
-    target: Spot,
-    ahead: number,
+  /** An empty hand's way, `wanted`, no further from the forearm's than a wrist bends. */
+  private static bent(forearm: Vector3, wanted: Vector3): Vector3 {
+    const angle = forearm.angle(wanted);
+    const axis = forearm.cross(wanted);
+    if (angle <= DwellerPose.WRIST_BEND || axis.size < 1e-9) {
+      return wanted.unit();
+    }
+    return forearm.unit().turned(axis.unit(), DwellerPose.WRIST_BEND);
+  }
+
+  /** The way an elbow goes off its arm's line, `axis`: `pole`'s, square to the arm, as far as
+   * the pole is square to it, with a steady pull out from the body and down besides, as an elbow
+   * hangs; so where the pole is nearly the arm's own way the elbow still goes out and down,
+   * never back behind the arm, and turns smoothly. */
+  private static hanging(pole: Vector3, axis: Vector3): Vector3 {
+    const { OUTWARD, DOWNWARD } = DwellerPose.HANG;
+    const square = (way: Vector3): Vector3 => way.across(axis);
+    return square(pole.unit())
+      .plus(square(new Vector3(-1, 0, 0)).times(OUTWARD))
+      .plus(square(new Vector3(0, 1, 0)).times(DOWNWARD))
+      .unit();
+  }
+
+  /** The upper arm and the forearm from `shoulder` toward `target`, in three dimensions, the
+   * lower `beyond` longer than the forearm: the elbow off their line `pole`'s way, as it hangs;
+   * where the lower ends, as near the target as they reach, and where the forearm does along
+   * it. A pose keeps the forearm from pointing at the viewer, a sleeve seen end on, by where it
+   * puts the hand and which way the elbow hangs: the tests hold every movement to it. */
+  private static bent3(
+    shoulder: Vector3,
+    target: Vector3,
     pole: Point,
-    lower: number,
-  ): Point {
-    const { SEEN } = DwellerPose;
+    beyond = 0,
+  ): { readonly elbow: Vector3; readonly end: Vector3 } {
     const upper = DwellerPose.UPPER_ARM;
+    const lower = DwellerPose.FOREARM + beyond;
+    const ahead = target.z - shoulder.z;
     const { along, reach, cos, sin } = DwellerPose.toward(shoulder, target, ahead, lower);
-    const dot = pole.x * along.x + pole.y * along.y + pole.z * along.z;
-    const square = {
-      x: pole.x - dot * along.x,
-      y: pole.y - dot * along.y,
-      z: pole.z - dot * along.z,
-    };
-    const size = Math.hypot(square.x, square.y, square.z);
-    const side =
-      size < 1e-9
-        ? { x: 0, y: 0, z: 1 }
-        : { x: square.x / size, y: square.y / size, z: square.z / size };
-    // How far toward the viewer the lower bone runs depends on how far round from the front of
-    // the arm the elbow is: the least it can be seen from in front, straight behind.
-    const level = Math.sqrt(Math.max(0, 1 - along.z * along.z));
-    const round = upper * sin * level;
-    const least = (along.z * (reach - upper * cos) - lower * Math.sqrt(1 - SEEN * SEEN)) / round;
-    if (round <= 1e-6 || least <= -1) {
-      return side;
-    }
-    const near = { x: (-along.z * along.x) / level, y: (-along.z * along.y) / level, z: level };
-    const across = {
-      x: along.y * near.z - along.z * near.y,
-      y: along.z * near.x - along.x * near.z,
-      z: along.x * near.y - along.y * near.x,
-    };
-    const angle = Math.atan2(
-      side.x * across.x + side.y * across.y + side.z * across.z,
-      side.x * near.x + side.y * near.y + side.z * near.z,
-    );
-    const most = Math.acos(Math.min(1, least));
-    if (Math.abs(angle) <= most) {
-      return side;
-    }
-    const set = Math.sign(angle) * most;
-    return {
-      x: near.x * Math.cos(set) + across.x * Math.sin(set),
-      y: near.y * Math.cos(set) + across.y * Math.sin(set),
-      z: near.z * Math.cos(set) + across.z * Math.sin(set),
-    };
+    const way = new Vector3(along.x, along.y, along.z);
+    const off = DwellerPose.hanging(new Vector3(pole.x, pole.y, pole.z), way);
+    const elbow = shoulder.plus(way.times(upper * cos).plus(off.times(upper * sin)));
+    const end = shoulder.plus(way.times(reach));
+    return { elbow, end: elbow.toward(end, DwellerPose.FOREARM / lower) };
   }
 
   /** The way from `shoulder` to `target`, `ahead` of it, one long: how far the two bones
@@ -1750,27 +2029,20 @@ export class DwellerPose {
     return (Math.atan2(to.y - from.y, to.x - from.x) * 180) / Math.PI - 90;
   }
 
-  /** Which way a hand's fingers point that's turned so, one pixel long. */
-  private static fingers(palm: number): Spot {
-    const angle = (palm * Math.PI) / 180;
-    return { x: -Math.sin(angle), y: Math.cos(angle) };
-  }
-
-  /** A turn in degrees, the short way round: from -180 to 180. */
-  private static turn(degrees: number): number {
-    return degrees - 360 * Math.round(degrees / 360);
-  }
-
-  private static far(a: Spot, b: Spot): number {
-    return Math.hypot(a.x - b.x, a.y - b.y);
-  }
-
   /** A point turned by `degrees` about the hips, clockwise on the screen. */
   private static turned(spot: Spot, degrees: number): Spot {
     const angle = (degrees * Math.PI) / 180;
     const cos = Math.cos(angle);
     const sin = Math.sin(angle);
     return { x: spot.x * cos - spot.y * sin, y: spot.x * sin + spot.y * cos };
+  }
+
+  /** From one point to another by way of `by`, which bends the way toward it, `share` of the
+   * way along. */
+  private static curve(from: Spot, by: Spot, to: Spot, share: number): Spot {
+    const u = Math.min(Math.max(share, 0), 1);
+    const [a, b, c] = [(1 - u) * (1 - u), 2 * u * (1 - u), u * u];
+    return { x: a * from.x + b * by.x + c * to.x, y: a * from.y + b * by.y + c * to.y };
   }
 
   private static mix(from: Spot, to: Spot, share: number): Spot {
@@ -1838,14 +2110,42 @@ export class DwellerPose {
     };
   }
 
-  /** An elbow's way through its `keys` in time, as `glide` goes. */
+  /** `share` of the way from one way to another, turned round the shortest way at an even
+   * rate, as long as `from`: never shrunk to nothing between two ways nearly opposite. */
+  static turning(from: Point, to: Point, share: number): Point {
+    const a = new Vector3(from.x, from.y, from.z);
+    const b = new Vector3(to.x, to.y, to.z);
+    const axis = a.cross(b);
+    const way =
+      axis.size < 1e-9
+        ? a
+        : a
+            .unit()
+            .turned(axis.unit(), a.angle(b) * share)
+            .times(a.size);
+    return { x: way.x, y: way.y, z: way.z };
+  }
+
+  /** A way through its `keys` in time, as `glide` goes: turned from each to the next round
+   * the shortest way, at an even rate, so it never shrinks to nothing between two keys nearly
+   * opposite and turns all at once. */
   private static swing(t: number, keys: Keys<Point>): Point {
-    const part = (of: (point: Point) => number): number =>
-      DwellerPose.glide(
-        t,
-        keys.map(([time, point]): readonly [number, number] => [time, of(point)]),
-      );
-    return { x: part(({ x }) => x), y: part(({ y }) => y), z: part(({ z }) => z) };
+    const along = DwellerPose.glide(
+      t,
+      keys.map(([time], index): readonly [number, number] => [time, index]),
+    );
+    const index = Math.min(Math.max(Math.floor(along), 0), Math.max(keys.length - 2, 0));
+    const [from, to] = [keys[index]?.[1], keys[index + 1]?.[1] ?? keys[index]?.[1]];
+    if (from === undefined || to === undefined) {
+      return { x: 0, y: 1, z: 0 };
+    }
+    const a = new Vector3(from.x, from.y, from.z).unit();
+    const b = new Vector3(to.x, to.y, to.z).unit();
+    const share = Math.min(Math.max(along - index, 0), 1);
+    const angle = a.angle(b);
+    const axis = a.cross(b);
+    const way = axis.size < 1e-9 ? a : a.turned(axis.unit(), angle * share);
+    return { x: way.x, y: way.y, z: way.z };
   }
 
   /** What `steps` has at `t`: the last of them begun. */
