@@ -1832,8 +1832,7 @@ export class DwellerPose {
         {
           ...DwellerPose.resting(0),
           at: DwellerPose.mix(KNEES[0], { x: AT_WATCH.x, y: AT_WATCH.y + 3 * press }, over),
-          ahead:
-            DwellerPose.AT_KNEES + (DwellerPose.AT_CHEST + 14 - DwellerPose.AT_KNEES) * over,
+          ahead: DwellerPose.AT_KNEES + (DwellerPose.AT_CHEST + 14 - DwellerPose.AT_KNEES) * over,
           elbow: DwellerPose.swing(over, [
             [0, DwellerPose.OUT],
             [1, DwellerPose.DOWN],
@@ -1897,7 +1896,12 @@ export class DwellerPose {
     thing: Held,
     kept: Spot,
     past: Spot,
-    held: { readonly at: Spot; readonly aim: number; readonly ahead: number; readonly elbow: Point },
+    held: {
+      readonly at: Spot;
+      readonly aim: number;
+      readonly ahead: number;
+      readonly elbow: Point;
+    },
   ): HandLook {
     const glide = DwellerPose.glide;
     return {

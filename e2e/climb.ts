@@ -131,6 +131,8 @@ declare global {
       screenAt(x: number, y: number): readonly number[];
       climberAt(climber: string): readonly number[];
       climber(climber: string): SeenClimber;
+      /** The device a climber has in the hand (src/simulation → HandView, #271). */
+      hand(climber: string): { readonly device: string | null; readonly was: string | null };
       god?: SeenGod;
     };
   }
@@ -256,6 +258,14 @@ export const SAVING = { timeout: 20_000 };
  * thousand at most (#211), never slips, and a story on a ladder goes as it's told rather than end
  * in a fall one climb in a hundred. */
 export const SURE_FOOTED = [0x13579bdf, 0xb12327d4, 0x2468ace0, 0x0badf00d];
+
+/** The device a climber has in the hand (#271), or null: none, or before the climb. */
+export async function inHand(page: Page, climber: string): Promise<string | null> {
+  return page.evaluate(
+    (id) => ("everest" in window ? window.everest.hand(id).device : null),
+    climber,
+  );
+}
 
 /** How far across the slope a climber of the expedition is, in metres, or NaN before the climb:
  * on the flat, how far along it. */

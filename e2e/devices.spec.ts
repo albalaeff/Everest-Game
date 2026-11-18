@@ -1,7 +1,17 @@
 import { expect, test } from "@playwright/test";
 import type { Locator, Page } from "@playwright/test";
 
-import { SURE_FOOTED, WALKING, climbFrom, openTheGame, savedPlayer, seen, stage } from "./climb";
+import {
+  SURE_FOOTED,
+  WALKING,
+  along,
+  climbFrom,
+  inHand,
+  openTheGame,
+  savedPlayer,
+  seen,
+  stage,
+} from "./climb";
 
 /**
  * The devices a climber carries (#260): a handheld radio to Base Camp, a GPS watch, a pocket
@@ -176,4 +186,34 @@ test("hanging in a crevasse, the radio has no contact, the watch no fix and the 
   await page.keyboard.press("ArrowRight");
   await page.keyboard.press("ArrowRight");
   await expect(reading(page, "tracker", "status")).toHaveText("No sky: nothing leaves from here");
+});
+
+test("the climber takes out the device the card shows, holds it walking, and puts it away as the card closes (#271)", async ({
+  page,
+}) => {
+  test.slow();
+  await openTheGame(page);
+  await expect.poll(() => inHand(page, "player"), WALKING).toBeNull();
+
+  // The card's device comes out into the hand: an action of the game's, as a phrase is.
+  await page.keyboard.press("KeyG");
+  await expect(panel(page)).toBeVisible();
+  await expect.poll(() => inHand(page, "player"), WALKING).toBe("radio");
+  await expect(page.locator("#received")).toContainText("device radio");
+  // Another tab, another device: the first goes back for it.
+  await show(page, "GPS");
+  await expect.poll(() => inHand(page, "player"), WALKING).toBe("gps");
+
+  // They walk on with it in the hand.
+  const from = await along(page, "player");
+  await page.keyboard.down("KeyD");
+  await expect.poll(() => along(page, "player"), WALKING).toBeGreaterThan(from + 1);
+  await page.keyboard.up("KeyD");
+  expect(await inHand(page, "player")).toBe("gps");
+
+  // The card closes, and the hand is empty.
+  await page.keyboard.press("Escape");
+  await expect(panel(page)).toBeHidden();
+  await expect.poll(() => inHand(page, "player"), WALKING).toBeNull();
+  await expect(page.locator("#received")).toContainText("device none");
 });

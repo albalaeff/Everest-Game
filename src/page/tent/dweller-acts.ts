@@ -159,8 +159,7 @@ export class DwellerActs {
       this.held = this.act.slice(0, -"-out".length) as DeviceAct;
     }
     // A device goes back before anything else is taken up, or another device (#271).
-    const wanted =
-      work.device === null || this.asleep ? null : DwellerPose.DEVICES[work.device];
+    const wanted = work.device === null || this.asleep ? null : DwellerPose.DEVICES[work.device];
     const held = this.held;
     if (held !== null && (this.next.length > 0 || held !== wanted)) {
       this.toSay = this.toSay && wanted === "radio";

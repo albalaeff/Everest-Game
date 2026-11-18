@@ -252,7 +252,7 @@ export class ClimberReading {
           : { hips: this.local(mount.hips, at) ?? { x: 0, y: 0 }, lean: mount.lean },
       limp: upright ? ClimberReading.limp(view) : 0,
       crawling: upright ? (drawn.through?.down ?? 0) : 0,
-      device: upright && drawn.hand != null ? DeviceHold.of(drawn.hand) : null,
+      device: upright && drawn.hand != null ? new DeviceHold(drawn.hand).shown : null,
     };
   }
 

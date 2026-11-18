@@ -14,10 +14,12 @@ export class DeviceHold {
   static readonly AWAY = 0.6;
   static readonly TALK = 1.6;
 
-  /** What the picture shows of a hand: the device, how far out it is, and whether it's talked
+  constructor(private readonly hand: HandView) {}
+
+  /** What the picture shows of the hand: the device, how far out it is, and whether it's talked
    * into; or nothing, with empty hands. */
-  static of(hand: HandView): InHand | null {
-    const { device, was, seconds, spoke } = hand;
+  get shown(): InHand | null {
+    const { device, was, seconds, spoke } = this.hand;
     const { OUT, AWAY, TALK } = DeviceHold;
     if (was !== null && seconds < AWAY) {
       return { kind: was, out: 1 - seconds / AWAY, talking: false };

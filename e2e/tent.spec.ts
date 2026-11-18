@@ -1,13 +1,14 @@
 import { expect, test } from "@playwright/test";
 import type { Locator, Page } from "@playwright/test";
 
-import { WALKING, climbFrom, savedPlayer, seen } from "./climb";
+import { WALKING, climbFrom, inHand, savedPlayer, seen } from "./climb";
 
 /**
  * The camps' tents (#258): a button over the tent whose door the climber stands at takes them in,
  * the slope shows them through the door, and the tent's inside opens over it, cut open from end to
  * end, with a panel of what there is and the chores. The stove burns while a chore of its is in
- * hand; a sleep alone passes the night at once; [Leave the tent] goes out again. Base Camp's
+ * hand; [Devices] opens the devices' card over the tent, and the person takes up the one it shows
+ * (#271); a sleep alone passes the night at once; [Leave the tent] goes out again. Base Camp's
  * kitchen never runs out and has the guitar; Camp 1 has the gas and the meals carried up to it.
  * The panel is in marks and few words (#264): each button and row says the whole in a sentence,
  * as its tooltip and its name to a screen reader, which is what the stories read.
@@ -135,6 +136,31 @@ test("at Base Camp the button over a tent's door takes the climber in: the tent 
   await expect(inventory).toContainText("At Base Camp: take from its store");
   await inventory.getByRole("button", { name: "Close" }).dispatchEvent("click");
   await expect(inventory).toBeHidden();
+
+  // [Devices] opens their card over the tent (#271), and the person takes up the one it shows:
+  // the radio from where it lies on the pad, a phrase talked into it, then the weather meter
+  // out of the chest pocket and held out at the door, which opens for it; and back as it closes.
+  const devices = page.getByRole("dialog", { name: "Devices" });
+  await press(tent(page).getByRole("button", { name: /^Your devices/ }));
+  await expect(devices).toBeVisible();
+  await expect.poll(() => inHand(page, "player"), WALKING).toBe("radio");
+  await expect(picture(page)).toHaveAttribute("data-act", "radio", THROUGH_THE_DOOR);
+  await expect(picture(page)).toHaveAttribute("data-holds", "radio");
+  await expect(picture(page).locator(".tent-props .tent-radio")).toBeHidden();
+  await press(devices.getByRole("button", { name: "Radio check" }));
+  await expect(picture(page)).toHaveAttribute("data-act", "radio-talk", WALKING);
+  await expect(devices.locator(".radio__log")).toContainText("Loud and clear", WALKING);
+  await press(devices.getByRole("tab", { name: "Weather", exact: true }));
+  await expect.poll(() => inHand(page, "player"), WALKING).toBe("wind");
+  await expect(picture(page)).toHaveAttribute("data-act", "meter", THROUGH_THE_DOOR);
+  await expect(picture(page)).toHaveAttribute("data-holds", "meter");
+  await expect(picture(page)).toHaveAttribute("data-door", "open");
+  await expect(picture(page).locator(".tent-props .tent-radio")).toBeVisible();
+  await press(devices.getByRole("button", { name: "Close" }));
+  await expect(devices).toBeHidden();
+  await expect.poll(() => inHand(page, "player"), WALKING).toBeNull();
+  await expect(picture(page)).toHaveAttribute("data-act", "idle", THROUGH_THE_DOOR);
+  await expect(picture(page)).toHaveAttribute("data-door", "shut");
 
   // A sleep alone passes the night at once: 23 hours less the minutes since 03:00. The picture
   // shows them into the bag, asleep for a moment, and up again with a stretch.

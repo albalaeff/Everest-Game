@@ -618,7 +618,9 @@ describe("DwellerPose: the devices (#271)", () => {
 
     const pressing = at("watch-out", 0.95);
     expect(far(pressing.joints.hands[0], held.joints.wrists[1])).toBeLessThan(40);
-    expect(far(at("watch-out", 1.6).joints.hands[0], at("idle", 0).joints.hands[0])).toBeLessThan(2);
+    expect(far(at("watch-out", 1.6).joints.hands[0], at("idle", 0).joints.hands[0])).toBeLessThan(
+      2,
+    );
   });
 
   it("takes the weather meter from the chest pocket and holds it out toward the door, which is open for it", () => {

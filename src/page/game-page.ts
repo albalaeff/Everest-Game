@@ -49,7 +49,7 @@ import type { RoomCode } from "../room/room-code";
 import { IndexedDbStore } from "../saves";
 import type { ExpeditionStore } from "../saves";
 import { Expedition } from "../simulation";
-import type { ClimberId, ExpeditionSave, PackOf, Scenario } from "../simulation";
+import type { ClimberId, ExpeditionSave, HandView, PackOf, Scenario } from "../simulation";
 import { ActionQueue, EverySink, ZoomSink } from "./action-queue";
 import { BrowserSockets } from "./browser-sockets";
 import { CarriedPace } from "./carried-pace";
@@ -128,6 +128,8 @@ export interface PageHooks {
   climberAt(climber: ClimberId): readonly number[];
   /** A climber of the expedition as the physics shows them: on a ladder, on a rope, falling. */
   climber(climber: ClimberId): ClimberView;
+  /** The device a climber has in the hand, as the rule has it (#271). */
+  hand(climber: ClimberId): HandView;
   /** The god mode's places and powers, with `?god` alone (#245). */
   god?: GodHooks;
 }
@@ -577,6 +579,7 @@ export class GamePage {
         return [x, y];
       },
       climber: (climber) => physics.climber(climber),
+      hand: (climber) => rules.devices.hand(climber),
       ...(god === null ? {} : { god }),
     });
     if (await scene.open(window)) {

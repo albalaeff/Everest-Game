@@ -3184,6 +3184,27 @@ main:has(#tent:not([hidden])) #devices {
   max-height: calc(100vh - var(--edge-top) - var(--edge-bottom));
 }
 
+/* On a phone it lies over the tent's panel, never its picture: across the bottom upright, and
+ * down the right with the phone on its side, where the panel is. */
+.touch main:has(#tent:not([hidden])) #devices {
+  top: auto;
+  right: var(--edge-right);
+  bottom: var(--edge-bottom);
+  left: var(--edge-left);
+  width: auto;
+  max-height: min(56vh, calc(100vh - var(--edge-top) - var(--edge-bottom)));
+}
+
+@media (max-height: 31.25rem) and (orientation: landscape) {
+  .touch main:has(#tent:not([hidden])) #devices {
+    top: var(--edge-top);
+    bottom: auto;
+    left: auto;
+    width: min(33rem, 50vw);
+    max-height: calc(100vh - var(--edge-top) - var(--edge-bottom));
+  }
+}
+
 main:has(#tent:not([hidden])) #self-check {
   z-index: 6;
 }

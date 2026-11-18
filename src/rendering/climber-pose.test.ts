@@ -1393,10 +1393,9 @@ describe("ClimberPose: a casualty and their rescuer (#241)", () => {
 });
 
 describe("ClimberPose: a device in the hand (#271)", () => {
-  const held = (
-    kind: "radio" | "gps" | "wind" | "tracker",
-    out = 1,
-  ): Partial<PoseState> => ({ device: { kind, out, talking: false } });
+  const held = (kind: "radio" | "gps" | "wind" | "tracker", out = 1): Partial<PoseState> => ({
+    device: { kind, out, talking: false },
+  });
   /** Standing with the device out, settled. */
   const holding = (kind: "radio" | "gps" | "wind" | "tracker"): Pose => {
     const climber = new ClimberPose();
