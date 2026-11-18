@@ -51,8 +51,9 @@ test.describe("on a screen of 630 by 360", () => {
     // apart, can miss: by then it may say a minute or two past.
     await expect(page.locator("#readout-clock")).toHaveText(/^03:0\d$/);
     await expect(page.locator("#readout-altitude")).toHaveText(/^5,3\d\d m$/);
-    await expect(page.locator("#slope")).toHaveAttribute("data-tents", "6", { timeout: 15_000 });
-    // A tent stands 3 m behind the climber: 54 px left of the anchor, a few pixels up its canvas.
+    // Two tents pitched at Base Camp and two at Camp 1 (content/route/icefall.json, #258).
+    await expect(page.locator("#slope")).toHaveAttribute("data-tents", "4", { timeout: 15_000 });
+    // A tent's room is 3 m behind the climber: 54 px left of the anchor, a few pixels up its fly.
     await expect.poll(() => warmth(page, 156, 208)).toBeGreaterThan(60);
     expect(await warmth(page, 210, 260)).toBeLessThan(20);
   });

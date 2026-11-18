@@ -110,6 +110,9 @@ export interface ClimberView {
    * runs past (`rope`); none where they stepped or stood, or a wall or a ladder's end stopped
    * them. The coach reads it. */
   readonly heldBack: "jumar" | "rope" | null;
+  /** Whether they're in a tent, under cover (#258): there they stay put, whatever their keys
+   * say, until the tents let them out. */
+  readonly sheltered: boolean;
   /** Which way along the slope they face: the way they last walked, up the route to begin with;
    * and whether they've turned out of it to face the viewer, standing (#235). */
   readonly facing: Way;
@@ -235,6 +238,8 @@ export type ClimberSave = {
    * and not turned. */
   readonly facing?: Way;
   readonly towardViewer?: boolean;
+  /** Missing from the saves of builds before the tents (#258), and where they're not in one. */
+  readonly sheltered?: boolean;
 };
 
 /** A cowstail's carabiner, or its jumar, on a rope: it runs along it, or grips it where it is. */
@@ -530,6 +535,8 @@ export class Climber {
   private facing: Way = 1;
   private towardViewer = false;
   private took = false;
+  /** Whether they're in a tent, under cover (#258). */
+  private sheltered = false;
 
   /** Everything checked. */
   static readonly CHECKED: Kit = { crampons: true, lamp: true, water: true };
@@ -655,6 +662,7 @@ export class Climber {
     climber.heldBack = save.heldBack ?? null;
     climber.facing = save.facing ?? 1;
     climber.towardViewer = save.towardViewer ?? false;
+    climber.sheltered = save.sheltered ?? false;
     return climber;
   }
 
@@ -689,6 +697,7 @@ export class Climber {
       ...(this.heldBack === null ? {} : { heldBack: this.heldBack }),
       ...(this.facing === 1 ? {} : { facing: this.facing }),
       ...(this.towardViewer ? { towardViewer: true } : {}),
+      ...(this.sheltered ? { sheltered: true } : {}),
     };
   }
 
@@ -731,13 +740,14 @@ export class Climber {
       heldBack: this.heldBack,
       facing: this.facing,
       towardViewer: this.towardViewer,
+      sheltered: this.sheltered,
     };
   }
 
   /** Takes an action of theirs: the walking, the cowstails and the jumar are the physics', the
-   * rest isn't. The dead take none. */
+   * rest isn't. The dead take none, and nor does one in a tent (#258). */
   hear(action: GameAction, slope: Slope): void {
-    if (this.killed) {
+    if (this.killed || this.sheltered) {
       return;
     }
 
@@ -818,6 +828,19 @@ export class Climber {
     }
   }
 
+  /** Into a tent, under cover, or out of it (#258): going in, they stop where they stand, side
+   * on, and let go of whatever their hands held. */
+  shelter(inside: boolean): void {
+    if (inside && !this.sheltered) {
+      this.walking = "stop";
+      this.jumarHeld = false;
+      this.haulHeld = false;
+      this.clipping = [];
+      this.towardViewer = false;
+    }
+    this.sheltered = inside;
+  }
+
   /** What they carry of the gear from now on: what their pack holds (`Packs`). */
   equip(gear: Gear): void {
     if (!(gear.tools >= 0)) {
@@ -872,6 +895,10 @@ export class Climber {
     if (this.falling !== null) {
       this.clipping = [];
       this.climbBack(this.falling, slope, hauls.of(this), hauls.who(this), hauls.to(this));
+      return;
+    }
+    if (this.sheltered) {
+      // In a tent: no step, and no stance to lose (#258).
       return;
     }
     if (hauls.by(this)) {

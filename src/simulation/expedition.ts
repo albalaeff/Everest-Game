@@ -97,7 +97,8 @@ export class Expedition {
   private loadRules(states: RuleStates): void {
     const names = new Set<string>();
     for (const rule of this.rules) {
-      const state = states[rule.name];
+      // A save from before a rule existed goes on with the state the rule gives it (#258).
+      const state = Object.hasOwn(states, rule.name) ? states[rule.name] : rule.missing?.();
       if (names.has(rule.name)) {
         throw new RangeError(`Two rules are called ${rule.name}`);
       }

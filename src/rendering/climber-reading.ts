@@ -17,6 +17,9 @@ export interface DrawnAt {
   readonly jumar: Point | null;
   readonly carabiner: Point | null;
   readonly grown: number;
+  /** On their way into a tent or out of it (#258): the way they face through its door, and how
+   * far down on hands and knees they are, 0 to 1. Not said, they're as the physics has them. */
+  readonly through?: { readonly facing: 1 | -1; readonly down: number } | null;
 }
 
 /**
@@ -119,6 +122,8 @@ export class ClimberReading {
     this.onLadder = along === null ? null : ladder;
     if (upright) {
       this.turnTo(view, at, heading, wall);
+      // Through a tent's door, they face the way they go (#258).
+      this.facingNow = drawn.through?.facing ?? this.facingNow;
       if (this.started) {
         const dx = at.x - this.x;
         const dy = at.y - this.y;
@@ -168,6 +173,7 @@ export class ClimberReading {
       tools: view.gear.tools,
       onIce,
       face: face === null ? null : face / grown,
+      crawling: upright ? (drawn.through?.down ?? 0) : 0,
     };
   }
 

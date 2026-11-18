@@ -73,6 +73,10 @@ import { StartMenu } from "./start-menu";
 import { ClimbInterface } from "./climb-interface";
 import { CoachedClimb } from "./coached-climb";
 import { SherpaClimb } from "./sherpa-climb";
+import { TentDoorPin } from "./tent/tent-door";
+import { TentReadout } from "./tent/tent-readout";
+import type { TentTextName } from "./tent/tent-readout";
+import { TentScreen } from "./tent/tent-screen";
 
 export interface PageTexts {
   readonly controls: ControlTexts;
@@ -99,6 +103,8 @@ export interface PageTexts {
   readonly sherpa: Texts<SherpaTextName>;
   /** The god mode's panel (#245). */
   readonly god: Texts<GodTextName>;
+  /** The tent's words: its panel, its chores and the button at its door (#258). */
+  readonly tent: Texts<TentTextName>;
 }
 
 /** What the page's stories read that the DOM doesn't show, on `window.everest`. */
@@ -337,6 +343,7 @@ export class GamePage {
         oxygen: rules.oxygen,
         lamps: rules.lamps,
         camps: this.mountain.route.camps,
+        tentSizes: this.mountain.tents.sizes,
         parts: this.mountain.route.parts,
         climbers: scenario.climbers,
         player,
@@ -357,6 +364,8 @@ export class GamePage {
     const sink = new EverySink([climb.sink, new ZoomSink(zoom), received]);
     new ControlsPage(window, texts.controls, player, camera, sink);
     const { warmth } = this.mountain.hazardSettings();
+    /** Whether the scene draws: before it does, and without WebGL, nothing's pinned to it. */
+    let drawn = false;
     const climbInterface = new ClimbInterface(
       window,
       rules.clock,
@@ -375,6 +384,35 @@ export class GamePage {
       player,
       this.playersPack().base,
     );
+    // The tent's inside (#258): open once the slope has shown the player in through the door, or
+    // at once where there's no picture; and the button over the door they stand at.
+    const passage = () => (drawn ? scene.passage : "inside");
+    const tent = new TentScreen(
+      window,
+      texts.tent,
+      rules,
+      new TentReadout(texts.tent, this.mountain.tents.numbers, this.mountain.tents.canister, (id) =>
+        texts.camps.say(id),
+      ),
+      this.mountain.tents.sizes,
+      this.mountain.tents.canister,
+      sink,
+      player,
+      passage,
+      () => {
+        inventory.toggle();
+      },
+    );
+    const tentDoor = new TentDoorPin(
+      window,
+      texts.tent,
+      rules.tents,
+      player,
+      sink,
+      (x, y) => (drawn ? scene.screenAt(x, y) : null),
+      (camp, index) => scene.tentOver(camp, index),
+      passage,
+    );
     const coached = new CoachedClimb(physics, rules.hazards, rules.lamps, player, rules.jolts);
     const coach = new CoachCard(window.document, texts.coach, new Coach(this.storage()), coached);
     // The tip's arrow on the slope, at the place it's about (#233), and the ring on a changeover's
@@ -388,7 +426,6 @@ export class GamePage {
       new SherpaFacts(this.knowledge).fills,
       scenario.seed,
     );
-    let drawn = false;
     const bubble =
       sherpa === null
         ? null
@@ -449,6 +486,9 @@ export class GamePage {
       godPanel?.update();
       climbInterface.update();
       inventory.update();
+      tent.update(seconds);
+      scene.cover(tent.covering);
+      tentDoor.update();
       arrival.update(seconds);
       coach.update(seconds);
       arrow.update(coach.tip, coach.changeover);

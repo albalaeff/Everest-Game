@@ -81,6 +81,9 @@ export interface PoseState {
    * harness, within a leg's reach, in the figure's metres: they put their boots on it (#243).
    * None in the open air, or not hanging. */
   readonly face?: number | null;
+  /** Going into a tent or coming out of it (#258), how far down on their hands and knees they
+   * are: 0 on their feet, 1 crawling. Not said, they're on their feet. */
+  readonly crawling?: number;
 }
 
 /** The figure's joints this frame, in its metres from where it stands, facing +x: the whole of it
@@ -521,6 +524,28 @@ export class ClimberPose {
     lean: 0.45,
     toes: -1.1,
   };
+  /** On hands and knees, through a tent's door (#258): the pelvis over the knees, the back near
+   * level, the head up to see ahead; where the ankles lie behind, the shins along the ground and
+   * the toes down, and where the hands are planted ahead; how far along the ground a crawl's
+   * stride goes, each hand going forward with the knee across from it, and how far a hand or a
+   * knee reaches and lifts in it. */
+  private static readonly ALL_FOURS = {
+    pelvis: { x: -0.06, y: 0.47 },
+    lean: 1.3,
+    nod: 1.12,
+    ankles: [
+      { x: -0.5, y: 0.09 },
+      { x: -0.42, y: 0.09 },
+    ] as readonly [Joint, Joint],
+    hands: [
+      { x: 0.52, y: 0.03 },
+      { x: 0.43, y: 0.03 },
+    ] as readonly [Joint, Joint],
+    toes: -1.2,
+    stride: 0.5,
+    reach: 0.08,
+    lift: 0.04,
+  };
   /** How far the body sinks onto a pick as the weight comes onto it; and the most it crouches on
    * the ice towards a tool in it below the shoulder and out of the arm's reach, as over a lip. */
   private static readonly LOAD_SINK = 0.025;
@@ -852,6 +877,15 @@ export class ClimberPose {
       return this.wall(state, gait);
     }
     const walk = this.walk(state, gait);
+    const crawling = state.crawling ?? 0;
+    if (crawling > 0 && mode === "walk") {
+      // Down onto hands and knees, and up off them, through a tent's door (#258).
+      const share = ClimberPose.smooth(crawling);
+      return {
+        targets: ClimberPose.mix(walk.targets, this.allFours(state), share),
+        down: share < 0.5 ? walk.down : ClimberPose.NONE_DOWN,
+      };
+    }
     if (mode === "rise") {
       const up = ClimberPose.smooth((this.rising - 0.4) / 0.6);
       return { targets: ClimberPose.mix(this.kneel(state), walk.targets, up), down: walk.down };
@@ -1407,6 +1441,29 @@ export class ClimberPose {
       ],
       tilt,
       offset,
+    };
+  }
+
+  /** On hands and knees (#258): the knees under the hips and the hands under the shoulders, on
+   * the ground as it lies; crawling, a hand goes forward with the knee across from it, by the
+   * ground covered. */
+  private allFours(state: PoseState): Targets {
+    const { pelvis, lean, nod, ankles, hands, toes, stride, reach, lift } = ClimberPose.ALL_FOURS;
+    const phase = (2 * Math.PI * state.travelled) / stride;
+    const limb = (rest: Joint, turn: number): Joint => {
+      const x = rest.x + reach * Math.sin(phase + turn);
+      return { x, y: rest.y + state.ground(x) + lift * Math.max(0, Math.cos(phase + turn)) };
+    };
+    return {
+      pelvis: { x: pelvis.x, y: pelvis.y + state.ground(pelvis.x) + 0.012 * Math.sin(2 * phase) },
+      lean,
+      nod,
+      ankles: [limb(ankles[0], 0), limb(ankles[1], Math.PI)],
+      soles: [toes, toes],
+      pivots: [ClimberPose.ON_THE_TOE, ClimberPose.ON_THE_TOE],
+      hands: [limb(hands[0], Math.PI), limb(hands[1], 0)],
+      tilt: 0,
+      offset: ClimberPose.ORIGIN,
     };
   }
 

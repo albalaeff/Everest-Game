@@ -6,7 +6,7 @@ export type ControlName =
   | "check-self"
   | "radio"
   | "inventory"
-  | "set-up-tent"
+  | "tent"
   | "oxygen-down"
   | "oxygen-up"
   | "clip-first"
@@ -59,12 +59,17 @@ export const CONTROLS: readonly Control[] = [
     press: () => ({ kind: "panel", panel: "inventory" }),
   },
   {
-    name: "set-up-tent",
+    // In at the tent's door they stand at, and out of the tent they're in (#258).
+    name: "tent",
     keys: ["KeyT"],
     keyName: "T",
     gamepadButton: 5,
     group: "menu",
-    press: (climber) => ({ kind: "set-up-tent", climber }),
+    press: (climber, seen) => ({
+      kind: "tent",
+      climber,
+      go: seen.sheltered === true ? "out" : "in",
+    }),
   },
   {
     name: "oxygen-down",

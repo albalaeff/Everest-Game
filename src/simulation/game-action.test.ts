@@ -19,7 +19,8 @@ const EVERY_ACTION: Readonly<Record<GameAction["kind"], GameAction>> = {
   oxygen: { kind: "oxygen", climber: "anna", change: "up" },
   "check-self": { kind: "check-self", climber: "anna" },
   radio: { kind: "radio", climber: "anna", channel: "base-camp", phrase: "at-camp" },
-  "set-up-tent": { kind: "set-up-tent", climber: "anna" },
+  tent: { kind: "tent", climber: "anna", go: "in" },
+  chore: { kind: "chore", climber: "anna", chore: "melt" },
 };
 
 describe("GameAction", () => {

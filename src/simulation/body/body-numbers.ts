@@ -46,7 +46,11 @@ export interface BodyNumbers {
     readonly hungryAfter: number;
     readonly cost: number;
   };
-  /** The hours awake past which a climber is short of sleep, and the % of their endurance each
-   * hour past them costs. */
-  readonly sleep: { readonly sleepyAfter: number; readonly cost: number };
+  /** The hours awake past which a climber is short of sleep; the % of their endurance each hour
+   * past them costs; and the hours awake an hour's sleep takes off (#258). */
+  readonly sleep: {
+    readonly sleepyAfter: number;
+    readonly cost: number;
+    readonly restores: number;
+  };
 }

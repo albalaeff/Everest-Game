@@ -559,7 +559,10 @@
       "status": "source only",
       "versions": [
         {
-          "range": { "min": 15, "max": 18 },
+          "range": {
+            "min": 15,
+            "max": 18
+          },
           "unit": "mL O₂/kg/min",
           "note": "18 in men and 15 in women, which ageing brings at 80–85 years.",
           "source": {
@@ -961,6 +964,16 @@
         "body.independence-vo2max",
         "body.steady-endurance"
       ]
+    },
+    {
+      "id": "body.sleep-restores",
+      "kind": "coefficient",
+      "claim": "The hours awake that an hour's sleep takes off. Six hours of sleep in a day is where sleep loss begins (body.acute-sleep-loss), so six hours' sleep clear the eighteen awake that go with them (body.sleepy-after): three for one.",
+      "status": "source only",
+      "value": 3,
+      "unit": "h/h",
+      "fitted_to": ["body.acute-sleep-loss"],
+      "fitted": "2026-11-17"
     }
   ]
 }
