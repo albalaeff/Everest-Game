@@ -52,9 +52,9 @@ export class TentPicture {
   private readonly seat: { readonly x: number; readonly y: number };
   private readonly dweller: DwellerDrawing;
   private readonly parts = new Map<string, SVGElement>();
-  /** What each hand holds, by what it is; each hand's fist and its open hand. */
+  /** What each hand holds, by what it is; and each hand's shapes, in both its layers. */
   private readonly held: readonly (readonly SVGElement[])[];
-  private readonly fists: readonly (readonly [SVGElement | null, SVGElement | null])[];
+  private readonly shapes: readonly (readonly SVGElement[])[];
   /** The face's moving parts: each eye's lid and its edge, where the eyes look, the dark of the
    * open mouth and the jaw. */
   private readonly lids: readonly (readonly [SVGElement | null, SVGElement | null])[];
@@ -91,11 +91,15 @@ export class TentPicture {
     for (const part of svg.querySelectorAll<SVGElement>("[data-part]")) {
       this.parts.set(part.dataset.part ?? "", part);
     }
-    const hands = [0, 1].map((side) => svg.querySelector(`[data-part="hand${side}"]`));
-    this.held = hands.map((hand) => [...(hand?.querySelectorAll<SVGElement>(".dw-held") ?? [])]);
-    this.fists = hands.map((hand) => [
-      hand?.querySelector<SVGElement>(".dw-fist") ?? null,
-      hand?.querySelector<SVGElement>(".dw-open") ?? null,
+    this.held = [0, 1].map((side) => [
+      ...svg.querySelectorAll<SVGElement>(
+        `[data-part="held${side}"] .dw-held, [data-part="carried${side}"] .dw-held`,
+      ),
+    ]);
+    this.shapes = [0, 1].map((side) => [
+      ...svg.querySelectorAll<SVGElement>(
+        `[data-part="back${side}"] .dw-shape, [data-part="hand${side}"] .dw-shape`,
+      ),
     ]);
     const face = svg.querySelector(".tent-dweller .dw-head");
     this.lids = [0, 1].map((index) => [
@@ -123,8 +127,15 @@ export class TentPicture {
   }
 
   /** The person as `look` has them, in the middle of `act`, `seconds` of the picture's own time
-   * on, the wind outside gusting so hard, 0 to 1. */
-  pose(look: DwellerLook, act: Act, seconds: number, gust: number): void {
+   * on, the wind outside gusting so hard, 0 to 1, with `chore` in hand at the stove or
+   * elsewhere. */
+  pose(
+    look: DwellerLook,
+    act: Act,
+    seconds: number,
+    gust: number,
+    chore: string | null = null,
+  ): void {
     const frame = this.dweller.frame(look);
     const set = (part: string, name: string, value: string): void => {
       this.write(this.parts.get(part) ?? null, `${part} ${name}`, name, value);
@@ -142,16 +153,25 @@ export class TentPicture {
       set(`${name}-drop`, "transform", DwellerDrawing.drop(frame.limbs[name]));
     }
     set("stream", "d", frame.stream);
-    for (const side of [0, 1] as const) {
-      set(`hand${side}`, "transform", frame.hands[side]);
-      const holds = frame.holds[side];
-      for (const held of this.held[side] ?? []) {
-        TentPicture.show(held, held.dataset.held === holds);
+    set("stream-light", "d", frame.stream);
+    set("dip", "d", frame.dip);
+    const lump = this.parts.get("lump");
+    if (lump !== undefined) {
+      TentPicture.show(lump, frame.lump !== null);
+      if (frame.lump !== null) {
+        set("lump", "transform", frame.lump);
       }
-      const [fist, open] = this.fists[side] ?? [null, null];
-      if (fist !== null && open !== null) {
-        TentPicture.show(fist, frame.fists[side]);
-        TentPicture.show(open, !frame.fists[side]);
+    }
+    for (const side of [0, 1] as const) {
+      set(`back${side}`, "transform", frame.hands[side]);
+      set(`hand${side}`, "transform", frame.hands[side]);
+      set(`held${side}`, "transform", frame.held[side]);
+      set(`carried${side}`, "transform", frame.held[side]);
+      for (const held of this.held[side] ?? []) {
+        TentPicture.show(held, held.dataset.held === frame.holds[side]);
+      }
+      for (const shape of this.shapes[side] ?? []) {
+        TentPicture.show(shape, shape.dataset.shape === frame.shapes[side]);
       }
     }
     this.face(frame.eyes, frame.gaze, frame.mouth);
@@ -168,6 +188,15 @@ export class TentPicture {
     const { dataset, style } = this.svg;
     if (dataset.act !== act) {
       dataset.act = act;
+    }
+    // What's in a hand isn't standing where it was taken from; the spoon stands in the pot, and
+    // the snow lies in it, for as long as the snow is being melted.
+    const holds = frame.holds.filter((held) => held !== "nothing").join(" ");
+    if (dataset.holds !== holds) {
+      dataset.holds = holds;
+    }
+    if (dataset.doing !== (chore ?? "none")) {
+      dataset.doing = chore ?? "none";
     }
     const flame = look.flame > 0.02 ? "on" : "off";
     if (dataset.flame !== flame) {
@@ -211,8 +240,9 @@ export class TentPicture {
     each("bottle", (index, bottle) => {
       const share = Math.min(1, Math.max(0, stock.water - index));
       const water = bottle.querySelector(".tent-water");
-      water?.setAttribute("height", (64 * share).toFixed(1));
-      water?.setAttribute("y", (-4 - 64 * share).toFixed(1));
+      const full = TentArt.BOTTLE.height - 14;
+      water?.setAttribute("height", (full * share).toFixed(1));
+      water?.setAttribute("y", (-4 - full * share).toFixed(1));
       return index < Math.min(MOST.bottles, Math.ceil(stock.bottles));
     });
     each("meal", (index) => index < Math.min(MOST.meals, stock.meals ?? MOST.meals));

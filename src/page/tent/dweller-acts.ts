@@ -9,18 +9,20 @@ export interface TentWork {
   readonly sleptTo: number | null;
 }
 
-/** What the person is seen doing this frame: the act, how long they've been at it, and how far
- * through the chore is. */
+/** What the person is seen doing this frame: the act, and how long they've been at it. */
 export interface Acting {
   readonly act: Act;
   readonly seconds: number;
-  readonly progress: number;
 }
 
 /**
  * What the person in the tent is seen doing, frame by frame (#258): they come in on hands and
  * knees; then their chore shows, melting, cooking or playing, or they sit; a drink, a bar and a
- * hand in the pack play once, over a chore too, and go back to it. For a sleep they lie down
+ * hand in the pack play once, over a chore too, and go back to it. A chore at the stove is seen
+ * in its parts, each begun as the chore gets so far (#269): melting snow, the stove is lit and
+ * then the pot stirred and fed; cooking, the stove is lit, the bottle's water poured into the
+ * pot, the hands warmed while it boils, the pouch filled from the pot and left to stand, and the
+ * meal eaten. For a sleep they lie down
  * first, sleep, and sit up with a stretch when it ends. A sleep the clock skipped, alone, is over
  * in the core before a frame shows it: it's seen by the second their last sleep ended at moving
  * on, and plays as lying down, a moment asleep and waking. On the way out they crawl to the door.
@@ -39,9 +41,26 @@ export class DwellerActs {
     "wake",
   ];
 
+  /** A chore's parts, and how far through the chore each begins: the mountain's time runs 36
+   * times play's, so melting's 12 minutes are 20 seconds of play and cooking's 15 are 25, and
+   * each part has the seconds its movement takes (`DwellerPose.LASTS`). */
+  static readonly PARTS: Readonly<Record<"melt" | "cook", readonly (readonly [number, Act])[]>> = {
+    melt: [
+      [0, "light"],
+      [0.11, "melt"],
+    ],
+    cook: [
+      [0, "light"],
+      [0.09, "pour"],
+      [0.29, "boil"],
+      [0.43, "fill"],
+      [0.65, "steep"],
+      [0.74, "eat"],
+    ],
+  };
+
   private act: Act = "enter";
   private seconds = 0;
-  private progress = 0;
   /** Whether they're in the bag; the acts to play once after this one; the last sleep seen
    * ending; and whether they're on their way out. */
   private lying = false;
@@ -85,11 +104,10 @@ export class DwellerActs {
   /** The act `seconds` after the last frame, the tent's rule as `work` has it. */
   advance(seconds: number, work: TentWork): Acting {
     this.seconds += Math.max(0, seconds);
-    this.progress = work.progress;
     if (!this.leaving) {
       this.follow(work);
     }
-    return { act: this.act, seconds: this.seconds, progress: this.progress };
+    return { act: this.act, seconds: this.seconds };
   }
 
   private follow(work: TentWork): void {
@@ -124,13 +142,28 @@ export class DwellerActs {
       }
       return;
     }
-    const steady: Act =
-      work.chore === "melt" || work.chore === "cook" || work.chore === "guitar"
-        ? work.chore
-        : "idle";
+    const steady = DwellerActs.steady(work);
     if (this.act !== steady) {
       this.begin(steady);
     }
+  }
+
+  /** What they're at while nothing plays once: the part of the chore it has got to, the guitar,
+   * or sitting. */
+  private static steady(work: TentWork): Act {
+    if (work.chore === "guitar") {
+      return "guitar";
+    }
+    if (work.chore !== "melt" && work.chore !== "cook") {
+      return "idle";
+    }
+    let part: Act = "idle";
+    for (const [from, act] of DwellerActs.PARTS[work.chore]) {
+      if (work.progress >= from) {
+        part = act;
+      }
+    }
+    return part;
   }
 
   private begin(act: Act): void {

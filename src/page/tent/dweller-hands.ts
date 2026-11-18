@@ -1,49 +1,214 @@
+import { TentArt } from "./tent-art";
+
+/** What a hand holds: a spoon, empty or with a spoonful on it, or in the fist to stir with; a
+ * bottle; an energy bar; a meal's pouch, open or sealed, or its seal between finger and thumb; a
+ * lump of snow; a lighter, or one lit; the guitar's pick, or its neck; the pot, by its handle. */
+export type Held =
+  | "nothing"
+  | "spoon"
+  | "spoonful"
+  | "stirrer"
+  | "seal"
+  | "bottle"
+  | "bar"
+  | "pouch"
+  | "sealed"
+  | "snow"
+  | "lighter"
+  | "lit"
+  | "pick"
+  | "neck"
+  | "pot";
+
+/** How a hand is shaped: open; wrapped round something wide, a bottle; laid across something
+ * flat, a pouch; closed tight round something thin; or pinching, as a pen is held. */
+export type Shape = "open" | "wide" | "flat" | "tight" | "pinch";
+
+/** How a hand lies to what it holds: its fingers across it, or along it. */
+export type Grip = "across" | "along";
+
 /**
- * The hands of the person in the tent (#264), and what they hold, drawn to life at a real hand's
- * size: in millimetres, scaled to the tent's 300 pixels a metre, in the hand's own frame, the
- * middle of the palm, where it grips, at the origin, the wrist 70 mm behind it at -y and the
- * fingers ahead along +y. It's a right hand seen from its back, the thumb at +x; the left is its
- * mirror image. Open, it lies relaxed, the fingers a little curled; closed, it's a fist round what
- * it holds, the fingers curled over it and the thumb across them. What it holds is drawn first,
- * so the fingers close over it: a long spoon, a bottle in its sleeve, an energy bar, a lighter, a
- * lump of snow, a meal's pouch, a pick. The skin is the face's (`--skin`), lit from the right.
+ * The hands of the person in the tent (#264, #269), and what they hold, drawn to life at a real
+ * hand's size: in millimetres, scaled to the tent's 300 pixels a metre, in the hand's own frame,
+ * where it grips at the origin, the wrist behind it at -y and the fingers ahead along +y. A hand
+ * is drawn in two layers, with what it holds between them, so the thing is in the hand and not
+ * under it or over it: wrapped round a bottle or laid across a pouch, the palm is behind the thing
+ * and the fingers lie across its front; closed tight, the fist covers the middle of something
+ * thin, a lighter, the spoon the pot is stirred with or the pot's handle; pinching, the thumb and
+ * the first finger are over a spoon or a bar and the other fingers under it, as a pen is held;
+ * open, the whole hand is in front. It's a right hand seen from its back, the thumb at +x; the
+ * left is its mirror image. What a hand holds is drawn in the thing's own frame, upright, where
+ * it's held at the origin, in the picture's pixels: the bottle, the pouch, the pot and the spoon
+ * are the tent's own (`TentArt`), so what's taken from the floor is what was standing there. The
+ * pot is carried by the handle on its near side, so it's behind the arm that carries it, not in
+ * front of it as the rest is. The skin is the face's (`--skin`).
  */
 export class DwellerHands {
   /** The tent's pixels a millimetre. */
   static readonly SCALE = 0.3;
-  /** How far the bottle's mouth is from the hand that holds it by its middle, in the tent's
-   * pixels: where it pours from, and what goes to the lips. */
-  static readonly BOTTLE_NECK = 150 * DwellerHands.SCALE;
-  /** How far beyond the hand the spoon's bowl is, and the bar's end, along its fingers. */
-  static readonly SPOON = 150 * DwellerHands.SCALE;
-  static readonly BAR = 112 * DwellerHands.SCALE;
+  /** The shape of the hand that holds each thing. */
+  static readonly SHAPES: Readonly<Record<Held, Shape>> = {
+    nothing: "open",
+    spoon: "pinch",
+    spoonful: "pinch",
+    stirrer: "tight",
+    seal: "pinch",
+    bar: "pinch",
+    pick: "pinch",
+    bottle: "wide",
+    pouch: "flat",
+    sealed: "flat",
+    snow: "wide",
+    lighter: "tight",
+    lit: "tight",
+    neck: "tight",
+    pot: "tight",
+  };
+  /** How each shape lies to what it holds, the open hand to where it points. */
+  static readonly GRIPS: Readonly<Record<Shape, Grip>> = {
+    open: "along",
+    pinch: "along",
+    wide: "across",
+    flat: "across",
+    tight: "across",
+  };
+  /** How far behind where each shape grips its wrist is, in the tent's pixels. */
+  static readonly WRIST: Readonly<Record<Shape, number>> = {
+    open: 72 * DwellerHands.SCALE,
+    wide: 88 * DwellerHands.SCALE,
+    flat: 118 * DwellerHands.SCALE,
+    tight: 80 * DwellerHands.SCALE,
+    pinch: 105 * DwellerHands.SCALE,
+  };
+  /** How far what each shape holds can turn in it, off square or off straight, in degrees: a
+   * spoon lies along the finger that pinches it, so hardly at all. */
+  static readonly CANT: Readonly<Record<Shape, number>> = {
+    open: 0,
+    wide: 45,
+    flat: 30,
+    tight: 40,
+    pinch: 24,
+  };
+  /** What swings freely in the hand, whichever way the hand is turned: the pot, on its
+   * handle. */
+  static readonly TURNS: Readonly<Partial<Record<Held, true>>> = { pot: true };
+  /** How far above its base a pouch is held; and where the pot's lip is from its handle, on the
+   * side it pours to, upright. */
+  static readonly POUCH_HELD = 12;
+  static readonly POT_LIP = { x: TentArt.POT.half, y: TentArt.POT.handle - TentArt.POT.rim };
+  /** How much nearer its handle's end a spoon is held in the fist than pinched. */
+  static readonly STIRRER_HELD = 12;
+  /** How far from where it's held each thing's working end is, in the tent's pixels: a bottle's
+   * mouth, the middle of a spoon's bowl, pinched or in the fist, a bar's bitten end, a lighter's
+   * flame, a pouch's opening. */
+  static readonly REACH = {
+    bottle: TentArt.BOTTLE.height / 2 + TentArt.BOTTLE.cap,
+    spoon: (TentArt.SPOON.neck + TentArt.SPOON.tip) / 2,
+    stirrer: (TentArt.SPOON.neck + TentArt.SPOON.tip) / 2 + DwellerHands.STIRRER_HELD,
+    bar: 24,
+    lighter: 17,
+    pouch: TentArt.POUCH.height - DwellerHands.POUCH_HELD - 3,
+  } as const;
 
-  /** `id` names the hand's shadings, so each hand's can be told apart. */
+  /** `id` names the hand's shading, so each hand's can be told apart. */
   constructor(private readonly id: string) {}
 
-  /** The hand, open (`"open"`) or round what it holds (`"fist"`), its gradient named after the
-   * hand's id and its shape. */
-  markup(shape: "open" | "fist"): string {
-    const id = `${this.id}-${shape}`;
-    const fingers = shape === "open" ? DwellerHands.open() : DwellerHands.fist();
-    return `<g class="dw-hand-${shape}" transform="scale(${DwellerHands.SCALE})">
-<linearGradient id="${id}" gradientUnits="userSpaceOnUse" x1="-44" y1="0" x2="46" y2="0"><stop offset="0" class="dw-skin-shade"/><stop offset="0.5" class="dw-skin-base"/><stop offset="0.85" class="dw-skin-light"/><stop offset="1" class="dw-skin-base"/></linearGradient>
-${fingers.replaceAll("SKIN", `url(#${id})`)}
-</g>`;
+  /** The hand's shading, lit from its thumb's side. */
+  defs(): string {
+    return `<linearGradient id="${this.id}-skin" gradientUnits="userSpaceOnUse" x1="-44" y1="0" x2="46" y2="0"><stop offset="0" class="dw-skin-shade"/><stop offset="0.5" class="dw-skin-base"/><stop offset="0.85" class="dw-skin-light"/><stop offset="1" class="dw-skin-base"/></linearGradient>`;
   }
 
-  /** What a hand holds, each drawn in the hand's frame; the game shows the one held. */
-  static held(): string {
-    const { SCALE } = DwellerHands;
-    return `<g transform="scale(${SCALE})">
-<g class="dw-held" data-held="spoon"><path class="dw-spoon" d="M-3-60L3-60L4.5 120L-4.5 120Z"/><path class="dw-spoon" d="M0 118C14 118 19 136 18 154C17 172 8 184 0 184C-8 184-17 172-18 154C-19 136-14 118 0 118Z"/><path class="dw-spoon-light" d="M-9 150C-8 138-3 130 4 128"/></g>
-<g class="dw-held" data-held="bar"><rect class="dw-bar-wrap" x="-21" y="-30" width="42" height="112" rx="5"/><path class="dw-bar" d="M-19 82L-19 118C-14 124-6 120 0 124C6 120 14 124 19 118L19 82Z"/><path class="dw-bar-tear" d="M-21 82L-15 90L-9 82L-3 90L3 82L9 90L15 82L21 90"/><rect class="dw-bar-label" x="-14" y="0" width="28" height="44" rx="3"/></g>
-<g class="dw-held" data-held="lighter"><rect class="dw-lighter" x="-14" y="-10" width="28" height="84" rx="7"/><rect class="dw-lighter-top" x="-12" y="70" width="24" height="20" rx="3"/><path class="dw-spark" d="M0 92C-10 104-8 120 0 134C8 120 10 104 0 92Z"/></g>
-<g class="dw-held" data-held="snow"><path class="dw-snow" d="M-50 20C-60-34-10-56 26-40C62-26 66 24 40 46C10 66-44 64-50 20Z"/><path class="dw-snow-shade" d="M-50 20C-40 48 0 62 40 46C20 40-20 40-50 20Z"/></g>
-<g class="dw-held" data-held="bottle"><rect class="dw-bottle" x="-52" y="-112" width="104" height="238" rx="30"/><rect class="dw-bottle-water" x="-42" y="-86" width="84" height="200" rx="22"/><rect class="dw-bottle-sleeve" x="-53" y="-40" width="106" height="94"/><path class="dw-bottle-light" d="M34-90V100"/><rect class="dw-bottle-cap" x="-34" y="-152" width="68" height="44" rx="10"/><path class="dw-bottle-loop" d="M30-140C60-136 58-104 38-100"/></g>
-<g class="dw-held" data-held="pouch"><path class="dw-pouch" d="M-80 70L-86-130L86-130L80 70C40 80-40 80-80 70Z"/><path class="dw-pouch-top" d="M-86-130L86-130L84-104L-84-104Z"/><rect class="dw-pouch-label" x="-50" y="-70" width="100" height="60" rx="8"/><path class="dw-pouch-light" d="M58-96L54 56"/></g>
-<g class="dw-held" data-held="pick"><path class="dw-pick" d="M-2 40C12 38 26 44 24 52C20 62 8 72 2 74C-4 66-10 56-12 50C-12 44-8 41-2 40Z"/></g>
-</g>`;
+  /** What of each shape is behind what the hand holds: a wrapping hand's palm, and a pinching
+   * hand's back with the fingers under the thing. */
+  back(): string {
+    return this.layer({
+      wide: DwellerHands.palm(88, 50),
+      flat: DwellerHands.palm(118, 84),
+      pinch: DwellerHands.pinchBack(),
+    });
+  }
+
+  /** What of each shape is in front of what the hand holds: the open hand, a wrapping hand's
+   * fingers, the fist, and a pinching hand's thumb and first finger. */
+  front(): string {
+    return this.layer({
+      open: DwellerHands.open(),
+      wide: DwellerHands.across([46, 51, 50, 44], -56, false),
+      flat: DwellerHands.across([-16, -7, -10, -22], -92, true),
+      tight: DwellerHands.fist(),
+      pinch: DwellerHands.pinchFront(),
+    });
+  }
+
+  /** The spoon as the fist holds it to stir, upright, where it's held at the origin. */
+  static stirrer(): string {
+    return `<g transform="translate(0 ${-DwellerHands.STIRRER_HELD})">${TentArt.spoon()}</g>`;
+  }
+
+  /** What a hand holds behind its arm, upright in its own frame, where it's held at the origin:
+   * the pot, whose handle is on its near side, so the arm that carries it is in front of it. */
+  static carried(): string {
+    return `<g class="dw-held" data-held="pot"><g transform="translate(0 ${TentArt.POT.handle})">${TentArt.pot()}</g></g>`;
+  }
+
+  /** What a hand holds in front of its arm, each upright in its own frame, where it's held at
+   * the origin; the game shows the one held. */
+  static things(): string {
+    const held = (name: Held, art: string): string =>
+      `<g class="dw-held" data-held="${name}">${art}</g>`;
+    const spoon = TentArt.spoon();
+    const lighter = (lit: boolean): string =>
+      `<rect class="dw-lighter" x="-4.2" y="-12" width="8.4" height="24" rx="2"/><rect class="dw-lighter-top" x="-3.6" y="-17" width="7.2" height="6" rx="1"/>${lit ? '<path class="dw-spark" d="M0 -17C-3.2 -21 -2.6 -26 0 -31C2.6 -26 3.2 -21 0 -17Z"/>' : ""}<path class="dw-thumb" d="M3.4 1C6.6 -3 6.4 -9.5 4 -14.6C2 -16.6 -0.8 -15.6 -1 -13C-0.2 -8.5 -0.8 -3.5 -2.2 0.6Z"/>`;
+    const pouch = (open: boolean): string =>
+      `<g transform="translate(0 ${DwellerHands.POUCH_HELD})">${TentArt.pouch(open)}</g>`;
+    return [
+      held("spoon", spoon),
+      held(
+        "spoonful",
+        `${spoon}<path class="dw-food" d="M-4.5 -40C-4.5 -47 4.5 -47 4.5 -40C3 -37.4 -3 -37.4 -4.5 -40Z"/>`,
+      ),
+      held("stirrer", DwellerHands.stirrer()),
+      held(
+        "bottle",
+        `<g transform="translate(0 ${TentArt.BOTTLE.height / 2})">${TentArt.bottle()}</g>`,
+      ),
+      held(
+        "bar",
+        `<rect class="dw-bar-wrap" x="-6.3" y="-12" width="12.6" height="24" rx="1.5"/><path class="dw-bar" d="M-5.7 -12L-5.7 -22.5C-4 -24.6 -2 -23 0 -24.6C2 -23 4 -24.6 5.7 -22.5L5.7 -12Z"/><path class="dw-bar-tear" d="M-6.3 -12L-4.2 -14.4L-2.1 -12L0 -14.4L2.1 -12L4.2 -14.4L6.3 -12"/><rect class="dw-bar-label" x="-4.2" y="-6" width="8.4" height="13" rx="1"/>`,
+      ),
+      held("pouch", pouch(true)),
+      held("sealed", pouch(false)),
+      held(
+        "snow",
+        `<g transform="translate(${-DwellerHands.LUMP_HELD} 0)">${DwellerHands.lump()}</g>`,
+      ),
+      held("lighter", lighter(false)),
+      held("lit", lighter(true)),
+      held(
+        "pick",
+        `<path class="dw-pick" d="M-0.6 2C3.6 1.4 7.8 3.2 7.2 5.6C6 8.6 2.4 11.6 0.6 12.2C-1.2 9.8 -3 6.8 -3.6 5C-3.6 3.2 -2.4 2.3 -0.6 2Z"/>`,
+      ),
+    ].join("");
+  }
+
+  /** How far toward the fingertips a lump of snow is held, so it shows beyond them. */
+  static readonly LUMP_HELD = 7;
+
+  /** A lump of snow, its middle at the origin: a broken chunk, lit from above. */
+  static lump(): string {
+    return `<path class="dw-snow" d="M-16 4L-14 -10L-4 -15L8 -14L16 -5L15 8L6 14L-8 14Z"/><path class="dw-snow-shade" d="M-16 4L-8 14L6 14L15 8L5 6L-6 8Z"/><path class="dw-snow-edge" d="M-14 -10L-5 -6L8 -14M-5 -6L-6 8"/>`;
+  }
+
+  /** The shapes of a layer, each in a group the game shows when the hand is so shaped. */
+  private layer(shapes: Readonly<Partial<Record<Shape, string>>>): string {
+    const skin = `url(#${this.id}-skin)`;
+    const groups = Object.entries(shapes)
+      .map(
+        ([shape, art]) =>
+          `<g class="dw-shape" data-shape="${shape}">${art.replaceAll("SKIN", skin)}</g>`,
+      )
+      .join("");
+    return `<g transform="scale(${DwellerHands.SCALE})">${groups}</g>`;
   }
 
   /** The open hand: the back of it from the wrist to the knuckles, four fingers a little curled,
@@ -52,12 +217,12 @@ ${fingers.replaceAll("SKIN", `url(#${id})`)}
     const back =
       "M-27-72C-29-50-35-20-39 6C-40 14-38 22-32 24L34 26C40 22 42 14 41 6C38-20 32-50 29-72Z";
     const fingers = [
-      DwellerHands.finger(-28, 20, 54, 16.5, -3),
-      DwellerHands.finger(-10, 24, 62, 17.5, -1),
-      DwellerHands.finger(8, 25, 60, 17, 1),
-      DwellerHands.finger(25, 22, 48, 15, 3),
+      DwellerHands.finger({ x: -28, y: 20 }, { x: -30.8, y: 74 }, 16.5),
+      DwellerHands.finger({ x: -10, y: 24 }, { x: -11.1, y: 86 }, 17.5),
+      DwellerHands.finger({ x: 8, y: 25 }, { x: 9, y: 85 }, 17),
+      DwellerHands.finger({ x: 25, y: 22 }, { x: 27.5, y: 70 }, 15),
     ];
-    const thumb = DwellerHands.finger(24, -36, 62, 21, 24);
+    const thumb = DwellerHands.finger({ x: 24, y: -36 }, { x: 49.2, y: 20.6 }, 21);
     return `<path class="dw-hand-shadow" d="${back}" transform="translate(-5 6)"/>
 ${thumb.shape}
 <path class="dw-hand-skin" fill="SKIN" d="${back}"/>
@@ -67,56 +232,106 @@ ${fingers.map(({ shape }) => shape).join("")}
 ${[...fingers, thumb].map(({ nail }) => nail).join("")}`;
   }
 
-  /** The fist: the back of the hand, the fingers' middle joints curled in a row over what it
-   * holds, the creases between them, and the thumb across the first two. */
+  /** A wrapping hand's palm, behind what it holds: from the wrist, `wrist` behind the grip, to
+   * the knuckles, `knuckles` behind it. */
+  private static palm(wrist: number, knuckles: number): string {
+    const middle = (wrist + knuckles) / 2;
+    return `<path class="dw-hand-skin" fill="SKIN" d="M-27 ${-wrist}C-30 ${-middle - 6} -36 ${-middle + 4} -38 ${-knuckles}L38 ${-knuckles}C36 ${-middle + 4} 30 ${-middle - 6} 27 ${-wrist}Z"/>`;
+  }
+
+  /** A wrapping hand's four fingers, laid across the front of what it holds from their knuckles
+   * at `from` to where each ends: round the thing's far edge, out of sight, or, `tips`, on its
+   * face, with their nails. */
+  private static across(to: readonly number[], from: number, tips: boolean): string {
+    const fingers = [-27, -9, 9, 27].map((x, index) =>
+      DwellerHands.finger({ x, y: from }, { x, y: to[index] ?? 0 }, 17.4, tips ? 0.86 : 0.97),
+    );
+    const far = Math.min(...to);
+    const creases = [-18, 0, 18].map((x) => `M${x} ${from + 9}V${far - 4}`).join("");
+    const knuckles = [-27, -9, 9, 27]
+      .map((x) => `M${x - 6.5} ${from + 7}Q${x} ${from - 1} ${x + 6.5} ${from + 7}`)
+      .join("");
+    return `<path class="dw-hand-shadow" d="M-36 ${from + 4}H36V${far}H-36Z" transform="translate(-4 4)"/>
+${fingers.map(({ shape }) => shape).join("")}
+<path class="dw-creases" d="${creases}"/>
+<path class="dw-knuckles" d="${knuckles}"/>
+${tips ? fingers.map(({ nail }) => nail).join("") : ""}`;
+  }
+
+  /** The fist: the back of the hand, and the fingers curled in a row over what it holds, the
+   * creases between them. */
   private static fist(): string {
     const back =
-      "M-27-72C-30-48-36-22-38 2C-38 10-34 14-28 14L32 16C38 14 41 8 40 0C38-24 32-48 29-72Z";
+      "M-27-80C-30-62-36-42-38-26C-38-18-34-14-28-14L32-12C38-14 41-20 40-28C38-46 32-62 29-80Z";
     const curled = [
-      { x: -30, width: 17.5, low: 38 },
-      { x: -12, width: 18, low: 42 },
-      { x: 6.5, width: 17.5, low: 41 },
-      { x: 24.5, width: 15.5, low: 35 },
+      { x: -27, width: 17.5, low: 20 },
+      { x: -9, width: 18, low: 24 },
+      { x: 9, width: 17.5, low: 23 },
+      { x: 27, width: 15.5, low: 18 },
     ]
-      .map(
-        ({ x, width, low }) =>
-          `<path class="dw-hand-skin" fill="SKIN" d="M${x} 6C${x - 1} ${low - 10} ${x + 2} ${low} ${x + width / 2} ${low}C${x + width - 2} ${low} ${x + width + 1} ${low - 10} ${x + width} 6Z"/>`,
-      )
+      .map(({ x, width, low }) => {
+        const half = width / 2;
+        return `<path class="dw-hand-skin" fill="SKIN" d="M${x - half} -18C${x - half - 1} ${low - 10} ${x - half + 2} ${low} ${x} ${low}C${x + half - 2} ${low} ${x + half + 1} ${low - 10} ${x + half} -18Z"/>`;
+      })
       .join("");
     return `<path class="dw-hand-shadow" d="${back}" transform="translate(-5 6)"/>
 <path class="dw-hand-skin" fill="SKIN" d="${back}"/>
 ${curled}
-<path class="dw-creases" d="M-12.5 12V36M6 12V38M24.5 12V32"/>
-<path class="dw-tendons" d="M-20-58L-22 6M-6-60L-6 8M8-60L10 8M22-58L26 6"/>
-<path class="dw-knuckles" d="M-30 10Q-22 4-14 10M-12 12Q-3 6 6 12M6.5 12Q15 6 24 12M24.5 10Q31 5 39 9"/>
-<path class="dw-hand-skin" fill="SKIN" d="M40-34C50-20 46 4 34 20C26 30 14 34 4 32C0 30 0 24 6 22C16 20 24 12 26 0C28-12 26-24 24-30Z"/>
-<path class="dw-nail" d="M4 26C8 24 12 25 14 28C11 31 6 31 4 26Z"/>`;
+<path class="dw-creases" d="M-18 -12V17M0 -12V20M18 -12V16"/>
+<path class="dw-tendons" d="M-20-66L-22-20M-6-68L-6-18M8-68L10-18M22-66L26-20"/>
+<path class="dw-knuckles" d="M-34 -14Q-27 -21 -20 -14M-16 -12Q-9 -19 -2 -12M2 -12Q9 -19 16 -12M20 -14Q27 -20 34 -15"/>`;
   }
 
-  /** A finger from its knuckle at (`x`, `y`), `long` and `wide`, leaning `lean` degrees toward
-   * +x as it goes: a strip rounded at its tip, and the nail on it. */
+  /** A pinching hand, behind what it holds: its back, and the three fingers curled under the
+   * thing, the second supporting it where it's held. */
+  private static pinchBack(): string {
+    const back =
+      "M-26-105C-29-90-34-70-35-56C-35-50-32-46-27-46L30-44C34-46 36-50 35-56C33-70 30-90 27-105Z";
+    const under = [
+      DwellerHands.finger({ x: -25, y: -48 }, { x: -22, y: -24 }, 13),
+      DwellerHands.finger({ x: -10, y: -49 }, { x: -9, y: -13 }, 15),
+      DwellerHands.finger({ x: 6, y: -50 }, { x: -1, y: -3 }, 16),
+    ];
+    return `<path class="dw-hand-shadow" d="${back}" transform="translate(-5 6)"/>
+<path class="dw-hand-skin" fill="SKIN" d="${back}"/>
+${under.map(({ shape }) => shape).join("")}
+<path class="dw-tendons" d="M-20-92L-24-54M-6-94L-8-52M8-94L8-52M22-92L25-54"/>
+<path class="dw-knuckles" d="M-31 -50Q-25 -56 -19 -50M-16 -51Q-10 -57 -4 -51M0 -52Q6 -58 12 -52"/>`;
+  }
+
+  /** A pinching hand, in front of what it holds: the first finger and the thumb, their tips
+   * together on the thing. */
+  private static pinchFront(): string {
+    const first = DwellerHands.finger({ x: 23, y: -50 }, { x: 5, y: 0 }, 16);
+    const thumb = DwellerHands.finger({ x: 36, y: -80 }, { x: 11, y: -3 }, 19, 0.8);
+    return `${thumb.shape}${first.shape}
+<path class="dw-knuckles" d="M16 -52Q23 -58 30 -52"/>
+${first.nail}${thumb.nail}`;
+  }
+
+  /** A finger from its knuckle at `from` to its tip at `to`, `wide` at its root and `taper` of
+   * that at its tip: a strip rounded at its tip, and the nail on it. */
   private static finger(
-    x: number,
-    y: number,
-    long: number,
+    from: { readonly x: number; readonly y: number },
+    to: { readonly x: number; readonly y: number },
     wide: number,
-    lean: number,
+    taper = 0.86,
   ): { readonly shape: string; readonly nail: string } {
-    const angle = (lean * Math.PI) / 180;
-    const dx = Math.sin(angle);
-    const dy = Math.cos(angle);
+    const long = Math.hypot(to.x - from.x, to.y - from.y) || 1;
+    const dx = (to.x - from.x) / long;
+    const dy = (to.y - from.y) / long;
     const half = wide / 2;
+    const end = half * taper;
     // Across the finger, at its root and at its tip, narrowing a little.
     const across = { x: dy, y: -dx };
-    const tip = { x: x + dx * long, y: y + dy * long };
-    const end = half * 0.86;
     const round = (value: number): number => Math.round(value * 10) / 10;
-    const point = (from: { x: number; y: number }, by: number): string =>
-      `${round(from.x + across.x * by)} ${round(from.y + across.y * by)}`;
-    const beyond = `${round(tip.x + dx * end * 1.25)} ${round(tip.y + dy * end * 1.25)}`;
-    const shape = `<path class="dw-hand-skin" fill="SKIN" d="M${point({ x, y }, -half)}L${point(tip, -end)}Q${beyond} ${point(tip, end)}L${point({ x, y }, half)}Z"/>`;
-    const nailAt = { x: tip.x - dx * 4, y: tip.y - dy * 4 };
-    const nail = `<ellipse class="dw-nail" cx="${round(nailAt.x)}" cy="${round(nailAt.y)}" rx="${round(end * 0.62)}" ry="${round(end * 0.8)}" transform="rotate(${-lean} ${round(nailAt.x)} ${round(nailAt.y)})"/>`;
+    const point = (at: { readonly x: number; readonly y: number }, by: number): string =>
+      `${round(at.x + across.x * by)} ${round(at.y + across.y * by)}`;
+    const beyond = `${round(to.x + dx * end * 1.25)} ${round(to.y + dy * end * 1.25)}`;
+    const shape = `<path class="dw-hand-skin" fill="SKIN" d="M${point(from, -half)}L${point(to, -end)}Q${beyond} ${point(to, end)}L${point(from, half)}Z"/>`;
+    const nailAt = { x: to.x - dx * 4, y: to.y - dy * 4 };
+    const turn = (Math.atan2(dy, dx) * 180) / Math.PI - 90;
+    const nail = `<ellipse class="dw-nail" cx="${round(nailAt.x)}" cy="${round(nailAt.y)}" rx="${round(end * 0.62)}" ry="${round(end * 0.8)}" transform="rotate(${round(turn)} ${round(nailAt.x)} ${round(nailAt.y)})"/>`;
     return { shape, nail };
   }
 }

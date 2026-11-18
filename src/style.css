@@ -4050,13 +4050,37 @@ main:has(#tent:not([hidden])) #self-check {
   fill: #9aa3b5;
 }
 
+.tent-pot-handle {
+  fill: none;
+  stroke: #4b5262;
+  stroke-width: 2.4;
+  stroke-linecap: round;
+}
+
 .tent-pot-snow {
   opacity: 0;
   transition: opacity 0.5s;
 }
 
-[data-act="melt"] .tent-pot-snow {
+[data-doing="melt"] .tent-pot-snow {
   opacity: 1;
+}
+
+/* What a hand has taken isn't standing where it was (#269): the nearest bottle, the pot, the
+ * nearest meal. The spoon stands in the pot while snow is melted, unless it's in the hand. */
+[data-holds~="bottle"] .tent-props [data-bottle="0"],
+[data-holds~="pot"] .tent-pot-all,
+[data-holds~="pouch"] .tent-props [data-meal="0"],
+[data-holds~="sealed"] .tent-props [data-meal="0"] {
+  visibility: hidden;
+}
+
+.dw-rest {
+  display: none;
+}
+
+[data-doing="melt"]:not([data-holds~="stirrer"]) .dw-rest {
+  display: inline;
 }
 
 .tent-flame {
@@ -4614,9 +4638,17 @@ main:has(#tent:not([hidden])) #self-check {
 .dw-spoon-light {
   fill: none;
   stroke: #fff;
-  stroke-width: 3;
+  stroke-width: 0.9;
   stroke-linecap: round;
   opacity: 0.5;
+}
+
+.dw-food {
+  fill: #c98a3c;
+}
+
+.dw-thumb {
+  fill: var(--skin);
 }
 
 .dw-bar-wrap {
@@ -4630,7 +4662,7 @@ main:has(#tent:not([hidden])) #self-check {
 .dw-bar-tear {
   fill: none;
   stroke: #b8822a;
-  stroke-width: 3;
+  stroke-width: 0.9;
 }
 
 .dw-bar-label {
@@ -4653,67 +4685,31 @@ main:has(#tent:not([hidden])) #self-check {
   fill: #c7d6e8;
 }
 
-.dw-bottle {
-  fill: #27323f;
-}
-
-.dw-bottle-water {
-  fill: #86c8ff;
-  opacity: 0.9;
-}
-
-.dw-bottle-sleeve {
-  fill: #3f9488;
-}
-
-.dw-bottle-light {
-  fill: none;
-  stroke: #fff;
-  stroke-width: 5;
-  stroke-linecap: round;
-  opacity: 0.25;
-}
-
-.dw-bottle-cap {
-  fill: #dfe6f0;
-}
-
-.dw-bottle-loop {
-  fill: none;
-  stroke: #dfe6f0;
-  stroke-width: 7;
-}
-
-/* A freeze-dried meal's pouch, foil with its label, as the panel draws it (#art-meal). */
-.dw-pouch {
-  fill: #b9c4d0;
-}
-
-.dw-pouch-top {
-  fill: #8e9aa8;
-}
-
-.dw-pouch-label {
-  fill: #e8742c;
-}
-
-.dw-pouch-light {
-  fill: none;
-  stroke: #fff;
-  stroke-width: 6;
-  opacity: 0.2;
-}
-
 .dw-pick {
   fill: #e0b040;
 }
 
+.dw-snow-edge {
+  fill: none;
+  stroke: #dbe6f2;
+  stroke-width: 1;
+  stroke-linejoin: round;
+}
+
 .dw-stream {
   fill: none;
-  stroke: #a6d6ff;
-  stroke-width: 4.5;
+  stroke: #8fc8f7;
+  stroke-width: 5.5;
   stroke-linecap: round;
-  opacity: 0.9;
+  opacity: 0.92;
+}
+
+.dw-stream-light {
+  fill: none;
+  stroke: #e9f6ff;
+  stroke-width: 1.6;
+  stroke-linecap: round;
+  opacity: 0.8;
 }
 
 .dw-spark {

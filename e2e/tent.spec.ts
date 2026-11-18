@@ -115,7 +115,10 @@ test("at Base Camp the button over a tent's door takes the climber in: the tent 
   );
   await expect(chore(page, "melt")).toContainText("Stop");
   await expect(note(page)).toHaveText("Door open for the fumes");
+  // They light the stove first, then stir the pot with the spoon in the fist (#269).
+  await expect(picture(page)).toHaveAttribute("data-doing", "melt", WALKING);
   await expect(picture(page)).toHaveAttribute("data-act", "melt", WALKING);
+  await expect(picture(page)).toHaveAttribute("data-holds", /stirrer|snow/, WALKING);
   await expect(picture(page)).toHaveAttribute("data-flame", "on");
   await expect(picture(page)).toHaveAttribute("data-door", "open");
   await press(chore(page, "melt"));
