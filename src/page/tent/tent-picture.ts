@@ -2,7 +2,11 @@ import type { Atmosphere } from "../../rendering/atmosphere";
 import type { TentSizes } from "../../rendering/camp-signs";
 import { Palette } from "../../rendering/palette";
 import { DwellerDrawing } from "./dweller-drawing";
-import type { Act, DwellerLook, Held } from "./dweller-pose";
+import { FrontShapes } from "../../rendering/front-shapes";
+import { Appearance } from "./appearance";
+import { DwellerHead } from "./dweller-head";
+import type { Act, DwellerLook, Spot } from "./dweller-pose";
+import { DwellerShapes } from "./dweller-shapes";
 import { TentArt } from "./tent-art";
 
 /** What's in the tent to see: the litres in the bottles and how many they hold, the camp's meals
@@ -49,9 +53,17 @@ export class TentPicture {
   private readonly seat: { readonly x: number; readonly y: number };
   private readonly dweller: DwellerDrawing;
   private readonly parts = new Map<string, SVGElement>();
-  private readonly held: readonly SVGElement[];
-  private readonly lids: readonly SVGElement[];
+  /** What each hand holds, by what it is; each hand's fist and its open hand. */
+  private readonly held: readonly (readonly SVGElement[])[];
+  private readonly fists: readonly (readonly [SVGElement | null, SVGElement | null])[];
+  /** The face's moving parts: each eye's lid and its edge, where the eyes look, the dark of the
+   * open mouth and the jaw. */
+  private readonly lids: readonly (readonly [SVGElement | null, SVGElement | null])[];
+  private readonly gazes: readonly SVGElement[];
   private readonly mouth: SVGElement | null;
+  private readonly jaw: SVGElement | null;
+  /** What each attribute was last set to, so the page is only written where something changed. */
+  private readonly written = new Map<string, string>();
   private readonly wind: SVGElement | null;
   private readonly sleeper: SVGElement | null;
   private readonly emptyBag: SVGElement | null;
@@ -65,7 +77,7 @@ export class TentPicture {
     this.art = new TentArt(sizes);
     this.seat = {
       x: this.art.room.from + TentArt.SEAT_IN,
-      y: TentArt.FLOOR - TentArt.SEAT - 22,
+      y: TentArt.FLOOR - TentArt.SEAT - FrontShapes.CROTCH * DwellerShapes.SCALE,
     };
     this.dweller = new DwellerDrawing(this.seat);
     const svg = document.createElementNS(TentPicture.SVG, "svg");
@@ -80,17 +92,26 @@ export class TentPicture {
     for (const part of svg.querySelectorAll<SVGElement>("[data-part]")) {
       this.parts.set(part.dataset.part ?? "", part);
     }
-    this.held = [...svg.querySelectorAll<SVGElement>(".dw-held")];
-    this.lids = [...svg.querySelectorAll<SVGElement>(".tent-dweller .dw-lid")];
-    this.mouth = svg.querySelector<SVGElement>(".tent-dweller .dw-mouth-open");
+    const hands = [0, 1].map((side) => svg.querySelector(`[data-part="hand${side}"]`));
+    this.held = hands.map((hand) => [...(hand?.querySelectorAll<SVGElement>(".dw-held") ?? [])]);
+    this.fists = hands.map((hand) => [
+      hand?.querySelector<SVGElement>(".dw-fist") ?? null,
+      hand?.querySelector<SVGElement>(".dw-open") ?? null,
+    ]);
+    const face = svg.querySelector(".tent-dweller .dw-head");
+    this.lids = [0, 1].map((index) => [
+      face?.querySelector<SVGElement>(`[data-lid="${index}"]`) ?? null,
+      face?.querySelector<SVGElement>(`[data-lid-edge="${index}"]`) ?? null,
+    ]);
+    this.gazes = [...(face?.querySelectorAll<SVGElement>(".dw-gaze") ?? [])];
+    this.mouth = face?.querySelector<SVGElement>(".dw-open") ?? null;
+    this.jaw = face?.querySelector<SVGElement>(".dw-jaw") ?? null;
     this.wind = svg.querySelector<SVGElement>(".tent-wind");
     this.sleeper = svg.querySelector<SVGElement>(".tent-sleeper");
     this.emptyBag = svg.querySelector<SVGElement>(".tent-bag-empty");
     this.guitarAtRest = svg.querySelector<SVGElement>(".tent-guitar-rest");
-    // Whoever's in the bag has their eyes shut.
-    for (const lid of svg.querySelectorAll(".tent-sleeper .dw-lid")) {
-      lid.setAttribute("ry", "5.4");
-      lid.setAttribute("cy", "-0.2");
+    for (const [name, value] of Object.entries(Appearance.CLIMBER.variables())) {
+      svg.style.setProperty(name, value);
     }
     this.svg = svg;
     stage.replaceChildren(svg);
@@ -107,30 +128,34 @@ export class TentPicture {
   pose(look: DwellerLook, act: Act, seconds: number, gust: number): void {
     const frame = this.dweller.frame(look);
     const set = (part: string, name: string, value: string): void => {
-      this.parts.get(part)?.setAttribute(name, value);
+      this.write(this.parts.get(part) ?? null, `${part} ${name}`, name, value);
     };
     set("all", "transform", frame.all);
     set("all", "opacity", frame.shown.toFixed(3));
     set("torso", "transform", frame.torso);
     set("head", "transform", frame.head);
-    for (const side of [0, 1] as const) {
-      set(`leg${side}`, "d", frame.legs[side]);
-      set(`foot${side}`, "d", frame.feet[side]);
-      set(`arm${side}`, "d", frame.arms[side]);
-      set(`quilt${side}`, "d", frame.arms[side]);
-      set(`hand${side}`, "transform", frame.hands[side]);
+    for (const [name, limb] of Object.entries(frame.limbs)) {
+      set(name, "transform", limb.transform);
+      set(name, "data-lit", limb.lit);
+      set(name, "data-puff", limb.puff);
+    }
+    for (const name of DwellerDrawing.DROPPED) {
+      set(`${name}-drop`, "transform", DwellerDrawing.drop(frame.limbs[name]));
     }
     set("stream", "d", frame.stream);
-    const holds: readonly Held[] = frame.holds;
-    for (const held of this.held) {
-      const shown = holds.includes((held.dataset.held ?? "nothing") as Held);
-      TentPicture.show(held, shown);
+    for (const side of [0, 1] as const) {
+      set(`hand${side}`, "transform", frame.hands[side]);
+      const holds = frame.holds[side];
+      for (const held of this.held[side] ?? []) {
+        TentPicture.show(held, held.dataset.held === holds);
+      }
+      const [fist, open] = this.fists[side] ?? [null, null];
+      if (fist !== null && open !== null) {
+        TentPicture.show(fist, frame.fists[side]);
+        TentPicture.show(open, !frame.fists[side]);
+      }
     }
-    for (const lid of this.lids) {
-      lid.setAttribute("ry", frame.lids.toFixed(2));
-      lid.setAttribute("cy", (-5.6 + frame.lids).toFixed(2));
-    }
-    this.mouth?.setAttribute("ry", frame.mouth.toFixed(2));
+    this.face(frame.eyes, frame.gaze, frame.mouth);
     const lap = this.parts.get("guitar");
     if (lap !== undefined) {
       TentPicture.show(lap, frame.guitar);
@@ -275,6 +300,43 @@ export class TentPicture {
   focus(shift: number, lying: number): number {
     const bed = this.art.room.from + TentArt.BAG_IN + 260;
     return this.seat.x + shift - 60 + (bed - this.seat.x + 60) * lying;
+  }
+
+  /** The face: the lids as far down as the eyes are shut, the eyes looking where they look, and
+   * the mouth as far open as it is. */
+  private face(eyes: number, gaze: Spot, mouth: number): void {
+    const open = Math.round(eyes * 40) / 40;
+    for (const [index, [skin, edge]] of this.lids.entries()) {
+      const lid = DwellerHead.lid(index === 0 ? 0 : 1, open);
+      this.write(skin, `lid${index}`, "d", lid.skin);
+      this.write(edge, `lid-edge${index}`, "d", lid.edge);
+    }
+    const looking = `translate(${gaze.x.toFixed(2)} ${gaze.y.toFixed(2)})`;
+    for (const [index, gazing] of this.gazes.entries()) {
+      this.write(gazing, `gaze${index}`, "transform", looking);
+    }
+    const wide = mouth.toFixed(3);
+    this.write(
+      this.mouth,
+      "mouth",
+      "transform",
+      `translate(-29 73) scale(1 ${wide}) translate(29 -73)`,
+    );
+    this.write(
+      this.jaw,
+      "jaw",
+      "transform",
+      `translate(0 ${(mouth * DwellerHead.JAW).toFixed(2)})`,
+    );
+  }
+
+  /** Sets an element's attribute, only if it's changed since it was last set. */
+  private write(element: Element | null, key: string, name: string, value: string): void {
+    if (element === null || this.written.get(key) === value) {
+      return;
+    }
+    this.written.set(key, value);
+    element.setAttribute(name, value);
   }
 
   private static show(element: SVGElement, shown: boolean): void {

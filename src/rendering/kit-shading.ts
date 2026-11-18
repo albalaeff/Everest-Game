@@ -1,6 +1,7 @@
 import { FillGradient } from "pixi.js";
 
 import type { Joint } from "./climber-pose";
+import { FigureShapes } from "./figure-shapes";
 import { Palette } from "./palette";
 
 /** Which way a colour is shaded over a part, in the part's own bounds. Side-on (`SuitRig`):
@@ -20,9 +21,9 @@ export class KitShading {
   /** The one every figure paints with. */
   static readonly SHARED = new KitShading();
   /** How dark a colour's shaded side is, and how bright its lit side, as shares of it. */
-  static readonly TONES = { dark: 0.55, light: 1.32 };
+  static readonly TONES = Palette.KIT_TONES;
   /** The seams between the down's baffles: how wide and how dark. */
-  static readonly SEAM = { width: 0.012, alpha: 0.42 };
+  static readonly SEAM = { width: FigureShapes.SEAM_WIDTH, alpha: 0.42 };
   private static readonly WAYS: Readonly<Record<Shade, { start: Joint; end: Joint }>> = {
     across: { start: { x: 0.5, y: 0 }, end: { x: 0.5, y: 1 } },
     front: { start: { x: 0, y: 0.35 }, end: { x: 1, y: 0.65 } },
@@ -66,7 +67,6 @@ export class KitShading {
 
   /** A colour with each channel times `share`: darker below 1, brighter above. */
   static toned(colour: number, share: number): number {
-    const { red, green, blue } = Palette.channels(colour);
-    return Palette.colour({ red: red * share, green: green * share, blue: blue * share });
+    return Palette.toned(colour, share);
   }
 }

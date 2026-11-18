@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import { KNOWLEDGE_FILES } from "../../content/knowledge-files";
 import { KnowledgeBase } from "../../content/knowledge-base";
 import { TentFacts } from "../../content/tent-facts";
+import { DwellerHead } from "./dweller-head";
 import { TentArt } from "./tent-art";
 
 const { sizes } = new TentFacts(new KnowledgeBase(KNOWLEDGE_FILES));
@@ -76,22 +77,10 @@ describe("TentArt: the tent cut open from end to end (#258)", () => {
     expect(guitar.split("guitar-strings")[1]?.match(/M-52/gu)).toHaveLength(6);
   });
 
-  it("draws a face: two eyes with irises, lids and lashes, brows, a nose, a mouth, an ear and a hat", () => {
-    const head = TentArt.head();
+  it("gives the sleeper in the other bag the same face as the person, its eyes shut", () => {
+    const sleeper = art.markup().split('class="tent-sleeper-head"')[1] ?? "";
 
-    expect(head.match(/class="dw-eye"/gu)).toHaveLength(2);
-    expect(head.match(/class="dw-lid"/gu)).toHaveLength(2);
-    expect(head.match(/class="dw-brow"/gu)).toHaveLength(2);
-    for (const part of [
-      "dw-iris",
-      "dw-pupil",
-      "dw-lash",
-      "dw-nose",
-      "dw-mouth",
-      "dw-ear",
-      "dw-hat",
-    ]) {
-      expect(head).toContain(part);
-    }
+    expect(sleeper).toContain('id="dw-sleeper-face"');
+    expect(sleeper).toContain(`d="${DwellerHead.lid(0, 0).edge}"`);
   });
 });

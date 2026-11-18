@@ -350,6 +350,16 @@ export class Palette {
     });
   }
 
+  /** How dark the kit's shaded side is, and how bright its lit side, as shares of its colour: the
+   * slope's figures' (`KitShading`) and the person's in a tent (#264). */
+  static readonly KIT_TONES = { dark: 0.55, light: 1.32 };
+
+  /** A colour with each channel times `share`: darker below 1, brighter above. */
+  static toned(colour: number, share: number): number {
+    const { red, green, blue } = Palette.channels(colour);
+    return Palette.colour({ red: red * share, green: green * share, blue: blue * share });
+  }
+
   static channels(colour: number): Channels {
     return { red: (colour >> 16) & 0xff, green: (colour >> 8) & 0xff, blue: colour & 0xff };
   }

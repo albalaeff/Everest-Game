@@ -100,33 +100,48 @@
         <div class="tent-stage"></div>
         <div class="tent-panel">
           <div class="tent-head">
-            <div>
+            <div class="tent-where">
               <p class="eyebrow" data-text="where"></p>
               <h2 id="tent-title" data-text="title"></h2>
             </div>
-            <output class="tent-clock" data-text="clock"></output>
-            <p class="tent-feel" data-text="feel"></p>
-            <button type="button" class="tent-leave" data-act="leave"></button>
+            <div class="tent-time">
+              <output class="tent-clock" data-text="clock"></output>
+              <p class="tent-slept tent-chip" data-mark="moon" hidden>
+                <i aria-hidden="true"></i><span data-text="slept"></span>
+              </p>
+            </div>
+            <ul class="tent-feel" data-text="feel"></ul>
+            <button type="button" class="tent-leave" data-act="leave" data-mark="door">
+              <i aria-hidden="true"></i><span></span>
+            </button>
           </div>
           <ul class="tent-stock">
             <li data-stock="water">
-              <span></span><i class="tent-gauge"><b></b></i><output></output>
+              <span class="tent-name"></span><i class="tent-gauge"><b></b></i><output></output>
             </li>
             <li data-stock="gas">
-              <span></span><i class="tent-gauge"><b></b></i><output></output>
+              <span class="tent-name"></span><i class="tent-gauge"><b></b></i><output></output>
             </li>
-            <li data-stock="meals"><span></span><output></output></li>
-            <li data-stock="bars"><span></span><output></output></li>
-            <li data-stock="oxygen"><span></span><output></output></li>
+            <li data-stock="meals"><span class="tent-name"></span><output></output></li>
+            <li data-stock="bars"><span class="tent-name"></span><output></output></li>
+            <li data-stock="oxygen"><span class="tent-name"></span><output></output></li>
           </ul>
           <ul class="tent-chores"></ul>
           <div class="tent-foot">
             <div class="tent-quick">
-              <button type="button" data-act="drink"></button>
-              <button type="button" data-act="eat"></button>
-              <button type="button" data-act="pack"></button>
+              <button type="button" data-act="drink" data-mark="bottle">
+                <i aria-hidden="true"></i><span></span>
+              </button>
+              <button type="button" data-act="eat" data-mark="bar">
+                <i aria-hidden="true"></i><span></span>
+              </button>
+              <button type="button" data-act="pack" data-mark="pack">
+                <i aria-hidden="true"></i><span></span>
+              </button>
             </div>
-            <p class="tent-advice" data-text="advice"></p>
+            <p class="tent-note tent-chip" data-mark="warning" hidden>
+              <i aria-hidden="true"></i><span data-text="note"></span>
+            </p>
           </div>
         </div>
       </section>
@@ -480,6 +495,39 @@
           stroke="#fff"
           stroke-opacity="0.4"
           stroke-width="2.5"
+          stroke-linecap="round"
+        />
+      </symbol>
+      <!-- What the tent's panel counts (#264), in the same style: a gas canister, and a meal's
+           pouch. -->
+      <symbol id="art-gas" viewBox="0 0 64 64">
+        <rect x="28" y="5" width="8" height="7" rx="2" fill="#8fa3bd" />
+        <path d="M22 12h20l4 7H18z" fill="#c9d6e6" />
+        <path
+          d="M13 26a7 7 0 0 1 7-7h24a7 7 0 0 1 7 7v24a8 8 0 0 1-8 8H21a8 8 0 0 1-8-8z"
+          fill="#2f6fd0"
+        />
+        <path d="M13 32h38v11H13z" fill="#ffd166" />
+        <path d="M19 37.5h15" stroke="#0b1830" stroke-width="2.5" stroke-linecap="round" />
+        <path
+          d="M18 25v3M18 47v6"
+          stroke="#fff"
+          stroke-opacity="0.45"
+          stroke-width="2.5"
+          stroke-linecap="round"
+        />
+      </symbol>
+      <symbol id="art-meal" viewBox="0 0 64 64">
+        <path d="M15 9h34l-2.5 45a4 4 0 0 1-4 4h-21a4 4 0 0 1-4-4z" fill="#c9d6e6" />
+        <path d="M15 9h34l-.5 9h-33z" fill="#8fa3bd" />
+        <path d="M16 22h32" stroke="#0b1830" stroke-opacity="0.35" stroke-width="1.5" />
+        <rect x="21" y="28" width="22" height="17" rx="3" fill="#ff8f45" />
+        <path d="M25.5 33.5h13M25.5 39h8" stroke="#fff" stroke-width="2.5" stroke-linecap="round" />
+        <path
+          d="M43 26l-1.5 26"
+          stroke="#fff"
+          stroke-opacity="0.55"
+          stroke-width="2"
           stroke-linecap="round"
         />
       </symbol>

@@ -9,6 +9,8 @@ import { WALKING, climbFrom, savedPlayer, seen } from "./climb";
  * end, with a panel of what there is and the chores. The stove burns while a chore of its is in
  * hand; a sleep alone passes the night at once; [Leave the tent] goes out again. Base Camp's
  * kitchen never runs out and has the guitar; Camp 1 has the gas and the meals carried up to it.
+ * The panel is in marks and few words (#264): each button and row says the whole in a sentence,
+ * as its tooltip and its name to a screen reader, which is what the stories read.
  * Two stories, each through a whole visit: a story's start costs more of CI's time than its steps.
  */
 
@@ -27,6 +29,16 @@ const picture = (page: Page): Locator => page.locator("#tent .tent-picture");
 const chore = (page: Page, name: string): Locator => tent(page).locator(`[data-chore="${name}"]`);
 const stock = (page: Page, name: string): Locator =>
   tent(page).locator(`[data-stock="${name}"] output`);
+const feel = (page: Page): Locator => tent(page).locator('[data-text="feel"]');
+const note = (page: Page): Locator => tent(page).locator(".tent-note");
+
+// A fault on one browser alone would otherwise show only as a wait that ran out: each story
+// says the page's errors in CI's log.
+test.beforeEach(({ page }) => {
+  page.on("pageerror", (error) => {
+    console.log(`Page error (${test.info().project.name}): ${error.stack ?? error.message}`);
+  });
+});
 
 /** A press of one of the page's buttons, by a click or a tap: the button over a door follows
  * the camera, which a click waits to see still. */
@@ -56,23 +68,36 @@ test("at Base Camp the button over a tent's door takes the climber in: the tent 
 
   await goIn(page);
 
-  // The panel: where and when, how they feel, what there is, and a button a chore.
+  // The panel: where and when, how they feel, what there is, and a button a chore, each a mark
+  // and a word, with what it takes and gives as marks with numbers.
   await expect(page.locator("#slope")).toHaveAttribute("data-passage", "inside");
   await expect(tent(page).locator('[data-text="where"]')).toHaveText(/^Base Camp · 5,3\d\d m$/);
   await expect(tent(page).locator('[data-text="clock"]')).toHaveText(/^0[34]:\d\d$/);
-  await expect(tent(page).locator('[data-text="feel"]')).toHaveText(/^You feel .+\.$/);
-  await expect(stock(page, "water")).toHaveText("2 of 3 L");
-  await expect(stock(page, "gas")).toHaveText("plenty");
-  await expect(stock(page, "meals")).toHaveText("plenty");
+  await expect(feel(page)).toHaveAttribute("aria-label", /^You feel .+\.$/);
+  await expect(stock(page, "water")).toHaveText("2/3 L");
+  await expect(tent(page).locator('[data-stock="water"]')).toHaveAttribute(
+    "title",
+    "Water: 2 of 3 L",
+  );
+  await expect(stock(page, "gas")).toHaveText("∞");
+  await expect(stock(page, "meals")).toHaveText("∞");
   await expect(stock(page, "bars")).toHaveText("2");
   await expect(tent(page).locator(".tent-chores button")).toHaveCount(5);
-  await expect(chore(page, "melt")).toContainText("12 min, 38 g of gas: 1 L of water");
+  await expect(chore(page, "melt")).toHaveAttribute(
+    "aria-label",
+    "Melt snow: 12 min and 38 g of gas for 1 L of water",
+  );
+  await expect(chore(page, "melt").locator(".tent-chip")).toHaveText(["12 min", "38 g", "+1 L"]);
   await expect(chore(page, "cook")).toContainText("600 kcal");
-  await expect(chore(page, "sleep")).toContainText("Until the alarm at 02:00");
+  await expect(chore(page, "sleep")).toHaveAttribute(
+    "aria-label",
+    "Sleep until the alarm at 02:00",
+  );
   await expect(chore(page, "guitar")).toBeEnabled();
+  await expect(note(page)).toBeHidden();
 
   // The picture: the tent, the person in it with a face, the stove, the pack and the guitar.
-  for (const part of [".tent-room-wall", ".dw-face", ".dw-eye", ".tent-stove", ".tent-pack"]) {
+  for (const part of [".tent-room-wall", ".dw-head", ".dw-eye", ".tent-stove", ".tent-pack"]) {
     await expect(picture(page).locator(part).first()).toBeAttached();
   }
   await expect(picture(page)).toHaveAttribute("data-ground", "rubble");
@@ -81,19 +106,26 @@ test("at Base Camp the button over a tent's door takes the climber in: the tent 
 
   // The stove: lit with the door open for its fumes, and out again when the chore is stopped.
   // The litre it melts is the core's story (src/content/tent.story.test.ts).
+  // What a press does shows on the next frames, which WebKit draws in software slowly on CI.
   await press(chore(page, "melt"));
-  await expect(chore(page, "melt")).toHaveAttribute("data-state", "doing");
-  await expect(chore(page, "melt")).toContainText(/^Melt snow\d+ min left\. Stop$/);
+  await expect(chore(page, "melt")).toHaveAttribute("data-state", "doing", WALKING);
+  await expect(chore(page, "melt")).toHaveAttribute(
+    "aria-label",
+    /^Melt snow: \d+ min left\. Press to stop$/,
+  );
+  await expect(chore(page, "melt")).toContainText("Stop");
+  await expect(note(page)).toHaveText("Door open for the fumes");
   await expect(picture(page)).toHaveAttribute("data-act", "melt", WALKING);
   await expect(picture(page)).toHaveAttribute("data-flame", "on");
   await expect(picture(page)).toHaveAttribute("data-door", "open");
   await press(chore(page, "melt"));
-  await expect(chore(page, "melt")).toHaveAttribute("data-state", "ready");
+  await expect(chore(page, "melt")).toHaveAttribute("data-state", "ready", WALKING);
+  await expect(note(page)).toBeHidden();
   await expect(picture(page)).toHaveAttribute("data-flame", "off", WALKING);
 
   // A drink is the pack's, and [Pack] opens its card over the tent, with the camp's store.
   await press(tent(page).getByRole("button", { name: "Drink" }));
-  await expect(stock(page, "water")).toHaveText("1.5 of 3 L");
+  await expect(stock(page, "water")).toHaveText("1.5/3 L", WALKING);
   await press(tent(page).getByRole("button", { name: "Pack" }));
   const inventory = page.locator("#inventory");
   await expect(inventory).toBeVisible();
@@ -105,10 +137,10 @@ test("at Base Camp the button over a tent's door takes the climber in: the tent 
   // shows them into the bag, asleep for a moment, and up again with a stretch.
   await press(chore(page, "sleep"));
   await expect(tent(page).locator('[data-text="clock"]')).toHaveText(/^02:0\d$/, WALKING);
-  await expect(tent(page).locator('[data-text="advice"]')).toHaveText(/^You slept 22 h \d+ min\.$/);
+  await expect(tent(page).locator('[data-text="slept"]')).toHaveText(/^Slept 22 h \d+ min$/);
   await expect(picture(page)).toHaveAttribute("data-asleep", "yes", WALKING);
   await expect(picture(page)).toHaveAttribute("data-asleep", "no", THROUGH_THE_DOOR);
-  await expect(tent(page).locator('[data-text="feel"]')).not.toContainText("sleepy");
+  await expect(feel(page)).not.toHaveAttribute("aria-label", /sleepy/);
 
   // Out: the screen closes behind them, and the button is over the door again.
   await press(tent(page).getByRole("button", { name: "Leave the tent" }));
@@ -136,7 +168,11 @@ test("Camp 1's tent stands on snow, with the gas and the meals carried up, and n
   await expect(stock(page, "gas")).toHaveText("454 g");
   await expect(stock(page, "meals")).toHaveText("6");
   await expect(chore(page, "guitar")).toBeDisabled();
-  await expect(chore(page, "guitar")).toContainText("The guitar stays at Base Camp");
+  await expect(chore(page, "guitar")).toHaveAttribute(
+    "aria-label",
+    "Play the guitar: the guitar stays at Base Camp",
+  );
+  await expect(chore(page, "guitar").locator('[data-lacking="yes"]')).toHaveText("Base Camp");
   await expect(picture(page)).toHaveAttribute("data-ground", "snow");
   await expect(picture(page).locator(".tent-guitar-rest")).toBeHidden();
   await expect(picture(page).locator(".tent-duffel")).toBeHidden();

@@ -1,7 +1,16 @@
+import { DwellerHands } from "./dweller-hands";
+import { DwellerHead } from "./dweller-head";
+import { DwellerShapes } from "./dweller-shapes";
+
 /** A point of the tent's picture, in its pixels: across to the right, and down. */
 export interface Spot {
   readonly x: number;
   readonly y: number;
+}
+
+/** A point in three dimensions: a spot, and how far toward the viewer it is. */
+interface Point extends Spot {
+  readonly z: number;
 }
 
 /** What the person in the tent is seen doing: sitting, at the stove melting snow, cooking and
@@ -21,8 +30,13 @@ export type Act =
   | "lie"
   | "wake";
 
-/** What a hand holds. */
-export type Held = "nothing" | "spoon" | "bottle" | "bar" | "pouch" | "snow" | "lighter";
+/** Which way an elbow points: out to the side, or down by the body, for a hand held in front of
+ * it. */
+export type Elbow = "out" | "down";
+
+/** What a hand holds: the guitar's pick, or its neck, too. */
+export type Held =
+  "nothing" | "spoon" | "bottle" | "bar" | "pouch" | "snow" | "lighter" | "pick" | "neck";
 
 /**
  * The person in the tent this frame, from their hips as they sit: how far along the floor from
@@ -53,6 +67,14 @@ export interface DwellerLook {
   /** How far what the first hand holds is tipped from upright, in degrees clockwise: a bottle
    * to the mouth or over the pot. `null` for what lies along the forearm, as a spoon does. */
   readonly tip: number | null;
+  /** Where the eyes look, -1 to 1 each way: to the viewer's left and right, up and down. */
+  readonly gaze: Spot;
+  /** How far in front of the shoulders each hand is, toward the viewer, in pixels: 0 beside the
+   * body, more at the chest or the mouth. The arms are bent in three dimensions and drawn flat,
+   * so one that reaches toward the viewer is drawn shorter. */
+  readonly ahead: readonly [number, number];
+  /** Which way each elbow points. */
+  readonly elbows: readonly [Elbow, Elbow];
 }
 
 /** The person's joints this frame, in the picture's pixels from their hips: the shoulders,
@@ -82,20 +104,16 @@ export interface DwellerJoints {
  * lengths. It holds nothing: the same act and seconds give the same pose.
  */
 export class DwellerPose {
-  /** The bones, in the picture's pixels: the upper arm, the forearm to the middle of the hand. */
-  static readonly UPPER_ARM = 92;
-  static readonly FOREARM = 88;
+  /** The bones, in the picture's pixels, the slope climber's (#264): the upper arm, and the
+   * forearm to the middle of the hand, where it grips. */
+  static readonly UPPER_ARM = DwellerShapes.UPPER_ARM;
+  static readonly FOREARM = DwellerShapes.FOREARM + DwellerShapes.GRIP;
   /** From the hips, sitting upright: each shoulder, the nearer the stove first, the neck, the
    * head's middle over the neck, and the mouth from the head's middle. */
-  static readonly SHOULDERS: readonly [Spot, Spot] = [
-    { x: -42, y: -134 },
-    { x: 40, y: -130 },
-  ];
-  static readonly NECK: Spot = { x: -2, y: -152 };
-  static readonly HEAD: Spot = { x: -4, y: -44 };
-  static readonly MOUTH: Spot = { x: -10.4, y: 24.4 };
-  /** How much bigger than its drawing the head is. */
-  static readonly HEAD_SCALE = 1.16;
+  static readonly SHOULDERS: readonly [Spot, Spot] = DwellerShapes.SHOULDERS;
+  static readonly NECK: Spot = DwellerShapes.NECK;
+  static readonly HEAD: Spot = DwellerShapes.HEAD;
+  static readonly MOUTH: Spot = DwellerHead.MOUTH;
   /** How long each act that plays once takes, in seconds. */
   static readonly ONCE: Readonly<Partial<Record<Act, number>>> = {
     enter: 1.8,
@@ -110,32 +128,38 @@ export class DwellerPose {
    * it; the bottle on the floor, and the pouch held at the chest; the pack, from the seat they
    * move to for it. */
   private static readonly KNEES: readonly [Spot, Spot] = [
-    { x: -92, y: -34 },
-    { x: 84, y: -30 },
+    { x: -84, y: -24 },
+    { x: 86, y: -24 },
   ];
-  private static readonly POT: Spot = { x: -238, y: -54 };
-  private static readonly SNOW: Spot = { x: -181, y: -6 };
-  private static readonly BOTTLE: Spot = { x: -122, y: 12 };
-  private static readonly CHEST: Spot = { x: 14, y: -92 };
-  private static readonly PACK: Spot = { x: -150, y: -128 };
+  private static readonly POT: Spot = { x: -238, y: -50 };
+  private static readonly SNOW: Spot = { x: -182, y: 0 };
+  private static readonly BOTTLE: Spot = { x: -124, y: 16 };
+  private static readonly CHEST: Spot = { x: 10, y: -88 };
+  private static readonly PACK: Spot = { x: -150, y: -104 };
   /** How far along the floor from the seat the door is, and the pack's seat. */
   static readonly FROM_DOOR = -330;
   static readonly AT_PACK = 190;
   /** The guitar on the lap: where its strings are strummed, and the ends of the stretch of its
    * neck the other hand plays on. */
-  private static readonly STRUM: Spot = { x: 30, y: -60 };
+  private static readonly STRUM: Spot = { x: -16, y: -44 };
   private static readonly FRETS: readonly [Spot, Spot] = [
-    { x: 112, y: -105 },
-    { x: 190, y: -150 },
+    { x: 96, y: -94 },
+    { x: 149, y: -119 },
   ];
   /** The strum's beat, in strokes a second. */
   private static readonly BEAT = 2.6;
-  /** How far under its shoulder a hand is as its elbow has swung to the other side: raised to
-   * the mouth for the first arm, at the chest for the second; and how far the hand rises as it
-   * swings. */
-  private static readonly RAISED = -45;
-  private static readonly AT_CHEST = 10;
-  private static readonly TURNING = 30;
+  /** Which way the nearer the stove's elbow points, for each way: x to the viewer's right, y
+   * down and z toward the viewer; the other's is mirrored. A little back, as elbows bend, so one
+   * swings round behind its arm as the hand moves, never jumps. */
+  private static readonly POLES: Readonly<Record<Elbow, Point>> = {
+    out: { x: -0.7, y: 0.7, z: -0.3 },
+    down: { x: -0.25, y: 1, z: -0.3 },
+  };
+  /** How far in front of the shoulders the hands are on the knees, which the thighs bring
+   * toward the viewer, at the chest and at the mouth. */
+  private static readonly AT_KNEES = 100;
+  private static readonly AT_CHEST = 95;
+  private static readonly AT_MOUTH = 80;
   /** How far along the mats they go to lie down, and how far back they lean on the way, in
    * degrees. */
   private static readonly TO_BED = 130;
@@ -143,8 +167,11 @@ export class DwellerPose {
   /** How far a bottle tips to pour, in degrees; and how far off the mats the hips are on hands
    * and knees. */
   private static readonly POUR = 118;
-  /** How far from the hand that holds it by its middle a bottle's mouth is. */
-  static readonly BOTTLE_NECK = 46;
+  /** How far from the hand that holds it by its middle a bottle's mouth is, and how far beyond
+   * the hand a spoon's bowl and a bar's end are. */
+  static readonly BOTTLE_NECK = DwellerHands.BOTTLE_NECK;
+  static readonly SPOON = DwellerHands.SPOON;
+  private static readonly BAR = DwellerHands.BAR;
   private static readonly ON_KNEES = 46;
 
   /** The look of the act `seconds` in, a chore `progress` of the way through. */
@@ -160,9 +187,9 @@ export class DwellerPose {
       case "guitar":
         return DwellerPose.strumming(t);
       case "enter":
-        return DwellerPose.entering(DwellerPose.share(act, t));
+        return DwellerPose.entering(DwellerPose.share(act, t), true);
       case "leave":
-        return DwellerPose.entering(1 - DwellerPose.share(act, t));
+        return DwellerPose.entering(1 - DwellerPose.share(act, t), false);
       case "drink":
         return DwellerPose.drinking(DwellerPose.share(act, t));
       case "bar":
@@ -190,11 +217,19 @@ export class DwellerPose {
     const over = DwellerPose.turned(DwellerPose.HEAD, headAngle);
     const head = { x: neck.x + over.x + look.sway, y: neck.y + over.y };
     const lips = DwellerPose.turned(DwellerPose.MOUTH, headAngle);
-    // An elbow points out from the body with the hand low, on a knee. The first arm's swings
-    // out to the side for a hand at the mouth or over the head; the second's hangs under a hand
-    // at the chest or higher, on the guitar's neck.
-    const first = DwellerPose.arm(shoulders[0], look.hands[0], 1, DwellerPose.RAISED);
-    const second = DwellerPose.arm(shoulders[1], look.hands[1], -1, DwellerPose.AT_CHEST);
+    const [one, other] = look.elbows;
+    const first = DwellerPose.arm(
+      shoulders[0],
+      look.hands[0],
+      look.ahead[0],
+      DwellerPose.pole(one, 0),
+    );
+    const second = DwellerPose.arm(
+      shoulders[1],
+      look.hands[1],
+      look.ahead[1],
+      DwellerPose.pole(other, 1),
+    );
     return {
       torso: -look.lean,
       neck,
@@ -208,13 +243,14 @@ export class DwellerPose {
     };
   }
 
-  /** Where the mouth is for a pose that leans and tilts so: where a spoon or a bottle goes. */
-  private static mouthAt(lean: number, tilt: number): Spot {
+  /** Where the lips are for a pose that leans and tilts so: where a spoon, a bar or a bottle
+   * goes. */
+  static mouthAt(lean: number, tilt: number): Spot {
     const neck = DwellerPose.turned(DwellerPose.NECK, -lean);
     const angle = -lean * 0.55 + tilt;
     const head = DwellerPose.turned(DwellerPose.HEAD, angle);
     const lips = DwellerPose.turned(DwellerPose.MOUTH, angle);
-    return { x: neck.x + head.x + lips.x - 14, y: neck.y + head.y + lips.y + 6 };
+    return { x: neck.x + head.x + lips.x, y: neck.y + head.y + lips.y };
   }
 
   private static sitting(t: number): DwellerLook {
@@ -232,6 +268,7 @@ export class DwellerPose {
         { x: far.x, y: far.y - 1.5 * breath },
       ],
       eyes: DwellerPose.blink(t),
+      gaze: { x: -0.3 - 0.7 * glance, y: 0.25 - 0.2 * glance },
     };
   }
 
@@ -259,6 +296,8 @@ export class DwellerPose {
       holds: [held, "nothing"],
       eyes: DwellerPose.blink(t),
       flame: 1,
+      gaze: { x: -1, y: 0.8 },
+      ahead: [0, DwellerPose.AT_KNEES],
     };
   }
 
@@ -275,6 +314,8 @@ export class DwellerPose {
         holds: ["lighter", "nothing"],
         eyes: DwellerPose.blink(t),
         flame: lit,
+        gaze: { x: -1, y: 1 },
+        ahead: [0, DwellerPose.AT_KNEES],
       };
     }
     if (progress < 0.38) {
@@ -289,6 +330,8 @@ export class DwellerPose {
         tip: -DwellerPose.POUR * DwellerPose.ease((pour - 0.35) / 0.5),
         eyes: DwellerPose.blink(t),
         flame: 1,
+        gaze: { x: -1, y: 0.7 },
+        ahead: [0, DwellerPose.AT_KNEES],
       };
     }
     if (progress < 0.62) {
@@ -305,13 +348,18 @@ export class DwellerPose {
         holds: ["nothing", "pouch"],
         eyes: DwellerPose.blink(t),
         flame: 0,
+        gaze: { x: 0.3, y: 1 },
+        ahead: [DwellerPose.AT_CHEST, DwellerPose.AT_CHEST],
+        elbows: ["down", "down"],
       };
     }
     // A spoonful to the mouth every two seconds, and chewing between.
     const cycle = (t % 2) / 2;
     const lift = DwellerPose.arc(cycle / 0.7);
     const lean = 8;
-    const mouth = DwellerPose.mouthAt(lean, 2);
+    const lips = DwellerPose.mouthAt(lean, 2);
+    // The hand under the mouth, the spoon's bowl up at the lips.
+    const mouth = DwellerPose.holding(lips, DwellerPose.SPOON, lean, DwellerPose.AT_MOUTH);
     const dip = { x: CHEST.x - 6, y: CHEST.y - 20 };
     const chew = cycle > 0.7 ? 0.25 + 0.25 * Math.sin(2 * Math.PI * 4 * t) : 0;
     return {
@@ -322,6 +370,12 @@ export class DwellerPose {
       holds: ["spoon", "pouch"],
       mouth: Math.max(chew, Math.min(1, Math.max(0, (lift - 0.5) * 4))),
       eyes: DwellerPose.blink(t),
+      gaze: { x: 0.1 - 0.4 * lift, y: 1 - 1.2 * lift },
+      ahead: [
+        DwellerPose.AT_CHEST + (DwellerPose.AT_MOUTH - DwellerPose.AT_CHEST) * lift,
+        DwellerPose.AT_CHEST,
+      ],
+      elbows: ["down", "down"],
     };
   }
 
@@ -329,8 +383,13 @@ export class DwellerPose {
     const up = DwellerPose.ease(share / 0.3) * (1 - DwellerPose.ease((share - 0.75) / 0.25));
     const tilt = -16 * up;
     const lips = DwellerPose.mouthAt(2, tilt);
-    // The bottle's mouth to the lips: the hand holds it by its middle, short of them.
-    const mouth = { x: lips.x - 26, y: lips.y - 28 };
+    // The bottle's mouth to the lips: the hand holds it by its middle, tipped, up and to the
+    // side of them.
+    const tipped = (DwellerPose.POUR * Math.PI) / 180;
+    const mouth = {
+      x: lips.x - DwellerPose.BOTTLE_NECK * Math.sin(tipped),
+      y: lips.y + DwellerPose.BOTTLE_NECK * Math.cos(tipped),
+    };
     return {
       ...DwellerPose.STILL,
       lean: 2,
@@ -340,6 +399,8 @@ export class DwellerPose {
       tip: DwellerPose.POUR * DwellerPose.ease((up - 0.35) / 0.5),
       mouth: up > 0.9 ? 0.5 : 0,
       eyes: up > 0.9 ? 0.25 : 1,
+      gaze: { x: -0.2, y: -0.7 * up },
+      ahead: [DwellerPose.AT_MOUTH * 0.6 * up, DwellerPose.AT_KNEES],
     };
   }
 
@@ -347,7 +408,9 @@ export class DwellerPose {
     // Two bites, a chew after each.
     const bite = share < 0.5 ? share / 0.5 : (share - 0.5) / 0.5;
     const up = DwellerPose.arc(Math.min(1, bite / 0.55));
-    const mouth = DwellerPose.mouthAt(4, 0);
+    const lips = DwellerPose.mouthAt(4, 0);
+    // The bar's end at the lips, the hand under it.
+    const mouth = DwellerPose.holding(lips, DwellerPose.BAR, 4, DwellerPose.AT_MOUTH);
     const rest = { x: -60, y: -74 };
     const chew = bite > 0.55 ? 0.3 + 0.3 * Math.sin(2 * Math.PI * 9 * bite) : 0;
     return {
@@ -356,6 +419,12 @@ export class DwellerPose {
       hands: [DwellerPose.mix(rest, mouth, up), DwellerPose.KNEES[1]],
       holds: ["bar", "nothing"],
       mouth: Math.max(chew, up > 0.85 ? 0.9 : 0),
+      gaze: { x: -0.5, y: 0.6 - 0.4 * up },
+      ahead: [
+        DwellerPose.AT_CHEST + (DwellerPose.AT_MOUTH - DwellerPose.AT_CHEST) * up,
+        DwellerPose.AT_KNEES,
+      ],
+      elbows: ["down", "out"],
     };
   }
 
@@ -376,10 +445,14 @@ export class DwellerPose {
         { x: STRUM.x + 10 * Math.sin(beat), y: STRUM.y + 17 * Math.sin(beat) },
         DwellerPose.mix(FRETS[0], FRETS[1], at),
       ],
+      holds: ["pick", "neck"],
       mouth: 0.25 + 0.25 * Math.sin(beat / 4),
       eyes: Math.min(DwellerPose.blink(t), Math.sin(t / 3.1) > 0.75 ? 0.15 : 1),
       guitar: true,
       tap: Math.max(0, Math.sin(beat / 2)),
+      gaze: Math.sin(t / 2.3) > 0.6 ? { x: -0.1, y: 0 } : { x: 1, y: 0.8 },
+      ahead: [50, 40],
+      elbows: ["out", "down"],
     };
   }
 
@@ -394,14 +467,17 @@ export class DwellerPose {
       lean: 22 * over,
       tilt: 8 * over,
       turned: over > 0.5,
+      gaze: { x: -1, y: 0.5 },
       hands: [
         DwellerPose.mix(KNEES[0], { x: PACK.x + 18 * reach, y: PACK.y - 12 * reach }, over),
         DwellerPose.mix(KNEES[1], { x: PACK.x + 60 - 20 * reach, y: PACK.y + 30 * reach }, over),
       ],
+      ahead: [DwellerPose.AT_KNEES * (1 - over), DwellerPose.AT_KNEES * (1 - over)],
     };
   }
 
-  private static entering(share: number): DwellerLook {
+  /** In from the door, `inward`, or out to it: on hands and knees, facing the way they go. */
+  private static entering(share: number, inward: boolean): DwellerLook {
     // In from the door on hands and knees, and up onto the seat.
     const along = DwellerPose.ease(share / 0.7);
     const up = DwellerPose.ease((share - 0.55) / 0.45);
@@ -418,6 +494,9 @@ export class DwellerPose {
         DwellerPose.mix({ x: -96 - 18 * crawl, y: DwellerPose.ON_KNEES + 16 }, far, up),
       ],
       shown: DwellerPose.ease(share / 0.25),
+      turned: inward && up < 0.5,
+      gaze: { x: -0.8, y: 0.5 },
+      ahead: [DwellerPose.AT_KNEES * up, DwellerPose.AT_KNEES * up],
     };
   }
 
@@ -460,6 +539,8 @@ export class DwellerPose {
       ],
       mouth: stretch,
       eyes: 1 - 0.8 * stretch,
+      gaze: { x: 0, y: -0.5 * stretch },
+      ahead: [DwellerPose.AT_KNEES * (1 - stretch), DwellerPose.AT_KNEES * (1 - stretch)],
     };
   }
 
@@ -480,6 +561,9 @@ export class DwellerPose {
     flame: 0,
     tap: 0,
     tip: null,
+    gaze: { x: -0.3, y: 0.25 },
+    ahead: [DwellerPose.AT_KNEES, DwellerPose.AT_KNEES],
+    elbows: ["out", "out"],
   };
 
   /** How far through an act that plays once `seconds` is, 0 to 1. */
@@ -487,51 +571,66 @@ export class DwellerPose {
     return Math.min(1, seconds / (DwellerPose.ONCE[act] ?? 1));
   }
 
-  /** An arm from `shoulder` to `target`, its elbow to `side` while the hand is lower than `turn`
-   * under the shoulder, to the other side once it's as high as that, and between the two over
-   * `TURNING` pixels of the hand's way up. */
+  /** An arm from `shoulder` to `target`, `ahead` of it toward the viewer, its elbow bent the
+   * way `pole` points: the hand as near the target as the arm reaches, the bones their lengths
+   * in three dimensions, and drawn flat, so a bone that points toward the viewer is shorter. */
   private static arm(
     shoulder: Spot,
     target: Spot,
-    side: 1 | -1,
-    turn: number,
-  ): { readonly elbow: Spot; readonly hand: Spot; readonly angle: number } {
-    const low = DwellerPose.bend(shoulder, target, side);
-    const share = DwellerPose.ease((shoulder.y + turn - target.y) / DwellerPose.TURNING + 1);
-    if (share <= 0) {
-      return low;
-    }
-    const high = DwellerPose.bend(shoulder, target, side === 1 ? -1 : 1);
-    const elbow = DwellerPose.mix(low.elbow, high.elbow, share);
-    const angle = (Math.atan2(low.hand.y - elbow.y, low.hand.x - elbow.x) * 180) / Math.PI - 90;
-    return { elbow, hand: low.hand, angle };
-  }
-
-  /** An arm from `shoulder` to `target`, its elbow bent to `side`: the hand as near the target
-   * as the arm reaches, the bones their lengths. */
-  private static bend(
-    shoulder: Spot,
-    target: Spot,
-    side: 1 | -1,
+    ahead: number,
+    pole: Point,
   ): { readonly elbow: Spot; readonly hand: Spot; readonly angle: number } {
     const { UPPER_ARM: upper, FOREARM: lower } = DwellerPose;
-    const dx = target.x - shoulder.x;
-    const dy = target.y - shoulder.y;
-    const far = Math.hypot(dx, dy);
+    const to = { x: target.x - shoulder.x, y: target.y - shoulder.y, z: ahead };
+    const far = Math.hypot(to.x, to.y, to.z);
     const reach = Math.min(Math.max(far, Math.abs(upper - lower) + 0.01), upper + lower - 0.01);
-    const towards = far < 1e-9 ? Math.PI / 2 : Math.atan2(dy, dx);
-    const inner = Math.acos((upper * upper + reach * reach - lower * lower) / (2 * upper * reach));
-    const angle = towards + side * inner;
+    const along =
+      far < 1e-9 ? { x: 0, y: 1, z: 0 } : { x: to.x / far, y: to.y / far, z: to.z / far };
+    // The elbow on the circle it can be on, the way the pole points square to the arm.
+    const dot = pole.x * along.x + pole.y * along.y + pole.z * along.z;
+    const square = {
+      x: pole.x - dot * along.x,
+      y: pole.y - dot * along.y,
+      z: pole.z - dot * along.z,
+    };
+    const size = Math.hypot(square.x, square.y, square.z);
+    const side =
+      size < 1e-9
+        ? { x: 0, y: 0, z: -1 }
+        : { x: square.x / size, y: square.y / size, z: square.z / size };
+    const cos = (upper * upper + reach * reach - lower * lower) / (2 * upper * reach);
+    const sin = Math.sqrt(Math.max(0, 1 - cos * cos));
     const elbow = {
-      x: shoulder.x + upper * Math.cos(angle),
-      y: shoulder.y + upper * Math.sin(angle),
+      x: shoulder.x + upper * (along.x * cos + side.x * sin),
+      y: shoulder.y + upper * (along.y * cos + side.y * sin),
     };
-    const hand = {
-      x: shoulder.x + reach * Math.cos(towards),
-      y: shoulder.y + reach * Math.sin(towards),
-    };
-    const fore = (Math.atan2(hand.y - elbow.y, hand.x - elbow.x) * 180) / Math.PI - 90;
-    return { elbow, hand, angle: fore };
+    const hand = { x: shoulder.x + along.x * reach, y: shoulder.y + along.y * reach };
+    const angle = (Math.atan2(hand.y - elbow.y, hand.x - elbow.x) * 180) / Math.PI - 90;
+    return { elbow, hand, angle };
+  }
+
+  /** Which way an elbow of `side` points. */
+  private static pole(elbow: Elbow, side: 0 | 1): Point {
+    const { x, y, z } = DwellerPose.POLES[elbow];
+    return { x: side === 0 ? x : -x, y, z };
+  }
+
+  /** Where the first hand goes, `ahead` and its elbow down, for what it holds along the forearm
+   * to reach `spot` `length` beyond it: a spoon's bowl or a bar's end to the lips, for a body
+   * that leans `lean`. */
+  private static holding(spot: Spot, length: number, lean: number, ahead: number): Spot {
+    const shoulder = DwellerPose.turned(DwellerPose.SHOULDERS[0], -lean);
+    const pole = DwellerPose.pole("down", 0);
+    let hand = { x: spot.x, y: spot.y + length };
+    // The forearm's way moves little with the hand: a few steps find it.
+    for (let step = 0; step < 4; step += 1) {
+      const arm = DwellerPose.arm(shoulder, hand, ahead, pole);
+      const dx = arm.hand.x - arm.elbow.x;
+      const dy = arm.hand.y - arm.elbow.y;
+      const size = Math.hypot(dx, dy) || 1;
+      hand = { x: spot.x - (dx / size) * length, y: spot.y - (dy / size) * length };
+    }
+    return hand;
   }
 
   /** A point turned by `degrees` about the hips, clockwise on the screen. */

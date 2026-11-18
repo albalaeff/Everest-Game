@@ -1,3 +1,4 @@
+import { DwellerHead } from "./dweller-head";
 import { CampSigns } from "../../rendering/camp-signs";
 import type { TentSizes } from "../../rendering/camp-signs";
 
@@ -269,7 +270,7 @@ ${[0, 1, 2].map((index) => canister(to + 22 + (index === 2 ? 17 : index * 34), i
     }).join("");
     return `<g class="tent-breathing"><path class="tent-bag" d="M${bag} ${FLOOR - 42}C${bag - 6} ${FLOOR - 84} ${bag + 16} ${FLOOR - 100} ${bag + 70} ${FLOOR - 104}L1040 ${FLOOR - 118}C1090 ${FLOOR - 122} 1118 ${FLOOR - 118} 1128 ${FLOOR - 108}L1128 ${FLOOR - 42}Z"/><path class="tent-bag-seams" d="${seams}"/></g>
 <path class="tent-bag-hood" d="M1100 ${FLOOR - 112}C1108 ${FLOOR - 150} 1160 ${FLOOR - 160} 1190 ${FLOOR - 130}C1204 ${FLOOR - 104} 1196 ${FLOOR - 70} 1178 ${FLOOR - 56}L1120 ${FLOOR - 50}Z"/>
-<g class="tent-sleeper-head" transform="translate(1150 ${FLOOR - 104}) rotate(74) scale(0.82)">${TentArt.head()}</g>
+<g class="tent-sleeper-head" transform="translate(1150 ${FLOOR - 102}) rotate(76)">${new DwellerHead("dw-sleeper").markup(true)}</g>
 <path class="tent-bag-hood-rim" d="M1112 ${FLOOR - 118}C1124 ${FLOOR - 146} 1164 ${FLOOR - 150} 1184 ${FLOOR - 126}" />
 <g class="tent-zed"><text x="1180" y="${FLOOR - 190}">z</text><text x="1204" y="${FLOOR - 224}">z</text><text x="1232" y="${FLOOR - 262}">Z</text></g>`;
   }
@@ -277,26 +278,6 @@ ${[0, 1, 2].map((index) => canister(to + 22 + (index === 2 ? 17 : index * 34), i
   /** A head from its middle, turned a little toward the stove: the neck, the hair, the ear, the
    * face with the goggles' paler band across the eyes, the cheeks the wind burnt, the stubble,
    * the eyes with their lids, the brows, the nose, the mouth, and the hat. */
-  static head(): string {
-    const eye = (x: number, wide: number): string =>
-      `<g class="dw-eye" transform="translate(${x} -6)"><ellipse class="dw-white" rx="${wide}" ry="4.7"/><circle class="dw-iris" cx="-1" cy="0.3" r="3.4"/><circle class="dw-pupil" cx="-1.2" cy="0.3" r="1.6"/><circle class="dw-glint" cx="-2.3" cy="-1" r="0.9"/><ellipse class="dw-lid" cx="0" cy="-5.6" rx="${wide + 0.8}" ry="0"/><path class="dw-lash" d="M${-wide} -1.5Q0 -7 ${wide} -1.5"/></g>`;
-    return `<path class="dw-neck" d="M-13 22L-11 52L17 52L15 20Z"/>
-<path class="dw-hair" d="M26 -8C36 6 31 24 22 31L16 8Z"/>
-<ellipse class="dw-ear" cx="24" cy="4" rx="7" ry="10.5"/><path class="dw-ear-in" d="M22 -1q5 4 1 10"/>
-<path class="dw-face" d="M-29 -10C-30 -36 27 -40 29 -8C31 14 20 33 4 38C-9 41 -23 31 -27 13C-29 5 -29 -2 -29 -10Z"/>
-<path class="dw-stubble" d="M-27 12C-21 33 -7 40 4 38C16 35 24 26 27 13C14 27 -9 30 -27 12Z"/>
-<path class="dw-tan" d="M-28 -17C-10 -23 12 -23 27 -15L27 -1C10 5 -12 5 -28 -1Z"/>
-<ellipse class="dw-cheek" cx="-19" cy="9" rx="8" ry="5"/><ellipse class="dw-cheek" cx="11" cy="10" rx="9" ry="5.5"/>
-${eye(-16, 5.8)}${eye(5, 6.8)}
-<path class="dw-brow" data-brow="0" d="M-23 -15.5q7 -4 13 -1"/><path class="dw-brow" data-brow="1" d="M-3 -16.5q9 -4 16 0"/>
-<path class="dw-nose" d="M-7 -5C-11 2 -15 8 -12 12.5C-9 15 -6 14 -4 12"/>
-<ellipse class="dw-mouth-open" cx="-9" cy="22.5" rx="6.5" ry="0"/>
-<path class="dw-mouth" d="M-16 21.5Q-9 25.5 -1 21.5"/>
-<path class="dw-hat" d="M-32 -12C-35 -50 31 -54 32 -10C13 -21 -14 -21 -32 -12Z"/>
-<path class="dw-hat-cuff" d="M-33 -15C-14 -26 14 -26 33 -13L32 -1C12 -12 -14 -12 -32 -3Z"/>
-<circle class="dw-pom" cx="1" cy="-50" r="8"/>`;
-  }
-
   private air(): string {
     return `<g class="tent-steam" transform="translate(${TentArt.STOVE} ${TentArt.FLOOR - 128})"><circle r="10"/><circle r="13" cx="8"/><circle r="9" cx="-9"/><circle r="12" cx="2"/></g>
 <g class="tent-notes"><text x="${this.room.from + 250}" y="${TentArt.FLOOR - 230}">♪</text><text x="${this.room.from + 286}" y="${TentArt.FLOOR - 196}">♫</text><text x="${this.room.from + 226}" y="${TentArt.FLOOR - 176}">♪</text></g>`;
