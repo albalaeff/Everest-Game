@@ -130,7 +130,8 @@ export class Protocol {
     oxygen: { change: ["up", "down"] },
     "check-self": {},
     radio: { channel: ["guide", "base-camp", "group"], phrase: "string" },
-    "set-up-tent": {},
+    tent: { go: ["in", "out"] },
+    chore: { chore: ["melt", "cook", "nap", "sleep", "guitar", "stop"] },
   };
 
   /** What a browser sent, or null for anything that isn't a message of the protocol. */

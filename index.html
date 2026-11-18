@@ -92,6 +92,44 @@
           </div>
         </dl>
       </section>
+      <button type="button" id="tent-door" hidden>
+        <kbd>T</kbd>
+        <span data-text="enter"></span>
+      </button>
+      <section id="tent" role="dialog" aria-modal="true" aria-labelledby="tent-title" hidden>
+        <div class="tent-stage"></div>
+        <div class="tent-panel">
+          <div class="tent-head">
+            <div>
+              <p class="eyebrow" data-text="where"></p>
+              <h2 id="tent-title" data-text="title"></h2>
+            </div>
+            <output class="tent-clock" data-text="clock"></output>
+            <p class="tent-feel" data-text="feel"></p>
+            <button type="button" class="tent-leave" data-act="leave"></button>
+          </div>
+          <ul class="tent-stock">
+            <li data-stock="water">
+              <span></span><i class="tent-gauge"><b></b></i><output></output>
+            </li>
+            <li data-stock="gas">
+              <span></span><i class="tent-gauge"><b></b></i><output></output>
+            </li>
+            <li data-stock="meals"><span></span><output></output></li>
+            <li data-stock="bars"><span></span><output></output></li>
+            <li data-stock="oxygen"><span></span><output></output></li>
+          </ul>
+          <ul class="tent-chores"></ul>
+          <div class="tent-foot">
+            <div class="tent-quick">
+              <button type="button" data-act="drink"></button>
+              <button type="button" data-act="eat"></button>
+              <button type="button" data-act="pack"></button>
+            </div>
+            <p class="tent-advice" data-text="advice"></p>
+          </div>
+        </div>
+      </section>
       <section
         id="inventory"
         role="dialog"

@@ -285,4 +285,22 @@ describe("Packs", () => {
       ),
     ).toThrow("can't pack 4 of water");
   });
+
+  it("has its bottles filled by the tents' stove, as far as they hold, and poured from for a meal (#258)", () => {
+    const { expedition, packs } = climb();
+
+    expect(packs.water("anna")).toBe(2);
+    expect(packs.room("anna")).toBe(1);
+
+    packs.pour("anna", 2.5);
+    expect(packs.water("anna")).toBe(3);
+    expect(packs.room("anna")).toBe(0);
+
+    packs.pour("anna", -0.4);
+    expedition.advance();
+    expect(packs.pack("anna").items.water).toBeCloseTo(2.6, 9);
+
+    packs.pour("anna", -5);
+    expect(packs.water("anna")).toBe(0);
+  });
 });

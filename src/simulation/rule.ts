@@ -33,6 +33,11 @@ export interface Rule {
   /** Works out one step: the same state, moment and draws must give the same result. */
   advance(moment: Moment): void;
   /**
+   * The state a save from before this rule existed goes on with (#258), as a scenario would start
+   * it: a rule that has none can't go on from such a save, and a new climb replaces it.
+   */
+  missing?(): Json;
+  /**
    * An agent's (#212): what the NPCs it steers do this step, worked out from what the last step
    * left, before any rule advances, so every rule hears them with the players' actions
    * (docs/conventions/simulation-core.md → The only door). The log keeps the players' alone: an

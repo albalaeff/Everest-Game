@@ -73,6 +73,12 @@ export class MountainClock implements Rule {
     return (this.steps * this.compression) / SimulationClock.STEPS_PER_SECOND + this.skipped;
   }
 
+  /** The mountain's seconds the expedition has lived through at the ratio, what camp skipped
+   * aside: a section took this long, whatever night was slept away before it (#258). */
+  get played(): number {
+    return this.elapsed - this.skipped;
+  }
+
   /** The mountain's seconds a step of play takes, at the ratio: what camp skips aside. */
   get secondsAStep(): number {
     return this.compression * SimulationClock.STEP_SECONDS;

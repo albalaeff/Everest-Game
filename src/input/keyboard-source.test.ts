@@ -20,7 +20,7 @@ const ONE_PRESS_KEYS = [
   ["Minus", { kind: "oxygen", climber: "anna", change: "down" }],
   ["NumpadSubtract", { kind: "oxygen", climber: "anna", change: "down" }],
   ["Tab", { kind: "check-self", climber: "anna" }],
-  ["KeyT", { kind: "set-up-tent", climber: "anna" }],
+  ["KeyT", { kind: "tent", climber: "anna", go: "in" }],
   ["KeyQ", { kind: "panel", panel: "radio" }],
   ["KeyI", { kind: "panel", panel: "inventory" }],
   ["KeyZ", { kind: "view", change: "farther" }],

@@ -22,6 +22,8 @@ import type { SnowPuffs } from "./snow-puffs";
 import { SteppedPoints } from "./stepped-points";
 import type { BetweenSteps } from "./stepped-points";
 import { SuitRig } from "./suit-rig";
+import { TentEntry } from "./tent-entry";
+import type { Doorway, EntryLook } from "./tent-entry";
 
 /** A point the figure keeps and moves each frame. */
 interface Spot {
@@ -153,8 +155,13 @@ export class ClimberFigure extends Container {
   private readonly aside: Spot = { x: 0, y: 0 };
   private readonly first: Spot = { x: 0, y: 0 };
   private readonly second: Spot = { x: 0, y: 0 };
-  private readonly drawn: { at: Spot; jumar: Spot | null; carabiner: Spot | null; grown: number } =
-    { at: this.point, jumar: null, carabiner: null, grown: 1 };
+  private readonly drawn: {
+    at: Spot;
+    jumar: Spot | null;
+    carabiner: Spot | null;
+    grown: number;
+    through: { facing: 1 | -1; down: number } | null;
+  } = { at: this.point, jumar: null, carabiner: null, grown: 1, through: null };
   /** The jumar, where the physics has it on the rope and where the hand holds it, this frame, and
    * how much of the climber's weight the rope bears there (#232). */
   private readonly holding: Grip = {
@@ -181,6 +188,9 @@ export class ClimberFigure extends Container {
   private readonly out: Spot = { x: 0, y: 0 };
   private readonly lamp: Spot = { x: 0, y: 0 };
   private climber: ClimberView | null = null;
+  /** Their way into a tent and out of it, and how it looks this frame (#258). */
+  private readonly entry = new TentEntry();
+  private entered: EntryLook | null = null;
   private holds = false;
   /** The lamp's beam this frame, in the layer's metres, or none while it's off. */
   private shining: Beam | null = null;
@@ -318,10 +328,18 @@ export class ClimberFigure extends Container {
     this.second.y = stepped.y(2);
   }
 
+  /** How they look on their way into a tent or out of it this frame (#258): none before the
+   * first frame. */
+  get passage(): EntryLook | null {
+    return this.entered;
+  }
+
   /** Draws them as they are this frame, `seconds` after the last, as the body shows them, the mask
    * on while their oxygen flows (`masked`), in the frame's light, no smaller than `size` allows,
-   * `sag` lower where a ladder gives under them, their headlamp shining if it's `lit`, and
-   * `beside` whom a rescue has them: on their rescuer's back, or at their casualty's limb. */
+   * `sag` lower where a ladder gives under them, and their headlamp shining if it's `lit`. In a
+   * tent, `doorway`'s, they're not drawn: on their way through its door they go down on hands and
+   * knees and crawl, and are gone behind its fly (#258). `beside` is whom a rescue has them with
+   * (#241): on their rescuer's back, or at their casualty's limb. */
   show(
     body: BodyView,
     masked: boolean,
@@ -330,12 +348,20 @@ export class ClimberFigure extends Container {
     size: LeastSize,
     sag = 0,
     lit = true,
+    doorway: Doorway | null = null,
     beside: Beside = ClimberReading.ALONE,
   ): void {
     const { climber, drawn } = this;
     if (climber === null) {
       return;
     }
+    const sheltered = climber.sheltered && !climber.dead && !climber.falling;
+    const entry = this.entry.advance(seconds, sheltered, this.trod.x, doorway);
+    this.entered = entry;
+    this.point.x = this.trod.x + this.aside.x + entry.shift;
+    this.visible = !entry.inside || entry.passing;
+    drawn.through =
+      entry.passing && entry.facing !== null ? { facing: entry.facing, down: entry.down } : null;
     const grown = size.climber(ClimberFigure.HEIGHT_METRES);
     drawn.grown = grown;
     drawn.jumar = climber.first === null ? null : this.first;
@@ -373,7 +399,7 @@ export class ClimberFigure extends Container {
     if (!climber.dead) {
       this.breathing.advance(seconds, Breathing.period(climber.altitude, body.tiredness, moving));
     }
-    this.alpha = climber.dead ? ClimberFigure.DEAD_ALPHA : 1;
+    this.alpha = climber.dead ? ClimberFigure.DEAD_ALPHA : entry.shown;
     // Hanging with both cowstails on the one rope, they hang from one point of it (#243).
     const together = borne !== null && climber.first !== null && climber.second === climber.first;
     // Down on the snow, the cowstails that are off lie on it beside them (#241).
@@ -381,7 +407,8 @@ export class ClimberFigure extends Container {
     const floor = sat && !climber.dead ? pose.pelvis.y - ClimberPose.SEAT : null;
     this.draw(pose, masked, atmosphere, climber.dead, grown, size, together, floor);
     this.dress(pose, climber);
-    const upright = !climber.dead && !climber.falling;
+    // On hands and knees through a tent's door, the lamp lights the ground under their nose.
+    const upright = !climber.dead && !climber.falling && entry.down < 0.5;
     this.drawLamp(pose, atmosphere, upright && lit ? state : null, seconds);
     this.drawBreath(atmosphere, climber.dead, atmosphere.gust * facing, lit);
     // Facing the viewer, the jumar hangs on its cowstail and the rope lies where it lay.

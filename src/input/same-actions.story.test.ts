@@ -38,7 +38,7 @@ const THE_CLIMB = [
   { kind: "check-self", climber: "anna" },
   { kind: "panel", panel: "radio" },
   { kind: "panel", panel: "inventory" },
-  { kind: "set-up-tent", climber: "anna" },
+  { kind: "tent", climber: "anna", go: "in" },
   { kind: "view", change: "farther" },
   { kind: "view", change: "closer" },
 ];
@@ -107,7 +107,7 @@ function playedOnAPhone(): HeardActions {
   tapTheButton("check-self");
   tapTheButton("radio");
   tapTheButton("inventory");
-  tapTheButton("set-up-tent");
+  tapTheButton("tent");
   tapTheButton("view-farther");
   tapTheButton("view-closer");
   return heard;

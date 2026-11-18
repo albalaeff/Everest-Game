@@ -1,4 +1,13 @@
-import type { ClimberId, HazardGround, JoltGround, Json, Legs, Moment, Rule } from "../simulation";
+import type {
+  Campground,
+  ClimberId,
+  HazardGround,
+  JoltGround,
+  Json,
+  Legs,
+  Moment,
+  Rule,
+} from "../simulation";
 import { Climber } from "./climber";
 import type { ClimberSave, ClimberView, Gear, Kit, KitsSpent } from "./climber";
 import type { AidDue, Injury } from "./injuries";
@@ -94,7 +103,7 @@ type SlopeSave = {
  * Its numbers are handed to it; the ground, the ropes, the ladders and the climbers are its
  * state, which a scenario starts and a save keeps.
  */
-export class SlopePhysics implements Rule, HazardGround, JoltGround, Legs {
+export class SlopePhysics implements Rule, HazardGround, JoltGround, Legs, Campground {
   /** Its key in scenarios and saves: never change it once saves exist. */
   static readonly NAME = "slope-physics";
 
@@ -193,6 +202,12 @@ export class SlopePhysics implements Rule, HazardGround, JoltGround, Legs {
    * pack's (`Packs`). */
   equip(id: ClimberId, gear: Gear): void {
     this.climberFor(id).equip(gear);
+  }
+
+  /** Takes a climber into a tent, under cover, where they stay put whatever their keys say, or
+   * lets them out again: the tents' (`Tents`, #258). */
+  shelter(id: ClimberId, inside: boolean): void {
+    this.climberFor(id).shelter(inside);
   }
 
   /** Puts fresh batteries in a climber's headlamp: it's checked from now on. */

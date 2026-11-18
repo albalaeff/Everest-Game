@@ -81,6 +81,7 @@ const view = (over: Partial<ClimberView> = {}): ClimberView => ({
   onLine: null,
   hauled: false,
   helping: null,
+  sheltered: false,
   ...over,
 });
 

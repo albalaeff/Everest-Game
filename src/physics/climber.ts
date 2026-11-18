@@ -127,6 +127,9 @@ export interface ClimberView {
    * runs past (`rope`); none where they stepped or stood, or a wall or a ladder's end stopped
    * them. The coach reads it. */
   readonly heldBack: "jumar" | "rope" | null;
+  /** Whether they're in a tent, under cover (#258): there they stay put, whatever their keys
+   * say, until the tents let them out. */
+  readonly sheltered: boolean;
   /** Which way along the slope they face: the way they last walked, up the route to begin with;
    * and whether they've turned out of it to face the viewer, standing (#235). */
   readonly facing: Way;
@@ -281,6 +284,8 @@ export type ClimberSave = {
   readonly spent?: KitsSpent;
   /** Whether the haul they hold has lifted a casualty or set one down already (#241). */
   readonly holdSpent?: boolean;
+  /** Missing from the saves of builds before the tents (#258), and where they're not in one. */
+  readonly sheltered?: boolean;
 };
 
 /** A casualty being lifted onto a rescuer's back, or set down off it: by whom, and the seconds of
@@ -611,6 +616,8 @@ export class Climber {
   /** As a save has them until `link` finds the climbers and the line: who carries them, whom
    * they carry and the rescue line they're on. */
   private linked: Pick<ClimberSave, "carriedBy" | "carrying" | "onLine"> = {};
+  /** Whether they're in a tent, under cover (#258). */
+  private sheltered = false;
 
   /** Everything checked. */
   static readonly CHECKED: Kit = { crampons: true, lamp: true, water: true };
@@ -757,6 +764,7 @@ export class Climber {
       ...(carrying === undefined ? {} : { carrying }),
       ...(onLine === undefined ? {} : { onLine }),
     };
+    climber.sheltered = save.sheltered ?? false;
     return climber;
   }
 
@@ -808,6 +816,7 @@ export class Climber {
       ...(this.holdSpent ? { holdSpent: true } : {}),
       ...(this.lift === null ? {} : { lift: this.lift }),
       ...(this.spent.firstAid + this.spent.rescueKit === 0 ? {} : { spent: this.spent }),
+      ...(this.sheltered ? { sheltered: true } : {}),
     };
   }
 
@@ -859,13 +868,14 @@ export class Climber {
       onLine: this.onLine?.id ?? null,
       hauled: this.onLine !== null && down,
       helping: this.helping,
+      sheltered: this.sheltered,
     };
   }
 
   /** Takes an action of theirs: the walking, the cowstails and the jumar are the physics', the
-   * rest isn't. The dead take none. */
+   * rest isn't. The dead take none, and nor does one in a tent (#258). */
   hear(action: GameAction, slope: Slope): void {
-    if (this.killed) {
+    if (this.killed || this.sheltered) {
       return;
     }
 
@@ -959,6 +969,19 @@ export class Climber {
     }
   }
 
+  /** Into a tent, under cover, or out of it (#258): going in, they stop where they stand, side
+   * on, and let go of whatever their hands held. */
+  shelter(inside: boolean): void {
+    if (inside && !this.sheltered) {
+      this.walking = "stop";
+      this.jumarHeld = false;
+      this.haulHeld = false;
+      this.clipping = [];
+      this.towardViewer = false;
+    }
+    this.sheltered = inside;
+  }
+
   /** What they carry of the gear from now on: what their pack holds (`Packs`). */
   equip(gear: Gear): void {
     if (!(gear.tools >= 0)) {
@@ -1029,6 +1052,10 @@ export class Climber {
     if (this.down) {
       // A bone broken: they lie where they are, until they're hauled or carried (#241).
       this.walking = "stop";
+      return;
+    }
+    if (this.sheltered) {
+      // In a tent: no step, and no stance to lose (#258).
       return;
     }
     if (hauls.by(this)) {

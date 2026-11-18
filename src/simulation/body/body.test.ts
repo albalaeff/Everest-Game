@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 
 import type { ExpeditionSave } from "../expedition";
 import type { ClimberId, GameAction, Pace } from "../game-action";
+import { SimulationClock } from "../simulation-clock";
 import { Hike } from "../testing/hike";
 import { TestRidge } from "../testing/test-ridge";
 import type { RidgeStart } from "../testing/test-ridge";
@@ -267,6 +268,30 @@ describe("Body: water, food and sleep", () => {
     const views = climbers.map((id) => hike.body.climber(id));
     expect(views.map((view) => view.tiredness)).toEqual(["fresh", "tired", "tired", "tired"]);
     expect(views.map((view) => view.symptoms)).toEqual([[], ["thirsty"], ["hungry"], ["sleepy"]]);
+  });
+
+  it("takes the hours awake off a climber who sleeps, two for each hour slept, and rests them (#258)", () => {
+    // Both 20 hours awake, sleepy past 16, and half spent: Boris sleeps four hours, Anna sits up.
+    const hike = Hike.on([
+      { id: "anna", altitude: 0, awake: 20, fatigue: 0.5 },
+      { id: "boris", altitude: 0, awake: 20, fatigue: 0.5 },
+    ]);
+
+    for (let step = 0; step < 4 * SimulationClock.STEPS_PER_SECOND; step += 1) {
+      hike.body.sleep("boris");
+      hike.expedition.advance();
+    }
+
+    const awake = (id: string): number | undefined =>
+      (hike.body.save() as unknown as { climbers: { id: string; awake: number }[] }).climbers.find(
+        (climber) => climber.id === id,
+      )?.awake;
+    expect(awake("anna")).toBeCloseTo(24, 6);
+    expect(awake("boris")).toBeCloseTo(12, 6);
+    expect(hike.body.climber("anna").symptoms).toContain("sleepy");
+    expect(hike.body.climber("boris").symptoms).not.toContain("sleepy");
+    // Rest is rest, asleep or not: both are fresh again.
+    expect(hike.body.climber("boris").tiredness).toBe("fresh");
   });
 
   it("leaves a climber out of breath at the faster pace on the move, and not standing", () => {

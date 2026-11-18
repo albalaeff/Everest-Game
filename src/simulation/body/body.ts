@@ -66,6 +66,8 @@ export class Body implements Rule {
   private readonly effort: PaceEffort;
   private seen = 0;
   private readonly climbers = new Map<ClimberId, Condition>();
+  /** Who sleeps through the time this step lives: said by the tents, before the body runs. */
+  private readonly asleep = new Set<ClimberId>();
 
   constructor(
     private readonly numbers: BodyNumbers,
@@ -123,11 +125,13 @@ export class Body implements Rule {
       const { altitude, moving, exertion } = this.legs.climber(id);
       const flow = this.breathing.flow(id);
       const recovers = this.oxygen.felt(altitude, flow, false) <= this.numbers.deathZone;
-      condition.live(hours, moving, exertion, recovers, this.numbers, this.effort);
+      const asleep = this.asleep.has(id);
+      condition.live(hours, moving, exertion, recovers, this.numbers, this.effort, asleep);
       const capacity = this.oxygen.capacity(this.oxygen.felt(altitude, flow, true));
       this.legs.stride(id, condition.stride(this.numbers, capacity));
       this.legs.sureness(id, condition.sureness(this.numbers));
     }
+    this.asleep.clear();
   }
 
   /** What a climber carries from now on, in kilograms; a drink of their water; a bar of their
@@ -142,6 +146,13 @@ export class Body implements Rule {
 
   eat(id: ClimberId, kcal: number): void {
     this.conditionOf(id).eat(kcal);
+  }
+
+  /** A climber sleeps through the mountain's time this step lives, a step's or the night the
+   * camp skips (#258): the tents', which run before the body. */
+  sleep(id: ClimberId): void {
+    this.conditionOf(id);
+    this.asleep.add(id);
   }
 
   private conditionOf(id: ClimberId): Condition {

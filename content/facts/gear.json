@@ -204,6 +204,322 @@
       "about": ["gear.most-water", "gear.most-food", "gear.most-oxygen"]
     },
     {
+      "id": "gear.tent-length",
+      "kind": "fact",
+      "claim": "A three-person expedition tent, the dome a camp on Everest is pitched with, is about this long on its floor.",
+      "status": "source only",
+      "versions": [
+        {
+          "value": 2.64,
+          "unit": "m",
+          "note": "The North Face's VE 25: floor length 2.64 m, floor width 2.16 m, floor area 4.5 sq. m.",
+          "source": {
+            "title": "MEC: The North Face VE 25 3-Person Tent → Specs",
+            "url": "https://www.mec.ca/en/product/6008-309/the-north-face-ve-25-3-person-tent"
+          },
+          "checked": "2026-11-17"
+        }
+      ]
+    },
+    {
+      "id": "gear.tent-width",
+      "kind": "fact",
+      "claim": "A three-person expedition tent is about this wide on its floor.",
+      "status": "source only",
+      "versions": [
+        {
+          "value": 2.16,
+          "unit": "m",
+          "note": "The North Face's VE 25: floor width 2.16 m.",
+          "source": {
+            "title": "MEC: The North Face VE 25 3-Person Tent → Specs",
+            "url": "https://www.mec.ca/en/product/6008-309/the-north-face-ve-25-3-person-tent"
+          },
+          "checked": "2026-11-17"
+        }
+      ]
+    },
+    {
+      "id": "gear.tent-height",
+      "kind": "fact",
+      "claim": "A three-person expedition tent is about this high inside at its peak: lower than a climber standing, high enough to sit up in.",
+      "status": "source only",
+      "versions": [
+        {
+          "value": 1.23,
+          "unit": "m",
+          "note": "The North Face's VE 25: interior peak height 1.23 m.",
+          "source": {
+            "title": "MEC: The North Face VE 25 3-Person Tent → Specs",
+            "url": "https://www.mec.ca/en/product/6008-309/the-north-face-ve-25-3-person-tent"
+          },
+          "checked": "2026-11-17"
+        },
+        {
+          "value": 1.23,
+          "unit": "m",
+          "note": "Peak height: 48 in (123 cm).",
+          "source": {
+            "title": "Gear:30: The North Face VE 25 Expedition Tent → Features",
+            "url": "https://www.gearx.com/the-north-face-ve-25-expedition-tent"
+          },
+          "checked": "2026-11-17"
+        }
+      ]
+    },
+    {
+      "id": "gear.tent-vestibule",
+      "kind": "fact",
+      "claim": "The front vestibule of a three-person expedition tent, the porch under its fly where boots are left and the stove burns, covers about this much ground.",
+      "status": "source only",
+      "versions": [
+        {
+          "value": 1,
+          "unit": "m²",
+          "note": "The North Face's VE 25: vestibules' area, front 11 sq ft (1 sq m), rear 5 sq ft (0.5 sq m).",
+          "source": {
+            "title": "Gear:30: The North Face VE 25 Expedition Tent → Features",
+            "url": "https://www.gearx.com/the-north-face-ve-25-expedition-tent"
+          },
+          "checked": "2026-11-17"
+        }
+      ]
+    },
+    {
+      "id": "gear.dome-tent-width",
+      "kind": "fact",
+      "claim": "A base camp's big dome tent, where an expedition eats and meets, is about this far across.",
+      "status": "source only",
+      "versions": [
+        {
+          "value": 3.94,
+          "unit": "m",
+          "note": "The North Face's 2-Meter Dome, for eight: 155 in (394 cm) across, almost a hemisphere.",
+          "source": {
+            "title": "Family Camp Tents: The North Face 2-Meter Dome 8 Person Tent",
+            "url": "https://familycamptents.com/the-north-face-2-meter-dome-8-person-tent/"
+          },
+          "checked": "2026-11-17"
+        }
+      ]
+    },
+    {
+      "id": "gear.dome-tent-height",
+      "kind": "fact",
+      "claim": "A base camp's big dome tent is about this high: a climber stands up in it.",
+      "status": "source only",
+      "versions": [
+        {
+          "value": 2.11,
+          "unit": "m",
+          "note": "The North Face's 2-Meter Dome: 83 in (211 cm) high.",
+          "source": {
+            "title": "Family Camp Tents: The North Face 2-Meter Dome 8 Person Tent",
+            "url": "https://familycamptents.com/the-north-face-2-meter-dome-8-person-tent/"
+          },
+          "checked": "2026-11-17"
+        }
+      ]
+    },
+    {
+      "id": "gear.gas-canister",
+      "kind": "fact",
+      "claim": "A canister of gas for a mountain stove holds about this much fuel.",
+      "status": "source only",
+      "versions": [
+        {
+          "value": 0.227,
+          "unit": "kg",
+          "note": "MSR's IsoPro: the 8-oz canister, 0.227 kg of fuel, that its stoves' figures are given for.",
+          "source": {
+            "title": "Cascade Designs: MSR Reactor Stove Systems → Specs",
+            "url": "https://cascadedesigns.com/products/reactor-stove-systems"
+          },
+          "checked": "2026-11-17"
+        }
+      ]
+    },
+    {
+      "id": "gear.stove-water-boiled",
+      "kind": "fact",
+      "claim": "A mountain stove system built to melt snow boils about this much water on one canister, in a laboratory.",
+      "status": "source only",
+      "versions": [
+        {
+          "range": {
+            "min": 20,
+            "max": 22
+          },
+          "unit": "L",
+          "note": "MSR's Reactor on an 8-oz canister: 20 litres with the 1.0 L pot, 22 with the 1.7 L and the 2.5 L.",
+          "source": {
+            "title": "Cascade Designs: MSR Reactor Stove Systems → Specs",
+            "url": "https://cascadedesigns.com/products/reactor-stove-systems"
+          },
+          "checked": "2026-11-17"
+        }
+      ]
+    },
+    {
+      "id": "gear.stove-boil-time",
+      "kind": "fact",
+      "claim": "A mountain stove system built to melt snow brings a litre of water to the boil in about this long, in a laboratory.",
+      "status": "source only",
+      "versions": [
+        {
+          "range": {
+            "min": 3,
+            "max": 3.5
+          },
+          "unit": "min",
+          "note": "MSR's Reactor: 3.5 minutes a litre with the 1.0 L pot, 3 with the 1.7 L.",
+          "source": {
+            "title": "Cascade Designs: MSR Reactor Stove Systems → Specs",
+            "url": "https://cascadedesigns.com/products/reactor-stove-systems"
+          },
+          "checked": "2026-11-17"
+        }
+      ]
+    },
+    {
+      "id": "gear.stove-burn-time",
+      "kind": "fact",
+      "claim": "A mountain stove system burns through one canister in about this long.",
+      "status": "source only",
+      "versions": [
+        {
+          "value": 80,
+          "unit": "min",
+          "note": "MSR's Reactor: about 80 minutes on an 8-oz canister.",
+          "source": {
+            "title": "Cascade Designs: MSR Reactor Stove Systems → Specs",
+            "url": "https://cascadedesigns.com/products/reactor-stove-systems"
+          },
+          "checked": "2026-11-17"
+        }
+      ]
+    },
+    {
+      "id": "gear.snow-melt-fuel",
+      "kind": "fact",
+      "claim": "Melting snow for water, in the cold and the wind, takes this many times the fuel a stove's own figures give.",
+      "status": "source only",
+      "versions": [
+        {
+          "range": {
+            "min": 3,
+            "max": 4
+          },
+          "unit": "times",
+          "note": "Low temperatures, melting snow and wind can take 3 to 4 times the baseline; in the high alpine, melting snow is often the main source of water.",
+          "source": {
+            "title": "MSR: Stoves 101: How Much Fuel Should I Carry?",
+            "url": "https://www.cascadedesigns.com/blog/stoves-101-how-much-fuel-should-i-carry/"
+          },
+          "checked": "2026-11-17"
+        }
+      ]
+    },
+    {
+      "id": "gear.melt-gas",
+      "kind": "coefficient",
+      "claim": "The gas it takes to melt snow into a litre of water in a tent high on the mountain. A canister (gear.gas-canister) boils 20 to 22 litres in a laboratory (gear.stove-water-boiled), about 0.011 kg a litre; snow and cold take 3 to 4 times that (gear.snow-melt-fuel), 3.5 times in the middle: 0.038 kg a litre, six litres a canister.",
+      "status": "source only",
+      "value": 0.038,
+      "unit": "kg/L",
+      "fitted_to": ["gear.gas-canister", "gear.stove-water-boiled", "gear.snow-melt-fuel"],
+      "fitted": "2026-11-17"
+    },
+    {
+      "id": "gear.melt-minutes",
+      "kind": "coefficient",
+      "claim": "The time it takes to melt snow into a litre of water in a tent high on the mountain. A litre boils in 3 to 3.5 minutes in a laboratory (gear.stove-boil-time); snow and cold take 3 to 4 times as much (gear.snow-melt-fuel): 12 minutes a litre, which burns a canister's six litres (gear.melt-gas) in 72 of the 80 minutes it lasts (gear.stove-burn-time).",
+      "status": "source only",
+      "value": 12,
+      "unit": "min/L",
+      "fitted_to": ["gear.stove-boil-time", "gear.snow-melt-fuel", "gear.stove-burn-time"],
+      "fitted": "2026-11-17"
+    },
+    {
+      "id": "gear.meal-energy",
+      "kind": "fact",
+      "claim": "A freeze-dried expedition meal, one pouch, gives about this much energy.",
+      "status": "source only",
+      "versions": [
+        {
+          "value": 600,
+          "unit": "kcal",
+          "note": "Mountain House's Pro-Pak, made for altitude and the cold: 600 calories a pouch.",
+          "source": {
+            "title": "Public Lands: Mountain House Beef Stroganoff Pro-Pak → Specs",
+            "url": "https://www.publiclands.com/p/mountain-house-beef-stroganoff-pro-pak-21mhoumhbfstrgnffcac/21mhoumhbfstrgnffcac"
+          },
+          "checked": "2026-11-17"
+        }
+      ]
+    },
+    {
+      "id": "gear.meal-water",
+      "kind": "fact",
+      "claim": "A freeze-dried expedition meal takes about this much hot water.",
+      "status": "source only",
+      "versions": [
+        {
+          "value": 0.414,
+          "unit": "L",
+          "note": "1.75 cups, 14 fl oz, of water needed: 0.414 L.",
+          "source": {
+            "title": "Public Lands: Mountain House Beef Stroganoff Pro-Pak → Specs",
+            "url": "https://www.publiclands.com/p/mountain-house-beef-stroganoff-pro-pak-21mhoumhbfstrgnffcac/21mhoumhbfstrgnffcac"
+          },
+          "checked": "2026-11-17"
+        }
+      ]
+    },
+    {
+      "id": "gear.meal-wait",
+      "kind": "fact",
+      "claim": "A freeze-dried meal stands in its hot water for about this long before it's eaten.",
+      "status": "source only",
+      "versions": [
+        {
+          "value": 10,
+          "unit": "min",
+          "note": "Cook time: 10 minutes.",
+          "source": {
+            "title": "Public Lands: Mountain House Beef Stroganoff Pro-Pak → Specs",
+            "url": "https://www.publiclands.com/p/mountain-house-beef-stroganoff-pro-pak-21mhoumhbfstrgnffcac/21mhoumhbfstrgnffcac"
+          },
+          "checked": "2026-11-17"
+        }
+      ]
+    },
+    {
+      "id": "gear.meal-gas",
+      "kind": "coefficient",
+      "claim": "The gas it takes to bring a meal's water (gear.meal-water) from the bottles to the boil in a tent: about 0.011 kg a litre in a laboratory (gear.stove-water-boiled, gear.gas-canister), about twice that for water near freezing in the cold, with no snow to melt: 0.01 kg a meal.",
+      "status": "source only",
+      "value": 0.01,
+      "unit": "kg",
+      "fitted_to": [
+        "gear.meal-water",
+        "gear.stove-water-boiled",
+        "gear.gas-canister",
+        "gear.snow-melt-fuel"
+      ],
+      "fitted": "2026-11-17"
+    },
+    {
+      "id": "gear.meal-minutes",
+      "kind": "coefficient",
+      "claim": "The time a hot meal takes in a tent, from lighting the stove to the last spoonful: its water to the boil (gear.stove-boil-time, slower in the cold) and the pouch's wait (gear.meal-wait): 15 minutes.",
+      "status": "source only",
+      "value": 15,
+      "unit": "min",
+      "fitted_to": ["gear.stove-boil-time", "gear.meal-wait"],
+      "fitted": "2026-11-17"
+    },
+    {
       "id": "gear.rescue-kit-rope",
       "kind": "fact",
       "claim": "A crevasse rescue kit, a thin static rope with a progress-capture pulley, an ascender, three locking carabiners and a sling in a pouch, weighs about this much.",

@@ -53,6 +53,8 @@ export interface SeenClimber {
   readonly onLine: string | null;
   readonly hauled: boolean;
   readonly helping: { readonly kind: string; readonly whom: string } | null;
+  /** Whether they're in a tent, under cover (#258). */
+  readonly sheltered: boolean;
 }
 
 /** A climber on the slope as the device saves them (src/physics → ClimberSave), as far as the

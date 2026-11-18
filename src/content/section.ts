@@ -33,7 +33,9 @@ import type {
   PackNumbers,
   PackOf,
   Scenario,
+  TentStart,
 } from "../simulation";
+import { Tents } from "../simulation";
 import type { ClimberStart } from "./climber-facts";
 import type { KnowledgeBase, KnowledgeRange } from "./knowledge-base";
 import { PackFacts } from "./pack-facts";
@@ -42,13 +44,25 @@ import { SlopeFacts } from "./slope-facts";
 /** A point as the data file keeps it: two numbers. */
 type DataPair = readonly number[];
 
-/** A camp's stretch of the ground, as the data file keeps it: where its tents stand, and what
- * its store never runs out of: everything at Base Camp, the water melted from its snow higher. */
+/** A tent as the data file pitches it (#258): where its door is, along the ground, and the way
+ * its body lies from the door, 1 up the route and -1 down it. */
+export interface TentData {
+  readonly door: number;
+  readonly lies: number;
+}
+
+/** A camp's stretch of the ground, as the data file keeps it: what its store and its kitchen
+ * never run out of, everything at Base Camp; its tents, each by its door (#258); what its tents
+ * hold of the stove's gas, in kilograms, and of meals, where they can run out; and whether
+ * there's a guitar. */
 export interface CampData {
   readonly id: string;
   readonly from: number;
   readonly to: number;
   readonly endless?: readonly string[];
+  readonly tents?: readonly TentData[];
+  readonly larder?: { readonly gas?: number; readonly meals?: number };
+  readonly guitar?: boolean;
 }
 
 /** A part of the section, by the name the sources give it, and its stretch of the ground: the
@@ -163,6 +177,9 @@ export class Section {
   readonly packs: readonly PackOf[];
   readonly packNumbers: PackNumbers;
   readonly stores: readonly CampStore[];
+  /** Its camps' tents as a scenario pitches them (#258): each one's door, the gas, in grams, and
+   * the meals, and who sleeps when the players do, the Sherpa. */
+  readonly tents: TentStart;
   /** Its weather and the stretches of it under a hazard, which `ObjectiveHazards.start` checks;
    * and the stretches a jolt comes on, in the same weather, which `Jolts.start` checks (#197). */
   readonly hazards: HazardStart;
@@ -247,6 +264,27 @@ export class Section {
       stock: nothing,
       endless: PACK_ITEMS.filter((item) => endless.includes(item)),
     }));
+    // A tent's door is in reach of its camp's store, as the trodden snow round the camp is.
+    const kilogram = 1000;
+    this.tents = {
+      camps: data.camps.map(({ id, from, to, endless = [], tents = [], larder = {}, guitar }) => {
+        for (const { door, lies } of tents) {
+          const near =
+            door >= Math.max(0, from - round) && door <= Math.min(ground.length, to + round);
+          if (!near || (lies !== 1 && lies !== -1)) {
+            throw new RangeError(`A tent of ${id} isn't pitched by the camp on ${data.id}`);
+          }
+        }
+        return {
+          id,
+          doors: tents.map(({ door }) => door),
+          gas: endless.includes("gas") ? null : (larder.gas ?? 0) * kilogram,
+          meals: endless.includes("meals") ? null : (larder.meals ?? 0),
+          guitar: guitar === true,
+        };
+      }),
+      npcs: this.sherpa === null ? [] : [this.sherpa],
+    };
     this.clock = {
       date: data.date,
       time: MountainClock.text(knowledge.number(`time.${data.from}-departure`) * 3600),
@@ -386,6 +424,7 @@ export class Section {
           { climbers: packs.filter(({ id }) => climbers.includes(id)), camps: this.stores },
           this.packNumbers,
         ),
+        [Tents.NAME]: Tents.start(this.tents),
         [ObjectiveHazards.NAME]: ObjectiveHazards.start(hazards),
         [Jolts.NAME]: Jolts.start(this.jolts),
         [SlopePhysics.NAME]: SlopePhysics.start({ ...layout, ladders }),

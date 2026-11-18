@@ -845,6 +845,26 @@
           "checked": "2026-11-03"
         }
       ]
+    },
+    {
+      "id": "time.breakfast",
+      "kind": "coefficient",
+      "claim": "The time between waking and leaving a camp: the stove lit, a brew, a quick breakfast and the boots on. The alarm rings this long before the hour climbers leave Base Camp for the Icefall (time.base-camp-departure, \"after a quick breakfast\").",
+      "status": "source only",
+      "value": 1,
+      "unit": "h",
+      "fitted_to": ["time.base-camp-departure"],
+      "fitted": "2026-11-17"
+    },
+    {
+      "id": "time.nap",
+      "kind": "coefficient",
+      "claim": "How long a nap in a tent lasts: an hour, the shortest rest the game lets a climber sleep through, well short of the sleep that makes up a lost night (body.acute-sleep-loss).",
+      "status": "source only",
+      "value": 1,
+      "unit": "h",
+      "fitted_to": ["body.acute-sleep-loss"],
+      "fitted": "2026-11-17"
     }
   ]
 }

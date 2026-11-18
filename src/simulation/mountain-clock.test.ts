@@ -178,4 +178,16 @@ describe("MountainClock as a rule of the expedition", () => {
     expect(resumed.save()).toEqual(whole);
     expect(clock.elapsed).toBe(8 * HOUR + (3000 * COMPRESSION) / SimulationClock.STEPS_PER_SECOND);
   });
+
+  it("counts what was played apart from what camp skipped (#258)", () => {
+    const clock = new MountainClock(60);
+    clock.load(MountainClock.start({ date: "2026-05-01", time: "21:00" }));
+
+    clock.advance();
+    clock.skip(5 * 3600);
+    clock.advance();
+
+    expect(clock.played).toBe(6);
+    expect(clock.elapsed).toBe(5 * 3600 + 6);
+  });
 });

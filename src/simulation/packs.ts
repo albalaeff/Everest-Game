@@ -240,6 +240,23 @@ export class Packs implements Rule {
     return this.numbers.most[item];
   }
 
+  /** The litres of water a climber carries, and how many more their bottles hold: the tents'
+   * stove melts snow into them, and a meal is cooked with it (#258). */
+  water(id: ClimberId): number {
+    return this.packOf(id).items.water;
+  }
+
+  room(id: ClimberId): number {
+    return Math.max(0, this.numbers.most.water - this.packOf(id).items.water);
+  }
+
+  /** Pours `litres` into a climber's bottles, as far as there's room, or out of them below
+   * nought, as far as there's water. */
+  pour(id: ClimberId, litres: number): void {
+    const { items } = this.packOf(id);
+    items.water = Math.min(this.numbers.most.water, Math.max(0, items.water + litres));
+  }
+
   /** The pack with its bottles as the oxygen system counts them now. */
   private counted(id: ClimberId, items: PackCounts): PackCounts {
     return { ...items, oxygen: this.bottles.climber(id).bottles };

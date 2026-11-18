@@ -85,7 +85,7 @@ export class TestRidge implements Rule, Legs, Breathing {
     footing: { tired: 0.8, profoundlyTired: 0.6 },
     water: { loss: 2.4, threshold: 2, cost: 10 },
     food: { expenditure: 4800, hungryAfter: 0.5, cost: 20 },
-    sleep: { sleepyAfter: 16, cost: 1 },
+    sleep: { sleepyAfter: 16, cost: 1, restores: 2 },
   };
 
   private static readonly WAYS: Readonly<Record<Walk["direction"], RidgeClimber["way"]>> = {
