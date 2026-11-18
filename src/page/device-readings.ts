@@ -60,10 +60,12 @@ export class DeviceReadings {
     });
   }
 
-  /** Where the player is on the slope, in its metres: the dot on the watch's map. */
-  get spot(): { readonly x: number; readonly y: number } {
-    const { x, y } = this.rules.physics.climber(this.player);
-    return { x, y };
+  /** Where the player is on the slope, in its metres, and how far along its ground: the dot on
+   * the watch's map, and the end of the track on it. */
+  get spot(): { readonly x: number; readonly y: number; readonly along: number } {
+    const { physics } = this.rules;
+    const { x, y } = physics.climber(this.player);
+    return { x, y, along: physics.along(this.player) };
   }
 
   /** The player's altitude, as the altimeter reads it. */

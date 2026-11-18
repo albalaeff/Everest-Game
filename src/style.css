@@ -3387,6 +3387,11 @@ kbd {
   stroke-width: 1.5;
 }
 
+/* No fix yet: no dot. */
+.watch__dot:not([cx]) {
+  display: none;
+}
+
 .watch__where {
   margin: 0.2rem 0 0.5rem;
   font-weight: 800;

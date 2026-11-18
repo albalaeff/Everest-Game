@@ -1,9 +1,10 @@
-/** The route a GPS watch has loaded: its real length in metres, the length of its ground as the
- * game draws it, the altitudes of its foot and its top, and its parts, each a stretch of that
- * ground. */
+/** The route a GPS watch has loaded: its real length in metres, from where it leaves its first
+ * camp to where it reaches its last, each as far along the ground as the game draws it; the
+ * altitudes of its foot and its top; and its parts, each a stretch of that ground. */
 export interface GpsRoute {
   readonly length: number;
-  readonly ground: number;
+  readonly from: number;
+  readonly to: number;
   readonly foot: number;
   readonly top: number;
   readonly parts: readonly { readonly id: string; readonly from: number; readonly to: number }[];
@@ -51,16 +52,17 @@ export class GpsWatch {
   private static readonly SECONDS_AN_HOUR = 3600;
 
   constructor(private readonly route: GpsRoute) {
-    const { length, ground, parts } = route;
-    if (!(length > 0 && ground > 0 && parts.length > 0)) {
+    const { length, from, to, parts } = route;
+    if (!(length > 0 && to > from && parts.length > 0)) {
       throw new RangeError("A GPS watch needs a route with a length and its parts");
     }
   }
 
   /** The watch's reading at a place. */
   reading(place: GpsPlace): GpsFix {
-    const { length, ground, foot, top } = this.route;
-    const share = Math.min(1, Math.max(0, place.along / ground));
+    const { length, from, to, foot, top } = this.route;
+    // The way starts where the camp ends: a climber still among the tents has gone nowhere.
+    const share = Math.min(1, Math.max(0, (place.along - from) / (to - from)));
     const done = share * length;
     const left = length - done;
     const climbed = place.altitude - foot;

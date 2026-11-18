@@ -397,7 +397,8 @@ export class GamePage {
         player,
         new GpsWatch({
           length: route.length,
-          ground: physics.terrain.length,
+          from: route.camps[0]?.to ?? 0,
+          to: route.destination.from,
           foot: route.camps[0]?.altitude ?? 0,
           top: route.destination.altitude,
           parts: route.parts,
@@ -409,6 +410,7 @@ export class GamePage {
       {
         profile: route.layout.terrain,
         camp: route.destination.id,
+        ground: physics.terrain.length,
         minutes: this.knowledge.number("gear.tracker-interval"),
         sunrise: warmth.from * 3600,
       },

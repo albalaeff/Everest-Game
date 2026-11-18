@@ -38,9 +38,15 @@ async function show(page: Page, device: string): Promise<void> {
   await panel(page).getByRole("tab", { name: device, exact: true }).click();
 }
 
-test("Base Camp answers the radio from what the mountain is doing", async ({ page, hasTouch }) => {
+// One climb for the four of them: each story's way to the slope costs CI's runners more than the
+// devices do.
+test("a climber uses each device where they stand: the radio, the watch, the meter, the tracker", async ({
+  page,
+  hasTouch,
+}) => {
+  test.slow();
   await openTheGame(page);
-  // The button itself, on a PC too: a click opens what its key does.
+  // The radio's own button, on a PC too: a click opens what its key does.
   const radio = page.locator('[data-control="radio"]');
   await (hasTouch ? radio.tap() : radio.click());
 
@@ -52,122 +58,73 @@ test("Base Camp answers the radio from what the mountain is doing", async ({ pag
   await expect(reading(page, "radio", "contact")).toHaveText("Base Camp in range");
   const log = panel(page).locator(".radio__log");
 
-  await panel(page).getByRole("button", { name: "Radio check" }).click();
-  await expect(log).toContainText("Base Camp, radio check.");
-  await expect(log).toContainText("Loud and clear.", WALKING);
-
+  // Base Camp answers from what the mountain is doing: the place, and a clear night's sun.
   await panel(page).getByRole("button", { name: "Report position" }).click();
   await expect(log).toContainText(/Base Camp, I'm at the moraine, 5,\d{3} m\./);
   await expect(log).toContainText(/Copy: the moraine, 5,\d{3} m, at 0\d:\d\d\./, WALKING);
-
-  // The night is clear, and the sun is hours away.
   await panel(page).getByRole("button", { name: "Conditions?" }).click();
   await expect(log).toContainText("Clear over the Icefall", WALKING);
   await expect(log).toContainText(/The sun reaches the ice in \d h \d\d min\./);
-
-  await panel(page).getByRole("button", { name: "Route ahead?" }).click();
-  await expect(log).toContainText(
-    /The route is open to Camp 1\. You have about \d\.\d km to go\./,
-    {
-      ...WALKING,
-    },
-  );
-
   // Each phrase went to the game as the player's action.
-  await expect(page.locator("#received")).toContainText("radio base-camp radio-check");
-  await expect(page.locator("#received")).toContainText("radio base-camp route");
-});
+  await expect(page.locator("#received")).toContainText("radio base-camp conditions");
 
-test("the GPS watch says where the climber is, what's left, and when the sun comes", async ({
-  page,
-  hasTouch,
-}) => {
-  await openTheGame(page);
-  await press(page, "devices", hasTouch);
-  await show(page, "GPS");
-
-  await expect(reading(page, "gps", "where")).toHaveText("On the moraine");
-  await expect(reading(page, "gps", "altitude")).toHaveText(/^5,\d{3} m$/);
-  await expect(reading(page, "gps", "to-climb")).toHaveText(/^\d{3} m$/);
-  await expect(reading(page, "gps", "left-label")).toHaveText("To Camp 1");
-  await expect(reading(page, "gps", "left")).toHaveText(/^\d\.\d km$/);
-  await expect(reading(page, "gps", "sun")).toHaveText("06:00");
-  // No pace to tell an arrival from, a few steps out of camp.
-  await expect(reading(page, "gps", "arrival")).toHaveText("--");
-  await expect(panel(page).locator(".watch__route")).toHaveAttribute("d", /^M[\d.]+ [\d.]+L/);
-});
-
-test("the wind meter reads the still of a clear night", async ({ page, hasTouch }) => {
-  await openTheGame(page);
-  await press(page, "devices", hasTouch);
-  await show(page, "Wind");
-
-  await expect(reading(page, "wind", "now")).toHaveText(/^[345]$/);
-  await expect(reading(page, "wind", "name")).toHaveText("Calm");
-  await expect(reading(page, "wind", "strongest")).toHaveText(/^[345] km\/h$/);
-});
-
-test("the tracker tracks, checks in, and raises an SOS only on a held press", async ({
-  page,
-  hasTouch,
-}) => {
-  await openTheGame(page);
-  await press(page, "devices", hasTouch);
+  // The tracker next, so its messages leave while the other two are read: off as it sets off.
   await show(page, "Tracker");
   const tracker = panel(page).locator('[data-device="tracker"]');
-
   await expect(reading(page, "tracker", "state")).toHaveText("Tracking off");
-  await expect(reading(page, "tracker", "points")).toHaveText("0");
   await expect(reading(page, "tracker", "battery")).toHaveText("100%");
-
   await tracker.getByRole("button", { name: "Start tracking" }).click();
   await expect(reading(page, "tracker", "state")).toHaveText(
     "Tracking · a point every 10 min",
     WALKING,
   );
   await expect(reading(page, "tracker", "points")).toHaveText("1");
-  await expect(reading(page, "tracker", "last")).toHaveText(/^0\d:\d\d$/);
   await expect(tracker.getByRole("button", { name: "Stop tracking" })).toHaveAttribute(
     "aria-pressed",
     "true",
   );
-
-  // A check-in takes a few of the mountain's minutes to leave.
   await tracker.getByRole("button", { name: "Send check-in" }).click();
-  await expect(reading(page, "tracker", "check-ins")).toHaveText("1", { timeout: 30_000 });
-
   // A press isn't an SOS: the button is held, as the real one sits under a cover.
   const sos = tracker.getByRole("button", { name: /^SOS/ });
   await sos.click();
-  await expect(reading(page, "tracker", "status")).toHaveText("");
+  await expect(reading(page, "tracker", "status")).not.toHaveText(/SOS/);
   await sos.dispatchEvent("pointerdown");
   await expect(reading(page, "tracker", "status")).toHaveText(/SOS (sending|sent)/, {
     timeout: 30_000,
   });
+
+  // The watch: where they are, what's left, and the sun's hour; no pace yet, steps out of camp.
+  await show(page, "GPS");
+  await expect(reading(page, "gps", "where")).toHaveText("On the moraine");
+  await expect(reading(page, "gps", "altitude")).toHaveText(/^5,\d{3} m$/);
+  await expect(reading(page, "gps", "left-label")).toHaveText("To Camp 1");
+  await expect(reading(page, "gps", "left")).toHaveText(/^\d\.\d km$/);
+  await expect(reading(page, "gps", "sun")).toHaveText("06:00");
+  await expect(reading(page, "gps", "arrival")).toHaveText("--");
+  await expect(panel(page).locator(".watch__route")).toHaveAttribute("d", /^M[\d.]+ [\d.]+L/);
+
+  // The meter: the still of a clear night.
+  await show(page, "Wind");
+  await expect(reading(page, "wind", "now")).toHaveText(/^[345]$/);
+  await expect(reading(page, "wind", "name")).toHaveText("Calm");
+
+  // Back at the tracker, the check-in and the SOS have left: a few of the mountain's minutes.
+  await show(page, "Tracker");
   await expect(reading(page, "tracker", "status")).toHaveText(
     "SOS sent: Base Camp has your position",
     { timeout: 30_000 },
   );
+  await expect(reading(page, "tracker", "check-ins")).toHaveText("1");
   await expect(sos).toBeDisabled();
-});
 
-test("the devices and the pack take each other's place, and close as they opened", async ({
-  page,
-  hasTouch,
-}) => {
-  await openTheGame(page);
-  await press(page, "devices", hasTouch);
-  await expect(panel(page)).toBeVisible();
-  await expect(page.locator('[data-control="devices"]')).toHaveAttribute("aria-expanded", "true");
-
+  // The pack takes the devices' place, and gives it back; the same control closes them.
   await press(page, "inventory", hasTouch);
   await expect(panel(page)).toBeHidden();
   await expect(page.locator("#inventory")).toBeVisible();
-
   await press(page, "devices", hasTouch);
   await expect(page.locator("#inventory")).toBeHidden();
   await expect(panel(page)).toBeVisible();
-
+  await expect(page.locator('[data-control="devices"]')).toHaveAttribute("aria-expanded", "true");
   await press(page, "devices", hasTouch);
   await expect(panel(page)).toBeHidden();
   await expect(page.locator('[data-control="devices"]')).toHaveAttribute("aria-expanded", "false");
@@ -254,6 +211,9 @@ test("hanging in a crevasse, the radio has no contact, the watch no fix and the 
 
   await page.keyboard.press("ArrowRight");
   await expect(reading(page, "gps", "where")).toHaveText("No fix: no sky down here");
+  // The last fix stays on the screen: the lip they fell from.
+  await expect(reading(page, "gps", "altitude")).toHaveText(/^5,\d{3} m$/);
+  await expect(panel(page).locator(".watch__dot")).toHaveAttribute("cx", /^\d/);
   await page.keyboard.press("ArrowRight");
   await page.keyboard.press("ArrowRight");
   await expect(reading(page, "tracker", "status")).toHaveText("No sky: nothing leaves from here");

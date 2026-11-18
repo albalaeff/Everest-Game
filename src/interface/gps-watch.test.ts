@@ -3,22 +3,24 @@ import { describe, expect, it } from "vitest";
 import { GpsWatch } from "./gps-watch";
 import type { GpsPlace } from "./gps-watch";
 
-/** A route of 3 km drawn on 600 m of ground, from 5,300 m to 5,900 m, in three parts. */
+/** A route of 3 km drawn on 600 m of ground, between a camp that ends 10 m along it and one that
+ * starts at 610 m, from 5,300 m to 5,900 m, in three parts. */
 const watch = new GpsWatch({
   length: 3000,
-  ground: 600,
+  from: 10,
+  to: 610,
   foot: 5300,
   top: 5900,
   parts: [
-    { id: "moraine", from: 0, to: 100 },
-    { id: "popcorn", from: 100, to: 400 },
-    { id: "cwm", from: 400, to: 600 },
+    { id: "moraine", from: 0, to: 110 },
+    { id: "popcorn", from: 110, to: 410 },
+    { id: "cwm", from: 410, to: 620 },
   ],
 });
 
 /** An hour out of camp at 04:00, a third of the way along and 150 m up. */
 const AN_HOUR_OUT: GpsPlace = {
-  along: 200,
+  along: 210,
   altitude: 5450,
   sky: true,
   elapsed: 3600,
@@ -46,21 +48,25 @@ describe("the GPS watch", () => {
   });
 
   it("gives no pace before there's a track to tell it from, nor at the top", () => {
-    const fresh = watch.reading({ ...AN_HOUR_OUT, along: 2, altitude: 5300, elapsed: 60 });
+    const fresh = watch.reading({ ...AN_HOUR_OUT, along: 12, altitude: 5300, elapsed: 60 });
     expect(fresh).toMatchObject({ rate: null, arrival: null, part: "moraine" });
 
-    const top = watch.reading({ ...AN_HOUR_OUT, along: 600, altitude: 5900 });
+    // Still among the camp's tents an hour on: nowhere gone, so no pace to tell.
+    const waiting = watch.reading({ ...AN_HOUR_OUT, along: 6, altitude: 5300 });
+    expect(waiting).toMatchObject({ done: 0, left: 3000, rate: null, arrival: null });
+
+    const top = watch.reading({ ...AN_HOUR_OUT, along: 610, altitude: 5900 });
     expect(top).toMatchObject({ left: 0, toClimb: 0, rate: null, arrival: null, part: "cwm" });
   });
 
   it("has no fix without the sky, and keeps the route within its ends", () => {
     expect(watch.reading({ ...AN_HOUR_OUT, sky: false }).fix).toBe(false);
     expect(watch.reading({ ...AN_HOUR_OUT, along: 700 })).toMatchObject({ share: 1, part: "cwm" });
-    expect(watch.reading({ ...AN_HOUR_OUT, along: -5 })).toMatchObject({ share: 0, done: 0 });
+    expect(watch.reading({ ...AN_HOUR_OUT, along: 3 })).toMatchObject({ share: 0, done: 0 });
   });
 
   it("refuses a route with no length", () => {
-    expect(() => new GpsWatch({ length: 0, ground: 1, foot: 0, top: 1, parts: [] })).toThrow(
+    expect(() => new GpsWatch({ length: 0, from: 0, to: 1, foot: 0, top: 1, parts: [] })).toThrow(
       RangeError,
     );
   });

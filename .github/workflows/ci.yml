@@ -18,7 +18,9 @@ concurrency:
 jobs:
   checks:
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    # The page's stories took 14 of these minutes by #257, after four of setting up, and the
+    # devices' add theirs (#260): at 20 the job was cancelled in the middle of them.
+    timeout-minutes: 30
 
     steps:
       - uses: actions/checkout@v7

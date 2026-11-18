@@ -15,6 +15,8 @@ import type { DeviceReadings } from "./device-readings";
  * hour the sun comes onto the ice. */
 export interface DevicesRoute {
   readonly profile: readonly (readonly number[])[];
+  /** The length of that ground, as far along as a climber can be. */
+  readonly ground: number;
   readonly camp: string;
   readonly minutes: number;
   /** When the sun comes onto the ice, in seconds after midnight. */
@@ -45,6 +47,7 @@ export class DevicesPanel {
   private static readonly LOG_LINES = 6;
   private static readonly MAP = { left: 8, right: 192, top: 6, bottom: 46 };
   private static readonly SETTLE = 2.5;
+  private static readonly FIX_SECONDS = 0.5;
   private static readonly SECONDS_AN_HOUR = 3600;
 
   private readonly readings = new Readings();
@@ -62,8 +65,18 @@ export class DevicesPanel {
   private answered: number;
   private readonly answers: Answer[] = [];
 
-  /** The watch: where a point of the slope is on its map. */
+  /** The watch: where a point of the slope is on its map; its last fix, with the altitude and
+   * the place it was taken at, which stays on the screen where there's no sky; and the seconds
+   * until it takes the next while it's on the wrist and not looked at. */
   private readonly onMap: (x: number, y: number) => readonly [number, number];
+  private fix: {
+    readonly reading: GpsFix;
+    readonly altitude: number;
+    readonly x: number;
+    readonly y: number;
+    readonly along: number;
+  } | null = null;
+  private nextFix = 0;
 
   /** The wind meter: the seconds it's been out, what it shows, the sum for its average and its
    * strongest; the gusts it has seen, and the seconds a gust still shows. */
@@ -116,6 +129,7 @@ export class DevicesPanel {
   update(seconds: number): void {
     this.hear(seconds);
     this.feel(seconds);
+    this.locate(seconds);
     if (this.panel.hidden) {
       return;
     }
@@ -395,19 +409,40 @@ export class DevicesPanel {
     }
   }
 
+  /** The watch takes a fix where it sees the sky, twice a second on the wrist and every frame
+   * while it's looked at: the last one is what it shows under the ice. */
+  private locate(seconds: number): void {
+    this.nextFix -= seconds;
+    const looking = !this.panel.hidden && this.shown === "gps";
+    if (this.nextFix > 0 && !looking) {
+      return;
+    }
+    this.nextFix = DevicesPanel.FIX_SECONDS;
+    const reading = this.climb.gps;
+    if (reading.fix) {
+      this.fix = { reading, altitude: this.climb.altitude, ...this.climb.spot };
+    }
+  }
+
   private drawWatch(): void {
     const { texts, readings, baseCamp } = this;
-    const fix = this.climb.gps;
+    const seen = this.climb.gps.fix;
     const screen = this.find(".watch__screen");
-    screen.dataset.fix = fix.fix ? "yes" : "no";
-    if (!fix.fix) {
-      // No sky: the screen keeps the last fix, and says so.
+    screen.dataset.fix = seen ? "yes" : "no";
+    if (this.fix === null) {
       this.set("where", texts.say("gps.no-fix"));
       return;
     }
+    const { reading: fix, altitude, x, y, along } = this.fix;
     const metres = (value: number) => texts.say("gps.metres", { metres: Math.round(value) });
-    this.set("where", texts.say("gps.where", { part: texts.say(`part.${fix.part}`) }));
-    this.set("altitude", readings.altitude(this.climb.altitude));
+    // No sky: the screen keeps the last fix, and says so.
+    this.set(
+      "where",
+      seen
+        ? texts.say("gps.where", { part: texts.say(`part.${fix.part}`) })
+        : texts.say("gps.no-fix"),
+    );
+    this.set("altitude", readings.altitude(altitude));
     this.set("to-climb", metres(fix.toClimb));
     this.set("done", baseCamp.distance(fix.done));
     this.set("left", baseCamp.distance(fix.left));
@@ -422,12 +457,12 @@ export class DevicesPanel {
       fix.arrival === null ? texts.say("gps.none") : readings.clock(DevicesPanel.day(fix.arrival)),
     );
     this.drawSun(fix);
-    const { x, y } = this.climb.spot;
     const [left, top] = this.onMap(x, y);
     const dot = this.find(".watch__dot");
     dot.setAttribute("cx", left.toFixed(1));
     dot.setAttribute("cy", top.toFixed(1));
-    this.find(".watch__track").style.strokeDasharray = `${fix.share.toFixed(4)} 1`;
+    const walked = Math.min(1, Math.max(0, along / this.route.ground));
+    this.find(".watch__track").style.strokeDasharray = `${walked.toFixed(4)} 1`;
   }
 
   /** When the sun comes onto the ice, and whether the pace so far gets the climber to the top
