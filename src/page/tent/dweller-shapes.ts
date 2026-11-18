@@ -77,10 +77,9 @@ export class DwellerShapes {
     y: -(ClimberPose.NECK - FrontShapes.NECK) * DwellerShapes.SCALE,
   };
   /** The bones: the upper arm, and the forearm to the wrist, where the sleeve's cuff ends; the
-   * hand's middle, where it grips, from the wrist; the thigh and the shin. */
+   * thigh and the shin. A hand's length is its own (`DwellerHands.WRIST`). */
   static readonly UPPER_ARM = ClimberPose.UPPER_ARM * DwellerShapes.SCALE;
   static readonly FOREARM = ClimberPose.FOREARM * DwellerShapes.SCALE;
-  static readonly GRIP = 0.07 * DwellerShapes.SCALE;
   static readonly THIGH = ClimberPose.THIGH * DwellerShapes.SCALE;
   static readonly SHIN = ClimberPose.SHIN * DwellerShapes.SCALE;
   /** The suit's cuff round the wrist, the side figure's: from 7 cm short of it to 2 cm short. */

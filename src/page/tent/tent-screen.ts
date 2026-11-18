@@ -15,6 +15,7 @@ import type {
   TentView,
 } from "../../simulation";
 import { DwellerActs } from "./dweller-acts";
+import { DwellerBlend } from "./dweller-blend";
 import { DwellerPose } from "./dweller-pose";
 import { TentPicture } from "./tent-picture";
 import type { TentStock } from "./tent-picture";
@@ -100,6 +101,7 @@ export class TentScreen {
   private readonly pack: HTMLButtonElement;
   private readonly pose = new DwellerPose();
   private acts: DwellerActs | null = null;
+  private blend = new DwellerBlend();
   private elapsed = 0;
   /** How long it has been open, and closing, in seconds. */
   private shown = 0;
@@ -236,6 +238,7 @@ export class TentScreen {
         return;
       }
       this.acts = new DwellerActs(tent.slept?.to ?? null);
+      this.blend = new DwellerBlend();
       this.shown = 0;
       this.closing = 0;
       this.lit = null;
@@ -253,8 +256,8 @@ export class TentScreen {
       sleptTo: tent.slept?.to ?? null,
     });
     this.draw(seconds, acting.act === "sleep", tent, pack);
-    const look = this.pose.look(acting.act, acting.seconds, acting.progress);
-    this.picture.pose(look, acting.act, this.elapsed, this.gust);
+    const look = this.blend.next(this.pose.look(acting.act, acting.seconds), acting.act, seconds);
+    this.picture.pose(look, acting.act, this.elapsed, this.gust, tent.chore);
     this.frame(seconds, look.shift, look.lying);
     this.say(tent, pack, this.acts.asleep);
   }
@@ -269,7 +272,7 @@ export class TentScreen {
     acts.leave();
     this.closing += seconds;
     const acting = acts.advance(seconds, { chore: null, progress: 0, sleptTo: null });
-    const look = this.pose.look(acting.act, acting.seconds, acting.progress);
+    const look = this.blend.next(this.pose.look(acting.act, acting.seconds), acting.act, seconds);
     this.elapsed += seconds;
     this.picture.pose(look, acting.act, this.elapsed, this.gust);
     this.frame(seconds, look.shift, 0);

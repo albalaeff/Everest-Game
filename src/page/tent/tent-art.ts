@@ -33,6 +33,19 @@ export class TentArt {
   static readonly BAG_IN = 315;
   /** Where the lamp hangs from the roof. */
   static readonly LAMP = 752;
+  /** What a hand takes and puts back, in pixels: a bottle's body and its cap, and how far into
+   * the room the nearest stands, on the foam; a meal's pouch, and how far into the room the
+   * nearest lies; the pot, from the stove's foot up to its bottom, its rim and its handle's
+   * middle; the snow sack, how far into the room and how high its snow; the burner's flame over
+   * the floor; a spoon's handle below where it's pinched, its neck and its bowl's tip above. */
+  static readonly BOTTLE = { width: 31, height: 71, cap: 13, lift: 12 };
+  static readonly BOTTLE_IN = 72;
+  static readonly POUCH = { width: 50, height: 58 };
+  static readonly MEALS_IN = 414;
+  static readonly POT = { half: 30, bottom: 58, rim: 120, handle: 98 };
+  static readonly SNOW = { into: 14, top: 68 };
+  static readonly FLAME = 62;
+  static readonly SPOON = { handle: 24, neck: 31, tip: 52 };
 
   /** The fly's outline in pixels; where the room begins and ends along the floor; and the top
    * of the fly over a point of the floor. */
@@ -214,27 +227,66 @@ ${sleeve(to - 190, [to - 330, 400], 610)}
     const { from, to } = this.room;
     const pad = FLOOR - TentArt.SEAT + 2;
     const bottle = (x: number, lift: number, index: number): string =>
-      `<g class="tent-bottle" data-bottle="${index}" transform="translate(${x} ${FLOOR - 12 - lift})"><rect x="-17" y="-80" width="34" height="80" rx="9" fill="#27323f"/><rect class="tent-water" x="-14" y="-68" width="28" height="64" rx="7"/><rect x="-17" y="-52" width="34" height="30" fill="#3f9488" opacity="0.92"/><rect x="-11" y="-92" width="22" height="14" rx="4" fill="#dfe6f0"/><path d="M11 -88q12 4 6 22" stroke="#dfe6f0" stroke-width="3" fill="none"/></g>`;
+      `<g class="tent-bottle" data-bottle="${index}" transform="translate(${x} ${FLOOR - 12 - lift})">${TentArt.bottle()}</g>`;
     const pouch = (x: number, index: number): string =>
-      `<g class="tent-meal" data-meal="${index}" transform="translate(${x} ${pad}) rotate(${-8 + index * 6})"><path d="M-22 0L-25 -58L25 -58L22 0Z" fill="#e7b24a"/><path d="M-25 -58L25 -58L24 -48L-24 -48Z" fill="#b8822a"/><rect x="-14" y="-40" width="28" height="18" rx="3" fill="#7a4a1c"/><path d="M-10 -14h20" stroke="#7a4a1c" stroke-width="3"/></g>`;
+      `<g class="tent-meal" data-meal="${index}" transform="translate(${x} ${pad}) rotate(${-8 + index * 6})">${TentArt.pouch(false)}</g>`;
     const canister = (x: number, lift: number, index: number): string =>
       `<g class="tent-gas" data-gas="${index}" transform="translate(${x} ${FLOOR - lift})"><path d="M-22 0V-26Q-22 -34 -12 -36H12Q22 -34 22 -26V0Z" fill="#c9372c"/><rect x="-22" y="-20" width="44" height="9" fill="#f2f2ee"/><rect x="-7" y="-43" width="14" height="8" rx="2" fill="#8b93a2"/></g>`;
     const oxygen = (x: number, index: number): string =>
       `<g class="tent-oxygen" data-oxygen="${index}" transform="translate(${x} ${pad})"><rect x="-15" y="-112" width="30" height="112" rx="13" fill="#c4652f"/><rect x="-7" y="-126" width="14" height="16" rx="3" fill="#8b93a2"/><rect x="-15" y="-72" width="30" height="10" fill="#8f4318"/></g>`;
     return `<g class="tent-crampons" transform="translate(${FROM + 22} ${FLOOR - 4})"><path d="M0 0h54M4 0l-4 10M16 0l-2 11M30 0l0 11M44 0l3 11M54 0l6 9" stroke="#a3acc0" stroke-width="4" stroke-linecap="round" fill="none"/></g>
 <g class="tent-boots" transform="translate(${FROM + 76} ${FLOOR})"><path d="M0 0V-64Q0 -74 12 -74H32Q42 -74 42 -62V-24L62 -20Q72 -16 72 -8V0Z" fill="#b0842c"/><path d="M0 -8H72V0H0Z" fill="#17171c"/><path d="M0 -64H42V-52H0Z" fill="#17171c"/><path d="M8 -46H36M8 -36H38M10 -26H42" stroke="#17171c" stroke-width="3"/><g transform="translate(50 -2)"><path d="M0 0V-60Q0 -70 12 -70H30Q40 -70 40 -58V-24L58 -20Q68 -16 68 -8V0Z" fill="#c8973a"/><path d="M0 -8H68V0H0Z" fill="#17171c"/><path d="M0 -60H40V-48H0Z" fill="#17171c"/></g></g>
-<g class="tent-stove" transform="translate(${STOVE} ${FLOOR})"><rect x="-56" y="-6" width="112" height="7" rx="2" fill="#8a7a5c"/><g class="tent-mug" transform="translate(-42 -6)"><path d="M-11 0V-24H11V0Z" fill="#e6ebf2"/><path d="M-11 -12q-9 0 -9 6t9 6" stroke="#e6ebf2" stroke-width="4" fill="none"/></g><path d="M-24 -6V-30Q-24 -38 -14 -40H14Q24 -38 24 -30V-6Z" fill="#c9372c"/><rect x="-24" y="-24" width="48" height="9" fill="#f2f2ee"/><rect x="-8" y="-48" width="16" height="9" rx="2" fill="#8b93a2"/><path d="M-22 -48h44l-4 -8h-36z" fill="#3c404a"/><g class="tent-flame"><path d="M-16 -56q4 -16 8 0q4 -18 8 0q4 -16 8 0q4 -14 8 0z"/></g><path class="tent-pot" d="M-30 -58H30V-116Q30 -120 26 -120H-26Q-30 -120 -30 -116Z"/><path d="M-30 -74H30M-30 -66H30" stroke="#6b7385" stroke-width="2"/><path d="M30 -106h20q6 0 6 6v10" stroke="#2b2f39" stroke-width="5" fill="none" stroke-linecap="round"/><g class="tent-pot-snow"><path d="M-24 -118q6 -14 16 -8q8 -12 18 -2q10 -6 14 10z" fill="#f4f8fc"/></g><path class="tent-pot-rim" d="M-32 -120H32" stroke="#dfe6f0" stroke-width="4" stroke-linecap="round"/></g>
-<g class="tent-snow-sack" transform="translate(${from + 14} ${FLOOR})"><path d="M-22 0Q-30 -40 -18 -62H20Q32 -40 24 0Z" fill="#2f6cc4"/><path d="M-18 -62q8 -18 20 -10q10 -12 18 10z" fill="#f4f8fc"/><path d="M-20 -30Q0 -24 22 -30" stroke="#1d4a8e" stroke-width="3" fill="none"/></g>
+<g class="tent-stove" transform="translate(${STOVE} ${FLOOR})"><rect x="-56" y="-6" width="112" height="7" rx="2" fill="#8a7a5c"/><g class="tent-mug" transform="translate(-42 -6)"><path d="M-11 0V-24H11V0Z" fill="#e6ebf2"/><path d="M-11 -12q-9 0 -9 6t9 6" stroke="#e6ebf2" stroke-width="4" fill="none"/></g><path d="M-24 -6V-30Q-24 -38 -14 -40H14Q24 -38 24 -30V-6Z" fill="#c9372c"/><rect x="-24" y="-24" width="48" height="9" fill="#f2f2ee"/><rect x="-8" y="-48" width="16" height="9" rx="2" fill="#8b93a2"/><path d="M-22 -48h44l-4 -8h-36z" fill="#3c404a"/><g class="tent-flame"><path d="M-16 -56q4 -16 8 0q4 -18 8 0q4 -16 8 0q4 -14 8 0z"/></g><g class="tent-pot-all">${TentArt.pot(`<g class="tent-pot-snow"><path d="M-24 -118q6 -14 16 -8q8 -12 18 -2q10 -6 14 10z" fill="#f4f8fc"/></g>`)}</g></g>
+<g class="tent-snow-sack" transform="translate(${from + TentArt.SNOW.into} ${FLOOR})"><path d="M-22 0Q-30 -40 -18 -62H20Q32 -40 24 0Z" fill="#2f6cc4"/><path d="M-18 -62q8 -18 20 -10q10 -12 18 10z" fill="#f4f8fc"/><path d="M-20 -30Q0 -24 22 -30" stroke="#1d4a8e" stroke-width="3" fill="none"/></g>
 <g class="tent-guitar-rest" transform="translate(${from + 352} ${pad - 80}) rotate(-80) scale(0.84)">${TentArt.guitar()}</g>
 ${[0, 1, 2].map((index) => oxygen(from + 618 + index * 36, index)).join("")}
 <g class="tent-pack" transform="translate(${from + 536} ${pad})"><path d="M-52 0Q-64 -110 -50 -186Q-40 -214 0 -216Q42 -214 50 -186Q64 -110 54 0Z" fill="#262e47"/><path d="M-50 -186Q-40 -214 0 -216Q42 -214 50 -186Q40 -160 0 -158Q-40 -160 -50 -186Z" fill="#313a59"/><path d="M-34 -150V-20M34 -150V-20" stroke="#15171f" stroke-width="7"/><rect x="-26" y="-112" width="52" height="62" rx="8" fill="#1d2338"/><path d="M-20 -80H20" stroke="#ff8f45" stroke-width="4"/><path d="M-58 -120q-14 40 -4 110" stroke="#15171f" stroke-width="8" fill="none" stroke-linecap="round"/><g class="tent-pack-axe"><path d="M62 -8L44 -228" stroke="#b8c2d0" stroke-width="7" stroke-linecap="round"/><path d="M20 -214L44 -228L70 -238" stroke="#c3ccd9" stroke-width="8" fill="none" stroke-linecap="round" stroke-linejoin="round"/></g><g class="tent-pack-tool"><path d="M-66 -12L-50 -204" stroke="#5c84b8" stroke-width="7" stroke-linecap="round"/><path d="M-74 -196L-50 -204L-26 -196" stroke="#c3ccd9" stroke-width="7" fill="none" stroke-linecap="round" stroke-linejoin="round"/></g><g class="tent-pack-jumar" transform="translate(0 -140)"><rect x="-10" y="-6" width="20" height="36" rx="6" fill="#b5bdca"/><rect x="-10" y="14" width="20" height="16" rx="5" fill="#c9332c"/></g></g>
 <g class="tent-radio" transform="translate(${to - 24} ${pad})"><rect x="-10" y="-44" width="20" height="44" rx="4" fill="#17181d"/><path d="M-4 -44V-78" stroke="#17181d" stroke-width="4" stroke-linecap="round"/><rect x="-6" y="-36" width="12" height="9" fill="#8fd18a"/></g>
-${[0, 1, 2].map((index) => bottle(from + 38 + index * 34 - (index === 2 ? 51 : 0), index === 2 ? 10 : 0, index)).join("")}
-${[0, 1, 2, 3].map((index) => pouch(from + 414 + index * 25, index)).join("")}
+${[
+  [2, 55, 10],
+  [1, 38, 0],
+  [0, TentArt.BOTTLE_IN, 0],
+]
+  .map(([index = 0, x = 0, lift = 0]) => bottle(from + x, lift, index))
+  .join("")}
+${[0, 1, 2, 3].map((index) => pouch(from + TentArt.MEALS_IN + index * 25, index)).join("")}
 ${[0, 1, 2].map((index) => canister(to + 22 + (index === 2 ? 17 : index * 34), index === 2 ? 36 : 0, index)).join("")}
 <g class="tent-duffel" transform="translate(${to + 108} ${FLOOR})"><path d="M-36 0Q-46 -30 -32 -44H36Q48 -30 38 0Z" fill="#c23b30"/><path d="M-18 -44V0M18 -44V0" stroke="#272a33" stroke-width="6"/><path d="M-18 -44q18 -18 36 0" stroke="#272a33" stroke-width="5" fill="none"/></g>
 <g class="tent-left-tool" transform="translate(${from + 590} ${FLOOR + 1}) rotate(90)"><path d="M0 0V-176" stroke="#5c84b8" stroke-width="7" stroke-linecap="round"/><path d="M-22 -168L0 -176L22 -168" stroke="#c3ccd9" stroke-width="7" fill="none" stroke-linecap="round" stroke-linejoin="round"/></g>
 <g class="tent-left-jumar" transform="translate(${from + 530} ${FLOOR - 2}) rotate(90)"><rect x="-10" y="-6" width="20" height="36" rx="6" fill="#b5bdca"/><rect x="-10" y="14" width="20" height="16" rx="5" fill="#c9332c"/><path d="M0 30q16 20 40 14" stroke="#2f6bd0" stroke-width="5" fill="none"/></g>`;
+  }
+
+  /** A water bottle, standing on its base at the origin: its body with the water showing in it,
+   * its sleeve, its cap and the cap's loop. On the floor and in a hand it's the same bottle. */
+  static bottle(): string {
+    const { width, height, cap } = TentArt.BOTTLE;
+    const half = width / 2;
+    return `<rect x="${-half}" y="${-height}" width="${width}" height="${height}" rx="8" fill="#27323f"/><rect class="tent-water" x="${-half + 3}" y="${-height + 10}" width="${width - 6}" height="${height - 14}" rx="6"/><rect x="${-half}" y="${-height + 25}" width="${width}" height="26" fill="#3f9488" opacity="0.92"/><path d="M${half - 5} ${-height + 8}V-8" stroke="#fff" stroke-width="1.6" stroke-linecap="round" opacity="0.22" fill="none"/><rect x="-10" y="${-height - cap}" width="20" height="${cap + 1}" rx="4" fill="#dfe6f0"/><path d="M10 ${-height - cap + 4}q11 4 6 20" stroke="#dfe6f0" stroke-width="2.6" fill="none"/>`;
+  }
+
+  /** A freeze-dried meal's pouch, standing on its base at the origin: foil, with its label;
+   * `open`, its top torn off and dark inside, or sealed. */
+  static pouch(open: boolean): string {
+    const { width, height } = TentArt.POUCH;
+    const half = width / 2;
+    const top = open
+      ? `<path d="M${-half} ${-height}L${half} ${-height}L${half - 0.6} ${-height + 7}L${-half + 0.6} ${-height + 7}Z" fill="#3a3530"/><path d="M${-half} ${-height}H${half}" stroke="#dfe6f0" stroke-width="1.6" fill="none"/>`
+      : `<path d="M${-half} ${-height}L${half} ${-height}L${half - 1} ${-height + 10}L${-half + 1} ${-height + 10}Z" fill="#8e9aa8"/>`;
+    return `<path d="M${-half + 3} 0L${-half} ${-height}L${half} ${-height}L${half - 3} 0Z" fill="#b9c4d0"/>${top}<rect x="-14" y="${-height + 18}" width="28" height="18" rx="3" fill="#e8742c"/><path d="M-9 ${-height + 24}h18M-9 ${-height + 30}h11" stroke="#fff" stroke-width="2" stroke-linecap="round" fill="none" opacity="0.85"/><path d="M${half - 6} ${-height + 12}L${half - 7} -6" stroke="#fff" stroke-width="1.8" opacity="0.3" fill="none"/>`;
+  }
+
+  /** The stove's pot, from the stove's foot on the floor: its body with its bands, its folding
+   * handle on the side toward the viewer, `inside` it, and its rim over that. On the stove and
+   * in a hand it's the same pot. */
+  static pot(inside = ""): string {
+    const { half, bottom, rim, handle } = TentArt.POT;
+    return `<path class="tent-pot" d="M${-half} ${-bottom}H${half}V${-rim + 4}Q${half} ${-rim} ${half - 4} ${-rim}H${-half + 4}Q${-half} ${-rim} ${-half} ${-rim + 4}Z"/><path d="M${-half} ${-bottom - 16}H${half}M${-half} ${-bottom - 8}H${half}" stroke="#6b7385" stroke-width="2"/><rect class="tent-pot-handle" x="-10" y="${-handle - 5}" width="20" height="10" rx="4"/><path d="M-13 ${-handle}h3M10 ${-handle}h3" stroke="#4b5262" stroke-width="3" stroke-linecap="round"/>${inside}<path class="tent-pot-rim" d="M${-half - 2} ${-rim}H${half + 2}" stroke="#dfe6f0" stroke-width="4" stroke-linecap="round"/>`;
+  }
+
+  /** A long spoon, its bowl up, from where the fingers pinch it at the origin. */
+  static spoon(): string {
+    const { handle, neck, tip } = TentArt.SPOON;
+    return `<path class="dw-spoon" d="M-1.1 ${handle}L1.1 ${handle}L1.5 ${-neck}L-1.5 ${-neck}Z"/><path class="dw-spoon" d="M0 ${-neck + 1}C4.4 ${-neck + 1} 5.9 ${-neck - 5} 5.6 ${-neck - 11}C5.3 ${-tip + 4} 2.6 ${-tip} 0 ${-tip}C-2.6 ${-tip} -5.3 ${-tip + 4} -5.6 ${-neck - 11}C-5.9 ${-neck - 5} -4.4 ${-neck + 1} 0 ${-neck + 1}Z"/><path class="dw-spoon-light" d="M-2.8 ${-neck - 12}C-2.5 ${-neck - 8} -1 ${-neck - 4} 1.2 ${-neck - 3}"/>`;
   }
 
   /** The guitar, lying along +x from its body's end: its body, sound hole and bridge, its neck
