@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { DwellerDrawing } from "./dweller-drawing";
+import { DwellerHead } from "./dweller-head";
 import type { LimbFrame, LimbName } from "./dweller-drawing";
 import { DwellerPose } from "./dweller-pose";
 import { DwellerShapes } from "./dweller-shapes";
@@ -169,8 +170,8 @@ describe("DwellerDrawing: the person in the tent as a drawing (#258, #264)", () 
   it("looks where the pose looks, as far as the eye turns", () => {
     const frame = drawing.frame({ ...pose.look("idle", 1), gaze: { x: 5, y: -1 } });
 
-    expect(frame.gaze.x).toBeCloseTo(2.6, 6);
-    expect(frame.gaze.y).toBeCloseTo(-1.4, 6);
+    expect(frame.gaze.x).toBeCloseTo(DwellerHead.GAZE.x, 6);
+    expect(frame.gaze.y).toBeCloseTo(-DwellerHead.GAZE.y, 6);
   });
 
   it("pours the bottle's water into the pot while it's tipped over it, and not as it's drunk from", () => {

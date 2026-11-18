@@ -35,7 +35,7 @@ export class Appearance {
   });
   /** The skin's tones, as shares of it, and how much of the lips' colour is the flush. */
   private static readonly SKIN = { light: 1.16, shade: 0.74, deep: 0.46 };
-  private static readonly FLUSH = { colour: 0xb2453a, share: 0.38 };
+  private static readonly FLUSH = { colour: 0xa24a40, share: 0.26 };
 
   constructor(readonly colours: Colours) {}
 
@@ -63,8 +63,11 @@ export class Appearance {
       "--skin-deep": css(Palette.toned(skin, Appearance.SKIN.deep)),
       "--lips": css(lips),
       "--lips-shade": css(Palette.toned(lips, 0.72)),
+      "--lips-light": css(Palette.toned(lips, 1.14)),
       "--hair": css(hair),
       "--eyes": css(eyes),
+      "--eyes-light": css(Palette.toned(eyes, 1.45)),
+      "--eyes-dark": css(Palette.toned(eyes, 0.45)),
     };
   }
 }

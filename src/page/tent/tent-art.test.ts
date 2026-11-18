@@ -81,6 +81,6 @@ describe("TentArt: the tent cut open from end to end (#258)", () => {
     const sleeper = art.markup().split('class="tent-sleeper-head"')[1] ?? "";
 
     expect(sleeper).toContain('id="dw-sleeper-face"');
-    expect(sleeper).toContain(`d="${DwellerHead.lid(0, 0).edge}"`);
+    expect(sleeper).toContain(`d="${new DwellerHead("dw-sleeper").lid(0, 0).edge}"`);
   });
 });

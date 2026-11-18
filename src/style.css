@@ -4244,6 +4244,10 @@ main:has(#tent:not([hidden])) #self-check {
   opacity: 0.42;
 }
 
+.dw-shoulders {
+  fill: #000;
+}
+
 .dw-drop path {
   fill: #000;
   opacity: 0.26;
@@ -4327,14 +4331,6 @@ main:has(#tent:not([hidden])) #self-check {
   stop-color: #2a1209;
 }
 
-.dw-burn {
-  stop-color: #c43a28;
-}
-
-.dw-hair-tone {
-  stop-color: var(--hair);
-}
-
 .dw-hat-base {
   stop-color: var(--hat);
 }
@@ -4355,74 +4351,82 @@ main:has(#tent:not([hidden])) #self-check {
   stop-color: var(--lips-shade);
 }
 
-.dw-hair {
+.dw-lip-light {
+  stop-color: var(--lips-light);
+}
+
+.dw-iris-in {
+  stop-color: var(--eyes-light);
+}
+
+.dw-iris-mid {
+  stop-color: var(--eyes);
+}
+
+.dw-iris-out {
+  stop-color: var(--eyes-dark);
+}
+
+/* The head (#264): no outlines, but the lash line, the lips' meeting and the nostrils; the rest is
+ * light and shade, soft-edged. */
+.dw-hair,
+.dw-sideburn {
   fill: var(--hair);
 }
 
+.dw-sideburn {
+  opacity: 0.7;
+}
+
+.dw-stubble {
+  fill: #2e2721;
+  opacity: 0.32;
+}
+
+.dw-hairs {
+  fill: #15100c;
+  opacity: 0.38;
+}
+
 .dw-ear {
-  fill: var(--skin);
+  fill: var(--skin-shade);
 }
 
 .dw-ear-hollow {
-  fill: var(--skin-deep);
-  opacity: 0.55;
+  fill: #4a2414;
+  opacity: 0.4;
 }
 
 .dw-ear-rim {
   fill: none;
   stroke: var(--skin-light);
-  stroke-width: 2.4;
   stroke-linecap: round;
+  stroke-width: 2.4;
+  opacity: 0.45;
+}
+
+.dw-iris-ring {
+  fill: none;
+  stroke: #120b07;
+  stroke-width: 0.9;
   opacity: 0.55;
 }
 
-.dw-ear-tragus {
-  fill: none;
-  stroke: var(--skin-shade);
-  stroke-width: 2;
-  stroke-linecap: round;
-  opacity: 0.6;
-}
-
-.dw-tan {
-  fill: var(--skin-light);
-  opacity: 0.22;
-}
-
-.dw-moustache {
-  fill: var(--hair);
-  opacity: 0.3;
-}
-
-.dw-white {
-  fill: #e9e3da;
-}
-
-.dw-white-shade {
-  fill: none;
-  stroke: #5a3a2a;
-  stroke-width: 5;
-  opacity: 0.35;
-}
-
-.dw-iris {
-  fill: var(--eyes);
-}
-
-.dw-iris-rim {
-  fill: none;
-  stroke: #1a120c;
-  stroke-width: 1.1;
-  opacity: 0.7;
-}
-
 .dw-pupil {
-  fill: #0d0907;
+  fill: #0c0806;
 }
 
 .dw-glint {
   fill: #fff;
-  opacity: 0.9;
+  opacity: 0.85;
+}
+
+.dw-lid-shade {
+  fill: none;
+  stroke: #2a1209;
+  stroke-linecap: round;
+  stroke-width: 2.6;
+  opacity: 0.32;
 }
 
 .dw-lid-skin {
@@ -4431,38 +4435,32 @@ main:has(#tent:not([hidden])) #self-check {
 
 .dw-lid-edge {
   fill: none;
-  stroke: #241610;
-  stroke-width: 1.6;
+  stroke: #1c110b;
   stroke-linecap: round;
+  stroke-width: 1.5;
+  opacity: 0.85;
 }
 
-.dw-lid-shadow {
-  fill: none;
-  stroke: #2a1a12;
-  stroke-width: 3.4;
-  opacity: 0.35;
+.dw-caruncle {
+  fill: #c98676;
+  opacity: 0.75;
 }
 
-.dw-lash {
+.dw-crease,
+.dw-under {
   fill: none;
-  stroke: #1c120c;
-  stroke-width: 2.1;
+  stroke: #3a1a0d;
   stroke-linecap: round;
 }
 
 .dw-crease {
-  fill: none;
-  stroke: var(--skin-deep);
-  stroke-width: 1.3;
-  stroke-linecap: round;
-  opacity: 0.55;
+  stroke-width: 1;
+  opacity: 0.32;
 }
 
 .dw-under {
-  fill: none;
-  stroke: var(--skin-shade);
-  stroke-width: 1.2;
-  opacity: 0.5;
+  stroke-width: 0.8;
+  opacity: 0.2;
 }
 
 .dw-brow {
@@ -4470,96 +4468,109 @@ main:has(#tent:not([hidden])) #self-check {
   opacity: 0.88;
 }
 
-.dw-nose-side {
-  fill: var(--skin-light);
-  opacity: 0.35;
+.dw-nose-ridge,
+.dw-nose-bridge,
+.dw-nose-wing,
+.dw-fold {
+  fill: none;
+  stroke-linecap: round;
 }
 
 .dw-nose-ridge {
-  fill: none;
-  stroke: var(--skin-deep);
-  stroke-width: 2;
-  stroke-linecap: round;
-  opacity: 0.55;
+  stroke: #3b1d10;
+  stroke-width: 2.4;
+  opacity: 0.2;
+}
+
+.dw-nose-bridge {
+  stroke: #fff3e6;
+  stroke-width: 2.6;
+  opacity: 0.22;
+}
+
+.dw-nose-under {
+  fill: #3b1d10;
+  opacity: 0.3;
 }
 
 .dw-nose-wing {
-  fill: var(--skin-shade);
-  opacity: 0.8;
-}
-
-.dw-nose-alar {
-  fill: none;
-  stroke: var(--skin-deep);
-  stroke-width: 1.6;
-  stroke-linecap: round;
-  opacity: 0.6;
-}
-
-.dw-nostril {
-  fill: #3a1a10;
-  opacity: 0.85;
-}
-
-.dw-nose-light {
-  fill: none;
-  stroke: var(--skin-light);
-  stroke-width: 2.6;
-  stroke-linecap: round;
-  opacity: 0.6;
-}
-
-.dw-philtrum {
-  fill: none;
-  stroke: var(--skin-shade);
-  stroke-width: 1.2;
+  stroke: #3b1d10;
+  stroke-width: 1.3;
   opacity: 0.4;
 }
 
+.dw-nose-wing.far {
+  opacity: 0.28;
+}
+
+.dw-nostril {
+  fill: #24110a;
+  opacity: 0.85;
+}
+
+.dw-nose-glint {
+  fill: #fff;
+  opacity: 0.3;
+}
+
+.dw-fold {
+  stroke: #3b1d10;
+  stroke-width: 3;
+  opacity: 0.13;
+}
+
+.dw-fold.far {
+  opacity: 0.1;
+}
+
 .dw-mouth-inside {
-  fill: #2a0d09;
+  fill: #2a0f0b;
 }
 
 .dw-teeth {
-  fill: #e8e0d4;
-}
-
-.dw-lip-lower {
-  fill: var(--lips);
-}
-
-.dw-lip-light {
-  fill: #fff;
-  opacity: 0.16;
+  fill: #e6ded4;
 }
 
 .dw-lips-line {
   fill: none;
-  stroke: #4a1e16;
-  stroke-width: 1.5;
+  stroke: #3a1712;
   stroke-linecap: round;
-  opacity: 0.85;
+  stroke-width: 1.1;
+  opacity: 0.75;
+}
+
+.dw-corner {
+  fill: #3a1712;
+  opacity: 0.3;
+}
+
+.dw-hat-shadow {
+  fill: #000;
+  opacity: 0.38;
+}
+
+.dw-hat-crown,
+.dw-hat-ribs,
+.dw-hat-fold {
+  fill: none;
 }
 
 .dw-hat-crown {
-  fill: none;
-  stroke: #fff;
-  stroke-width: 2;
-  opacity: 0.08;
+  stroke: #000;
+  stroke-width: 1.6;
+  opacity: 0.16;
 }
 
 .dw-hat-ribs {
-  fill: none;
   stroke: #000;
-  stroke-width: 1.6;
-  opacity: 0.22;
+  stroke-width: 1.5;
+  opacity: 0.28;
 }
 
 .dw-hat-fold {
-  fill: none;
-  stroke: #000;
-  stroke-width: 2.4;
-  opacity: 0.3;
+  stroke: #fff;
+  stroke-width: 1.4;
+  opacity: 0.22;
 }
 
 .dw-hand-shadow {

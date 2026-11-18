@@ -4,7 +4,6 @@ import { Palette } from "../../rendering/palette";
 import { DwellerDrawing } from "./dweller-drawing";
 import { FrontShapes } from "../../rendering/front-shapes";
 import { Appearance } from "./appearance";
-import { DwellerHead } from "./dweller-head";
 import type { Act, DwellerLook, Spot } from "./dweller-pose";
 import { DwellerShapes } from "./dweller-shapes";
 import { TentArt } from "./tent-art";
@@ -133,6 +132,7 @@ export class TentPicture {
     set("all", "transform", frame.all);
     set("all", "opacity", frame.shown.toFixed(3));
     set("torso", "transform", frame.torso);
+    set("shoulders", "transform", frame.torso);
     set("head", "transform", frame.head);
     for (const [name, limb] of Object.entries(frame.limbs)) {
       set(name, "transform", limb.transform);
@@ -307,7 +307,7 @@ export class TentPicture {
   private face(eyes: number, gaze: Spot, mouth: number): void {
     const open = Math.round(eyes * 40) / 40;
     for (const [index, [skin, edge]] of this.lids.entries()) {
-      const lid = DwellerHead.lid(index === 0 ? 0 : 1, open);
+      const lid = this.dweller.head.lid(index === 0 ? 0 : 1, open);
       this.write(skin, `lid${index}`, "d", lid.skin);
       this.write(edge, `lid-edge${index}`, "d", lid.edge);
     }
@@ -315,19 +315,9 @@ export class TentPicture {
     for (const [index, gazing] of this.gazes.entries()) {
       this.write(gazing, `gaze${index}`, "transform", looking);
     }
-    const wide = mouth.toFixed(3);
-    this.write(
-      this.mouth,
-      "mouth",
-      "transform",
-      `translate(-29 73) scale(1 ${wide}) translate(29 -73)`,
-    );
-    this.write(
-      this.jaw,
-      "jaw",
-      "transform",
-      `translate(0 ${(mouth * DwellerHead.JAW).toFixed(2)})`,
-    );
+    const opened = this.dweller.head.open(mouth);
+    this.write(this.mouth, "mouth", "transform", opened.mouth);
+    this.write(this.jaw, "jaw", "transform", opened.jaw);
   }
 
   /** Sets an element's attribute, only if it's changed since it was last set. */

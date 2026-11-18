@@ -93,6 +93,8 @@ export class DwellerDrawing {
     [1, "#000", 0.16],
   ];
 
+  /** The head, whose lids and mouth a pose moves. */
+  readonly head = new DwellerHead("dw-face");
   private readonly shapes = new DwellerShapes();
   private readonly pose = new DwellerPose();
 
@@ -106,23 +108,25 @@ export class DwellerDrawing {
     const { shapes } = this;
     const { LAP } = DwellerDrawing;
     const p = (outline: Outline, kind = ""): string => DwellerDrawing.path(outline, kind);
+    // Each upper arm tucks behind the body's shoulders (`#dw-shoulders`), and lies over its
+    // forearm at the elbow, as a sleeve does.
     const arm = (side: 0 | 1): string =>
-      `<g class="dw-drop" data-part="upper${side}-drop">${p(shapes.upperArm.outline)}</g>
+      `<g mask="url(#dw-shoulders)"><g class="dw-drop" data-part="upper${side}-drop">${p(shapes.upperArm.outline)}</g></g>
 <g class="dw-drop" data-part="fore${side}-drop">${p(shapes.forearm.outline)}</g>
-${DwellerDrawing.limb(`upper${side}`, shapes.upperArm, "suit")}
 ${DwellerDrawing.limb(`fore${side}`, shapes.forearm, "suit", shapes.cuff, "dw-cuff")}
+<g mask="url(#dw-shoulders)">${DwellerDrawing.limb(`upper${side}`, shapes.upperArm, "suit")}</g>
 <g class="dw-hand" data-part="hand${side}">${DwellerHands.held()}<g class="dw-fist">${new DwellerHands(`dw-hand${side}`).markup("fist")}</g><g class="dw-open">${new DwellerHands(`dw-hand${side}`).markup("open")}</g></g>`;
     const thigh = (side: 0 | 1): string =>
       DwellerDrawing.limb(`thigh${side}`, shapes.thigh, "suit");
     const shin = (side: 0 | 1): string =>
       `${DwellerDrawing.limb(`shin${side}`, shapes.shin, "suit", shapes.shinPanel, "dw-panel")}${DwellerDrawing.limb(`foot${side}`, shapes.bootie, "booties", shapes.soles[side], "dw-sole")}`;
-    return `<defs>${DwellerDrawing.defs()}</defs>
+    return `<defs>${DwellerDrawing.defs()}<mask id="dw-shoulders" maskUnits="userSpaceOnUse" x="-600" y="-600" width="1200" height="1200"><rect x="-600" y="-600" width="1200" height="1200" fill="#fff"/><g data-part="shoulders">${p(shapes.shoulders, "dw-shoulders")}</g></mask></defs>
 <g class="dw" data-part="all">
 <g class="dw-torso" data-part="torso">${this.body()}</g>
 <g class="dw-legs">${thigh(0)}${thigh(1)}${shin(0)}${shin(1)}</g>
 <g class="dw-lap" data-part="guitar" transform="translate(${LAP.x} ${LAP.y}) rotate(${LAP.turn}) scale(${LAP.size})">${TentArt.guitar()}</g>
 ${arm(1)}
-<g class="dw-head" data-part="head">${new DwellerHead("dw-face").markup()}</g>
+<g class="dw-head" data-part="head">${this.head.markup()}</g>
 ${arm(0)}
 <path class="dw-stream" data-part="stream"/>
 </g>`;
@@ -209,7 +213,8 @@ ${arm(0)}
     const { NECK, HEAD } = DwellerShapes;
     const head = NECK.y + HEAD.y;
     const p = (outline: Outline, kind = ""): string => DwellerDrawing.path(outline, kind);
-    const neck = `M-12 ${head + 24}C-13 ${head + 40} -15 ${NECK.y - 12} -15 ${NECK.y + 6}L14 ${NECK.y + 6}C13 ${NECK.y - 12} 12 ${head + 40} 13 ${head + 14}Z`;
+    // A man's neck, as wide as two-thirds of the jaw, from under it down into the collar.
+    const neck = `M-15 ${head + 18}C-15 ${head + 36} -18 ${NECK.y - 10} -19 ${NECK.y + 6}L18 ${NECK.y + 6}C17 ${NECK.y - 10} 15 ${head + 36} 15 ${head + 14}Z`;
     return `<g class="dw-hood">${p(body.hood, "dw-hood-down")}<path class="dw-hood-rim" d="${DwellerDrawing.line(body.hood.slice(2, -2))}"/></g>
 <g class="dw-body-suit">${p(body.outline, "dw-body-base")}${body.baffles.map((baffle) => p(baffle, "dw-body-baffle")).join("")}${body.seams.map((seam) => p(seam, "dw-seam")).join("")}${p(body.yoke, "dw-yoke")}</g>
 ${p(body.opening, "dw-base-layer")}
