@@ -104,6 +104,14 @@ export interface Tracker extends ClimberAction {
   readonly do: "track" | "stop" | "check-in" | "sos";
 }
 
+/** Takes one of the devices they carry out into the hand (#271): the radio, the GPS watch on the
+ * wrist, turned up to be read, the weather meter or the tracker, in place of the one in it; or,
+ * with `none`, puts away the one they hold. */
+export interface DeviceInHand extends ClimberAction {
+  readonly kind: "device";
+  readonly device: "radio" | "gps" | "wind" | "tracker" | "none";
+}
+
 /** In a camp: goes into the tent at whose door the climber stands, or comes out of the one
  * they're in (`Tents`). */
 export interface TentDoorway extends ClimberAction {
@@ -138,6 +146,7 @@ export type GameAction =
   | CheckSelf
   | Radio
   | Tracker
+  | DeviceInHand
   | TentDoorway
   | TentChore;
 

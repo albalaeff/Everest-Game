@@ -131,6 +131,7 @@ export class Protocol {
     "check-self": {},
     radio: { channel: ["guide", "base-camp", "group"], phrase: "string" },
     tracker: { do: ["track", "stop", "check-in", "sos"] },
+    device: { device: ["radio", "gps", "wind", "tracker", "none"] },
     tent: { go: ["in", "out"] },
     chore: { chore: ["melt", "cook", "nap", "sleep", "guitar", "stop"] },
   };
