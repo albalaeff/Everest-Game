@@ -4244,10 +4244,6 @@ main:has(#tent:not([hidden])) #self-check {
   opacity: 0.42;
 }
 
-.dw-shoulders {
-  fill: #000;
-}
-
 .dw-drop path {
   fill: #000;
   opacity: 0.26;
@@ -4376,11 +4372,6 @@ main:has(#tent:not([hidden])) #self-check {
 
 .dw-sideburn {
   opacity: 0.7;
-}
-
-.dw-stubble {
-  fill: #2e2721;
-  opacity: 0.32;
 }
 
 .dw-hairs {
@@ -4544,9 +4535,18 @@ main:has(#tent:not([hidden])) #self-check {
   opacity: 0.3;
 }
 
+/* The hat's shade on the forehead under its cuff: a wide faint stroke and a narrow darker one. */
 .dw-hat-shadow {
-  fill: #000;
-  opacity: 0.38;
+  fill: none;
+  stroke: #000;
+  stroke-linecap: round;
+  stroke-width: 9;
+  opacity: 0.12;
+}
+
+.dw-hat-shadow.near {
+  stroke-width: 4;
+  opacity: 0.16;
 }
 
 .dw-hat-crown,

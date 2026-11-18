@@ -254,8 +254,9 @@ ${soft("pale", "#f3d2b4", 0.42)}
 <linearGradient id="${id}-upper-lip" x1="0" y1="0" x2="0" y2="1"><stop offset="0" class="dw-lip-shade"/><stop offset="1" class="dw-lip-base"/></linearGradient>
 <linearGradient id="${id}-lower-lip" x1="0" y1="0" x2="0" y2="1"><stop offset="0" class="dw-lip-base"/><stop offset="0.55" class="dw-lip-light"/><stop offset="1" class="dw-lip-base"/></linearGradient>
 <pattern id="${id}-hairs" width="9" height="9" patternUnits="userSpaceOnUse">${DwellerHead.hairs()}</pattern>
-<filter id="${id}-soften" x="-0.3" y="-0.3" width="1.6" height="1.6"><feGaussianBlur stdDeviation="3"/></filter>
-<mask id="${id}-beard"><path fill="#fff" filter="url(#${id}-soften)" d="${this.beardArea()}"/></mask>
+${soft("growth", "#fff", 1)}
+${soft("beard", "#231c17", 0.34)}
+<mask id="${id}-beard">${this.growth("growth")}</mask>
 <clipPath id="${id}-face"><path d="${this.outline()}"/></clipPath>
 <clipPath id="${id}-eye0"><path d="${this.eyeOpening(0)}"/></clipPath>
 <clipPath id="${id}-eye1"><path d="${this.eyeOpening(1)}"/></clipPath>`;
@@ -300,8 +301,25 @@ ${this.spot("dark", -30, 108, 22, 9, 30)}`;
     if (stubble <= 0) {
       return "";
     }
-    const area = this.beardArea();
-    return `<g mask="url(#${this.id}-beard)" opacity="${stubble.toFixed(2)}"><path class="dw-stubble" d="${area}"/><path fill="url(#${this.id}-hairs)" d="${area}"/></g>`;
+    return `<g class="dw-stubble" opacity="${stubble.toFixed(2)}">${this.growth("beard")}<path mask="url(#${this.id}-beard)" fill="url(#${this.id}-hairs)" d="${this.beardArea()}"/></g>`;
+  }
+
+  /** Where the stubble grows, as soft spots of `fill`: along the jaw, on the chin, and on the
+   * upper lip under the nose, fading at their edges as stubble does. */
+  private growth(fill: string): string {
+    const { lips } = this.features;
+    return [
+      this.spot(fill, 60, 58, 22, 36, -15),
+      this.spot(fill, -60, 58, 20, 36, 15),
+      this.spot(fill, 44, 86, 26, 26, -30),
+      this.spot(fill, -44, 86, 24, 26, 30),
+      this.spot(fill, 20, 102, 22, 20),
+      this.spot(fill, -20, 102, 22, 20),
+      this.spot(fill, 0, 108, 26, 16),
+      this.spot(fill, 0, 57, lips.wide / 2 + 6, 7),
+      this.spot(fill, 34, 64, 12, 12),
+      this.spot(fill, -34, 64, 12, 12),
+    ].join("");
   }
 
   /** Where the stubble grows: the jaw from the sideburns, the lower cheeks to their line, the
@@ -693,17 +711,14 @@ ${corner(half)}${corner(-half)}
         return `M${t(from.x)} ${t(from.y)}L${t(to.x)} ${t(to.y)}`;
       })
       .join("");
-    const shade = DwellerHead.closed([
-      ...cuff.map(({ x, y }) => ({ x, y: y + 7 })),
-      ...[...cuff].reverse().map(({ x, y }) => ({ x, y: y - 2 })),
-    ]);
+    const shade = DwellerHead.curve(cuff.map(({ x, y }) => ({ x, y: y + 3 })));
     const wrinkle = DwellerHead.curve(
       around
         .slice(4, -4)
         .map((angle) => on(angle, high(angle) - 34 + 10 * (1 - Math.cos(angle)), 7)),
     );
     return `<g class="dw-hat-all">
-<path class="dw-hat-shadow" d="${shade}" filter="url(#${id}-soften)"/>
+<path class="dw-hat-shadow" d="${shade}"/><path class="dw-hat-shadow near" d="${shade}"/>
 <path class="dw-hat" fill="url(#${id}-hat)" d="${crown}"/>
 <path class="dw-hat-crown" d="${wrinkle}"/>
 <path class="dw-hat-cuff" fill="url(#${id}-hat)" d="${band}"/>
