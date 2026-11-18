@@ -32,6 +32,14 @@ const stock = (page: Page, name: string): Locator =>
 const feel = (page: Page): Locator => tent(page).locator('[data-text="feel"]');
 const note = (page: Page): Locator => tent(page).locator(".tent-note");
 
+// A fault on one browser alone would otherwise show only as a wait that ran out: each story
+// says the page's errors in CI's log.
+test.beforeEach(({ page }) => {
+  page.on("pageerror", (error) => {
+    console.log(`Page error (${test.info().project.name}): ${error.stack ?? error.message}`);
+  });
+});
+
 /** A press of one of the page's buttons, by a click or a tap: the button over a door follows
  * the camera, which a click waits to see still. */
 async function press(target: Locator): Promise<void> {
@@ -99,7 +107,11 @@ test("at Base Camp the button over a tent's door takes the climber in: the tent 
   // The stove: lit with the door open for its fumes, and out again when the chore is stopped.
   // The litre it melts is the core's story (src/content/tent.story.test.ts).
   await press(chore(page, "melt"));
-  await expect(chore(page, "melt")).toHaveAttribute("data-state", "doing");
+  const pressed = Date.now();
+  await expect(chore(page, "melt")).toHaveAttribute("data-state", "doing", WALKING);
+  console.log(
+    `Melting began ${Date.now() - pressed} ms after the press (${test.info().project.name})`,
+  );
   await expect(chore(page, "melt")).toHaveAttribute(
     "aria-label",
     /^Melt snow: \d+ min left\. Press to stop$/,
