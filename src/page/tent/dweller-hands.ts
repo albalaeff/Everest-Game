@@ -27,7 +27,7 @@ export class DwellerHands {
     const id = `${this.id}-${shape}`;
     const fingers = shape === "open" ? DwellerHands.open() : DwellerHands.fist();
     return `<g class="dw-hand-${shape}" transform="scale(${DwellerHands.SCALE})">
-<linearGradient id="${id}" x1="0" y1="0" x2="1" y2="0"><stop offset="0" class="dw-skin-shade"/><stop offset="0.5" class="dw-skin-base"/><stop offset="0.85" class="dw-skin-light"/><stop offset="1" class="dw-skin-base"/></linearGradient>
+<linearGradient id="${id}" gradientUnits="userSpaceOnUse" x1="-44" y1="0" x2="46" y2="0"><stop offset="0" class="dw-skin-shade"/><stop offset="0.5" class="dw-skin-base"/><stop offset="0.85" class="dw-skin-light"/><stop offset="1" class="dw-skin-base"/></linearGradient>
 ${fingers.replaceAll("SKIN", `url(#${id})`)}
 </g>`;
   }

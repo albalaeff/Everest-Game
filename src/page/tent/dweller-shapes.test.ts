@@ -42,21 +42,33 @@ describe("DwellerShapes: the person in the tent on the slope climber's bones and
     }
   });
 
-  it("pads each limb as thick as the suit's down, round both its ends", () => {
+  it("pads each limb as thick as the suit's down, round both its ends, but the upper arm's top, tucked under the shoulder", () => {
     const pads = [
-      [shapes.upperArm, FigureShapes.DOWN.upperArm],
-      [shapes.forearm, FigureShapes.DOWN.forearm],
-      [shapes.thigh, FigureShapes.DOWN.thigh],
-      [shapes.shin, FigureShapes.DOWN.shin],
+      [shapes.upperArm, FigureShapes.DOWN.upperArm, 0.15],
+      [shapes.forearm, FigureShapes.DOWN.forearm, 1],
+      [shapes.thigh, FigureShapes.DOWN.thigh, 1],
+      [shapes.shin, FigureShapes.DOWN.shin, 1],
     ] as const;
-    for (const [part, down] of pads) {
+    for (const [part, down, round] of pads) {
       const { left, right, top, bottom } = extent(part.outline);
-      expect(left).toBeCloseTo(-down.root * SCALE, 0);
+      expect(left).toBeCloseTo(-down.root * SCALE * round, 0);
       expect(right).toBeCloseTo(part.length + down.end * SCALE, 0);
       // As thick as its root, and a few millimetres more where the down bulges.
       expect(bottom - top).toBeGreaterThanOrEqual(2 * down.root * SCALE - 0.5);
       expect(bottom - top).toBeLessThan(2 * (down.root + FrontShapes.PUFF) * SCALE + 0.5);
     }
+  });
+
+  it("takes the body's shoulders from the top of its sides up over the yoke, for the sleeves to tuck behind", () => {
+    const { top, bottom, left, right } = extent(shapes.shoulders);
+    const body = extent(shapes.body.outline);
+
+    expect(top).toBeCloseTo(body.top, 6);
+    expect(bottom).toBeCloseTo(-DwellerShapes.SHOULDERS_FROM, 0);
+    expect(left).toBeCloseTo(body.left, 0);
+    expect(right).toBeCloseTo(body.right, 0);
+    // The shoulders' joints are at its edge, under where a sleeve's top would show over it.
+    expect(DwellerShapes.SHOULDERS[1].y).toBeLessThan(bottom);
   });
 
   it("quilts the arms, the thighs and the body between the slope's seams", () => {
