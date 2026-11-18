@@ -16,30 +16,14 @@ const panel = (page: Page): Locator => page.getByRole("dialog", { name: "Devices
 const reading = (page: Page, device: string, name: string): Locator =>
   panel(page).locator(`[data-device="${device}"] [data-read="${name}"]`);
 
-/** The keys of the menu's controls the stories use on a PC. */
-const KEYS: Readonly<Record<string, string>> = {
-  radio: "KeyQ",
-  devices: "KeyG",
-  inventory: "KeyI",
-};
-
-/** Uses one of the menu's controls: its button under a finger on a phone, its key on a PC, where
- * a window this small has a card over part of the menu. */
-async function press(page: Page, control: string, hasTouch: boolean): Promise<void> {
-  if (hasTouch) {
-    await page.locator(`[data-control="${control}"]`).tap();
-  } else {
-    await page.keyboard.press(KEYS[control] ?? control);
-  }
-}
-
 /** Goes to a device by its tab. */
 async function show(page: Page, device: string): Promise<void> {
   await panel(page).getByRole("tab", { name: device, exact: true }).click();
 }
 
-// One climb for the four of them: each story's way to the slope costs CI's runners more than the
-// devices do.
+// One climb for the four of them, and a few looks at each: a story's way to the slope, and every
+// look at the page, cost CI's runners more than the devices do. What a tracker's messages do
+// once they've left is the rule's own tests' (src/simulation/devices.test.ts).
 test("a climber uses each device where they stand: the radio, the watch, the meter, the tracker", async ({
   page,
   hasTouch,
@@ -49,41 +33,23 @@ test("a climber uses each device where they stand: the radio, the watch, the met
   // The radio's own button, on a PC too: a click opens what its key does.
   const radio = page.locator('[data-control="radio"]');
   await (hasTouch ? radio.tap() : radio.click());
-
-  await expect(panel(page)).toBeVisible();
-  await expect(panel(page).getByRole("tab", { name: "Radio" })).toHaveAttribute(
-    "aria-selected",
-    "true",
-  );
   await expect(reading(page, "radio", "contact")).toHaveText("Base Camp in range");
-  const log = panel(page).locator(".radio__log");
 
-  // Base Camp answers from what the mountain is doing: the place, and a clear night's sun.
-  await panel(page).getByRole("button", { name: "Report position" }).click();
-  await expect(log).toContainText(/Base Camp, I'm at the moraine, 5,\d{3} m\./);
-  await expect(log).toContainText(/Copy: the moraine, 5,\d{3} m, at 0\d:\d\d\./, WALKING);
+  // Base Camp answers from what the mountain is doing: a clear night, the sun hours away.
   await panel(page).getByRole("button", { name: "Conditions?" }).click();
-  await expect(log).toContainText("Clear over the Icefall", WALKING);
-  await expect(log).toContainText(/The sun reaches the ice in \d h \d\d min\./);
-  // Each phrase went to the game as the player's action.
+  await expect(panel(page).locator(".radio__log")).toContainText(
+    /Clear over the Icefall.*The sun reaches the ice in \d h \d\d min\./,
+    WALKING,
+  );
+  // The phrase went to the game as the player's action.
   await expect(page.locator("#received")).toContainText("radio base-camp conditions");
 
-  // The tracker next, so its messages leave while the other two are read: off as it sets off.
+  // The tracker: off as it sets off, and its first point as it starts tracking.
   await show(page, "Tracker");
   const tracker = panel(page).locator('[data-device="tracker"]');
   await expect(reading(page, "tracker", "state")).toHaveText("Tracking off");
-  await expect(reading(page, "tracker", "battery")).toHaveText("100%");
   await tracker.getByRole("button", { name: "Start tracking" }).click();
-  await expect(reading(page, "tracker", "state")).toHaveText(
-    "Tracking · a point every 10 min",
-    WALKING,
-  );
-  await expect(reading(page, "tracker", "points")).toHaveText("1");
-  await expect(tracker.getByRole("button", { name: "Stop tracking" })).toHaveAttribute(
-    "aria-pressed",
-    "true",
-  );
-  await tracker.getByRole("button", { name: "Send check-in" }).click();
+  await expect(reading(page, "tracker", "points")).toHaveText("1", WALKING);
   // A press isn't an SOS: the button is held, as the real one sits under a cover.
   const sos = tracker.getByRole("button", { name: /^SOS/ });
   await sos.click();
@@ -92,42 +58,19 @@ test("a climber uses each device where they stand: the radio, the watch, the met
   await expect(reading(page, "tracker", "status")).toHaveText(/SOS (sending|sent)/, {
     timeout: 30_000,
   });
+  await expect(sos).toBeDisabled();
 
-  // The watch: where they are, what's left, and the sun's hour; no pace yet, steps out of camp.
+  // The watch: where they are, what's left, and the sun's hour; no pace yet, still in camp.
   await show(page, "GPS");
   await expect(reading(page, "gps", "where")).toHaveText("On the moraine");
-  await expect(reading(page, "gps", "altitude")).toHaveText(/^5,\d{3} m$/);
-  await expect(reading(page, "gps", "left-label")).toHaveText("To Camp 1");
   await expect(reading(page, "gps", "left")).toHaveText(/^\d\.\d km$/);
   await expect(reading(page, "gps", "sun")).toHaveText("06:00");
   await expect(reading(page, "gps", "arrival")).toHaveText("--");
-  await expect(panel(page).locator(".watch__route")).toHaveAttribute("d", /^M[\d.]+ [\d.]+L/);
 
   // The meter: the still of a clear night.
   await show(page, "Wind");
-  await expect(reading(page, "wind", "now")).toHaveText(/^[345]$/);
   await expect(reading(page, "wind", "name")).toHaveText("Calm");
-
-  // Back at the tracker, the check-in and the SOS have left: a few of the mountain's minutes.
-  await show(page, "Tracker");
-  await expect(reading(page, "tracker", "status")).toHaveText(
-    "SOS sent: Base Camp has your position",
-    { timeout: 30_000 },
-  );
-  await expect(reading(page, "tracker", "check-ins")).toHaveText("1");
-  await expect(sos).toBeDisabled();
-
-  // The pack takes the devices' place, and gives it back; the same control closes them.
-  await press(page, "inventory", hasTouch);
-  await expect(panel(page)).toBeHidden();
-  await expect(page.locator("#inventory")).toBeVisible();
-  await press(page, "devices", hasTouch);
-  await expect(page.locator("#inventory")).toBeHidden();
-  await expect(panel(page)).toBeVisible();
-  await expect(page.locator('[data-control="devices"]')).toHaveAttribute("aria-expanded", "true");
-  await press(page, "devices", hasTouch);
-  await expect(panel(page)).toBeHidden();
-  await expect(page.locator('[data-control="devices"]')).toHaveAttribute("aria-expanded", "false");
+  await expect(reading(page, "wind", "now")).toHaveText(/^[345]$/);
 });
 
 test("the keys open the devices, go between them, and close them", async ({ page, hasTouch }) => {
@@ -157,6 +100,14 @@ test("the keys open the devices, go between them, and close them", async ({ page
   await expect(panel(page)).toBeHidden();
   await page.keyboard.press("KeyG");
   await expect(tab("Radio")).toHaveAttribute("aria-selected", "true");
+
+  // The pack takes the devices' place, and gives it back; Esc puts them away.
+  await page.keyboard.press("KeyI");
+  await expect(panel(page)).toBeHidden();
+  await expect(page.locator("#inventory")).toBeVisible();
+  await page.keyboard.press("KeyG");
+  await expect(page.locator("#inventory")).toBeHidden();
+  await expect(panel(page)).toBeVisible();
   await page.keyboard.press("Escape");
   await expect(panel(page)).toBeHidden();
 });

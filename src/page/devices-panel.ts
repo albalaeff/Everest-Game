@@ -401,12 +401,12 @@ export class DevicesPanel {
   }
 
   private drawRadio(): void {
-    const { contact } = this.climb.radio;
-    this.find(".radio__lcd").dataset.contact = contact ? "yes" : "no";
-    this.set("contact", this.texts.say(contact ? "radio.contact" : "radio.no-contact"));
-    for (const button of this.panel.querySelectorAll<HTMLButtonElement>("[data-phrase]")) {
-      button.dataset.contact = contact ? "yes" : "no";
+    const contact = this.climb.radio.contact ? "yes" : "no";
+    const screen = this.find(".radio__lcd");
+    if (screen.dataset.contact !== contact) {
+      screen.dataset.contact = contact;
     }
+    this.set("contact", this.texts.say(contact === "yes" ? "radio.contact" : "radio.no-contact"));
   }
 
   /** The watch takes a fix where it sees the sky, twice a second on the wrist and every frame
@@ -428,7 +428,10 @@ export class DevicesPanel {
     const { texts, readings, baseCamp } = this;
     const seen = this.climb.gps.fix;
     const screen = this.find(".watch__screen");
-    screen.dataset.fix = seen ? "yes" : "no";
+    const sky = seen ? "yes" : "no";
+    if (screen.dataset.fix !== sky) {
+      screen.dataset.fix = sky;
+    }
     if (this.fix === null) {
       this.set("where", texts.say("gps.no-fix"));
       return;
@@ -486,7 +489,10 @@ export class DevicesPanel {
     const after = fix.arrival - (timeOfDay + until);
     const { hours, minutes } = readings.duration(Math.abs(after));
     const fills = { hours, minutes: String(minutes).padStart(2, "0") };
-    verdict.dataset.late = after > 0 ? "yes" : "no";
+    const late = after > 0 ? "yes" : "no";
+    if (verdict.dataset.late !== late) {
+      verdict.dataset.late = late;
+    }
     DevicesPanel.write(
       verdict,
       `${texts.say("gps.pace")}: ${texts.say(after > 0 ? "gps.late" : "gps.early", fills)}`,
@@ -552,7 +558,11 @@ export class DevicesPanel {
     const { texts, readings } = this;
     const tracker = this.climb.tracker;
     const flat = tracker.charge <= 0;
-    this.find(".tracker__screen").dataset.tracking = tracker.tracking ? "yes" : "no";
+    const face = this.find(".tracker__screen");
+    const tracking = tracker.tracking ? "yes" : "no";
+    if (face.dataset.tracking !== tracking) {
+      face.dataset.tracking = tracking;
+    }
     this.set(
       "state",
       flat
