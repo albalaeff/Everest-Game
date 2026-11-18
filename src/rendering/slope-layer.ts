@@ -17,6 +17,9 @@ import type { Beam } from "./beam";
 import { BlownSnow } from "./blown-snow";
 import type { Camera } from "./camera";
 import { CampSigns } from "./camp-signs";
+import type { TentShape, TentSizes } from "./camp-signs";
+import { TentDrawing } from "./tent-drawing";
+import type { TentUse } from "./tent-drawing";
 import type { CampStretch } from "./camp-signs";
 import { ClimberFigure } from "./climber-figure";
 import { SuitRig } from "./suit-rig";
@@ -100,6 +103,8 @@ interface DrawnClimber {
   readonly figure: ClimberFigure;
   /** The climber as the physics showed them after the frame's steps. */
   view: ClimberView | null;
+  /** The tent they're in, or on their way into or out of (#258); none on the slope. */
+  tent: TentShape | null;
 }
 
 /** The stretch of the slope in view, in metres across, with a margin each side. */
@@ -155,14 +160,8 @@ export class SlopeLayer extends ParallaxLayer {
   private static readonly BARE = "moraine";
   private static readonly CRACKED = "camp-1";
   private static readonly CRACKS_BEFORE = 6;
-  private static readonly TENT_EDGE_METRES = 0.08;
-  private static readonly TENT_GLOW_METRES = 1.6;
-  private static readonly TENT_GLOW_ALPHA = 0.35;
-  /** How far the full gust pushes in the middle of a tent's side, and how often it comes and
-   * goes; a side's curve is drawn in so many pieces. */
-  private static readonly RIPPLE_METRES = 0.07;
-  private static readonly RIPPLE_HZ = 0.5;
-  private static readonly SIDE_PIECES = 8;
+  /** The tents' own chance, apart from the ice's and the snow's: the rows behind a camp. */
+  private static readonly TENT_SEED = 258;
   /** The camp the prayer flags fly over; their mast's width and their strings'. */
   private static readonly FLAGS_OVER = "base-camp";
   private static readonly MAST_METRES = 0.08;
@@ -311,9 +310,11 @@ export class SlopeLayer extends ParallaxLayer {
   private readonly walls = new Graphics();
   private readonly wallEdges = new Graphics();
   private readonly surface = new Graphics();
-  private readonly tentGlow = new Graphics();
-  private readonly tentShapes: readonly (readonly Point[])[];
-  private readonly tentGraphics = new Graphics();
+  /** The camps' tents, behind the climbers and, for one somebody goes into, over them (#258). */
+  /** Where a tent's button is pinned: so far along its body from its door, and above its fly,
+   * in metres. */
+  private static readonly OVER_TENT = { along: 1.3, above: 0.35 };
+  private readonly tentDrawing: TentDrawing;
   private readonly flags: PrayerFlags | null;
   private readonly flagGraphics = new Graphics();
   /** How far across each tent, and the flags' strings, reach. */
@@ -413,6 +414,7 @@ export class SlopeLayer extends ParallaxLayer {
     seed: number,
     motes: number,
     ropeStretch: number,
+    tentSizes: TentSizes,
     private readonly jolts: {
       readonly zones: readonly JoltZone[];
       readonly warnings: readonly JoltWarning[];
@@ -496,19 +498,22 @@ export class SlopeLayer extends ParallaxLayer {
       this.rims,
       this.lips,
       this.hazards.standing,
-      this.tentGlow,
-      this.flagGraphics,
-      this.tentGraphics,
     );
-    const signs = new CampSigns(terrain);
-    this.tentShapes = camps.flatMap((camp) => signs.tents(camp));
-    this.tents = this.tentShapes.length;
-    SlopeLayer.glow(this.tentShapes, this.tentGlow);
+    this.tentDrawing = new TentDrawing(
+      terrain,
+      camps,
+      tentSizes,
+      bare?.to ?? 0,
+      seed + SlopeLayer.TENT_SEED,
+    );
+    this.addChild(this.flagGraphics, this.tentDrawing.behind);
+    this.tents = this.tentDrawing.count;
     const flown = camps.find(({ id }) => id === SlopeLayer.FLAGS_OVER);
     this.flags = flown === undefined ? null : new PrayerFlags(terrain, flown);
-    this.campSpans = [...this.tentShapes, ...(this.flags?.strings ?? [])].map((points) =>
-      SlopeLayer.across(points),
-    );
+    this.campSpans = [
+      ...this.tentDrawing.reach,
+      ...(this.flags?.strings ?? []).map((points) => SlopeLayer.across(points)),
+    ];
     for (const { graphics } of this.ladders) {
       this.addChild(graphics);
     }
@@ -540,7 +545,7 @@ export class SlopeLayer extends ParallaxLayer {
         ropeStretch,
         sherpa ? SuitRig.LOADED : 1,
       );
-      return { id, figure, view: null };
+      return { id, figure, view: null, tent: null };
     });
     this.playerFigure = this.figures.find(({ id }) => id === player)?.figure ?? null;
     // The player's own climber first of those who keep their place, and drawn over the others,
@@ -552,6 +557,8 @@ export class SlopeLayer extends ParallaxLayer {
     for (const { figure } of [...this.inPlace].reverse()) {
       this.addChild(figure);
     }
+    // Over the climbers: a tent somebody is on their way into, so they go in behind its fly.
+    this.addChild(this.tentDrawing.over);
     this.abreast = new Abreast((x) => physics.terrain.height(x));
     this.addChild(this.puffGraphics, this.chipGraphics);
     this.drift = new Drift(
@@ -611,6 +618,34 @@ export class SlopeLayer extends ParallaxLayer {
     return this.playerFigure?.facesViewer ?? false;
   }
 
+  /** Where the player is of a tent's door, as they're drawn (#258): outside, on their way in
+   * through it or out, or inside, nothing of them to see. */
+  /** The point over a camp's tent, a little above its fly over its door (#258). */
+  tentOver(camp: string, tent: number): Point | null {
+    const shape = this.tentDrawing.tents.find(
+      (pitched) => pitched.camp === camp && pitched.index === tent,
+    );
+    if (shape === undefined) {
+      return null;
+    }
+    const { door, lies, tall } = shape;
+    return {
+      x: door.x + lies * SlopeLayer.OVER_TENT.along,
+      y: door.y + tall + SlopeLayer.OVER_TENT.above,
+    };
+  }
+
+  get playerPassage(): "outside" | "going-in" | "inside" | "coming-out" {
+    const passage = this.playerFigure?.passage ?? null;
+    if (passage?.way === "in") {
+      return "going-in";
+    }
+    if (passage?.way === "out") {
+      return "coming-out";
+    }
+    return passage?.inside === true ? "inside" : "outside";
+  }
+
   /** How hard what's coming down shakes the picture now, from nothing to about 1. */
   get shaking(): number {
     return this.hazards.shaking;
@@ -653,12 +688,22 @@ export class SlopeLayer extends ParallaxLayer {
     this.load();
     this.standAbreast(seconds, size);
     this.beams.length = 0;
-    for (const { id, figure, view: climber } of this.figures) {
+    for (const drawn of this.figures) {
+      const { id, figure, view: climber } = drawn;
       const sag = this.sagUnder(climber, figure.at);
       const masked = this.oxygen.flow(id) > 0;
       const lit = this.lamps.lit(id);
-      figure.show(this.body.climber(id), masked, atmosphere, seconds, size, sag, lit);
-      if (figure.beam !== null) {
+      // In a tent, it's the one whose door is nearest where they stand (#258).
+      if (climber?.sheltered === true && drawn.tent === null) {
+        drawn.tent = CampSigns.nearest(this.tentDrawing.tents, climber.x);
+      }
+      const doorway = drawn.tent === null ? null : { x: drawn.tent.door.x, lies: drawn.tent.lies };
+      figure.show(this.body.climber(id), masked, atmosphere, seconds, size, sag, lit, doorway);
+      const passage = figure.passage;
+      if (climber?.sheltered !== true && passage?.passing !== true) {
+        drawn.tent = null;
+      }
+      if (figure.beam !== null && passage?.inside !== true) {
         this.beams.push(figure.beam);
       }
     }
@@ -689,10 +734,12 @@ export class SlopeLayer extends ParallaxLayer {
     this.drawRopes(size, rescaled, atmosphere, view);
     const { gust, elapsed } = atmosphere;
     const campsDue = this.campsDrawnAt !== pixelsPerMetre || gust > 0 || this.campGust > 0;
-    if (campsDue && this.campsInView(view)) {
+    const campsShow = this.campsInView(view);
+    if (campsDue && campsShow) {
       this.campsDrawnAt = pixelsPerMetre;
-      this.drawCamps(gust, elapsed, size);
+      this.drawFlags(gust, elapsed, size);
     }
+    this.tentDrawing.draw(atmosphere, size, this.tentsInUse(), campsShow);
     this.drawPuffs();
     this.drawChips();
     this.blow(seconds, camera, atmosphere);
@@ -728,8 +775,32 @@ export class SlopeLayer extends ParallaxLayer {
       );
     }
     this.tintedWith = atmosphere;
-    this.tentGlow.alpha = atmosphere.light.lamps * SlopeLayer.TENT_GLOW_ALPHA;
-    this.tentGlow.visible = this.tentGlow.alpha > 0.01;
+  }
+
+  /** The tents somebody is in, or on their way into or out of, this frame (#258): each one's
+   * door as far open as whoever goes through it has it. */
+  private tentsInUse(): readonly TentUse[] {
+    const use: TentUse[] = [];
+    for (const { figure, tent } of this.figures) {
+      const passage = figure.passage;
+      if (tent === null || passage === null) {
+        continue;
+      }
+      const at = use.findIndex((one) => one.tent === tent);
+      const before = use[at];
+      const now: TentUse = {
+        tent,
+        open: Math.max(passage.open, before?.open ?? 0),
+        inside: passage.inside || before?.inside === true,
+        passing: passage.passing || before?.passing === true,
+      };
+      if (before === undefined) {
+        use.push(now);
+      } else {
+        use[at] = now;
+      }
+    }
+    return use;
   }
 
   /** Climbers at one spot of the slope stand a step apart along the ground (`Abreast`, #243): each
@@ -741,8 +812,16 @@ export class SlopeLayer extends ParallaxLayer {
       seconds,
       this.inPlace.map(({ figure, view }) => ({
         at: figure.stands,
-        free: view !== null && !view.dead && !view.falling && !view.onIce && !view.lowering,
-        there: view !== null && !view.dead,
+        free:
+          view !== null &&
+          !view.dead &&
+          !view.falling &&
+          !view.onIce &&
+          !view.lowering &&
+          !view.sheltered &&
+          figure.passage?.passing !== true,
+        // In a tent, they're in nobody's way (#258).
+        there: view !== null && !view.dead && !view.sheltered,
         grown,
       })),
     );
@@ -1130,16 +1209,9 @@ export class SlopeLayer extends ParallaxLayer {
     return { left: Math.min(...xs), right: Math.max(...xs) };
   }
 
-  /** The tents, their sides pushed in and out on the gust, and the flags over Base Camp blown
-   * out on it, at `elapsed` seconds of picture. */
-  private drawCamps(gust: number, elapsed: number, size: LeastSize): void {
+  /** The flags over Base Camp blown out on the gust, at `elapsed` seconds of picture. */
+  private drawFlags(gust: number, elapsed: number, size: LeastSize): void {
     this.campGust = gust;
-    const graphics = this.tentGraphics;
-    graphics.clear();
-    for (const [index, tent] of this.tentShapes.entries()) {
-      const wave = Math.sin(2 * Math.PI * (SlopeLayer.RIPPLE_HZ * elapsed + 0.37 * index));
-      SlopeLayer.tent(graphics, tent, gust * SlopeLayer.RIPPLE_METRES * (0.55 + 0.45 * wave));
-    }
     const flags = this.flagGraphics;
     flags.clear();
     if (this.flags === null) {
@@ -1645,53 +1717,6 @@ export class SlopeLayer extends ParallaxLayer {
         { offset: 1, color: Palette.css(0x000000) },
       ],
     });
-  }
-
-  /** The glow behind each tent, for the night. */
-  private static glow(tents: readonly (readonly Point[])[], glow: Graphics): void {
-    for (const [left, , ridge] of tents) {
-      if (left !== undefined && ridge !== undefined) {
-        glow
-          .circle(ridge.x, ridge.y - (ridge.y - left.y) * 0.6, SlopeLayer.TENT_GLOW_METRES)
-          .fill(Palette.LAMP);
-      }
-    }
-  }
-
-  /** A tent as `CampSigns` shapes it: filled, with an edge and a door, so it reads by shape and by
-   * colour; its sides pushed `push` the way the wind blows at their middles, the windward one in
-   * and the lee one out. */
-  private static tent(graphics: Graphics, tent: readonly Point[], push: number): void {
-    const [left, right, ridge] = tent;
-    if (left === undefined || right === undefined || ridge === undefined) {
-      return;
-    }
-    graphics.moveTo(left.x, left.y);
-    SlopeLayer.side(graphics, left, ridge, push);
-    SlopeLayer.side(graphics, ridge, right, push);
-    graphics
-      .closePath()
-      .fill(Palette.TENT)
-      .stroke({ width: SlopeLayer.TENT_EDGE_METRES, color: Palette.TENT_DOOR });
-    const door = (ridge.y - left.y) * 0.55;
-    graphics
-      .poly([ridge.x - door * 0.4, left.y, ridge.x + door * 0.4, right.y, ridge.x, left.y + door])
-      .fill(Palette.TENT_DOOR);
-  }
-
-  /** A tent's side from `from` to `to`, its middle pushed `push` across: a curve in pieces. */
-  private static side(graphics: Graphics, from: Point, to: Point, push: number): void {
-    const controlX = (from.x + to.x) / 2 + 2 * push;
-    const controlY = (from.y + to.y) / 2;
-    const pieces = SlopeLayer.SIDE_PIECES;
-    for (let piece = 1; piece <= pieces; piece += 1) {
-      const t = piece / pieces;
-      const s = 1 - t;
-      graphics.lineTo(
-        s * s * from.x + 2 * s * t * controlX + t * t * to.x,
-        s * s * from.y + 2 * s * t * controlY + t * t * to.y,
-      );
-    }
   }
 
   /** A rope along its curve, with a dark edge so it reads on the snow, and a picket driven in at

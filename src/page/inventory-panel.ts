@@ -128,7 +128,8 @@ export class InventoryPanel {
     PackList.meter(this.meter, this.base + view.weight);
   }
 
-  private toggle(): void {
+  /** Opens the card, or closes it: its button's and its key's, and the tent's [Pack] (#258). */
+  toggle(): void {
     if (!this.panel.hidden) {
       this.close();
       return;

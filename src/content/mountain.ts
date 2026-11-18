@@ -11,6 +11,7 @@ import {
   ObjectiveHazards,
   OxygenSystem,
   Packs,
+  Tents,
 } from "../simulation";
 import type {
   DeviceNumbers,
@@ -30,6 +31,7 @@ import { ClimberFacts } from "./climber-facts";
 import { Questionnaire } from "./questionnaire";
 import type { ClimberAnswers } from "./questionnaire";
 import { Section } from "./section";
+import { TentFacts } from "./tent-facts";
 
 /** One expedition's rules, with their numbers: the page draws from the physics and reads the
  * clock, and the expedition runs them all, in this order. */
@@ -47,6 +49,8 @@ export interface ExpeditionRules {
   readonly lamps: Lamplight;
   /** What each climber carries, and what the camps hold. */
   readonly packs: Packs;
+  /** Who's in which tent, their chores, and the camps' gas and meals (#258). */
+  readonly tents: Tents;
   /** The climbers' Sherpa, Pemba, who guides them (#212). */
   readonly sherpa: Sherpa;
   /** The radios and the satellite trackers the climbers carry (#260). */
@@ -78,6 +82,8 @@ export class Mountain {
 
   /** What the player's answers make of their climber. */
   readonly climbers: ClimberFacts;
+  /** The tents' numbers, and their sizes for the picture (#258). */
+  readonly tents: TentFacts;
 
   constructor(
     private readonly knowledge: KnowledgeBase,
@@ -85,6 +91,7 @@ export class Mountain {
     readonly questionnaire: Questionnaire = new Questionnaire(),
   ) {
     this.climbers = new ClimberFacts(knowledge, questionnaire);
+    this.tents = new TentFacts(knowledge);
   }
 
   /** A new expedition's scenario on the route, from its seed, with the player as their `answers`
@@ -139,6 +146,9 @@ export class Mountain {
     // The packs first: the body carries this step what they weigh, and the physics climbs on
     // what's on the harness.
     const packs = new Packs(this.route.packNumbers, body, physics, oxygen);
+    // The tents after the packs, whose bottles their stove fills, and before the body, which
+    // sleeps this step, and the physics, which keeps whoever is inside where they are (#258).
+    const tents = new Tents(this.tents.numbers, clock, physics, packs, body, this.route.tents);
     const hazards = new ObjectiveHazards(this.hazardSettings(), clock, physics);
     const jolts = new Jolts(this.joltSettings(), clock, physics);
     const logbook = new Logbook(physics, hazards, clock, this.route.logged);
@@ -156,9 +166,10 @@ export class Mountain {
       logbook,
       lamps,
       packs,
+      tents,
       sherpa,
       devices,
-      all: [clock, packs, oxygen, body, hazards, jolts, physics, logbook, devices, sherpa],
+      all: [clock, packs, tents, oxygen, body, hazards, jolts, physics, logbook, devices, sherpa],
     };
   }
 

@@ -12,6 +12,7 @@ import disclaimerTexts from "../content/disclaimer.json";
 import renderingTexts from "../content/rendering.json";
 import roomTexts from "../content/room.json";
 import sherpaTexts from "../content/sherpa.json";
+import tentTexts from "../content/tent.json";
 import { Build } from "./build";
 import { KNOWLEDGE_FILES } from "./content/knowledge-files";
 import { Disclaimer } from "./interface/disclaimer";
@@ -37,6 +38,7 @@ new Disclaimer(document, disclaimerTexts.en, new ExpertReview(facts)).show(() =>
     pack: new Texts(packTexts.en),
     sherpa: new Texts(sherpaTexts.en),
     god: new Texts(godTexts.en),
+    tent: new Texts(tentTexts.en),
     devices: new Texts(deviceTexts.en),
   };
   void new GamePage(window, texts, facts, build).open();

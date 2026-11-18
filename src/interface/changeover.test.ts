@@ -38,6 +38,7 @@ const at = (over: Partial<ClimberView> = {}): ClimberView => ({
   heldBack: null,
   facing: 1,
   towardViewer: false,
+  sheltered: false,
   ...over,
 });
 

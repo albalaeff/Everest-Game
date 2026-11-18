@@ -20,7 +20,8 @@ export type {
   Pace,
   PackChange,
   Radio,
-  SetUpTent,
+  TentChore,
+  TentDoorway,
   Tool,
   Tracker,
   Unclip,
@@ -83,6 +84,19 @@ export type {
   Shoulders,
 } from "./packs";
 export type { Moment, Rule, RuleStates } from "./rule";
+export { CHORES, Tents } from "./tents";
+export type {
+  Campground,
+  Chore,
+  Flasks,
+  Lack,
+  Sleeper,
+  TentCamp,
+  TentDoor,
+  TentNumbers,
+  TentStart,
+  TentView,
+} from "./tents";
 export type { Scenario } from "./scenario";
 export { SeededRandom } from "./seeded-random";
 export type { RandomState } from "./seeded-random";

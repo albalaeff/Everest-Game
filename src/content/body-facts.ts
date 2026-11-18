@@ -62,7 +62,11 @@ export class BodyFacts {
         hungryAfter: number("body.hungry-after"),
         cost: number("body.hunger-cost"),
       },
-      sleep: { sleepyAfter: number("body.sleepy-after"), cost: number("body.sleep-loss-cost") },
+      sleep: {
+        sleepyAfter: number("body.sleepy-after"),
+        cost: number("body.sleep-loss-cost"),
+        restores: number("body.sleep-restores"),
+      },
     };
   }
 

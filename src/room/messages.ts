@@ -128,7 +128,8 @@ export class Protocol {
     "check-self": {},
     radio: { channel: ["guide", "base-camp", "group"], phrase: "string" },
     tracker: { do: ["track", "stop", "check-in", "sos"] },
-    "set-up-tent": {},
+    tent: { go: ["in", "out"] },
+    chore: { chore: ["melt", "cook", "nap", "sleep", "guitar", "stop"] },
   };
 
   /** What a browser sent, or null for anything that isn't a message of the protocol. */

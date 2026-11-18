@@ -42,7 +42,7 @@ const ONE_PRESS_BUTTONS = [
   ["the D-pad's right", DPAD_RIGHT, { kind: "view", change: "closer" }],
   ["View", VIEW, { kind: "check-self", climber: "anna" }],
   ["Menu", MENU, { kind: "panel", panel: "inventory" }],
-  ["the right bumper", RIGHT_BUMPER, { kind: "set-up-tent", climber: "anna" }],
+  ["the right bumper", RIGHT_BUMPER, { kind: "tent", climber: "anna", go: "in" }],
   ["RT", RIGHT_TRIGGER, { kind: "tool", climber: "anna", tool: "ice-axe", x: 1, y: 1 }],
   ["LT", LEFT_TRIGGER, { kind: "tool", climber: "anna", tool: "crampons", x: 1, y: -1 }],
 ] as const;

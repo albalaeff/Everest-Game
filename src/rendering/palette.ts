@@ -74,9 +74,29 @@ export class Palette {
   static readonly LADDER_SHADE = 0x4a5560;
   /** The cord lashing a long ladder's sections end to end: muted, so the rope keeps its orange. */
   static readonly LASHING = 0x7d6a4f;
-  /** The camps' tents, lit from inside at night. */
-  static readonly TENT = 0xe9a13b;
-  static readonly TENT_DOOR = 0xb06a1e;
+  /** The camps' tents (#258): an expedition dome's golden fly, its shade and its seams, the band
+   * of light on its crown, the grey vestibule and its shade, the zips and the guy lines, the
+   * valance along the ground, the dark inside an open door, and the light through the fly of a
+   * tent lit from inside. */
+  static readonly TENT = 0xf0b23a;
+  static readonly TENT_SHADE = 0xc98a1f;
+  static readonly TENT_SEAM = 0x7a4f10;
+  static readonly TENT_SHEEN = 0xffe7a3;
+  static readonly TENT_PORCH = 0x565c6b;
+  static readonly TENT_PORCH_SHADE = 0x3c414d;
+  static readonly TENT_ZIP = 0xe6ebf2;
+  static readonly TENT_VALANCE = 0x272a33;
+  static readonly TENT_INSIDE = 0x17110c;
+  static readonly TENT_LIT = 0xffd684;
+  static readonly GUY_LINE = 0xdfe6f0;
+  /** The other expeditions' tents behind a camp's own: gold, orange, red, green and blue. */
+  static readonly FAR_TENTS: readonly number[] = [0xe6ad3f, 0xdf6b32, 0xc9443a, 0x3f9488, 0x4a78c9];
+  /** What lies about a camp: Base Camp's blue barrels and red duffels, a marker wand's flag. */
+  static readonly BARREL = 0x2f6cc4;
+  static readonly BARREL_BAND = 0x1d4a8e;
+  static readonly DUFFEL = 0xc23b30;
+  static readonly WAND = 0x8f7a52;
+  static readonly WAND_FLAG = 0xd9402c;
   /** The prayer flags over Base Camp, blue, white, red, green and yellow in their order: muted, so
    * the suits and the rope keep their colours. */
   static readonly PRAYER_FLAGS: readonly number[] = [

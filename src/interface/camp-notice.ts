@@ -133,7 +133,7 @@ export class CampNotice {
   private show(): void {
     const { texts, readings, clock, section } = this;
     const { altitude } = this.climbers.climber(this.player);
-    const time = texts.say("duration", readings.duration(clock.elapsed));
+    const time = texts.say("duration", readings.duration(clock.played));
     this.title.textContent = texts.say(section.destination.id);
     this.where.textContent = `${readings.altitude(altitude)} · ${readings.clock(clock.timeOfDay)}`;
     this.took.textContent = `${texts.say(section.id, { time })} ${texts.say("first-time", section.hours)}`;

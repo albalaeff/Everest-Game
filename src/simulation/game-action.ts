@@ -101,9 +101,18 @@ export interface Tracker extends ClimberAction {
   readonly do: "track" | "stop" | "check-in" | "sos";
 }
 
-/** Sets up a tent where the climber stands, in camp. */
-export interface SetUpTent extends ClimberAction {
-  readonly kind: "set-up-tent";
+/** In a camp: goes into the tent at whose door the climber stands, or comes out of the one
+ * they're in (`Tents`). */
+export interface TentDoorway extends ClimberAction {
+  readonly kind: "tent";
+  readonly go: "in" | "out";
+}
+
+/** In a tent: takes up a chore, melting snow into the bottles, cooking a meal, a nap, a night's
+ * sleep or the camp's guitar, in place of the one in hand; or stops (`Tents`). */
+export interface TentChore extends ClimberAction {
+  readonly kind: "chore";
+  readonly chore: "melt" | "cook" | "nap" | "sleep" | "guitar" | "stop";
 }
 
 /**
@@ -126,7 +135,8 @@ export type GameAction =
   | CheckSelf
   | Radio
   | Tracker
-  | SetUpTent;
+  | TentDoorway
+  | TentChore;
 
 /**
  * A climber let go: stopped where they stand, at a steady pace, the jumar's slide and any haul let

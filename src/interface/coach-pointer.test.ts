@@ -39,6 +39,7 @@ const standing = (x: number, over: Partial<ClimberView> = {}): ClimberView => ({
   heldBack: null,
   facing: 1,
   towardViewer: false,
+  sheltered: false,
   ...over,
 });
 
