@@ -67,8 +67,9 @@ export interface DwellerFrame {
  * the picture's variables (`Appearance`). It holds nothing: the same look gives the same frame.
  */
 export class DwellerDrawing {
-  /** The names of the parts with a shadow of their own, on what's under them. */
-  static readonly DROPPED: readonly LimbName[] = ["upper0", "fore0", "upper1", "fore1"];
+  /** The names of the parts with a shadow of their own, on what's under them: the forearms, in
+   * front of the body. */
+  static readonly DROPPED: readonly LimbName[] = ["fore0", "fore1"];
   /** The light, from above and the right, as the figure faces; and how far each arm's shadow
    * falls on what's under it, down and to the left. */
   private static readonly LIGHT: Spot = { x: 0.55, y: -0.83 };
@@ -101,28 +102,29 @@ export class DwellerDrawing {
   /** `seat` is where the figure's hips are in the picture, sitting. */
   constructor(private readonly seat: Spot) {}
 
-  /** The figure's parts, in the order they're drawn: the hood behind the neck, the body, the
-   * legs, the guitar on the lap, the further arm and its hand, the head, the nearer arm and its
-   * hand, and the water it pours. */
+  /** The figure's parts, in the order they're drawn: the upper arms, behind the body; the hood
+   * behind the neck, the body, the legs, the guitar on the lap, the further forearm and its hand,
+   * the head, the nearer forearm and its hand, and the water it pours. */
   markup(): string {
     const { shapes } = this;
     const { LAP } = DwellerDrawing;
     const p = (outline: Outline, kind = ""): string => DwellerDrawing.path(outline, kind);
-    // Each upper arm tucks behind the body's shoulders, clipped to all but them
-    // (`#dw-shoulders`, turned with the torso), and lies over its forearm at the elbow, as a
-    // sleeve does.
+    // Each upper arm is behind the body, so its round top at the shoulder joint always runs on
+    // under the body's shoulder, whichever way the arm turns: the arm can't come away from the
+    // body. The forearm and the hand are in front of it.
+    const upper = (side: 0 | 1): string =>
+      DwellerDrawing.limb(`upper${side}`, shapes.upperArm, "suit");
     const arm = (side: 0 | 1): string =>
-      `<g clip-path="url(#dw-shoulders)"><g class="dw-drop" data-part="upper${side}-drop">${p(shapes.upperArm.outline)}</g></g>
-<g class="dw-drop" data-part="fore${side}-drop">${p(shapes.forearm.outline)}</g>
+      `<g class="dw-drop" data-part="fore${side}-drop">${p(shapes.forearm.outline)}</g>
 ${DwellerDrawing.limb(`fore${side}`, shapes.forearm, "suit", shapes.cuff, "dw-cuff")}
-<g clip-path="url(#dw-shoulders)">${DwellerDrawing.limb(`upper${side}`, shapes.upperArm, "suit")}</g>
 <g class="dw-hand" data-part="hand${side}">${DwellerHands.held()}<g class="dw-fist">${new DwellerHands(`dw-hand${side}`).markup("fist")}</g><g class="dw-open">${new DwellerHands(`dw-hand${side}`).markup("open")}</g></g>`;
     const thigh = (side: 0 | 1): string =>
       DwellerDrawing.limb(`thigh${side}`, shapes.thigh, "suit");
     const shin = (side: 0 | 1): string =>
       `${DwellerDrawing.limb(`shin${side}`, shapes.shin, "suit", shapes.shinPanel, "dw-panel")}${DwellerDrawing.limb(`foot${side}`, shapes.bootie, "booties", shapes.soles[side], "dw-sole")}`;
-    return `<defs>${DwellerDrawing.defs()}<clipPath id="dw-shoulders" clipPathUnits="userSpaceOnUse"><path data-part="shoulders" clip-rule="evenodd" d="M-600 -600H600V600H-600Z${DwellerDrawing.line(shapes.shoulders)}Z"/></clipPath></defs>
+    return `<defs>${DwellerDrawing.defs()}</defs>
 <g class="dw" data-part="all">
+<g class="dw-upper-arms">${upper(1)}${upper(0)}</g>
 <g class="dw-torso" data-part="torso">${this.body()}</g>
 <g class="dw-legs">${thigh(0)}${thigh(1)}${shin(0)}${shin(1)}</g>
 <g class="dw-lap" data-part="guitar" transform="translate(${LAP.x} ${LAP.y}) rotate(${LAP.turn}) scale(${LAP.size})">${TentArt.guitar()}</g>

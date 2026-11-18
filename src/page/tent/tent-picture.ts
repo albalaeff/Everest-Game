@@ -132,7 +132,6 @@ export class TentPicture {
     set("all", "transform", frame.all);
     set("all", "opacity", frame.shown.toFixed(3));
     set("torso", "transform", frame.torso);
-    set("shoulders", "transform", frame.torso);
     set("head", "transform", frame.head);
     for (const [name, limb] of Object.entries(frame.limbs)) {
       set(name, "transform", limb.transform);
