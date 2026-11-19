@@ -4,12 +4,12 @@
     {
       "id": "time.compression",
       "kind": "coefficient",
-      "claim": "How many times faster than play the mountain's time runs: an hour on the mountain passes in 100 seconds of play. It's three times the scale the route is drawn at (route.drawn-scale), so a climber goes three times as fast over the drawn ground as in life, quick enough to play, and still takes a section's real hours on the clock, which their body tires, thirsts and sickens by. Fitted so that the slowest summit day on record, 12 hours from the South Col to the summit in the queue of 20 May 2026, plays in 20 minutes, within the 20–30 the spec gives the push, and so that the whole climb takes about two hours once camp skips the waits.",
+      "claim": "How many times faster than play the mountain's time runs: an hour on the mountain passes in 50 seconds of play. It's six times the scale the route is drawn at (route.drawn-scale), so a climber goes six times as fast as in life over the drawn ground, at a walker's pace on the screen, and still takes a section's real hours on the clock, which their body tires, thirsts and sickens by. Twice the 36 it was first fitted to (an hour in 100 s, the slowest summit day in 20 minutes), which played too slowly (albalaeff, 2026-11-19): now the slowest summit day on record, 12 hours from the South Col to the summit in the queue of 20 May 2026, plays in 10 minutes, and the whole climb in about an hour once camp skips the waits.",
       "status": "source only",
-      "value": 36,
+      "value": 72,
       "unit": "1",
       "fitted_to": ["crowds.south-col-to-summit-2026"],
-      "fitted": "2026-11-06"
+      "fitted": "2026-11-19"
     },
     {
       "id": "time.section-hours",

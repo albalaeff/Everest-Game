@@ -3,12 +3,14 @@ import { DwellerPose } from "./dweller-pose";
 import { DEVICE_ACTS } from "./dweller-pose";
 import type { Act, DeviceAct } from "./dweller-pose";
 
-/** What the rules say of whoever is in the tent, as the acts read it: the chore in hand and how
- * far through it is, the mountain's second their last sleep here ended at, and the device they
- * have out (#271), which the devices' card shows. */
+/** What the rules say of whoever is in the tent, as the acts read it: the chore in hand, how far
+ * through it is and how many seconds of play it takes in all, nought untimed (#278); the
+ * mountain's second their last sleep here ended at; and the device they have out (#271), which
+ * the devices' card shows. */
 export interface TentWork {
   readonly chore: "melt" | "cook" | "nap" | "sleep" | "guitar" | null;
   readonly progress: number;
+  readonly lasts?: number;
   readonly sleptTo: number | null;
   readonly device: DeviceKind | null;
 }
@@ -50,9 +52,10 @@ export class DwellerActs {
     ...DEVICE_ACTS.flatMap((device): Act[] => [`${device}-out`, `${device}-away`]),
   ];
 
-  /** A chore's parts, and how far through the chore each begins: the mountain's time runs 36
-   * times play's, so melting's 12 minutes are 20 seconds of play and cooking's 15 are 25, and
-   * each part has the seconds its movement takes (`DwellerPose.LASTS`). */
+  /** A chore's parts, and how far through the chore each begins, each with a share of it for the
+   * seconds its movement takes (`DwellerPose.LASTS`): at the mountain's 36 times play's, melting's
+   * 12 minutes were 20 seconds of play and cooking's 15 were 25, and each fitted. At 72 (#278)
+   * they're 10 and 12.5, and a part shorter than its movement plays it the quicker (`brisk`). */
   static readonly PARTS: Readonly<Record<"melt" | "cook", readonly (readonly [number, Act])[]>> = {
     melt: [
       [0, "light"],
@@ -70,6 +73,9 @@ export class DwellerActs {
 
   private act: Act = "enter";
   private seconds = 0;
+  /** How much quicker than its own pace the act plays: a chore's part shorter than its
+   * movement, so it's seen to its end before the next begins (#278). */
+  private brisk = 1;
   /** Whether they're in the bag; the acts to play once after this one; the last sleep seen
    * ending; and whether they're on their way out. */
   private lying = false;
@@ -129,11 +135,31 @@ export class DwellerActs {
 
   /** The act `seconds` after the last frame, the tent's rule as `work` has it. */
   advance(seconds: number, work: TentWork): Acting {
-    this.seconds += Math.max(0, seconds);
+    this.seconds += Math.max(0, seconds) * this.brisk;
     if (!this.leaving) {
       this.follow(work);
     }
+    this.brisk = DwellerActs.briskness(this.act, work);
     return { act: this.act, seconds: this.seconds };
+  }
+
+  /** How much quicker than its own pace `act` plays for `work`: a part of the chore in hand whose
+   * share of it is shorter than its movement, by as much; anything else, at its own pace. */
+  private static briskness(act: Act, work: TentWork): number {
+    const { chore, lasts = 0 } = work;
+    if ((chore !== "melt" && chore !== "cook") || lasts <= 0) {
+      return 1;
+    }
+    const parts = DwellerActs.PARTS[chore];
+    const index = parts.findIndex(([, part]) => part === act);
+    const at = parts[index];
+    if (at === undefined) {
+      return 1;
+    }
+    const until = parts[index + 1]?.[0] ?? 1;
+    const movement = DwellerPose.LASTS[act as keyof typeof DwellerPose.LASTS];
+    const share = (until - at[0]) * lasts;
+    return share > 0 ? Math.max(1, movement / share) : 1;
   }
 
   private follow(work: TentWork): void {

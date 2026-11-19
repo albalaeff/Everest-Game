@@ -348,7 +348,7 @@
     {
       "id": "hazards.training-crack",
       "kind": "coefficient",
-      "claim": "How many of the mountain's seconds a serac collapse staged for training cracks and groans before it comes down (#209), as a flight simulator stages an engine failure: long enough for a player who reads the crack to stop or back off, a few seconds of play, where a real serac gives little warning (hazards.serac-warning).",
+      "claim": "How many of the mountain's seconds a serac collapse staged for training cracks and groans before it comes down (#209), as a flight simulator stages an engine failure: long enough for a player who reads the crack to stop or back off, under two seconds of play at the mountain's pace (time.compression), where a real serac gives little warning (hazards.serac-warning).",
       "status": "source only",
       "value": 120,
       "unit": "s",
@@ -485,7 +485,7 @@
     {
       "id": "hazards.gust-warning",
       "kind": "coefficient",
-      "claim": "How many of the mountain's seconds a gust shows coming, the snow streaming across the slope and its roar, before it hits (#197): long enough for a player who sees it to stop and brace, a couple of seconds of play, where a real gust gives a few seconds' warning.",
+      "claim": "How many of the mountain's seconds a gust shows coming, the snow streaming across the slope and its roar, before it hits (#197): long enough for a player who sees it to stop and brace, a second of play at the mountain's pace (time.compression), where a real gust gives a few seconds' warning.",
       "status": "source only",
       "value": 72,
       "unit": "s",
@@ -545,7 +545,7 @@
     {
       "id": "hazards.twist-warning",
       "kind": "coefficient",
-      "claim": "How many of the mountain's seconds a lashed ladder creaks and starts to sway before it twists under the climber on it (#197): long enough to stop and hold the rope, a second and a half of play.",
+      "claim": "How many of the mountain's seconds a lashed ladder creaks and starts to sway before it twists under the climber on it (#197): long enough to stop and hold the rope, under a second of play at the mountain's pace (time.compression).",
       "status": "source only",
       "value": 54,
       "unit": "s",

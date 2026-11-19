@@ -540,6 +540,26 @@ describe("SlopePhysics: slips and falls", () => {
     expect(anna.falls[0]?.drop).toBeCloseTo(30, 6);
     expect(anna.falls[0]?.speed).toBeCloseTo(Math.sqrt(2 * 9.8 * 30), 0);
   });
+
+  it("launches a slip at the speed they walk at in life, however fast the mountain's pace (#278)", () => {
+    /** Anna's slip on the flat, a step into her walk at the pace: how fast it went, and how far
+     * she slid. */
+    const slip = (pace: number): { readonly speed: number; readonly slid: number } => {
+      const settings = { ...TestMountain.HARSH, pace, walkingPower: pace, fastestWalk: pace };
+      const climb = new Climb(settings, alone(TestMountain.FLAT, 10));
+      climb.step("anna", "right");
+      const from = climb.physics.climber("anna").x;
+      climb.play(100);
+      const anna = climb.physics.climber("anna");
+      return { speed: anna.falls[0]?.speed ?? 0, slid: anna.x - from };
+    };
+
+    // She walks at 1 m/s in life, six times as fast over the drawn ground: she slips at 1 m/s and
+    // stops within a few centimetres, where at 6 m/s she'd slide 4 m.
+    expect(slip(1).speed).toBeCloseTo(1, 6);
+    expect(slip(6).speed).toBeCloseTo(1, 6);
+    expect(slip(6).slid).toBeLessThan(0.1);
+  });
 });
 
 describe("SlopePhysics: as the hazards' ground", () => {

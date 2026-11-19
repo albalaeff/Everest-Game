@@ -13,28 +13,28 @@ const compression = base.number("time.compression");
 const drawnScale = base.number("route.drawn-scale");
 
 /**
- * The game's scale (#116, #167): the mountain's clock runs `time.compression` times faster than
- * play, and every section is drawn at 1/`route.drawn-scale` of life, so a climber goes the one
- * over the other times faster than in life over the drawn ground, three times, and still takes
- * real mountain hours. An hour on the mountain passes in under two minutes of play, and the whole
- * climb fits the spec's two hours once camp skips the waits.
+ * The game's scale (#116, #167, #278): the mountain's clock runs `time.compression` times faster
+ * than play, and every section is drawn at 1/`route.drawn-scale` of life, so a climber goes the
+ * one over the other times faster than in life over the drawn ground, six times, and still takes
+ * real mountain hours. An hour on the mountain passes in under a minute of play, and the whole
+ * climb fits the spec's hour once camp skips the waits.
  */
-describe("The game's scale: a mountain hour in under two minutes of play", () => {
-  it("plays the slowest summit day on record within the 20–30 minutes the spec asks of the push", () => {
+describe("The game's scale: a mountain hour in under a minute of play", () => {
+  it("plays the slowest summit day on record within the 10–15 minutes the spec asks of the push", () => {
     const hours = base.number("crowds.south-col-to-summit-2026");
 
     const minutesOfPlay = (hours * 60) / compression;
 
-    expect(minutesOfPlay).toBeGreaterThanOrEqual(20);
-    expect(minutesOfPlay).toBeLessThanOrEqual(30);
+    expect(minutesOfPlay).toBeGreaterThanOrEqual(10);
+    expect(minutesOfPlay).toBeLessThanOrEqual(15);
   });
 
-  it("fits six to eight weeks into the spec's two hours of play, once camp skips the waits", () => {
+  it("fits six to eight weeks into the spec's hour of play, once camp skips the waits", () => {
     const clock = new MountainClock(compression);
     clock.load(MountainClock.start({ date: "2026-04-10", time: "06:00" }));
-    const twoHoursOfPlay = 2 * HOUR * SimulationClock.STEPS_PER_SECOND;
+    const anHourOfPlay = HOUR * SimulationClock.STEPS_PER_SECOND;
 
-    for (let step = 0; step < twoHoursOfPlay; step += 1) {
+    for (let step = 0; step < anHourOfPlay; step += 1) {
       clock.advance();
     }
     const onTheMove = clock.elapsed;

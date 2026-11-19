@@ -4,7 +4,7 @@ import { GearDrawing } from "../../interface/gear-drawing";
 import type { Texts } from "../../interface/texts";
 import { Atmosphere } from "../../rendering/atmosphere";
 import type { TentSizes } from "../../rendering/camp-signs";
-import { CHORES } from "../../simulation";
+import { CHORES, SimulationClock } from "../../simulation";
 import type {
   BodyView,
   Chore,
@@ -271,9 +271,12 @@ export class TentScreen {
       this.acts.talk();
     }
     this.spoke = hand.spoke;
+    // The chore's whole length in seconds of play, at the mountain's pace (#278).
+    const pace = world.clock.secondsAStep / SimulationClock.STEP_SECONDS;
     const acting = this.acts.advance(seconds, {
       chore: tent.chore,
       progress: tent.progress,
+      lasts: pace > 0 ? tent.whole / pace : 0,
       sleptTo: tent.slept?.to ?? null,
       device: hand.device,
     });

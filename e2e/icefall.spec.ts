@@ -34,10 +34,10 @@ async function height(page: Page): Promise<number> {
 
 /** The camp's stretch begins 659.5 m along the ground, 271.25 m across the picture, on the flat; the
  * climb is saved a step short of it, 3 h 20 min of the mountain's time after setting off, about a
- * typical crossing's, 3 h 27 (#186): 6,667 steps at 36 times play. */
+ * typical crossing's, 3 h 27 (#186): 3,334 steps at 72 times play (#278). */
 const CAMP_1_EDGE = 659.3;
 const CAMP_1_X = 271.25;
-const STEPS_TO_CAMP_1 = 6_667;
+const STEPS_TO_CAMP_1 = 3_334;
 
 test.describe("on a screen of 630 by 360", () => {
   test.use({ viewport: { width: 630, height: 360 } });

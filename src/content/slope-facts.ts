@@ -51,6 +51,7 @@ export class SlopeFacts {
       steepest,
       walkingPower: fast("walking-power"),
       fastestWalk: fast("fastest-walk"),
+      pace: speedUp,
       uphillCostShare: number("uphill-cost-share"),
       slipChance: [
         [-steepest, slip],
