@@ -1392,6 +1392,136 @@ describe("ClimberPose: a casualty and their rescuer (#241)", () => {
   });
 });
 
+describe("ClimberPose: a casualty hauled out of a crevasse (#279)", () => {
+  const HOLD = { x: 0, y: 0.7 };
+  /** A casualty with a broken leg hauled up a rescue line, its lip `lip` from their harness. */
+  const hauledAt = (lip: Joint, ground: (ahead: number) => number = flat): Partial<PoseState> => ({
+    falling: true,
+    hanging: true,
+    hurt: "leg",
+    jumar: HOLD,
+    face: 0,
+    ground,
+    terrain: ground,
+    hauled: { lip },
+  });
+  const at = (pose: Pose, joint: Joint): Joint => inWorld({ x: 0, y: 0, pose }, joint);
+  const head = (pose: Pose): Joint => at(pose, pose.head);
+  const ankles = (pose: Pose): Joint[] => pose.legs.map((leg) => at(pose, leg.end));
+
+  it("hangs in the harness below the lip, off the rope's way up, whatever ground the drawing finds by them: never lying as one who fell", () => {
+    // A wall's face right at their point, as on a ledge of its steps, or nothing near them.
+    const face = (ahead: number): number => (ahead > -0.1 ? 0 : -3);
+    for (const ground of [face, (): number => -3]) {
+      const { pose } = settled(hauledAt({ x: 0.1, y: 3 }, ground));
+
+      expect(Math.abs(pose.tilt)).toBeLessThan(0.4);
+      expect(at(pose, pose.pelvis).x).toBeLessThan(-0.25);
+      expect(head(pose).y).toBeGreaterThan(at(pose, pose.pelvis).y + 0.6);
+      for (const ankle of ankles(pose)) {
+        expect(ankle.y).toBeLessThan(-0.6);
+      }
+    }
+  });
+
+  it("is pulled over the lip chest first: pressed to its edge, the chest over the snow beyond it, the legs down the face", () => {
+    const { pose } = settled(hauledAt({ x: 0.02, y: 0 }));
+    const shoulder = at(pose, pose.shoulder);
+
+    expect(at(pose, pose.pelvis).x).toBeGreaterThan(-0.25);
+    expect(at(pose, pose.pelvis).x).toBeLessThan(-0.1);
+    expect(shoulder.x).toBeGreaterThan(0.05);
+    expect(shoulder.y).toBeGreaterThan(0.15);
+    expect(head(pose).x).toBeGreaterThan(shoulder.x);
+    for (const ankle of ankles(pose)) {
+      expect(ankle.y).toBeLessThan(-0.6);
+      expect(ankle.x).toBeLessThan(-0.1);
+    }
+    // Nothing of them in the ice under the snow, beyond the face.
+    for (const joint of joints(pose).map((joint) => at(pose, joint))) {
+      expect(joint.x > 0.02 && joint.y < -0.02).toBe(false);
+    }
+  });
+
+  it("is dragged down flat onto the snow past the lip, the legs over its edge till the hips are well onto it", () => {
+    const coming = settled(hauledAt({ x: -0.25, y: 0 })).pose;
+    const onto = settled(hauledAt({ x: -1.2, y: 0 })).pose;
+
+    // Half onto it: the body going over, the legs down over the edge, 25 cm behind.
+    expect(coming.tilt).toBeGreaterThan(0.7);
+    for (const ankle of ankles(coming)) {
+      expect(ankle.x).toBeLessThan(-0.25);
+      expect(ankle.y).toBeLessThan(-0.15);
+    }
+    // Well onto it: face down along the snow, the head toward the anchor, all of them on it.
+    expect(onto.tilt).toBeGreaterThan(1.45);
+    expect(head(onto).x).toBeGreaterThan(0.5);
+    for (const joint of joints(onto).map((joint) => at(onto, joint))) {
+      expect(joint.y).toBeGreaterThan(-0.05);
+      expect(joint.y).toBeLessThan(0.4);
+    }
+  });
+
+  it("is dragged sitting, feet first, along a crevasse's floor while the rope runs low to the lip, and lifted off it as it steepens", () => {
+    const dragged = settled(hauledAt({ x: 5, y: 2 })).pose;
+    const sitting = settled({ hurt: "leg" }).pose;
+    const lifting = settled(hauledAt({ x: 1.6, y: 2 })).pose;
+    const lifted = settled(hauledAt({ x: 0.4, y: 2 })).pose;
+
+    // As they sat: the broken leg out ahead toward the wall, the hips on the floor.
+    expect(at(dragged, dragged.pelvis).y).toBeCloseTo(at(sitting, sitting.pelvis).y, 2);
+    expect(ankles(dragged)[0]?.x).toBeGreaterThan(0.6);
+    // Lifted: the hips up off the floor, the legs coming down under them, till they stand on
+    // it, held up by the rope, the boots on the floor and none in it.
+    expect(at(lifting, lifting.pelvis).y).toBeGreaterThan(at(dragged, dragged.pelvis).y);
+    expect(ankles(lifting)[0]?.x).toBeLessThan(ankles(dragged)[0]?.x ?? 0);
+    expect(Math.abs(lifted.tilt)).toBeLessThan(0.4);
+    expect(at(lifted, lifted.pelvis).y).toBeGreaterThan(0.7);
+    for (const ankle of [...ankles(lifting), ...ankles(lifted)]) {
+      expect(ankle.y).toBeGreaterThan(ClimberPose.ANKLE - 0.01);
+    }
+  });
+
+  it("comes up a whole haul with no jump: off the floor, up the face, over the lip and onto the snow, lying there once it's done", () => {
+    const climber = new ClimberPose();
+    climber.advance(5, state({ hurt: "leg" }));
+    // Hauled at 0.5 m a second: along a floor 2 m under the lip toward its wall, up the wall, and
+    // over the top. The lip is where it is; the casualty comes to it.
+    const lips: Joint[] = [];
+    for (let x = 5; x > 0; x -= 0.5 / 60) {
+      lips.push({ x, y: 2 });
+    }
+    for (let y = 2; y > 0; y -= 0.5 / 60) {
+      lips.push({ x: 0, y });
+    }
+    for (let x = 0; x > -0.6; x -= 0.5 / 60) {
+      lips.push({ x, y: 0 });
+    }
+    const frames: Frame[] = [];
+    for (let frame = 0; frame < 60; frame += 1) {
+      frames.push({ x: -5, y: -2, pose: climber.advance(FRAME, state({ hurt: "leg" })) });
+    }
+    for (const lip of lips) {
+      const pose = climber.advance(FRAME, state(hauledAt(lip)));
+      frames.push({ x: -lip.x, y: -lip.y, pose });
+    }
+    for (let frame = 0; frame < 90; frame += 1) {
+      frames.push({ x: 0.6, y: 0, pose: climber.advance(FRAME, state({ hurt: "leg" })) });
+    }
+
+    // Steadily as they're hauled; a little faster as they go from sitting on the floor into the
+    // haul at its start, as one going down from their feet does.
+    const hauling = { from: 60 + 54, to: 60 + lips.length };
+    pairs(frames).forEach(([before, after], index) => {
+      const moved = joints(after.pose).map((joint, at) =>
+        length(inWorld(after, joint), inWorld(before, joints(before.pose)[at] ?? joint)),
+      );
+      const steady = index >= hauling.from && index < hauling.to;
+      expect(Math.max(...moved)).toBeLessThan(steady ? 0.05 : 0.12);
+    });
+  });
+});
+
 describe("ClimberPose: a device in the hand (#271)", () => {
   const held = (kind: "radio" | "gps" | "wind" | "tracker", out = 1): Partial<PoseState> => ({
     device: { kind, out, talking: false },
