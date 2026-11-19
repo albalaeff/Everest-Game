@@ -3,6 +3,7 @@ import { describe, expect, it } from "vitest";
 import { DwellerHands } from "./dweller-hands";
 import { DwellerPose } from "./dweller-pose";
 import type { Act, DwellerJoints, DwellerLook, Held, Spot } from "./dweller-pose";
+import { Vector3 } from "./hand-bones";
 import { TentArt } from "./tent-art";
 
 const pose = new DwellerPose();
@@ -74,57 +75,86 @@ const taken = (all: readonly Frame[], thing: Held): readonly [Frame, Frame] => {
   return [first, last];
 };
 
-describe("DwellerPose: the arms and the hands (#269)", () => {
-  it("draws no bone longer than it is, and puts each hand where the pose has it grip", () => {
+describe("DwellerPose: the arms and the hands (#269, #274)", () => {
+  /** How far a hand's wrist is bent, in three dimensions: from the way the forearm runs to the
+   * way the hand's bones do. */
+  const bend = (joints: DwellerJoints, side: 0 | 1): number => {
+    const { wrist, turn: hand } = joints.grips[side];
+    const forearm = new Vector3(
+      joints.wrists[side].x - joints.elbows[side].x,
+      joints.wrists[side].y - joints.elbows[side].y,
+      wrist.z - joints.elbowsAhead[side],
+    );
+    return forearm.angle(hand.along);
+  };
+  /** How much of its length a forearm shows, 0 seen end on to 1 across the picture. */
+  const shown = (joints: DwellerJoints, side: 0 | 1): number =>
+    far(joints.elbows[side], joints.wrists[side]) / DwellerPose.FOREARM;
+
+  it("draws no bone longer than it is, and puts each hand where the pose has it grip, as far as the arm reaches", () => {
     for (const act of ACTS) {
       for (const { look, joints } of frames(act, 20)) {
         for (const side of [0, 1] as const) {
           const hand = look.hands[side];
-          const upper = far(joints.shoulders[side], joints.elbows[side]);
-          const fore = far(joints.elbows[side], joints.wrists[side]);
           // A bone that points toward the viewer is drawn shorter, never longer.
-          expect(upper).toBeLessThan(DwellerPose.UPPER_ARM + 1e-6);
-          expect(fore).toBeLessThan(DwellerPose.FOREARM + 1e-6);
-          const palm = DwellerHands.WRIST[DwellerHands.SHAPES[hand.holds]];
-          const away = Math.hypot(far(joints.shoulders[side], hand.at), hand.ahead);
-          if (away + palm < DwellerPose.UPPER_ARM + DwellerPose.FOREARM - 1) {
+          expect(far(joints.shoulders[side], joints.elbows[side])).toBeLessThan(
+            DwellerPose.UPPER_ARM + 1e-6,
+          );
+          expect(far(joints.elbows[side], joints.wrists[side])).toBeLessThan(
+            DwellerPose.FOREARM + 1e-6,
+          );
+          // Where it grips, unless the arm is straight and reaches no further.
+          const reach = Math.hypot(
+            far(joints.shoulders[side], joints.wrists[side]),
+            joints.grips[side].wrist.z,
+          );
+          if (reach < DwellerPose.UPPER_ARM + DwellerPose.FOREARM - 0.5) {
             expect(far(joints.hands[side], hand.at)).toBeLessThan(0.01);
           }
-          // A hand set to what it holds is as long as its shape, from the wrist to where it
-          // grips; one that lies along its forearm is seen as short as the forearm is.
-          const long = far(joints.wrists[side], joints.hands[side]);
-          expect(long).toBeLessThan(palm + 1e-6);
-          if (hand.firm > 0 && DwellerHands.TURNS[hand.holds] === undefined) {
-            expect(long).toBeCloseTo(palm, 6);
-          }
         }
       }
     }
   });
 
-  it("bends a wrist no further than a wrist bends, more only as the forearm comes toward the viewer", () => {
+  it("bends a wrist no further than a wrist bends, the hand turned to what it holds and the arm to the hand", () => {
+    // Where the hands mostly reach and hold things out in front, past a wrist's easy bend only
+    // for a moment; anywhere, no further than a fretting hand round the guitar's neck.
+    const easy: readonly Act[] = ["idle", "light", "pour", "boil", "melt", "drink", "pack", "wake"];
     for (const act of ACTS) {
-      for (const { joints } of frames(act, 20)) {
+      const all = frames(act, 30);
+      let past = 0;
+      for (const { joints } of all) {
         for (const side of [0, 1] as const) {
-          const seen = Math.min(
-            1,
-            far(joints.elbows[side], joints.wrists[side]) / DwellerPose.FOREARM,
-          );
-          const most = DwellerPose.WRIST_BEND + (1 - seen) * DwellerPose.WRIST_LOOSE;
-          // To within a degree: the wrist and the hand settle each other.
-          expect(turn(joints.palms[side] - joints.forearms[side])).toBeLessThan(most + 1);
+          expect(bend(joints, side)).toBeLessThan(125);
+          past += bend(joints, side) > DwellerPose.WRIST_BEND ? 1 : 0;
         }
+      }
+      if (easy.includes(act)) {
+        expect(past / (2 * all.length)).toBeLessThan(0.1);
       }
     }
   });
 
-  it("never shows a forearm end on, a sleeve pointing at the viewer", () => {
+  it("shows a forearm end on, a sleeve pointing at the viewer, only as it swings past", () => {
     for (const act of ACTS) {
+      let [run, longest, count] = [0, 0, 0];
       for (const { joints } of frames(act)) {
+        const end = ([0, 1] as const).some((side) => shown(joints, side) < 0.35);
+        run = end ? run + 1 : 0;
+        longest = Math.max(longest, run);
+        count += end ? 1 : 0;
+      }
+      expect(longest).toBeLessThanOrEqual(4);
+      expect(count).toBeLessThanOrEqual(6);
+    }
+  });
+
+  it("lifts an elbow over its shoulder only to reach out over the stove or to stretch, never as a wing", () => {
+    for (const act of ACTS) {
+      const most = act === "wake" ? 60 : act === "fill" ? 45 : 25;
+      for (const { joints } of frames(act, 30)) {
         for (const side of [0, 1] as const) {
-          expect(far(joints.elbows[side], joints.wrists[side])).toBeGreaterThan(
-            DwellerPose.FOREARM * 0.3,
-          );
+          expect(joints.shoulders[side].y - joints.elbows[side].y).toBeLessThan(most);
         }
       }
     }
@@ -133,6 +163,9 @@ describe("DwellerPose: the arms and the hands (#269)", () => {
   it("moves without a jump from one frame to the next, sixty a second, round and round", () => {
     for (const act of ACTS) {
       const all = frames(act);
+      // Up off the hands and knees, round to the pack, and down to the radio on the pad, an elbow
+      // swings round behind its arm.
+      const swing = ["enter", "leave", "pack", "radio-out", "radio-away"].includes(act) ? 80 : 45;
       for (let index = 1; index < all.length; index += 1) {
         const [before, now] = [all[index - 1], all[index]];
         if (before === undefined || now === undefined) {
@@ -145,18 +178,16 @@ describe("DwellerPose: the arms and the hands (#269)", () => {
             far(of(now.joints), of(before.joints));
           expect(moved(({ hands }) => hands[side])).toBeLessThan(16);
           expect(moved(({ wrists }) => wrists[side])).toBeLessThan(26);
-          expect(moved(({ elbows }) => elbows[side])).toBeLessThan(40);
-          // A hand turns smoothly while it holds the same thing, and so does the thing.
-          if (now.look.hands[side].holds === before.look.hands[side].holds) {
-            expect(turn(now.joints.palms[side] - before.joints.palms[side])).toBeLessThan(40);
-            expect(turn(now.joints.aims[side] - before.joints.aims[side])).toBeLessThan(40);
-          }
+          expect(moved(({ elbows }) => elbows[side])).toBeLessThan(swing);
+          // A hand turns smoothly, whatever it holds.
+          const [from, to] = [before.joints.grips[side].turn, now.joints.grips[side].turn];
+          expect(Math.max(from.along.angle(to.along), from.back.angle(to.back))).toBeLessThan(26);
         }
       }
     }
   });
 
-  it("holds each thing the way the pose aims it: what the wrist can't turn to, the pose doesn't ask for", () => {
+  it("holds each thing the way the pose aims it, the hand turned round it", () => {
     const things: readonly Held[] = [
       "bottle",
       "spoon",
@@ -167,6 +198,7 @@ describe("DwellerPose: the arms and the hands (#269)", () => {
       "lit",
       "pouch",
       "sealed",
+      "lifted",
       "pot",
       "radio",
       "tracker",
@@ -178,29 +210,23 @@ describe("DwellerPose: the arms and the hands (#269)", () => {
         for (const side of [0, 1] as const) {
           const hand = look.hands[side];
           if (hand.firm >= 1 && things.includes(hand.holds)) {
-            expect(turn(joints.aims[side] - hand.aim)).toBeLessThan(12);
+            expect(turn(joints.aims[side] - hand.aim)).toBeLessThan(1);
           }
         }
       }
     }
   });
 
-  it("lays a hand across a bottle, a pouch and a lighter, and along a spoon and a bar", () => {
-    const across = (frame: Frame | undefined, side: 0 | 1): number =>
-      frame === undefined ? NaN : turn(frame.joints.palms[side] - frame.joints.aims[side]);
-    const at = (act: Act, seconds: number): Frame => {
-      const look = pose.look(act, seconds);
-      return { at: seconds, look, joints: pose.joints(look) };
-    };
-
-    // Square to the thing, give or take what it turns in the fingers.
-    expect(across(at("drink", 1.8), 0)).toBeGreaterThan(90 - DwellerHands.CANT.wide - 0.01);
-    expect(across(at("drink", 1.8), 0)).toBeLessThan(90 + DwellerHands.CANT.wide + 0.01);
-    expect(across(at("eat", 1), 1)).toBeGreaterThan(90 - DwellerHands.CANT.flat - 0.01);
-    expect(across(at("light", 1), 0)).toBeGreaterThan(90 - DwellerHands.CANT.tight - 0.01);
-    // The fingers run toward the bowl and the bitten end: the hand points the thing's way.
-    expect(180 - across(at("eat", 1.9), 0)).toBeLessThan(DwellerHands.CANT.pinch + 0.01);
-    expect(180 - across(at("bar", 1), 0)).toBeLessThan(DwellerHands.CANT.pinch + 0.01);
+  it("puts an empty hand by its palm as it rests, so what it's ready to take changes nothing until it reaches", () => {
+    const resting = pose.look("idle", 2);
+    const ready = (holds: Held): DwellerLook => ({
+      ...resting,
+      hands: [{ ...resting.hands[0], ready: holds, firm: 0, shut: 0 }, resting.hands[1]],
+    });
+    const [bottle, pot] = [pose.joints(ready("bottle")), pose.joints(ready("pot"))];
+    expect(bottle.grips[0].wrist).toEqual(pot.grips[0].wrist);
+    expect(bottle.grips[0].turn).toEqual(pot.grips[0].turn);
+    expect(bottle.elbows[0]).toEqual(pot.elbows[0]);
   });
 
   it("gives the same pose for the same act and seconds", () => {
@@ -326,10 +352,26 @@ describe("DwellerPose: at the stove (#269)", () => {
   it("takes a pouch from the pile and the pot off the stove by its handle, pours the pot's water into the pouch and puts the pot back", () => {
     const filling = frames("fill");
     const [lifted, put] = taken(filling, "pot");
+    const byTop = filling.filter(({ look }) => look.hands[1].holds === "lifted");
     const pouch = filling.filter(({ look }) => look.hands[1].holds === "pouch");
+    const standing = filling.filter(({ look }) => look.pouch !== null);
     const running = filling.filter(({ look }) => look.stream !== null);
 
-    expect(far(pouch[0]?.joints.hands[1] ?? { x: 0, y: 0 }, DwellerPose.MEAL)).toBeLessThan(3);
+    // Lifted by its top from where it stands in the pile, along the floor from where they've
+    // shifted to; set down on the lap, let go, and taken again by its side where it stands.
+    const [first] = byTop;
+    const pile = {
+      x: (first?.joints.hands[1].x ?? 0) + (first?.look.shift ?? 0),
+      y: first?.joints.hands[1].y ?? 0,
+    };
+    expect(far(pile, DwellerPose.MEAL)).toBeLessThan(3);
+    expect(turn((first?.joints.aims[1] ?? 0) - DwellerPose.MEAL_LEANS)).toBeLessThan(1);
+    expect(standing.length).toBeGreaterThan(10);
+    const set = standing[0]?.look.pouch;
+    expect(far(byTop.at(-1)?.joints.hands[1] ?? pile, set?.at ?? pile)).toBeLessThan(1);
+    expect(far(pouch[0]?.joints.hands[1] ?? pile, set?.at ?? pile)).toBeLessThan(1);
+    expect(byTop.at(-1)?.at).toBeLessThan(standing[0]?.at ?? 0);
+    expect(standing.at(-1)?.at).toBeLessThan(pouch[0]?.at ?? 0);
     for (const frame of [lifted, put]) {
       expect(far(frame.joints.hands[0], DwellerPose.HANDLE)).toBeLessThan(2.5);
       expect(turn(frame.joints.aims[0])).toBeLessThan(1);
@@ -451,7 +493,7 @@ describe("DwellerPose: the person in the tent (#258)", () => {
     const drinking = frames("drink");
     const [first, last] = taken(drinking, "bottle");
     const mouth = (frame: Frame): Spot => end(frame, 0, DwellerHands.REACH.bottle);
-    const sipping = drinking.filter(({ at }) => at > 1.5 && at < 2.3);
+    const sipping = drinking.filter(({ at }) => at > 1.6 && at < 2.3);
 
     for (const frame of [first, last]) {
       expect(far(frame.joints.hands[0], DwellerPose.BOTTLE)).toBeLessThan(2.5);

@@ -1,5 +1,7 @@
+import { DwellerHands } from "./dweller-hands";
+import type { Held } from "./dweller-hands";
 import { DwellerPose } from "./dweller-pose";
-import type { Act, DwellerLook, HandLook, Spot } from "./dweller-pose";
+import type { Act, DwellerLook, HandLook, Point, Spot } from "./dweller-pose";
 
 /**
  * The person in the tent between one act and the next (#269): when what they do changes, a chore
@@ -16,6 +18,8 @@ export class DwellerBlend {
   static readonly LASTS = 0.35;
   /** How far apart along the floor two poses can be and still be blended, in pixels. */
   private static readonly NEAR = 30;
+  /** The way an empty hand's back faces where a pose doesn't say (`DwellerPose`'s). */
+  private static readonly BACK = DwellerPose.BACK_UP;
 
   private act: Act | null = null;
   private shown: DwellerLook | null = null;
@@ -65,19 +69,68 @@ export class DwellerBlend {
 
   private static mix(from: DwellerLook, to: DwellerLook, share: number): DwellerLook {
     const number = (a: number, b: number): number => a + (b - a) * share;
+    const unit = (way: Point): Point => {
+      const size = Math.hypot(way.x, way.y, way.z) || 1;
+      return { x: way.x / size, y: way.y / size, z: way.z / size };
+    };
     const spot = (a: Spot, b: Spot): Spot => ({ x: number(a.x, b.x), y: number(a.y, b.y) });
-    const hand = (a: HandLook, b: HandLook): HandLook => ({
+    const hand = (a: HandLook, b: HandLook): HandLook => {
+      const mixed = place(a, b);
+      // A hand set for something else lets go of what it held, the first half of the way, and
+      // takes up the new act's grip from slack, the second: so it turns from the one to the
+      // other only while it's slack, as nothing jumps.
+      if (DwellerHands.GRIPS[DwellerBlend.grip(a)] === DwellerHands.GRIPS[DwellerBlend.grip(b)]) {
+        return mixed;
+      }
+      // Letting go, it keeps the old grip's aim and the way its back faces; taking up the new,
+      // the new act's aim, which a slack hand doesn't follow yet, and its back turning from the
+      // old way to the new.
+      if (share < 0.5) {
+        const part = 1 - 2 * share;
+        return {
+          ...mixed,
+          ready: DwellerBlend.grip(a),
+          firm: a.firm * part,
+          shut: DwellerBlend.shut(a) * part,
+          aim: a.aim,
+          back: a.back ?? DwellerBlend.BACK,
+        };
+      }
+      const part = 2 * share - 1;
+      return {
+        ...mixed,
+        ready: DwellerBlend.grip(b),
+        firm: b.firm * part,
+        shut: DwellerBlend.shut(b) * part,
+        aim: b.aim,
+        back: DwellerPose.turning(
+          unit(a.back ?? DwellerBlend.BACK),
+          unit(b.back ?? DwellerBlend.BACK),
+          part,
+        ),
+      };
+    };
+    const place = (a: HandLook, b: HandLook): HandLook => ({
       ...b,
       at: spot(a.at, b.at),
       ahead: number(a.ahead, b.ahead),
-      elbow: {
-        x: number(a.elbow.x, b.elbow.x),
-        y: number(a.elbow.y, b.elbow.y),
-        z: number(a.elbow.z, b.elbow.z),
-      },
+      // Turned round, not mixed, so the way never shrinks to nothing between two opposite ones.
+      elbow: DwellerPose.turning(unit(a.elbow), unit(b.elbow), share),
       // The short way round.
       aim: a.aim + (b.aim - a.aim - 360 * Math.round((b.aim - a.aim) / 360)) * share,
       firm: number(a.firm, b.firm),
+      // How far closed and spread, and the way an empty hand's back faces (#274).
+      shut: number(DwellerBlend.shut(a), DwellerBlend.shut(b)),
+      spread: number(a.spread ?? 0, b.spread ?? 0),
+      ...(a.back === undefined && b.back === undefined
+        ? {}
+        : {
+            back: DwellerPose.turning(
+              unit(a.back ?? DwellerBlend.BACK),
+              unit(b.back ?? DwellerBlend.BACK),
+              share,
+            ),
+          }),
     });
     return {
       ...to,
@@ -93,6 +146,16 @@ export class DwellerBlend {
       tap: number(from.tap, to.tap),
       gaze: spot(from.gaze, to.gaze),
     };
+  }
+
+  /** What a hand holds, or what it's set for, holding nothing. */
+  private static grip(hand: HandLook): Held {
+    return hand.holds === "nothing" ? (hand.ready ?? "nothing") : hand.holds;
+  }
+
+  /** How far a hand is closed: shut on what it holds, open holding nothing, as a pose has it. */
+  private static shut(hand: HandLook): number {
+    return hand.shut ?? (hand.holds === "nothing" ? 0 : 1);
   }
 
   /** 0 to 1 with an easy start and end. */

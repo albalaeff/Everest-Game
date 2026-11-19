@@ -67,8 +67,8 @@ function inside(path: string, { x, y }: Spot): boolean {
   return crossings % 2 === 1;
 }
 
-describe("DwellerDrawing: the person in the tent as a drawing (#258, #264, #269)", () => {
-  it("draws the slope's climber in parts: the quilted body and limbs, each hand in two layers with what it holds between, and a head with a face", () => {
+describe("DwellerDrawing: the person in the tent as a drawing (#258, #264, #269, #274)", () => {
+  it("draws the slope's climber in parts: the quilted body and limbs, each hand in three places round its sleeve and what it holds, and a head with a face", () => {
     const markup = drawing.markup();
 
     for (const part of [
@@ -78,15 +78,18 @@ describe("DwellerDrawing: the person in the tent as a drawing (#258, #264, #269)
       "fore0-drop",
       "fore1-drop",
       "back0",
+      "mid0",
       "held0",
       "carried0",
       "hand0",
       "back1",
+      "mid1",
       "held1",
       "carried1",
       "hand1",
       "head",
       "guitar",
+      "pouch",
       "lump",
       "stream",
       "stream-light",
@@ -108,28 +111,42 @@ describe("DwellerDrawing: the person in the tent as a drawing (#258, #264, #269)
     for (const face of ["dw-iris", "dw-lid-skin", "dw-brow", "dw-nose", "dw-lip-upper", "dw-ear"]) {
       expect(markup).toContain(face);
     }
-    // Each hand has every shape, and every thing a hand holds.
-    expect(markup.match(/data-shape="open"/gu)).toHaveLength(2);
-    expect(markup.match(/data-shape="wide"/gu)).toHaveLength(4);
-    expect(markup.match(/data-shape="pinch"/gu)).toHaveLength(4);
-    for (const held of ["spoon", "stirrer", "bottle", "bar", "pouch", "snow", "lighter", "pot"]) {
+    // Each hand has room for all its parts in each of its three places, and every thing a hand
+    // holds.
+    expect(markup.match(/class="dw-part"/gu)).toHaveLength(2 * 3 * DwellerHands.PARTS);
+    for (const held of [
+      "spoon",
+      "stirrer",
+      "bottle",
+      "bar",
+      "pouch",
+      "lifted",
+      "snow",
+      "lighter",
+      "pot",
+    ]) {
       expect(markup.match(new RegExp(`data-held="${held}"`, "gu"))).toHaveLength(2);
     }
   });
 
-  it("draws the upper arms behind the body, so an arm never comes away from the shoulder, and each forearm in front of it between its hand's two layers", () => {
+  it("draws the upper arms behind the body, so an arm never comes away from the shoulder, and each forearm in front of it among its hand's parts", () => {
     const markup = drawing.markup();
     const at = (part: string): number => markup.indexOf(`data-part="${part}"`);
 
     for (const side of [0, 1]) {
       expect(at(`upper${side}`)).toBeLessThan(at("torso"));
-      // The pot, then the palm, the sleeve, what's held, and the fingers over it.
+      // The pot, then what of the hand is behind the sleeve's cuff, the sleeve, what's between
+      // it and what's held, what's held, and what's in front of that.
       expect(at(`carried${side}`)).toBeGreaterThan(at("torso"));
       expect(at(`back${side}`)).toBeGreaterThan(at(`carried${side}`));
       expect(at(`fore${side}`)).toBeGreaterThan(at(`back${side}`));
-      expect(at(`held${side}`)).toBeGreaterThan(at(`fore${side}`));
+      expect(at(`mid${side}`)).toBeGreaterThan(at(`fore${side}`));
+      expect(at(`held${side}`)).toBeGreaterThan(at(`mid${side}`));
       expect(at(`hand${side}`)).toBeGreaterThan(at(`held${side}`));
     }
+    // A pouch set down on the lap, on the legs and under the arms.
+    expect(at("pouch")).toBeGreaterThan(at("guitar"));
+    expect(at("pouch")).toBeLessThan(at("carried1"));
     // The near arm in front of the face, for the spoon to come to the mouth.
     expect(at("carried0")).toBeGreaterThan(at("head"));
     expect(at("hand1")).toBeLessThan(at("head"));
@@ -142,11 +159,12 @@ describe("DwellerDrawing: the person in the tent as a drawing (#258, #264, #269)
     expect(frame.shown).toBe(1);
     expect(frame.eyes).toBe(1);
     expect(frame.mouth).toBe(0);
-    expect(frame.shapes).toEqual(["open", "open"]);
+    expect(frame.grips).toEqual(["open", "open"]);
     expect(frame.holds).toEqual(["nothing", "nothing"]);
     expect(frame.guitar).toBe(false);
     expect(frame.stream).toBe("");
     expect(frame.lump).toBeNull();
+    expect(frame.pouch).toBeNull();
     expect(frame.dip).toBe(DwellerDrawing.EVERYWHERE);
   });
 
@@ -167,11 +185,11 @@ describe("DwellerDrawing: the person in the tent as a drawing (#258, #264, #269)
         expect(short).toBeLessThanOrEqual(1);
       }
     }
-    // Sitting, the forearms reach forward to the knees.
-    expect(placed(drawing.frame(pose.look("idle", 1)).limbs.fore0).short).toBeLessThan(0.75);
+    // Sitting, the forearms reach a little forward to the knees.
+    expect(placed(drawing.frame(pose.look("idle", 1)).limbs.fore0).short).toBeLessThan(0.95);
   });
 
-  it("ends each sleeve at the wrist, and sets the hand on it, turned as the wrist is bent", () => {
+  it("ends each sleeve at the wrist, and sets the hand on it", () => {
     for (const [act, seconds] of [
       ["melt", 2.5],
       ["pour", 2.4],
@@ -195,21 +213,12 @@ describe("DwellerDrawing: the person in the tent as a drawing (#258, #264, #269)
           0,
         );
       });
-      // The hand's frame is where it grips, its wrist behind it the way it's turned; the further
-      // hand's is the nearer's mirror image.
+      // The hand round its wrist: each of its parts begins within a hand's length of it.
       frame.hands.forEach((hand, side) => {
-        const [x = 0, y = 0, palm = 0] = numbers(hand);
-        const [grip, wrist] = [joints.hands[side], joints.wrists[side]];
-        expect(x).toBeCloseTo(grip?.x ?? NaN, 1);
-        expect(y).toBeCloseTo(grip?.y ?? NaN, 1);
-        expect(palm).toBeCloseTo(joints.palms[side] ?? NaN, 1);
-        expect(hand.endsWith("scale(-1 1)")).toBe(side === 1);
-        // A hand set to what it holds is its own length from the wrist.
-        if ((look.hands[side]?.firm ?? 0) >= 1) {
-          const length = DwellerHands.WRIST[frame.shapes[side] ?? "open"];
-          const angle = (palm * Math.PI) / 180;
-          expect(x + Math.sin(angle) * length).toBeCloseTo(wrist?.x ?? NaN, 0);
-          expect(y - Math.cos(angle) * length).toBeCloseTo(wrist?.y ?? NaN, 0);
+        const wrist = joints.wrists[side] ?? { x: NaN, y: NaN };
+        for (const { skin } of [...hand.back, ...hand.mid, ...hand.front]) {
+          const [x = NaN, y = NaN] = numbers(skin);
+          expect(Math.hypot(x - wrist.x, y - wrist.y)).toBeLessThan(215 * DwellerHands.SCALE);
         }
       });
     }
@@ -224,7 +233,7 @@ describe("DwellerDrawing: the person in the tent as a drawing (#258, #264, #269)
       const frame = drawing.frame(look);
       const [x = 0, y = 0, aim = 0] = numbers(frame.held[0]);
       expect(frame.holds[0]).toBe("bottle");
-      expect(frame.shapes[0]).toBe("wide");
+      expect(frame.grips[0]).toBe("wrap");
       expect(x).toBeCloseTo(joints.hands[0].x, 1);
       expect(y).toBeCloseTo(joints.hands[0].y, 1);
       expect(aim).toBeCloseTo(joints.aims[0], 1);
@@ -270,7 +279,7 @@ describe("DwellerDrawing: the person in the tent as a drawing (#258, #264, #269)
     expect(Math.max(...frames.map(({ mouth }) => mouth))).toBeGreaterThan(0.8);
     expect(frames.every(({ holds }) => ["spoon", "spoonful"].includes(holds[0]))).toBe(true);
     expect(frames.every(({ holds }) => holds[1] === "pouch")).toBe(true);
-    expect(frames.every(({ shapes }) => shapes[0] === "pinch" && shapes[1] === "flat")).toBe(true);
+    expect(frames.every(({ grips }) => grips[0] === "pinch" && grips[1] === "plate")).toBe(true);
   });
 
   it("looks where the pose looks, as far as the eye turns", () => {

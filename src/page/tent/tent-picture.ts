@@ -52,9 +52,10 @@ export class TentPicture {
   private readonly seat: { readonly x: number; readonly y: number };
   private readonly dweller: DwellerDrawing;
   private readonly parts = new Map<string, SVGElement>();
-  /** What each hand holds, by what it is; and each hand's shapes, in both its layers. */
+  /** What each hand holds, by what it is; and each hand's parts in each of its three places,
+   * their skins and their nails. */
   private readonly held: readonly (readonly SVGElement[])[];
-  private readonly shapes: readonly (readonly SVGElement[])[];
+  private readonly parts3: readonly (readonly (readonly (readonly [SVGElement, SVGElement])[])[])[];
   /** The face's moving parts: each eye's lid and its edge, where the eyes look, the dark of the
    * open mouth and the jaw. */
   private readonly lids: readonly (readonly [SVGElement | null, SVGElement | null])[];
@@ -96,11 +97,16 @@ export class TentPicture {
         `[data-part="held${side}"] .dw-held, [data-part="carried${side}"] .dw-held`,
       ),
     ]);
-    this.shapes = [0, 1].map((side) => [
-      ...svg.querySelectorAll<SVGElement>(
-        `[data-part="back${side}"] .dw-shape, [data-part="hand${side}"] .dw-shape`,
+    this.parts3 = [0, 1].map((side) =>
+      ["back", "mid", "hand"].map((place) =>
+        [...svg.querySelectorAll<SVGElement>(`[data-part="${place}${side}"] .dw-part`)].map(
+          (part): readonly [SVGElement, SVGElement] => {
+            const [skin, nail] = [...part.querySelectorAll<SVGElement>("path")];
+            return [skin ?? part, nail ?? part];
+          },
+        ),
       ),
-    ]);
+    );
     const face = svg.querySelector(".tent-dweller .dw-head");
     this.lids = [0, 1].map((index) => [
       face?.querySelector<SVGElement>(`[data-lid="${index}"]`) ?? null,
@@ -155,16 +161,17 @@ export class TentPicture {
     set("stream", "d", frame.stream);
     set("stream-light", "d", frame.stream);
     set("dip", "d", frame.dip);
-    const lump = this.parts.get("lump");
-    if (lump !== undefined) {
-      TentPicture.show(lump, frame.lump !== null);
-      if (frame.lump !== null) {
-        set("lump", "transform", frame.lump);
+    for (const name of ["lump", "pouch"] as const) {
+      const part = this.parts.get(name);
+      const where = frame[name];
+      if (part !== undefined) {
+        TentPicture.show(part, where !== null);
+        if (where !== null) {
+          set(name, "transform", where);
+        }
       }
     }
     for (const side of [0, 1] as const) {
-      set(`back${side}`, "transform", frame.hands[side]);
-      set(`hand${side}`, "transform", frame.hands[side]);
       set(`held${side}`, "transform", frame.held[side]);
       set(`carried${side}`, "transform", frame.held[side]);
       for (const held of this.held[side] ?? []) {
@@ -172,9 +179,14 @@ export class TentPicture {
         const worn = held.dataset.held === "watch" && side === 1 && frame.holds[side] === "nothing";
         TentPicture.show(held, held.dataset.held === frame.holds[side] || worn);
       }
-      for (const shape of this.shapes[side] ?? []) {
-        TentPicture.show(shape, shape.dataset.shape === frame.shapes[side]);
-      }
+      const { back, mid, front } = frame.hands[side];
+      [back, mid, front].forEach((drawn, place) => {
+        (this.parts3[side]?.[place] ?? []).forEach(([skin, nail], index) => {
+          const part = drawn[index];
+          this.write(skin, `skin${side}.${place}.${index}`, "d", part?.skin ?? "");
+          this.write(nail, `nail${side}.${place}.${index}`, "d", part?.nail ?? "");
+        });
+      });
     }
     this.face(frame.eyes, frame.gaze, frame.mouth);
     const lap = this.parts.get("guitar");
@@ -191,11 +203,15 @@ export class TentPicture {
     if (dataset.act !== act) {
       dataset.act = act;
     }
-    // What's in a hand isn't standing where it was taken from; the spoon stands in the pot, and
-    // the snow lies in it, for as long as the snow is being melted.
+    // What's in a hand, or set down on the lap, isn't standing where it was taken from; the
+    // spoon stands in the pot, and the snow lies in it, for as long as the snow is being melted.
     const holds = frame.holds.filter((held) => held !== "nothing").join(" ");
     if (dataset.holds !== holds) {
       dataset.holds = holds;
+    }
+    const setDown = frame.pouch === null ? "none" : "pouch";
+    if (dataset.set !== setDown) {
+      dataset.set = setDown;
     }
     if (dataset.doing !== (chore ?? "none")) {
       dataset.doing = chore ?? "none";

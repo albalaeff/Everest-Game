@@ -1,6 +1,7 @@
 import type { Outline } from "../../rendering/figure-shapes";
 import { DwellerHands } from "./dweller-hands";
-import type { Held, Shape } from "./dweller-hands";
+import type { HandDrawing, Held } from "./dweller-hands";
+import type { Grip } from "./hand-bones";
 import { DwellerHead } from "./dweller-head";
 import { DwellerPose } from "./dweller-pose";
 import type { DwellerLook, Spot } from "./dweller-pose";
@@ -40,10 +41,10 @@ export interface DwellerFrame {
   /** The body, leaning about the hips. */
   readonly torso: string;
   readonly limbs: Readonly<Record<LimbName, LimbFrame>>;
-  /** Where each hand is and how it's turned; how it's shaped; what it holds, and where that is
-   * and how it's turned. */
-  readonly hands: readonly [string, string];
-  readonly shapes: readonly [Shape, Shape];
+  /** Each hand as it's drawn, in its three places; how it's closed; what it holds, and where
+   * that is and how it's turned. */
+  readonly hands: readonly [HandDrawing, HandDrawing];
+  readonly grips: readonly [Grip, Grip];
   readonly holds: readonly [Held, Held];
   readonly held: readonly [string, string];
   readonly head: string;
@@ -58,6 +59,8 @@ export interface DwellerFrame {
   readonly stream: string;
   /** Where a lump of snow is on its way into the pot, or nothing. */
   readonly lump: string | null;
+  /** Where a pouch stands on the lap, set down, or nothing. */
+  readonly pouch: string | null;
   /** Everywhere the first hand's thing shows: all but the inside of what it dips into. */
   readonly dip: string;
 }
@@ -114,8 +117,8 @@ export class DwellerDrawing {
 
   /** The figure's parts, in the order they're drawn: the spoon left standing in the pot; the
    * upper arms, behind the body; the hood behind the neck, the body, the legs, the guitar on the
-   * lap; the further arm's pot, forearm and hand, with what it holds; the head; the nearer
-   * arm's, the same; a lump of snow falling, and the water poured. */
+   * lap, a pouch set down there; the further arm's pot, forearm and hand, with what it holds; the
+   * head; the nearer arm's, the same; a lump of snow falling, and the water poured. */
   markup(): string {
     const { shapes } = this;
     const { LAP, EVERYWHERE } = DwellerDrawing;
@@ -127,17 +130,18 @@ export class DwellerDrawing {
     // body. The forearm and the hand are in front of it.
     const upper = (side: 0 | 1): string =>
       DwellerDrawing.limb(`upper${side}`, shapes.upperArm, "suit");
-    // A hand's palm is behind its sleeve's cuff and what it holds, and its fingers in front of
-    // them; the nearer hand's thing is cut off where it dips into the pot or the pouch. The pot
-    // is behind the arm that carries it.
+    // A hand's parts go behind its sleeve's cuff, between it and what the hand holds, or in front
+    // of that, as far toward the viewer as each is; the nearer hand's thing is cut off where it
+    // dips into the pot or the pouch. The pot is behind the arm that carries it.
     const arm = (side: 0 | 1): string => {
       const things = `<g class="dw-things" data-part="held${side}">${DwellerHands.things()}</g>`;
       return `<g class="dw-things" data-part="carried${side}">${DwellerHands.carried()}</g>
 <g class="dw-drop" data-part="fore${side}-drop">${p(shapes.forearm.outline)}</g>
-<g class="dw-hand" data-part="back${side}">${hands[side].back()}</g>
+${hands[side].place(`back${side}`)}
 ${DwellerDrawing.limb(`fore${side}`, shapes.forearm, "suit", shapes.cuff, "dw-cuff")}
+${hands[side].place(`mid${side}`)}
 ${side === 0 ? `<g clip-path="url(#dw-dip)">${things}</g>` : things}
-<g class="dw-hand" data-part="hand${side}">${hands[side].front()}</g>`;
+${hands[side].place(`hand${side}`)}`;
     };
     const thigh = (side: 0 | 1): string =>
       DwellerDrawing.limb(`thigh${side}`, shapes.thigh, "suit");
@@ -152,6 +156,7 @@ ${side === 0 ? `<g clip-path="url(#dw-dip)">${things}</g>` : things}
 <g class="dw-torso" data-part="torso">${this.body()}</g>
 <g class="dw-legs">${thigh(0)}${thigh(1)}${shin(0)}${shin(1)}</g>
 <g class="dw-lap" data-part="guitar" transform="translate(${LAP.x} ${LAP.y}) rotate(${LAP.turn}) scale(${LAP.size})">${TentArt.guitar()}</g>
+<g class="dw-set" data-part="pouch"><g transform="translate(0 ${DwellerHands.POUCH_HELD})">${TentArt.pouch(true)}</g></g>
 ${arm(1)}
 <g class="dw-head" data-part="head">${this.head.markup()}</g>
 ${arm(0)}
@@ -177,8 +182,10 @@ ${arm(0)}
     const [near, far] = [arm(0), arm(1)];
     const at = (side: 0 | 1): string =>
       `translate(${text(joints.hands[side].x)} ${text(joints.hands[side].y)})`;
-    const hand = (side: 0 | 1): string =>
-      `${at(side)} rotate(${text(joints.palms[side])})${side === 1 ? " scale(-1 1)" : ""}`;
+    const hand = (side: 0 | 1): HandDrawing => {
+      const { shape, turn, wrist, thing } = joints.grips[side];
+      return DwellerHands.drawn(shape, turn, wrist, thing);
+    };
     const held = (side: 0 | 1): string => `${at(side)} rotate(${text(joints.aims[side])})`;
     const holds: readonly [Held, Held] = [look.hands[0].holds, look.hands[1].holds];
     const { CRAWL } = DwellerDrawing;
@@ -206,7 +213,7 @@ ${arm(0)}
         foot1: limb(legs.ankles[1], tapped, DwellerShapes.BOOTIE.length),
       },
       hands: [hand(0), hand(1)],
-      shapes: [DwellerHands.SHAPES[holds[0]], DwellerHands.SHAPES[holds[1]]],
+      grips: [DwellerHands.GRIPS[holds[0]], DwellerHands.GRIPS[holds[1]]],
       holds,
       held: [held(0), held(1)],
       head: `translate(${text(joints.head.x)} ${text(joints.head.y)}) rotate(${text(joints.headAngle)})`,
@@ -219,6 +226,10 @@ ${arm(0)}
       guitar: look.guitar,
       stream: DwellerDrawing.stream(look),
       lump: look.lump === null ? null : `translate(${text(look.lump.x)} ${text(look.lump.y)})`,
+      pouch:
+        look.pouch === null
+          ? null
+          : `translate(${text(look.pouch.at.x)} ${text(look.pouch.at.y)}) rotate(${text(look.pouch.aim)})`,
       dip:
         look.dips === "pot"
           ? DwellerDrawing.POT_HOLE
