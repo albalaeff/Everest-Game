@@ -149,6 +149,20 @@ export class TentPicture {
     set("all", "transform", frame.all);
     set("all", "opacity", frame.shown.toFixed(3));
     set("torso", "transform", frame.torso);
+    const { neck } = frame;
+    for (const part of ["neck", "neck-under", "neck-stubble", "neck-clip"]) {
+      set(part, "d", neck.outline);
+    }
+    set("neck-muscle", "d", neck.muscle);
+    set("neck-muscle-shade", "d", neck.muscleShade);
+    for (const [part, ends] of [
+      ["neck-shade", neck.shade],
+      ["neck-growth", neck.growth],
+    ] as const) {
+      ["x1", "y1", "x2", "y2"].forEach((name, index) => {
+        set(part, name, ends[index] ?? "0");
+      });
+    }
     set("head", "transform", frame.head);
     for (const [name, limb] of Object.entries(frame.limbs)) {
       set(name, "transform", limb.transform);

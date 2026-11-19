@@ -87,6 +87,14 @@ describe("DwellerDrawing: the person in the tent as a drawing (#258, #264, #269,
       "held1",
       "carried1",
       "hand1",
+      "neck",
+      "neck-under",
+      "neck-stubble",
+      "neck-muscle",
+      "neck-muscle-shade",
+      "neck-clip",
+      "neck-shade",
+      "neck-growth",
       "head",
       "guitar",
       "pouch",
@@ -127,6 +135,22 @@ describe("DwellerDrawing: the person in the tent as a drawing (#258, #264, #269,
     ]) {
       expect(markup.match(new RegExp(`data-held="${held}"`, "gu"))).toHaveLength(2);
     }
+  });
+
+  it("draws the neck behind the base layer's collar and the head, and sets it to each pose, from the collar up into the head (#277)", () => {
+    const markup = drawing.markup();
+    const at = (found: string): number => markup.indexOf(found);
+    const neck = drawing.frame(pose.look("melt", 2)).neck;
+
+    // Over the back of the collar and the opening, under the collar's front and the head.
+    expect(at('data-part="neck"')).toBeGreaterThan(at('class="dw-base-layer-back"'));
+    expect(at('data-part="neck"')).toBeLessThan(markup.lastIndexOf('class="dw-base-layer"'));
+    expect(at('data-part="neck-muscle"')).toBeLessThan(at('data-part="head"'));
+    // A closed outline down one side and up the other, its muscle and its shadings' ends.
+    expect(neck.outline).toMatch(/^M[^C]+C[^L]+L[^C]+C[^Z]+Z$/u);
+    expect(neck.muscle).toMatch(/^M[^C]+C/u);
+    expect(neck.shade).toHaveLength(4);
+    expect(neck.growth).toHaveLength(4);
   });
 
   it("draws the upper arms behind the body, so an arm never comes away from the shoulder, and each forearm in front of it among its hand's parts", () => {

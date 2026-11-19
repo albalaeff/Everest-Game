@@ -222,9 +222,10 @@ ${this.hat()}
     return { x: -c * this.sin + side * wide, y };
   }
 
-  /** The head's outline as seen: each section's turned width down the far side, and back up the
-   * near one. */
-  private outline(): string {
+  /** The head's outline as seen, in its millimetres: each section's turned width down the far
+   * side from the crown to the chin, and back up the near one. What the neck goes up under
+   * (#277). */
+  silhouette(): readonly Spot[] {
     const heights: number[] = [];
     for (let y = DwellerHead.CROWN; y < DwellerHead.CHIN; y += 6) {
       heights.push(y);
@@ -232,7 +233,12 @@ ${this.hat()}
     heights.push(DwellerHead.CHIN);
     const far = heights.map((y) => this.edge(y, -1));
     const near = [...heights].reverse().map((y) => this.edge(y, 1));
-    return DwellerHead.closed([...far, ...near]);
+    return [...far, ...near];
+  }
+
+  /** The head's outline as a path. */
+  private outline(): string {
+    return DwellerHead.closed(this.silhouette());
   }
 
   // The face.
@@ -764,8 +770,9 @@ ${corner(half)}${corner(-half)}
     return path;
   }
 
-  /** The stubble's hairs in a tile: short dark dots scattered, the same each time. */
-  private static hairs(): string {
+  /** The stubble's hairs in a tile: short dark dots scattered, the same each time; on the neck
+   * under the jaw too (#277). */
+  static hairs(): string {
     let seed = 7;
     const next = (): number => {
       seed = (seed * 16807) % 2147483647;
