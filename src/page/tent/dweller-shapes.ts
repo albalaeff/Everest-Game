@@ -25,6 +25,8 @@ export interface DwellerBody {
   readonly zip: Outline;
   readonly opening: Outline;
   readonly baseLayer: Outline;
+  /** The back of the base layer's collar, behind the neck: the far half of its rim (#277). */
+  readonly collarBack: Outline;
   readonly collar: readonly [Outline, Outline];
   readonly hood: Outline;
 }
@@ -229,12 +231,28 @@ export class DwellerShapes {
       { x: 2, y: undone },
       { x: -2, y: undone },
     ];
-    // The base layer's own collar round the neck, up under the jaw.
-    const baseLayer = FigureShapes.path({ x: -0.052 * SCALE, y: collarTop + 8 }, [
-      [-0.06 * SCALE, collarTop - 4, -0.054 * SCALE, collarTop - 14],
-      [-0.02 * SCALE, collarTop - 18, 0.02 * SCALE, collarTop - 18, 0.054 * SCALE, collarTop - 14],
-      [0.06 * SCALE, collarTop - 4, 0.052 * SCALE, collarTop + 8],
+    // The base layer's own collar round the neck, up under the jaw: as wide as a man's neck and
+    // the fabric round it (#277), its rim dipping a little in front as a collar's does, seen from
+    // a little above.
+    const rim = { half: 0.063 * SCALE, y: collarTop - 16, deep: 3 };
+    const baseLayer = FigureShapes.path({ x: -0.06 * SCALE, y: collarTop + 8 }, [
+      [-0.067 * SCALE, collarTop - 4, -rim.half, rim.y],
+      [
+        -rim.half,
+        rim.y + (4 / 3) * rim.deep,
+        rim.half,
+        rim.y + (4 / 3) * rim.deep,
+        rim.half,
+        rim.y,
+      ],
+      [0.067 * SCALE, collarTop - 4, 0.06 * SCALE, collarTop + 8],
     ]);
+    // Its rim all round, an ellipse seen from a little above: its far half shows behind the neck
+    // where the neck is narrower than the collar, so the collar's top is round at its ends.
+    const collarBack = Array.from({ length: 24 }, (_, index) => {
+      const angle = (index / 24) * 2 * Math.PI;
+      return { x: rim.half * Math.cos(angle), y: rim.y + rim.deep * Math.sin(angle) };
+    });
     // Each half of the collar, standing round the neck and laid open at the front.
     const half = (side: -1 | 1): Outline => {
       const points = FigureShapes.path({ x: side * 4, y: undone - 2 }, [
@@ -272,6 +290,7 @@ export class DwellerShapes {
       ],
       opening,
       baseLayer,
+      collarBack,
       collar: [half(-1), half(1)],
       hood,
     };
