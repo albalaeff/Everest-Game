@@ -4347,6 +4347,10 @@ main:has(#tent:not([hidden])) #self-check {
   fill: url("#dw-base-side");
 }
 
+.dw-base-layer-back {
+  fill: var(--base-layer-dark);
+}
+
 .dw-base-layer-zip {
   fill: none;
   stroke: #0e1014;
@@ -4372,8 +4376,32 @@ main:has(#tent:not([hidden])) #self-check {
   fill: url("#dw-neck-side");
 }
 
-.dw-neck-shade {
-  fill: url("#dw-neck-top");
+/* Under the jaw, its shadow on the neck and the stubble growing a little way down it (#277). */
+.dw-neck-under {
+  fill: url("#dw-neck-shade");
+}
+
+.dw-neck-stubble {
+  fill: url("#dw-neck-hairs");
+  opacity: 0.8;
+}
+
+/* The muscle from behind the ear down the neck's near side: lit along its ridge, shaded in front. */
+.dw-neck-muscle,
+.dw-neck-muscle-shade {
+  fill: none;
+  stroke-width: 3.2;
+  stroke-linecap: round;
+}
+
+.dw-neck-muscle {
+  stroke: var(--skin-light);
+  opacity: 0.22;
+}
+
+.dw-neck-muscle-shade {
+  stroke: var(--skin-deep);
+  opacity: 0.22;
 }
 
 .dw-skin-light {

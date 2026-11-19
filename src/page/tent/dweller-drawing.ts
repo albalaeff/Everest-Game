@@ -3,6 +3,8 @@ import { DwellerHands } from "./dweller-hands";
 import type { HandDrawing, Held } from "./dweller-hands";
 import type { Grip } from "./hand-bones";
 import { DwellerHead } from "./dweller-head";
+import { DwellerNeck } from "./dweller-neck";
+import type { NeckFrame } from "./dweller-neck";
 import { DwellerPose } from "./dweller-pose";
 import type { DwellerLook, Spot } from "./dweller-pose";
 import { DwellerShapes } from "./dweller-shapes";
@@ -47,6 +49,8 @@ export interface DwellerFrame {
   readonly grips: readonly [Grip, Grip];
   readonly holds: readonly [Held, Held];
   readonly held: readonly [string, string];
+  /** The neck from the collar up into the head (#277), and the head. */
+  readonly neck: NeckFrame;
   readonly head: string;
   /** How far open the eyes are, 1 to 0; where they look, in the head's millimetres; how far open
    * the mouth is, 0 to 1. */
@@ -109,6 +113,7 @@ export class DwellerDrawing {
 
   /** The head, whose lids and mouth a pose moves. */
   readonly head = new DwellerHead("dw-face");
+  private readonly neck = new DwellerNeck();
   private readonly shapes = new DwellerShapes();
   private readonly pose = new DwellerPose();
 
@@ -149,7 +154,7 @@ ${hands[side].place(`hand${side}`)}`;
       `${DwellerDrawing.limb(`shin${side}`, shapes.shin, "suit", shapes.shinPanel, "dw-panel")}${DwellerDrawing.limb(`foot${side}`, shapes.bootie, "booties", shapes.soles[side], "dw-sole")}`;
     const clip = (id: string, part: string, d: string): string =>
       `<clipPath id="${id}" clipPathUnits="userSpaceOnUse"><path${part} clip-rule="evenodd" d="${d}"/></clipPath>`;
-    return `<defs>${DwellerDrawing.defs()}${hands[0].defs()}${hands[1].defs()}${clip("dw-pot", "", DwellerDrawing.POT_HOLE)}${clip("dw-dip", ' data-part="dip"', EVERYWHERE)}</defs>
+    return `<defs>${DwellerDrawing.defs()}${this.neck.defs()}${hands[0].defs()}${hands[1].defs()}${clip("dw-pot", "", DwellerDrawing.POT_HOLE)}${clip("dw-dip", ' data-part="dip"', EVERYWHERE)}</defs>
 <g class="dw" data-part="all">
 <g clip-path="url(#dw-pot)"><g class="dw-rest" transform="translate(${SPOON_LEFT.at.x.toFixed(1)} ${SPOON_LEFT.at.y.toFixed(1)}) rotate(${SPOON_LEFT.aim.toFixed(1)})">${DwellerHands.stirrer()}</g></g>
 <g class="dw-upper-arms">${upper(1)}${upper(0)}</g>
@@ -216,6 +221,7 @@ ${arm(0)}
       grips: [DwellerHands.GRIPS[holds[0]], DwellerHands.GRIPS[holds[1]]],
       holds,
       held: [held(0), held(1)],
+      neck: this.neck.frame(joints),
       head: `translate(${text(joints.head.x)} ${text(joints.head.y)}) rotate(${text(joints.headAngle)})`,
       eyes: Math.min(1, Math.max(0, look.eyes)),
       gaze: {
@@ -245,20 +251,18 @@ ${arm(0)}
     return `translate(${DROP.x} ${DROP.y}) ${limb.transform}`;
   }
 
-  /** The body: the hood down behind the neck, the neck, the suit's body quilted with its yoke and
-   * its zip, the base layer in the opening and round the neck, and the collar laid open. */
+  /** The body: the hood down behind the neck, the suit's body quilted with its yoke and its zip,
+   * the base layer in the opening, the neck (`DwellerNeck`), the base layer's collar round it, and
+   * the suit's collar laid open. */
   private body(): string {
     const { body } = this.shapes;
-    const { NECK, HEAD } = DwellerShapes;
-    const head = NECK.y + HEAD.y;
+    const { NECK } = DwellerShapes;
     const p = (outline: Outline, kind = ""): string => DwellerDrawing.path(outline, kind);
-    // A man's neck, as wide as two-thirds of the jaw, from under it down into the collar.
-    const neck = `M-15 ${head + 18}C-15 ${head + 36} -18 ${NECK.y - 10} -19 ${NECK.y + 6}L18 ${NECK.y + 6}C17 ${NECK.y - 10} 15 ${head + 36} 15 ${head + 14}Z`;
     return `<g class="dw-hood">${p(body.hood, "dw-hood-down")}<path class="dw-hood-rim" d="${DwellerDrawing.line(body.hood.slice(2, -2))}"/></g>
 <g class="dw-body-suit">${p(body.outline, "dw-body-base")}${body.baffles.map((baffle) => p(baffle, "dw-body-baffle")).join("")}${body.seams.map((seam) => p(seam, "dw-seam")).join("")}${p(body.yoke, "dw-yoke")}</g>
 ${p(body.opening, "dw-base-layer")}
-<path class="dw-neck" d="${neck}"/>
-<path class="dw-neck-shade" d="${neck}"/>
+${p(body.collarBack, "dw-base-layer-back")}
+${this.neck.markup()}
 ${p(body.baseLayer, "dw-base-layer")}
 <path class="dw-base-layer-zip" d="M0 ${NECK.y - 12}V${NECK.y + 30}"/>
 ${p(body.collar[0], "dw-collar")}${p(body.collar[1], "dw-collar")}
@@ -310,8 +314,6 @@ ${p(body.collar[0], "dw-collar")}${p(body.collar[1], "dw-collar")}
       side("dw-body-side", "suit"),
       side("dw-yoke-side", "yoke"),
       side("dw-base-side", "base-layer"),
-      `<linearGradient id="dw-neck-side" x1="0" y1="0.5" x2="1" y2="0.5"><stop offset="0" style="stop-color:var(--skin-shade)"/><stop offset="0.6" style="stop-color:var(--skin)"/><stop offset="1" style="stop-color:var(--skin-light)"/></linearGradient>`,
-      `<linearGradient id="dw-neck-top" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#1a0c06" stop-opacity="0.62"/><stop offset="0.45" stop-color="#1a0c06" stop-opacity="0.18"/><stop offset="1" stop-color="#1a0c06" stop-opacity="0"/></linearGradient>`,
       puff("dw-puff-end", 0, 0.5, 1, 0.5),
       puff("dw-puff-root", 1, 0.5, 0, 0.5),
       puff("dw-puff-up", 0.5, 1, 0.5, 0),
