@@ -128,9 +128,10 @@ function inTheIce({ x, y }: Point): boolean {
   return [x - deep, x, x + deep].every((near) => y < terrain.height(near) - deep);
 }
 
-/** The whole haul at 60 frames a second, the rope coming in at 0.45 m a second as the solo game
- * runs it: a second sitting where they lay, hauled from the foot of the line to its anchor, and a
- * second where the haul left them. */
+/** The whole haul at 60 frames a second, the rope coming in at 0.45 m a second, half as fast as
+ * the physics hauls at the mountain's pace (#278), so that a jump between frames stands out: a
+ * second sitting where they lay, hauled from the foot of the line to its anchor, and a second
+ * where the haul left them. */
 function haul(): Frame[] {
   const reading = new ClimberReading(slope);
   const pose = new ClimberPose();
