@@ -1,11 +1,12 @@
-import type { HazardWeather } from "../simulation";
+import { DEVICE_KINDS } from "../simulation";
+import type { DeviceKind, HazardWeather } from "../simulation";
 import type { SunReading } from "./sun-clock";
 import type { FrostbiteRisk } from "./wind-chill";
 import type { WindName } from "./wind-meter";
 
 /** The devices a climber carries (#260), in the order the panel's tabs have them. */
-export const DEVICES = ["radio", "gps", "wind", "tracker"] as const;
-export type DeviceName = (typeof DEVICES)[number];
+export const DEVICES = DEVICE_KINDS;
+export type DeviceName = DeviceKind;
 
 /** The radio's ready phrases, in the order its buttons have them. */
 export const RADIO_PHRASES = ["radio-check", "position", "conditions", "route", "help"] as const;

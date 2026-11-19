@@ -9,7 +9,17 @@ const fromAxis = (point: Vector3, centre: Vector3, axis: Vector3): number =>
   point.minus(centre).across(axis).size;
 /** The grips that close round something round, and those that hold it some other way. */
 const ROUND: readonly Grip[] = ["wrap", "cup", "fist", "pot", "lighter"];
-const GRIPS: readonly Grip[] = ["open", ...ROUND, "fret", "pinch", "seal", "plate", "top", "bar"];
+const GRIPS: readonly Grip[] = [
+  "open",
+  ...ROUND,
+  "fret",
+  "pinch",
+  "seal",
+  "plate",
+  "top",
+  "bar",
+  "cradle",
+];
 const close = (a: Vector3, b: Vector3, within = 1e-9): void => {
   expect(a.minus(b).size).toBeLessThan(within);
 };

@@ -7,7 +7,7 @@ import type { TentWork } from "./dweller-acts";
 import { DwellerPose } from "./dweller-pose";
 import type { Act } from "./dweller-pose";
 
-const IDLE: TentWork = { chore: null, progress: 0, sleptTo: null };
+const IDLE: TentWork = { chore: null, progress: 0, sleptTo: null, device: null };
 
 /** The acts seen over `seconds` of frames, a twentieth of a second each, with no repeats. */
 function seen(acts: DwellerActs, seconds: number, work: TentWork): Act[] {
@@ -148,5 +148,101 @@ describe("DwellerActs: what the person in the tent is seen doing (#258, #269)", 
     expect(acts.gone).toBe(false);
     expect(seen(acts, 2, IDLE)).toEqual(["leave"]);
     expect(acts.gone).toBe(true);
+  });
+});
+
+describe("DwellerActs: a device in the tent (#271)", () => {
+  const settled = (): DwellerActs => {
+    const acts = new DwellerActs();
+    seen(acts, 3, IDLE);
+    return acts;
+  };
+  const holding = (device: TentWork["device"]): TentWork => ({ ...IDLE, device });
+
+  it("takes the device the card shows from where it's kept, and holds it", () => {
+    const acts = settled();
+
+    expect(seen(acts, 3, holding("radio"))).toEqual(["radio-out", "radio"]);
+    expect(acts.holding).toBe("radio");
+  });
+
+  it("shows each of the climber's devices as the person has it in the tent", () => {
+    for (const [device, act] of [
+      ["gps", "watch"],
+      ["wind", "meter"],
+      ["tracker", "tracker"],
+    ] as const) {
+      expect(seen(settled(), 3, holding(device))).toEqual([`${act}-out`, act]);
+    }
+  });
+
+  it("puts it back when the card closes, and sits", () => {
+    const acts = settled();
+    seen(acts, 3, holding("tracker"));
+
+    expect(seen(acts, 3, IDLE)).toEqual(["tracker-away", "idle"]);
+    expect(acts.holding).toBeNull();
+  });
+
+  it("puts one back before it takes another", () => {
+    const acts = settled();
+    seen(acts, 3, holding("radio"));
+
+    expect(seen(acts, 5, holding("wind"))).toEqual(["radio-away", "meter-out", "meter"]);
+  });
+
+  it("talks into the radio once for a phrase, and listens again; not into anything else", () => {
+    const acts = settled();
+    seen(acts, 3, holding("radio"));
+    acts.talk();
+
+    expect(seen(acts, 3, holding("radio"))).toEqual(["radio-talk", "radio"]);
+
+    seen(acts, 5, holding("gps"));
+    acts.talk();
+    expect(seen(acts, 3, holding("gps"))).toEqual(["watch"]);
+  });
+
+  it("says a phrase pressed while the radio is on its way out once it's in the hand", () => {
+    const acts = settled();
+    acts.advance(0.05, holding("radio"));
+    acts.talk();
+
+    expect(seen(acts, 4, holding("radio"))).toEqual(["radio-out", "radio-talk", "radio"]);
+  });
+
+  it("puts the device down for a drink, and takes it up again after", () => {
+    const acts = settled();
+    seen(acts, 3, holding("radio"));
+    acts.play("drink");
+
+    expect(seen(acts, 8, holding("radio"))).toEqual(["radio-away", "drink", "radio-out", "radio"]);
+  });
+
+  it("holds a device over a chore at the stove, and goes back to the chore", () => {
+    const acts = settled();
+    const cooking: TentWork = { ...IDLE, chore: "cook", progress: 0.35 };
+    seen(acts, 1, cooking);
+
+    expect(seen(acts, 3, { ...cooking, device: "radio" })).toEqual(["radio-out", "radio"]);
+    expect(seen(acts, 3, cooking)).toEqual(["radio-away", "boil"]);
+  });
+
+  it("puts it back before lying down to sleep, and takes none while asleep", () => {
+    const acts = settled();
+    seen(acts, 3, holding("radio"));
+    const asleep: TentWork = { ...IDLE, chore: "sleep", device: "radio" };
+
+    expect(seen(acts, 5, asleep)).toEqual(["radio-away", "lie", "sleep"]);
+    expect(acts.holding).toBeNull();
+  });
+
+  it("leaves with it put away: straight to the door", () => {
+    const acts = settled();
+    seen(acts, 3, holding("wind"));
+    acts.leave();
+
+    expect(seen(acts, 2, IDLE)).toEqual(["leave"]);
+    expect(acts.holding).toBeNull();
   });
 });

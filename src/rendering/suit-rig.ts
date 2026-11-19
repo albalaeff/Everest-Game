@@ -1,5 +1,6 @@
 import { Container, FillGradient, Graphics } from "pixi.js";
 
+import type { DeviceKind } from "../simulation";
 import { ClimberPose } from "./climber-pose";
 import type { Joint, Pose } from "./climber-pose";
 import { FigureRig } from "./figure-rig";
@@ -14,6 +15,7 @@ import { Palette } from "./palette";
 interface SuitParts extends RigParts {
   readonly lens: Graphics;
   readonly jumar: Graphics;
+  readonly devices: Readonly<Record<DeviceKind, Graphics>>;
 }
 
 /**
@@ -99,6 +101,7 @@ export class SuitRig extends FigureRig<SuitParts> {
       parts.upperArms[0],
       parts.tools[0],
       parts.forearms[0],
+      ...Object.values(parts.devices),
     );
   }
 
@@ -281,7 +284,117 @@ export class SuitRig extends FigureRig<SuitParts> {
       jumar: SuitRig.jumar(),
       tools: tools(),
       strapped: tools(),
+      devices: {
+        radio: SuitRig.inTheMitt(SuitRig.radio()),
+        gps: SuitRig.watch(),
+        wind: SuitRig.inTheMitt(SuitRig.meter()),
+        tracker: SuitRig.inTheMitt(SuitRig.tracker()),
+      },
     };
+  }
+
+  /** A device's dark edge, so it reads on the snow and on the night's ice alike; its screen's own
+   * light, a screen being read at night; how far below its middle the mitt holds it, so its top
+   * stands clear of the hand; and the mitt's thumb, closed across it there. In metres, as the
+   * gear is. */
+  private static readonly DEVICE = {
+    edge: 0.008,
+    screen: 0xffc45a,
+    grey: 0xdfeee6,
+    held: 0.03,
+    thumb: { wide: 0.094, thick: 0.036 },
+  };
+
+  /** A device drawn round its middle, as the mitt holds it: by its lower end, the hand at the
+   * part's origin, the mitt behind it and its thumb closed across it. */
+  private static inTheMitt(device: Graphics): Graphics {
+    const { held, thumb } = SuitRig.DEVICE;
+    device
+      .roundRect(-thumb.wide / 2, -held - thumb.thick / 2, thumb.wide, thumb.thick, thumb.thick / 2)
+      .fill(SuitRig.PAINT.of(Palette.MITTS, "across"));
+    device.pivot.set(0, -held);
+    return device;
+  }
+
+  /** The handheld radio (#271), life size, held at the origin with its top along +y: a black body
+   * a hand's width across, its stubby antenna at the back corner, the speaker's grille, the amber
+   * display and the channel knob. */
+  private static radio(): Graphics {
+    const { edge, screen } = SuitRig.DEVICE;
+    return new Graphics()
+      .roundRect(-0.03, -0.05, 0.06, 0.125, 0.01)
+      .roundRect(-0.024, 0.07, 0.013, 0.1, 0.006)
+      .stroke({ width: edge, color: Palette.TOOL_EDGE, join: "round" })
+      .roundRect(-0.024, 0.07, 0.013, 0.1, 0.006)
+      .fill(Palette.TOOL_GRIP)
+      .roundRect(0.008, 0.07, 0.014, 0.018, 0.004)
+      .fill(Palette.TOOL_STEEL)
+      .roundRect(-0.03, -0.05, 0.06, 0.125, 0.01)
+      .fill(SuitRig.toolShading(0x2a2e38, "along"))
+      .roundRect(-0.021, 0.028, 0.042, 0.03, 0.004)
+      .fill(screen)
+      .rect(-0.02, -0.036, 0.04, 0.006)
+      .rect(-0.02, -0.022, 0.04, 0.006)
+      .rect(-0.02, -0.008, 0.04, 0.006)
+      .rect(-0.02, 0.006, 0.04, 0.006)
+      .fill(Palette.TOOL_EDGE);
+  }
+
+  /** The pocket weather meter (#271): a yellow body that fits the palm, the impeller in its
+   * ring at the top, open to the wind, and the grey display under it. */
+  private static meter(): Graphics {
+    const { edge, grey } = SuitRig.DEVICE;
+    return new Graphics()
+      .roundRect(-0.024, -0.05, 0.048, 0.1, 0.01)
+      .circle(0, 0.068, 0.026)
+      .stroke({ width: edge, color: Palette.TOOL_EDGE, join: "round" })
+      .roundRect(-0.024, -0.05, 0.048, 0.1, 0.01)
+      .fill(SuitRig.toolShading(0xe7b43a, "along"))
+      .circle(0, 0.068, 0.026)
+      .fill(0x2a2e38)
+      .circle(0, 0.068, 0.017)
+      .fill(0x8fa2b8)
+      .rect(-0.003, 0.051, 0.006, 0.034)
+      .rect(-0.017, 0.065, 0.034, 0.006)
+      .fill(0x2a2e38)
+      .roundRect(-0.017, 0.004, 0.034, 0.03, 0.004)
+      .fill(grey)
+      .circle(-0.009, -0.024, 0.006)
+      .circle(0.009, -0.024, 0.006)
+      .fill(0x2a2e38);
+  }
+
+  /** The satellite tracker (#271): an orange case with its black antenna cap, a small screen, and
+   * the SOS under its cover on the side. */
+  private static tracker(): Graphics {
+    const { edge, grey } = SuitRig.DEVICE;
+    return new Graphics()
+      .roundRect(-0.027, -0.05, 0.054, 0.1, 0.009)
+      .roundRect(-0.02, 0.046, 0.04, 0.034, 0.008)
+      .stroke({ width: edge, color: Palette.TOOL_EDGE, join: "round" })
+      .roundRect(-0.02, 0.046, 0.04, 0.034, 0.008)
+      .fill(0x1b1d24)
+      .roundRect(-0.027, -0.05, 0.054, 0.1, 0.009)
+      .fill(SuitRig.toolShading(0xe2671e, "along"))
+      .roundRect(-0.018, -0.004, 0.036, 0.034, 0.004)
+      .fill(grey)
+      .roundRect(-0.018, -0.04, 0.036, 0.014, 0.004)
+      .fill(0x1b1d24);
+  }
+
+  /** The GPS watch (#271), in the wrist's frame, the forearm along +x: its strap round the cuff
+   * and its round face out from the wrist, its display lit. */
+  private static watch(): Graphics {
+    const { edge, grey } = SuitRig.DEVICE;
+    return new Graphics()
+      .roundRect(-0.022, -0.062, 0.044, 0.124, 0.012)
+      .fill(0x1b1d24)
+      .circle(0, 0.062, 0.032)
+      .stroke({ width: edge, color: Palette.TOOL_EDGE })
+      .circle(0, 0.062, 0.032)
+      .fill(0x2a2e38)
+      .circle(0, 0.062, 0.024)
+      .fill(grey);
   }
 
   /** A limb of the suit along its bone, shaded across it, with the seams between its baffles

@@ -1,6 +1,7 @@
 import type { ClimberView, Point, RescueLineView, Terrain, Way } from "../physics";
-import type { BodyView } from "../simulation";
+import type { BodyView, HandView } from "../simulation";
 import type { Joint, LadderFooting, PoseState, Tending } from "./climber-pose";
+import { DeviceHold } from "./device-hold";
 import type { PickIn } from "./ice-tools";
 import { LineAnchor } from "./line-anchor";
 import { LineHold } from "./line-hold";
@@ -40,6 +41,9 @@ export interface DrawnAt {
   /** On their way into a tent or out of it (#258): the way they face through its door, and how
    * far down on hands and knees they are, 0 to 1. Not said, they're as the physics has them. */
   readonly through?: { readonly facing: 1 | -1; readonly down: number } | null;
+  /** Their hand as the `Devices` rule has it (#271): the device in it, the one before, and for
+   * how long. Not said, their hands are empty. */
+  readonly hand?: HandView | null;
 }
 
 /**
@@ -248,6 +252,7 @@ export class ClimberReading {
           : { hips: this.local(mount.hips, at) ?? { x: 0, y: 0 }, lean: mount.lean },
       limp: upright ? ClimberReading.limp(view) : 0,
       crawling: upright ? (drawn.through?.down ?? 0) : 0,
+      device: upright && drawn.hand != null ? new DeviceHold(drawn.hand).shown : null,
     };
   }
 

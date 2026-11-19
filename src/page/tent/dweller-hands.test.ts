@@ -17,7 +17,7 @@ const PALM_SEEN = HandTurn.of(new Vector3(0, 1, 0), new Vector3(0, 0, -1));
 const WRIST = new Vector3(100, 50, 20);
 
 describe("DwellerHands: the hands of the person in the tent (#264, #269, #274)", () => {
-  it("closes the hand on each thing it holds as it would: round a bottle, a fist on a spoon, a pinch, a pouch by its side or its top", () => {
+  it("closes the hand on each thing it holds as it would: round a bottle, a fist on a spoon, a pinch, a pouch by its side or its top, a device as a radio is", () => {
     expect(DwellerHands.GRIPS).toEqual({
       nothing: "open",
       spoon: "pinch",
@@ -35,6 +35,10 @@ describe("DwellerHands: the hands of the person in the tent (#264, #269, #274)",
       lit: "lighter",
       neck: "fret",
       pot: "pot",
+      radio: "cradle",
+      tracker: "cradle",
+      meter: "cradle",
+      watch: "open",
     });
   });
 

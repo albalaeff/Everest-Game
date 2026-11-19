@@ -252,10 +252,12 @@ export interface HandShape {
  * the thumb on a lighter's wheel; round the guitar's neck, the fingertips on its strings; a pen's
  * pinch, a spoon, a pick or a pouch's top between the thumb and the first finger; a flat thing,
  * a pouch by its side or by its top, the fingers over its face and the thumb behind, or a bar,
- * the thumb on its face. */
+ * the thumb on its face; or cradling a device that lies along it (#271), as a radio or a phone
+ * is held, the palm behind it, the fingers round its far edge and the thumb along its near one. */
 export type Grip =
   | "open"
   | "wrap"
+  | "cradle"
   | "cup"
   | "fist"
   | "pot"
@@ -474,6 +476,23 @@ export class HandBones {
           fingers: [closing, closing, closing, closing],
           thumb: wrapThumb,
           closes: round(RADII.bottle, 94),
+          over: false,
+        };
+      case "cradle":
+        // Curled round a device's far edge onto its face, the thumb along its near edge.
+        return {
+          fingers: [
+            [4, 38, 52, 22],
+            [0, 40, 55, 24],
+            [-4, 42, 58, 26],
+            [-8, 44, 60, 28],
+          ],
+          thumb: {
+            root: new Vector3(0.5, 0.78, -0.38).unit(),
+            curl: new Vector3(-0.2, 0.3, -0.93).unit(),
+            bends: [8, 14],
+          },
+          closes: null,
           over: false,
         };
       case "cup":
@@ -704,6 +723,18 @@ export class HandBones {
     }
     const first = fingers[0];
     const tip = thumb.joints.at(-1) ?? Vector3.ZERO;
+    if (grip === "cradle") {
+      // Against the palm, by its middle, its long way along the hand a little toward the thumb,
+      // its face away from the palm.
+      const face = new Vector3(0, 0, -1);
+      const centre = new Vector3(4, 76, -30);
+      return {
+        hold: centre,
+        aim: new Vector3(0.24, 0.97, 0).unit(),
+        face,
+        thing: { kind: "flat", centre, face, thick: 10 },
+      };
+    }
     if (grip === "fret") {
       // Round the neck, the fingertips on its front: the neck's axis across the fingers' middle
       // bones, its face where the palm faces.

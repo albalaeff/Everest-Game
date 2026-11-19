@@ -9,6 +9,7 @@ import type {
   BodyView,
   Chore,
   ClimberId,
+  HandView,
   HazardWeather,
   MountainClock,
   PackView,
@@ -39,6 +40,8 @@ export interface TentWorld {
   readonly clock: MountainClock;
   readonly hazards: { readonly weather: HazardWeather };
   readonly physics: { climber(id: ClimberId): { readonly altitude: number } };
+  /** The device in the climber's hand (#271): the one the devices' card shows. */
+  readonly devices: { hand(id: ClimberId): HandView };
 }
 
 /** Where the player is on their way through a tent's door, as the slope's picture shows it. */
@@ -55,7 +58,9 @@ export type Passage = "outside" | "going-in" | "inside" | "coming-out";
  * out, and in hand a ring of its progress round its mark, the time left and its stop. Each says
  * the whole of it in a sentence, as its tooltip and to a screen reader. A chore's button begins
  * it, and stops the one in hand; [Drink] and [Eat] use the pack; [Pack] opens the pack's card, to
- * take from the camp's store or leave things in it; [Leave], or the tent's key, goes out, and the
+ * take from the camp's store or leave things in it; [Devices] opens the devices' card over the
+ * tent (#271), and the person takes up the one it shows, talks into the radio when a phrase is
+ * said, and puts it back as the card closes; [Leave], or the tent's key, goes out, and the
  * screen closes as they crawl to the door. The stove's warning shows while it burns, and the sleep
  * slept by the clock until the next chore. Every button is an action of the game's, so a room and
  * a replay see the tent as the player's own climb does. It reads the rules each frame while it's
@@ -99,6 +104,10 @@ export class TentScreen {
   private readonly drink: HTMLButtonElement;
   private readonly eat: HTMLButtonElement;
   private readonly pack: HTMLButtonElement;
+  private readonly devices: HTMLButtonElement;
+  /** How long ago the player last spoke on the radio, as the last frame read it: a shorter time
+   * since is a new phrase. */
+  private spoke: number | null = null;
   private readonly pose = new DwellerPose();
   private acts: DwellerActs | null = null;
   private blend = new DwellerBlend();
@@ -130,6 +139,8 @@ export class TentScreen {
     private readonly passage: () => Passage,
     /** Opens the pack's card. */
     private readonly openPack: () => void,
+    /** Opens the devices' card, or closes it, and says whether it's open (#271). */
+    private readonly devicesCard: { toggle(): void; readonly open: boolean },
   ) {
     const elements = new PageElements(window.document);
     this.screen = elements.find("#tent");
@@ -178,14 +189,15 @@ export class TentScreen {
         return item;
       }),
     );
-    const act = (name: "leave" | "drink" | "eat" | "pack", heard: () => void) => {
+    const act = (name: "leave" | "drink" | "eat" | "pack" | "devices", heard: () => void) => {
       const button = elements.find(`#tent [data-act="${name}"]`) as HTMLButtonElement;
       const words = button.querySelector("span");
       if (words === null) {
         throw new RangeError(`The tent's [${name}] needs its words`);
       }
       words.textContent = texts.say(name);
-      const label = name === "leave" || name === "eat" ? texts.say(`${name}.label`) : null;
+      const labelled = name === "leave" || name === "eat" || name === "devices";
+      const label = labelled ? texts.say(`${name}.label`) : null;
       if (label !== null) {
         button.setAttribute("aria-label", label);
         button.title = label;
@@ -211,6 +223,9 @@ export class TentScreen {
     this.pack = act("pack", () => {
       this.acts?.play("pack");
       this.openPack();
+    });
+    this.devices = act("devices", () => {
+      this.devicesCard.toggle();
     });
   }
 
@@ -250,10 +265,17 @@ export class TentScreen {
     this.shown += seconds;
     const pack = world.packs.pack(player);
     this.last = { tent, pack };
+    const hand = world.devices.hand(player);
+    // A phrase said since the last frame is talked into the radio.
+    if (hand.spoke !== null && (this.spoke === null || hand.spoke < this.spoke)) {
+      this.acts.talk();
+    }
+    this.spoke = hand.spoke;
     const acting = this.acts.advance(seconds, {
       chore: tent.chore,
       progress: tent.progress,
       sleptTo: tent.slept?.to ?? null,
+      device: hand.device,
     });
     this.draw(seconds, acting.act === "sleep", tent, pack);
     const look = this.blend.next(this.pose.look(acting.act, acting.seconds), acting.act, seconds);
@@ -271,7 +293,7 @@ export class TentScreen {
     }
     acts.leave();
     this.closing += seconds;
-    const acting = acts.advance(seconds, { chore: null, progress: 0, sleptTo: null });
+    const acting = acts.advance(seconds, { chore: null, progress: 0, sleptTo: null, device: null });
     const look = this.blend.next(this.pose.look(acting.act, acting.seconds), acting.act, seconds);
     this.elapsed += seconds;
     this.picture.pose(look, acting.act, this.elapsed, this.gust);
@@ -362,6 +384,11 @@ export class TentScreen {
     this.drink.disabled = asleep || !(pack.items.water > 0);
     this.eat.disabled = asleep || !(pack.items.food >= 1);
     this.pack.disabled = asleep;
+    this.devices.disabled = asleep;
+    const open = String(this.devicesCard.open);
+    if (this.devices.getAttribute("aria-expanded") !== open) {
+      this.devices.setAttribute("aria-expanded", open);
+    }
   }
 
   private showStock(name: StockName, row: StockRow): void {

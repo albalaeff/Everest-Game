@@ -49,7 +49,7 @@ import type { RoomCode } from "../room/room-code";
 import { IndexedDbStore } from "../saves";
 import type { ExpeditionStore } from "../saves";
 import { Expedition } from "../simulation";
-import type { ClimberId, ExpeditionSave, PackOf, Scenario } from "../simulation";
+import type { ClimberId, ExpeditionSave, HandView, PackOf, Scenario } from "../simulation";
 import { ActionQueue, EverySink, ZoomSink } from "./action-queue";
 import { BrowserSockets } from "./browser-sockets";
 import { CarriedPace } from "./carried-pace";
@@ -128,6 +128,8 @@ export interface PageHooks {
   climberAt(climber: ClimberId): readonly number[];
   /** A climber of the expedition as the physics shows them: on a ladder, on a rope, falling. */
   climber(climber: ClimberId): ClimberView;
+  /** The device a climber has in the hand, as the rule has it (#271). */
+  hand(climber: ClimberId): HandView;
   /** The god mode's places and powers, with `?god` alone (#245). */
   god?: GodHooks;
 }
@@ -371,6 +373,7 @@ export class GamePage {
         seed: scenario.seed,
         ropeStretch: this.mountain.ropeStretch,
         jolts: rules.jolts,
+        devices: rules.devices,
       },
       choice.chosen,
     );
@@ -404,35 +407,6 @@ export class GamePage {
       sink,
       player,
       this.playersPack().base,
-    );
-    // The tent's inside (#258): open once the slope has shown the player in through the door, or
-    // at once where there's no picture; and the button over the door they stand at.
-    const passage = () => (drawn ? scene.passage : "inside");
-    const tent = new TentScreen(
-      window,
-      texts.tent,
-      rules,
-      new TentReadout(texts.tent, this.mountain.tents.numbers, this.mountain.tents.canister, (id) =>
-        texts.camps.say(id),
-      ),
-      this.mountain.tents.sizes,
-      this.mountain.tents.canister,
-      sink,
-      player,
-      passage,
-      () => {
-        inventory.toggle();
-      },
-    );
-    const tentDoor = new TentDoorPin(
-      window,
-      texts.tent,
-      rules.tents,
-      player,
-      sink,
-      (x, y) => (drawn ? scene.screenAt(x, y) : null),
-      (camp, index) => scene.tentOver(camp, index),
-      passage,
     );
     // The devices on the harness and the wrist (#260): the radio, the GPS watch, the weather
     // meter and the tracker, which read the climb as the rules have it.
@@ -468,6 +442,36 @@ export class GamePage {
         minutes: this.knowledge.number("gear.tracker-interval"),
         sunrise: warmth.from * 3600,
       },
+    );
+    // The tent's inside (#258): open once the slope has shown the player in through the door, or
+    // at once where there's no picture; and the button over the door they stand at.
+    const passage = () => (drawn ? scene.passage : "inside");
+    const tent = new TentScreen(
+      window,
+      texts.tent,
+      rules,
+      new TentReadout(texts.tent, this.mountain.tents.numbers, this.mountain.tents.canister, (id) =>
+        texts.camps.say(id),
+      ),
+      this.mountain.tents.sizes,
+      this.mountain.tents.canister,
+      sink,
+      player,
+      passage,
+      () => {
+        inventory.toggle();
+      },
+      devices,
+    );
+    const tentDoor = new TentDoorPin(
+      window,
+      texts.tent,
+      rules.tents,
+      player,
+      sink,
+      (x, y) => (drawn ? scene.screenAt(x, y) : null),
+      (camp, index) => scene.tentOver(camp, index),
+      passage,
     );
     devices.whenOpened(() => {
       inventory.close();
@@ -575,6 +579,7 @@ export class GamePage {
         return [x, y];
       },
       climber: (climber) => physics.climber(climber),
+      hand: (climber) => rules.devices.hand(climber),
       ...(god === null ? {} : { god }),
     });
     if (await scene.open(window)) {

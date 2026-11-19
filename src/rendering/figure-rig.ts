@@ -1,7 +1,8 @@
 import { Container } from "pixi.js";
 
+import type { DeviceKind } from "../simulation";
 import { ClimberPose } from "./climber-pose";
-import type { Joint, Pose } from "./climber-pose";
+import type { DrawnDevice, Joint, Limb, Pose } from "./climber-pose";
 import { FigureShapes } from "./figure-shapes";
 import type { DrawnTool } from "./ice-tools";
 
@@ -22,6 +23,9 @@ export interface RigParts {
   readonly mask: Container;
   readonly tools: readonly [Container, Container];
   readonly strapped: readonly [Container, Container];
+  /** The devices (#271), each in its own frame, held at the origin with its top along +y: the
+   * one in the near hand shows. A rim of light has none. */
+  readonly devices?: Readonly<Record<DeviceKind, Container>>;
 }
 
 /**
@@ -49,6 +53,9 @@ export abstract class FigureRig<Parts extends RigParts = RigParts> extends Conta
     at: { x: 0.2, y: 0.42 },
     turn: -0.9,
   };
+
+  /** How far back from the hand the wrist is, of the forearm: where a watch is worn. */
+  private static readonly WRIST = 0.24;
 
   /** Whether the pack is on their back, with the tools strapped to it. */
   private packed = true;
@@ -90,6 +97,32 @@ export abstract class FigureRig<Parts extends RigParts = RigParts> extends Conta
     parts.pack.visible = this.packed;
     FigureRig.wear(parts, masked);
     FigureRig.carry(parts, pose.tools, this.packed);
+    FigureRig.hold(parts, pose.device, pose.arms[0]);
+  }
+
+  /** The device in the near hand, where the pose has it, its top the way it's held (#271): the
+   * watch is on the wrist, a little back from the hand along the forearm, its face out from it. */
+  private static hold({ devices }: RigParts, held: DrawnDevice | null, arm: Limb): void {
+    if (devices === undefined) {
+      return;
+    }
+    for (const [kind, part] of Object.entries(devices)) {
+      part.visible = held !== null && held.kind === kind;
+    }
+    if (held === null) {
+      return;
+    }
+    const part = devices[held.kind];
+    if (held.kind !== "gps") {
+      part.position.set(held.at.x, held.at.y);
+      // Its top leans forward by `angle`: the layer's y is up, so the turn is the other way.
+      part.rotation = -held.angle;
+      return;
+    }
+    const { middle, end } = arm;
+    const { WRIST } = FigureRig;
+    part.position.set(end.x + (middle.x - end.x) * WRIST, end.y + (middle.y - end.y) * WRIST);
+    part.rotation = Math.atan2(end.y - middle.y, end.x - middle.x);
   }
 
   /** Each ice tool where it's drawn: the part that's held where a hand has it, or the one on the

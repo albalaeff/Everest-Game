@@ -57,6 +57,9 @@ export class DevicesPanel {
   private readonly faces = new Map<DeviceName, HTMLElement>();
   private shown: DeviceName = "radio";
   private whenOpen: () => void = () => undefined;
+  /** The device the card last told the climber to hold: the one a climb that's gone on from a
+   * save still has out, if any. */
+  private taken: DeviceName | null;
 
   /** The radio: the phrases said and not yet heard back, the calls answered so far, and the
    * answers on their way. */
@@ -100,6 +103,7 @@ export class DevicesPanel {
       radio: elements.find("[data-control='radio']"),
     };
     this.answered = climb.calls.length;
+    this.taken = climb.hand.device;
     this.onMap = this.mapOf(route.profile);
     for (const element of this.panel.querySelectorAll<HTMLElement>("[data-text]")) {
       element.textContent = texts.say(element.dataset.text as DeviceTextName);
@@ -108,6 +112,8 @@ export class DevicesPanel {
     this.build();
     this.listen();
     this.wind.gusts = climb.wind.gusts;
+    // The card opens shut: a device a saved climb left out goes back.
+    this.take(null);
   }
 
   /** What to do as the panel opens: close the card it would lie over. */
@@ -122,6 +128,17 @@ export class DevicesPanel {
     this.letGoOfSos();
     this.panel.hidden = true;
     this.mark();
+    this.take(null);
+  }
+
+  /** Whether the card is open. */
+  get open(): boolean {
+    return !this.panel.hidden;
+  }
+
+  /** Opens the card at the device used last, or closes it: the tent's [Devices] (#271). */
+  toggle(): void {
+    this.toggleAt(this.shown);
   }
 
   /** The devices as they are this frame, `seconds` of play after the last. */
@@ -182,10 +199,10 @@ export class DevicesPanel {
   private listen(): void {
     const { window } = this;
     this.buttons.devices.addEventListener("click", () => {
-      this.toggle(this.shown);
+      this.toggle();
     });
     this.buttons.radio.addEventListener("click", () => {
-      this.toggle("radio");
+      this.toggleAt("radio");
     });
     this.find("[data-act='close']").addEventListener("click", () => {
       this.close();
@@ -263,9 +280,9 @@ export class DevicesPanel {
       return;
     }
     if (event.code === "KeyG" && !event.repeat) {
-      this.toggle(this.shown);
+      this.toggle();
     } else if (event.code === "KeyQ" && !event.repeat) {
-      this.toggle("radio");
+      this.toggleAt("radio");
     } else if (this.panel.hidden) {
       return;
     } else if (event.code === "Escape") {
@@ -293,7 +310,7 @@ export class DevicesPanel {
   }
 
   /** Opens at `device`, or closes if that's what's open; from another device, goes to it. */
-  private toggle(device: DeviceName): void {
+  private toggleAt(device: DeviceName): void {
     if (!this.panel.hidden && this.shown === device) {
       this.close();
       return;
@@ -324,7 +341,19 @@ export class DevicesPanel {
       this.takeOutMeter();
     }
     this.mark();
+    this.take(device);
     this.update(0);
+  }
+
+  /** The device the card shows comes out into the climber's hand, and goes back as the card
+   * closes (#271): an action of the game's, so a teammate and a replay see it. Said once: the
+   * hand may not have heard the last word yet. */
+  private take(device: DeviceName | null): void {
+    if (device === this.taken) {
+      return;
+    }
+    this.taken = device;
+    this.sink.send({ kind: "device", climber: this.player, device: device ?? "none" });
   }
 
   /** The menu's buttons take the rope's orange while their panel is open: [Radio] at the radio. */

@@ -5,7 +5,8 @@ import { TentArt } from "./tent-art";
 /** What a hand holds: a spoon, empty or with a spoonful on it, or in the fist to stir with; a
  * bottle; an energy bar; a meal's pouch, open or sealed, or lifted by its top, or its seal
  * between finger and thumb; a lump of snow; a lighter, or one lit; the guitar's pick, or its
- * neck; the pot, by its handle. */
+ * neck; the pot, by its handle; and the devices (#271): the radio, the tracker, the weather
+ * meter, and the watch, which is on the wrist of the open hand that's turned up to read it. */
 export type Held =
   | "nothing"
   | "spoon"
@@ -22,7 +23,11 @@ export type Held =
   | "lit"
   | "pick"
   | "neck"
-  | "pot";
+  | "pot"
+  | "radio"
+  | "tracker"
+  | "meter"
+  | "watch";
 
 /** A part of a hand as it's drawn this frame: its skin's outline, and a nail on it, if one shows;
  * both SVG paths in the picture's pixels, empty where there's nothing. */
@@ -78,6 +83,10 @@ export class DwellerHands {
     lit: "lighter",
     neck: "fret",
     pot: "pot",
+    radio: "cradle",
+    tracker: "cradle",
+    meter: "cradle",
+    watch: "open",
   };
   /** How many parts a hand has, and so how many each of its places can draw: the palm, and the
    * three bones of each finger and of the thumb. */
@@ -91,6 +100,8 @@ export class DwellerHands {
    * side it pours to, upright. */
   static readonly POUCH_HELD = 12;
   static readonly POT_LIP = { x: TentArt.POT.half, y: TentArt.POT.handle - TentArt.POT.rim };
+  /** How far behind an open hand's middle its watch is, on the sleeve's cuff. */
+  static readonly WATCH_WORN = 72 * DwellerHands.SCALE + 9;
   /** How much nearer its handle's end a spoon is held in the fist than pinched. */
   static readonly STIRRER_HELD = 12;
   /** How far from where it's held each thing's working end is, in the tent's pixels: a bottle's
@@ -103,6 +114,8 @@ export class DwellerHands {
     bar: 24,
     lighter: 17,
     pouch: TentArt.POUCH.height - DwellerHands.POUCH_HELD - 3,
+    radio: TentArt.RADIO.height / 2,
+    meter: TentArt.METER.height / 2 + TentArt.METER.ring,
   } as const;
 
   /** `id` names the hand's shading, so each hand's can be told apart. */
@@ -230,6 +243,22 @@ export class DwellerHands {
       held("snow", DwellerHands.lump()),
       held("lighter", lighter(false)),
       held("lit", lighter(true)),
+      held(
+        "radio",
+        `<g transform="translate(0 ${TentArt.RADIO.height / 2})">${TentArt.radio()}</g>`,
+      ),
+      held(
+        "tracker",
+        `<g transform="translate(0 ${TentArt.TRACKER.height / 2})">${TentArt.tracker()}</g>`,
+      ),
+      held(
+        "meter",
+        `<g transform="translate(0 ${TentArt.METER.height / 2})">${TentArt.meter()}</g>`,
+      ),
+      held(
+        "watch",
+        `<g transform="translate(0 ${DwellerHands.WATCH_WORN})">${TentArt.watch()}</g>`,
+      ),
       held(
         "pick",
         `<path class="dw-pick" d="M-0.6 2C3.6 1.4 7.8 3.2 7.2 5.6C6 8.6 2.4 11.6 0.6 12.2C-1.2 9.8 -3 6.8 -3.6 5C-3.6 3.2 -2.4 2.3 -0.6 2Z"/>`,

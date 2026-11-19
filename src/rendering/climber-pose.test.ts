@@ -1391,3 +1391,186 @@ describe("ClimberPose: a casualty and their rescuer (#241)", () => {
     expect(after({ hurt: "leg" })?.tools[0]?.hand).toBeNull();
   });
 });
+
+describe("ClimberPose: a device in the hand (#271)", () => {
+  const held = (kind: "radio" | "gps" | "wind" | "tracker", out = 1): Partial<PoseState> => ({
+    device: { kind, out, talking: false },
+  });
+  /** Standing with the device out, settled. */
+  const holding = (kind: "radio" | "gps" | "wind" | "tracker"): Pose => {
+    const climber = new ClimberPose();
+    climber.advance(5, state());
+    let pose = climber.advance(FRAME, state(held(kind)));
+    for (let frame = 0; frame < 120; frame += 1) {
+      pose = climber.advance(FRAME, state(held(kind)));
+    }
+    return pose;
+  };
+  const empty = new ClimberPose().advance(5, state());
+
+  it("holds the radio at the mouth in the near hand, the far arm at the side", () => {
+    const pose = holding("radio");
+    const [near, far] = pose.arms;
+
+    expect(pose.device).toMatchObject({ kind: "radio" });
+    expect(length(near.end, pose.head)).toBeLessThan(0.22);
+    expect(near.end.x).toBeGreaterThan(pose.head.x);
+    expect(length(pose.device?.at ?? pose.pelvis, near.end)).toBeLessThan(1e-9);
+    expect(far.end.y).toBeLessThan(pose.pelvis.y + 0.1);
+  });
+
+  it("turns the wrist up for the watch, across the chest, the head down to it", () => {
+    const pose = holding("gps");
+    const hand = pose.arms[0].end;
+
+    expect(pose.device).toMatchObject({ kind: "gps" });
+    expect(hand.x).toBeGreaterThan(pose.shoulder.x + 0.1);
+    expect(hand.y).toBeLessThan(pose.shoulder.y);
+    expect(hand.y).toBeGreaterThan(pose.pelvis.y + 0.2);
+    expect(pose.nod).toBeGreaterThan(empty.nod + 0.25);
+  });
+
+  it("holds the weather meter up into the wind, over the head, and looks up at it", () => {
+    const pose = holding("wind");
+    const hand = pose.arms[0].end;
+
+    expect(pose.device).toMatchObject({ kind: "wind" });
+    expect(hand.y).toBeGreaterThan(pose.head.y);
+    expect(hand.x).toBeGreaterThan(pose.shoulder.x + 0.15);
+    expect(pose.nod).toBeLessThan(empty.nod);
+  });
+
+  it("holds the tracker in front of the chest, the head down to its screen", () => {
+    const pose = holding("tracker");
+    const hand = pose.arms[0].end;
+
+    expect(pose.device).toMatchObject({ kind: "tracker" });
+    expect(hand.x).toBeGreaterThan(pose.shoulder.x + 0.15);
+    expect(hand.y).toBeLessThan(pose.shoulder.y + 0.05);
+    expect(hand.y).toBeGreaterThan(pose.pelvis.y + 0.25);
+    expect(pose.nod).toBeGreaterThan(empty.nod + 0.2);
+  });
+
+  it("goes on walking with it: the legs stride and the far arm swings, the hand that holds it steady by the body", () => {
+    const frames = through([
+      { frames: 60, over: held("radio") },
+      { frames: 240, over: { ...held("radio"), moving: true } },
+    ]).slice(120);
+    const fromShoulder = (pose: Pose, arm: 0 | 1): Joint => ({
+      x: pose.arms[arm].end.x - pose.shoulder.x,
+      y: pose.arms[arm].end.y - pose.shoulder.y,
+    });
+    const spread = (arm: 0 | 1): number => {
+      const xs = frames.map(({ pose }) => fromShoulder(pose, arm).x);
+      return Math.max(...xs) - Math.min(...xs);
+    };
+    const strides = frames.map(({ pose }) => pose.legs[0].end.x - pose.legs[1].end.x);
+
+    expect(Math.max(...strides) - Math.min(...strides)).toBeGreaterThan(0.4);
+    expect(spread(1)).toBeGreaterThan(0.15);
+    expect(spread(0)).toBeLessThan(0.05);
+    for (const { pose } of frames) {
+      expect(pose.device).toMatchObject({ kind: "radio" });
+    }
+  });
+
+  it("comes out by way of where it's carried, and goes back, with no joint jumping, standing and walking", () => {
+    // Out over 0.7 s from the 30th frame, held, and back over 0.6 s from the 120th.
+    const out = (frame: number): number | null =>
+      frame < 30
+        ? null
+        : frame < 120
+          ? Math.min(1, (frame - 30) / 42)
+          : frame < 156
+            ? 1 - (frame - 120) / 36
+            : null;
+    for (const kind of ["radio", "gps", "wind", "tracker"] as const) {
+      for (const moving of [false, true]) {
+        const climber = new ClimberPose();
+        climber.advance(5, state());
+        const frames: Frame[] = [];
+        let x = 0;
+        for (let frame = 0; frame < 180; frame += 1) {
+          x += moving ? 0.01 : 0;
+          const share = out(frame);
+          const device = share === null ? null : { kind, out: share, talking: false };
+          const pose = climber.advance(FRAME, state({ moving, travelled: x, device }));
+          frames.push({ x, y: 0, pose });
+        }
+
+        for (const [before, after] of pairs(frames)) {
+          const from = joints(before.pose);
+          joints(after.pose).forEach((joint, index) => {
+            const was = from[index] ?? joint;
+            // The fastest is the elbow as the arm unfolds from the chest to over the head.
+            expect(length(inWorld(before, was), inWorld(after, joint))).toBeLessThan(0.07);
+          });
+        }
+        expect(frames[100]?.pose.device).toMatchObject({ kind });
+        expect(frames.at(-1)?.pose.device).toBeNull();
+      }
+    }
+  });
+
+  it("is in the hand only once it's out of where it's carried: the watch is on the wrist all along", () => {
+    const climber = new ClimberPose();
+    climber.advance(5, state());
+    const early = climber.advance(FRAME, state(held("tracker", 0.2)));
+
+    expect(early.device).toBeNull();
+    expect(holding("gps").device).not.toBeNull();
+  });
+
+  it("is put away where the hands are needed: on a ladder, up a wall, hauling, in a fall", () => {
+    const busy: readonly Partial<PoseState>[] = [
+      { ladder: across(0) },
+      { ladder: upAWall(0.6) },
+      { hauling: true },
+      { falling: true },
+    ];
+    for (const over of busy) {
+      const climber = new ClimberPose();
+      climber.advance(5, state());
+      let pose = climber.advance(FRAME, state({ ...over, ...held("radio") }));
+      for (let frame = 0; frame < 90; frame += 1) {
+        pose = climber.advance(FRAME, state({ ...over, ...held("radio") }));
+      }
+
+      expect(pose.device).toBeNull();
+    }
+  });
+
+  it("gives the jumar to the far hand while a device is out, and takes it back after", () => {
+    const climber = new ClimberPose();
+    const onTheRope: Partial<PoseState> = { jumar: { x: 0.35, y: 0.75 }, moving: true };
+    climber.advance(5, state(onTheRope));
+    let pose = climber.advance(FRAME, state(onTheRope));
+    const near = (): number => length(pose.arms[0].end, pose.jumar ?? pose.pelvis);
+    const far = (): number => length(pose.arms[1].end, pose.jumar ?? pose.pelvis);
+    expect(near()).toBeLessThan(0.02);
+
+    for (let frame = 0; frame < 120; frame += 1) {
+      pose = climber.advance(FRAME, state({ ...onTheRope, ...held("radio") }));
+    }
+    expect(far()).toBeLessThan(0.02);
+    expect(pose.device).toMatchObject({ kind: "radio" });
+    expect(length(pose.arms[0].end, pose.head)).toBeLessThan(0.22);
+
+    for (let frame = 0; frame < 120; frame += 1) {
+      pose = climber.advance(FRAME, state(onTheRope));
+    }
+    expect(near()).toBeLessThan(0.02);
+    expect(pose.device).toBeNull();
+  });
+
+  it("keeps its bones' lengths with a device out", () => {
+    for (const kind of ["radio", "gps", "wind", "tracker"] as const) {
+      const pose = holding(kind);
+      for (const arm of pose.arms) {
+        expect(length(arm.root, arm.middle)).toBeCloseTo(ClimberPose.UPPER_ARM, 9);
+        expect(length(arm.middle, arm.end)).toBeCloseTo(ClimberPose.FOREARM, 9);
+      }
+      expect(length(pose.shoulder, pose.head)).toBeCloseTo(ClimberPose.NECK, 9);
+    }
+  });
+});

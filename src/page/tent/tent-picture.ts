@@ -175,7 +175,9 @@ export class TentPicture {
       set(`held${side}`, "transform", frame.held[side]);
       set(`carried${side}`, "transform", frame.held[side]);
       for (const held of this.held[side] ?? []) {
-        TentPicture.show(held, held.dataset.held === frame.holds[side]);
+        // The watch is on the wrist all along (#271): on the open hand that wears it, too.
+        const worn = held.dataset.held === "watch" && side === 1 && frame.holds[side] === "nothing";
+        TentPicture.show(held, held.dataset.held === frame.holds[side] || worn);
       }
       const { back, mid, front } = frame.hands[side];
       [back, mid, front].forEach((drawn, place) => {
@@ -227,8 +229,9 @@ export class TentPicture {
     if (dataset.asleep !== asleep) {
       dataset.asleep = asleep;
     }
-    // The door's open while the stove burns, for the fumes, and on the way in and out.
-    const door = look.flame > 0.02 || look.shift < -40 ? "open" : "shut";
+    // The door's open while the stove burns, for the fumes, on the way in and out, and for a
+    // weather meter held out at it (#271).
+    const door = look.flame > 0.02 || look.shift < -40 || look.door === true ? "open" : "shut";
     if (dataset.door !== door) {
       dataset.door = door;
     }

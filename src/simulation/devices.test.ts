@@ -206,10 +206,83 @@ describe("the tracker", () => {
   });
 });
 
+const take = (device: "radio" | "gps" | "wind" | "tracker" | "none"): GameAction => ({
+  kind: "device",
+  climber: "anna",
+  device,
+});
+
+describe("a device in the hand", () => {
+  it("is taken out, and seen for as long as it has been held", () => {
+    const { expedition, devices } = climb();
+    expect(devices.hand("anna")).toEqual({ device: null, was: null, seconds: 0, spoke: null });
+
+    expedition.advance([take("radio")]);
+    expect(devices.hand("anna")).toMatchObject({ device: "radio", was: null, seconds: 0 });
+
+    expedition.advance();
+    expedition.advance();
+    expect(devices.hand("anna")).toMatchObject({ device: "radio", seconds: 0.1 });
+  });
+
+  it("goes back, and the one before it is remembered while the hand comes down", () => {
+    const { expedition, devices } = climb();
+    expedition.advance([take("gps")]);
+    pass(expedition, 30);
+    expedition.advance([take("none")]);
+    expedition.advance();
+
+    expect(devices.hand("anna")).toMatchObject({ device: null, was: "gps", seconds: 0.05 });
+  });
+
+  it("changes for another, and taking the one in the hand again changes nothing", () => {
+    const { expedition, devices } = climb();
+    expedition.advance([take("wind")]);
+    pass(expedition, 30);
+    expedition.advance([take("wind")]);
+    expect(devices.hand("anna").seconds).toBeGreaterThan(0.4);
+
+    expedition.advance([take("tracker")]);
+    expect(devices.hand("anna")).toMatchObject({ device: "tracker", was: "wind", seconds: 0 });
+  });
+
+  it("says how long ago they last spoke on the radio", () => {
+    const { expedition, devices } = climb();
+    expedition.advance([take("radio"), call("radio-check")]);
+    expect(devices.hand("anna").spoke).toBe(0);
+
+    expedition.advance();
+    expect(devices.hand("anna").spoke).toBeCloseTo(0.05);
+  });
+
+  it("stays as it was for the dead, who take nothing out", () => {
+    const { expedition, devices, slope } = climb();
+    slope.dead = true;
+    expedition.advance([take("radio")]);
+
+    expect(devices.hand("anna").device).toBeNull();
+  });
+
+  it("is empty on a save from before devices were held", () => {
+    const first = climb();
+    first.expedition.advance([press("track")]);
+    const save = JSON.parse(JSON.stringify(first.expedition.save())) as ExpeditionSave;
+    const state = save.rules[Devices.NAME] as Record<string, unknown>;
+    delete state.hands;
+    delete state.step;
+
+    const clock = new MountainClock(60);
+    const devices = new Devices(NUMBERS, clock, new Slope());
+    Expedition.resume(save, [clock, devices]);
+
+    expect(devices.hand("anna")).toEqual({ device: null, was: null, seconds: 0, spoke: null });
+  });
+});
+
 describe("the devices' state", () => {
   it("goes on exactly from a save", () => {
     const first = climb();
-    first.expedition.advance([call("radio-check"), press("track"), press("check-in")]);
+    first.expedition.advance([call("radio-check"), press("track"), press("check-in"), take("gps")]);
     pass(first.expedition, 30);
     const save = JSON.parse(JSON.stringify(first.expedition.save())) as ExpeditionSave;
 
@@ -221,6 +294,7 @@ describe("the devices' state", () => {
 
     expect(devices.tracker("anna")).toEqual(first.devices.tracker("anna"));
     expect(devices.calls).toEqual(first.devices.calls);
+    expect(devices.hand("anna")).toEqual(first.devices.hand("anna"));
     expect(resumed.save()).toEqual(first.expedition.save());
   });
 

@@ -20,6 +20,7 @@ import type { ParallaxLayer } from "./parallax-layer";
 import { SkyLayer } from "./sky-layer";
 import { SkylineLayer } from "./skyline-layer";
 import { SlopeLayer } from "./slope-layer";
+import type { Hands } from "./slope-layer";
 import { SnowLayer } from "./snow-layer";
 import type { BetweenSteps } from "./stepped-points";
 
@@ -50,6 +51,8 @@ export interface SceneWorld {
     readonly zones: readonly JoltZone[];
     readonly warnings: readonly JoltWarning[];
   };
+  /** The devices in the climbers' hands (#271): the figure holds what its climber took out. */
+  readonly devices?: Hands;
 }
 
 /**
@@ -243,7 +246,7 @@ export class SlopeScene {
     const { width, height } = this.app.screen;
     const { physics, hazards, body, oxygen, lamps, camps, parts, climbers, player, npcs, seed } =
       this.world;
-    const { jolts, ropeStretch, tentSizes } = this.world;
+    const { jolts, ropeStretch, tentSizes, devices } = this.world;
     const skyline = (style: typeof SkylineLayer.PEAKS, offset: number): SkylineLayer =>
       new SkylineLayer(style, physics.terrain, seed + offset, fogBanks, parts);
     this.sky = new SkyLayer(dithered);
@@ -269,6 +272,7 @@ export class SlopeScene {
       ropeStretch,
       tentSizes,
       jolts,
+      devices,
     );
     this.snow = flakes > 0 ? new SnowLayer(flakes, width, height) : null;
     const behind = this.skylines.filter((layer) => layer.depth.x < 1);
