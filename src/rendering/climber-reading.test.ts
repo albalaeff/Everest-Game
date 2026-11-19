@@ -405,11 +405,75 @@ describe("ClimberReading: a casualty and their rescuer (#241)", () => {
     const reading = new ClimberReading(withLine());
     reading.read(view({ walking: "left" }), BODY, drawn(19, 2));
     const hauled = view({ down: true, hauled: true, onLine: "line", injuries: [BROKEN_LEG] });
+    // The physics has them 1.5 m down the wall, a third of the line's 4.5 m from its anchor; the
+    // rope runs taut from the lip to its foot on the floor, and brings them up along it (#279).
     const state = reading.read(hauled, BODY, drawn(20, 3.5));
 
-    expect(state).toMatchObject({ falling: true, hanging: true, hurt: "leg", face: 0 });
-    expect(state.ground(0)).toBeCloseTo(-1.5, 9);
-    expect(state.jumar?.y).toBeCloseTo(0.7, 9);
+    expect(reading.drawnAt.x).toBeCloseTo(19.5, 9);
+    expect(reading.drawnAt.y).toBeCloseTo(4, 9);
+    expect(state).toMatchObject({ falling: true, hanging: true, hurt: "leg" });
+    expect(state.face).toBeCloseTo(0.45, 9);
+    expect(state.ground(0)).toBeCloseTo(-2, 9);
+    // Tied in a reach up the rope, toward the lip: where the lip is from their harness.
+    expect(Math.hypot(state.jumar?.x ?? 0, state.jumar?.y ?? 0)).toBeCloseTo(0.7, 9);
+    expect(state.hauled?.lip.x).toBeCloseTo(0.5, 9);
+    expect(state.hauled?.lip.y).toBeCloseTo(1, 9);
+    expect(reading.facing).toBe(1);
+    expect(reading.onLine?.taut[0]).toEqual({ x: 20, y: 5 });
+  });
+
+  it("brings a casualty hauled up a stepped wall straight up the rope's way over the steps, facing the anchor, not in and out along them (#279)", () => {
+    // A wall from a floor at 0 up to a lip at 4 m, in two steps of 2 m, the upper one 0.4 m
+    // further back; its top beyond, where the anchor is.
+    const steps = new Terrain([
+      [0, 0],
+      [10, 0],
+      [10, 2],
+      [10.4, 2],
+      [10.4, 4],
+      [16, 4],
+    ]);
+    const stepped: ReadSlope = {
+      ...slope,
+      terrain: steps,
+      lines: [
+        {
+          id: "line",
+          top: 0,
+          foot: 0,
+          shape: [
+            { x: 10.8, y: 4 },
+            { x: 10.4, y: 4 },
+            { x: 10.4, y: 2 },
+            { x: 10, y: 2 },
+            { x: 10, y: 0 },
+          ],
+          built: 1,
+        },
+      ],
+    };
+    const reading = new ClimberReading(stepped);
+    const hauled = view({ down: true, hauled: true, onLine: "line", injuries: [BROKEN_LEG] });
+    const drawnAs = (x: number, y: number): Point => {
+      reading.read(hauled, BODY, drawn(x, y));
+      return reading.drawnAt;
+    };
+    // Up the lower step, out along its ledge, up the upper one, as the physics goes.
+    const physics = [
+      { x: 10, y: 0.5 },
+      { x: 10, y: 1.9 },
+      { x: 10.2, y: 2 },
+      { x: 10.4, y: 2.1 },
+      { x: 10.4, y: 3.5 },
+    ];
+    const ways = physics.map(({ x, y }) => drawnAs(x, y));
+
+    // On the rope's straight runs: up the lower step's face to its corner, then straight from
+    // there to the lip, rising all the way, never along the ledge and back.
+    ways.forEach((at, index) => {
+      expect(at.x).toBeCloseTo(at.y <= 2 ? 10 : 10 + 0.2 * (at.y - 2), 9);
+      expect(at.y).toBeGreaterThan(ways[index - 1]?.y ?? -1);
+    });
     expect(reading.facing).toBe(1);
   });
 

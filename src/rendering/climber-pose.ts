@@ -88,6 +88,11 @@ export interface PoseState {
    * out straight ahead of them, a broken arm held to the chest. None on their feet. Hauled up a
    * rescue line they hang in the harness, their boots off the wall. */
   readonly hurt?: "leg" | "arm" | null;
+  /** Hauled up a rescue line (#279): where its lip is from their harness, in the figure's metres,
+   * x the way they face. Below it they hang in the harness, or are dragged lying where the rope
+   * runs low along a crevasse's floor; at it they're pulled over it chest first; past it they lie
+   * on the snow. None when they're not hauled. */
+  readonly hauled?: { readonly lip: Joint } | null;
   /** Kneeling at their work for a casualty, the hands at it (#241): first aid, or lifting them
    * (`aid`), at the hurt limb where the picture has it, from the climber's point, if it's known;
    * or the screws of a rescue line's anchor, turned into the ice (`anchor`). */
@@ -181,7 +186,19 @@ export interface Pose {
 }
 
 /** What the figure is doing, as the pose draws it: from one to the next, it blends. */
-type Mode = "walk" | "rungs" | "wall" | "rise" | "fall" | "hang" | "dead" | "sit" | "tend" | "ride";
+type Mode =
+  | "walk"
+  | "rungs"
+  | "wall"
+  | "rise"
+  | "fall"
+  | "hang"
+  | "hauled"
+  | "laid"
+  | "dead"
+  | "sit"
+  | "tend"
+  | "ride";
 
 /** The points a boot turns on as its stiff ankle needs, in its frame from the point of the sole
  * under the ankle, x along the sole and y up off it: as the shin leans too far forward over it,
@@ -369,6 +386,8 @@ export class ClimberPose {
     rise: 0.5,
     fall: ClimberPose.FALL_SECONDS,
     hang: 0.5,
+    hauled: 0.6,
+    laid: 0.6,
     dead: 0.6,
     sit: 0.9,
     tend: 0.5,
@@ -666,6 +685,39 @@ export class ClimberPose {
   /** Hauled up a rescue line (#241), hurt: how far off a wall's face beside them they hang, in
    * the harness, their boots off it. */
   private static readonly HAULED_OFF = 0.34;
+  /** Hauled up a rescue line (#279): how steeply the rope must run up to the lip, in radians, to
+   * begin to lift them off a crevasse's floor rather than drag them along it, and to have them
+   * hanging; how far under the lip's edge their harness is as their hands reach up over it onto
+   * the snow, and as their chest comes over it, and how far back from the face it is then,
+   * pressed to the edge; how far forward they lean over it;
+   * how far past it on the snow they're down flat; how deep the body lies, its spine over the
+   * snow; and how high over the edge a leg rests on it. */
+  private static readonly HAULED = {
+    drag: 0.6,
+    hang: 1.1,
+    reach: 0.75,
+    over: 0.25,
+    back: 0.17,
+    lean: 0.8,
+    flat: 0.45,
+    deep: 0.12,
+    rest: 0.07,
+  };
+  /** Dragged face down along the snow (#279), where the hands are, from the harness: ahead of the
+   * head, the near one further on, and over the snow. */
+  private static readonly DRAGGED_HANDS: readonly [Joint, Joint] = [
+    { x: 1.06, y: 0.15 },
+    { x: 1.02, y: 0.14 },
+  ];
+  /** How far an arm reaches for something out of its reach, as a share of its length: still
+   * bent a little (#279). */
+  private static readonly REACHING = 0.93;
+  /** Hauled up to a lip (#279), where the hands go on the snow over its edge, from the edge: the
+   * near one further on, the far one nearer it. */
+  private static readonly ON_THE_LIP: readonly [Joint, Joint] = [
+    { x: 0.55, y: 0.04 },
+    { x: 0.36, y: 0.03 },
+  ];
   /** On their knees at a casualty (#241): the kneel, bent this far over them, the head down; the
    * hands at the hurt limb where the picture has it, as far as the arms reach, or this far ahead
    * and this high off the snow (`aid`), working, this far round, so many times a second, one
@@ -824,6 +876,8 @@ export class ClimberPose {
   /** The pose's own seconds, which the wobble sways on. */
   private time = 0;
   private mode: Mode | null = null;
+  /** Whether they were hauled out over a lip onto the snow and lie there still, hurt (#279). */
+  private laid = false;
   /** Last frame's targets, and the blend from them to the new mode's: its seconds so far. */
   private last: Targets | null = null;
   private blendFrom: Targets | null = null;
@@ -841,6 +895,8 @@ export class ClimberPose {
     const frame = Math.max(seconds, 0);
     const share = 1 - Math.exp(-frame / ClimberPose.SETTLE_SECONDS);
     const mode = this.modeOf(state);
+    const { lip } = state.hauled ?? { lip: null };
+    this.laid = lip === null ? mode === "laid" : ClimberPose.onTheSnow(lip) > 0.5;
     const picks = state.picks ?? [];
     this.tools.advance(frame, {
       picks,
@@ -923,6 +979,9 @@ export class ClimberPose {
     if (state.dead) {
       return "dead";
     }
+    if (state.hauled != null) {
+      return "hauled";
+    }
     if (state.riding != null) {
       return "ride";
     }
@@ -930,7 +989,8 @@ export class ClimberPose {
       return this.heldUp(state) || this.hangingFrom(state) !== null ? "hang" : "fall";
     }
     if (state.hurt != null) {
-      return "sit";
+      // Hauled out over a lip, they lie where the haul left them (#279).
+      return this.laid ? "laid" : "sit";
     }
     if (this.rising < 1) {
       return "rise";
@@ -1120,6 +1180,12 @@ export class ClimberPose {
     }
     if (mode === "hang") {
       return { targets: this.hanging(state), down: ClimberPose.NONE_DOWN };
+    }
+    if (mode === "hauled" && state.hauled != null) {
+      return { targets: this.hauled(state, state.hauled.lip), down: ClimberPose.NONE_DOWN };
+    }
+    if (mode === "laid") {
+      return { targets: this.dragged(Infinity), down: ClimberPose.NONE_DOWN };
     }
     if (mode === "ride" && state.riding != null) {
       return { targets: ClimberPose.riding(state.riding), down: ClimberPose.NONE_DOWN };
@@ -1658,16 +1724,20 @@ export class ClimberPose {
    * lip, they hang upright still, leaning its way (#239): a harness never turns a climber over,
    * nor lays them flat as the rope comes taut from the side (#243). Beside a wall's face, their
    * boots are on it (`bracedOn`). */
-  private hanging(state: PoseState): Targets {
+  private hanging(state: PoseState, hauled = false): Targets {
     const drawn = state.jumar ?? state.carabiner;
     const lifted =
       drawn === null ? null : { x: drawn.x, y: Math.max(drawn.y, ClimberPose.HELD_ABOVE) };
-    const hold = this.hangingFrom(state) ?? (this.heldUp(state) ? lifted : null) ?? ClimberPose.UP;
-    // Hauled up beside a wall's face, hurt, they hang clear of it, no boot on the ice (#241).
+    const loose = this.hangingFrom(state) ?? (this.heldUp(state) ? lifted : null);
+    const hold = (hauled ? lifted : loose) ?? ClimberPose.UP;
+    // Hauled up beside a wall's face, hurt, they hang clear of it, no boot on the ice (#241):
+    // off the rope's way up, which bears on the ice's outermost corners (#279).
     const clear = state.hurt != null && state.face != null;
-    const offset: Joint = clear
-      ? { x: Math.min(0, this.faceAhead - ClimberPose.HAULED_OFF), y: 0 }
-      : ClimberPose.ORIGIN;
+    const offset: Joint = hauled
+      ? { x: -ClimberPose.HAULED_OFF, y: 0 }
+      : clear
+        ? { x: Math.min(0, this.faceAhead - ClimberPose.HAULED_OFF), y: 0 }
+        : ClimberPose.ORIGIN;
     const most = ClimberPose.HANG_LEAN;
     const leant = Math.min(Math.max(Math.atan2(hold.x - offset.x, hold.y), -most), most);
     // Level with the carabiner or under it, the lean eases to half: the rope pulls them along,
@@ -1705,6 +1775,143 @@ export class ClimberPose {
     return this.braced > 1e-3
       ? ClimberPose.mix(free, this.bracedOn(state, hold), this.braced)
       : free;
+  }
+
+  /** Hauled up a rescue line, its lip `lip` from their harness (#279). Below it they hang in the
+   * harness, off the rope's way up; where the rope runs low to it along a crevasse's floor it
+   * drags them sitting, feet first, and lifts them as it steepens. As the harness comes
+   * up to the lip's edge, the chest is pulled over it onto the snow, pressed to the edge, the legs
+   * still down the face; past it, they're dragged down flat onto the snow, the legs over the edge
+   * till the hips are well onto it. */
+  private hauled(state: PoseState, lip: Joint): Targets {
+    const { HAULED, ON_THE_LIP, DRAGGED_HANDS } = ClimberPose;
+    const rise = Math.atan2(lip.y, Math.abs(lip.x));
+    const lift = ClimberPose.smooth((rise - HAULED.drag) / (HAULED.hang - HAULED.drag));
+    const past = Math.max(0, -lip.x);
+    const lying = this.dragged(past);
+    // Along a crevasse's floor they're dragged sitting, feet first, as they sat.
+    const hanging = ClimberPose.mix(this.sitting(state), this.hanging(state, true), lift);
+    const over = ClimberPose.smooth((HAULED.over - lip.y) / HAULED.over);
+    const flat = ClimberPose.onTheSnow(lip);
+    const coming = ClimberPose.mix(
+      ClimberPose.onTheFloor(hanging, state),
+      ClimberPose.overTheLip(),
+      over,
+    );
+    const laid = ClimberPose.mix(coming, lying, flat);
+    // Coming up to the lip, the hands reach up over its edge onto the snow, and stay on it ahead
+    // of them as they're dragged onto it.
+    const hands = ON_THE_LIP.map((hand, index) =>
+      ClimberPose.between(
+        { x: lip.x + hand.x, y: lip.y + hand.y },
+        DRAGGED_HANDS[index] ?? hand,
+        flat,
+      ),
+    );
+    const reach = ClimberPose.smooth((HAULED.reach - lip.y) / (HAULED.reach - HAULED.over));
+    return ClimberPose.reaching(laid, hands, reach);
+  }
+
+  /** How far down onto the snow past a lip `lip` from their harness a hauled casualty is, 0 to 1
+   * (#279): none till the harness is at its edge, all once the hips are well onto it. */
+  private static onTheSnow(lip: Joint): number {
+    const { HAULED } = ClimberPose;
+    const over = ClimberPose.smooth((HAULED.over - lip.y) / HAULED.over);
+    return over * ClimberPose.smooth(Math.max(0, -lip.x) / HAULED.flat);
+  }
+
+  /** `targets` raised as far as the boots would be in the ground under them, as it is: lifted
+   * off a crevasse's floor, a casualty stands on it till the rope has them clear of it (#279). */
+  private static onTheFloor(targets: Targets, state: PoseState): Targets {
+    const { offset, tilt } = targets;
+    const under = targets.ankles.map((ankle) => {
+      const at = ClimberPose.turned(ankle, tilt);
+      const x = offset.x + at.x;
+      return state.terrain(x) + ClimberPose.ANKLE - (offset.y + at.y);
+    });
+    const raise = Math.max(0, ...under);
+    return raise <= 0 ? targets : { ...targets, offset: { x: offset.x, y: offset.y + raise } };
+  }
+
+  /** `targets` with the hands `share` of the way to `hands`, where they are from the climber's
+   * point, upright: in the targets' own frame, however it's turned, and no further from the
+   * shoulder than a bent arm reaches, so the elbow never snaps straight. */
+  private static reaching(targets: Targets, hands: readonly Joint[], share: number): Targets {
+    if (share <= 0) {
+      return targets;
+    }
+    const { offset, tilt } = targets;
+    const shoulder = ClimberPose.shoulderOf(targets.pelvis, targets.lean);
+    const most = ClimberPose.REACHING * (ClimberPose.UPPER_ARM + ClimberPose.FOREARM);
+    const toward = (index: 0 | 1): Joint => {
+      const hand = targets.hands[index];
+      const to = hands[index];
+      if (to === undefined) {
+        return hand;
+      }
+      const inside = ClimberPose.inside(to, offset, tilt);
+      const away = Math.hypot(inside.x - shoulder.x, inside.y - shoulder.y);
+      const within = away > most ? ClimberPose.between(shoulder, inside, most / away) : inside;
+      return ClimberPose.between(hand, within, share);
+    };
+    return { ...targets, hands: [toward(0), toward(1)] };
+  }
+
+  /** Over a lip, the harness at its edge (#279): pressed to it, the chest over it, the hands on
+   * the snow beyond it, the legs hanging down the face. */
+  private static overTheLip(): Targets {
+    const { HAULED, OFF_THE_GROUND, ON_THE_LIP } = ClimberPose;
+    const [near, far] = ON_THE_LIP;
+    return {
+      pelvis: { x: -HAULED.back, y: 0 },
+      lean: HAULED.lean,
+      nod: HAULED.lean * 0.4,
+      ankles: [
+        { x: -HAULED.back - 0.04, y: -0.8 },
+        { x: -HAULED.back - 0.1, y: -0.78 },
+      ],
+      soles: [-0.35, -0.3],
+      pivots: [OFF_THE_GROUND, OFF_THE_GROUND],
+      hands: [near, far],
+      tilt: 0,
+      offset: ClimberPose.ORIGIN,
+    };
+  }
+
+  /** Dragged face down along the snow (#279): the harness at their point, the spine over the
+   * snow, the head up a little toward the rope, the hands ahead on the snow; the legs straight
+   * behind, or, `past` a lip by less than their length, over its edge, down toward the face. */
+  private dragged(past: number): Targets {
+    const { HAULED, THIGH, SHIN, FALLEN_RADIANS, OFF_THE_GROUND, DRAGGED_HANDS } = ClimberPose;
+    // Face down, a quarter turn over: in the body's frame x goes down into the snow and y along
+    // it, so a point `along` the snow from the harness and `up` off it is (-up, along).
+    const at = (along: number, up: number): Joint => ({ x: -up, y: along });
+    const leg = THIGH + SHIN - 0.01;
+    // Straight, resting on the lip's edge where it's behind them nearer than their length, the
+    // knee as it is lying face down; along the snow once they're further onto it.
+    const ankle = (aside: number): Joint => {
+      const back = past + aside;
+      const drop = HAULED.deep - HAULED.rest;
+      if (back >= leg) {
+        return at(-leg, HAULED.deep - 0.04);
+      }
+      const far = Math.hypot(back, drop);
+      return at((-back / far) * leg, HAULED.deep - (drop / far) * leg);
+    };
+    return {
+      pelvis: at(0, HAULED.deep),
+      lean: 0,
+      nod: -0.25,
+      ankles: [ankle(0.02), ankle(0.06)],
+      soles: [-0.3, -0.25],
+      pivots: [OFF_THE_GROUND, OFF_THE_GROUND],
+      hands: [
+        at(DRAGGED_HANDS[0].x, DRAGGED_HANDS[0].y),
+        at(DRAGGED_HANDS[1].x, DRAGGED_HANDS[1].y),
+      ],
+      tilt: FALLEN_RADIANS,
+      offset: ClimberPose.ORIGIN,
+    };
   }
 
   /** Hanging from `hold` beside a wall's face, the boots on it (#243): the harness out from the
@@ -1998,7 +2205,7 @@ export class ClimberPose {
     // Hanging, each cowstail runs up to the rope from the harness: one the physics has level
     // with them or below, hauled toward a lip, is drawn over it, as their hand on it is (#243).
     const up = (hold: Joint | null): Joint | null =>
-      hold === null || this.mode !== "hang"
+      hold === null || (this.mode !== "hang" && this.mode !== "hauled")
         ? hold
         : { x: hold.x, y: Math.max(hold.y, ClimberPose.HELD_ABOVE) };
     const jumar = up(state.jumar);

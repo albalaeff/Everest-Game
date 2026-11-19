@@ -371,6 +371,12 @@ export class ClimberFigure extends Container {
     drawn.carabiner = climber.second === null ? null : this.second;
     drawn.hand = hand;
     const state = this.reading.read(climber, body, drawn, beside);
+    // Hauled up a rescue line, they're drawn where the taut rope brings them (#279).
+    if (climber.hauled) {
+      const { drawnAt } = this.reading;
+      this.point.x = drawnAt.x;
+      this.point.y = drawnAt.y;
+    }
     const pose = this.pose.advance(seconds, state);
     const { facing } = this.reading;
     // Turning round, the figure narrows to its edge and opens the other way; turning to face
