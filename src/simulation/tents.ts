@@ -60,15 +60,17 @@ export interface TentDoor {
 }
 
 /** A climber's tent as the rest of the game sees it, while they're in it: the camp and which of
- * its tents; the chore in hand and how far through it is, 0 to 1, nought for the guitar; the
- * grams of gas and the meals the camp has, `null` for what it never runs out of; whether there's
- * a guitar; what each chore lacks to begin, if anything; and their last sleep here, by the
- * mountain's seconds it began and ended at. */
+ * its tents; the chore in hand, how far through it is, 0 to 1, nought for the guitar, and how
+ * many of the mountain's seconds it takes in all, nought untimed (#278); the grams of gas and the
+ * meals the camp has, `null` for what it never runs out of; whether there's a guitar; what each
+ * chore lacks to begin, if anything; and their last sleep here, by the mountain's seconds it
+ * began and ended at. */
 export interface TentView {
   readonly camp: string;
   readonly tent: number;
   readonly chore: Chore | null;
   readonly progress: number;
+  readonly whole: number;
   readonly gas: number | null;
   readonly meals: number | null;
   readonly guitar: boolean;
@@ -249,6 +251,7 @@ export class Tents implements Rule {
       tent: dweller.tent,
       chore: task?.kind ?? null,
       progress: timed ? Math.min(1, Math.max(0, 1 - task.left / task.whole)) : 0,
+      whole: timed ? task.whole : 0,
       gas: camp.gas,
       meals: camp.meals,
       guitar: camp.guitar,

@@ -472,7 +472,7 @@
     {
       "id": "technique.ladder-creak",
       "kind": "coefficient",
-      "claim": "How many of the mountain's seconds a ladder staged to break creaks and shifts under a climber before it breaks (#209): long enough to clip in, a couple of seconds of play. The moving glacier shifts and drops ladders (route.icefall-hazards).",
+      "claim": "How many of the mountain's seconds a ladder staged to break creaks and shifts under a climber before it breaks (#209): long enough to clip in, a second and a quarter of play at the mountain's pace (time.compression). The moving glacier shifts and drops ladders (route.icefall-hazards).",
       "status": "source only",
       "value": 90,
       "unit": "s",

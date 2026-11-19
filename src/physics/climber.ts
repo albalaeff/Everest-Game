@@ -1946,9 +1946,10 @@ export class Climber {
       return;
     }
     if (walking.steeperDown(steepness)) {
-      // On the rope that runs down it, they stop at the edge, to lower themselves down it.
+      // On the rope that runs down it, they stop at the edge, to lower themselves down it; else
+      // they go off it at the speed they walk at in life (#278).
       if (this.ropedDown(slope, way) === null) {
-        this.fall(slope, ahead, speed, moment.step);
+        this.fall(slope, ahead, speed / slope.settings.pace, moment.step);
       }
       return;
     }
@@ -2107,7 +2108,8 @@ export class Climber {
 
   /** After a step of `metres` `ahead` at `speed`, from `on` the rung it ended on, if any: the
    * carabiners follow, and the step slips at `chance` a metre, divided by how sure-footed they are
-   * (#208), drawn from the expedition's chance. A step on safe ground draws nothing. */
+   * (#208), drawn from the expedition's chance, at the speed they walk at in life. A step on safe
+   * ground draws nothing. */
   private stepped(
     slope: Slope,
     moment: Moment,
@@ -2125,7 +2127,8 @@ export class Climber {
     this.slipChance = chance <= 0 ? 0 : sure > 0 ? chance / sure : Number.POSITIVE_INFINITY;
     if (this.slipChance > 0 && metres > 0) {
       if (moment.random.chance(Math.min(1, this.slipChance * metres))) {
-        this.fall(slope, ahead, speed, moment.step, on);
+        // The slip launches them at the speed they walk at in life, as the falls are (#278).
+        this.fall(slope, ahead, speed / slope.settings.pace, moment.step, on);
       }
     }
   }

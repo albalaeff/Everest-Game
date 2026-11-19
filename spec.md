@@ -4,7 +4,7 @@ Nov 1, 2026 · @Alex
 
 ## Concept and requirements
 
-A 2D browser game for PC and phone: a simulator-trainer for climbing Everest by the South route. The player completes a full expedition in about 2 hours and learns the decisions that save lives in real mountains. The main goal is fewer deaths caused by mistakes, lack of professionalism and inexperience.
+A 2D browser game for PC and phone: a simulator-trainer for climbing Everest by the South route. The player completes a full expedition in about an hour and learns the decisions that save lives in real mountains. The main goal is fewer deaths caused by mistakes, lack of professionalism and inexperience.
 
 | Parameter | Decision |
 | --- | --- |
@@ -16,7 +16,7 @@ A 2D browser game for PC and phone: a simulator-trainer for climbing Everest by 
 | Training | Full, for everyone; experienced climbers skip the theory but not the training on the game's controls |
 | Real accidents | All real accidents, including the most recent, plus fictional scenarios |
 | Route | South route, from Nepal |
-| Length | One expedition takes about 2 hours, possibly up to 3½ |
+| Length | One expedition takes about an hour, possibly up to 2 |
 | Platform | One game in the browser on PC and on the phone, installable on the phone's home screen like an app; players on phones and PCs play together |
 | Graphics | Silhouettes and gradients |
 | Language | Russian and English |
@@ -103,7 +103,7 @@ The models are plausible simplifications, not a medical simulator. Their goal is
 
 ## Gameplay
 
-The game combines three layers, as on a real expedition: planning in camp, moving on the slope and decisions under pressure. The real six to eight weeks are compressed into about 2 hours: waiting days are skipped, and summit day is the most detailed part.
+The game combines three layers, as on a real expedition: planning in camp, moving on the slope and decisions under pressure. The real six to eight weeks are compressed into about an hour: waiting days are skipped, and summit day is the most detailed part.
 
 The game runs in real time and isn't turn-based: the mountain, the weather and the crowd go on whether or not the player acts, and all players move at once. Every expedition is unique, like a match in an online game: each has its own seed, so its weather, hazards and crowds fall differently; a scenario can generate its conditions at random or set them in advance, harsh weather for instance; and different mistakes lead to different consequences.
 
@@ -146,7 +146,7 @@ Ctrl has no action: Ctrl+W closes the browser's tab and a web page can't stop it
 | Summit push and descent | 30 |
 | Expedition debrief | 15 |
 
-About 2 hours in total without training; training adds another 0.5–1 hour. Saving is possible only in camps, so decisions on the route cannot be “replayed”.
+About an hour in total without training; training adds another half hour. Saving is possible only in camps, so decisions on the route cannot be “replayed”.
 
 ## Co-op
 
@@ -316,7 +316,7 @@ Development goes from the riskiest part to the simplest: first one section and s
 2. **Prototype: Icefall.** Walking, fixed ropes, ladders, fatigue and oxygen on one section.
    - Check: re-clipping and fatigue feel plausible in playtests.
 3. **Vertical slice: summit push.** South Col → summit → descent, solo and as a pair online.
-   - Check: the push takes 20–30 min, and the turnaround decisions are clear.
+   - Check: the push takes 10–15 min, and the turnaround decisions are clear.
 4. **Whole route.** Trek, Base Camp, rotations and tour choice.
 5. **Training and real accidents.** Modules, "In real life" cards, debriefs, 15–20 scenarios.
 6. **Co-op and leader role.** Up to 4 players by code, radio, camp coordinator, NPC Sherpas.

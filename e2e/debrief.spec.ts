@@ -35,12 +35,13 @@ test.describe("on a screen of 630 by 360", () => {
     hasTouch,
   }) => {
     test.skip(hasTouch, "a PC's story");
-    // On the ramp of blue ice down to the big crevasse's lip at 319.75 m along, unclipped, past the
-    // seracs that end at 317.75 m, whose chance would take the draw first; with no training event
-    // (#209), whose collapse among those seracs would add its line to the debrief, and no gust,
-    // whose chance would take it too (#197).
+    // At the foot of the ramp of blue ice, unclipped, a step short of the big crevasse's lip at
+    // 319.75 m along: a slip goes at the speed of a walk in life (#278), and from there it slides
+    // over the lip. Past the seracs that end at 317.75 m, whose chance would take the draw first;
+    // with no training event (#209), whose collapse among those seracs would add its line to the
+    // debrief, and no gust, whose chance would take it too (#197).
     await climbFrom(page, (climb) => {
-      savedPlayer(climb).along = 317.85;
+      savedPlayer(climb).along = 319.6;
       climb.random = [...SLIPS_NEXT];
       stage(climb, null, null);
       calm(climb);

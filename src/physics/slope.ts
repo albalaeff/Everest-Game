@@ -131,6 +131,10 @@ export interface SlopeSettings {
   readonly walkingPower: number;
   /** The fastest a climber walks, in m/s, whatever power they have to spare. */
   readonly fastestWalk: number;
+  /** How many times faster than in life a climber goes over the drawn ground, the speeds above
+   * with it: the mountain's clock over the drawing's scale (#167). A slip, or a step off an edge,
+   * launches them at the speed they walk at in life, as the falls are life's (#278). */
+  readonly pace: number;
   /** The share of the climb's extra cost, a metre up a slope over a metre on the level, that a
    * stride pays: 1 as measured, less where the game eases the climb. */
   readonly uphillCostShare: number;

@@ -79,17 +79,32 @@ describe("DwellerActs: what the person in the tent is seen doing (#258, #269)", 
       act: "pour",
       seconds: 0,
     });
-    // The chore's seconds of play between one part's start and the next are as long as the
-    // part's movement, so it's seen to its end before the next begins.
+    // Each part is seen to its end before the next begins: played at its own pace where its
+    // share of the chore is as long as its movement, and quicker where it's shorter, at the
+    // mountain's pace (#278), but never more than twice as quick.
     for (const [chore, seconds] of [
       ["melt", numbers.melt.seconds / pace],
       ["cook", numbers.meal.seconds / pace],
     ] as const) {
       const parts = DwellerActs.PARTS[chore];
+      const playing = new DwellerActs();
+      seen(playing, 3, IDLE);
+      const reached = new Map<Act, number>();
+      for (let frame = 0; frame <= seconds * 60; frame += 1) {
+        const progress = Math.min(1, frame / 60 / seconds);
+        const { act, seconds: at } = playing.advance(1 / 60, {
+          ...IDLE,
+          chore,
+          progress,
+          lasts: seconds,
+        });
+        reached.set(act, Math.max(reached.get(act) ?? 0, at));
+      }
       parts.forEach(([from, act], index) => {
         const until = parts[index + 1]?.[0] ?? 1;
         const lasts = DwellerPose.LASTS[act as keyof typeof DwellerPose.LASTS];
-        expect((until - from) * seconds).toBeGreaterThanOrEqual(lasts);
+        expect(reached.get(act) ?? 0).toBeGreaterThanOrEqual(lasts - 0.05);
+        expect(lasts / ((until - from) * seconds)).toBeLessThanOrEqual(2);
       });
       expect(parts[0]?.[0]).toBe(0);
     }

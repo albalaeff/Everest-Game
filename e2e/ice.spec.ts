@@ -23,13 +23,19 @@ const STEP = { x: 57.875, lip: 13.5, before: 83.6, onTop: 87.5 };
  * of brittle ice, 1.9 to 2.3 m up it. */
 const CRUX = { x: 214.5, ledge: 39, onTheLedge: 516.5, brittle: 40.95 };
 
+/** The expedition's chance set so that none of its next thousand draws comes up below a
+ * hundredth, nor any of its next 5,000 below a thousandth (src/simulation/seeded-random.ts): a pick
+ * that bites poorly slips the climber who stands still on it a little under once in a hundred
+ * steps at the mountain's pace (#278), and with `SURE_FOOTED` one of the first comes up. */
+const STEADY = [0xd03706c2, 0xbf9677ad, 0x28aee335, 0x025bfc67];
+
 /** The climb from `along`, the player with a second ice tool in their pack, so no swing comes
  * off with no pick in the ice, and its chance set so that no step slips: the story goes as told. */
 const from =
-  (along: number) =>
+  (along: number, random: readonly number[] = SURE_FOOTED) =>
   (climb: SavedClimb): void => {
     savedPlayer(climb).along = along;
-    climb.random = [...SURE_FOOTED];
+    climb.random = [...random];
     for (const pack of climb.rules.packs?.climbers ?? []) {
       if (pack.id === "player") {
         pack.items["ice-tool"] = 1;
@@ -96,7 +102,7 @@ test("warns of a pick swung into the crux's brittle ice: it bites poorly", async
   hasTouch,
 }) => {
   test.skip(hasTouch, "a PC's story: a click places the pick");
-  await climbFrom(page, from(CRUX.onTheLedge));
+  await climbFrom(page, from(CRUX.onTheLedge, STEADY));
   await page.keyboard.down("KeyD");
   await expect.poll(async () => (await seen(page, "player"))?.x ?? 0, WALKING).toBe(CRUX.x);
   await page.keyboard.up("KeyD");

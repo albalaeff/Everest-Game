@@ -29,6 +29,7 @@ const TENT: TentView = {
   tent: 0,
   chore: null,
   progress: 0,
+  whole: 0,
   gas: 454,
   meals: 6,
   guitar: false,
