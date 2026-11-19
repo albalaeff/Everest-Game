@@ -263,7 +263,8 @@ describe("Slips by chance (#208): the rest step's care on the ice and the crossi
     ).toBe(true);
     expect(careful.every(({ dead }) => !dead)).toBe(true);
     expect(slips(steady).length).toBeGreaterThan(slips(careful).length);
-  });
+    // Twelve whole crossings take a few seconds, more than the default five on a busy runner.
+  }, 30_000);
 });
 
 describe("The training events on a careful crossing (#209)", () => {
