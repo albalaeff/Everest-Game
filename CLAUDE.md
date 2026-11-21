@@ -6,6 +6,7 @@ Everest is a 2D browser simulator-trainer for climbing Everest by the South rout
 
 - [docs/conventions.md](docs/conventions.md): the Git workflow, modules, objects, time and chance, data, tests and the definition of done. Every change follows it; its table names the areas with rules of their own: read those your change touches, not all of them (PEB#424).
 - [docs/workflow.md](docs/workflow.md): how work goes from an issue to a merge, in full: what this file says in brief, and why. Read the part your step touches.
+- [docs/design.md](docs/design.md): what Alex decided in chat that holds for every change (realistic and beautiful, everything drawn in code, Pemba talking like a Sherpa), and the notes on the main menu, the devices, the tents and the rescue as built: read the part your change touches.
 
 ## Words used here
 
