@@ -33,6 +33,7 @@ from scripts.check_setup import (
     has_settings,
     login_path,
     main_checkout,
+    merged_branches,
     node,
     poppler,
     python,
@@ -269,6 +270,30 @@ def test_no_github_token() -> None:
 
     assert not check.ok
     assert "sign in to GitHub" in check.fix
+
+
+def test_github_deletes_a_merged_branch() -> None:
+    check = merged_branches(lambda path: {"delete_branch_on_merge": True} if path == "" else {})
+
+    assert check.ok
+
+
+def test_github_keeping_merged_branches_is_missing() -> None:
+    # Off, every merged PR's branch stayed on GitHub: 49 of them by 2026-11-21.
+    check = merged_branches(lambda path: {"delete_branch_on_merge": False})
+
+    assert not check.ok and check.needed
+    assert "Automatically delete head branches" in check.fix
+
+
+def test_merged_branches_unknown_without_github() -> None:
+    def refused(path: str) -> Any:
+        raise SystemExit("No GitHub token")
+
+    for call in (refused, lambda path: {}):  # no answer, or the setting not shown
+        check = merged_branches(call)
+
+        assert check.note and not check.needed
 
 
 def test_claude_s_prices_are_in_the_repository() -> None:
