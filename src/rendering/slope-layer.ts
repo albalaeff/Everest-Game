@@ -1,4 +1,13 @@
-import { DOMAdapter, FillGradient, Graphics, Particle, ParticleContainer, Texture } from "pixi.js";
+import {
+  Container,
+  DOMAdapter,
+  FillGradient,
+  Graphics,
+  Particle,
+  ParticleContainer,
+  Sprite,
+  Texture,
+} from "pixi.js";
 import type { DestroyOptions } from "pixi.js";
 
 import { Terrain } from "../physics";
@@ -41,6 +50,7 @@ import { IceBody } from "./ice-body";
 import { IceSurface } from "./ice-surface";
 import { IceTowers } from "./ice-towers";
 import type { TowerSizes } from "./ice-towers";
+import type { IceRelief } from "./ice-relief";
 import { IceWall } from "./ice-wall";
 import { LadderBow } from "./ladder-bow";
 import { LadderShake } from "./ladder-shake";
@@ -82,6 +92,10 @@ interface DrawnLadder {
   /** Whether it lies across a crevasse, rather than up a wall: one across gives under a climber,
    * and has a hand line. */
   readonly across: boolean;
+  /** Whether a crevasse lies under it: one across, or one too steep to walk whose ground dips
+   * between its ends, a crevasse crossed at an angle, drawn as the crevasse it is and not as a
+   * wall down both its sides (#290). */
+  readonly over: boolean;
   readonly graphics: Graphics;
   /** How it gives, how far along it each climber on it is drawn this frame, and whether it was
    * drawn bowed. */
@@ -241,9 +255,24 @@ export class SlopeLayer extends ParallaxLayer {
   /** How near a twist zone's ends are to a ladder's, along the ground, to be its (#197). */
   private static readonly SAME = 1e-6;
   private static readonly SWING = { fall: 0.55, knock: 0.35, back: 0.18, settle: 3 };
+  /** How far under a ladder's lower end the ground between its ends goes for a crevasse to lie
+   * under it. */
+  private static readonly DIP_METRES = 1;
   /** The streaks down a wall's bare ice: how wide, and how strong. */
   private static readonly STREAK_METRES = 0.035;
   private static readonly STREAK_ALPHA = 0.55;
+  /** A wall's ice (#290), as shares of the gloss: how much of its highlights show over it; the
+   * scars up a step climbed on the tools; and the light down an icicle, so wide. */
+  private static readonly GLOSS = {
+    shine: { night: 0.8, day: 0.3 },
+    scarAlpha: 0.7,
+    icicle: 0.014,
+    icicleAlpha: 0.6,
+  } as const;
+  /** A headlamp's beam on a wall's wet ice (#290): the least light that shows, and each glint, a
+   * star so big in the full beam, its points so thin, and so much brighter than the light that
+   * makes it. */
+  private static readonly FLASH = { least: 0.05, size: 0.07, waist: 0.22, alpha: 1.6 };
   /** How far the seeds of the steps of ice with no ladder are from the ladders' walls', so no two
    * are drawn alike. */
   private static readonly BARE_SEEDS = 1000;
@@ -318,7 +347,21 @@ export class SlopeLayer extends ParallaxLayer {
   private readonly sastrugi = new Graphics();
   private readonly track = new Graphics();
   private readonly walls = new Graphics();
-  private readonly wallEdges = new Graphics();
+  /** The walls' glassy ice catching the light (#290): their reflections, edges, glints, the light
+   * beside their runnels, the scars up a step climbed on the tools and the icicles' light, in the
+   * hour's gloss; a band of brittle ice over them, chalky and dull; and where a headlamp's beam
+   * falls on them, flashing in its light, each frame it does. */
+  private readonly wallGloss = new Graphics();
+  private readonly brittleBands = new Graphics();
+  private readonly wallFlash = new Graphics();
+  /** The walls' ice, each a relief worked out and lit (`IceRelief`), tinted by the hour; their
+   * highlights apart, in the hour's gloss; and the textures they're drawn from. */
+  private readonly wallFaces = new Container();
+  private readonly wallShine = new Container();
+  private readonly reliefTextures: Texture[] = [];
+  /** The walls drawn, for the headlamps to shine on: each one and how far across it reaches. */
+  private readonly iceWalls: { readonly wall: IceWall; readonly reach: InView }[] = [];
+  private flashShown = false;
   private readonly surface = new Graphics();
   /** The camps' tents, behind the climbers and, for one somebody goes into, over them (#258). */
   /** Where a tent's button is pinned: so far along its body from its door, and above its fly,
@@ -470,6 +513,7 @@ export class SlopeLayer extends ParallaxLayer {
         finish,
         length,
         across,
+        over: across || SlopeLayer.dips(terrain, start, finish),
         graphics,
         bow,
         loads: [],
@@ -486,7 +530,7 @@ export class SlopeLayer extends ParallaxLayer {
     });
     const bare = parts.find(({ id }) => id === SlopeLayer.BARE) ?? null;
     this.cramponPoint = bare === null ? null : terrain.point(bare.to);
-    const crossings = this.ladders.filter(({ across }) => across);
+    const crossings = this.ladders.filter(({ over }) => over);
     const surface = new IceSurface(
       new Terrain(this.ground.map(({ x, y }) => [x, y] as const)),
       crossings,
@@ -508,8 +552,8 @@ export class SlopeLayer extends ParallaxLayer {
       this.snow,
       this.shade,
       this.sastrugi,
+      this.wallFaces,
       this.walls,
-      this.wallEdges,
       this.track,
       this.moraine,
       this.iceSkin,
@@ -517,8 +561,13 @@ export class SlopeLayer extends ParallaxLayer {
       this.crevasses,
       this.rims,
       this.lips,
+      this.wallShine,
+      this.wallGloss,
+      this.brittleBands,
+      this.wallFlash,
       this.hazards.standing,
     );
+    this.wallFlash.blendMode = "add";
     this.tentDrawing = new TentDrawing(
       terrain,
       camps,
@@ -626,6 +675,9 @@ export class SlopeLayer extends ParallaxLayer {
     super.destroy(options);
     if (this.softPuff !== Texture.WHITE) {
       this.softPuff.destroy(true);
+    }
+    for (const texture of this.reliefTextures) {
+      texture.destroy(true);
     }
   }
 
@@ -782,8 +834,38 @@ export class SlopeLayer extends ParallaxLayer {
     this.tentDrawing.draw(atmosphere, size, this.tentsInUse(), campsShow);
     this.drawPuffs();
     this.drawChips();
+    this.flash(view);
     this.blow(seconds, camera, atmosphere);
     this.drawVeil(camera, atmosphere);
+  }
+
+  /** The walls' glassy ice where the headlamps' beams fall on it, in view, flashing in their light
+   * (#290); nothing drawn again while no beam is on. */
+  private flash(view: InView): void {
+    const { beams, wallFlash } = this;
+    const { FLASH } = SlopeLayer;
+    const shown =
+      beams.length === 0
+        ? []
+        : this.iceWalls.filter(({ reach }) => reach.right >= view.left && reach.left <= view.right);
+    if (shown.length === 0) {
+      if (this.flashShown) {
+        wallFlash.clear();
+        this.flashShown = false;
+      }
+      return;
+    }
+    wallFlash.clear();
+    let flashed = false;
+    for (const { wall } of shown) {
+      for (const { point, light } of wall.lit(beams, FLASH.least)) {
+        wallFlash
+          .poly(SlopeLayer.star(point, FLASH.size * (0.5 + light)))
+          .fill({ color: Palette.LAMP, alpha: Math.min(1, light * FLASH.alpha) });
+        flashed = true;
+      }
+    }
+    this.flashShown = flashed;
   }
 
   /** The snow and the ice in the hour's light: tinted again when the colours change. */
@@ -796,7 +878,13 @@ export class SlopeLayer extends ParallaxLayer {
       this.sastrugi.tint = palette.snowShade;
       this.track.tint = palette.track;
       this.walls.tint = palette.snowTint;
-      this.wallEdges.tint = palette.snowTint;
+      this.wallFaces.tint = palette.snowTint;
+      this.wallShine.tint = palette.gloss;
+      // Under the night's sky the wet ice's highlights are most of what shows of it.
+      const { night, day } = SlopeLayer.GLOSS.shine;
+      this.wallShine.alpha = night + (day - night) * atmosphere.light.daylight;
+      this.wallGloss.tint = palette.gloss;
+      this.brittleBands.tint = palette.snowTint;
       this.iceSkin.tint = palette.snowTint;
       this.crevasses.tint = palette.crevasse;
       this.rims.tint = palette.snowTint;
@@ -1717,8 +1805,9 @@ export class SlopeLayer extends ParallaxLayer {
   /** The ice where the ladders cross it, and the steps of it the route climbs with none, in the
    * day's colours for the hour to tint (#184): each crevasse's inside going black as it goes down,
    * the light through the ice along its walls, the snow at its foot and on its steps; each wall's
-   * bare face and its streaks, and on a step with no ladder its bands of brittle ice, pale and
-   * edged; and the lips of snow on them all, with their icicles. */
+   * bare face of glassy ice, its streaks and the light it throws back (#290), and on a step with
+   * no ladder its bulge, its scars and its bands of brittle ice, pale and edged; and the lips of
+   * snow on them all, with their icicles. */
   private drawIce(terrain: Terrain, seed: number): void {
     const { flat } = SlopeLayer;
     const cornices = [];
@@ -1730,27 +1819,32 @@ export class SlopeLayer extends ParallaxLayer {
       if (start === undefined || finish === undefined) {
         continue;
       }
-      const wall = new IceWall(terrain, start, finish, seed + SlopeLayer.BARE_SEEDS + index);
-      this.walls.poly(flat(wall.face)).fill(SlopeLayer.litIce(wall.face));
-      this.streak(wall.streaks);
+      const wall = new IceWall(terrain, start, finish, seed + SlopeLayer.BARE_SEEDS + index, true);
+      this.drawWall(wall);
       for (const stretch of brittle) {
         const [low, high] = [stretch.from, stretch.to]
           .map((along) => terrain.point(along).y)
           .sort((one, other) => one - other);
         const band = wall.brittle(low ?? 0, high ?? 0);
         if (band !== null) {
-          this.walls.poly(flat(band.outline)).fill(Palette.BRITTLE);
-          this.streak(band.cracks);
+          this.brittleBands.poly(flat(band.outline)).fill(Palette.BRITTLE);
+          SlopeLayer.lines(this.brittleBands, band.cracks);
+          this.brittleBands.stroke({
+            width: SlopeLayer.STREAK_METRES,
+            color: Palette.STREAK,
+            alpha: SlopeLayer.STREAK_ALPHA,
+            cap: "round",
+          });
         }
       }
       cornices.push(wall.cornice);
     }
-    for (const [index, { start, finish, across }] of this.ladders.entries()) {
-      if (across) {
+    for (const [index, { start, finish, over }] of this.ladders.entries()) {
+      if (over) {
         const crevasse = new Crevasse(terrain, start, finish, seed + index);
         this.crevasses.poly(flat(crevasse.inside)).fill(SlopeLayer.deepening(crevasse.depth));
         for (const rim of crevasse.rims) {
-          this.rims.poly(flat(rim)).fill(SlopeLayer.litIce(rim));
+          this.rims.poly(flat(rim)).fill(SlopeLayer.throughIce(rim, Palette.LIT_ICE));
         }
         for (const snow of crevasse.snow) {
           this.lips.poly(flat(snow)).fill(0xffffff);
@@ -1758,54 +1852,148 @@ export class SlopeLayer extends ParallaxLayer {
         cornices.push(...crevasse.cornices);
       } else {
         const wall = new IceWall(terrain, start, finish, seed + index);
-        this.walls.poly(flat(wall.face)).fill(SlopeLayer.litIce(wall.face));
-        this.streak(wall.streaks);
+        this.drawWall(wall);
         cornices.push(wall.cornice);
       }
     }
-    this.wallEdges.stroke({
-      width: SlopeLayer.STREAK_METRES,
-      color: Palette.STREAK,
-      alpha: SlopeLayer.STREAK_ALPHA,
+    const { GLOSS } = SlopeLayer;
+    for (const cornice of cornices) {
+      for (const icicle of cornice.icicles) {
+        this.lips.poly(flat(icicle)).fill(Palette.ICICLE);
+        // The light down its glassy side, from near its root towards its tip.
+        const [left, right, tip] = icicle;
+        if (left !== undefined && right !== undefined && tip !== undefined) {
+          this.wallGloss
+            .moveTo(left.x + (right.x - left.x) * 0.3, left.y)
+            .lineTo(tip.x + (left.x - tip.x) * 0.25, tip.y + (left.y - tip.y) * 0.25);
+        }
+      }
+      this.lips.poly(flat(cornice.outline)).fill(0xffffff);
+    }
+    this.wallGloss.stroke({
+      width: GLOSS.icicle,
+      color: 0xffffff,
+      alpha: GLOSS.icicleAlpha,
       cap: "round",
     });
-    for (const { outline, icicles } of cornices) {
-      for (const icicle of icicles) {
-        this.lips.poly(flat(icicle)).fill(Palette.ICICLE);
-      }
-      this.lips.poly(flat(outline)).fill(0xffffff);
-    }
   }
 
-  /** A wall's streaks, each a line down its face, for the stroke that draws them all. */
-  private streak(streaks: readonly (readonly Point[])[]): void {
-    for (const streak of streaks) {
-      const [first, ...rest] = streak;
-      if (first !== undefined) {
-        this.wallEdges.moveTo(first.x, first.y);
+  /** A wall of the Icefall's ice (#290, `IceRelief`): its relief by day, for the hour to tint, and
+   * the drift of snow against its foot; its highlights apart, in the hour's gloss, with the scars
+   * of the picks and front points up a step climbed on the tools. Kept for the headlamps to shine
+   * on. */
+  private drawWall(wall: IceWall): void {
+    const { flat, GLOSS } = SlopeLayer;
+    const { relief } = wall;
+    this.wallFaces.addChild(this.reliefSprite(relief, relief.ice));
+    this.wallShine.addChild(this.reliefSprite(relief, relief.gloss));
+    if (wall.apron.length > 0) {
+      this.walls.poly(flat(wall.apron)).fill(Palette.SNOW);
+    }
+    for (const scar of wall.scars) {
+      this.wallGloss.poly(flat(scar)).fill({ color: 0xffffff, alpha: GLOSS.scarAlpha });
+    }
+    this.iceWalls.push({ wall, reach: SlopeLayer.across([...wall.face, ...wall.bulge]) });
+  }
+
+  /** A relief's `pixels` as a sprite where its box is, in the layer's metres; its texture kept,
+   * to go with the layer. Nothing where there's no canvas to make it on. */
+  private reliefSprite(relief: IceRelief, pixels: Uint8ClampedArray): Sprite {
+    const { columns, rows, box } = relief;
+    const sprite = new Sprite();
+    const canvas = DOMAdapter.get().createCanvas(columns, rows);
+    const context = canvas.getContext("2d");
+    if (context === null) {
+      return sprite;
+    }
+    const image = context.createImageData(columns, rows);
+    image.data.set(pixels);
+    context.putImageData(image, 0, 0);
+    const texture = Texture.from(canvas);
+    this.reliefTextures.push(texture);
+    sprite.texture = texture;
+    // The layer's y is up: the picture hangs down from its box's top.
+    sprite.position.set(box.left, box.top);
+    sprite.scale.set(box.width / columns, -box.height / rows);
+    return sprite;
+  }
+
+  /** Whether the ground between a ladder's ends dips under them both: a crevasse under it, not a
+   * wall it stands against. */
+  private static dips(terrain: Terrain, start: Point, finish: Point): boolean {
+    const [from, to] = [start, finish]
+      .map((end) => terrain.nearest(end).along)
+      .sort((one, other) => one - other);
+    const under = Math.min(start.y, finish.y) - SlopeLayer.DIP_METRES;
+    return terrain.points.some(([, y], index) => {
+      const along = terrain.alongs[index] ?? 0;
+      return along > (from ?? 0) && along < (to ?? 0) && y < under;
+    });
+  }
+
+  /** A glint's star at a point, so big: four thin points round a narrow waist, as a polygon takes
+   * it. */
+  private static star({ x, y }: Point, size: number): number[] {
+    const waist = size * SlopeLayer.FLASH.waist;
+    return [
+      x,
+      y + size,
+      x + waist,
+      y + waist,
+      x + size,
+      y,
+      x + waist,
+      y - waist,
+      x,
+      y - size,
+      x - waist,
+      y - waist,
+      x - size,
+      y,
+      x - waist,
+      y + waist,
+    ];
+  }
+
+  /** Lines through points, each its own, for the stroke that draws them. */
+  private static lines(graphics: Graphics, lines: readonly (readonly Point[])[]): void {
+    for (const line of lines) {
+      const [first, ...rest] = line;
+      if (first !== undefined && rest.length > 0) {
+        graphics.moveTo(first.x, first.y);
         for (const { x, y } of rest) {
-          this.wallEdges.lineTo(x, y);
+          graphics.lineTo(x, y);
         }
       }
     }
   }
 
   /** The light through the ice by a wall, bright under its top and fading as it goes down, over
-   * the shape's height, `Palette.LIT_ICE`'s metres down from its top. The layer's y is up, so the
-   * gradient runs from the top of the shape's bounds, 1, to their foot, 0. */
-  private static litIce(shape: readonly Point[]): FillGradient {
+   * the shape's height, as `stops` has it at its metres down from the top (`Palette.LIT_ICE`),
+   * its foot the colour between the two stops about it. The layer's y is up,
+   * so the gradient runs from the top of the shape's bounds, 1, to their foot, 0. */
+  private static throughIce(
+    shape: readonly Point[],
+    stops: readonly (readonly [depth: number, colour: number])[],
+  ): FillGradient {
     const ys = shape.map(({ y }) => y);
     const height = Math.max(...ys) - Math.min(...ys) || 1;
+    const colorStops: { offset: number; color: string }[] = [];
+    for (const [index, [depth, colour]] of stops.entries()) {
+      if (depth < height) {
+        colorStops.push({ offset: depth / height, color: Palette.css(colour) });
+        continue;
+      }
+      const [above, from] = stops[index - 1] ?? [depth, colour];
+      const share = (height - above) / (depth - above || 1);
+      colorStops.push({ offset: 1, color: Palette.css(Palette.mix(from, colour, share)) });
+      break;
+    }
     return new FillGradient({
       type: "linear",
       start: { x: 0, y: 1 },
       end: { x: 0, y: 0 },
-      colorStops: Palette.LIT_ICE.map(([depth, colour]) => ({
-        offset: Math.min(depth / height, 1),
-        color: Palette.css(colour),
-      })).filter(
-        ({ offset }, index, stops) => index === 0 || offset > (stops[index - 1]?.offset ?? 0),
-      ),
+      colorStops,
     });
   }
 
