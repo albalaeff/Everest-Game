@@ -6,7 +6,7 @@ What Alex (albalaeff) decided in chats with Claude on claude.ai, and the notes t
 
 These hold for every change:
 
-- **Realistic and beautiful.** Everything in the game is as true to the real mountain and as beautiful as it can be, and every change is judged by both (Nov 2026). Readability stays the floor under the beauty ([guidelines.md](guidelines.md) → Principles, 2).
+- **Realistic and beautiful.** Everything in the game is as true to the real mountain and as beautiful as it can be, and every change is judged by both (Nov 2026). Readability stays the floor under the beauty ([guidelines.md](guidelines.md) → Principles, 2). Realism is the main requirement: every motion and number is checked against sources, and where they show life slower or harder than the game, the game goes as life does (21 Nov 2026, #256).
 - **Drawn in code.** No image generator and no painted images: every picture, the people included, is drawn in code ([design/tents.md](design/tents.md) → The person).
 - **Pemba talks like a Sherpa.** The Sherpa, alone and in a room, knows everything about Everest and thinks and talks like a Sherpa, not like an AI. Written lines for now; a live voice through the Claude API later.
 
