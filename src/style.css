@@ -50,6 +50,10 @@
   --icon-stop: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23000' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Crect x='6' y='6' width='12' height='12' rx='2' fill='%23000'/%3E%3C/svg%3E");
   --icon-moon: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23000' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M20 14.5A8.5 8.5 0 1 1 9.5 4 6.5 6.5 0 0 0 20 14.5z'/%3E%3C/svg%3E");
   --icon-wind: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23000' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M3 8.5h10.5a3 3 0 1 0-3-3M3 12.5h15.5a3 3 0 1 1-3 3M3 16.5h7'/%3E%3C/svg%3E");
+  --icon-cold: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23000' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M10 13.6V5a2 2 0 0 1 4 0v8.6a4 4 0 1 1-4 0zM12 10v6.5M16.5 6h2.5M16.5 9.5h2'/%3E%3C/svg%3E");
+  --icon-sun: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23000' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Ccircle cx='12' cy='12' r='4'/%3E%3Cpath d='M12 2.5v2M12 19.5v2M2.5 12h2M19.5 12h2M5.3 5.3l1.4 1.4M17.3 17.3l1.4 1.4M5.3 18.7l1.4-1.4M17.3 6.7l1.4-1.4'/%3E%3C/svg%3E");
+  --icon-cloud: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23000' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M7 18.5h10a4 4 0 0 0 .6-8 5.5 5.5 0 0 0-10.7 1.4A3.3 3.3 0 0 0 7 18.5z'/%3E%3C/svg%3E");
+  --icon-storm: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23000' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M7 14h10a3.8 3.8 0 0 0 .6-7.5 5.2 5.2 0 0 0-10.1 1.3A3.1 3.1 0 0 0 7 14zM3 18h9M6 21.5h11M14.5 17.5l.5.5M18 19l1 1'/%3E%3C/svg%3E");
   --icon-snow: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23000' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M12.00 2.50L12.00 21.50M3.77 7.25L20.23 16.75M3.77 16.75L20.23 7.25M9.60 3.10L12.00 5.10L14.40 3.10M3.09 9.63L6.02 8.55L5.49 5.47M5.49 18.53L6.02 15.45L3.09 14.37M14.40 20.90L12.00 18.90L9.60 20.90M20.91 14.37L17.98 15.45L18.51 18.53M18.51 5.47L17.98 8.55L20.91 9.63'/%3E%3C/svg%3E");
   --icon-pot: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23000' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M4.5 10.5h15v6a4 4 0 0 1-4 4h-7a4 4 0 0 1-4-4zM2.5 10.5h19M9 7.5c0-1.4 1.2-1.9 1.2-3.3M14 7.5c0-1.4 1.2-1.9 1.2-3.3'/%3E%3C/svg%3E");
   --icon-nap: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23000' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M18 15A7.5 7.5 0 1 1 9 6a6 6 0 0 0 9 9zM14.5 3h5l-5 5h5'/%3E%3C/svg%3E");
@@ -3340,6 +3344,10 @@ main:has(#tent:not([hidden])) #self-check {
   --mark: var(--icon-snow);
 }
 
+#tent [data-mark="cold"] {
+  --mark: var(--icon-cold);
+}
+
 #tent [data-mark="pot"] {
   --mark: var(--icon-pot);
 }
@@ -5448,6 +5456,79 @@ main:has(#tent:not([hidden])) #self-check {
 .tracker__side {
   display: grid;
   gap: 0.5rem;
+}
+
+/* The forecast the tracker fetched (#272): its own small screen, three days in six hours each,
+ * a sky's mark over the air and the wind. */
+.tracker__forecast {
+  padding: 0.45rem 0.5rem;
+  border: 2px solid #0b0d10;
+  border-radius: 0.35rem;
+  background: linear-gradient(180deg, #e2e9dc, #cdd6c8);
+  color: #0d1b22;
+  font-size: 0.75rem;
+}
+
+.tracker__forecast[hidden] {
+  display: none;
+}
+
+.tracker__forecast strong {
+  display: block;
+  margin-bottom: 0.3rem;
+}
+
+.tracker__forecast .device__note {
+  margin-top: 0.35rem;
+  color: #2c3a40;
+  font-size: 0.75rem;
+}
+
+.tracker__table {
+  width: 100%;
+  border-collapse: collapse;
+  table-layout: fixed;
+}
+
+.tracker__table th {
+  padding: 0.1rem;
+  font-weight: 700;
+  text-align: left;
+}
+
+.tracker__table td {
+  padding: 0.15rem 0.1rem;
+  line-height: 1.15;
+  vertical-align: top;
+}
+
+.tracker__table td i {
+  display: block;
+  width: 1.1rem;
+  height: 1.1rem;
+  background: currentcolor;
+  -webkit-mask: var(--sky) center / contain no-repeat;
+  mask: var(--sky) center / contain no-repeat;
+}
+
+.tracker__table [data-sky="clear"] {
+  --sky: var(--icon-sun);
+}
+
+.tracker__table [data-sky="cloud"] {
+  --sky: var(--icon-cloud);
+}
+
+.tracker__table [data-sky="snow"] {
+  --sky: var(--icon-snow);
+}
+
+.tracker__table [data-sky="wind"] {
+  --sky: var(--icon-wind);
+}
+
+.tracker__table [data-sky="storm"] {
+  --sky: var(--icon-storm);
 }
 
 #devices .tracker__side button {

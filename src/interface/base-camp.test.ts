@@ -21,7 +21,45 @@ const SCENE: CallScene = {
   sun: { state: "cold", hours: 1, minutes: 5, warmth: 0 },
   laddersDown: 0,
   left: 2400,
+  forecast: [],
 };
+
+const HOUR = 3600;
+/** Base Camp's forecast at 05:00: clear till noon, snow in the afternoon, cloud in the evening;
+ * a storm all tomorrow; and the day after clearing by the afternoon. */
+const FORECAST: CallScene["forecast"] = [
+  {
+    day: 0,
+    confidence: "high",
+    periods: [
+      { from: 0, day: 0, sky: "clear", air: -11, wind: 4 },
+      { from: 6 * HOUR, day: 0, sky: "clear", air: -8, wind: 9 },
+      { from: 12 * HOUR, day: 0, sky: "snow", air: -6, wind: 21 },
+      { from: 18 * HOUR, day: 0, sky: "cloud", air: -9, wind: 12 },
+    ],
+  },
+  {
+    day: 1,
+    confidence: "medium",
+    periods: [0, 6, 12, 18].map((hour) => ({
+      from: (24 + hour) * HOUR,
+      day: 1,
+      sky: "storm" as const,
+      air: -15,
+      wind: 58,
+    })),
+  },
+  {
+    day: 2,
+    confidence: "low",
+    periods: [
+      { from: 48 * HOUR, day: 2, sky: "snow", air: -12, wind: 30 },
+      { from: 54 * HOUR, day: 2, sky: "snow", air: -10, wind: 26 },
+      { from: 60 * HOUR, day: 2, sky: "clear", air: -4, wind: 12 },
+      { from: 66 * HOUR, day: 2, sky: "clear", air: -8, wind: 4 },
+    ],
+  },
+];
 
 const call = (phrase: string, heard = true): RadioCall => ({
   step: 10,
@@ -82,6 +120,15 @@ describe("Base Camp on the radio", () => {
       "Only static. Nothing gets out from down here.",
     ]);
     expect(baseCamp.answer(call("sing"), SCENE)).toEqual(["Say again?"]);
+  });
+
+  it("reads its forecaster's forecast, a day a line, with how sure they are (#272)", () => {
+    const lines = baseCamp.answer(call("forecast"), { ...SCENE, forecast: FORECAST });
+    expect(lines).toEqual([
+      "Today: clear, snow by afternoon, cloud by evening, wind up to 20 km/h. We're sure of it.",
+      "Tomorrow: storm all day, wind up to 60 km/h. Fairly sure.",
+      "Day after: snow, clear by afternoon, wind up to 30 km/h. Not sure.",
+    ]);
   });
 
   it("has the climber's own words for every phrase, in both languages", () => {

@@ -11,7 +11,6 @@ import type { ControlTexts } from "../input/controls-page";
 import { PageElements } from "../input/page-elements";
 import type { ActionSink } from "../input/player-action";
 import { ReceivedActions } from "../input/received-actions";
-import { AirTemperature } from "../interface/air-temperature";
 import { BaseCamp } from "../interface/base-camp";
 import { CampNotice } from "../interface/camp-notice";
 import { Coach } from "../interface/coach";
@@ -32,8 +31,6 @@ import { SherpaVoice } from "../interface/sherpa-voice";
 import type { SherpaTextName } from "../interface/sherpa-voice";
 import { SunClock } from "../interface/sun-clock";
 import type { Texts } from "../interface/texts";
-import { WindChill } from "../interface/wind-chill";
-import { WindMeter } from "../interface/wind-meter";
 import type { ClimberView } from "../physics";
 import {
   Camera,
@@ -48,7 +45,7 @@ import type { RenderingTexts } from "../rendering";
 import type { RoomCode } from "../room/room-code";
 import { IndexedDbStore } from "../saves";
 import type { ExpeditionStore } from "../saves";
-import { Expedition } from "../simulation";
+import { Expedition, Wind, WindChill } from "../simulation";
 import type { ClimberId, ExpeditionSave, HandView, PackOf, Scenario } from "../simulation";
 import { ActionQueue, EverySink, ZoomSink } from "./action-queue";
 import { BrowserSockets } from "./browser-sockets";
@@ -60,6 +57,7 @@ import { GearCheck } from "./gear-check";
 import { GodMode } from "./god-mode";
 import type { GodHooks } from "./god-mode";
 import { GodPanel } from "./god-panel";
+import { HeldWeather } from "./held-weather";
 import type { GodTextName } from "./god-panel";
 import { InventoryPanel } from "./inventory-panel";
 import type { PackTextName } from "./pack-list";
@@ -245,7 +243,8 @@ export class GamePage {
       packing.show((pack) => {
         new GearCheck(this.window, this.texts.gear).show((kit) => {
           const seed = this.newSeed();
-          const scenario = this.mountain.scenario(seed, answers, kit, true, pack, true);
+          const held = new HeldWeather(this.storage()).weather;
+          const scenario = this.mountain.scenario(seed, answers, kit, true, pack, true, held);
           this.playAlone(store, Expedition.start(scenario, rules.all), rules, godly);
         });
       });
@@ -374,6 +373,7 @@ export class GamePage {
         ropeStretch: this.mountain.ropeStretch,
         jolts: rules.jolts,
         devices: rules.devices,
+        weather: rules.weather,
       },
       choice.chosen,
     );
@@ -428,11 +428,15 @@ export class GamePage {
           parts: route.parts,
         }),
         {
-          wind: new WindMeter(this.mountain.windSpeeds(), this.mountain.dayWarmth()),
-          air: new AirTemperature(this.mountain.airSettings()),
+          wind: new Wind(this.mountain.windSpeeds(), this.mountain.dayWarmth()),
           chill: new WindChill(this.mountain.windChill()),
+          station: this.mountain.airSettings().station,
         },
         sunClock,
+        {
+          baseCamp: this.mountain.forecast("base-camp", rules.weather, scenario.seed),
+          general: this.mountain.forecast("general", rules.weather, scenario.seed),
+        },
       ),
       new BaseCamp(texts.devices),
       {
@@ -514,6 +518,7 @@ export class GamePage {
               player,
               this.knowledge.number("time.first-light") * 3600,
               () => coach.tip,
+              () => rules.weather.turn.to,
             ),
             (x, y) => (drawn ? scene.screenAt(x, y) : null),
           );
@@ -530,6 +535,7 @@ export class GamePage {
         get strikes() {
           return rules.hazards.strikes;
         },
+        cold: (climber) => rules.body.chilled(climber),
       },
       texts.debrief,
       climb.startOver,

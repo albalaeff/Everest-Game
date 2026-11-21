@@ -22,6 +22,16 @@
 - **How tired**: tired from `body.tired`; profoundly tired from `body.profoundly-tired`, when they can only rest-step, whatever pace they chose; exhausted at 1, when they stop, until rest brings them back below profound fatigue.
 - **On the move is the physics' word**: a climber who took a step in the last step (`ClimberView.moving`), and what it took of their power (`ClimberView.exertion`). The body runs before the physics in each step: it lives through the time since the last on what the physics did then, and sets the strides for this one. A scenario starts each climber's body (`BodyStart`): their mass and their pack's, their fatigue, and the water, energy and sleep they're short of.
 
+## The cold
+
+The body feels the cold since #272 (`body/cold.ts`, `Cold`), where it's given a sense of it (`ColdSense`: the cold's numbers, the wind chill and the weather outdoors); without one, as on the tests' ridge, nobody gets cold.
+
+- **The wind chill where a climber is**: the air of the hour at their altitude and the steady wind (`Weather.airNow`, `windNow`), by Canada's index (`WindChill`). In a tent it's the air `cold.tent-warmer` warmer and no wind; hanging in a crevasse or under a lip, no wind.
+- **The core**: colder than they hold their heat in, `cold.holds-moving` on the move and `cold.holds-resting` at rest, it cools by `cold.cooling-rate` for each degree colder; out of it, they shiver warm again at `cold.shivering-rewarming` while the core is above moderate hypothermia, and a tent warms them at `cold.safe-rewarming` from any cold (`cold.below-moderate-needs-heat`). Its stages are `cold.hypothermia-*`: mild leaves them clumsy (`cold.clumsy-footing`) and slower (`cold.clumsy-stride`), moderate stops them, severe takes their consciousness, and profound kills them: the body says so to the slope physics (`Legs.perish`), which lays them down as the hazards' dead.
+- **Frost** on the face and the fingers: in freezing air, where Canada gives a time for bare skin to freeze in the chill (`cold.freeze-time-*`), each part's frost grows by the share of that time passed, `cold.cover-face` or `cold.cover-fingers` times slower covered; numb from `cold.frost-numb`, frostnip from `cold.frost-nip`, which thaws back in `cold.thaw-hours` out of the freezing chill, and frostbite from `cold.frost-bite`, which stays.
+- **What the player sees**: symptoms in words, `cold`, `shivering`, `confused`, `unconscious`, `numb-fingers`, `numb-face`, `frostnip`, `frostbite`, never the core's degrees; the debrief reads `Body.chilled` for the frostbite and a death from the cold.
+- **Saves** keep each climber's core and frost (`colds`); a save from before the cold goes on warm. What no source gives (how fast a dressed climber cools, how much the cover slows freezing, how warm a tent is) is a coefficient with a question for the doctor (`cold.dressed-cooling`, `cold.covered-freezing`, `cold.tent-warmth`).
+
 ## What the player sees
 
 `Body.climber(id)` is how a climber feels (`BodyView`): their tiredness and their symptoms in words (out of breath at the faster pace, thirsty, hungry, sleepy), the pace they go at, and the one number a pulse oximeter on their finger reads, their SpO2 in whole %. Their fatigue, what they're short of and their capacity are never shown (spec.md → Simulation systems); the self-check shows the view (#25).

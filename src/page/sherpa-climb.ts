@@ -3,7 +3,7 @@ import type { CoachTip } from "../interface/coach";
 import { Readings } from "../interface/readings";
 import type { SherpaWorld } from "../interface/sherpa-voice";
 import type { AidDue, ClimberView, SlopePhysics } from "../physics";
-import type { ClimberId, HazardZone, MountainClock } from "../simulation";
+import type { ClimberId, HazardWeather, HazardZone, MountainClock } from "../simulation";
 
 /** A part of the route, by its id and its stretch of the ground. */
 interface Part {
@@ -29,7 +29,13 @@ export class SherpaClimb implements SherpaWorld {
     private readonly firstLightAt: number,
     /** The coach's tip on the screen now. */
     private readonly coachTip: () => CoachTip | null,
+    /** The weather the sky is turning to (#272). */
+    private readonly turningTo: () => HazardWeather,
   ) {}
+
+  sky(): HazardWeather {
+    return this.turningTo();
+  }
 
   sherpa(): SherpaView {
     return this.sherpaRule.view;

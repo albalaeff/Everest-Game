@@ -1,5 +1,6 @@
 import type { Mountain } from "../content/mountain";
-import { SimulationClock } from "../simulation";
+import { HazardChance, SimulationClock } from "../simulation";
+import type { HazardWeather } from "../simulation";
 import { CloseCode } from "./messages";
 import { Room } from "./room";
 import type { Socket } from "./room";
@@ -32,12 +33,20 @@ export class RoomHost {
   private ticking = false;
   private unsaved = 0;
 
+  /** `weather`, the weather its rooms' climbs hold, or `drawn`, the seed's (#272). */
   constructor(
     private readonly storage: RoomStorage,
     private readonly mountain: Mountain,
     private readonly version: string,
     private readonly ticker: Ticker,
+    private readonly weather: HazardWeather | "drawn" = "drawn",
   ) {}
+
+  /** The weather a worker's `WEATHER` holds its rooms' climbs in: one the hazards know, or the
+   * seed's without one. */
+  static weatherOf(held: string | undefined): HazardWeather | "drawn" {
+    return held !== undefined && HazardChance.knows(held) ? (held as HazardWeather) : "drawn";
+  }
 
   /** Loads the room stored, if there is one. */
   async load(): Promise<void> {
@@ -59,7 +68,16 @@ export class RoomHost {
       return false;
     }
     const rules = this.mountain.rules().all;
-    this.room = Room.create(code, this.mountain.scenario(seed), rules, this.version);
+    const scenario = this.mountain.scenario(
+      seed,
+      undefined,
+      undefined,
+      true,
+      undefined,
+      false,
+      this.weather,
+    );
+    this.room = Room.create(code, scenario, rules, this.version);
     return true;
   }
 

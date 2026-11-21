@@ -1,4 +1,5 @@
 import { Body } from "../body/body";
+import type { ColdSense } from "../body/body";
 import type { BodyNumbers } from "../body/body-numbers";
 import { Expedition } from "../expedition";
 import type { ExpeditionSave } from "../expedition";
@@ -17,9 +18,13 @@ export class Hike {
   readonly body: Body;
   readonly expedition: Expedition;
 
-  /** A hike from a scenario's start, or on from a save. */
-  constructor(start: Scenario | ExpeditionSave, numbers: BodyNumbers = TestRidge.NUMBERS) {
-    this.body = new Body(numbers, this.clock, this.ridge, this.ridge);
+  /** A hike from a scenario's start, or on from a save, in the `cold` if it's given (#272). */
+  constructor(
+    start: Scenario | ExpeditionSave,
+    numbers: BodyNumbers = TestRidge.NUMBERS,
+    cold: ColdSense | null = null,
+  ) {
+    this.body = new Body(numbers, this.clock, this.ridge, this.ridge, cold);
     const rules = [this.clock, this.body, this.ridge];
     this.expedition =
       "scenario" in start ? Expedition.resume(start, rules) : Expedition.start(start, rules);
@@ -30,8 +35,9 @@ export class Hike {
     climbers: readonly RidgeStart[],
     climbing = 0,
     numbers: BodyNumbers = TestRidge.NUMBERS,
+    cold: ColdSense | null = null,
   ): Hike {
-    return new Hike(TestRidge.scenario(1, climbers, climbing), numbers);
+    return new Hike(TestRidge.scenario(1, climbers, climbing), numbers, cold);
   }
 
   /** Plays `hours` of the mountain's time, a second of play each, with `actions` in the first

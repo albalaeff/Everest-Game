@@ -10,10 +10,19 @@ const BASE_URL = "http://localhost:4173";
  * page's main thread, at a cost that grows with its layers and pixels, and every step of a story
  * waits for one: on CI's two cores, a PC's frame on High took a third of a second and a tap five
  * seconds (#154). So the stories draw on Low, as the device keeps it, but for the picture's own
- * (e2e/slope.spec.ts). */
+ * (e2e/slope.spec.ts). And they climb in a clear sky (#272): a climb's weather turns from its
+ * seed, and a story would meet a storm by chance. */
 const LOW_GRAPHICS = {
   cookies: [],
-  origins: [{ origin: BASE_URL, localStorage: [{ name: "everest.graphics", value: "low" }] }],
+  origins: [
+    {
+      origin: BASE_URL,
+      localStorage: [
+        { name: "everest.graphics", value: "low" },
+        { name: "everest.weather", value: "clear" },
+      ],
+    },
+  ],
 };
 
 export default defineConfig({
@@ -37,7 +46,8 @@ export default defineConfig({
       reuseExistingServer: !process.env.CI,
     },
     {
-      command: "npm run room",
+      // The rooms' climbs in a clear sky too (#272).
+      command: "npm run room -- --var WEATHER:clear",
       url: "http://localhost:8787",
       reuseExistingServer: !process.env.CI,
     },

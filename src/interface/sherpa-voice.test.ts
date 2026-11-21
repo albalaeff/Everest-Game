@@ -5,6 +5,7 @@ import coachTexts from "../../content/coach.json";
 import type { SherpaView } from "../agents";
 import { Climber } from "../physics";
 import type { ClimberView, Fall } from "../physics";
+import type { HazardWeather } from "../simulation";
 import type { CoachTip } from "./coach";
 import { SherpaVoice } from "./sherpa-voice";
 import type { SherpaLine, SherpaTextName, SherpaWorld } from "./sherpa-voice";
@@ -73,6 +74,7 @@ class FakeWorld implements SherpaWorld {
   sun = false;
   coach: CoachTip | null = null;
   due: "tourniquet" | "splint" | "wrap" | null = null;
+  weather: HazardWeather = "clear";
 
   sherpa(): SherpaView {
     return this.view;
@@ -103,6 +105,9 @@ class FakeWorld implements SherpaWorld {
   }
   aidDue(): "tourniquet" | "splint" | "wrap" | null {
     return this.due;
+  }
+  sky(): HazardWeather {
+    return this.weather;
   }
 
   tip(): CoachTip | null {
@@ -228,6 +233,30 @@ describe("SherpaVoice: Pemba's lines, for the moment (#212)", () => {
     play(4);
 
     expect(cues()).toEqual(["set-off", "gust", "twist", "passing"]);
+  });
+
+  it("says the weather as it comes: cloud, snow, a storm at once, and the sky clearing (#272)", () => {
+    const { world, cues, play } = listening();
+    play(8);
+
+    world.weather = "cloud";
+    play(12);
+    world.weather = "snow";
+    play(12);
+    world.weather = "storm";
+    play(2);
+    expect(cues().at(-1)).toBe("weather-storm");
+    play(10);
+    world.weather = "clear";
+    play(12);
+
+    expect(cues()).toEqual([
+      "set-off",
+      "weather-cloud",
+      "weather-snow",
+      "weather-storm",
+      "weather-clearing",
+    ]);
   });
 
   it("says the same warning again only after a while, the next of its lines", () => {

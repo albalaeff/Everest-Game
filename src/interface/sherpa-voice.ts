@@ -1,7 +1,7 @@
 import type { SherpaDoing, SherpaView } from "../agents";
 import type { AidDue, ClimberView } from "../physics";
 import { SeededRandom } from "../simulation";
-import type { ClimberId } from "../simulation";
+import type { ClimberId, HazardWeather } from "../simulation";
 import type { CoachTip } from "./coach";
 import type { TextFills, Texts } from "./texts";
 
@@ -45,6 +45,11 @@ export type SherpaCue =
   | "floor"
   | "gust"
   | "twist"
+  | "weather-cloud"
+  | "weather-snow"
+  | "weather-wind"
+  | "weather-storm"
+  | "weather-clearing"
   | "passing"
   | "popcorn"
   | "maze"
@@ -111,6 +116,8 @@ export interface SherpaWorld {
   /** The first aid a climber is due next, the tourniquet, the splint or the wrap, or none
    * (#241). */
   aidDue(climber: ClimberId): AidDue["what"] | null;
+  /** The weather the sky is turning to, or the weather of the hour while it's steady (#272). */
+  sky(): HazardWeather;
 }
 
 /** A line he says: its cue, its text's name, its words, and whether it cuts in at once. */
@@ -305,6 +312,7 @@ export class SherpaVoice {
     readonly part: string | null;
     readonly seracs: boolean;
     readonly sun: boolean;
+    readonly sky: HazardWeather;
     readonly onLadder: string | null;
     readonly pembaOnLadder: boolean;
     /** What he does for a casualty, the first aid he's at, and whether one is on his back. */
@@ -406,6 +414,7 @@ export class SherpaVoice {
       part: world.part(),
       seracs: world.underSeracs(),
       sun: world.firstLight(),
+      sky: world.sky(),
       onLadder: player.ladder,
       pembaOnLadder: pemba.ladder !== null,
       helping: pemba.helping?.kind ?? null,
@@ -464,7 +473,22 @@ export class SherpaVoice {
     if (now.sun && !before.sun) {
       this.wait("sun", "quiet", Infinity);
     }
+    this.noticeSky(now.sky, before.sky);
     this.before = now;
+  }
+
+  /** The sky turning to another weather (#272): he says it as it comes, a storm at once, with
+   * what to do; the sky clearing after snow or a storm too. */
+  private noticeSky(now: HazardWeather, before: HazardWeather): void {
+    if (now === before) {
+      return;
+    }
+    const bad = before === "snow" || before === "storm" || before === "wind";
+    const cue: SherpaCue | null =
+      now === "clear" ? (bad ? "weather-clearing" : null) : `weather-${now}`;
+    if (cue !== null) {
+      this.wait(cue, now === "storm" ? "now" : "soon");
+    }
   }
 
   /** A client who lies hurt (#241): that he's coming, as he sets off to them; and each thing he

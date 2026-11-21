@@ -4,7 +4,8 @@ import type { HazardWeather } from "./objective-hazards";
  * `peak`, and is over `until`. */
 export type WarmthHours = { readonly from: number; readonly peak: number; readonly until: number };
 
-/** How much of the sun's warmth reaches the ice under cloud, and while snow falls: a share. */
+/** How much of the sun's warmth reaches the ice under cloud, and while snow falls, in a storm too
+ * (#272): a share. */
 export type SunShares = { readonly cloud: number; readonly snow: number };
 
 /**
@@ -47,6 +48,10 @@ export class DayWarmth {
   /** How much of the sun's warmth reaches the ice in a weather. */
   private sunIn(weather: HazardWeather): number {
     const { sun } = this;
-    return weather === "cloud" ? sun.cloud : weather === "snow" ? sun.snow : 1;
+    return weather === "cloud"
+      ? sun.cloud
+      : weather === "snow" || weather === "storm"
+        ? sun.snow
+        : 1;
   }
 }

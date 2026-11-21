@@ -19,6 +19,7 @@ import {
   PACK_ITEMS,
   Packs,
   SeededRandom,
+  Weather,
 } from "../simulation";
 import type {
   BodyStart,
@@ -27,6 +28,7 @@ import type {
   ClockStart,
   HazardEvent,
   HazardStart,
+  HazardWeather,
   JoltStart,
   PackCounts,
   PackItem,
@@ -347,7 +349,9 @@ export class Section {
    * players alone (#212). The player carries the `pack` they chose at Base Camp, or the file's:
    * its weight on their body with what they carry besides, its jumar and its tools on their
    * harness, its bottles their oxygen. The Sherpa, if the section has one, is its NPC, guiding
-   * the players; `alone`, the player is the only one, with no seat for a teammate (#212). */
+   * the players; `alone`, the player is the only one, with no seat for a teammate (#212). The
+   * `weather` is drawn from the seed through the days (#272), or held all climb long: the one
+   * given, or the file's when none is. */
   scenario(
     seed: number,
     player?: ClimberStart,
@@ -355,6 +359,7 @@ export class Section {
     training = true,
     pack?: PackCounts,
     alone = false,
+    weather?: HazardWeather | "drawn",
   ): Scenario {
     const made = this.climbing(alone, player === undefined ? this : this.withPlayer(player));
     const checked = gear === undefined ? made : Section.withKit(made, gear);
@@ -418,6 +423,9 @@ export class Section {
       start: {
         ...guided,
         [MountainClock.NAME]: MountainClock.start(this.clock),
+        [Weather.NAME]: Weather.start(
+          weather === "drawn" ? { seed } : { seed, held: weather ?? this.hazards.weather },
+        ),
         [OxygenSystem.NAME]: OxygenSystem.start(climbers, (id) => packOf(id).items.oxygen),
         [Body.NAME]: Body.start(bodies),
         [Packs.NAME]: Packs.start(

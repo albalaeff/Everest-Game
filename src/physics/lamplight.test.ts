@@ -23,6 +23,10 @@ class Standing implements KittedLegs {
     // Standing: nothing to stride.
   }
 
+  kill(): void {
+    // Standing in the warm of a test: nobody dies of the cold.
+  }
+
   sureness(_id: ClimberId, share: number): void {
     this.handed = share;
   }

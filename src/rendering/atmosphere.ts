@@ -1,4 +1,4 @@
-import type { HazardWeather } from "../simulation";
+import type { HazardWeather, SkyTurn } from "../simulation";
 import { DayLight } from "./day-light";
 import { Gust } from "./gust";
 import { Palette } from "./palette";
@@ -53,12 +53,12 @@ export class Atmosphere {
     this.elapsed = elapsed;
   }
 
-  /** The atmosphere as the picture opens: `timeOfDay` seconds since midnight, in `weather`, at
-   * `altitude` metres. */
-  static at(timeOfDay: number, weather: HazardWeather, altitude: number): Atmosphere {
+  /** The atmosphere as the picture opens: `timeOfDay` seconds since midnight, in `weather` or as
+   * the sky turns from one to the next (#272), at `altitude` metres. */
+  static at(timeOfDay: number, weather: HazardWeather | SkyTurn, altitude: number): Atmosphere {
     const light = DayLight.at(timeOfDay);
     const air = ThinAir.at(altitude);
-    const look = WeatherLook.of(weather);
+    const look = Atmosphere.lookOf(weather);
     return new Atmosphere(
       light,
       air,
@@ -77,13 +77,13 @@ export class Atmosphere {
   after(
     seconds: number,
     timeOfDay: number,
-    weather: HazardWeather,
+    weather: HazardWeather | SkyTurn,
     altitude: number,
     blowing = 0,
   ): Atmosphere {
     const light = DayLight.at(timeOfDay);
     const air = ThinAir.at(altitude);
-    const look = WeatherLook.of(weather);
+    const look = Atmosphere.lookOf(weather);
     const elapsed = this.elapsed + Math.max(seconds, 0);
     const { mixed } = this;
     const same = look === this.look && light.same(mixed.light) && air.same(mixed.air);
@@ -96,6 +96,11 @@ export class Atmosphere {
       Math.min(Math.max(blowing, 0), 1),
       elapsed,
     );
+  }
+
+  /** A weather's look, or the sky's as it turns. */
+  private static lookOf(weather: HazardWeather | SkyTurn): WeatherLook {
+    return typeof weather === "string" ? WeatherLook.of(weather) : WeatherLook.turning(weather);
   }
 
   /** The colours of the frame. */

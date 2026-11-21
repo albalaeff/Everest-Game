@@ -21,7 +21,7 @@ export interface GodHooks {
   readonly state: GodState;
   teleport(where: string | number, who?: ClimberId): number;
   hour(time: string): void;
-  weather(weather: HazardWeather): void;
+  weather(weather: HazardWeather | "drawn"): void;
   calm(): void;
   speed(times: number): void;
   serac(): HazardEvent;
@@ -33,11 +33,12 @@ export interface GodHooks {
 }
 
 /** How the god mode has set the climb: whether the player is immortal, how many times faster than
- * real time it runs, the weather, and the mountain's time of day, `HH:MM`. */
+ * real time it runs, the weather it holds, or the seed's (#272), and the mountain's time of day,
+ * `HH:MM`. */
 export interface GodState {
   readonly immortal: boolean;
   readonly speed: number;
-  readonly weather: HazardWeather;
+  readonly weather: HazardWeather | "drawn";
   readonly time: string;
 }
 
@@ -57,7 +58,15 @@ export class GodMode implements GodHooks {
   static readonly WORD = "god";
   /** The speeds its panel offers, times real time. */
   static readonly SPEEDS: readonly number[] = [1, 5, 20];
-  static readonly WEATHERS: readonly HazardWeather[] = ["clear", "cloud", "snow", "wind"];
+  /** The weathers its panel holds, and the seed's, which turns through the days (#272). */
+  static readonly WEATHERS: readonly (HazardWeather | "drawn")[] = [
+    "clear",
+    "cloud",
+    "snow",
+    "wind",
+    "storm",
+    "drawn",
+  ];
   /** The injury it stages unless told another: a broken leg, which can't walk. */
   private static readonly BROKEN_LEG: Pick<Injury, "part" | "kind"> = {
     part: "leg",
@@ -93,11 +102,11 @@ export class GodMode implements GodHooks {
   }
 
   get state(): GodState {
-    const { hazards, clock } = this.rules;
+    const { weather, clock } = this.rules;
     return {
       immortal: this.undying,
       speed: this.times,
-      weather: hazards.weather,
+      weather: weather.held ?? "drawn",
       time: MountainClock.text(clock.timeOfDay),
     };
   }
@@ -144,10 +153,14 @@ export class GodMode implements GodHooks {
     this.game.save();
   }
 
-  /** Sets the weather, for the hazards and the jolts alike. */
-  weather(weather: HazardWeather): void {
-    this.rules.hazards.changeWeather(weather);
-    this.rules.jolts.changeWeather(weather);
+  /** Holds a weather from now on, or goes back to the seed's (#272), and tells the hazards and the
+   * jolts at once. */
+  weather(weather: HazardWeather | "drawn"): void {
+    const { rules } = this;
+    rules.weather.hold(weather === "drawn" ? null : weather);
+    const now = rules.weather.now;
+    rules.hazards.changeWeather(now);
+    rules.jolts.changeWeather(now);
     this.game.save();
   }
 

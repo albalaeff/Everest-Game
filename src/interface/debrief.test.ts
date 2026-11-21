@@ -121,6 +121,34 @@ describe("Debrief: what the climb was, after it (#194)", () => {
     expect(value(said, "Falls with no rope to hold you")).toBe("1");
   });
 
+  it("names the cold as what killed a climber who froze, and says what to do (#272)", () => {
+    const said = debrief.of(
+      facts({
+        page: page({ arrived: null, died: 14 * HOUR }),
+        cold: { core: 24, frostbitten: ["face"], froze: true },
+      }),
+    );
+
+    expect(said.dead).toBe(true);
+    expect(said.verdict.tone).toBe("bad");
+    expect(said.verdict.text).toContain("The cold killed you");
+    expect(said.verdict.text).toContain("get into a tent");
+    expect(value(said, "Frostbite")).toBe("face");
+  });
+
+  it("tells a climber who made it with frostbite what it froze, and that it stays (#272)", () => {
+    const said = debrief.of(
+      facts({ cold: { core: 36.2, frostbitten: ["face", "fingers"], froze: false } }),
+    );
+
+    expect(said.verdict.tone).toBe("bad");
+    expect(said.verdict.text).toContain("froze your face and fingers");
+    expect(value(said, "Frostbite")).toBe("face and fingers");
+    const warm = debrief.of(facts({ cold: { core: 37, frostbitten: [], froze: false } }));
+    expect(value(warm, "Frostbite")).toBeUndefined();
+    expect(warm.verdict.text).toContain("clean");
+  });
+
   it("lists the checks skipped at Base Camp, and says everything was checked when it was (#196)", () => {
     const checked = debrief.of(facts());
     const skipped = debrief.of(facts({ kit: { crampons: false, lamp: false, water: true } }));

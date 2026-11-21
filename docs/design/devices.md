@@ -28,19 +28,19 @@ Sources: Alan Arnette, "Everest 2024: Nepal's GPS Chip Plan has Major Problems";
 ## How each works in the game
 
 - **One card**: [Devices] or G opens it at the device used last; [Radio] or Q at the radio. Arrows left and right go between devices, up and down through a device's buttons, Esc closes. On a gamepad: the left stick pressed in. It ends above the bottom controls and takes turns with the pack's card.
-- **Radio**: five ready phrases (Radio check, Report position, Conditions?, Route ahead?, I need help). Base Camp answers from the game's real state: the position logged with its time, the weather, its weather station's temperature, the hour the sun reaches the ice, a ladder that's down. Hanging in a crevasse: static.
+- **Radio**: six ready phrases (Radio check, Report position, Conditions?, Forecast?, Route ahead?, I need help). Base Camp answers from the game's real state: the position logged with its time, the weather, its weather station's temperature, the hour the sun reaches the ice, a ladder that's down, and its forecaster's forecast, a day a line with how sure they are (#272). Hanging in a crevasse: static.
 - **GPS watch**: the route's profile with the track, the part of the route, altitude, distance done and left (counted from Base Camp's edge to Camp 1's), metres still to climb, rate of climb, and the arrival at Camp 1 at the pace so far against the sun's hour (06:00). Hanging under the ice it has no fix and keeps the last one on its screen.
 - **Weather meter** (tab [Weather] / [Метео]): wind now, its Beaufort name, average and strongest since it was taken out; under it, the air (0.1 °C) and the wind chill (whole degrees); beside it the frostbite risk, red with a triangle from "high". Wind: still night 4 km/h, the sun adds up to 12 by the day's warmest, snow 20, strong wind 45, a gust 70. Air at Base Camp's station by weather: clear −10 to +2 °C, cloud −7 to −2, snow −6 to −3, strong wind −13 to −6; coldest at 06:00, warmest at 13:00; 6.6 °C colder per km higher. It jumps as a gust comes, a moment before the gust arrives, and the wind chill with it.
-- **Tracker**: off at the start; tracking sends a point every 10 minutes under the sky; a check-in takes three of the mountain's minutes to leave; SOS needs a press held 3 seconds.
+- **Tracker**: off at the start; tracking sends a point every 10 minutes under the sky; a check-in takes three of the mountain's minutes to leave; SOS needs a press held 3 seconds. [Get weather] (#272) sends a request the same way, and five minutes of sky later the general model's forecast is on a screen of its own: three days in six hours, a sky's mark, the air and the wind, with no word on how sure it is.
 
 ## Decisions and limits
 
 - Every climber has all four devices; they aren't things to pack or leave behind yet.
 - The wind's speeds and the air's day are coefficients fitted to the measurements above; the question for an expert on the Icefall's winds is gone. The Icefall itself has no station: Base Camp's and Camp II's bracket it.
 - The meter names a wind by the Beaufort scale at the speed in the hand (a simplification: the scale's speeds are for 10 m up); the wind chill uses the 10 m wind, as a Kestrel does.
-- The body doesn't feel the cold yet: temperature and wind chill are for reading and training. Frostbite and hypothermia are future work.
+- The body feels the cold since #272: the meter's air and wind chill are what the climber's body feels where they stand (docs/design/weather.md).
 - No coordinates on the watch: no sourced coordinates for Camp 1.
-- An SOS reaches Base Camp and nobody sets out from there yet; the rescue on the Icefall is the team's own (#241, #263). The radio's guide and group channels and its battery are #79's; the forecast is #39's.
+- An SOS reaches Base Camp and nobody sets out from there yet; the rescue on the Icefall is the team's own (#241, #263). The radio's guide and group channels and its battery are #79's; the jet stream's summit wind and the plume in the forecast are #39's.
 - A climb saved before this change starts again from Base Camp.
 
 ## Testing with god mode (`?god`)

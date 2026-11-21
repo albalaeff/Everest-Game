@@ -499,6 +499,485 @@
           "checked": "2026-11-03"
         }
       ]
+    },
+    {
+      "id": "cold.normal-core",
+      "kind": "fact",
+      "claim": "The body keeps its core temperature at or near this.",
+      "status": "source only",
+      "versions": [
+        {
+          "value": 37,
+          "unit": "°C",
+          "note": "The human body attempts to maintain a core temperature at or near 37 °C. Section: Physiology of hypothermia.",
+          "source": {
+            "title": "Dow et al. 2019, Wilderness Medical Society Clinical Practice Guidelines for the Out-of-Hospital Evaluation and Treatment of Accidental Hypothermia: 2019 Update (Wilderness Environ Med 30(4S), S47–S69)",
+            "url": "https://www.femecv.com/sites/default/files/WMS%20hipotermia_2019.pdf"
+          },
+          "checked": "2026-11-21"
+        }
+      ]
+    },
+    {
+      "id": "cold.hypothermia-mild",
+      "kind": "fact",
+      "claim": "Mild hypothermia is a core of this: the climber is conscious and shivering, and their movement is impaired.",
+      "status": "source only",
+      "versions": [
+        {
+          "range": {
+            "min": 32,
+            "max": 35
+          },
+          "unit": "°C",
+          "note": "Mild at 35 to 32 °C; thermoregulatory shivering functional, increasing as the core cools. Swiss HT I: clear consciousness with shivering.",
+          "source": {
+            "title": "Dow et al. 2019, Wilderness Medical Society Clinical Practice Guidelines for the Out-of-Hospital Evaluation and Treatment of Accidental Hypothermia: 2019 Update (Wilderness Environ Med 30(4S), S47–S69)",
+            "url": "https://www.femecv.com/sites/default/files/WMS%20hipotermia_2019.pdf"
+          },
+          "checked": "2026-11-21"
+        },
+        {
+          "range": {
+            "min": 32,
+            "max": 35
+          },
+          "unit": "°C",
+          "note": "Mild: movement impaired, shivering, alert and conscious.",
+          "source": {
+            "title": "American Family Physician 102(9), 571–572 (2020): Accidental Hypothermia: Guidelines from the Wilderness Medical Society",
+            "url": "https://www.aafp.org/pubs/afp/issues/2020/1101/p571.html"
+          },
+          "checked": "2026-11-21"
+        },
+        {
+          "range": {
+            "min": 32,
+            "max": 35
+          },
+          "unit": "°C",
+          "note": "Conscious; shivering. Intense shivering first, then impaired movement; lethargy and clumsiness.",
+          "source": {
+            "title": "MSD Manual Professional Edition: Hypothermia (Danzl, reviewed August 2026)",
+            "url": "https://www.msdmanuals.com/professional/injuries-poisoning/cold-injury/hypothermia"
+          },
+          "checked": "2026-11-21"
+        }
+      ]
+    },
+    {
+      "id": "cold.hypothermia-moderate",
+      "kind": "fact",
+      "claim": "Moderate hypothermia is a core of this: consciousness falls and shivering slows or stops, and the body can't rewarm itself any more.",
+      "status": "source only",
+      "versions": [
+        {
+          "range": {
+            "min": 28,
+            "max": 32
+          },
+          "unit": "°C",
+          "note": "Below 32 °C thermoregulation becomes less effective, rewarming is possible only with exogenous heat, and consciousness decreases. Swiss HT II: impaired consciousness without shivering.",
+          "source": {
+            "title": "Dow et al. 2019, Wilderness Medical Society Clinical Practice Guidelines for the Out-of-Hospital Evaluation and Treatment of Accidental Hypothermia: 2019 Update (Wilderness Environ Med 30(4S), S47–S69)",
+            "url": "https://www.femecv.com/sites/default/files/WMS%20hipotermia_2019.pdf"
+          },
+          "checked": "2026-11-21"
+        },
+        {
+          "range": {
+            "min": 28,
+            "max": 32
+          },
+          "unit": "°C",
+          "note": "Moderate: movement impaired, shivering slows or stops, not alert, still conscious.",
+          "source": {
+            "title": "American Family Physician 102(9), 571–572 (2020): Accidental Hypothermia: Guidelines from the Wilderness Medical Society",
+            "url": "https://www.aafp.org/pubs/afp/issues/2020/1101/p571.html"
+          },
+          "checked": "2026-11-21"
+        },
+        {
+          "range": {
+            "min": 28,
+            "max": 32
+          },
+          "unit": "°C",
+          "note": "Impaired consciousness; shivering absent; confusion follows lethargy and clumsiness.",
+          "source": {
+            "title": "MSD Manual Professional Edition: Hypothermia (Danzl, reviewed August 2026)",
+            "url": "https://www.msdmanuals.com/professional/injuries-poisoning/cold-injury/hypothermia"
+          },
+          "checked": "2026-11-21"
+        }
+      ]
+    },
+    {
+      "id": "cold.hypothermia-severe",
+      "kind": "fact",
+      "claim": "Severe hypothermia is a core of this: the climber is unconscious and doesn't shiver, and the heart is at risk.",
+      "status": "source only",
+      "versions": [
+        {
+          "range": {
+            "min": 24,
+            "max": 28
+          },
+          "unit": "°C",
+          "note": "Severe below 28 °C: most patients unconscious and not shivering, the risk of VF or asystole high. Swiss HT III: unconscious, 28 to 24 °C.",
+          "source": {
+            "title": "Dow et al. 2019, Wilderness Medical Society Clinical Practice Guidelines for the Out-of-Hospital Evaluation and Treatment of Accidental Hypothermia: 2019 Update (Wilderness Environ Med 30(4S), S47–S69)",
+            "url": "https://www.femecv.com/sites/default/files/WMS%20hipotermia_2019.pdf"
+          },
+          "checked": "2026-11-21"
+        },
+        {
+          "range": {
+            "min": 24,
+            "max": 28
+          },
+          "unit": "°C",
+          "note": "Unconscious.",
+          "source": {
+            "title": "MSD Manual Professional Edition: Hypothermia (Danzl, reviewed August 2026)",
+            "url": "https://www.msdmanuals.com/professional/injuries-poisoning/cold-injury/hypothermia"
+          },
+          "checked": "2026-11-21"
+        }
+      ]
+    },
+    {
+      "id": "cold.hypothermia-profound",
+      "kind": "fact",
+      "claim": "Profound hypothermia is a core below this: the chance of survival is much lower, the heart likely to stop.",
+      "status": "source only",
+      "versions": [
+        {
+          "range": {
+            "min": 13.7,
+            "max": 24
+          },
+          "unit": "°C",
+          "note": "Profound hypothermia at <24 °C or <20 °C; the chance of survival appears much lower, probably because of a high likelihood of cardiac arrest. Swiss HT IV, apparent death: 24 to 13.7 °C.",
+          "source": {
+            "title": "Dow et al. 2019, Wilderness Medical Society Clinical Practice Guidelines for the Out-of-Hospital Evaluation and Treatment of Accidental Hypothermia: 2019 Update (Wilderness Environ Med 30(4S), S47–S69)",
+            "url": "https://www.femecv.com/sites/default/files/WMS%20hipotermia_2019.pdf"
+          },
+          "checked": "2026-11-21"
+        },
+        {
+          "value": 24,
+          "unit": "°C",
+          "note": "Profound, under 24 °C: apparent death.",
+          "source": {
+            "title": "MSD Manual Professional Edition: Hypothermia (Danzl, reviewed August 2026)",
+            "url": "https://www.msdmanuals.com/professional/injuries-poisoning/cold-injury/hypothermia"
+          },
+          "checked": "2026-11-21"
+        }
+      ]
+    },
+    {
+      "id": "cold.shivering-rewarming",
+      "kind": "fact",
+      "claim": "Vigorous shivering can raise a cold-stressed or mildly hypothermic climber's core by this much an hour, if they're insulated well enough to keep the heat.",
+      "status": "source only",
+      "versions": [
+        {
+          "range": {
+            "min": 3,
+            "max": 4
+          },
+          "unit": "°C/h",
+          "note": "Shivering can raise core temperature by 3 to 4 °C·h⁻¹; the patient must be adequately insulated to retain the heat. Section: Shivering.",
+          "source": {
+            "title": "Dow et al. 2019, Wilderness Medical Society Clinical Practice Guidelines for the Out-of-Hospital Evaluation and Treatment of Accidental Hypothermia: 2019 Update (Wilderness Environ Med 30(4S), S47–S69)",
+            "url": "https://www.femecv.com/sites/default/files/WMS%20hipotermia_2019.pdf"
+          },
+          "checked": "2026-11-21"
+        }
+      ]
+    },
+    {
+      "id": "cold.safe-rewarming",
+      "kind": "fact",
+      "claim": "Rewarming in the field, insulated and with outside heat, warms a hypothermic patient by this much an hour, the safe rate.",
+      "status": "source only",
+      "versions": [
+        {
+          "range": {
+            "min": 1,
+            "max": 2
+          },
+          "unit": "°C/h",
+          "note": "The rewarming methods described achieve the safe rewarming rate of 1 to 2 °C·h⁻¹. Section: Field rewarming.",
+          "source": {
+            "title": "Dow et al. 2019, Wilderness Medical Society Clinical Practice Guidelines for the Out-of-Hospital Evaluation and Treatment of Accidental Hypothermia: 2019 Update (Wilderness Environ Med 30(4S), S47–S69)",
+            "url": "https://www.femecv.com/sites/default/files/WMS%20hipotermia_2019.pdf"
+          },
+          "checked": "2026-11-21"
+        }
+      ]
+    },
+    {
+      "id": "cold.below-moderate-needs-heat",
+      "kind": "fact",
+      "claim": "Below a core of 32 °C the body can't rewarm itself: it needs heat from outside.",
+      "status": "source only",
+      "versions": [
+        {
+          "note": "Below 32 °C (moderate hypothermia), thermoregulation becomes less effective and rewarming is possible only with addition of exogenous heat.",
+          "source": {
+            "title": "Dow et al. 2019, Wilderness Medical Society Clinical Practice Guidelines for the Out-of-Hospital Evaluation and Treatment of Accidental Hypothermia: 2019 Update (Wilderness Environ Med 30(4S), S47–S69)",
+            "url": "https://www.femecv.com/sites/default/files/WMS%20hipotermia_2019.pdf"
+          },
+          "checked": "2026-11-21"
+        },
+        {
+          "note": "Thermoregulation ceases below approximately 30 °C; the body must then depend on an external heat source for rewarming.",
+          "source": {
+            "title": "MSD Manual Professional Edition: Hypothermia (Danzl, reviewed August 2026)",
+            "url": "https://www.msdmanuals.com/professional/injuries-poisoning/cold-injury/hypothermia"
+          },
+          "checked": "2026-11-21"
+        }
+      ]
+    },
+    {
+      "id": "cold.exercise-prevents-hypothermia",
+      "kind": "fact",
+      "claim": "Exercise and shivering raise the body's heat enough to prevent hypothermia, so long as the climber has eaten enough and is insulated well enough; beyond that, clothing and shelter prevent it.",
+      "status": "source only",
+      "versions": [
+        {
+          "note": "Exercise and shivering can raise the metabolic rate to prevent hypothermia if nutritional reserves and insulation are adequate; prevention mostly depends on insulating clothing and shelter.",
+          "source": {
+            "title": "Dow et al. 2019, Wilderness Medical Society Clinical Practice Guidelines for the Out-of-Hospital Evaluation and Treatment of Accidental Hypothermia: 2019 Update (Wilderness Environ Med 30(4S), S47–S69)",
+            "url": "https://www.femecv.com/sites/default/files/WMS%20hipotermia_2019.pdf"
+          },
+          "checked": "2026-11-21"
+        }
+      ]
+    },
+    {
+      "id": "cold.cold-stressed",
+      "kind": "fact",
+      "claim": "A climber who shivers with a core still over 35 °C is cold-stressed, not hypothermic: one who shivers but looks after themselves well is unlikely to be hypothermic.",
+      "status": "source only",
+      "versions": [
+        {
+          "note": "A shivering patient with a core temperature >35 °C is cold-stressed, but not hypothermic. Section: Some patients are cold, but not hypothermic.",
+          "source": {
+            "title": "Dow et al. 2019, Wilderness Medical Society Clinical Practice Guidelines for the Out-of-Hospital Evaluation and Treatment of Accidental Hypothermia: 2019 Update (Wilderness Environ Med 30(4S), S47–S69)",
+            "url": "https://www.femecv.com/sites/default/files/WMS%20hipotermia_2019.pdf"
+          },
+          "checked": "2026-11-21"
+        }
+      ]
+    },
+    {
+      "id": "cold.windproof-layer",
+      "kind": "fact",
+      "claim": "A windproof layer protects a cold climber a great deal from the wind's loss of heat.",
+      "status": "source only",
+      "versions": [
+        {
+          "note": "In windy conditions, a windproof layer, ideally a vapor barrier, provides substantial protection from convective heat loss.",
+          "source": {
+            "title": "Dow et al. 2019, Wilderness Medical Society Clinical Practice Guidelines for the Out-of-Hospital Evaluation and Treatment of Accidental Hypothermia: 2019 Update (Wilderness Environ Med 30(4S), S47–S69)",
+            "url": "https://www.femecv.com/sites/default/files/WMS%20hipotermia_2019.pdf"
+          },
+          "checked": "2026-11-21"
+        }
+      ]
+    },
+    {
+      "id": "cold.holds-moving",
+      "kind": "coefficient",
+      "claim": "The coldest wind chill a climber dressed for Everest keeps their heat in on the move (#272): about the summit's on a summit night, which climbers climb through for hours, working, in their down suits.",
+      "status": "source only",
+      "value": -45,
+      "unit": "°C",
+      "fitted_to": [
+        "cold.summit-wind-chill",
+        "weather.summit-temperature",
+        "cold.exercise-prevents-hypothermia"
+      ],
+      "fitted": "2026-11-21"
+    },
+    {
+      "id": "cold.holds-resting",
+      "kind": "coefficient",
+      "claim": "The coldest wind chill a climber dressed for Everest keeps their heat in at rest, standing or sitting out of a tent (#272): shivering's heat alone, cold-stressed at a moderate risk, not hypothermic.",
+      "status": "source only",
+      "value": -20,
+      "unit": "°C",
+      "fitted_to": [
+        "cold.wind-chill-moderate",
+        "cold.cold-stressed",
+        "cold.exercise-prevents-hypothermia"
+      ],
+      "fitted": "2026-11-21"
+    },
+    {
+      "id": "cold.cooling-rate",
+      "kind": "coefficient",
+      "claim": "How fast a dressed climber's core cools, in °C an hour, for each degree of wind chill colder than they keep their heat in (#272): at rest in a storm's wind chill of −45 °C, mildly hypothermic in four hours and unable to go on in ten, more slowly than the safe rewarming rate brings them back.",
+      "status": "source only",
+      "value": 0.02,
+      "unit": "°C/h/°C",
+      "fitted_to": [
+        "cold.hypothermia-mild",
+        "cold.hypothermia-moderate",
+        "cold.safe-rewarming"
+      ],
+      "fitted": "2026-11-21"
+    },
+    {
+      "id": "cold.tent-warmer",
+      "kind": "coefficient",
+      "claim": "How much warmer a tent's air is than the air outside, out of the wind, with its climbers in it (#272).",
+      "status": "source only",
+      "value": 8,
+      "unit": "°C",
+      "fitted_to": [
+        "weather.base-camp-april-temperatures",
+        "cold.safe-rewarming"
+      ],
+      "fitted": "2026-11-21"
+    },
+    {
+      "id": "cold.cover-face",
+      "kind": "coefficient",
+      "claim": "How many times slower than bare skin a climber's face freezes behind a hood, goggles and a buff, the cheeks and nose still partly bare (#272).",
+      "status": "source only",
+      "value": 3,
+      "unit": "1",
+      "fitted_to": [
+        "cold.freeze-time-high",
+        "cold.freeze-time-very-high",
+        "medicine.frostbite-prevention"
+      ],
+      "fitted": "2026-11-21"
+    },
+    {
+      "id": "cold.cover-fingers",
+      "kind": "coefficient",
+      "claim": "How many times slower than bare skin a climber's fingers freeze in mittens that come off to clip in and work the jumar (#272): slow enough that a summit night, hours in a wind chill of −46 to −50 °C, frostnips their fingers rather than frostbiting them.",
+      "status": "source only",
+      "value": 40,
+      "unit": "1",
+      "fitted_to": [
+        "cold.freeze-time-high",
+        "cold.freeze-time-very-high",
+        "cold.summit-wind-chill",
+        "medicine.frostbite-prevention"
+      ],
+      "fitted": "2026-11-21"
+    },
+    {
+      "id": "cold.frost-numb",
+      "kind": "coefficient",
+      "claim": "A part goes numb, white and cold, once this share of the time bare skin takes to freeze in the chill has passed (#272): numbness comes before the skin freezes.",
+      "status": "source only",
+      "value": 0.5,
+      "unit": "1",
+      "fitted_to": [
+        "medicine.frostbite-signs",
+        "medicine.frostnip"
+      ],
+      "fitted": "2026-11-21"
+    },
+    {
+      "id": "cold.frost-nip",
+      "kind": "coefficient",
+      "claim": "A part is frostnipped once the time bare skin takes to freeze in the chill has passed, this many times over (#272): the first, superficial freezing, which thaws.",
+      "status": "source only",
+      "value": 1,
+      "unit": "1",
+      "fitted_to": [
+        "cold.freeze-time-high",
+        "medicine.frostnip"
+      ],
+      "fitted": "2026-11-21"
+    },
+    {
+      "id": "cold.frost-bite",
+      "kind": "coefficient",
+      "claim": "A part is frostbitten once the time bare skin takes to freeze in the chill has passed this many times over (#272): frozen past frostnip, and it stays.",
+      "status": "source only",
+      "value": 2,
+      "unit": "1",
+      "fitted_to": [
+        "medicine.frostbite-signs",
+        "medicine.frostnip",
+        "cold.freeze-time-high"
+      ],
+      "fitted": "2026-11-21"
+    },
+    {
+      "id": "cold.thaw-hours",
+      "kind": "coefficient",
+      "claim": "How many hours a frostnipped part takes to thaw out of the freezing chill (#272): about the half hour a frozen part is rewarmed in.",
+      "status": "source only",
+      "value": 0.5,
+      "unit": "h",
+      "fitted_to": [
+        "medicine.frostnip",
+        "medicine.frostbite-rewarming"
+      ],
+      "fitted": "2026-11-21"
+    },
+    {
+      "id": "cold.clumsy-footing",
+      "kind": "coefficient",
+      "claim": "How sure-footed a mildly hypothermic climber still is, against a warm one (#272): their movement impaired.",
+      "status": "source only",
+      "value": 0.6,
+      "unit": "1",
+      "fitted_to": [
+        "cold.hypothermia-mild"
+      ],
+      "fitted": "2026-11-21"
+    },
+    {
+      "id": "cold.clumsy-stride",
+      "kind": "coefficient",
+      "claim": "How fast a mildly hypothermic climber still goes, against a warm one (#272): clumsy and slower.",
+      "status": "source only",
+      "value": 0.8,
+      "unit": "1",
+      "fitted_to": [
+        "cold.hypothermia-mild"
+      ],
+      "fitted": "2026-11-21"
+    },
+    {
+      "id": "cold.dressed-cooling",
+      "kind": "question",
+      "question": "How fast does the core of a climber in expedition clothing cool sitting still in a wind chill of −40 °C at 6,000 m, and down to what wind chill do they keep their heat at rest and on the move?",
+      "about": [
+        "cold.cooling-rate",
+        "cold.holds-resting",
+        "cold.holds-moving"
+      ]
+    },
+    {
+      "id": "cold.covered-freezing",
+      "kind": "question",
+      "question": "How many times longer than bare skin do mittened fingers, and a face behind a hood, goggles and a buff, take to freeze?",
+      "about": [
+        "cold.cover-fingers",
+        "cold.cover-face"
+      ]
+    },
+    {
+      "id": "cold.tent-warmth",
+      "kind": "question",
+      "question": "How much warmer than the air outside is an expedition tent at Camp 1 at night, its climbers in their bags?",
+      "about": [
+        "cold.tent-warmer"
+      ]
     }
   ]
 }

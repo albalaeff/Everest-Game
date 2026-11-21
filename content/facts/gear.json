@@ -989,6 +989,34 @@
           "checked": "2026-11-18"
         }
       ]
+    },
+    {
+      "id": "gear.messenger-weather",
+      "kind": "fact",
+      "claim": "A satellite messenger asks for a weather forecast by message, basic, premium or marine, for where it is or a place chosen; the forecast can take several minutes to come back, and it needs a clear view of the sky.",
+      "status": "source only",
+      "versions": [
+        {
+          "note": "It may take several minutes to receive the weather forecast data; ensure your device has a clear view of the sky; forecasts incur data charges.",
+          "source": {
+            "title": "Garmin GPSMAP 66i Owner's Manual: Requesting an inReach Weather Forecast",
+            "url": "https://www8.garmin.com/manuals/webhelp/gpsmap66i/EN-US/GUID-771A9318-FDF4-48D0-ABB8-09221D49CAD1.html"
+          },
+          "checked": "2026-11-21"
+        }
+      ]
+    },
+    {
+      "id": "gear.messenger-weather-answer",
+      "kind": "coefficient",
+      "claim": "How long a forecast takes to come back to a satellite messenger once its request has left (#272): several minutes.",
+      "status": "source only",
+      "value": 5,
+      "unit": "min",
+      "fitted_to": [
+        "gear.messenger-weather"
+      ],
+      "fitted": "2026-11-21"
     }
   ]
 }

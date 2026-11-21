@@ -182,8 +182,11 @@ describe("Mountain", () => {
     expect(first.sherpa).not.toBe(second.sherpa);
     expect(first.tents).not.toBe(second.tents);
     expect(first.devices).not.toBe(second.devices);
-    expect(first.all[1]).toBe(first.packs);
-    expect([...first.all.slice(0, 1), ...first.all.slice(2)]).toEqual([
+    expect(first.weather).not.toBe(second.weather);
+    // The weather right after the clock (#272), and the packs after it.
+    expect(first.all[1]).toBe(first.weather);
+    expect(first.all[2]).toBe(first.packs);
+    expect([...first.all.slice(0, 1), ...first.all.slice(3)]).toEqual([
       first.clock,
       first.tents,
       first.oxygen,
@@ -208,6 +211,7 @@ describe("Mountain", () => {
       interval: 10 * 60,
       life: 14 * 24 * 3600,
       delivery: 3 * 60,
+      answer: 5 * 60,
     });
     for (const climber of scenario.climbers) {
       expect(rules.devices.tracker(climber)).toMatchObject({ tracking: false, charge: 1 });
@@ -257,6 +261,7 @@ describe("Mountain", () => {
       cloud: { min: -7, max: -2 },
       snow: { min: -6, max: -3 },
       wind: { min: -13, max: -6 },
+      storm: { min: -13, max: -8 },
     });
     expect([coldest, warmest]).toEqual([6, 13]);
     expect(lapse).toBeCloseTo(6.6, 9);
@@ -279,6 +284,67 @@ describe("Mountain", () => {
     const summit = knowledge.range("weather.summit-temperature");
     expect(days.clear.min - colder).toBeLessThanOrEqual(summit.min);
     expect(days.clear.max - colder).toBeGreaterThanOrEqual(summit.max);
+  });
+
+  it("reads the weather from its records (#272): bad days in spells, a spring day's hours, a turn", () => {
+    const { bad, windy, stormy, hours, turn } = new Mountain(knowledge).weatherNumbers();
+
+    // About four days in ten bad, about one day in two with precipitation at Phortse in spring
+    // (26% of 171 events in March to May), and a bad day more likely after a bad one: spells.
+    const share = bad.afterGood / (1 - bad.afterBad + bad.afterGood);
+    const events = knowledge.number("weather.premonsoon-precipitation-events") / 100;
+    expect(share).toBeGreaterThan(0.3);
+    expect(share).toBeLessThan((events * 171) / 92);
+    expect(bad.afterBad).toBeGreaterThan(share);
+    expect([windy, stormy].every((each) => each > 0 && each < 0.5)).toBe(true);
+    // The day's parts in order, none overlapping: a clear morning, cloud by noon, snow in the
+    // afternoon, easing by night; a windy day's wind by day; a storm through the day.
+    expect(hours.cloud.max).toBeLessThanOrEqual(hours.snow.min);
+    expect(hours.snow.min).toBeGreaterThanOrEqual(12);
+    expect(hours.snow.max).toBeLessThanOrEqual(hours.clearing.min);
+    expect(hours.wind.max).toBeLessThanOrEqual(hours.calm.min);
+    expect(hours.storm.max).toBeLessThanOrEqual(hours.easing.min);
+    expect(turn).toBe(40 * 60);
+  });
+
+  it("reads the cold from its records (#272): hypothermia's stages, the body's heat and the frost", () => {
+    const { normal, stages, holds, cooling, rewarming, frost, covers } = new Mountain(
+      knowledge,
+    ).coldNumbers();
+
+    expect([normal, stages.mild, stages.moderate, stages.severe, stages.death]).toEqual([
+      37, 35, 32, 28, 24,
+    ]);
+    expect(holds.moving).toBeLessThan(holds.resting);
+    // A summit night's wind chill, on the move for twelve hours, leaves a climber short of mild
+    // hypothermia.
+    const summit = knowledge.range("cold.summit-wind-chill");
+    const night = (holds.moving - (summit.min + summit.max) / 2) * cooling * 12;
+    expect(night).toBeLessThan(normal - stages.mild);
+    const shivering = knowledge.range("cold.shivering-rewarming");
+    const safe = knowledge.range("cold.safe-rewarming");
+    expect(rewarming.shivering).toBeCloseTo((shivering.min + shivering.max) / 2, 9);
+    expect(rewarming.sheltered).toBeCloseTo((safe.min + safe.max) / 2, 9);
+    expect(frost.numb).toBeLessThan(frost.nip);
+    expect(frost.nip).toBeLessThan(frost.bite);
+    expect(covers.fingers).toBeGreaterThan(covers.face);
+  });
+
+  it("reads the forecasters from their records (#272): Base Camp's better than the general model's", () => {
+    const mountain = new Mountain(knowledge);
+    const baseCamp = mountain.forecastNumbers("base-camp");
+    const general = mountain.forecastNumbers("general");
+
+    for (const day of [0, 1, 2] as const) {
+      expect(baseCamp.right[day]).toBeGreaterThan(general.right[day]);
+    }
+    expect(baseCamp.right[0]).toBeGreaterThan(baseCamp.right[2]);
+    // A mountain's three days no surer than the plain's five (nine times in ten).
+    expect(baseCamp.right[2]).toBeLessThanOrEqual(
+      knowledge.number("weather.forecast-five-day") / 100,
+    );
+    expect(general.storms).toBeLessThan(baseCamp.storms);
+    expect(general.air).toBeCloseTo(knowledge.number("weather.forecast-temperature-accuracy"), 9);
   });
 
   it("reads the wind chill from its records (#260): the index, the meter's factor and Canada's bands", () => {

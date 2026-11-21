@@ -69,6 +69,8 @@ export type Mark =
   | "pulse"
   | "moon"
   | "wind"
+  | "snow"
+  | "cold"
   | "warning";
 
 /** A mark with a word or a number beside it: what a chore takes or gives, a feeling. `lacking`,
@@ -161,6 +163,16 @@ export class TentReadout {
     thirsty: "drop",
     hungry: "pouch",
     sleepy: "moon",
+    // The cold (#272): a thermometer while it chills, snow on what it freezes, and the red
+    // triangle for what's dangerous now.
+    cold: "cold",
+    shivering: "cold",
+    confused: "warning",
+    unconscious: "warning",
+    "numb-fingers": "snow",
+    "numb-face": "snow",
+    frostnip: "snow",
+    frostbite: "warning",
   };
   private readonly readings = new Readings();
 

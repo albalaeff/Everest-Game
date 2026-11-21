@@ -1,19 +1,19 @@
 import { describe, expect, it } from "vitest";
 
-import { DayWarmth } from "../simulation";
-import { WindMeter } from "./wind-meter";
+import { DayWarmth } from "./day-warmth";
+import { Wind } from "./wind";
 
 /** The sun warms the ice from 06:00 to 14:00, and none of it comes through falling snow. */
 const warmth = new DayWarmth({ from: 6, peak: 14, until: 20 }, { cloud: 0.3, snow: 0 });
 /** The Beaufort scale's names: a breeze from 6 km/h, fresh from 29, strong from 50, a gale from 62. */
 const scale = { breeze: 6, fresh: 29, strong: 50, gale: 62 };
-const meter = new WindMeter(
-  { still: 4, thermal: 10, snow: 25, strong: 45, gust: 65, scale },
+const meter = new Wind(
+  { still: 4, thermal: 10, snow: 25, strong: 45, storm: 60, gust: 65, scale },
   warmth,
 );
 const HOUR = 3600;
 
-describe("the wind meter", () => {
+describe("the wind in the Icefall", () => {
   it("reads the still of the night, and the thermals as the day warms", () => {
     expect(meter.steady(3 * HOUR, "clear")).toBe(4);
     expect(meter.steady(10 * HOUR, "clear")).toBe(9);
@@ -26,6 +26,18 @@ describe("the wind meter", () => {
     expect(meter.steady(14 * HOUR, "snow")).toBe(25);
     expect(meter.steady(3 * HOUR, "wind")).toBe(45);
     expect(meter.steady(14 * HOUR, "wind")).toBe(55);
+  });
+
+  it("blows a storm's gale, snow in it, the sun's warmth no more than through snow (#272)", () => {
+    expect(meter.steady(3 * HOUR, "storm")).toBe(60);
+    expect(meter.steady(14 * HOUR, "storm")).toBe(60);
+    expect(
+      () =>
+        new Wind(
+          { still: 4, thermal: 10, snow: 25, strong: 45, storm: 40, gust: 65, scale },
+          warmth,
+        ),
+    ).toThrow(RangeError);
   });
 
   it("reads a gust over whatever blows", () => {
@@ -49,12 +61,24 @@ describe("the wind meter", () => {
 
   it("refuses speeds that don't rise to a gust, and names that don't rise to a gale", () => {
     expect(
-      () => new WindMeter({ still: 4, thermal: 10, snow: 25, strong: 20, gust: 65, scale }, warmth),
+      () =>
+        new Wind(
+          { still: 4, thermal: 10, snow: 25, strong: 20, storm: 60, gust: 65, scale },
+          warmth,
+        ),
     ).toThrow(RangeError);
     expect(
       () =>
-        new WindMeter(
-          { still: 4, thermal: 10, snow: 25, strong: 45, gust: 65, scale: { ...scale, fresh: 60 } },
+        new Wind(
+          {
+            still: 4,
+            thermal: 10,
+            snow: 25,
+            strong: 45,
+            storm: 60,
+            gust: 65,
+            scale: { ...scale, fresh: 60 },
+          },
           warmth,
         ),
     ).toThrow(RangeError);

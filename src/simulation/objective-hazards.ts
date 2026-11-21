@@ -5,12 +5,15 @@ import type { Json } from "./json";
 import type { MountainClock } from "./mountain-clock";
 import type { Moment, Rule } from "./rule";
 import { SimulationClock } from "./simulation-clock";
+import type { Sky } from "./weather";
 
 /** What can come down on a climber, or give way under them (spec.md → Simulation systems). */
 export type HazardKind = "serac" | "avalanche" | "crevasse" | "cornice";
 
-/** The weather as the hazards feel it, which the scenario sets until the weather (#39) does. */
-export type HazardWeather = "clear" | "cloud" | "snow" | "wind";
+/** The weather of the hour (#272): clear, cloud, falling snow, a strong wind, or a storm, which
+ * is snow in a gale. The hazards and the jolts feel it as `Weather` tells them, and a storm as
+ * snow and wind at once. */
+export type HazardWeather = "clear" | "cloud" | "snow" | "wind" | "storm";
 
 /** How one kind of hazard goes: its numbers, handed in from the knowledge base. */
 export interface HazardOdds {
@@ -137,6 +140,7 @@ export class HazardChance {
     "cloud",
     "snow",
     "wind",
+    "storm",
   ]);
 
   private readonly warmth: DayWarmth;
@@ -150,13 +154,23 @@ export class HazardChance {
     return HazardChance.WEATHERS.has(weather);
   }
 
+  /** Whether snow falls in a weather: in snow, and in a storm (#272). */
+  static snows(weather: HazardWeather): boolean {
+    return weather === "snow" || weather === "storm";
+  }
+
+  /** Whether a strong wind blows in a weather: in a wind, and in a storm (#272). */
+  static blows(weather: HazardWeather): boolean {
+    return weather === "wind" || weather === "storm";
+  }
+
   /** How many times an hour `kind` goes on a climber under it, at `timeOfDay` seconds after
    * midnight, in `weather`. */
   perHour(kind: HazardKind, timeOfDay: number, weather: HazardWeather): number {
     const odds = this.settings.kinds[kind];
     const warmed = 1 + (odds.warmth - 1) * this.warmth.at(timeOfDay, weather);
-    const snow = weather === "snow" ? odds.snow : 1;
-    const wind = weather === "wind" ? odds.wind : 1;
+    const snow = HazardChance.snows(weather) ? odds.snow : 1;
+    const wind = HazardChance.blows(weather) ? odds.wind : 1;
     return odds.rate * warmed * snow * wind;
   }
 
@@ -216,11 +230,13 @@ export class ObjectiveHazards implements Rule {
   private readonly chance: HazardChance;
   private state: HazardSave | null = null;
 
-  /** `clock` is the expedition's, which runs before this in its rules. */
+  /** `clock` is the expedition's, which runs before this in its rules, and `sky` the weather of
+   * the hour, which runs before it too (#272): without one, the weather is the scenario's. */
   constructor(
     settings: HazardSettings,
     private readonly clock: MountainClock,
     private readonly ground: HazardGround,
+    private readonly sky: Sky | null = null,
   ) {
     this.chance = new HazardChance(settings);
   }
@@ -270,7 +286,8 @@ export class ObjectiveHazards implements Rule {
     };
   }
 
-  /** Changes the weather between steps, as a scenario sets it: the god mode's (#245). */
+  /** Changes the weather the hazards feel: `Weather`'s, as the hour's changes (#272), and a
+   * scenario's. */
   changeWeather(weather: HazardWeather): void {
     if (!HazardChance.knows(weather)) {
       throw new RangeError(`The hazards don't know the weather ${weather}`);
@@ -318,7 +335,11 @@ export class ObjectiveHazards implements Rule {
   }
 
   advance(moment: Moment): void {
-    const { weather, zones } = this.loaded;
+    const weather = this.sky?.now ?? this.loaded.weather;
+    if (weather !== this.loaded.weather) {
+      this.state = { ...this.loaded, weather };
+    }
+    const { zones } = this.loaded;
     const { timeOfDay, secondsAStep } = this.clock;
     const { step } = moment;
     for (const zone of zones) {

@@ -10,15 +10,15 @@ import type { Scenario } from "./scenario";
 
 /** A point every 10 minutes, a battery of 2 hours and a message out in a minute: made up, to
  * show the rule. */
-const NUMBERS: DeviceNumbers = { interval: 600, life: 7200, delivery: 60 };
+const NUMBERS: DeviceNumbers = { interval: 600, life: 7200, delivery: 60, answer: 300 };
 
 /** The slope under the devices: Anna on her feet, hanging in a crevasse, or dead. */
 class Slope implements DeviceGround {
   hanging = false;
   dead = false;
 
-  climber(): { dead: boolean; hanging: boolean } {
-    return { dead: this.dead, hanging: this.hanging };
+  climber(): { dead: boolean; hanging: boolean; altitude: number } {
+    return { dead: this.dead, hanging: this.hanging, altitude: 5600 };
   }
 }
 
@@ -46,11 +46,13 @@ const call = (phrase: string): GameAction => ({
   phrase,
 });
 
-const press = (what: "track" | "stop" | "check-in" | "sos"): GameAction => ({
+const press = (what: "track" | "stop" | "check-in" | "weather" | "sos"): GameAction => ({
   kind: "tracker",
   climber: "anna",
   do: what,
 });
+
+const HOUR = 60 * 60;
 
 /** Plays `seconds` of the mountain's time, in whole steps. */
 const pass = (expedition: Expedition, seconds: number): void => {
@@ -123,6 +125,7 @@ describe("the tracker", () => {
       sending: 0,
       sos: "none",
       sky: true,
+      weather: { asking: false, coming: false, arrived: null },
     });
   });
 
@@ -187,6 +190,32 @@ describe("the tracker", () => {
     slope.hanging = false;
     pass(expedition, 60);
     expect(devices.tracker("anna")).toMatchObject({ checkIns: 1, sending: 0 });
+  });
+
+  it("asks for the weather: the request leaves under the sky, and the forecast comes back (#272)", () => {
+    const { expedition, devices, slope } = climb();
+    expedition.advance([press("weather")]);
+    expedition.advance([press("weather")]);
+    expect(devices.tracker("anna").weather).toEqual({ asking: true, coming: false, arrived: null });
+    expect(devices.tracker("anna").sending).toBe(1);
+
+    pass(expedition, 60);
+    expect(devices.tracker("anna").weather).toEqual({ asking: false, coming: true, arrived: null });
+    // Issued as the request reached the service: 03:01 on the first day, for where she was.
+    const issued = 3 * HOUR + 60;
+
+    slope.hanging = true;
+    pass(expedition, 600);
+    expect(devices.tracker("anna").weather.arrived).toBeNull();
+
+    slope.hanging = false;
+    pass(expedition, 300);
+    expect(devices.tracker("anna").weather).toEqual({
+      asking: false,
+      coming: false,
+      arrived: { issued, altitude: 5600, at: 3 * HOUR + 16 * 60 },
+    });
+    expect(devices.tracker("anna").checkIns).toBe(0);
   });
 
   it("raises one SOS, which turns the tracking on, and goes on tracking for the dead", () => {
@@ -305,8 +334,8 @@ describe("the devices' state", () => {
 
   it("refuses numbers no tracker has", () => {
     const clock = new MountainClock(60);
-    expect(() => new Devices({ interval: 0, life: 1, delivery: 1 }, clock, new Slope())).toThrow(
-      RangeError,
-    );
+    expect(
+      () => new Devices({ interval: 0, life: 1, delivery: 1, answer: 1 }, clock, new Slope()),
+    ).toThrow(RangeError);
   });
 });
