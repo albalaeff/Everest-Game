@@ -37,6 +37,9 @@ export type DeviceTextName =
   | "radio.no-contact"
   | "radio.empty"
   | "radio.waiting"
+  | "radio.channel-label"
+  | "radio.tx"
+  | "radio.rx"
   | "who.you"
   | "who.base-camp"
   | `phrase.${RadioPhrase}`
@@ -77,6 +80,10 @@ export type DeviceTextName =
   | "gps.late"
   | "gps.sun-on"
   | "gps.pace"
+  | "gps.time"
+  | "gps.timer"
+  | "gps.paused"
+  | "gps.note"
   | "wind.now"
   | "wind.average"
   | "wind.strongest"
@@ -86,8 +93,9 @@ export type DeviceTextName =
   | "wind.air"
   | "wind.chill"
   | `wind.risk.${FrostbiteRisk}`
-  | "wind.reset"
   | "wind.note"
+  | "wind.lcd.max"
+  | "wind.lcd.average"
   | "tracker.off"
   | "tracker.on"
   | "tracker.flat"
@@ -108,9 +116,12 @@ export type DeviceTextName =
   | "tracker.weather-air"
   | "tracker.weather-wind"
   | "tracker.weather-note"
+  | "tracker.forecast-row"
+  | "tracker.sos-countdown"
   | "tracker.sos"
-  | "tracker.sos-hold"
   | "tracker.sos-sending"
   | "tracker.sos-sent"
   | "tracker.sos-note"
-  | "tracker.note";
+  | "tracker.note"
+  | `button.${DeviceName}.${string}`
+  | `tip.${DeviceName}.${string}`;

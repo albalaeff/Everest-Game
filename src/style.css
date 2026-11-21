@@ -4982,104 +4982,226 @@ main:has(#tent:not([hidden])) #self-check {
   text-align: right;
 }
 
-/* The handheld radio: a black case with its antenna and channel knob, an amber screen, and the
- * speaker's grille. */
-.radio {
+/* A device drawn as the thing itself (#284): its drawing in code, its screen laid over the
+ * drawing's glass and a button over each of its buttons, all in shares of the drawing, so they
+ * scale with it; the screen's words in shares of its width (cqw). */
+.device__body {
   position: relative;
-  box-sizing: border-box;
-  margin-top: 2.6rem;
-  padding: 0.8rem 0.7rem 0.9rem;
-  border: 1px solid #3a4048;
-  border-radius: 0.7rem 0.7rem 1.1rem 1.1rem;
-  background: linear-gradient(160deg, #2a2f36, #14171b 60%);
-  box-shadow:
-    inset 0 1px 0 rgb(255 255 255 / 12%),
-    0 0.5rem 1rem rgb(0 0 0 / 35%);
+  aspect-ratio: var(--ratio);
+  container-type: inline-size;
 }
 
-.radio__antenna,
-.radio__knob {
+.device__drawing {
   position: absolute;
-  bottom: 100%;
-  background: linear-gradient(90deg, #0e1013, #2c3138 45%, #0e1013);
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+  filter: drop-shadow(0 0.45rem 0.6rem rgb(0 0 0 / 50%));
 }
 
-.radio__antenna {
-  left: 1rem;
-  width: 0.7rem;
-  height: 2.5rem;
-  border-radius: 0.35rem 0.35rem 0 0;
+/* A cap held down sinks into the case. */
+.cap {
+  transition: transform 0.06s;
 }
 
-.radio__knob {
-  right: 1.1rem;
-  width: 1.3rem;
-  height: 0.8rem;
-  border-radius: 0.2rem 0.2rem 0 0;
+.cap--held {
+  transform: translate(var(--push-x), var(--push-y));
+}
+
+/* The screen: as dark as the hour while it's unlit, readable in the headlamp's light, and bright
+ * in its own light for a few seconds after a press. The glass's glare lies over its readings. */
+.device__screen {
+  position: absolute;
+  box-sizing: border-box;
+  overflow: hidden;
+  filter: brightness(var(--ambient, 1));
+  transition:
+    filter 0.4s,
+    background 0.4s;
+}
+
+.device__body[data-lit="yes"] .device__screen {
+  filter: none;
+}
+
+.device__screen::after {
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: linear-gradient(
+    150deg,
+    rgb(255 255 255 / 24%),
+    rgb(255 255 255 / 6%) 38%,
+    rgb(255 255 255 / 0%) 52%
+  );
+  content: "";
+  pointer-events: none;
+}
+
+/* A button over a drawn one: the drawing's cap is what shows; the ice's glow under a pointer, and
+ * the focus ring round it. */
+#devices .device__button,
+#devices .device__button:hover:not(:disabled),
+#devices .device__button:active:not(:disabled) {
+  position: absolute;
+  min-width: 0;
+  min-height: 0;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  background: none;
+  box-shadow: none;
+  translate: none;
+  cursor: pointer;
+}
+
+#devices .device__button:hover:not(:disabled) {
+  background: radial-gradient(closest-side, rgb(169 220 255 / 30%), rgb(169 220 255 / 0%));
+}
+
+.device__part {
+  position: absolute;
+}
+
+.device__unseen {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+/* A segment screen's figures: the lit bars in the screen's ink, the rest faint on the glass. */
+.segments {
+  display: block;
+  height: 100%;
+  overflow: visible;
+}
+
+.seg {
+  fill: currentcolor;
+  opacity: 0.07;
+}
+
+.seg--lit {
+  opacity: 1;
+}
+
+/* The handheld radio: its black case beside the log, and its screen a grey-green LCD with dark
+ * figures, the signal's bars, TX or RX, and the battery, amber in its own light. The light on its
+ * top: red as it sends, green as it hears. */
+.radio__device {
+  display: grid;
+  justify-items: center;
+}
+
+.radio {
+  width: 6.4rem;
 }
 
 .radio__lcd {
-  display: flex;
-  gap: 0.4rem;
+  display: grid;
+  grid-template: "bars air battery" 1fr "channel name name" 1.6fr / auto 1fr auto;
+  gap: 0 4cqw;
   align-items: center;
-  justify-content: space-between;
-  padding: 0.55rem 0.5rem;
-  border: 2px solid #0b0d10;
-  border-radius: 0.3rem;
-  background: linear-gradient(180deg, #f6c15a, #e59c2a);
-  box-shadow: inset 0 0 0.6rem rgb(120 60 0 / 45%);
-  color: #221203;
-  font-size: 0.75rem;
+  padding: 2cqw 4cqw;
+  border-radius: 1.5cqw;
+  background: linear-gradient(180deg, #b7c1a4, #98a387);
+  box-shadow: inset 0 0.6cqw 1.4cqw rgb(0 0 0 / 35%);
+  color: #182012;
+  font-size: 9cqw;
   font-weight: 800;
-  letter-spacing: 0.02em;
-  line-height: 1.2;
+  letter-spacing: 0.04em;
+  line-height: 1;
 }
 
-/* The signal's bars, as a radio draws them: four that rise, empty with no contact. */
+.radio[data-lit="yes"] .radio__lcd {
+  background: linear-gradient(180deg, #f8c560, #e89d2c);
+  box-shadow:
+    inset 0 0.6cqw 1.4cqw rgb(120 60 0 / 40%),
+    0 0 5cqw rgb(255 190 80 / 45%);
+}
+
 .radio__bars {
   display: inline-flex;
-  flex: none;
-  gap: 2px;
+  grid-area: bars;
+  gap: 1cqw;
   align-items: end;
-  height: 1rem;
+  height: 7cqw;
 }
 
 .radio__bars i {
-  width: 3px;
-  border: 1px solid #221203;
-  background: #221203;
+  width: 1.8cqw;
+  background: currentcolor;
 }
 
 .radio__bars i:nth-child(1) {
-  height: 35%;
+  height: 30%;
 }
 
 .radio__bars i:nth-child(2) {
-  height: 55%;
+  height: 52%;
 }
 
 .radio__bars i:nth-child(3) {
-  height: 78%;
+  height: 76%;
 }
 
 .radio__bars i:nth-child(4) {
   height: 100%;
 }
 
-.radio__lcd[data-contact="no"] {
-  background: linear-gradient(180deg, #b98f4a, #94692a);
-}
-
 .radio__lcd[data-contact="no"] .radio__bars i {
-  background: none;
+  opacity: 0.12;
 }
 
-.radio__grille {
-  display: block;
-  height: 4.2rem;
-  margin-top: 0.8rem;
-  border-radius: 0.4rem;
-  background: repeating-linear-gradient(180deg, #07090b 0 3px, #23282e 3px 7px);
+.radio__air {
+  grid-area: air;
+  font-size: 7.5cqw;
+  text-align: center;
+}
+
+/* The battery: a case and three bars, full: the radio's battery is #79's. */
+.radio__battery {
+  display: inline-flex;
+  grid-area: battery;
+  gap: 0.6cqw;
+  height: 6cqw;
+  padding: 0.6cqw;
+  border: 0.6cqw solid currentcolor;
+  border-radius: 0.6cqw;
+}
+
+.radio__battery i {
+  width: 1.6cqw;
+  background: currentcolor;
+}
+
+.radio__channel {
+  grid-area: channel;
+  height: 13cqw;
+}
+
+.radio__name {
+  grid-area: name;
+  font-size: 10cqw;
+  text-align: right;
+}
+
+.radio__led {
+  transition: fill 0.1s;
+}
+
+.radio[data-air="tx"] .radio__led {
+  fill: #ff3b2f;
+  filter: drop-shadow(0 0 1.4px #ff3b2f);
+}
+
+.radio[data-air="rx"] .radio__led {
+  fill: #39e46b;
+  filter: drop-shadow(0 0 1.4px #39e46b);
 }
 
 .radio__contact {
@@ -5087,6 +5209,7 @@ main:has(#tent:not([hidden])) #self-check {
   color: var(--muted);
   font-size: 0.875rem;
   line-height: 1.3;
+  text-align: center;
 }
 
 .radio__log {
@@ -5138,47 +5261,102 @@ main:has(#tent:not([hidden])) #self-check {
   grid-column: 1 / -1;
 }
 
-/* The GPS watch: a dark bezel with its strap's ends, round its screen, which is grey with dark
- * figures, as a screen made to read in the sun is. */
+/* The GPS watch: a round screen in its steel bezel, a page at a time, grey with dark figures as a
+ * screen made to read in the sun is, and white in its own light; the page's place among the
+ * others at its right edge. */
+.device[data-device="gps"] {
+  grid-template-columns: 15rem 1fr;
+  align-items: center;
+}
+
 .watch {
-  position: relative;
-  max-width: 26rem;
-  margin: 0.7rem auto;
-  padding: 0.7rem;
-  border: 1px solid #454b54;
-  border-radius: 1.6rem;
-  background: linear-gradient(150deg, #353b44, #111418 65%);
-  box-shadow:
-    inset 0 1px 0 rgb(255 255 255 / 16%),
-    0 0.5rem 1rem rgb(0 0 0 / 35%);
-}
-
-.watch::before,
-.watch::after {
-  position: absolute;
-  left: 22%;
-  width: 56%;
-  height: 0.7rem;
-  background: #0d0f12;
-  content: "";
-}
-
-.watch::before {
-  bottom: 100%;
-  border-radius: 0.5rem 0.5rem 0 0;
-}
-
-.watch::after {
-  top: 100%;
-  border-radius: 0 0 0.5rem 0.5rem;
+  width: 15rem;
 }
 
 .watch__screen {
-  padding: 0.45rem 0.8rem 0.55rem;
-  border: 2px solid #07090b;
-  border-radius: 1.05rem;
-  background: linear-gradient(180deg, #e2e9dc, #cdd6c8);
+  display: flex;
+  flex-direction: column;
+  gap: 1.2cqw;
+  align-items: center;
+  justify-content: center;
+  padding: 6cqw 9cqw;
+  border-radius: 50%;
+  background: radial-gradient(circle at 50% 38%, #e3e9de, #c5cdbf 72%, #b1baab);
   color: #0d1b22;
+  font-size: 4.6cqw;
+  line-height: 1.15;
+  text-align: center;
+}
+
+.watch[data-lit="yes"] .watch__screen {
+  background: radial-gradient(circle at 50% 38%, #f4fbff, #dbeaf5 72%, #c4d7e6);
+  box-shadow: 0 0 6cqw rgb(190 225 255 / 55%);
+}
+
+.watch__where {
+  max-width: 80%;
+  margin: 0;
+  overflow: hidden;
+  font-size: 4.2cqw;
+  font-weight: 800;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.watch__page {
+  display: flex;
+  flex-direction: column;
+  gap: 0.8cqw;
+  align-items: center;
+  width: 100%;
+}
+
+.watch__label {
+  font-size: 4.2cqw;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  opacity: 0.75;
+}
+
+.watch__big {
+  font-size: 11.5cqw;
+  font-variant-numeric: tabular-nums;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  line-height: 1;
+  white-space: nowrap;
+}
+
+#devices .watch__pair {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1cqw 3cqw;
+  width: 100%;
+  margin-top: 1cqw;
+  padding-top: 1.4cqw;
+  border-top: 0.4cqw solid rgb(13 27 34 / 30%);
+}
+
+#devices .watch__pair div {
+  display: grid;
+  gap: 0.3cqw;
+  justify-items: center;
+}
+
+.watch__pair dt {
+  font-size: 3.4cqw;
+  font-weight: 700;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+  opacity: 0.75;
+}
+
+#devices .watch__pair dd {
+  font-size: 5.4cqw;
+  font-weight: 800;
+  text-align: center;
+  white-space: nowrap;
 }
 
 .watch__map {
@@ -5190,56 +5368,38 @@ main:has(#tent:not([hidden])) #self-check {
 .watch__route {
   fill: none;
   stroke: #0d1b22;
-  stroke-opacity: 0.4;
-  stroke-width: 1.6;
+  stroke-opacity: 0.35;
+  stroke-width: 2.2;
   stroke-linejoin: round;
 }
 
-/* The track so far: the rope's orange, darkened to read on the grey. */
+/* The track the watch recorded: the rope's orange, darkened to read on the grey, broken where it
+ * was paused. */
 .watch__track {
   fill: none;
   stroke: #c64f0c;
-  stroke-width: 2.6;
+  stroke-width: 3.4;
   stroke-linejoin: round;
   stroke-dasharray: 0 1;
 }
 
 .watch__dot {
   fill: #0d1b22;
-  stroke: #e2e9dc;
-  stroke-width: 1.5;
+  stroke: #e3e9de;
+  stroke-width: 1.8;
 }
 
-/* No fix yet: no dot. */
 .watch__dot:not([cx]) {
   display: none;
 }
 
-.watch__where {
-  margin: 0.1rem 0 0.35rem;
-  font-weight: 800;
-}
-
-#devices .watch__fields {
-  grid-template-columns: 1fr 1fr;
-  gap: 0.3rem 1.2rem;
-}
-
-.watch__fields dt {
-  opacity: 0.75;
-}
-
-.watch__sun,
 .watch__verdict {
   display: flex;
-  gap: 0.75rem;
-  justify-content: space-between;
-  margin: 0.35rem 0 0;
-  padding-top: 0.3rem;
-  border-top: 1px solid rgb(13 27 34 / 30%);
-}
-
-.watch__verdict {
+  gap: 1.5cqw;
+  align-items: center;
+  max-width: 80%;
+  margin: 1cqw 0 0;
+  font-size: 4cqw;
   font-weight: 800;
 }
 
@@ -5252,8 +5412,8 @@ main:has(#tent:not([hidden])) #self-check {
 .watch__verdict[data-late="yes"]::before,
 .meter__risk[data-warn="yes"]::before {
   flex: none;
-  width: 1.1rem;
-  height: 1.1rem;
+  width: 1.1em;
+  height: 1.1em;
   background: currentcolor;
   content: "";
   -webkit-mask: var(--icon-warning) center / contain no-repeat;
@@ -5261,39 +5421,79 @@ main:has(#tent:not([hidden])) #self-check {
 }
 
 /* No fix: the last one stays on the screen, faded, under the words that say so. */
-.watch__screen[data-fix="no"] > :not(.watch__where) {
+.watch__screen[data-fix="no"] > :not(.watch__where, .watch__pages) {
   opacity: 0.4;
 }
 
-/* The pocket wind meter: a yellow case, its impeller in a ring at the top, and a grey screen. */
-.meter {
-  box-sizing: border-box;
-  padding: 0.7rem 0.7rem 0.9rem;
-  border: 1px solid #8a6a12;
-  border-radius: 2.6rem 2.6rem 1rem 1rem;
-  background: linear-gradient(160deg, #f4c94a, #d9a31c 70%);
-  box-shadow:
-    inset 0 1px 0 rgb(255 255 255 / 35%),
-    0 0.5rem 1rem rgb(0 0 0 / 35%);
+/* Paused: the word across the screen's foot, blinking as a watch's does. */
+.watch__paused {
+  position: absolute;
+  bottom: 8cqw;
+  display: none;
+  margin: 0;
+  padding: 0.6cqw 2.4cqw;
+  border-radius: 1cqw;
+  background: #0d1b22;
+  color: #e3e9de;
+  font-size: 3.6cqw;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  animation: watch-blink 1.2s steps(2, jump-none) infinite;
 }
 
-.meter__impeller {
-  width: 4.6rem;
-  height: 4.6rem;
-  margin: 0 auto 0.7rem;
-  border: 0.35rem solid #14171b;
-  border-radius: 50%;
-  background: #2a2f36;
-  overflow: hidden;
-}
-
-/* Its vanes, which turn as fast as the wind blows. */
-.meter__impeller i {
+.watch__screen[data-paused="yes"] .watch__paused {
   display: block;
-  width: 100%;
-  height: 100%;
+}
+
+@keyframes watch-blink {
+  50% {
+    opacity: 0.25;
+  }
+}
+
+/* Where the page is among the four: a dot each down its right edge, the shown one filled. */
+.watch__pages {
+  position: absolute;
+  top: 50%;
+  right: 3.4cqw;
+  display: grid;
+  gap: 1.4cqw;
+  translate: 0 -50%;
+}
+
+.watch__pages i {
+  width: 1.6cqw;
+  height: 1.6cqw;
+  border: 0.35cqw solid currentcolor;
   border-radius: 50%;
-  background: repeating-conic-gradient(#aeb7c2 0 18deg, #2a2f36 18deg 45deg);
+}
+
+.watch__screen[data-page="altitude"] .watch__pages i:nth-child(1),
+.watch__screen[data-page="map"] .watch__pages i:nth-child(2),
+.watch__screen[data-page="arrival"] .watch__pages i:nth-child(3),
+.watch__screen[data-page="time"] .watch__pages i:nth-child(4) {
+  background: currentcolor;
+}
+
+.watch__side {
+  align-self: center;
+}
+
+/* The pocket weather meter: its gold case beside the wind's name and the risk of frostbite, its
+ * impeller turning as fast as the wind blows, and its segment screen of one big number with the
+ * screen's sign and unit under it, green in its own light. */
+.device[data-device="wind"] {
+  grid-template-columns: 7.2rem 1fr;
+}
+
+.meter {
+  width: 7.2rem;
+}
+
+.meter__vanes {
+  transform-box: fill-box;
+  transform-origin: center;
   animation: meter-turn var(--turn, 0s) linear infinite;
 }
 
@@ -5304,84 +5504,127 @@ main:has(#tent:not([hidden])) #self-check {
 }
 
 .meter__lcd {
-  padding: 0.45rem 0.6rem 0.5rem;
-  border: 2px solid #14171b;
-  border-radius: 0.35rem;
-  background: linear-gradient(180deg, #d9e0d2, #c3ccbd);
-  color: #0d1b22;
+  display: grid;
+  grid-template-rows: 1fr auto;
+  gap: 2cqw;
+  padding: 4cqw 4cqw 3cqw;
+  border-radius: 2cqw;
+  background: linear-gradient(180deg, #c3cbb4, #a4ae95);
+  box-shadow: inset 0 0.8cqw 1.6cqw rgb(0 0 0 / 35%);
+  color: #161d12;
 }
 
-.meter__lcd span {
-  font-size: 0.75rem;
-  font-weight: 800;
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
+.meter[data-lit="yes"] .meter__lcd {
+  background: linear-gradient(180deg, #b8f4b0, #79d97a);
+  box-shadow:
+    inset 0 0.8cqw 1.6cqw rgb(0 60 0 / 30%),
+    0 0 6cqw rgb(120 240 120 / 45%);
 }
 
-.meter__lcd p {
+.meter__number {
+  display: block;
+  height: 100%;
+  min-height: 0;
+}
+
+.meter__number .segments {
+  margin-left: auto;
+}
+
+/* The line under the number: the screen's sign, MAX or AVG, and the unit. */
+.meter__line {
   display: flex;
-  gap: 0.3rem;
-  align-items: baseline;
+  gap: 3cqw;
+  align-items: center;
   justify-content: end;
-  margin: 0;
-}
-
-.meter__lcd strong {
-  font-size: 2.3rem;
-  font-variant-numeric: tabular-nums;
+  height: 7cqw;
+  font-size: 6.5cqw;
+  font-weight: 800;
+  letter-spacing: 0.03em;
   line-height: 1;
 }
 
-.meter__lcd em {
-  display: block;
-  min-height: 1.2em;
-  font-size: 0.875rem;
-  font-style: normal;
+.meter__icon {
+  display: flex;
+  gap: 1cqw;
+  margin-right: auto;
+}
+
+.meter__icon::before,
+.meter__icon::after {
+  width: 7cqw;
+  height: 7cqw;
+  background: currentcolor;
+  -webkit-mask: var(--sign) center / contain no-repeat;
+  mask: var(--sign) center / contain no-repeat;
+}
+
+.meter__icon::before {
+  content: "";
+}
+
+.meter__lcd[data-screen="wind"],
+.meter__lcd[data-screen="max"],
+.meter__lcd[data-screen="average"] {
+  --sign: var(--icon-wind);
+}
+
+.meter__lcd[data-screen="air"] {
+  --sign: var(--icon-cold);
+}
+
+/* The wind chill: the thermometer with the wind beside it. */
+.meter__lcd[data-screen="chill"] {
+  --sign: var(--icon-cold);
+}
+
+.meter__lcd[data-screen="chill"] .meter__icon::after {
+  --sign: var(--icon-wind);
+  content: "";
+}
+
+.meter__mode,
+.meter__unit {
+  display: none;
+}
+
+.meter__lcd[data-screen="max"] [data-mode="max"],
+.meter__lcd[data-screen="average"] [data-mode="average"],
+.meter__lcd:is([data-screen="wind"], [data-screen="max"], [data-screen="average"])
+  [data-unit="speed"],
+.meter__lcd:is([data-screen="air"], [data-screen="chill"]) [data-unit="degrees"] {
+  display: inline;
+}
+
+/* Switched off: a blank screen. */
+.meter__lcd[data-on="no"] > * {
+  visibility: hidden;
+}
+
+.meter__side {
+  display: grid;
+  gap: 0.6rem;
+  align-content: start;
+}
+
+.meter__name {
+  margin: 0;
+  font-size: 1.05rem;
   font-weight: 800;
 }
 
-/* A gust: its words, and the screen's frame in red. */
-.meter[data-gust="yes"] .meter__lcd {
-  border-color: #a01414;
+/* A gust: its words in red, the one danger's colour. */
+.device[data-gust="yes"] .meter__name {
+  color: var(--danger);
 }
 
-.meter[data-gust="yes"] .meter__lcd em {
-  color: #a01414;
-}
-
-/* Under the wind, a weather meter's second line: the air its thermometer reads, and the wind
- * chill it works out. */
-#devices .meter__air {
-  gap: 0.1rem;
-  margin-top: 0.3rem;
-  padding-top: 0.3rem;
-  border-top: 1px solid rgb(13 27 34 / 30%);
-}
-
-#devices .meter__air div {
-  gap: 0.5rem;
-}
-
-.meter__air dt {
-  font-size: 0.6875rem;
-  font-weight: 800;
-  letter-spacing: 0.03em;
-  text-transform: uppercase;
-  white-space: nowrap;
-}
-
-#devices .meter__air dd {
-  font-weight: 800;
-  white-space: nowrap;
-}
-
-/* The risk of frostbite in that chill, first beside the meter: red, and a triangle, once bare
- * skin can freeze within the half hour. */
+/* The risk of frostbite in that chill: red, and a triangle, once bare skin can freeze within
+ * the half hour. */
 .meter__risk {
   display: flex;
   gap: 0.5rem;
   align-items: start;
-  margin: 0 0 0.6rem;
+  margin: 0;
   font-size: 0.9375rem;
   font-weight: 700;
   line-height: 1.35;
@@ -5391,179 +5634,246 @@ main:has(#tent:not([hidden])) #self-check {
   color: var(--danger);
 }
 
-.meter__side button {
-  margin-top: 0.8rem;
+/* The satellite messenger: its red case beside what it has sent, and its square screen: grey
+ * with dark words, white in its own light; the battery, the sky and the time along its top; the
+ * bar on the row it's on; the forecast a day at a time; the SOS's count while it's held. */
+.device[data-device="tracker"] {
+  grid-template-columns: 12.5rem 1fr;
 }
 
-/* The satellite tracker: an orange case with its antenna on top and a small grey screen. */
-.tracker {
-  position: relative;
-  box-sizing: border-box;
-  margin-top: 1.3rem;
-  padding: 0.7rem 0.7rem 2.2rem;
-  border: 1px solid #a3400a;
-  border-radius: 0.9rem;
-  background: linear-gradient(180deg, #ff7a26 0 62%, #1b1e23 62%);
-  box-shadow:
-    inset 0 1px 0 rgb(255 255 255 / 30%),
-    0 0.5rem 1rem rgb(0 0 0 / 35%);
+.messenger {
+  width: 12.5rem;
 }
 
-.tracker__antenna {
-  position: absolute;
-  bottom: 100%;
-  left: 50%;
-  width: 3.4rem;
-  height: 1.2rem;
-  border-radius: 0.6rem 0.6rem 0 0;
-  background: #1b1e23;
-  translate: -50% 0;
+.messenger__screen {
+  display: flex;
+  flex-direction: column;
+  gap: 1.4cqw;
+  padding: 2cqw 2.4cqw;
+  border-radius: 1cqw;
+  background: linear-gradient(180deg, #d6dccf, #bfc7b8);
+  color: #11181c;
+  font-size: 3.6cqw;
+  font-weight: 700;
+  line-height: 1.15;
 }
 
-.tracker__screen {
-  padding: 0.5rem 0.55rem;
-  border: 2px solid #0b0d10;
-  border-radius: 0.35rem;
-  background: linear-gradient(180deg, #e2e9dc, #cdd6c8);
-  color: #0d1b22;
-  font-size: 0.875rem;
+.messenger[data-lit="yes"] .messenger__screen {
+  background: linear-gradient(180deg, #f6fbff, #dfeaf2);
+  box-shadow: 0 0 5cqw rgb(220 240 255 / 45%);
 }
 
-.tracker__screen strong {
-  display: block;
-  margin-bottom: 0.4rem;
-  line-height: 1.25;
+.messenger__bar {
+  display: flex;
+  gap: 2cqw;
+  align-items: center;
+  justify-content: space-between;
+  margin: 0;
+  padding-bottom: 0.8cqw;
+  border-bottom: 0.4cqw solid currentcolor;
+  font-size: 3cqw;
+}
+
+.messenger__battery {
+  display: inline-flex;
+  gap: 1cqw;
+  align-items: center;
+}
+
+.messenger__battery i {
+  width: 5cqw;
+  height: 2.6cqw;
+  border: 0.45cqw solid currentcolor;
+  border-radius: 0.5cqw;
+  background: linear-gradient(90deg, currentcolor 70%, transparent 70%);
+}
+
+/* The sky: a satellite's mark, struck through where there's none. */
+.messenger__sky {
+  width: 3.6cqw;
+  height: 3.6cqw;
+  border: 0.45cqw solid currentcolor;
+  border-radius: 50%;
+  background: radial-gradient(circle, currentcolor 30%, transparent 32%);
+}
+
+.messenger__screen[data-sky="no"] .messenger__sky {
+  background: linear-gradient(
+    45deg,
+    transparent 44%,
+    currentcolor 44%,
+    currentcolor 56%,
+    transparent 56%
+  );
+}
+
+.messenger__home,
+.messenger__forecast {
+  display: grid;
+  gap: 1cqw;
+  align-content: start;
+}
+
+.messenger__screen[data-shows="menu"] .messenger__forecast,
+.messenger__screen[data-shows="forecast"] .messenger__home {
+  display: none;
+}
+
+.messenger__state {
+  font-size: 3.4cqw;
 }
 
 /* Tracking: a mark that it's on, beside the words. */
-.tracker__screen[data-tracking="yes"] strong::before {
+.messenger__screen[data-tracking="yes"] .messenger__state::before {
   display: inline-block;
-  width: 0.6rem;
-  height: 0.6rem;
-  margin-right: 0.4rem;
+  width: 2.2cqw;
+  height: 2.2cqw;
+  margin-right: 1.2cqw;
   border-radius: 50%;
-  background: #0d1b22;
+  background: currentcolor;
   content: "";
 }
 
-.tracker__screen p {
-  min-height: 1.3em;
-  margin: 0.4rem 0 0;
-  font-weight: 800;
-  line-height: 1.3;
+.messenger__menu {
+  display: grid;
+  gap: 0.4cqw;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+#devices .messenger__row,
+#devices .messenger__row:hover:not(:disabled),
+#devices .messenger__row:active:not(:disabled) {
+  display: block;
+  width: 100%;
+  min-width: 0;
+  min-height: 0;
+  padding: 0.7cqw 1.4cqw;
+  border: 0;
+  border-radius: 0.6cqw;
+  background: none;
+  box-shadow: none;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  translate: none;
+  white-space: normal;
+}
+
+/* The bar on the row it's on: dark, the words light, as the real screen draws it. */
+#devices .messenger__row[aria-current="true"] {
+  background: #11181c;
+  color: #d6dccf;
+}
+
+#devices .messenger__row:disabled {
+  opacity: 0.45;
+}
+
+.messenger__status {
+  margin: auto 0 0;
+  font-size: 3.2cqw;
+}
+
+.messenger__status:empty {
+  display: none;
+}
+
+.messenger__status[data-sos="yes"] {
+  padding: 0.6cqw 1.2cqw;
+  border-radius: 0.6cqw;
+  background: #11181c;
+  color: #d6dccf;
+}
+
+.messenger__forecast strong {
+  font-size: 3.4cqw;
+}
+
+.messenger__table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 3.2cqw;
+}
+
+.messenger__table th {
+  padding: 0.4cqw 0;
+  font-weight: 700;
+  text-align: left;
+}
+
+.messenger__table td {
+  padding: 0.4cqw 0.6cqw;
+  text-align: right;
+  white-space: nowrap;
+}
+
+.messenger__table td i {
+  display: inline-block;
+  width: 4cqw;
+  height: 4cqw;
+  background: currentcolor;
+  vertical-align: middle;
+  -webkit-mask: var(--sky) center / contain no-repeat;
+  mask: var(--sky) center / contain no-repeat;
+}
+
+.messenger__table [data-sky="clear"] {
+  --sky: var(--icon-sun);
+}
+
+.messenger__table [data-sky="cloud"] {
+  --sky: var(--icon-cloud);
+}
+
+.messenger__table [data-sky="snow"] {
+  --sky: var(--icon-snow);
+}
+
+.messenger__table [data-sky="wind"] {
+  --sky: var(--icon-wind);
+}
+
+.messenger__table [data-sky="storm"] {
+  --sky: var(--icon-storm);
+}
+
+/* The SOS held: the screen counts it down, a bar filling over the 3 seconds. */
+.messenger__countdown {
+  position: absolute;
+  inset: auto 2cqw 2cqw;
+  display: none;
+  gap: 1cqw;
+  margin: 0;
+  padding: 1.2cqw;
+  border-radius: 0.8cqw;
+  background: #11181c;
+  color: #d6dccf;
+  font-size: 3.4cqw;
+}
+
+.messenger[data-holding="sos"] .messenger__countdown {
+  display: grid;
+}
+
+.messenger__countdown i {
+  display: block;
+  height: 1.4cqw;
+  background: linear-gradient(90deg, currentcolor 50%, transparent 50%) right / 200% 100%;
+  animation: messenger-sos 3s linear forwards;
+}
+
+@keyframes messenger-sos {
+  to {
+    background-position: left;
+  }
 }
 
 .tracker__side {
   display: grid;
   gap: 0.5rem;
-}
-
-/* The forecast the tracker fetched (#272): its own small screen, three days in six hours each,
- * a sky's mark over the air and the wind. */
-.tracker__forecast {
-  padding: 0.45rem 0.5rem;
-  border: 2px solid #0b0d10;
-  border-radius: 0.35rem;
-  background: linear-gradient(180deg, #e2e9dc, #cdd6c8);
-  color: #0d1b22;
-  font-size: 0.75rem;
-}
-
-.tracker__forecast[hidden] {
-  display: none;
-}
-
-.tracker__forecast strong {
-  display: block;
-  margin-bottom: 0.3rem;
-}
-
-.tracker__forecast .device__note {
-  margin-top: 0.35rem;
-  color: #2c3a40;
-  font-size: 0.75rem;
-}
-
-.tracker__table {
-  width: 100%;
-  border-collapse: collapse;
-  table-layout: fixed;
-}
-
-.tracker__table th {
-  padding: 0.1rem;
-  font-weight: 700;
-  text-align: left;
-}
-
-.tracker__table td {
-  padding: 0.15rem 0.1rem;
-  line-height: 1.15;
-  vertical-align: top;
-}
-
-.tracker__table td i {
-  display: block;
-  width: 1.1rem;
-  height: 1.1rem;
-  background: currentcolor;
-  -webkit-mask: var(--sky) center / contain no-repeat;
-  mask: var(--sky) center / contain no-repeat;
-}
-
-.tracker__table [data-sky="clear"] {
-  --sky: var(--icon-sun);
-}
-
-.tracker__table [data-sky="cloud"] {
-  --sky: var(--icon-cloud);
-}
-
-.tracker__table [data-sky="snow"] {
-  --sky: var(--icon-snow);
-}
-
-.tracker__table [data-sky="wind"] {
-  --sky: var(--icon-wind);
-}
-
-.tracker__table [data-sky="storm"] {
-  --sky: var(--icon-storm);
-}
-
-#devices .tracker__side button {
-  white-space: normal;
-}
-
-/* The SOS: red, the one danger's colour, with its word, and a bar that fills while it's held. */
-#devices .tracker__sos {
-  position: relative;
-  flex-direction: column;
-  gap: 0.1rem;
-  padding: 0.45rem 0.95rem 0.6rem;
-  overflow: hidden;
-  border-color: #ff8f8f;
-  background: linear-gradient(180deg, #c62222, #8a1010);
-  color: #fff;
-}
-
-.tracker__sos small {
-  font-weight: 600;
-  opacity: 0.9;
-}
-
-.tracker__hold {
-  position: absolute;
-  bottom: 0;
-  left: 0;
-  width: 0;
-  height: 0.3rem;
-  background: #fff;
-}
-
-.tracker__sos--held .tracker__hold {
-  width: 100%;
-  transition: width 3s linear;
+  align-content: start;
 }
 
 /* On a phone, the devices are on the left under the instruments, as the pack is, clear of the
@@ -5578,82 +5888,39 @@ main:has(#tent:not([hidden])) #self-check {
   padding: 0.7rem 0.8rem;
 }
 
-/* A narrow card, as a phone held sideways has: what's read and pressed comes first. The radio
- * keeps its screen alone, the wind meter lies on its side, the tracker's screen fills the card's
- * width, and the title gives its line to the devices' tabs. */
+/* A narrow card, as a phone held sideways has: each device a little smaller, the watch and the
+ * messenger over what's beside them, so their screens stay readable, and the title gives its
+ * line to the devices' tabs. */
 @container devices (max-width: 27rem) {
   .device {
-    grid-template-columns: 1fr;
     gap: 0.6rem;
   }
 
-  .radio,
-  .tracker {
-    margin-top: 0;
-    padding: 0.35rem;
-    border-radius: 0.5rem;
+  .device[data-device="radio"] {
+    grid-template-columns: 5.6rem 1fr;
   }
 
-  .tracker {
-    background: #ff7a26;
+  .radio {
+    width: 5.6rem;
   }
 
-  .radio__antenna,
-  .radio__knob,
-  .radio__grille,
-  .tracker__antenna,
-  .watch::before,
-  .watch::after {
-    display: none;
+  .device[data-device="gps"],
+  .device[data-device="tracker"] {
+    grid-template-columns: 1fr;
+    justify-items: center;
   }
 
-  .watch {
-    margin: 0;
-    padding: 0.35rem;
-    border-radius: 1rem;
+  .watch,
+  .messenger {
+    width: min(100%, 14rem);
   }
 
-  .watch__screen {
-    border-radius: 0.75rem;
+  .device[data-device="wind"] {
+    grid-template-columns: 6rem 1fr;
   }
 
   .meter {
-    display: flex;
-    gap: 0.6rem;
-    align-items: center;
-    padding: 0.5rem;
-    border-radius: 2.2rem 0.8rem 0.8rem 2.2rem;
-  }
-
-  .meter__impeller {
-    flex: none;
-    width: 3.4rem;
-    height: 3.4rem;
-    margin: 0;
-  }
-
-  /* The wind on the screen's left, the air and the chill on its right. */
-  .meter__lcd {
-    display: flex;
-    flex: 1;
-    gap: 0.8rem;
-    align-items: center;
-  }
-
-  .meter__wind {
-    flex: 1;
-  }
-
-  #devices .meter__air {
-    flex: 1;
-    margin: 0;
-    padding: 0 0 0 0.8rem;
-    border-top: 0;
-    border-left: 1px solid rgb(13 27 34 / 30%);
-  }
-
-  .meter__side button {
-    margin-top: 0.5rem;
+    width: 6rem;
   }
 
   .radio__contact {
@@ -5674,11 +5941,9 @@ main:has(#tent:not([hidden])) #self-check {
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .meter__impeller i {
+  .meter__vanes,
+  .watch__paused,
+  .messenger__countdown i {
     animation: none;
-  }
-
-  .tracker__sos--held .tracker__hold {
-    transition: none;
   }
 }

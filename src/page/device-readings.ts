@@ -104,6 +104,11 @@ export class DeviceReadings {
     return this.rules.clock.timeOfDay;
   }
 
+  /** The mountain's seconds since the climb set off: the watch's activity (#284). */
+  get elapsed(): number {
+    return this.rules.clock.elapsed;
+  }
+
   /** Where the sun is on the ice. */
   get sun(): SunReading {
     return this.sunClock.at(this.rules.clock.timeOfDay);

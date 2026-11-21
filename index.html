@@ -181,14 +181,14 @@
         <div class="devices__tabs" role="tablist"></div>
         <div class="device" data-device="radio" role="tabpanel" hidden>
           <div class="radio__device">
-            <div class="radio" aria-hidden="true">
-              <i class="radio__antenna"></i>
-              <i class="radio__knob"></i>
-              <div class="radio__lcd" data-contact="yes">
-                <span data-text="radio.channel"></span>
-                <span class="radio__bars"><i></i><i></i><i></i><i></i></span>
+            <div class="device__body radio">
+              <div class="device__screen radio__lcd" data-contact="yes">
+                <span class="radio__bars" aria-hidden="true"><i></i><i></i><i></i><i></i></span>
+                <span class="radio__air" data-read="air"></span>
+                <span class="radio__battery" aria-hidden="true"><i></i><i></i><i></i></span>
+                <span class="radio__channel" data-read="channel"></span>
+                <span class="radio__name" data-text="radio.channel"></span>
               </div>
-              <i class="radio__grille"></i>
             </div>
             <p class="radio__contact" data-read="contact" role="status"></p>
           </div>
@@ -198,61 +198,91 @@
           </div>
         </div>
         <div class="device" data-device="gps" role="tabpanel" hidden>
-          <div class="watch">
-            <div class="watch__screen" data-fix="yes">
-              <svg class="watch__map" viewBox="0 0 200 52" aria-hidden="true">
-                <path class="watch__route" />
-                <path class="watch__track" pathLength="1" />
-                <circle class="watch__dot" r="4" />
-              </svg>
+          <div class="device__body watch">
+            <div class="device__screen watch__screen" data-fix="yes">
               <p class="watch__where" data-read="where" role="status"></p>
-              <dl class="watch__fields">
-                <div>
-                  <dt data-text="gps.altitude"></dt>
-                  <dd data-read="altitude"></dd>
-                </div>
-                <div>
-                  <dt data-text="gps.to-climb"></dt>
-                  <dd data-read="to-climb"></dd>
-                </div>
-                <div>
-                  <dt data-text="gps.done"></dt>
-                  <dd data-read="done"></dd>
-                </div>
-                <div>
-                  <dt data-read="left-label"></dt>
-                  <dd data-read="left"></dd>
-                </div>
-                <div>
-                  <dt data-text="gps.rate"></dt>
-                  <dd data-read="rate"></dd>
-                </div>
-                <div>
-                  <dt data-read="arrival-label"></dt>
-                  <dd data-read="arrival"></dd>
-                </div>
-              </dl>
-              <p class="watch__sun">
-                <span data-text="gps.sun"></span>
-                <strong data-read="sun"></strong>
-              </p>
-              <p class="watch__verdict" data-read="verdict" data-late="no" hidden></p>
+              <div class="watch__page" data-page="altitude">
+                <span class="watch__label" data-text="gps.altitude"></span>
+                <strong class="watch__big" data-read="altitude"></strong>
+                <dl class="watch__pair">
+                  <div>
+                    <dt data-text="gps.rate"></dt>
+                    <dd data-read="rate"></dd>
+                  </div>
+                  <div>
+                    <dt data-text="gps.to-climb"></dt>
+                    <dd data-read="to-climb"></dd>
+                  </div>
+                </dl>
+              </div>
+              <div class="watch__page" data-page="map">
+                <svg class="watch__map" viewBox="0 0 200 52" aria-hidden="true">
+                  <path class="watch__route" />
+                  <path class="watch__track" pathLength="1" />
+                  <circle class="watch__dot" r="5" />
+                </svg>
+                <dl class="watch__pair">
+                  <div>
+                    <dt data-text="gps.done"></dt>
+                    <dd data-read="done"></dd>
+                  </div>
+                  <div>
+                    <dt data-read="left-label"></dt>
+                    <dd data-read="left"></dd>
+                  </div>
+                </dl>
+              </div>
+              <div class="watch__page" data-page="arrival">
+                <span class="watch__label" data-read="arrival-label"></span>
+                <strong class="watch__big" data-read="arrival"></strong>
+                <p class="watch__verdict" data-read="verdict" data-late="no" hidden></p>
+              </div>
+              <div class="watch__page" data-page="time">
+                <span class="watch__label" data-text="gps.time"></span>
+                <strong class="watch__big" data-read="time"></strong>
+                <dl class="watch__pair">
+                  <div>
+                    <dt data-text="gps.timer"></dt>
+                    <dd data-read="timer"></dd>
+                  </div>
+                  <div>
+                    <dt data-text="gps.sun"></dt>
+                    <dd data-read="sun"></dd>
+                  </div>
+                </dl>
+              </div>
+              <p class="watch__paused" data-text="gps.paused"></p>
+              <span class="watch__pages" aria-hidden="true"><i></i><i></i><i></i><i></i></span>
             </div>
+          </div>
+          <div class="watch__side">
+            <p class="device__note" data-text="gps.note"></p>
           </div>
         </div>
         <div class="device" data-device="wind" role="tabpanel" hidden>
-          <div class="meter">
-            <div class="meter__impeller" aria-hidden="true"><i></i></div>
-            <div class="meter__lcd">
-              <div class="meter__wind">
-                <span data-text="wind.now"></span>
-                <p>
-                  <strong data-read="now"></strong>
-                  <small data-text="wind.unit"></small>
-                </p>
-                <em data-read="name" role="status"></em>
-              </div>
-              <dl class="meter__air">
+          <div class="device__body meter">
+            <div class="device__screen meter__lcd" data-screen="wind" data-on="yes">
+              <span class="meter__number" aria-hidden="true"></span>
+              <span class="meter__line" aria-hidden="true">
+                <i class="meter__icon"></i>
+                <b class="meter__mode" data-mode="max" data-text="wind.lcd.max"></b>
+                <b class="meter__mode" data-mode="average" data-text="wind.lcd.average"></b>
+                <span class="meter__unit" data-unit="speed" data-text="wind.unit"></span>
+                <span class="meter__unit" data-unit="degrees">°C</span>
+              </span>
+              <dl class="device__unseen">
+                <div>
+                  <dt data-text="wind.now"></dt>
+                  <dd data-read="now"></dd>
+                </div>
+                <div>
+                  <dt data-text="wind.strongest"></dt>
+                  <dd data-read="strongest"></dd>
+                </div>
+                <div>
+                  <dt data-text="wind.average"></dt>
+                  <dd data-read="average"></dd>
+                </div>
                 <div>
                   <dt data-text="wind.air"></dt>
                   <dd data-read="air"></dd>
@@ -265,61 +295,58 @@
             </div>
           </div>
           <div class="meter__side">
+            <p class="meter__name" data-read="name" role="status"></p>
             <p class="meter__risk" data-read="risk" data-warn="no"></p>
-            <dl>
-              <div>
-                <dt data-text="wind.average"></dt>
-                <dd data-read="average"></dd>
-              </div>
-              <div>
-                <dt data-text="wind.strongest"></dt>
-                <dd data-read="strongest"></dd>
-              </div>
-            </dl>
-            <button type="button" data-act="reset" data-text="wind.reset"></button>
             <p class="device__note" data-text="wind.note"></p>
           </div>
         </div>
         <div class="device" data-device="tracker" role="tabpanel" hidden>
-          <div class="tracker">
-            <i class="tracker__antenna" aria-hidden="true"></i>
-            <div class="tracker__screen" data-tracking="no">
-              <strong data-read="state" role="status"></strong>
-              <dl>
-                <div>
-                  <dt data-text="tracker.points"></dt>
-                  <dd data-read="points"></dd>
-                </div>
-                <div>
-                  <dt data-text="tracker.last"></dt>
-                  <dd data-read="last"></dd>
-                </div>
-                <div>
-                  <dt data-text="tracker.check-ins"></dt>
-                  <dd data-read="check-ins"></dd>
-                </div>
-                <div>
-                  <dt data-text="tracker.battery"></dt>
-                  <dd data-read="battery"></dd>
-                </div>
-              </dl>
-              <p data-read="status"></p>
+          <div class="device__body messenger">
+            <div
+              class="device__screen messenger__screen"
+              data-tracking="no"
+              data-sky="yes"
+              data-shows="menu"
+            >
+              <p class="messenger__bar">
+                <span class="messenger__battery">
+                  <i aria-hidden="true"></i>
+                  <span data-read="battery"></span>
+                </span>
+                <i class="messenger__sky" aria-hidden="true"></i>
+                <span data-read="time"></span>
+              </p>
+              <div class="messenger__home">
+                <strong class="messenger__state" data-read="state" role="status"></strong>
+                <ol class="messenger__menu"></ol>
+              </div>
+              <div class="messenger__forecast">
+                <strong data-read="forecast-of"></strong>
+                <table class="messenger__table"></table>
+              </div>
+              <p class="messenger__status" data-read="status"></p>
+              <p class="messenger__countdown">
+                <span data-text="tracker.sos-countdown"></span>
+                <i aria-hidden="true"></i>
+              </p>
             </div>
           </div>
           <div class="tracker__side">
-            <button type="button" data-act="track"></button>
-            <button type="button" data-act="check-in" data-text="tracker.check-in"></button>
-            <button type="button" data-act="weather" data-text="tracker.weather"></button>
-            <div class="tracker__forecast" data-read="forecast" hidden>
-              <strong data-read="forecast-of"></strong>
-              <table class="tracker__table"></table>
-              <p class="device__note" data-text="tracker.weather-note"></p>
-            </div>
-            <button type="button" data-act="sos" class="tracker__sos">
-              <span data-text="tracker.sos"></span>
-              <small data-text="tracker.sos-hold"></small>
-              <i class="tracker__hold" aria-hidden="true"></i>
-            </button>
+            <dl>
+              <div>
+                <dt data-text="tracker.points"></dt>
+                <dd data-read="points"></dd>
+              </div>
+              <div>
+                <dt data-text="tracker.last"></dt>
+                <dd data-read="last"></dd>
+              </div>
+              <div>
+                <dt data-text="tracker.check-ins"></dt>
+                <dd data-read="check-ins"></dd>
+              </div>
+            </dl>
+            <p class="device__note" data-text="tracker.weather-note"></p>
             <p class="device__note" data-text="tracker.note"></p>
             <p class="device__note" data-text="tracker.sos-note"></p>
           </div>
