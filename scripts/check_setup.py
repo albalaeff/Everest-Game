@@ -311,6 +311,28 @@ def github_access(find_token: Callable[[], str], call: Callable[[str], Any]) -> 
     )
 
 
+def merged_branches(call: Callable[[str], Any]) -> Check:
+    """Whether GitHub deletes a merged PR's branch by itself, as docs/workflow.md expects:
+    with the setting off, every merged branch stayed on GitHub, 49 of them by 2026-11-21.
+    It's the repository's, set once by its owner (README → Repository settings); while
+    GitHub can't be asked, or doesn't show it, it's a note: the GitHub line says why."""
+    try:
+        deletes = call("").get("delete_branch_on_merge")
+    except SystemExit:  # no token, or a refused one
+        deletes = None
+    if deletes is None:
+        return Check("Merged branches", False, "GitHub didn't say who deletes them", note=True)
+    if deletes:
+        return Check("Merged branches", True, "GitHub deletes a merged PR's branch")
+    return Check(
+        "Merged branches",
+        False,
+        "GitHub keeps a merged PR's branch: they pile up",
+        "the repository's owner turns on Settings → General → Pull Requests → Automatically "
+        "delete head branches",
+    )
+
+
 def claude_prices(history: Path = prices.HISTORY) -> Check:
     """Claude's prices (PEB#390), which `scripts/github.py cost` and the issues' title
     prefixes price the work with: in the repo, kept up to date by the watcher."""
@@ -698,6 +720,7 @@ def all_checks() -> list[Check]:
         checks += [env_file(env), env_pins(env)]
     checks += [
         github_access(github.token, lambda path: _github().call("GET", path)),
+        merged_branches(lambda path: _github().call("GET", path)),
         claude_prices(),
         claude_cli(),
         claude_trust(root=main_checkout()),
