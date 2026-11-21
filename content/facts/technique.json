@@ -852,28 +852,28 @@
       "kind": "coefficient",
       "claim": "How fast a fresh climber at sea level lowers themselves down a step of ice too steep to walk, on the fixed rope that runs down it, through their descender, in metres a second, at a whole stride: their front points against the ice, their cowstails on the rope. Fitted so that the way down from Camp 1 keeps the hours the sources give it, the Icefall's steps of ice with no ladder rappelled about as fast as a ladder down them would be climbed.",
       "status": "source only",
-      "value": 0.6,
+      "value": 1.05,
       "unit": "m/s",
       "fitted_to": [
         "technique.down-fixed-ropes",
         "route.icefall-ice-steps",
         "time.camp-2-to-base-camp"
       ],
-      "fitted": "2026-11-13"
+      "fitted": "2026-11-21"
     },
     {
       "id": "technique.ice-climb-speed",
       "kind": "coefficient",
       "claim": "How fast a fresh climber at sea level climbs ice too steep to walk on two ice tools and their front points, in metres a second, at a whole stride: a pick swung in, the feet walked up under it. Fitted with the Icefall's steps of ice, which have no ladder, to the hours the sources give the crossing: a step a few metres high takes some minutes of the mountain's time, longer than a ladder up it would, and longer still on the ice axe alone.",
       "status": "source only",
-      "value": 0.2,
+      "value": 0.35,
       "unit": "m/s",
       "fitted_to": [
         "technique.front-pointing",
         "route.icefall-ice-steps",
         "time.base-camp-to-camp-1"
       ],
-      "fitted": "2026-11-13"
+      "fitted": "2026-11-21"
     },
     {
       "id": "technique.ice-climb-one-tool",
