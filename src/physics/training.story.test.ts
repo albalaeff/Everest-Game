@@ -25,7 +25,7 @@ const haul = (climber: string, held: boolean): GameAction => ({ kind: "haul", cl
  * a drop of about 7 m, kills. */
 const SETTINGS: SlopeSettings = {
   ...TestMountain.CALM,
-  ladderBreak: { creak: 1, reset: 8 },
+  ladderBreak: { creak: 1, reset: 8, overload: 0 },
   lethalLanding: 12,
 };
 

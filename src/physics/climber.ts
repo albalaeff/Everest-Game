@@ -31,6 +31,8 @@ export type Fall = {
   /** Whether the ladder they stood on broke under them, and whether a partner pulled them out
    * (#209), and who (#212): missing where not. */
   readonly broke?: boolean;
+  /** Whether it broke for sliding off its lip with two of them on it (#256): missing where not. */
+  readonly twoOn?: boolean;
   readonly pulled?: boolean;
   readonly pulledBy?: readonly ClimberId[];
 };
@@ -199,6 +201,8 @@ type FallingSave = {
   /** Missing from the saves of falls before #209: off a ladder that broke, pulled out, and the
    * lip they climb back to, where they came from. */
   readonly broke?: boolean;
+  /** Off a ladder that slid off its lip under two (#256): missing where not. */
+  readonly twoOn?: boolean;
   readonly pulled?: boolean;
   readonly lip?: number;
   /** Who has hauled them so far (#212): missing where nobody has. */
@@ -422,9 +426,10 @@ class Falling {
   /** Whether the climber holds on where they hang, climbing back up their rope: gravity has
    * them no more. */
   holding = false;
-  /** Whether the ladder they stood on broke under them, and whether a partner has pulled them up
-   * (#209). */
+  /** Whether the ladder they stood on broke under them, whether for sliding off its lip under two
+   * (#256), and whether a partner has pulled them up (#209). */
   broke = false;
+  twoOn = false;
   pulled = false;
   /** Who has hauled them so far (#212). */
   pullers: readonly ClimberId[] = [];
@@ -463,6 +468,7 @@ class Falling {
     falling.impact = save.impact ?? 0;
     falling.holding = save.holding ?? false;
     falling.broke = save.broke ?? false;
+    falling.twoOn = save.twoOn ?? false;
     falling.pulled = save.pulled ?? false;
     falling.pullers = save.pullers ?? [];
     falling.lip = save.lip ?? null;
@@ -484,6 +490,7 @@ class Falling {
       impact,
       holding,
       ...(broke ? { broke } : {}),
+      ...(this.twoOn ? { twoOn: true } : {}),
       ...(pulled ? { pulled } : {}),
       ...(this.lip === null ? {} : { lip: this.lip }),
       ...(this.pullers.length === 0 ? {} : { pullers: this.pullers }),
@@ -523,6 +530,7 @@ class Falling {
       held,
       ...(looseCrampon ? { looseCrampon } : {}),
       ...(this.broke ? { broke: true } : {}),
+      ...(this.twoOn ? { twoOn: true } : {}),
       ...(this.pulled ? { pulled: true } : {}),
       ...(this.pullers.length === 0 ? {} : { pulledBy: this.pullers }),
     };
@@ -1243,6 +1251,11 @@ export class Climber {
     this.fall(slope, Climber.DOWN, 0, step);
   }
 
+  /** The ladder they're on their feet on, and the rung (#256): none off one, or falling. */
+  get onRungs(): { readonly ladder: Ladder; readonly rung: number } | null {
+    return this.falling === null && !this.killed ? this.onLadder : null;
+  }
+
   /** Where they stand along the ground, on their feet off a ladder and off the ice; none
    * otherwise. */
   get onTheGround(): number | null {
@@ -1513,7 +1526,8 @@ export class Climber {
   /** Where a hauler can haul them up from (#239): within the haul's reach of their way back up
    * the rope; and, hanging off a ladder that stands, of either of its ends across a crevasse, or
    * of its top up a wall: the rope along it is anchored past its ends, and whoever pulls it in at
-   * one brings them up there. None for one who doesn't hang. */
+   * one brings them up there. Against one of a crevasse's walls, only its own lip (#256): the
+   * other's rope would drag them along the ice, down the wall. None for one who doesn't hang. */
   haulPoints(slope: Slope): readonly HaulPoint[] {
     const lift = this.liftPoint(slope);
     const falling = this.falling;
@@ -1530,8 +1544,16 @@ export class Climber {
       return [own];
     }
     const ends = ladder.ends.map((along) => ({ point: slope.terrain.point(along), lip: along }));
-    const top = ends.reduce((high, end) => (end.point.y > high.point.y ? end : high));
-    return [own, ...(ladder.across ? ends : [top])];
+    if (!ladder.across) {
+      return [own, ends.reduce((high, end) => (end.point.y > high.point.y ? end : high))];
+    }
+    const surface = slope.terrain.nearest(falling.body);
+    if (Climber.distance(surface, falling.body) > Climber.TOUCH) {
+      return [own, ...ends];
+    }
+    const nearer = (end: HaulPoint & { readonly lip: number }): number =>
+      Math.abs(end.lip - surface.along);
+    return [own, ends.reduce((near, end) => (nearer(end) < nearer(near) ? end : near))];
   }
 
   /** Whether they can haul someone now: holding the haul, on their feet on the ground, alive and
@@ -1578,6 +1600,7 @@ export class Climber {
     if (this.falling !== null) {
       // Out to the nearer lip, along the rope.
       this.falling.broke = true;
+      this.falling.twoOn = ladder.slipped;
       this.falling.lip = ladder.end(on.rung <= ladder.length / 2 ? -1 : 1).along;
     }
   }

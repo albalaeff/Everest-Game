@@ -10,8 +10,9 @@ import type { ClimberId, Expedition, GameAction } from "../../simulation";
  * up and down the walls, the steps of ice on its tools or down their ropes, the rest step on blue
  * ice and the crossings unless it's told not to, and back up its rope after a slip. At the lip of
  * a ladder that fell into its crevasse it stops and holds the haul, for whoever comes to haul it
- * back up with it (#228). It writes down the ladders it climbs and the faces of ice it goes up or
- * down. Only tests import it.
+ * back up with it (#228); at the end of a ladder someone else is on it waits its turn, one at a
+ * time on a ladder, as the coach says (technique.one-on-a-ladder, #256). It writes down the
+ * ladders it climbs and the faces of ice it goes up or down. Only tests import it.
  */
 export class Crossing {
   /** The ladders climbed, in order. */
@@ -48,8 +49,10 @@ export class Crossing {
       this.laddersClimbed.push(view.ladder);
     }
     this.lastLadder = view.ladder;
-    const fallen = !view.falling && view.ladder === null && this.atAFallenLadder();
-    const actions = this.footwork.actions(fallen ? null : this.way);
+    const afoot = !view.falling && view.ladder === null;
+    const fallen = afoot && this.atAFallenLadder();
+    const waits = afoot && this.atATakenLadder();
+    const actions = this.footwork.actions(fallen || waits ? null : this.way);
     const { face } = this.footwork;
     if (face !== null && this.facesClimbed.at(-1) !== face) {
       this.facesClimbed.push(face);
@@ -72,6 +75,24 @@ export class Crossing {
             (end) => Math.abs(physics.terrain.nearest(end).along - along) <= Crossing.AT_THE_LIP,
           ),
     );
+  }
+
+  /** Whether it stands at the end of a ladder its way goes onto, someone else on it (#256). */
+  private atATakenLadder(): boolean {
+    const { physics, climber } = this;
+    const along = physics.along(climber);
+    return physics.ladders.some((id) => {
+      const taken = physics.climbers.some(
+        (other) => other !== climber && physics.climber(other).ladder === id,
+      );
+      if (!taken) {
+        return false;
+      }
+      const ends = physics.ladder(id).map((end) => physics.terrain.nearest(end).along);
+      const onto = this.way === "up" ? Math.min(...ends) : Math.max(...ends);
+      const ahead = this.way === "up" ? onto - along : along - onto;
+      return Math.abs(ahead) <= Crossing.AT_THE_LIP;
+    });
   }
 
   /** Steps until the climber is `along` metres along the ground, or `steps` have gone: whether

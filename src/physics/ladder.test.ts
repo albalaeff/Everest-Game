@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import type { ExpeditionSave } from "../simulation";
+import { Ladder } from "./ladder";
 import { SlopePhysics } from "./slope-physics";
 import type { LadderLayout, RopeLayout, SlopeLayout } from "./slope-physics";
 import { Climb } from "./testing/climb";
@@ -138,5 +139,41 @@ describe("SlopePhysics: ladders", () => {
     expect(laid({ ...BRIDGE, to: 1000 })).toThrow(RangeError);
     expect(laid({ ...BRIDGE, to: 20 })).toThrow(RangeError);
     expect(laid({ ...BRIDGE, from: 83, to: 20 })).toThrow(RangeError);
+  });
+});
+
+describe("Ladder: sliding off its lip under two (#256)", () => {
+  const bridge = (): Ladder => new Ladder(BRIDGE, TestMountain.CREVASSE.terrain);
+
+  it("slides only across a crevasse, whole: then it creaks, the end said torn free, and a save keeps that it slid", () => {
+    const ladder = bridge();
+    ladder.slideOff(5, "finish");
+    const wall = new Ladder(UP_THE_WALL, TestMountain.WALL.terrain);
+    wall.slideOff(5, "start");
+
+    expect(ladder).toMatchObject({ condition: "creaking", torn: "finish", slipped: true });
+    expect(ladder.slidable).toBe(false);
+    expect(ladder.save()).toMatchObject({ creaking: 5, free: "finish", slid: true });
+    expect(new Ladder(ladder.save(), TestMountain.CREVASSE.terrain).slipped).toBe(true);
+    expect(wall).toMatchObject({ condition: "whole", slipped: false, slidable: false });
+  });
+
+  it("falls when it has creaked its time, and forgets it slid once it's hauled back across", () => {
+    const ladder = bridge();
+    ladder.slideOff(5, "start");
+    // Creaking, a second slide changes nothing.
+    ladder.slideOff(6, "finish");
+
+    expect(ladder.snap(7, 3)).toBe(false);
+    expect(ladder.snap(8, 3)).toBe(true);
+    expect(ladder).toMatchObject({ condition: "broken", torn: "start", slipped: true });
+    ladder.raise(1);
+    expect(ladder).toMatchObject({
+      condition: "whole",
+      torn: null,
+      slipped: false,
+      slidable: true,
+    });
+    expect(ladder.save()).toEqual(BRIDGE);
   });
 });

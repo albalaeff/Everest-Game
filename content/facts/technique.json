@@ -503,12 +503,54 @@
     {
       "id": "technique.ladder-creak",
       "kind": "coefficient",
-      "claim": "How many of the mountain's seconds a ladder staged to break creaks and shifts under a climber before it breaks (#209): long enough to clip in, a second and a quarter of play at the mountain's pace (time.compression). The moving glacier shifts and drops ladders (route.icefall-hazards).",
+      "claim": "How many of the mountain's seconds a ladder staged to break creaks and shifts under a climber before it breaks (#209), and one sliding off its lip under two before it falls (#256): long enough to clip in, a second and a quarter of play at the mountain's pace (time.compression). The moving glacier shifts and drops ladders (route.icefall-hazards).",
       "status": "source only",
       "value": 90,
       "unit": "s",
       "fitted_to": ["route.icefall-hazards", "route.icefall-lessons"],
       "fitted": "2026-11-08"
+    },
+    {
+      "id": "technique.one-on-a-ladder",
+      "kind": "fact",
+      "claim": "The Icefall Doctors ask every climber in the Khumbu Icefall to cross its ladders one at a time, and the high-altitude workers to carry lighter loads so as not to overload them: the game's coach says so at a ladder someone is on, its Sherpa never steps onto one, and a ladder with two on it can slide off its lip (#256).",
+      "status": "source only",
+      "versions": [
+        {
+          "note": "Among the precautions the Ice Doctors ask of everyone when the route opened: only one climber on any ladder at a time; lighter loads for the high-altitude workers, to avoid overloading the ladders; harnesses clipped to the safety ropes on the ladders.",
+          "source": {
+            "title": "Explorersweb: Everest: Icefall Open but Climbers Advised to Hurry Through It (18 April 2024)",
+            "url": "https://explorersweb.com/everest-risky-terrain-icefall/"
+          },
+          "checked": "2026-11-21"
+        }
+      ]
+    },
+    {
+      "id": "technique.ladder-slid-in",
+      "kind": "fact",
+      "claim": "On 9 May 2018 two Sherpas fell into a crevasse in the Icefall when the ladders they were crossing gave way: the ladder lay too near the crevasse's edge, and as the second Sherpa stepped onto it, its end slid in and took them both down. They were clipped to the safety lines, which held them, and neither was hurt.",
+      "status": "source only",
+      "versions": [
+        {
+          "note": "Filmed by Nobukazu Kuriki's crew. The clipped safety lines probably prevented a disaster; the ladders are adjusted daily, the Icefall always moving.",
+          "source": {
+            "title": "Snowbrains: VIDEO: Sherpas Fall in to Crevasse on Everest when Ladder Collapses Beneath Them (17 May 2018)",
+            "url": "https://snowbrains.com/sherpas-fall-crevasse-everest"
+          },
+          "checked": "2026-11-21"
+        }
+      ]
+    },
+    {
+      "id": "technique.ladder-overload-slip",
+      "kind": "coefficient",
+      "claim": "The chance that a ladder across a crevasse slides off its lip as a climber steps onto it with someone already on it (#256), as one did under a second Sherpa in 2018 (technique.ladder-slid-in): it creaks, then falls with whoever is on it, the end they stepped on from torn free, and the ropes hold those clipped. No source counts how often a shared crossing ends so: a playability choice that makes the Icefall Doctors' rule (technique.one-on-a-ladder) matter without making every shared crossing a fall, about one in ten.",
+      "status": "source only",
+      "value": 0.1,
+      "unit": "1",
+      "fitted_to": ["technique.one-on-a-ladder", "technique.ladder-slid-in"],
+      "fitted": "2026-11-21"
     },
     {
       "id": "technique.ladder-reset",
@@ -609,9 +651,9 @@
     {
       "id": "technique.novice-share",
       "kind": "coefficient",
-      "claim": "The share of the speed on a ladder and clipped to a fixed rope of a climber who has never used crampons, a jumar or a ladder, against one with alpine climbs behind them, whom the ladder speeds and the walking power are fitted to. Fitted so that such a climber, as fit as the typical client, takes about the middle of the hours the sources give a first crossing of the Icefall, 5, where a typical client who never stops at an anchor takes 3.8: 5.0; refitted from 0.77 once the walls' ladders on the way up that go down are climbed down no faster than up them (#256): 5.4, where the typical client takes 4.3.",
+      "claim": "The share of the speed on a ladder and clipped to a fixed rope of a climber who has never used crampons, a jumar or a ladder, against one with alpine climbs behind them, whom the ladder speeds and the walking power are fitted to. Fitted so that such a climber, as fit as the typical client, takes about the middle of the hours the sources give a first crossing of the Icefall, 5, where a typical client who never stops at an anchor takes 3.8: 5.0. Since #256 both wait their turn at the ladders Pemba is on, and climb the walls' ladders down no faster than up them: the typical client takes 4.8 and the novice 5.9, an hour slower, near the 6 the sources give foreigners on a first rotation.",
       "status": "source only",
-      "value": 0.79,
+      "value": 0.77,
       "unit": "1",
       "fitted_to": ["time.base-camp-to-camp-1", "route.icefall-ladders"],
       "fitted": "2026-11-21"

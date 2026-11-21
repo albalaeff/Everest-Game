@@ -226,6 +226,25 @@ describe("Debrief: what the climb was, after it (#194)", () => {
     expect(value(said, "Ladder broke under you (training)")).toBe("no rope held you");
   });
 
+  it("says a ladder slid off its lip with two on it, no training, and traces a death to the rule (#256)", () => {
+    const slid: Fall = { ...held(4), broke: true, twoOn: true, pulled: true, pulledBy: ["pemba"] };
+    const said = debrief.of(facts({ falls: [slid], sherpa: "pemba" }));
+    const died = debrief.of(
+      facts({
+        page: page({ arrived: null, died: 5 * HOUR }),
+        falls: [{ ...unheld(30, 24), broke: true, twoOn: true }],
+      }),
+    );
+
+    expect(value(said, "Ladder slid off its edge with two of you on it")).toBe(
+      "the rope held you, and Pemba pulled you out",
+    );
+    expect(value(said, "Ladder broke under you (training)")).toBeUndefined();
+    expect(died.verdict.text).toContain("two of you");
+    expect(died.verdict.text).toContain("one at a time");
+    expect(died.verdict.text).toContain("30 m");
+  });
+
   it("writes hours as hours and minutes", () => {
     const said = debrief.of(facts({ page: page({ unclipped: 2 * HOUR + 5 * 60 }) }));
 

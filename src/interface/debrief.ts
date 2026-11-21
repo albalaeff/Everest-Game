@@ -145,8 +145,12 @@ export class Debrief {
         caughtBy ? "bad" : "good",
       );
     }
-    const broke = falls.find(({ broke }) => broke === true);
-    if (broke !== undefined) {
+    // And a ladder that slid off its lip under two (#256), said apart from the training's.
+    for (const twoOn of [false, true]) {
+      const broke = falls.find((fall) => fall.broke === true && (fall.twoOn === true) === twoOn);
+      if (broke === undefined) {
+        continue;
+      }
       const bySherpa = sherpa !== null && (broke.pulledBy ?? []).includes(sherpa);
       const said =
         broke.held !== true
@@ -156,7 +160,8 @@ export class Debrief {
             : bySherpa
               ? "training-ladder.pulled-by-sherpa"
               : "training-ladder.pulled";
-      line("training-ladder", this.texts.say(said), broke.held === true ? "good" : "bad");
+      const label = twoOn ? "two-on-ladder" : "training-ladder";
+      line(label, this.texts.say(said), broke.held === true ? "good" : "bad");
     }
     const verdict = this.verdict(page, caught, unroped, strikes, player, injuries, cold);
     return { dead, verdict, lines };
@@ -201,7 +206,9 @@ export class Debrief {
       const drop = Math.round(worst?.drop ?? 0);
       const cause =
         worst?.broke === true
-          ? "died.ladder"
+          ? worst.twoOn === true
+            ? "died.ladder-two-on"
+            : "died.ladder"
           : worst?.looseCrampon === true
             ? "died.fall-crampon"
             : "died.fall";

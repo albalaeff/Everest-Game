@@ -7,8 +7,9 @@ import type { Pair, Point, Terrain, Way } from "./terrain";
  * staged to break for training (#209) has the rung it `breaks` at, in metres from `from`, and the
  * climbers it's staged for, its `trainees`, the players (#212): only a step of theirs sets it
  * creaking, anyone's if none are named. A save keeps the step it began `creaking` on, the step it
- * `broke` on, the end that tore `free`, its start, at `from`, or its finish, and how far it's been
- * hauled back up, `raised`, from 0 hanging to 1 across (#228). */
+ * `broke` on, the end that tore `free`, its start, at `from`, or its finish, how far it's been
+ * hauled back up, `raised`, from 0 hanging to 1 across (#228), and whether it `slid` off its lip
+ * under two, rather than breaking where it was staged to (#256). */
 export type LadderLayout = {
   readonly id: string;
   readonly from: number;
@@ -20,6 +21,7 @@ export type LadderLayout = {
   readonly broke?: number;
   readonly free?: "start" | "finish";
   readonly raised?: number;
+  readonly slid?: boolean;
 };
 
 /** A ladder's condition: whole, creaking before it breaks, or broken, until it's hauled back. */
@@ -36,7 +38,9 @@ export type LadderCondition = "whole" | "creaking" | "broken";
  * break (#209) creaks once one of its trainees steps past the rung it breaks at, then breaks: the
  * end behind them tears free and it swings down into the crevasse, and there it hangs, nobody
  * walking onto it, until climbers at its lips haul it back up by its ropes and lash it across
- * (#228): no Icefall Doctors come. It breaks once.
+ * (#228): no Icefall Doctors come. It breaks once. One across a crevasse may slide off its lip
+ * instead, as a climber steps onto it with someone already on it (#256): it creaks and falls the
+ * same way, the end they stepped on from torn free.
  */
 export class Ladder {
   /** Steeper than this sine, a ladder is up or down a wall, which doesn't bounce. */
@@ -77,6 +81,8 @@ export class Ladder {
   private free: "start" | "finish" | null;
   /** How far it's been hauled back up since it broke, 0 to 1 (#228). */
   private raised: number;
+  /** Whether it creaks or broke for sliding off its lip under two (#256). */
+  private slid: boolean;
 
   /** A ladder laid on the ground: its ends on it, `from` further back than `to`. */
   constructor(
@@ -99,6 +105,7 @@ export class Ladder {
     this.broke = layout.broke ?? null;
     this.free = layout.free ?? null;
     this.raised = layout.raised ?? 0;
+    this.slid = layout.slid ?? false;
   }
 
   get id(): string {
@@ -118,6 +125,7 @@ export class Ladder {
       ...(this.broke === null ? {} : { broke: this.broke }),
       ...(this.free === null ? {} : { free: this.free }),
       ...(this.raised > 0 ? { raised: this.raised } : {}),
+      ...(this.slid ? { slid: true } : {}),
     };
   }
 
@@ -154,6 +162,29 @@ export class Ladder {
     }
   }
 
+  /** Whether it could slide off its lip now (#256): whole, across a crevasse, not creaking. */
+  get slidable(): boolean {
+    return this.across && this.creaking === null && this.broke === null;
+  }
+
+  /** Whether it creaks, or broke, for sliding off its lip under two rather than where it was staged
+   * to break (#256). */
+  get slipped(): boolean {
+    return this.slid;
+  }
+
+  /** Slides off its lip at its `end` from `step` (#256), a climber having stepped onto it from
+   * there with someone already on it: it creaks, then breaks as a staged ladder does, that end
+   * torn free. Nothing for one that can't slide now. */
+  slideOff(step: number, end: "start" | "finish"): void {
+    if (!this.slidable) {
+      return;
+    }
+    this.creaking = step;
+    this.free = end;
+    this.slid = true;
+  }
+
   /** On `step`, a ladder that has creaked `creak` steps breaks: whether it broke just now. */
   snap(step: number, creak: number): boolean {
     if (this.creaking === null || step - this.creaking < creak) {
@@ -182,6 +213,7 @@ export class Ladder {
       this.breaks = null;
       this.free = null;
       this.raised = 0;
+      this.slid = false;
     }
   }
 

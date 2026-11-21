@@ -104,6 +104,14 @@ describe("SlopeFacts: the slope physics' numbers from the knowledge base", () =>
     expect(settings.ladderDownCost).toBeLessThan(0.75);
   });
 
+  it("slides a ladder off its lip under two at the fitted chance a shared crossing, as in life, not sped up (#256)", () => {
+    const { overload } = settings.ladderBreak;
+
+    expect(overload).toBe(number("technique.ladder-overload-slip"));
+    expect(overload).toBeGreaterThan(0);
+    expect(overload).toBeLessThan(0.5);
+  });
+
   it("slips on blue ice and a bouncing ladder at the fitted chances a metre, its bounce dying away sped up, and lands at life size", () => {
     const { footing } = settings;
 

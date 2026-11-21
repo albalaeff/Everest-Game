@@ -163,9 +163,15 @@ export interface SlopeSettings {
   /** How fast a climber lowers themselves down a face of ice on the fixed rope that runs down it,
    * at a whole stride, in m/s: the rope through their descender, their front points on the ice. */
   readonly rappel: number;
-  /** A ladder staged to break (#209): the seconds it creaks before it breaks, and the seconds two
-   * climbers at whole strides take to haul it back up and lash it across once it has (#228). */
-  readonly ladderBreak: { readonly creak: number; readonly reset: number };
+  /** A ladder staged to break (#209), or sliding off its lip under two (#256): the seconds it
+   * creaks before it breaks, and the seconds two climbers at whole strides take to haul it back up
+   * and lash it across once it has (#228); and the chance that one across a crevasse slides off
+   * its lip as a climber steps onto it with someone already on it. */
+  readonly ladderBreak: {
+    readonly creak: number;
+    readonly reset: number;
+    readonly overload: number;
+  };
   /** Hauling a partner who hangs on the rope (#209): how fast a whole stride hauls them up it, in
    * m/s, and how near the point they're hauled to the hauler has to stand, in metres. */
   readonly haul: { readonly speed: number; readonly reach: number };
@@ -536,6 +542,34 @@ export class Slope {
     }
   }
 
+  /** Each climber who stepped onto a ladder across a crevasse this step, with someone on it
+   * already, or stepping onto it with them (#256): at the overload's chance it slides off its lip,
+   * the end they stepped on from; it creaks first, and falls as a staged one does. They were on
+   * the ladders `before` says, in the climbers' order. Nobody stepping onto someone else's
+   * ladder, nothing is drawn. */
+  private overload(
+    climbers: readonly Climber[],
+    before: readonly (Ladder | null)[],
+    moment: Moment,
+  ): void {
+    const { overload } = this.settings.ladderBreak;
+    if (!(overload > 0)) {
+      return;
+    }
+    for (const [index, climber] of climbers.entries()) {
+      const on = climber.onRungs;
+      if (on === null || before[index] === on.ladder || !on.ladder.slidable) {
+        continue;
+      }
+      const shared = climbers.some(
+        (other, at) => other !== climber && (before[at] ?? other.onRungs?.ladder) === on.ladder,
+      );
+      if (shared && moment.random.chance(Math.min(1, overload))) {
+        on.ladder.slideOff(moment.step, on.rung <= on.ladder.length / 2 ? "start" : "finish");
+      }
+    }
+  }
+
   /** One step for every climber on it, in the scenario's order. A rope that lay still and
    * nobody is clipped to waits, so the ropes of a whole section cost nothing until used. The
    * ladders' bounce dies away after the climbers' steps set it going; one that has creaked long
@@ -560,12 +594,14 @@ export class Slope {
       ? new RescueWork(this, climbers, (climber) => hauls.by(climber))
       : null;
     const before = climbers.map((climber) => climber.onTheGround);
+    const onRungs = climbers.map((climber) => climber.onRungs?.ladder ?? null);
     for (const climber of climbers) {
       climber.walk(this, moment, hauls, rescues ?? undefined);
       climber.beginStep();
     }
     rescues?.carryOut();
     this.pass(climbers, before, moment);
+    this.overload(climbers, onRungs, moment);
     for (const ladder of this.ladders.values()) {
       ladder.settle(SimulationClock.STEP_SECONDS, footing.bounce.damp);
       if (ladder.snap(moment.step, Slope.steps(ladderBreak.creak))) {
