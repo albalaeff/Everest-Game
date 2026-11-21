@@ -5,6 +5,7 @@ import { Faces } from "./faces";
 import type { Face } from "./faces";
 import type { InjurySettings } from "./injuries";
 import type { Ladder } from "./ladder";
+import { LadderClimbing } from "./ladder-climbing";
 import { RescueLine } from "./rescue-line";
 import { RescueWork } from "./rescue-work";
 import type { RescueSettings } from "./rescue-work";
@@ -141,9 +142,13 @@ export interface SlopeSettings {
   /** The chance a metre walked slips, by the steepness ahead (#208): on snow, before what ice
    * and their care do to it. */
   readonly slipChance: readonly SteepnessPoint[];
-  /** A climber's speed along a ladder by its steepness the way they go, in m/s: across a
-   * crevasse at 0°, up a wall at 90°, and down it at −90°. */
+  /** A climber's speed along a ladder by its steepness the way they go, in m/s, at a whole
+   * stride: across a crevasse at 0°, up a wall at 90°, and down it at −90°, where it's their
+   * footing's (#256). */
   readonly ladderSpeed: readonly SteepnessPoint[];
+  /** What a metre down a wall's ladder costs, as a share of what a metre up it does (#256): the
+   * stride's power buys the speed up over it, and the footing's speed down holds them to it. */
+  readonly ladderDownCost: number;
   /** The chance a metre climbed on a ladder slips, by its steepness the way they go: the
    * rungs' own, before a crossing's bounce. */
   readonly ladderSlipChance: readonly SteepnessPoint[];
@@ -201,7 +206,7 @@ export class Slope {
 
   readonly walking: Walking;
   readonly slipChance: SteepnessCurve;
-  readonly ladderSpeed: SteepnessCurve;
+  readonly ladderClimbing: LadderClimbing;
   readonly ladderSlipChance: SteepnessCurve;
   readonly substepSeconds = SimulationClock.STEP_SECONDS / Slope.SUBSTEPS;
   /** The section's scale, which reads the altimeter. */
@@ -226,7 +231,7 @@ export class Slope {
     const { walkingCost, steepest, walkingPower, fastestWalk, uphillCostShare } = settings;
     this.walking = new Walking(walkingCost, steepest, walkingPower, fastestWalk, uphillCostShare);
     this.slipChance = new SteepnessCurve(settings.slipChance);
-    this.ladderSpeed = new SteepnessCurve(settings.ladderSpeed);
+    this.ladderClimbing = new LadderClimbing(settings.ladderSpeed, settings.ladderDownCost);
     this.ladderSlipChance = new SteepnessCurve(settings.ladderSlipChance);
     const anchors = [...ropes.values()].flatMap((rope) => {
       const { shape } = rope;

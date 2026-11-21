@@ -59,11 +59,14 @@ export class SlopeFacts {
         [slipFree, 0],
         [steepest, slip],
       ],
+      // Down a wall's ladder their footing holds them to the speed up it, less what they lose
+      // coming down (#256), and their power buys it at the cost a metre down takes.
       ladderSpeed: [
-        [-SlopeFacts.WALL, fast("ladder-speed-down")],
+        [-SlopeFacts.WALL, fast("ladder-speed-up") * (1 - number("ladder-down-slower"))],
         [0, fast("ladder-speed-across")],
         [SlopeFacts.WALL, fast("ladder-speed-up")],
       ],
+      ladderDownCost: number("ladder-down-cost"),
       ladderSlipChance: [[0, number("ladder-slip")]],
       footing: {
         ice: number("ice-slip"),

@@ -2036,8 +2036,9 @@ export class Climber {
     }
   }
 
-  /** Along a ladder at their technique's share of its speed for its steepness the way they go,
-   * and off it onto the ground at its end. */
+  /** Along a ladder at their technique's share of the speed their stride goes at on it, by its
+   * steepness the way they go (`LadderClimbing`: down a wall, their footing holds them back), and
+   * off it onto the ground at its end. */
   private climb(onLadder: OnLadder, slope: Slope, moment: Moment): void {
     const { ladder, rung } = onLadder;
     const way = ladder.way(this.walking);
@@ -2045,8 +2046,8 @@ export class Climber {
       return;
     }
     const steepness = ladder.steepness(way);
-    const share = this.gait(slope) * this.technique;
-    const speed = slope.ladderSpeed.at(steepness) * share;
+    const step = slope.ladderClimbing.step(steepness, this.gait(slope));
+    const speed = step.speed * this.technique;
     const end = ladder.end(way);
     const climbed = rung + way * speed * SimulationClock.STEP_SECONDS;
     const next = way > 0 ? Math.min(climbed, end.rung) : Math.max(climbed, end.rung);
@@ -2063,7 +2064,7 @@ export class Climber {
     const chance = slope.ladderSlipChance.at(steepness) + bounce.slip * ladder.bounce;
     this.onLadder = next === end.rung ? null : new OnLadder(ladder, next);
     this.along = next === end.rung ? end.along : this.along;
-    this.exertion = 1;
+    this.exertion = step.exertion;
     this.stepped(slope, moment, ladder.ahead(way), speed, Math.abs(next - rung), chance, {
       ladder: ladder.id,
       rung: next,

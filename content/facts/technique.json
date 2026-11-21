@@ -190,7 +190,7 @@
     {
       "id": "technique.fastest-walk",
       "kind": "coefficient",
-      "claim": "The fastest a climber walks in crampons, in metres a second, whatever power they have to spare: down a slope and on the flat their footing holds them to it, so their steps take less of their power and tire them less. Fitted with the walking power and the ladder speeds so that the way down the Icefall takes about 2.5 hours, the 4 from Camp 2 to Base Camp shared between the Icefall and the Western Cwm as the way up's 5 and 3 are: 2.9, with the climb eased (technique.uphill-cost-share) and the careful steps on ice and ladders (#190).",
+      "claim": "The fastest a climber walks in crampons, in metres a second, whatever power they have to spare: down a slope and on the flat their footing holds them to it, so their steps take less of their power and tire them less. Fitted with the walking power and the ladder speeds so that the way down the Icefall takes about 2.5 hours, the 4 from Camp 2 to Base Camp shared between the Icefall and the Western Cwm as the way up's 5 and 3 are: 2.9, with the climb eased (technique.uphill-cost-share) and the careful steps on ice and ladders (#190); 3.2 once the walls' ladders are climbed down no faster than up them (#256). Faster, it barely shortens the way down, where most of the walking is held back by the stride's power on gentle ground, and the ladders drawn at life size take twelve times their real minutes either way while only the way up's walking is eased.",
       "status": "source only",
       "value": 0.7,
       "unit": "m/s",
@@ -259,19 +259,50 @@
       "fitted": "2026-11-06"
     },
     {
-      "id": "technique.ladder-speed-down",
-      "kind": "coefficient",
-      "claim": "How fast that climber comes down a wall a ladder stands against, in metres a second: three times as fast as up it, as down the fixed rope beside it (technique.down-a-fixed-rope asks how climbers go down one). Fitted with the crossing speed and the fastest walk to the Icefall's hours down, which go down 48 m of its walls and up 18.",
+      "id": "technique.ladder-down-slower",
+      "kind": "fact",
+      "claim": "How much slower a climber goes down a ladder than up it at their own pace, as a share of the speed up: the game comes down a wall's ladder at the speed up it less this share, where the footing holds them back (#256). Nothing makes it quicker in crampons: no source measures them on rungs, and climbers tell of the points catching on them (technique.ladder-down-cost says why the breath holds them back less on the way down).",
       "status": "source only",
-      "value": 0.9,
-      "unit": "m/s",
-      "fitted_to": [
-        "time.camp-2-to-base-camp",
-        "time.base-camp-to-camp-1",
-        "time.camp-1-to-camp-2",
-        "route.icefall-ladders"
-      ],
-      "fitted": "2026-11-06"
+      "versions": [
+        {
+          "value": 0.088,
+          "unit": "1",
+          "note": "Nineteen firefighters in their own work boots and gloves, with a 9 kg pack, up and down ladders at 30°, 52.5° and 75° at a self-selected normal pace, about 0.4 m/s: climbing down was 8.8% slower than climbing up (p = 0.0003).",
+          "source": {
+            "title": "Simeonov et al. 2020, Effects of Aerial Ladder Rung Spacing on Firefighter Climbing Biomechanics (Applied Ergonomics) → 3.1 Climbing speed",
+            "url": "https://pmc.ncbi.nlm.nih.gov/articles/PMC10111962/"
+          },
+          "checked": "2026-11-21"
+        }
+      ]
+    },
+    {
+      "id": "technique.ladder-down-cost",
+      "kind": "fact",
+      "claim": "What a metre down a ladder costs a climber, as a share of what a metre up it costs: the oxygen they take up descending against ascending. The game buys a climber's speed down a wall's ladder with their stride's power at this share of the cost up it, so the altitude and tiredness slow them less on the way down, and the rungs take only a share of their power where their footing holds them back (#256).",
+      "status": "source only",
+      "versions": [
+        {
+          "value": 0.74,
+          "unit": "1",
+          "note": "Kamon 1970, as the review cites it: oxygen uptake 26% lower descending a ladder ergometer than ascending it.",
+          "source": {
+            "title": "Milligan, O'Halloran and Tipton, An Ergonomics Assessment of Three Simulated 120 m Ladder Ascents (University of Portsmouth) → Introduction",
+            "url": "https://pure.port.ac.uk/ws/files/18011694/An_Ergonomics_Assessment.pdf"
+          },
+          "checked": "2026-11-21"
+        },
+        {
+          "value": 0.54,
+          "unit": "1",
+          "note": "Barron et al. 2017, as the review cites it: oxygen uptake 46% lower descending a 30 m vertical ladder than in its ascent of 3 min 45 s; a share by the minute, the descent's time not given.",
+          "source": {
+            "title": "Milligan, O'Halloran and Tipton, An Ergonomics Assessment of Three Simulated 120 m Ladder Ascents (University of Portsmouth) → Introduction",
+            "url": "https://pure.port.ac.uk/ws/files/18011694/An_Ergonomics_Assessment.pdf"
+          },
+          "checked": "2026-11-21"
+        }
+      ]
     },
     {
       "id": "technique.ladder-slip",
@@ -578,12 +609,12 @@
     {
       "id": "technique.novice-share",
       "kind": "coefficient",
-      "claim": "The share of the speed on a ladder and clipped to a fixed rope of a climber who has never used crampons, a jumar or a ladder, against one with alpine climbs behind them, whom the ladder speeds and the walking power are fitted to. Fitted so that such a climber, as fit as the typical client, takes about the middle of the hours the sources give a first crossing of the Icefall, 5, where a typical client who never stops at an anchor takes 3.8: 5.0.",
+      "claim": "The share of the speed on a ladder and clipped to a fixed rope of a climber who has never used crampons, a jumar or a ladder, against one with alpine climbs behind them, whom the ladder speeds and the walking power are fitted to. Fitted so that such a climber, as fit as the typical client, takes about the middle of the hours the sources give a first crossing of the Icefall, 5, where a typical client who never stops at an anchor takes 3.8: 5.0; refitted from 0.77 once the walls' ladders on the way up that go down are climbed down no faster than up them (#256): 5.4, where the typical client takes 4.3.",
       "status": "source only",
-      "value": 0.77,
+      "value": 0.79,
       "unit": "1",
       "fitted_to": ["time.base-camp-to-camp-1", "route.icefall-ladders"],
-      "fitted": "2026-11-08"
+      "fitted": "2026-11-21"
     },
     {
       "id": "technique.veteran-share",
@@ -659,8 +690,12 @@
     {
       "id": "technique.ladder-up",
       "kind": "question",
-      "question": "How does a climber go up a ladder stood against an ice wall: clipped to what, and what holds a slip? The game climbs at 0.3 m/s at sea level and comes down at 0.9, as fast as down the rope beside it, less at altitude.",
-      "about": ["technique.ladder-speed-up", "technique.ladder-speed-down"]
+      "question": "How does a climber go up a ladder stood against an ice wall, and down it: clipped to what, facing it or not, and what holds a slip? Down it, do clients climb the rungs, or go down the rope beside it on a descender or an arm wrap? The game climbs at 0.3 m/s at sea level, slower at altitude, and climbs down the rungs 8.8% slower than that, as firefighters did, its altitude slowing them less (#256).",
+      "about": [
+        "technique.ladder-speed-up",
+        "technique.ladder-down-slower",
+        "technique.ladder-down-cost"
+      ]
     },
     {
       "id": "technique.jumar",
@@ -686,7 +721,7 @@
     {
       "id": "technique.speed-by-steepness",
       "kind": "question",
-      "question": "How fast does a climber walk on ground of each steepness, up and down, in crampons and with a pack, and how much slower on a ladder? The game's walking costs what Minetti et al. measured on a treadmill, read as rise over run, from 24° down to 24° up, each metre of height costing the same past that up to 60°; a climber walks on 2.2 W/kg at sea level, before the altitude and the pack take their share, and no faster than 0.7 m/s whatever they have to spare. The power, the fastest walk and the ladder speeds are fitted to the hours the sources give the Icefall, up and down, not measured.",
+      "question": "How fast does a climber walk on ground of each steepness, up and down, in crampons and with a pack, and how much slower on a ladder? The game's walking costs what Minetti et al. measured on a treadmill, read as rise over run, from 24° down to 24° up, each metre of height costing the same past that up to 60°; a climber walks on 2.2 W/kg at sea level, before the altitude and the pack take their share, and no faster than 0.7 m/s whatever they have to spare. The power, the fastest walk and the ladder speeds up and across are fitted to the hours the sources give the Icefall, up and down, not measured; down a ladder goes 8.8% slower than up it and costs about two thirds of it, as firefighters and ladder ergometers measured at sea level (#256). How much slower are crampons on the rungs, going down?",
       "about": [
         "technique.walking-cost-gradients",
         "technique.walking-efficiency-gradient",
@@ -694,7 +729,8 @@
         "technique.fastest-walk",
         "technique.ladder-speed-across",
         "technique.ladder-speed-up",
-        "technique.ladder-speed-down"
+        "technique.ladder-down-slower",
+        "technique.ladder-down-cost"
       ]
     },
     {

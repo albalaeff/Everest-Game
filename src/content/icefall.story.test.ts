@@ -212,9 +212,12 @@ describe("The cost of the steps: down from Camp 1, and up with a heavier pack", 
     const down = (knowledge.number("time.camp-2-to-base-camp") * icefall) / (icefall + cwm);
 
     expect(hours).toBeLessThan(up.hours);
-    // Within about half an hour: at the mountain's pace a step of play is 3.6 of its seconds, and
-    // a clip at each anchor down takes whole steps, a few minutes over the way down (#278).
-    expect(Math.abs(hours - down)).toBeLessThan(0.55);
+    // Within about three quarters of an hour: at the mountain's pace a step of play is 3.6 of its
+    // seconds, and a clip at each anchor down takes whole steps, a few minutes over the way down
+    // (#278); and the walls' ladders are climbed down no faster than up them (#256), each taking
+    // twelve times its real minutes as the ladders drawn at life size do, which only the way up's
+    // eased walking makes up for (technique.fastest-walk).
+    expect(Math.abs(hours - down)).toBeLessThan(0.75);
   });
 
   it("tires a climber less for each hour of the way down than of the way up", () => {
