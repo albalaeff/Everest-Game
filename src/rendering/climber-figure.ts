@@ -416,7 +416,7 @@ export class ClimberFigure extends Container {
     // Down on the snow, the cowstails that are off lie on it beside them (#241).
     const sat = climber.down && !climber.falling && !climber.hauled && climber.carriedBy === null;
     const floor = sat && !climber.dead ? pose.pelvis.y - ClimberPose.SEAT : null;
-    this.draw(pose, masked, atmosphere, climber.dead, grown, size, together, floor);
+    this.draw(pose, masked, atmosphere, climber.dead, grown, size, together, floor, climber);
     this.dress(pose, climber);
     // On hands and knees through a tent's door, the lamp lights the ground under their nose.
     const upright = !climber.dead && !climber.falling && entry.down < 0.5;
@@ -601,7 +601,8 @@ export class ClimberFigure extends Container {
   /** The kit on the pose, the chest swollen with the breath, the mask on the face or on the chest,
    * the far limbs in the hour's cold light; the cowstails no thinner than a line can be drawn,
    * however small the figure, both to one point of the rope `together`, lying on the snow
-   * `floor` high where they sit on it; and the rim behind it. */
+   * `floor` high where they sit on it, the second's as long as `climber`'s rope lets it be
+   * drawn (`slingFor`); and the rim behind it. */
   private draw(
     pose: Pose,
     masked: boolean,
@@ -611,6 +612,7 @@ export class ClimberFigure extends Container {
     size: LeastSize,
     together = false,
     floor: number | null = null,
+    climber: ClimberView | null = null,
   ): void {
     const { figure, front } = this;
     const swell = ClimberFigure.CHEST_SWELL * this.breathing.chest;
@@ -634,13 +636,39 @@ export class ClimberFigure extends Container {
       pose,
       {
         jumar: ClimberFigure.COWSTAIL_METRES / grown,
-        carabiner: ClimberFigure.SLING_METRES / grown,
+        carabiner: this.slingFor(climber, grown) / grown,
       },
       thin,
       together,
       floor,
     );
     this.drawRim(pose, swell, masked, atmosphere, dead);
+  }
+
+  /** How long the second carabiner's sling is drawn, at life size (#256): the short one, which
+   * holds it up off the snow and lifts the rope to it, where the rope has the slack to come up to
+   * it; the whole cowstail, taut to where it's on the rope, where the rope hasn't, tied off at
+   * its anchors, as a step past one's end, its slack pulled out to them. */
+  private slingFor(climber: ClimberView | null, grown: number): number {
+    const { SLING_METRES, COWSTAIL_METRES } = ClimberFigure;
+    const id = climber?.second ?? null;
+    if (id === null) {
+      return SLING_METRES;
+    }
+    const chain = this.ropes.rope(id);
+    const [from, to] = [chain[0], chain.at(-1)];
+    if (from === undefined || to === undefined) {
+      return SLING_METRES;
+    }
+    const on = this.second;
+    const spare =
+      this.ropes.ropeLength(id) -
+      Math.hypot(on.x - from.x, on.y - from.y) -
+      Math.hypot(on.x - to.x, on.y - to.y);
+    // Held up off the snow, the carabiner is this far from where it's on the rope: the hips, last
+    // frame's, are about where the sling's tied.
+    const lift = Math.hypot(this.hipsAt.x - on.x, this.hipsAt.y - on.y) - SLING_METRES * grown;
+    return spare >= lift ? SLING_METRES : COWSTAIL_METRES;
   }
 
   /** The rim of the hour's light along the body's edge on the side the sun is: the figure's

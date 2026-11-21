@@ -168,7 +168,6 @@ export class FrontShapes {
     jumar: null,
     carabiner: null,
     sliding: false,
-    slack: 0,
     ladder: null,
     footing: 1,
     hauling: false,

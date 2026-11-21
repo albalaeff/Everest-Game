@@ -190,7 +190,8 @@ describe("GodMode: the clock, the weather and the speed", () => {
     expect(rules.jolts.jolts).toEqual([]);
     expect(god.jolt("gust")).toBe(false);
     expect(store.stored.at(-1)?.rules["jolts"]).toMatchObject({ zones: [] });
-  });
+    // A day of the mountain's in all: about 2 s alone, more than the default five on a busy runner.
+  }, 30_000);
 
   it("runs the climb as many times faster as it's told", () => {
     const { god, game } = aClimb();

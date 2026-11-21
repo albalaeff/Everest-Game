@@ -319,6 +319,12 @@ export class SlopePhysics implements Rule, HazardGround, JoltGround, Legs, Campg
     return this.loaded.rope(id).shape;
   }
 
+  /** How long a rope is between its anchors, in metres: at least the way between them, and the
+   * rest slack, as far as it reaches (#256). */
+  ropeLength(id: string): number {
+    return this.loaded.rope(id).length;
+  }
+
   /** Where a ladder lies: its two ends. */
   ladder(id: string): readonly Point[] {
     return this.loaded.ladder(id).shape;
