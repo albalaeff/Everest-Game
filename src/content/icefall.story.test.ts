@@ -62,6 +62,7 @@ function crossed(
   const rules = mountain.rules();
   const expedition = Expedition.start(scenario, [
     rules.clock,
+    rules.weather,
     rules.oxygen,
     rules.body,
     rules.physics,
@@ -240,6 +241,7 @@ describe("Slips by chance (#208): the rest step's care on the ice and the crossi
     const rules = mountain.rules();
     const expedition = Expedition.start(mountain.scenario(seed, undefined, undefined, false), [
       rules.clock,
+      rules.weather,
       rules.oxygen,
       rules.body,
       rules.physics,
@@ -359,6 +361,7 @@ describe("Leaving early is safer: the night's crossing against the morning's", (
     const { zones, weather } = mountain.route.hazards;
     const expedition = Expedition.start(scenarioAt(mountain, SEED, time), [
       rules.clock,
+      rules.weather,
       rules.oxygen,
       rules.body,
       rules.physics,

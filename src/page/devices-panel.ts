@@ -8,6 +8,7 @@ import { Readings } from "../interface/readings";
 import type { Texts } from "../interface/texts";
 import type { ClimberId } from "../simulation";
 import type { DeviceReadings } from "./device-readings";
+import { TrackerForecast } from "./tracker-forecast";
 
 /** What the panel draws the devices for: the route's ground as its file has it, each point
  * metres across and up; the camp it ends at; the minutes between a tracker's points; and the
@@ -85,6 +86,8 @@ export class DevicesPanel {
   private wind = { seconds: 0, shown: 0, sum: 0, strongest: 0, gusts: 0, gusting: 0 };
 
   private sosTimer: number | null = null;
+  /** The tracker's screen of the forecast it fetched (#272). */
+  private readonly forecast: TrackerForecast;
 
   constructor(
     private readonly window: Window,
@@ -109,6 +112,11 @@ export class DevicesPanel {
       element.textContent = texts.say(element.dataset.text as DeviceTextName);
     }
     this.find("[data-act='close']").setAttribute("aria-label", texts.say("close-label"));
+    this.forecast = new TrackerForecast(
+      window.document,
+      this.find("[data-read='forecast']"),
+      texts,
+    );
     this.build();
     this.listen();
     this.wind.gusts = climb.wind.gusts;
@@ -215,6 +223,9 @@ export class DevicesPanel {
     });
     this.find("[data-act='check-in']").addEventListener("click", () => {
       this.work("check-in");
+    });
+    this.find("[data-act='weather']").addEventListener("click", () => {
+      this.work("weather");
     });
     this.listenForSos(this.find("[data-act='sos']"));
     // A click leaves the keys with the climb: focus would let Space press the button again.
@@ -371,7 +382,7 @@ export class DevicesPanel {
     this.sink.send({ kind: "radio", climber: this.player, channel: "base-camp", phrase });
   }
 
-  private work(what: "track" | "stop" | "check-in" | "sos"): void {
+  private work(what: "track" | "stop" | "check-in" | "weather" | "sos"): void {
     this.sink.send({ kind: "tracker", climber: this.player, do: what });
   }
 
@@ -626,9 +637,13 @@ export class DevicesPanel {
           ? texts.say("tracker.sos-sending")
           : tracker.sos === "sent"
             ? texts.say("tracker.sos-sent")
-            : tracker.sending > 0
-              ? texts.say("tracker.sending")
-              : "",
+            : tracker.weather.asking
+              ? texts.say("tracker.weather-asking")
+              : tracker.sending > 0
+                ? texts.say("tracker.sending")
+                : tracker.weather.coming
+                  ? texts.say("tracker.weather-coming")
+                  : "",
     );
     const status = this.find("[data-read='status']");
     const sos = tracker.sos === "none" ? "no" : "yes";
@@ -641,13 +656,18 @@ export class DevicesPanel {
     if (track.getAttribute("aria-pressed") !== pressed) {
       track.setAttribute("aria-pressed", pressed);
     }
-    for (const act of ["track", "check-in", "sos"]) {
+    const { weather } = tracker;
+    for (const act of ["track", "check-in", "weather", "sos"]) {
       const button = this.find(`[data-act='${act}']`) as HTMLButtonElement;
-      const off = flat || (act === "sos" && tracker.sos !== "none");
+      const off =
+        flat ||
+        (act === "sos" && tracker.sos !== "none") ||
+        (act === "weather" && (weather.asking || weather.coming));
       if (button.disabled !== off) {
         button.disabled = off;
       }
     }
+    this.forecast.draw(this.climb.fetched, weather.arrived?.issued ?? null);
   }
 
   /** The route's ground as a path on the watch's map. */

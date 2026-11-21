@@ -10,6 +10,7 @@ const air = new AirTemperature({
     cloud: { min: -7, max: -2 },
     snow: { min: -6, max: -3 },
     wind: { min: -13, max: -6 },
+    storm: { min: -15, max: -9 },
   },
   coldest: 6,
   warmest: 13,
@@ -53,7 +54,11 @@ describe("the air's temperature", () => {
 
   it("refuses a day that's warmest before it's coldest, or colder at its warmest", () => {
     const days = { clear: { min: -10, max: 2 }, cloud: { min: -7, max: -2 } };
-    const snowAndWind = { snow: { min: -6, max: -3 }, wind: { min: -13, max: -6 } };
+    const snowAndWind = {
+      snow: { min: -6, max: -3 },
+      wind: { min: -13, max: -6 },
+      storm: { min: -15, max: -9 },
+    };
     expect(
       () =>
         new AirTemperature({

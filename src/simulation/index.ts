@@ -1,10 +1,39 @@
 // The simulation core, as the modules above it see it (docs/conventions.md → Modules).
 export { ActionLog } from "./action-log";
 export type { LoggedStep } from "./action-log";
+export { AirTemperature } from "./air-temperature";
+export type { AirDay, AirNumbers } from "./air-temperature";
 export { Body } from "./body/body";
-export type { Breathing, Legs, Whereabouts } from "./body/body";
+export type { Breathing, ColdSense, ColdView, Legs, Outdoors, Whereabouts } from "./body/body";
 export type { BodyNumbers, PaceNumbers } from "./body/body-numbers";
+export { FROST_PARTS } from "./body/cold";
+export type { ColdNumbers, ColdSymptom, FrostPart } from "./body/cold";
 export type { BodyStart, BodyView, Symptom, Tiredness } from "./body/condition";
+export { Forecast } from "./forecast";
+export type {
+  Confidence,
+  ForecastDay,
+  Forecaster,
+  ForecastNumbers,
+  ForecastPeriod,
+} from "./forecast";
+export { Power } from "./power";
+export { Weather } from "./weather";
+export type {
+  DayKind,
+  DrawnDay,
+  HourRange,
+  Sky,
+  SkyTurn,
+  Spell,
+  WeatherNumbers,
+  WeatherStart,
+  WeatherTruth,
+} from "./weather";
+export { Wind } from "./wind";
+export type { WindName, WindNumbers, WindScale } from "./wind";
+export { FROSTBITE_RISKS, WindChill } from "./wind-chill";
+export type { ChillReading, FrostbiteRisk, RiskBand, WindChillNumbers } from "./wind-chill";
 export { Curve } from "./curve";
 export type { CurvePoint } from "./curve";
 export { Expedition } from "./expedition";

@@ -1,5 +1,6 @@
 import type { ClimberId, Pace } from "../game-action";
 import type { BodyNumbers } from "./body-numbers";
+import type { ColdSymptom } from "./cold";
 import type { PaceEffort } from "./pace-effort";
 
 /** How a climber starts an expedition, as its scenario sets them. */
@@ -23,8 +24,8 @@ export interface BodyStart {
 /** How tired a climber feels. */
 export type Tiredness = "fresh" | "tired" | "profoundly-tired" | "exhausted";
 
-/** What else a climber feels. */
-export type Symptom = "out-of-breath" | "thirsty" | "hungry" | "sleepy";
+/** What else a climber feels: out of breath, thirsty, hungry, sleepy, and the cold (#272). */
+export type Symptom = "out-of-breath" | "thirsty" | "hungry" | "sleepy" | ColdSymptom;
 
 /**
  * A climber's body as they feel it, and as the self-check (#25) shows it: words, and the one

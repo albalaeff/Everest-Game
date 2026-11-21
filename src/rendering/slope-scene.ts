@@ -9,6 +9,7 @@ import type {
   JoltZone,
   MountainClock,
   ObjectiveHazards,
+  SkyTurn,
 } from "../simulation";
 import { Atmosphere } from "./atmosphere";
 import type { Camera } from "./camera";
@@ -46,6 +47,9 @@ export interface SceneWorld {
   /** How far a fixed rope gives under a climber's weight, as a share of its loaded length
    * (#232): the knowledge base's `gear.fixed-rope-stretch`. */
   readonly ropeStretch: number;
+  /** The sky as it turns from one weather to the next (#272): the hazards' weather, steady,
+   * where there's no weather to turn. */
+  readonly weather?: { readonly turn: SkyTurn };
   /** The jolts on their way (#197): a gust streams the snow, a lashed ladder shudders. */
   readonly jolts?: {
     readonly zones: readonly JoltZone[];
@@ -94,7 +98,7 @@ export class SlopeScene {
     private readonly world: SceneWorld,
     private quality: GraphicsQuality,
   ) {
-    this.atmosphere = Atmosphere.at(world.clock.timeOfDay, world.hazards.weather, this.altitude);
+    this.atmosphere = Atmosphere.at(world.clock.timeOfDay, this.turning, this.altitude);
   }
 
   /** Opens the canvas in the host: false when the browser can't draw, which is no WebGL. */
@@ -147,7 +151,7 @@ export class SlopeScene {
       return;
     }
     const { width, height } = this.app.screen;
-    const { clock, hazards } = this.world;
+    const { clock } = this.world;
     this.camera.resize(width, height);
     this.slope?.move(between);
     this.camera.follow(seconds, this.slope?.player ?? this.camera.climber);
@@ -160,7 +164,7 @@ export class SlopeScene {
     this.atmosphere = this.atmosphere.after(
       seconds,
       clock.timeOfDay,
-      hazards.weather,
+      this.turning,
       this.altitude,
       this.blowing,
     );
@@ -176,6 +180,12 @@ export class SlopeScene {
     this.shake();
     this.frames += 1;
     this.report();
+  }
+
+  /** The sky as it turns (#272), or the hazards' weather, steady. */
+  private get turning(): SkyTurn {
+    const { weather, hazards } = this.world;
+    return weather?.turn ?? { from: hazards.weather, to: hazards.weather, share: 1 };
   }
 
   /** The player's altitude, in metres: the air the sky is seen through. */

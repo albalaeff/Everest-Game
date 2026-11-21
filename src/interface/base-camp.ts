@@ -1,13 +1,14 @@
-import type { HazardWeather, RadioCall } from "../simulation";
+import type { ForecastDay, HazardWeather, RadioCall } from "../simulation";
 import { RADIO_PHRASES } from "./device-texts";
-import type { DeviceTextName, RadioPhrase } from "./device-texts";
+import type { DeviceTextName, ForecastDayIndex, ForecastPart, RadioPhrase } from "./device-texts";
 import { Readings } from "./readings";
 import type { SunReading } from "./sun-clock";
 import type { Texts } from "./texts";
 
 /** The mountain as Base Camp knows it when a call comes in: the part of the route the caller is
  * on and their altitude, the weather, what Base Camp's weather station reads, in °C, where the sun
- * is on the ice, how many ladders are down, and the metres of route the caller has left. */
+ * is on the ice, how many ladders are down, the metres of route the caller has left, and its
+ * forecaster's forecast as issued then (#272). */
 export interface CallScene {
   readonly part: string;
   readonly altitude: number;
@@ -16,6 +17,7 @@ export interface CallScene {
   readonly sun: SunReading;
   readonly laddersDown: number;
   readonly left: number;
+  readonly forecast: readonly ForecastDay[];
 }
 
 /**
@@ -27,6 +29,9 @@ export interface CallScene {
  */
 export class BaseCamp {
   private static readonly METRES_A_KILOMETRE = 1000;
+  private static readonly SIX_HOURS = 6 * 60 * 60;
+  /** The forecaster gives the wind to the nearest 5 km/h. */
+  private static readonly WIND_STEP = 5;
   private readonly readings = new Readings();
 
   constructor(private readonly texts: Texts<DeviceTextName>) {}
@@ -66,6 +71,8 @@ export class BaseCamp {
           texts.say("reply.air", { air: this.readings.temperature(scene.air, 1) }),
           this.sun(scene.sun),
         ];
+      case "forecast":
+        return scene.forecast.map((day) => this.forecastOf(day));
       case "route":
         return [
           scene.laddersDown > 0
@@ -85,6 +92,33 @@ export class BaseCamp {
       : this.texts.say("gps.kilometres", {
           kilometres: Math.round(metres / (BaseCamp.METRES_A_KILOMETRE / 10)) / 10,
         });
+  }
+
+  /** A day of the forecaster's forecast in a line (#272): its skies in the order they come, from
+   * the six hours they come by, the strongest wind to the nearest 5 km/h, and how sure they are. */
+  forecastOf(day: ForecastDay): string {
+    const { texts } = this;
+    const [first] = day.periods;
+    const index = Math.min(day.day, 2) as ForecastDayIndex;
+    const wind = Math.max(0, ...day.periods.map(({ wind: blowing }) => blowing));
+    const skies: string[] = [];
+    let last: HazardWeather | null = null;
+    for (const { sky, from } of day.periods) {
+      if (sky === last) {
+        continue;
+      }
+      const words = texts.say(`forecast.sky.${sky}`);
+      const part = (Math.floor(from / BaseCamp.SIX_HOURS) % 4) as ForecastPart;
+      skies.push(last === null ? words : texts.say(`forecast.by.${part}`, { sky: words }));
+      last = sky;
+    }
+    const steady = skies.length === 1 && first !== undefined;
+    return texts.say("reply.forecast", {
+      day: texts.say(`forecast.day.${index}`),
+      skies: steady ? texts.say("forecast.all-day", { sky: skies[0] ?? "" }) : skies.join(", "),
+      wind: Math.round(wind / BaseCamp.WIND_STEP) * BaseCamp.WIND_STEP,
+      confidence: texts.say(`forecast.confidence.${day.confidence ?? "low"}`),
+    });
   }
 
   private place(scene: CallScene): { part: string; altitude: string } {

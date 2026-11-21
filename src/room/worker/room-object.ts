@@ -70,7 +70,13 @@ export class RoomObject extends DurableObject<RoomEnv> {
     super(ctx, env);
     const mountain = new Mountain(new KnowledgeBase(KNOWLEDGE_FILES));
     const storage = new RoomStorage(ctx.storage);
-    this.host = new RoomHost(storage, mountain, env.GAME_VERSION, new IntervalTicker());
+    this.host = new RoomHost(
+      storage,
+      mountain,
+      env.GAME_VERSION,
+      new IntervalTicker(),
+      RoomHost.weatherOf(env.WEATHER),
+    );
     void ctx.blockConcurrencyWhile(() => this.host.load());
   }
 

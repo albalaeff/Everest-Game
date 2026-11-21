@@ -27,5 +27,6 @@ Each page was written in chat as its part was built (16–19 Nov 2026). The merg
 | The climber's devices: a radio, a GPS watch, a weather meter and a satellite tracker | #260, #261, #275 | [design/devices.md](design/devices.md) |
 | The camps' tents: the way in, the inside and the person in it | #258 to #282 | [design/tents.md](design/tents.md) |
 | Injury and rescue | #241, #263, #279, #281 | [design/rescue.md](design/rescue.md) |
+| Weather that changes, the forecast and the cold | #272 | [design/weather.md](design/weather.md) |
 
 A change that alters what a page says updates the page in the same PR.

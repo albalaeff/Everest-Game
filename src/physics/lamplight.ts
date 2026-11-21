@@ -13,9 +13,11 @@ export interface LampSettings {
   readonly dark: number;
 }
 
-/** What the lamps light: the slope physics, which moves the climbers in their kit. */
+/** What the lamps light: the slope physics, which moves the climbers in their kit, and lays down
+ * one the cold kills (#272). */
 export interface KittedLegs extends Legs {
   climber(id: ClimberId): Whereabouts & { readonly kit: Kit };
+  kill(id: ClimberId, step: number): void;
 }
 
 /** Whose headlamps are lit, as the rendering and the coach read it. */
@@ -47,6 +49,11 @@ export class Lamplight implements Legs, Lamps {
 
   climber(id: ClimberId): Whereabouts {
     return this.physics.climber(id);
+  }
+
+  /** One the cold kills falls where they are, as the hazards' dead do (#272). */
+  perish(id: ClimberId, step: number): void {
+    this.physics.kill(id, step);
   }
 
   stride(id: ClimberId, share: number): void {

@@ -1,4 +1,4 @@
-import type { HazardWeather } from "../simulation";
+import type { HazardWeather } from "./objective-hazards";
 
 /** The coldest and the warmest the air gets in a day, in °C. */
 export interface AirDay {
@@ -26,8 +26,8 @@ export interface AirNumbers {
  * cools fast through the late afternoon, then slowly through the night
  * (weather.base-camp-daily-cycle). So it rises from the coldest along a curve that flattens
  * towards the warmest, and falls from there along one that flattens towards the next sunrise.
- * The body doesn't feel the cold yet: the weather meter reads it, and Base Camp. Four operations
- * only, as the simulation core's maths, so the core can take it when the body does.
+ * The weather meter reads it, Base Camp's station, and the body feels it (#272): four operations
+ * only, as the simulation core's maths are.
  */
 export class AirTemperature {
   private static readonly SECONDS_AN_HOUR = 3600;

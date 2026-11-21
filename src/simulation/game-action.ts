@@ -98,10 +98,10 @@ export interface Radio extends ClimberAction {
 }
 
 /** Works the satellite tracker a climber carries (#260): starts its tracking or stops it, sends a
- * check-in to Base Camp, or raises its SOS. */
+ * check-in to Base Camp, asks for a weather forecast (#272), or raises its SOS. */
 export interface Tracker extends ClimberAction {
   readonly kind: "tracker";
-  readonly do: "track" | "stop" | "check-in" | "sos";
+  readonly do: "track" | "stop" | "check-in" | "weather" | "sos";
 }
 
 /** Takes one of the devices they carry out into the hand (#271): the radio, the GPS watch on the

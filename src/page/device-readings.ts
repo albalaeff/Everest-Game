@@ -1,13 +1,13 @@
-import type { AirTemperature } from "../interface/air-temperature";
 import type { CallScene } from "../interface/base-camp";
 import type { GpsFix, GpsWatch } from "../interface/gps-watch";
 import type { SunClock, SunReading } from "../interface/sun-clock";
-import type { ChillReading, WindChill } from "../interface/wind-chill";
-import type { WindMeter, WindName } from "../interface/wind-meter";
 import type { SlopePhysics } from "../physics";
 import type {
+  ChillReading,
   ClimberId,
   Devices,
+  Forecast,
+  ForecastDay,
   HandView,
   Jolts,
   MountainClock,
@@ -15,6 +15,10 @@ import type {
   RadioCall,
   RadioView,
   TrackerView,
+  Weather,
+  Wind,
+  WindChill,
+  WindName,
 } from "../simulation";
 
 /** The rules the devices read: the page's, or a room's. */
@@ -24,14 +28,24 @@ export interface DeviceRules {
   readonly physics: SlopePhysics;
   readonly hazards: ObjectiveHazards;
   readonly jolts: Jolts;
+  /** The weather of the hour, the sky turning, and the days ahead (#272). */
+  readonly weather: Weather;
 }
 
-/** A pocket weather meter's parts (#260): its impeller, which reads the wind; the air its
- * thermometer reads; and the wind chill it works out from the two. */
+/** A pocket weather meter's parts (#260): its impeller, which names the wind and reads a gust;
+ * the wind chill it works out; and the altitude of Base Camp's weather station, which Base Camp
+ * reads its air at. The air and the steady wind are the weather's, as the sky turns (#272). */
 export interface WeatherMeter {
-  readonly wind: WindMeter;
-  readonly air: AirTemperature;
+  readonly wind: Wind;
   readonly chill: WindChill;
+  readonly station: number;
+}
+
+/** The forecasts the devices give (#272): Base Camp's forecaster's, on the radio, and the general
+ * model's, which the tracker fetches. */
+export interface Forecasts {
+  readonly baseCamp: Forecast;
+  readonly general: Forecast;
 }
 
 /** The wind where the player stands, in km/h: as it blows steadily, as a gust would, whether a
@@ -56,6 +70,7 @@ export class DeviceReadings {
     private readonly watch: GpsWatch,
     private readonly meter: WeatherMeter,
     private readonly sunClock: SunClock,
+    private readonly forecasts: Forecasts,
   ) {}
 
   /** The GPS watch's reading where the player is: no fix where they hang under the ice. */
@@ -94,14 +109,13 @@ export class DeviceReadings {
     return this.sunClock.at(this.rules.clock.timeOfDay);
   }
 
-  /** The wind where the player stands. */
+  /** The wind where the player stands: the weather's, as the sky turns (#272). */
   get wind(): WindNow {
-    const { clock, hazards, jolts } = this.rules;
-    const { timeOfDay } = clock;
-    const { wind } = this.meter;
+    const { clock, jolts, weather } = this.rules;
+    const steady = weather.windNow();
     return {
-      steady: wind.steady(timeOfDay, hazards.weather),
-      gust: wind.gust(timeOfDay, hazards.weather),
+      steady,
+      gust: Math.max(steady, this.meter.wind.gust(clock.timeOfDay, weather.now)),
       coming: jolts.comingTo(this.player) === "gust",
       gusts: jolts.jolts.filter(
         ({ kind, caught }) => kind === "gust" && caught.includes(this.player),
@@ -114,10 +128,9 @@ export class DeviceReadings {
     return this.meter.wind.named(speed);
   }
 
-  /** The air where the player stands, in °C. */
+  /** The air where the player stands, in °C, as the sky turns (#272). */
   get air(): number {
-    const { clock, hazards } = this.rules;
-    return this.meter.air.at(clock.timeOfDay, hazards.weather, this.altitude);
+    return this.rules.weather.airNow(this.altitude);
   }
 
   /** The wind chill the meter works out from the air where the player stands and a wind it
@@ -145,18 +158,30 @@ export class DeviceReadings {
   }
 
   /** The mountain as Base Camp knows it now: where the player is, the weather, what its weather
-   * station reads, the sun, the ladders that are down, and how far they have left. */
+   * station reads, the sun, the ladders that are down, how far they have left, and its
+   * forecaster's forecast for where they are, as issued now (#272). */
   get scene(): CallScene {
-    const { physics, hazards, clock } = this.rules;
+    const { physics, weather } = this.rules;
     const { part, left } = this.gps;
     return {
       part,
       altitude: this.altitude,
-      weather: hazards.weather,
-      air: this.meter.air.station(clock.timeOfDay, hazards.weather),
+      weather: weather.now,
+      air: weather.airNow(this.meter.station),
       sun: this.sun,
       laddersDown: physics.ladders.filter((id) => physics.ladderCondition(id) === "broken").length,
       left,
+      forecast: this.forecasts.baseCamp.issued(weather.seconds, this.altitude),
     };
+  }
+
+  /** The general model's forecast the tracker fetched (#272), as it was issued when its request
+   * reached the service, for where the player was then; none until one has come back. */
+  get fetched(): readonly ForecastDay[] | null {
+    const { weather } = this.tracker;
+    if (weather.arrived === null) {
+      return null;
+    }
+    return this.forecasts.general.issued(weather.arrived.issued, weather.arrived.altitude);
   }
 }

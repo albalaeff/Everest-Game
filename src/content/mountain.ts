@@ -3,18 +3,28 @@ import type { SherpaSettings } from "../agents";
 import { Lamplight, Logbook, SlopePhysics } from "../physics";
 import type { Kit } from "../physics";
 import {
+  AirTemperature,
   Body,
   DayWarmth,
   Devices,
+  Forecast,
   Jolts,
   MountainClock,
   ObjectiveHazards,
   OxygenSystem,
   Packs,
   Tents,
+  Weather,
+  Wind,
+  WindChill,
 } from "../simulation";
 import type {
+  ColdNumbers,
   DeviceNumbers,
+  Forecaster,
+  ForecastNumbers,
+  HourRange,
+  WeatherNumbers,
   HazardKind,
   HazardWeather,
   HazardOdds,
@@ -38,6 +48,8 @@ import { TentFacts } from "./tent-facts";
  * clock, and the expedition runs them all, in this order. */
 export interface ExpeditionRules {
   readonly clock: MountainClock;
+  /** The weather of the hour, the days ahead, and the sky turning (#272). */
+  readonly weather: Weather;
   readonly body: Body;
   readonly oxygen: OxygenSystem;
   readonly hazards: ObjectiveHazards;
@@ -66,6 +78,7 @@ export interface WindSpeeds {
   readonly thermal: number;
   readonly snow: number;
   readonly strong: number;
+  readonly storm: number;
   readonly gust: number;
   readonly scale: {
     readonly breeze: number;
@@ -140,7 +153,8 @@ export class Mountain {
    * make them (#145), or as the route has them, with what they checked of their `kit` before
    * setting off (#196), or all of it, and the training events the seed stages (#209), unless
    * `training` is off; `alone`, with the player and their Sherpa only, and no seat for a
-   * teammate (#212). */
+   * teammate (#212); the `weather` drawn from the seed through the days, or held (#272): the one
+   * given, or the route's. */
   scenario(
     seed: number,
     answers?: ClimberAnswers,
@@ -148,6 +162,7 @@ export class Mountain {
     training = true,
     pack?: PackCounts,
     alone = false,
+    weather?: HazardWeather | "drawn",
   ): Scenario {
     const player = answers === undefined ? undefined : this.climbers.climber(answers);
     const scenario = this.route.scenario(
@@ -159,6 +174,7 @@ export class Mountain {
       training,
       pack,
       alone,
+      weather,
     );
     return {
       ...scenario,
@@ -184,15 +200,28 @@ export class Mountain {
       firstLight: this.knowledge.number("time.first-light") * Mountain.SECONDS_AN_HOUR,
       dark: this.knowledge.number("technique.dark-footing"),
     });
-    const body = new Body(bodyFacts.numbers, clock, lamps, oxygen);
+    // The weather right after the clock (#272): the hazards and the jolts read the weather of the
+    // hour from it, and the body feels its air and its wind in the same step.
+    const weather = new Weather(
+      this.weatherNumbers(),
+      clock,
+      new AirTemperature(this.airSettings()),
+      new Wind(this.windSpeeds(), this.dayWarmth()),
+    );
+    const hazards = new ObjectiveHazards(this.hazardSettings(), clock, physics, weather);
+    const jolts = new Jolts(this.joltSettings(), clock, physics, weather);
+    const cold = {
+      numbers: this.coldNumbers(),
+      chill: new WindChill(this.windChill()),
+      outdoors: weather,
+    };
+    const body = new Body(bodyFacts.numbers, clock, lamps, oxygen, cold);
     // The packs first: the body carries this step what they weigh, and the physics climbs on
     // what's on the harness.
     const packs = new Packs(this.route.packNumbers, body, physics, oxygen);
     // The tents after the packs, whose bottles their stove fills, and before the body, which
     // sleeps this step, and the physics, which keeps whoever is inside where they are (#258).
     const tents = new Tents(this.tents.numbers, clock, physics, packs, body, this.route.tents);
-    const hazards = new ObjectiveHazards(this.hazardSettings(), clock, physics);
-    const jolts = new Jolts(this.joltSettings(), clock, physics);
     const logbook = new Logbook(
       physics,
       hazards,
@@ -206,6 +235,7 @@ export class Mountain {
     const sherpa = new Sherpa(this.sherpaSettings(), physics, hazards, clock);
     return {
       clock,
+      weather,
       oxygen,
       body,
       hazards,
@@ -217,7 +247,101 @@ export class Mountain {
       tents,
       sherpa,
       devices,
-      all: [clock, packs, tents, oxygen, body, hazards, jolts, physics, logbook, devices, sherpa],
+      all: [
+        clock,
+        weather,
+        packs,
+        tents,
+        oxygen,
+        body,
+        hazards,
+        jolts,
+        physics,
+        logbook,
+        devices,
+        sherpa,
+      ],
+    };
+  }
+
+  /** The weather's numbers (#272), from their records in content/facts/weather.json: the chance
+   * a day is bad after a good one and after a bad one (`weather.bad-day-after-good`,
+   * `-after-bad`), the shares of good days that are windy and of bad days that are stormy
+   * (`weather.windy-days`, `weather.stormy-days`), the hours each part of a day begins between
+   * (`weather.<part>-hour`), and the minutes the sky takes to turn (`weather.turn-minutes`). */
+  weatherNumbers(): WeatherNumbers {
+    const number = (name: string) => this.knowledge.number(`weather.${name}`);
+    const hours = (part: string): HourRange => {
+      const { min, max } = this.knowledge.range(`weather.${part}-hour`);
+      return { min, max };
+    };
+    return {
+      bad: { afterGood: number("bad-day-after-good"), afterBad: number("bad-day-after-bad") },
+      windy: number("windy-days"),
+      stormy: number("stormy-days"),
+      hours: {
+        cloud: hours("cloud"),
+        snow: hours("snow"),
+        clearing: hours("clearing"),
+        wind: hours("wind"),
+        calm: hours("calm"),
+        storm: hours("storm"),
+        easing: hours("easing"),
+      },
+      turn: number("turn-minutes") * Mountain.SECONDS_A_MINUTE,
+    };
+  }
+
+  /** A forecaster's skill (#272), from the records in content/facts/weather.json: the chance it
+   * calls the sky right today, tomorrow and the day after
+   * (`weather.<forecaster>-forecast-right-<day>`), the chance it calls a storm a storm
+   * (`-forecast-storms`), and how far off its air and its wind are for each day further ahead
+   * (`weather.forecast-air-error`, `-wind-error`, the general model's
+   * `weather.general-forecast-error-factor` times as far). */
+  forecastNumbers(forecaster: Forecaster): ForecastNumbers {
+    const number = (name: string) => this.knowledge.number(`weather.${name}`);
+    const right = (day: string) => number(`${forecaster}-forecast-right-${day}`);
+    const worse = forecaster === "general" ? number("general-forecast-error-factor") : 1;
+    return {
+      right: [right("today"), right("tomorrow"), right("after")],
+      storms: number(`${forecaster}-forecast-storms`),
+      air: number("forecast-air-error") * worse,
+      wind: number("forecast-wind-error") * worse,
+    };
+  }
+
+  /** The forecast `forecaster` issues on a climb from `seed`, of the weather `weather` draws. */
+  forecast(forecaster: Forecaster, weather: Weather, seed: number): Forecast {
+    return new Forecast(forecaster, this.forecastNumbers(forecaster), weather, seed);
+  }
+
+  /** The cold's numbers (#272), from their records in content/facts/cold.json: the normal core
+   * and hypothermia's stages (`cold.normal-core`, `cold.hypothermia-mild`, `-moderate`,
+   * `-severe`, `-profound`), the wind chill a climber holds their heat in at rest and on the move
+   * (`cold.holds-resting`, `-moving`), how fast they cool and warm again (`cold.cooling-rate`,
+   * `cold.shivering-rewarming`, `cold.safe-rewarming`), a tent's warmth (`cold.tent-warmer`), each
+   * part's cover (`cold.cover-face`, `-fingers`), the frost's stages and thaw (`cold.frost-numb`,
+   * `-nip`, `-bite`, `cold.thaw-hours`), and how clumsy mild hypothermia leaves them
+   * (`cold.clumsy-footing`, `-stride`). */
+  coldNumbers(): ColdNumbers {
+    const number = (name: string) => this.knowledge.number(`cold.${name}`);
+    const top = (name: string) => this.knowledge.range(`cold.${name}`).max;
+    return {
+      normal: number("normal-core"),
+      stages: {
+        mild: top("hypothermia-mild"),
+        moderate: top("hypothermia-moderate"),
+        severe: top("hypothermia-severe"),
+        death: top("hypothermia-profound"),
+      },
+      holds: { resting: number("holds-resting"), moving: number("holds-moving") },
+      cooling: number("cooling-rate"),
+      rewarming: { shivering: number("shivering-rewarming"), sheltered: number("safe-rewarming") },
+      tent: number("tent-warmer"),
+      covers: { face: number("cover-face"), fingers: number("cover-fingers") },
+      frost: { numb: number("frost-numb"), nip: number("frost-nip"), bite: number("frost-bite") },
+      thaw: number("thaw-hours"),
+      clumsy: { footing: number("clumsy-footing"), stride: number("clumsy-stride") },
     };
   }
 
@@ -236,6 +360,7 @@ export class Mountain {
       interval: this.knowledge.number("gear.tracker-interval") * Mountain.SECONDS_A_MINUTE,
       life: this.knowledge.number("gear.tracker-battery") * Mountain.SECONDS_A_DAY,
       delivery: this.knowledge.number("gear.messenger-delivery-time") * Mountain.SECONDS_A_MINUTE,
+      answer: this.knowledge.number("gear.messenger-weather-answer") * Mountain.SECONDS_A_MINUTE,
     };
   }
 
@@ -251,6 +376,7 @@ export class Mountain {
       thermal: number("wind-thermal"),
       snow: number("wind-snow"),
       strong: number("wind-strong"),
+      storm: number("wind-storm"),
       gust: number("gust"),
       scale: {
         breeze: force("light-breeze"),
@@ -273,7 +399,13 @@ export class Mountain {
       return { min, max };
     };
     return {
-      days: { clear: day("clear"), cloud: day("cloud"), snow: day("snow"), wind: day("wind") },
+      days: {
+        clear: day("clear"),
+        cloud: day("cloud"),
+        snow: day("snow"),
+        wind: day("wind"),
+        storm: day("storm"),
+      },
       coldest: this.knowledge.number("weather.icefall-coldest-hour"),
       warmest: this.knowledge.number("weather.icefall-warmest-hour"),
       lapse: this.knowledge.number("weather.premonsoon-lapse-rate"),

@@ -1,3 +1,5 @@
+import { Power } from "./power";
+
 /** Canada's names for the risk of frostbite at a wind chill, from the least
  * (cold.wind-chill-*). */
 export const FROSTBITE_RISKS = [
@@ -43,12 +45,13 @@ export interface ChillReading {
 }
 
 /**
- * The wind chill a pocket weather meter works out (#260), as the ones climbers carry on Everest
- * do (gear.wind-meter-readings): how cold the air feels on bare skin in the wind, by the index
- * Canada and the United States have used since 2001, from the air's temperature and the wind in
- * the meter's hand raised to the wind 10 m up that the index takes (gear.wind-meter-chill-factor).
- * Where the index doesn't hold, in a calm or in air over its warmest, the chill is the air's own.
- * Its risk of frostbite is Canada's, by the band its whole degrees fall in.
+ * The wind chill (#260): how cold the air feels on bare skin in the wind, by the index Canada and
+ * the United States have used since 2001, from the air's temperature and the wind in hand, as a
+ * pocket weather meter reads it (gear.wind-meter-readings), raised to the wind 10 m up that the
+ * index takes (gear.wind-meter-chill-factor). Where the index doesn't hold, in a calm or in air
+ * over its warmest, the chill is the air's own. Its risk of frostbite is Canada's, by the band its
+ * whole degrees fall in. It's the core's since #272, the body's cold as much as the meter's: the
+ * wind's power is raised with square roots (`Power`), so it comes out the same everywhere.
  */
 export class WindChill {
   /** The risks over low, the worst first: a chill has the first whose band it's in. */
@@ -56,12 +59,15 @@ export class WindChill {
     (risk): risk is Exclude<FrostbiteRisk, "low"> => risk !== "low",
   ).reverse();
 
+  private readonly power: Power;
+
   constructor(private readonly numbers: WindChillNumbers) {
     const froms = WindChill.WORST_FIRST.map((risk) => numbers.risks[risk].from);
     const warmer = froms.every((from, at) => at === 0 || from > (froms[at - 1] ?? from));
     if (!(warmer && numbers.factor > 0 && numbers.power > 0 && numbers.calmest >= 0)) {
       throw new RangeError("The risks of frostbite have to start colder as they rise");
     }
+    this.power = new Power(numbers.power);
   }
 
   /** The wind chill of air at `air` °C in a wind the meter reads at `wind` km/h in its hand. */
@@ -80,7 +86,7 @@ export class WindChill {
     if (air > numbers.warmest || high < numbers.calmest) {
       return air;
     }
-    const blown = high ** numbers.power;
+    const blown = this.power.of(high);
     return (
       numbers.constant + numbers.air * air - numbers.wind * blown + numbers.airInWind * air * blown
     );

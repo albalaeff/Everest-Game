@@ -1,16 +1,27 @@
 import { DEVICE_KINDS } from "../simulation";
-import type { DeviceKind, HazardWeather } from "../simulation";
+import type { Confidence, DeviceKind, HazardWeather } from "../simulation";
 import type { SunReading } from "./sun-clock";
-import type { FrostbiteRisk } from "./wind-chill";
-import type { WindName } from "./wind-meter";
+import type { FrostbiteRisk, WindName } from "../simulation";
 
 /** The devices a climber carries (#260), in the order the panel's tabs have them. */
 export const DEVICES = DEVICE_KINDS;
 export type DeviceName = DeviceKind;
 
-/** The radio's ready phrases, in the order its buttons have them. */
-export const RADIO_PHRASES = ["radio-check", "position", "conditions", "route", "help"] as const;
+/** The radio's ready phrases, in the order its buttons have them: the forecast since #272. */
+export const RADIO_PHRASES = [
+  "radio-check",
+  "position",
+  "conditions",
+  "forecast",
+  "route",
+  "help",
+] as const;
 export type RadioPhrase = (typeof RADIO_PHRASES)[number];
+
+/** A forecast's days, from the day it's issued, and its six hours of the day, from midnight
+ * (#272). */
+export type ForecastDayIndex = 0 | 1 | 2;
+export type ForecastPart = 0 | 1 | 2 | 3;
 
 /** The devices' words in content/devices.json: the panel's, each device's face, what the climber
  * says on the radio for each phrase and each of Base Camp's answers, and the route's parts and
@@ -35,6 +46,13 @@ export type DeviceTextName =
   | "reply.position"
   | `reply.conditions.${HazardWeather}`
   | "reply.air"
+  | "reply.forecast"
+  | `forecast.day.${ForecastDayIndex}`
+  | `forecast.sky.${HazardWeather}`
+  | `forecast.by.${ForecastPart}`
+  | "forecast.all-day"
+  | `forecast.confidence.${Confidence}`
+  | `forecast.part.${ForecastPart}`
   | `reply.sun.${SunReading["state"]}`
   | "reply.route.open"
   | "reply.route.ladder"
@@ -83,6 +101,13 @@ export type DeviceTextName =
   | "tracker.no-sky"
   | "tracker.sending"
   | "tracker.check-in"
+  | "tracker.weather"
+  | "tracker.weather-asking"
+  | "tracker.weather-coming"
+  | "tracker.weather-of"
+  | "tracker.weather-air"
+  | "tracker.weather-wind"
+  | "tracker.weather-note"
   | "tracker.sos"
   | "tracker.sos-hold"
   | "tracker.sos-sending"

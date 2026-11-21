@@ -900,6 +900,651 @@
       "unit": "h",
       "fitted_to": ["weather.base-camp-daily-cycle"],
       "fitted": "2026-11-18"
+    },
+    {
+      "id": "weather.precipitation-daily-cycle",
+      "kind": "fact",
+      "claim": "In the Khumbu, snow and rain are least frequent in the late morning and grow more frequent through the afternoon, peaking in the early evening at the stations near Base Camp: mornings are the driest part of the day.",
+      "status": "source only",
+      "versions": [
+        {
+          "note": "A distinct minimum in frequency during the late morning (0500–0700 UTC), followed by increasing frequency throughout the afternoon; peaks in the early evening (about 1300 UTC) at Pheriche and Pyramid (5,035 m). Section: Daily Cycle of Precipitation.",
+          "source": {
+            "title": "Perry et al. 2020, Precipitation Characteristics and Moisture Source Regions on Mt. Everest in the Khumbu, Nepal (One Earth 3, 594–607)",
+            "url": "https://eprints.whiterose.ac.uk/id/eprint/229288/1/Precipitation%20Characteristics%20and%20Moisture.pdf"
+          },
+          "checked": "2026-11-21"
+        }
+      ]
+    },
+    {
+      "id": "weather.premonsoon-precipitation-events",
+      "kind": "fact",
+      "claim": "Of the precipitation events at Phortse in the Khumbu from June 2019 to May 2020, this share came in the pre-monsoon, March to May: about one every other day.",
+      "status": "source only",
+      "versions": [
+        {
+          "value": 26,
+          "unit": "%",
+          "note": "171 events in the year, most in JJAS (60%) and MAM (26%). Section: Seasonal Cycles during Precipitation Events.",
+          "source": {
+            "title": "Perry et al. 2020, Precipitation Characteristics and Moisture Source Regions on Mt. Everest in the Khumbu, Nepal (One Earth 3, 594–607)",
+            "url": "https://eprints.whiterose.ac.uk/id/eprint/229288/1/Precipitation%20Characteristics%20and%20Moisture.pdf"
+          },
+          "checked": "2026-11-21"
+        }
+      ]
+    },
+    {
+      "id": "weather.premonsoon-graupel",
+      "kind": "fact",
+      "claim": "In March and April the Khumbu's snow comes as heavily rimed pellets, graupel, from convective cloud: the showers that build through a spring afternoon.",
+      "status": "source only",
+      "versions": [
+        {
+          "note": "Graupel observed primarily during the pre-monsoon in March and April at Phortse, likely due to convective activity.",
+          "source": {
+            "title": "Perry et al. 2020, Precipitation Characteristics and Moisture Source Regions on Mt. Everest in the Khumbu, Nepal (One Earth 3, 594–607)",
+            "url": "https://eprints.whiterose.ac.uk/id/eprint/229288/1/Precipitation%20Characteristics%20and%20Moisture.pdf"
+          },
+          "checked": "2026-11-21"
+        }
+      ]
+    },
+    {
+      "id": "weather.camp-2-precipitation-temperatures",
+      "kind": "fact",
+      "claim": "While precipitation fell, the mean air temperature at Camp II, 6,464 m, ranged over this, from winter to the monsoon.",
+      "status": "source only",
+      "versions": [
+        {
+          "range": {
+            "min": -20.7,
+            "max": -4.7
+          },
+          "unit": "°C",
+          "note": "Concurrent measurements during Phortse's precipitation events, DJF to JJAS.",
+          "source": {
+            "title": "Perry et al. 2020, Precipitation Characteristics and Moisture Source Regions on Mt. Everest in the Khumbu, Nepal (One Earth 3, 594–607)",
+            "url": "https://eprints.whiterose.ac.uk/id/eprint/229288/1/Precipitation%20Characteristics%20and%20Moisture.pdf"
+          },
+          "checked": "2026-11-21"
+        }
+      ]
+    },
+    {
+      "id": "weather.forecast-five-day",
+      "kind": "fact",
+      "claim": "A five-day forecast predicts the weather accurately about this share of the time.",
+      "status": "source only",
+      "versions": [
+        {
+          "value": 90,
+          "unit": "%",
+          "source": {
+            "title": "NOAA NESDIS: How Reliable Are Weather Forecasts?",
+            "url": "https://www.nesdis.noaa.gov/about/k-12-education/weather-forecasting/how-reliable-are-weather-forecasts"
+          },
+          "checked": "2026-11-21"
+        }
+      ]
+    },
+    {
+      "id": "weather.forecast-seven-day",
+      "kind": "fact",
+      "claim": "A seven-day forecast predicts the weather accurately about this share of the time.",
+      "status": "source only",
+      "versions": [
+        {
+          "value": 80,
+          "unit": "%",
+          "source": {
+            "title": "NOAA NESDIS: How Reliable Are Weather Forecasts?",
+            "url": "https://www.nesdis.noaa.gov/about/k-12-education/weather-forecasting/how-reliable-are-weather-forecasts"
+          },
+          "checked": "2026-11-21"
+        }
+      ]
+    },
+    {
+      "id": "weather.forecast-ten-day",
+      "kind": "fact",
+      "claim": "A forecast ten days or more ahead is right only about this share of the time.",
+      "status": "source only",
+      "versions": [
+        {
+          "value": 50,
+          "unit": "%",
+          "source": {
+            "title": "NOAA NESDIS: How Reliable Are Weather Forecasts?",
+            "url": "https://www.nesdis.noaa.gov/about/k-12-education/weather-forecasting/how-reliable-are-weather-forecasts"
+          },
+          "checked": "2026-11-21"
+        }
+      ]
+    },
+    {
+      "id": "weather.forecast-precipitation-harder",
+      "kind": "fact",
+      "claim": "Precipitation is harder to forecast than temperature, and forecasts of heavy precipitation lose their accuracy much faster with the days ahead.",
+      "status": "source only",
+      "versions": [
+        {
+          "note": "Predicting the details of precipitation is more difficult than predicting temperature; the accuracy of extreme precipitation events dwindles much more quickly than temperature forecasts.",
+          "source": {
+            "title": "Penn State METEO 3, Lesson 13: Assessing Forecast Accuracy",
+            "url": "https://courses.ems.psu.edu/meteo3/node/2285"
+          },
+          "checked": "2026-11-21"
+        }
+      ]
+    },
+    {
+      "id": "weather.everest-forecast-models",
+      "kind": "fact",
+      "claim": "Free weather sites for Everest often run a single global model, the GFS; a professional forecaster weighs six or more models, the GFS and the ECMWF among them, by how well each did of late.",
+      "status": "source only",
+      "versions": [
+        {
+          "note": "Several sites use just the US-based GFS; Fagin's six models include the GFS and the ECMWF, the highest weight to the one most accurate in recent runs.",
+          "source": {
+            "title": "Alan Arnette: Everest 2017: Free vs. Paid Weather Forecasts (an interview with Michael Fagin)",
+            "url": "https://www.alanarnette.com/2017/04/06/everest-2017-free-paid-weather-forecasts/"
+          },
+          "checked": "2026-11-21"
+        },
+        {
+          "note": "Most NWP forecasts use just one model, often the GFS; a professional meteorologist looks at far more than the GFS.",
+          "source": {
+            "title": "ExplorersWeb, March 2019: Forecasting the Weather on Mount Everest",
+            "url": "https://explorersweb.com/forecasting-the-weather-on-mount-everest/"
+          },
+          "checked": "2026-11-21"
+        }
+      ]
+    },
+    {
+      "id": "weather.everest-forecast-confidence",
+      "kind": "fact",
+      "claim": "Everest's professional forecaster gives each forecast a confidence rating.",
+      "status": "source only",
+      "versions": [
+        {
+          "note": "Fagin includes a 'confidence rating' with his forecasts.",
+          "source": {
+            "title": "Scientific American, April 2016: Meet Mount Everest's Meteorologist (Rachel Nuwer with Michael Fagin)",
+            "url": "https://www.scientificamerican.com/article/meet-mount-everest-s-meteorologist-q-a/"
+          },
+          "checked": "2026-11-21"
+        }
+      ]
+    },
+    {
+      "id": "weather.everest-forecast-storms",
+      "kind": "fact",
+      "claim": "Numerical forecasts do poorly at the snowfall of the storms that come up from the Bay of Bengal, and free sites don't say when a cyclone may form there.",
+      "status": "source only",
+      "versions": [
+        {
+          "note": "The numerical forecast does a poor job forecasting snowfall during such storms.",
+          "source": {
+            "title": "ExplorersWeb, March 2019: Forecasting the Weather on Mount Everest",
+            "url": "https://explorersweb.com/forecasting-the-weather-on-mount-everest/"
+          },
+          "checked": "2026-11-21"
+        },
+        {
+          "note": "Free sites do not indicate if a major cyclone might form in the Bay of Bengal.",
+          "source": {
+            "title": "Alan Arnette: Everest 2017: Free vs. Paid Weather Forecasts (an interview with Michael Fagin)",
+            "url": "https://www.alanarnette.com/2017/04/06/everest-2017-free-paid-weather-forecasts/"
+          },
+          "checked": "2026-11-21"
+        }
+      ]
+    },
+    {
+      "id": "weather.everest-forecast-place-error",
+      "kind": "fact",
+      "claim": "A forecast made two days ahead can be this far off in where it puts the weather.",
+      "status": "source only",
+      "versions": [
+        {
+          "value": 500,
+          "unit": "km",
+          "note": "It is not unusual that a forecast made two days in advance has an error of 500 km.",
+          "source": {
+            "title": "ExplorersWeb, March 2019: Forecasting the Weather on Mount Everest",
+            "url": "https://explorersweb.com/forecasting-the-weather-on-mount-everest/"
+          },
+          "checked": "2026-11-21"
+        }
+      ]
+    },
+    {
+      "id": "weather.forecast-temperature-accuracy",
+      "kind": "fact",
+      "claim": "Free sites' temperature forecasts for Everest are supposed to be accurate to within this.",
+      "status": "source only",
+      "versions": [
+        {
+          "value": 1.5,
+          "unit": "°C",
+          "source": {
+            "title": "ExplorersWeb, March 2019: Forecasting the Weather on Mount Everest",
+            "url": "https://explorersweb.com/forecasting-the-weather-on-mount-everest/"
+          },
+          "checked": "2026-11-21"
+        }
+      ]
+    },
+    {
+      "id": "weather.forecast-issued",
+      "kind": "fact",
+      "claim": "Everest's forecaster sends one forecast a day, early in the Nepal morning, and looks again in the afternoon for updates.",
+      "status": "source only",
+      "versions": [
+        {
+          "note": "Works from 5 to 9 A.M. Seattle time on the forecast and looks again at 7 P.M. for updates; expeditions hire him for daily forecasts.",
+          "source": {
+            "title": "Scientific American, April 2016: Meet Mount Everest's Meteorologist (Rachel Nuwer with Michael Fagin)",
+            "url": "https://www.scientificamerican.com/article/meet-mount-everest-s-meteorologist-q-a/"
+          },
+          "checked": "2026-11-21"
+        },
+        {
+          "note": "Ready by 9 A.M. and sent out about 7 P.M. his time, which is 7 A.M. theirs.",
+          "source": {
+            "title": "Alan Arnette: Everest 2017: Free vs. Paid Weather Forecasts (an interview with Michael Fagin)",
+            "url": "https://www.alanarnette.com/2017/04/06/everest-2017-free-paid-weather-forecasts/"
+          },
+          "checked": "2026-11-21"
+        }
+      ]
+    },
+    {
+      "id": "weather.cyclone-lead",
+      "kind": "fact",
+      "claim": "A cyclone forming in the Bay of Bengal can be seen this many days ahead, though not the exact track it will take.",
+      "status": "source only",
+      "versions": [
+        {
+          "value": 7,
+          "unit": "days",
+          "note": "Many times I can see the formation of a cyclone 7+ days in advance; the exact track is uncertain.",
+          "source": {
+            "title": "Alan Arnette: Everest 2017: Free vs. Paid Weather Forecasts (an interview with Michael Fagin)",
+            "url": "https://www.alanarnette.com/2017/04/06/everest-2017-free-paid-weather-forecasts/"
+          },
+          "checked": "2026-11-21"
+        }
+      ]
+    },
+    {
+      "id": "weather.bad-day-after-good",
+      "kind": "coefficient",
+      "claim": "The chance that a spring day in the Icefall is a bad one, snowing from the afternoon or stormy, after a good day (#272): with the next record, bad days come about four in ten, in spells, as often as the Khumbu's spring precipitation comes.",
+      "status": "source only",
+      "value": 0.3,
+      "unit": "1",
+      "fitted_to": [
+        "weather.premonsoon-precipitation-events",
+        "weather.calm-days-in-may",
+        "weather.precipitation-daily-cycle"
+      ],
+      "fitted": "2026-11-21"
+    },
+    {
+      "id": "weather.bad-day-after-bad",
+      "kind": "coefficient",
+      "claim": "The chance that a bad day in the Icefall is followed by another (#272): bad weather sits for days, as the jet stream does and the storms from the Bay of Bengal do.",
+      "status": "source only",
+      "value": 0.6,
+      "unit": "1",
+      "fitted_to": [
+        "weather.jet-stream",
+        "weather.premonsoon-precipitation-events",
+        "weather.cyclone-lead"
+      ],
+      "fitted": "2026-11-21"
+    },
+    {
+      "id": "weather.windy-days",
+      "kind": "coefficient",
+      "claim": "The share of the Icefall's good spring days that are windy (#272): the jet stream near, too windy for the summit, the Icefall in a strong wind by day.",
+      "status": "source only",
+      "value": 0.25,
+      "unit": "1",
+      "fitted_to": [
+        "weather.jet-stream",
+        "weather.calm-days-in-may",
+        "weather.safe-summit-wind"
+      ],
+      "fitted": "2026-11-21"
+    },
+    {
+      "id": "weather.stormy-days",
+      "kind": "coefficient",
+      "claim": "The share of the Icefall's bad spring days that are stormy, snow in a gale, rather than snowing from the afternoon (#272).",
+      "status": "source only",
+      "value": 0.3,
+      "unit": "1",
+      "fitted_to": [
+        "weather.camp-2-storm-wind",
+        "weather.everest-forecast-storms"
+      ],
+      "fitted": "2026-11-21"
+    },
+    {
+      "id": "weather.cloud-hour",
+      "kind": "coefficient",
+      "claim": "The hour cloud builds by on a day that snows from the afternoon (#272): the morning stays clear, its snow and rain least frequent in the late morning.",
+      "status": "source only",
+      "range": {
+        "min": 9,
+        "max": 12
+      },
+      "unit": "h",
+      "fitted_to": [
+        "weather.precipitation-daily-cycle",
+        "weather.base-camp-daily-cycle"
+      ],
+      "fitted": "2026-11-21"
+    },
+    {
+      "id": "weather.snow-hour",
+      "kind": "coefficient",
+      "claim": "The hour snow begins on a day that snows from the afternoon, and a fine day's afternoon cloud comes (#272): as the afternoon's showers grow more frequent.",
+      "status": "source only",
+      "range": {
+        "min": 12,
+        "max": 15
+      },
+      "unit": "h",
+      "fitted_to": [
+        "weather.precipitation-daily-cycle",
+        "weather.premonsoon-graupel"
+      ],
+      "fitted": "2026-11-21"
+    },
+    {
+      "id": "weather.clearing-hour",
+      "kind": "coefficient",
+      "claim": "The hour the afternoon's snow eases to cloud, and a fine day clears (#272): past the early evening's peak.",
+      "status": "source only",
+      "range": {
+        "min": 19,
+        "max": 22
+      },
+      "unit": "h",
+      "fitted_to": [
+        "weather.precipitation-daily-cycle"
+      ],
+      "fitted": "2026-11-21"
+    },
+    {
+      "id": "weather.wind-hour",
+      "kind": "coefficient",
+      "claim": "The hour a windy day's strong wind gets up (#272): with the day's warmth and the up-valley wind.",
+      "status": "source only",
+      "range": {
+        "min": 7,
+        "max": 10
+      },
+      "unit": "h",
+      "fitted_to": [
+        "weather.khumbu-valley-winds",
+        "weather.wind-by-time-of-day"
+      ],
+      "fitted": "2026-11-21"
+    },
+    {
+      "id": "weather.calm-hour",
+      "kind": "coefficient",
+      "claim": "The hour a windy day's strong wind drops (#272): the valley's winds at night are weak.",
+      "status": "source only",
+      "range": {
+        "min": 17,
+        "max": 20
+      },
+      "unit": "h",
+      "fitted_to": [
+        "weather.khumbu-valley-winds",
+        "weather.wind-by-time-of-day"
+      ],
+      "fitted": "2026-11-21"
+    },
+    {
+      "id": "weather.storm-hour",
+      "kind": "coefficient",
+      "claim": "The hour a stormy day's storm breaks, out of the cloud it comes in under (#272).",
+      "status": "source only",
+      "range": {
+        "min": 2,
+        "max": 6
+      },
+      "unit": "h",
+      "fitted_to": [
+        "weather.camp-2-storm-wind",
+        "weather.everest-forecast-storms"
+      ],
+      "fitted": "2026-11-21"
+    },
+    {
+      "id": "weather.easing-hour",
+      "kind": "coefficient",
+      "claim": "The hour a stormy day's gale eases, leaving the snow falling (#272).",
+      "status": "source only",
+      "range": {
+        "min": 18,
+        "max": 22
+      },
+      "unit": "h",
+      "fitted_to": [
+        "weather.camp-2-storm-wind",
+        "weather.precipitation-daily-cycle"
+      ],
+      "fitted": "2026-11-21"
+    },
+    {
+      "id": "weather.turn-minutes",
+      "kind": "coefficient",
+      "claim": "How long the sky takes to turn from one weather to the next (#272): cloud builds, snow sets in, a gale gets up, over the better part of an hour, not at a cut.",
+      "status": "source only",
+      "value": 40,
+      "unit": "min",
+      "fitted_to": [
+        "weather.precipitation-daily-cycle",
+        "weather.base-camp-daily-cycle"
+      ],
+      "fitted": "2026-11-21"
+    },
+    {
+      "id": "weather.icefall-air-storm",
+      "kind": "coefficient",
+      "claim": "The air at the Base Camp weather station in a storm in late April (#272): colder than a day of strong wind's, as the storms that bring snow at Camp II are, its coldest above the spring's lowest.",
+      "status": "source only",
+      "range": {
+        "min": -13,
+        "max": -8
+      },
+      "unit": "°C",
+      "fitted_to": [
+        "weather.camp-2-precipitation-temperatures",
+        "weather.base-camp-spring-lowest",
+        "weather.camp-2-storm-wind",
+        "weather.premonsoon-lapse-rate"
+      ],
+      "fitted": "2026-11-21"
+    },
+    {
+      "id": "weather.icefall-wind-storm",
+      "kind": "coefficient",
+      "claim": "The wind a pocket wind meter reads in the Icefall in a storm (#272): just short of a gale, below the storm winds that wreck Camp II's tents, and well over what the drones flew in.",
+      "status": "source only",
+      "value": 60,
+      "unit": "km/h",
+      "fitted_to": [
+        "weather.camp-2-storm-wind",
+        "weather.beaufort-gale",
+        "weather.icefall-drone-wind"
+      ],
+      "fitted": "2026-11-21"
+    },
+    {
+      "id": "weather.base-camp-forecast-right-today",
+      "kind": "coefficient",
+      "claim": "The chance Base Camp's forecaster calls the sky of a six hours today right (#272): better than the five-day forecast's nine in ten, from several models weighed.",
+      "status": "source only",
+      "value": 0.95,
+      "unit": "1",
+      "fitted_to": [
+        "weather.forecast-five-day",
+        "weather.everest-forecast-models"
+      ],
+      "fitted": "2026-11-21"
+    },
+    {
+      "id": "weather.base-camp-forecast-right-tomorrow",
+      "kind": "coefficient",
+      "claim": "The chance Base Camp's forecaster calls the sky of a six hours tomorrow right (#272).",
+      "status": "source only",
+      "value": 0.9,
+      "unit": "1",
+      "fitted_to": [
+        "weather.forecast-five-day",
+        "weather.everest-forecast-models",
+        "weather.forecast-precipitation-harder"
+      ],
+      "fitted": "2026-11-21"
+    },
+    {
+      "id": "weather.base-camp-forecast-right-after",
+      "kind": "coefficient",
+      "claim": "The chance Base Camp's forecaster calls the sky of a six hours the day after tomorrow right (#272): a mountain's, harder than the plain's five-day forecast.",
+      "status": "source only",
+      "value": 0.85,
+      "unit": "1",
+      "fitted_to": [
+        "weather.forecast-five-day",
+        "weather.forecast-seven-day",
+        "weather.everest-forecast-place-error"
+      ],
+      "fitted": "2026-11-21"
+    },
+    {
+      "id": "weather.general-forecast-right-today",
+      "kind": "coefficient",
+      "claim": "The chance the general model a satellite messenger fetches calls the sky of a six hours today right (#272): one global model, not weighed against others.",
+      "status": "source only",
+      "value": 0.85,
+      "unit": "1",
+      "fitted_to": [
+        "weather.everest-forecast-models",
+        "weather.forecast-five-day"
+      ],
+      "fitted": "2026-11-21"
+    },
+    {
+      "id": "weather.general-forecast-right-tomorrow",
+      "kind": "coefficient",
+      "claim": "The chance the general model calls the sky of a six hours tomorrow right (#272).",
+      "status": "source only",
+      "value": 0.75,
+      "unit": "1",
+      "fitted_to": [
+        "weather.everest-forecast-models",
+        "weather.everest-forecast-place-error"
+      ],
+      "fitted": "2026-11-21"
+    },
+    {
+      "id": "weather.general-forecast-right-after",
+      "kind": "coefficient",
+      "claim": "The chance the general model calls the sky of a six hours the day after tomorrow right (#272): two days ahead, its weather may be 500 km off.",
+      "status": "source only",
+      "value": 0.65,
+      "unit": "1",
+      "fitted_to": [
+        "weather.everest-forecast-place-error",
+        "weather.forecast-seven-day"
+      ],
+      "fitted": "2026-11-21"
+    },
+    {
+      "id": "weather.base-camp-forecast-storms",
+      "kind": "coefficient",
+      "claim": "The chance Base Camp's forecaster, calling a storm's six hours right otherwise, calls it a storm rather than snow or wind (#272): a cyclone shows days ahead to a forecaster who looks for it.",
+      "status": "source only",
+      "value": 0.9,
+      "unit": "1",
+      "fitted_to": [
+        "weather.cyclone-lead",
+        "weather.everest-forecast-storms"
+      ],
+      "fitted": "2026-11-21"
+    },
+    {
+      "id": "weather.general-forecast-storms",
+      "kind": "coefficient",
+      "claim": "The chance the general model, calling a storm's six hours right otherwise, calls it a storm rather than snow or wind (#272): it does poorly at a storm's snow and doesn't flag cyclones.",
+      "status": "source only",
+      "value": 0.5,
+      "unit": "1",
+      "fitted_to": [
+        "weather.everest-forecast-storms"
+      ],
+      "fitted": "2026-11-21"
+    },
+    {
+      "id": "weather.forecast-air-error",
+      "kind": "coefficient",
+      "claim": "How far off Base Camp's forecast air can be, either way, for each day further ahead (#272): a degree today, more beyond.",
+      "status": "source only",
+      "value": 1,
+      "unit": "°C",
+      "fitted_to": [
+        "weather.forecast-temperature-accuracy",
+        "weather.forecast-five-day"
+      ],
+      "fitted": "2026-11-21"
+    },
+    {
+      "id": "weather.forecast-wind-error",
+      "kind": "coefficient",
+      "claim": "How far off Base Camp's forecast wind can be, either way, as a share, for each day further ahead (#272).",
+      "status": "source only",
+      "value": 0.15,
+      "unit": "1",
+      "fitted_to": [
+        "weather.everest-forecast-place-error",
+        "weather.everest-forecast-models"
+      ],
+      "fitted": "2026-11-21"
+    },
+    {
+      "id": "weather.general-forecast-error-factor",
+      "kind": "coefficient",
+      "claim": "How many times as far off the general model's air and wind are as Base Camp's (#272): to the free sites' 1.5 °C today.",
+      "status": "source only",
+      "value": 1.5,
+      "unit": "1",
+      "fitted_to": [
+        "weather.forecast-temperature-accuracy",
+        "weather.everest-forecast-models"
+      ],
+      "fitted": "2026-11-21"
+    },
+    {
+      "id": "weather.icefall-spring-days",
+      "kind": "question",
+      "question": "How often in late April are the Icefall's days fine, windy, snowing from the afternoon or stormy, and how long do its bad spells last?",
+      "about": [
+        "weather.bad-day-after-good",
+        "weather.bad-day-after-bad",
+        "weather.windy-days",
+        "weather.stormy-days"
+      ]
     }
   ]
 }

@@ -4,6 +4,9 @@ import type { ExpeditionSave } from "../expedition";
 import type { ClimberId, GameAction, Pace } from "../game-action";
 import { SimulationClock } from "../simulation-clock";
 import { Hike } from "../testing/hike";
+import { TestCold } from "../testing/test-cold";
+
+const TEST_COLD = new TestCold();
 import { TestRidge } from "../testing/test-ridge";
 import type { RidgeStart } from "../testing/test-ridge";
 import { Body } from "./body";
@@ -317,6 +320,76 @@ describe("Body: what the player sees", () => {
     const numbers = Object.entries(view).filter(([, value]) => typeof value === "number");
     expect(numbers).toEqual([["oximeter", 98]]);
     expect(view).toEqual({ tiredness: "tired", symptoms: [], oximeter: 98, pace: "steady" });
+  });
+});
+
+describe("Body: the cold (#272)", () => {
+  it("feels the weather's cold where a climber stands, and says it in words, no number", () => {
+    const hike = Hike.on([{ id: "anna", altitude: 6000 }], 0, TestRidge.NUMBERS, TEST_COLD.in());
+
+    hike.hours(1);
+
+    const view = hike.body.climber("anna");
+    expect(view.symptoms).toEqual(["cold", "frostnip"]);
+    expect(Object.values(view).filter((value) => typeof value === "number")).toEqual([
+      view.oximeter,
+    ]);
+    expect(hike.body.chilled("anna")?.core).toBeCloseTo(37 - TEST_COLD.cooling(), 6);
+  });
+
+  it("keeps a climber on the move warm in a storm, and one standing in it cools", () => {
+    const climbers = [
+      { id: "anna", altitude: 6000 },
+      { id: "boris", altitude: 6000 },
+    ];
+    const hike = Hike.on(climbers, 10, TestRidge.NUMBERS, TEST_COLD.in());
+
+    hike.hours(6, [walk("anna")]);
+
+    expect(hike.body.chilled("anna")?.core).toBe(37);
+    expect(hike.body.chilled("boris")?.core).toBeLessThan(35);
+    expect(hike.body.climber("boris").symptoms).toContain("shivering");
+  });
+
+  it("slows a mildly hypothermic climber, stops a moderately one, and the cold kills one left in it", () => {
+    const hike = Hike.on([{ id: "anna", altitude: 6000 }], 10, TestRidge.NUMBERS, TEST_COLD.in());
+    const warm = Hike.on([{ id: "anna", altitude: 6000 }], 10);
+    const hoursTo = (core: number) => Math.ceil((37 - core) / TEST_COLD.cooling());
+
+    // A step of the walk, before the work warms her again.
+    for (const each of [hike, warm]) {
+      each.hours(hoursTo(34.5));
+      each.expedition.advance([walk("anna")]);
+    }
+    expect(hike.stride("anna") / warm.stride("anna")).toBeCloseTo(0.8, 6);
+    hike.hours(hoursTo(31.5) - hoursTo(34.5) - 1, [
+      { kind: "walk", climber: "anna", direction: "stop" },
+    ]);
+    expect(hike.stride("anna")).toBe(0);
+    expect(hike.body.climber("anna").symptoms).toContain("confused");
+    expect(hike.ridge.climber("anna").dead).toBeUndefined();
+    hike.hours(hoursTo(24) - hoursTo(31.5) + 1);
+    expect(hike.ridge.climber("anna").dead).toBe(true);
+    expect(hike.body.chilled("anna")?.froze).toBe(true);
+  });
+
+  it("keeps the cold in its saves, and a save from before it goes on warm", () => {
+    const hike = Hike.on([{ id: "anna", altitude: 6000 }], 0, TestRidge.NUMBERS, TEST_COLD.in());
+    hike.hours(2);
+    const saved = JSON.parse(JSON.stringify(hike.expedition.save())) as ExpeditionSave;
+    const resumed = new Hike(saved, TestRidge.NUMBERS, TEST_COLD.in());
+    hike.hours(1);
+    resumed.hours(1);
+    expect(resumed.body.chilled("anna")).toEqual(hike.body.chilled("anna"));
+    const warm = Hike.on([{ id: "anna", altitude: 6000 }]);
+    warm.hours(2);
+    expect(warm.body.chilled("anna")).toBeNull();
+    const before = new Hike(
+      JSON.parse(JSON.stringify(warm.expedition.save())) as ExpeditionSave,
+      TestRidge.NUMBERS,
+      TEST_COLD.in(),
+    );
+    expect(before.body.chilled("anna")?.core).toBe(37);
   });
 });
 

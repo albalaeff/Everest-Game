@@ -23,6 +23,8 @@ export type RidgeClimber = {
   readonly ground: number;
   /** What their last step took of it: the ground's share on the move, nought still. */
   readonly exertion: number;
+  /** Whether the cold has killed them (#272): they lie where they fell. */
+  readonly dead?: boolean;
 };
 
 /** A climber as a test puts them on the ridge: where, on how much oxygen, how much of their
@@ -144,6 +146,11 @@ export class TestRidge implements Rule, Legs, Breathing {
     this.climbers.set(id, { ...this.climber(id), stride: share });
   }
 
+  /** The cold kills them (#272): they stop where they are, and never move again. */
+  perish(id: ClimberId): void {
+    this.climbers.set(id, { ...this.climber(id), dead: true, way: 0, moving: false });
+  }
+
   /** The ridge has no footing to lose: how sure-footed a climber is goes nowhere. */
   sureness(id: ClimberId): void {
     this.climber(id);
@@ -178,7 +185,7 @@ export class TestRidge implements Rule, Legs, Breathing {
       }
     }
     for (const [id, climber] of this.climbers) {
-      const moving = climber.way !== 0 && climber.stride > 0;
+      const moving = climber.way !== 0 && climber.stride > 0 && climber.dead !== true;
       const climbed = climber.way * this.climbing * climber.stride * SimulationClock.STEP_SECONDS;
       const exertion = moving ? climber.ground : 0;
       this.climbers.set(id, { ...climber, moving, exertion, altitude: climber.altitude + climbed });

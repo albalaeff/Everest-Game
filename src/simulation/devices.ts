@@ -1,6 +1,6 @@
 import type { ClimberId, GameAction } from "./game-action";
 import type { Json } from "./json";
-import type { MountainClock } from "./mountain-clock";
+import { MountainClock } from "./mountain-clock";
 import type { Moment, Rule } from "./rule";
 import { SimulationClock } from "./simulation-clock";
 
@@ -9,19 +9,25 @@ import { SimulationClock } from "./simulation-clock";
 export const DEVICE_KINDS = ["radio", "gps", "wind", "tracker"] as const;
 export type DeviceKind = (typeof DEVICE_KINDS)[number];
 
-/** The devices' numbers, from the knowledge base, in the mountain's seconds: how long a tracker
+/** The devices' numbers, from the knowledge base, in the mountain's seconds: how long a weather
+ * forecast takes to come back to a tracker once its request has left (#272); how long a tracker
  * that's tracking waits between two points, how long its full battery lasts tracking, and how
  * long a message takes to leave once the tracker sees the sky. */
 export interface DeviceNumbers {
   readonly interval: number;
   readonly life: number;
   readonly delivery: number;
+  readonly answer: number;
 }
 
 /** Where the devices are: a climber who hangs on their rope in a crevasse or under a lip has ice
  * between their radio and Base Camp, and no sky over their tracker. The slope physics. */
 export interface DeviceGround {
-  climber(id: ClimberId): { readonly dead: boolean; readonly hanging: boolean };
+  climber(id: ClimberId): {
+    readonly dead: boolean;
+    readonly hanging: boolean;
+    readonly altitude: number;
+  };
 }
 
 /** A call on the radio: the step it was made on, the mountain's time of day in seconds, who
@@ -52,6 +58,23 @@ export interface TrackerView {
   readonly sending: number;
   readonly sos: "none" | "sending" | "sent";
   readonly sky: boolean;
+  /** Its weather forecast (#272): asked for and leaving, on its way back, and the last one that
+   * came back, if any. */
+  readonly weather: TrackerWeather;
+}
+
+/** A tracker's weather forecast (#272): whether a request is leaving it, whether one has left and
+ * its forecast is on its way back, and the last forecast that came: the mountain's seconds since
+ * the first day's midnight it was issued at, for the altitude the tracker was at then, and the
+ * time of day it came back at. */
+export interface TrackerWeather {
+  readonly asking: boolean;
+  readonly coming: boolean;
+  readonly arrived: {
+    readonly issued: number;
+    readonly altitude: number;
+    readonly at: number;
+  } | null;
 }
 
 /** A climber's hand as the picture shows it (#271): the device in it, if any; the one that was in
@@ -69,7 +92,11 @@ export interface HandView {
 type Hand = { device: DeviceKind | null; was: DeviceKind | null; at: number };
 
 /** A message on its way out of a tracker: which, and the seconds of sky it still needs. */
-type Outgoing = { readonly kind: "check-in" | "sos"; left: number };
+type Outgoing = { readonly kind: "check-in" | "sos" | "weather"; left: number };
+
+/** A forecast on its way back to a tracker (#272): when it was issued and for what altitude, and
+ * the seconds of sky it still needs to come. */
+type Incoming = { readonly issued: number; readonly altitude: number; left: number };
 
 type TrackerSave = {
   readonly id: ClimberId;
@@ -82,6 +109,9 @@ type TrackerSave = {
   checkIns: number;
   sos: boolean;
   outgoing: Outgoing[];
+  /** Missing from the saves of builds before the forecast (#272). */
+  incoming?: Incoming | null;
+  forecast?: TrackerWeather["arrived"];
 };
 
 /** The hands and the step are missing from the saves of builds before a device was seen in the
@@ -207,8 +237,14 @@ export class Devices implements Rule {
 
   /** A climber's tracker. */
   tracker(id: ClimberId): TrackerView {
-    const { tracking, charge, points, last, checkIns, sos, outgoing } = this.trackerOf(id);
+    const tracker = this.trackerOf(id);
+    const { tracking, charge, points, last, checkIns, sos, outgoing } = tracker;
     const raising = outgoing.some(({ kind }) => kind === "sos");
+    const weather: TrackerWeather = {
+      asking: outgoing.some(({ kind }) => kind === "weather"),
+      coming: (tracker.incoming ?? null) !== null,
+      arrived: tracker.forecast ?? null,
+    };
     return {
       tracking: tracking && charge > 0,
       charge,
@@ -218,6 +254,7 @@ export class Devices implements Rule {
       sending: outgoing.length,
       sos: raising ? "sending" : sos ? "sent" : "none",
       sky: this.sees(id),
+      weather,
     };
   }
 
@@ -272,6 +309,12 @@ export class Devices implements Rule {
       tracker.tracking = false;
     } else if (action.do === "check-in") {
       tracker.outgoing.push({ kind: "check-in", left: this.numbers.delivery });
+    } else if (action.do === "weather") {
+      // One request at a time: a press while one is on its way changes nothing.
+      const asking = tracker.outgoing.some(({ kind }) => kind === "weather");
+      if (!asking && (tracker.incoming ?? null) === null) {
+        tracker.outgoing.push({ kind: "weather", left: this.numbers.delivery });
+      }
     } else if (!tracker.sos && !tracker.outgoing.some(({ kind }) => kind === "sos")) {
       // An SOS turns the tracking on with it: the rescue follows the points.
       tracker.tracking = true;
@@ -302,10 +345,24 @@ export class Devices implements Rule {
     for (const message of tracker.outgoing) {
       message.left -= clock.secondsAStep;
     }
+    const incoming = tracker.incoming ?? null;
+    if (incoming !== null) {
+      incoming.left -= clock.secondsAStep;
+      if (incoming.left <= 0) {
+        const { issued, altitude } = incoming;
+        tracker.forecast = { issued, altitude, at: clock.timeOfDay };
+        tracker.incoming = null;
+      }
+    }
     const left = tracker.outgoing.filter((message) => message.left > 0);
     for (const { kind } of tracker.outgoing.filter((message) => message.left <= 0)) {
       if (kind === "sos") {
         tracker.sos = true;
+      } else if (kind === "weather") {
+        // The service issues its forecast as the request reaches it, for where the tracker is.
+        const issued = clock.day * MountainClock.SECONDS_A_DAY + clock.timeOfDay;
+        const { altitude } = this.ground.climber(tracker.id);
+        tracker.incoming = { issued, altitude, left: this.numbers.answer };
       } else {
         tracker.checkIns += 1;
       }

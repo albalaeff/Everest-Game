@@ -6,6 +6,7 @@ import type { MountainClock } from "./mountain-clock";
 import type { HazardWeather } from "./objective-hazards";
 import { HazardChance } from "./objective-hazards";
 import type { Moment, Rule } from "./rule";
+import type { Sky } from "./weather";
 
 /** What jolts a climber off balance, which they can't prevent but can see coming (#197): a gust
  * of wind across the slope, and a lashed ladder twisting under whoever is on it. */
@@ -118,11 +119,13 @@ export class Jolts implements Rule {
   private readonly warmth: DayWarmth;
   private state: JoltSave | null = null;
 
-  /** `clock` is the expedition's, which runs before this in its rules. */
+  /** `clock` is the expedition's, which runs before this in its rules, and `sky` the weather of
+   * the hour, which runs before it too (#272): without one, the weather is the scenario's. */
   constructor(
     private readonly settings: JoltSettings,
     private readonly clock: MountainClock,
     private readonly ground: JoltGround,
+    private readonly sky: Sky | null = null,
   ) {
     this.warmth = new DayWarmth(settings.warmth, settings.sun);
   }
@@ -176,7 +179,13 @@ export class Jolts implements Rule {
     this.state = { ...this.loaded, zones: [], warnings: [] };
   }
 
-  /** Changes the weather between steps, as a scenario sets it: the god mode's (#245). */
+  /** The weather the jolts feel: the weather of the hour, as `Weather` tells them (#272). */
+  get weather(): HazardWeather {
+    return this.loaded.weather;
+  }
+
+  /** Changes the weather the jolts feel: `Weather`'s, as the hour's changes (#272), and a
+   * scenario's. */
   changeWeather(weather: HazardWeather): void {
     if (!HazardChance.knows(weather)) {
       throw new RangeError(`The jolts don't know the weather ${weather}`);
@@ -209,8 +218,8 @@ export class Jolts implements Rule {
   perHour(kind: JoltKind, timeOfDay: number, weather: HazardWeather): number {
     const odds = this.settings.kinds[kind];
     const warmed = 1 + (odds.warmth - 1) * this.warmth.at(timeOfDay, weather);
-    const snow = weather === "snow" ? odds.snow : 1;
-    const wind = weather === "wind" ? odds.wind : 1;
+    const snow = HazardChance.snows(weather) ? odds.snow : 1;
+    const wind = HazardChance.blows(weather) ? odds.wind : 1;
     return odds.rate * warmed * snow * wind;
   }
 
@@ -223,7 +232,11 @@ export class Jolts implements Rule {
   }
 
   advance(moment: Moment): void {
-    const { weather, zones } = this.loaded;
+    const weather = this.sky?.now ?? this.loaded.weather;
+    if (weather !== this.loaded.weather) {
+      this.state = { ...this.loaded, weather };
+    }
+    const { zones } = this.loaded;
     const { timeOfDay, secondsAStep } = this.clock;
     const { step, random } = moment;
     for (const zone of zones) {

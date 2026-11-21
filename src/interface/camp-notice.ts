@@ -1,5 +1,5 @@
 import type { Fall, Injury, Kit, LogPage } from "../physics";
-import type { ClimberId, MountainClock, Strike } from "../simulation";
+import type { ClimberId, ColdView, MountainClock, Strike } from "../simulation";
 import type { Debrief, DebriefTextName } from "./debrief";
 import { Readings } from "./readings";
 import type { Texts } from "./texts";
@@ -41,6 +41,8 @@ export interface ArrivingSherpa {
 export interface ClimbRecord {
   page(climber: ClimberId): LogPage;
   readonly strikes: readonly Strike[];
+  /** What the cold did to a climber (#272): none where the body feels no cold. */
+  cold?(climber: ClimberId): ColdView | null;
 }
 
 /**
@@ -198,6 +200,7 @@ export class CampNotice {
       kit: this.climbers.climber(player).kit,
       sherpa: this.sherpa?.climber ?? null,
       injuries: this.climbers.climber(player).injuries,
+      cold: record.cold?.(player) ?? null,
     });
     this.verdict.textContent = said.verdict.text;
     this.verdict.dataset.tone = said.verdict.tone;

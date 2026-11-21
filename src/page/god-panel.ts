@@ -25,6 +25,8 @@ export const GOD_TEXTS = [
   "cloud",
   "snow",
   "wind",
+  "storm",
+  "drawn",
   "stage",
   "serac",
   "ladder",
@@ -102,7 +104,7 @@ export class GodPanel {
   private readonly note: HTMLElement;
   private readonly whereabouts: HTMLElement;
   private readonly speeds = new Map<number, HTMLButtonElement>();
-  private readonly weathers = new Map<HazardWeather, HTMLButtonElement>();
+  private readonly weathers = new Map<HazardWeather | "drawn", HTMLButtonElement>();
   /** The pick's listener on the next press on the slope, while it waits for one. */
   private picking: ((event: PointerEvent) => void) | null = null;
   private said = "";

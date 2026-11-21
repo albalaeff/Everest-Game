@@ -309,6 +309,12 @@
           <div class="tracker__side">
             <button type="button" data-act="track"></button>
             <button type="button" data-act="check-in" data-text="tracker.check-in"></button>
+            <button type="button" data-act="weather" data-text="tracker.weather"></button>
+            <div class="tracker__forecast" data-read="forecast" hidden>
+              <strong data-read="forecast-of"></strong>
+              <table class="tracker__table"></table>
+              <p class="device__note" data-text="tracker.weather-note"></p>
+            </div>
             <button type="button" data-act="sos" class="tracker__sos">
               <span data-text="tracker.sos"></span>
               <small data-text="tracker.sos-hold"></small>

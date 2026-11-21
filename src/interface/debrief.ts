@@ -1,5 +1,5 @@
 import type { Fall, Injury, Kit, LogPage } from "../physics";
-import type { ClimberId, Strike } from "../simulation";
+import type { ClimberId, ColdView, FrostPart, Strike } from "../simulation";
 import { Readings } from "./readings";
 import type { DayWarmth } from "./sun-clock";
 import type { Texts } from "./texts";
@@ -22,6 +22,9 @@ export interface DebriefFacts {
   readonly sherpa?: ClimberId | null;
   /** What their hard landings left them (#241): none, if not said. */
   readonly injuries?: readonly Injury[];
+  /** What the cold did to them (#272): their frostbite, and whether it killed them; none, if not
+   * said. */
+  readonly cold?: ColdView | null;
 }
 
 /** The debrief said: whether the climber died, a verdict, and its lines. */
@@ -76,6 +79,7 @@ export class Debrief {
     kit,
     sherpa = null,
     injuries = [],
+    cold = null,
   }: DebriefFacts): DebriefSaid {
     const caught = falls.filter((fall) => fall.held === true).length;
     const unroped = falls.filter((fall) => fall.held === false);
@@ -109,6 +113,10 @@ export class Debrief {
     );
     if (injuries.length > 0) {
       line("injuries", this.hurt(injuries), "bad");
+    }
+    const bitten = cold?.frostbitten ?? [];
+    if (bitten.length > 0) {
+      line("frostbite", this.parts(bitten), "bad");
     }
     line("under-seracs", this.duration(page.underSeracs), "plain");
     line("stopped", this.duration(page.stopped), page.stopped > 0 ? "bad" : "good");
@@ -150,8 +158,13 @@ export class Debrief {
               : "training-ladder.pulled";
       line("training-ladder", this.texts.say(said), broke.held === true ? "good" : "bad");
     }
-    const verdict = this.verdict(page, caught, unroped, strikes, player, injuries);
+    const verdict = this.verdict(page, caught, unroped, strikes, player, injuries, cold);
     return { dead, verdict, lines };
+  }
+
+  /** The parts the cold froze, in words: "your face and fingers". */
+  private parts(parts: readonly FrostPart[]): string {
+    return parts.map((part) => this.texts.say(`frostbite.${part}`)).join(this.texts.say("and"));
   }
 
   /** What a climber's landings left them, in words: each injury, the worst limb first as they
@@ -170,12 +183,16 @@ export class Debrief {
     strikes: readonly Strike[],
     player: ClimberId,
     injuries: readonly Injury[],
+    cold: ColdView | null,
   ): DebriefSaid["verdict"] {
     const { texts } = this;
     if (page.died !== null) {
       const struck = strikes.find((strike) => strike.killed.includes(player));
       if (struck !== undefined) {
         return { text: texts.say(`died.${struck.kind}`), tone: "bad" };
+      }
+      if (cold?.froze === true) {
+        return { text: texts.say("died.cold"), tone: "bad" };
       }
       const worst = unroped.reduce<Fall | null>(
         (most, fall) => (most === null || fall.drop > most.drop ? fall : most),
@@ -197,6 +214,10 @@ export class Debrief {
       return (page.evacuated ?? null) !== null || injuries.some(({ kind }) => kind !== "sprain")
         ? { text: texts.say("verdict.evacuated", said), tone: "bad" }
         : { text: texts.say("verdict.hurt", said), tone: "warn" };
+    }
+    if ((cold?.frostbitten.length ?? 0) > 0) {
+      const parts = this.parts(cold?.frostbitten ?? []);
+      return { text: texts.say("verdict.frostbite", { parts }), tone: "bad" };
     }
     if (page.exposed > 0) {
       return {
