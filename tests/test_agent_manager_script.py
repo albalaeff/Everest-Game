@@ -49,6 +49,7 @@ from scripts.agent_manager import (
 )
 from scripts.agents import (
     NOTES,
+    ROOT,
     WATCH_EVERY,
     AgentPower,
     CompactShare,
@@ -813,16 +814,8 @@ class Repositories:
 
 
 @pytest.fixture
-def repositories(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Repositories:
-    """With none of the developer's git settings (a signing key, hooks), and a name to
-    commit as."""
-    settings = tmp_path / "gitconfig"
-    settings.write_text("", encoding="utf-8")
-    monkeypatch.setenv("GIT_CONFIG_GLOBAL", str(settings))
-    monkeypatch.setenv("GIT_CONFIG_NOSYSTEM", "1")
-    for who in ("AUTHOR", "COMMITTER"):
-        monkeypatch.setenv(f"GIT_{who}_NAME", "Claude")
-        monkeypatch.setenv(f"GIT_{who}_EMAIL", "claude@example.com")
+def repositories(tmp_path: Path, plain_git: None) -> Repositories:
+    """With none of the developer's git settings (`plain_git`)."""
     return Repositories(tmp_path)
 
 
@@ -2896,17 +2889,16 @@ def wiki_run(
     dry_run: bool = False,
     sleep: Callable[[float], None] | None = None,
 ) -> tuple[WikiRun, WikiLauncher, list[str]]:
-    """A run from the checkout `tmp_path`, whose main checkout is `tmp_path/main`, on a check
-    that finds `news`; what it says goes in the list."""
+    """A run whose locks are in `tmp_path/.agent-runs`, on a check that finds `news`; what it
+    says goes in the list."""
     said: list[str] = []
     fake = launcher or WikiLauncher(0)
     runs = tmp_path / ".agent-runs"
-    main = tmp_path / "main" / ".agent-runs"
     run = WikiRun(
         lambda now: news,
         fake,  # type: ignore[arg-type]
         WikiLock(runs / "wiki.lock"),
-        (ManagerLock(runs / "manager.lock"), ManagerLock(main / "manager.lock")),
+        ManagerLock(runs / "manager.lock"),
         said.append,
         dry_run=dry_run,
         now=lambda: NOW,
@@ -3015,12 +3007,10 @@ def test_ctrl_c_stops_the_wiki_s_agent_and_keeps_its_worktree(tmp_path: Path) ->
     assert said[-1] == "the wiki behind main: finished None"  # kept, as `Agent.finish` says
 
 
-@pytest.mark.parametrize(
-    "where", [".agent-runs", "main/.agent-runs"], ids=["here", "in the main checkout"]
-)
-def test_while_a_manager_runs_the_wiki_is_left_to_its_watcher(tmp_path: Path, where: str) -> None:
-    # #126: its watcher keeps the wiki, and its agent would share the wiki's worktree.
-    manager = ManagerLock(tmp_path / where / "manager.lock")
+def test_while_a_manager_runs_the_wiki_is_left_to_its_watcher(tmp_path: Path) -> None:
+    # #126: its watcher keeps the wiki, and its agent would share the wiki's worktree. Its lock
+    # is the main checkout's, from any worktree (#307): one lock to read, wherever each runs.
+    manager = ManagerLock(tmp_path / ".agent-runs" / "manager.lock")
     assert manager.acquire(NOW)
     try:
         run, launcher, said = wiki_run(tmp_path)
@@ -3030,7 +3020,7 @@ def test_while_a_manager_runs_the_wiki_is_left_to_its_watcher(tmp_path: Path, wh
 
     assert launcher.tried == []
     assert said == [
-        f"The agent manager runs here (pid {os.getpid()}, since 2026-10-12 18:30): "
+        f"The agent manager runs here (pid {os.getpid()}, in {ROOT}, since 2026-10-12 18:30): "
         "its watcher keeps the wiki up to date."
     ]
 
@@ -3045,7 +3035,9 @@ def test_a_second_wiki_run_leaves_the_wiki_to_the_first(tmp_path: Path) -> None:
         first.release()
 
     assert launcher.tried == []
-    assert said == [f"A wiki run already runs here (pid {os.getpid()}, since 2026-10-12 18:30)."]
+    assert said == [
+        f"A wiki run already runs here (pid {os.getpid()}, in {ROOT}, since 2026-10-12 18:30)."
+    ]
 
 
 def test_a_dry_run_says_what_it_would_run_and_starts_nothing(tmp_path: Path) -> None:

@@ -61,8 +61,8 @@ give its agents a tool installed since it started (`ToolchainHold`, #108). When 
 ends, its worktree goes if nothing in it is missing from GitHub; else it stays, and the log
 says why. The first Ctrl+C stops the watcher and starts nothing more, letting the agents
 running finish their work; a second stops them too, and keeps their worktrees as they are
-(#485). While it runs it holds a lock (`ManagerLock`), so a session's watcher ends: the
-agents take the issues (CLAUDE.md → Sessions).
+(#485). While it runs it holds a lock (`ManagerLock`), so a session's watcher ends, in
+any worktree of the repository (#307): the agents take the issues (CLAUDE.md → Sessions).
 """
 
 import argparse
@@ -111,7 +111,7 @@ from scripts.agents import (  # noqa: E402
     Priority,
     WikiLock,
 )
-from scripts.check_setup import Check, Toolchain, main_checkout  # noqa: E402
+from scripts.check_setup import Check, Toolchain  # noqa: E402
 from scripts.claude_cost import IssueCost, Title, issue_cost  # noqa: E402
 from scripts.github import (  # noqa: E402
     CLOSES,
@@ -2058,14 +2058,14 @@ class WikiRun:
     end, and says what came of it.
 
     It takes no issue and holds no manager's lock, so a session's watcher on the machine goes
-    on (#597). While a manager runs, in this checkout or the main one (`managers`), the
+    on (#597). While a manager runs (`manager`, in any worktree of the repository, #307), the
     manager's watcher keeps the wiki and this does nothing; and while another wiki run holds
     `lock`, neither does this, rather than start a second agent in the wiki's worktree."""
 
     check: Callable[[datetime], WikiNews]  # `WikiCheck.run`
     launcher: Launcher
     lock: WikiLock
-    managers: tuple[ManagerLock, ...]
+    manager: ManagerLock
     say: Say
     dry_run: bool = False
     now: Callable[[], datetime] = datetime.now  # naive, as the watcher's check takes it
@@ -2076,12 +2076,11 @@ class WikiRun:
     def __call__(self) -> int:
         """Does it; the exit status: 0 when the wiki is up to date (its pages pushed, or
         nothing new) or left to a manager or another run, 1 when it isn't."""
-        for manager in self.managers:
-            if (held := manager.holder()) is not None:
-                self.say(
-                    f"The agent manager runs here ({held}): its watcher keeps the wiki up to date."
-                )
-                return 0
+        if (held := self.manager.holder()) is not None:
+            self.say(
+                f"The agent manager runs here ({held}): its watcher keeps the wiki up to date."
+            )
+            return 0
         if not self.dry_run and not self.lock.acquire(self.now()):
             self.say(f"A wiki run already runs here ({self.lock.holder()}).")
             return 0
@@ -2206,7 +2205,7 @@ def main(argv: Sequence[str] | None = None) -> None:
                 database=lambda slot: TestDatabase(slot, server),
             ),
             WikiLock(),
-            (ManagerLock(), ManagerLock(main_checkout() / RUNS.name / "manager.lock")),
+            ManagerLock(),
             Console().say,
             dry_run=args.dry_run,
         )

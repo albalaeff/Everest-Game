@@ -1,5 +1,6 @@
 """scripts/agents.py: what the session manager and its agents share (#387)."""
 
+import os
 from datetime import datetime
 from pathlib import Path
 
@@ -7,6 +8,7 @@ import pytest
 
 from scripts.agents import (
     LABEL_FAMILIES,
+    ROOT,
     AgentPower,
     CompactShare,
     ManagerConfig,
@@ -14,9 +16,12 @@ from scripts.agents import (
     Priority,
     WatchLock,
     WikiLock,
+    main_checkout,
 )
+from tests.fakes import Worktrees
 
 pytestmark = pytest.mark.unit
+SESSION = WatchLock.SESSION
 
 DEFAULT = AgentPower("opus", "xhigh")
 PCT = "CLAUDE_AUTOCOMPACT_PCT_OVERRIDE"
@@ -226,14 +231,13 @@ def test_nobody_holds_the_lock_before_a_manager_takes_it(tmp_path: Path) -> None
     assert ManagerLock(tmp_path / "manager.lock").holder() is None
 
 
-def test_a_running_manager_holds_it_and_says_since_when(tmp_path: Path) -> None:
+def test_a_running_manager_holds_it_and_says_where_and_since_when(tmp_path: Path) -> None:
     path = tmp_path / ".agent-runs" / "manager.lock"
     manager = ManagerLock(path)
 
     assert manager.acquire(datetime(2026, 10, 12, 18, 2))
     try:
-        held = ManagerLock(path).holder()
-        assert held is not None and "since 2026-10-12 18:02" in held
+        assert ManagerLock(path).holder() == f"pid {os.getpid()}, in {ROOT}, since 2026-10-12 18:02"
         assert not ManagerLock(path).acquire(datetime(2026, 10, 12, 18, 3))  # a second one
     finally:
         manager.release()
@@ -252,14 +256,14 @@ def test_a_lock_left_by_a_manager_that_died_holds_nothing(tmp_path: Path) -> Non
 def test_a_session_s_watcher_holds_a_lock_of_its_own_naming_its_session(tmp_path: Path) -> None:
     # #597: a second session's watcher ends; `handoffs` in the first knows the watcher is its own.
     path = tmp_path / "watch.lock"
-    mine = WatchLock(path, {"CLAUDE_CODE_SESSION_ID": "9fec4b62"})
+    mine = WatchLock(path, {SESSION: "9fec4b62"})
 
     assert mine.acquire(datetime(2026, 10, 18, 20, 34))
     try:
         held = WatchLock(path, {}).holder()
-        assert held is not None and held.endswith("session 9fec4b62, since 2026-10-18 20:34")
-        assert WatchLock(path, {"CLAUDE_CODE_SESSION_ID": "9fec4b62"}).another() is None
-        assert WatchLock(path, {"CLAUDE_CODE_SESSION_ID": "0ther"}).another() == held
+        assert held == f"pid {os.getpid()}, session 9fec4b62, in {ROOT}, since 2026-10-18 20:34"
+        assert WatchLock(path, {SESSION: "9fec4b62"}).another() is None
+        assert WatchLock(path, {SESSION: "0ther"}).another() == held
         assert WatchLock(path, {}).another() == held  # outside a session, none is one's own
     finally:
         mine.release()
@@ -280,3 +284,65 @@ def test_a_wiki_run_holds_a_lock_of_its_own(tmp_path: Path) -> None:
         first.release()
 
     assert WikiLock(path).holder() is None
+
+
+# --- the locks in every worktree (#307) ------------------------------------------------------
+
+
+def test_the_main_checkout_is_found_from_any_of_its_worktrees(worktrees: Worktrees) -> None:
+    # A Claude app session's worktree and an agent's both belong to the main checkout.
+    main = worktrees.checkout.resolve()
+
+    for checkout in (worktrees.checkout, worktrees.app, worktrees.agent):
+        assert main_checkout(root=checkout).resolve() == main
+
+
+def test_the_locks_are_in_the_main_checkout_s_agent_runs() -> None:
+    # This repository's, from whichever of its worktrees the tests run in: on CI, its clone.
+    runs = main_checkout() / ".agent-runs"
+
+    assert WatchLock(env={}).path == runs / "watch.lock"
+    assert ManagerLock().path == runs / "manager.lock"
+    assert WikiLock().path == runs / "wiki.lock"
+
+
+def test_a_watcher_in_one_worktree_ends_a_second_one_in_any_other(worktrees: Worktrees) -> None:
+    # Two sessions as one login, each in a worktree of its own as the Claude app gives them,
+    # would both start the same new issue (seen on 22 Nov 2026, 03:03 to 03:10).
+    first = WatchLock(env={SESSION: "9fec4b62"}, checkout=worktrees.app)
+
+    assert first.acquire(datetime(2026, 11, 22, 3, 3))
+    try:
+        for checkout in (worktrees.checkout, worktrees.agent):
+            second = WatchLock(env={SESSION: "0ther"}, checkout=checkout)
+            assert not second.acquire(datetime(2026, 11, 22, 3, 4))
+            assert second.another() == (
+                f"pid {os.getpid()}, session 9fec4b62, in {worktrees.app}, since 2026-11-22 03:03"
+            )
+    finally:
+        first.release()
+
+    assert WatchLock(env={}, checkout=worktrees.agent).holder() is None
+    assert not (worktrees.app / ".agent-runs").exists()  # nothing in the worktree's own
+
+
+def test_a_manager_or_a_wiki_run_in_one_worktree_holds_its_lock_in_every_other(
+    worktrees: Worktrees,
+) -> None:
+    # The manager in the main checkout ends a session's watcher in a worktree; the wiki's
+    # agent's worktree is the machine's, from whichever checkout the wiki run starts.
+    manager = ManagerLock(checkout=worktrees.checkout)
+    wiki = WikiLock(checkout=worktrees.agent)
+
+    assert manager.acquire(datetime(2026, 11, 22, 3, 5)) and wiki.acquire(datetime(2026, 11, 22, 6))
+    try:
+        assert ManagerLock(checkout=worktrees.app).holder() == (
+            f"pid {os.getpid()}, in {worktrees.checkout}, since 2026-11-22 03:05"
+        )
+        assert not ManagerLock(checkout=worktrees.agent).acquire(datetime(2026, 11, 22, 3, 6))
+        assert not WikiLock(checkout=worktrees.checkout).acquire(datetime(2026, 11, 22, 6, 1))
+    finally:
+        manager.release()
+        wiki.release()
+
+    assert ManagerLock(checkout=worktrees.app).holder() is None

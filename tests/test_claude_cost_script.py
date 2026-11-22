@@ -1,7 +1,6 @@
 """scripts/claude_cost.py: what Claude's work on an issue cost, from its logs (#390)."""
 
 import json
-import subprocess
 from datetime import UTC, date, datetime
 from decimal import Decimal
 from pathlib import Path
@@ -22,6 +21,7 @@ from scripts.claude_cost import (
     session_logs,
 )
 from scripts.claude_prices import ALL, ModelPrice, Price, PriceHistory, Tokens
+from tests.fakes import Worktrees
 
 pytestmark = pytest.mark.unit
 
@@ -121,26 +121,12 @@ def test_the_app_s_worktrees_count_even_once_they_re_gone(tmp_path: Path) -> Non
 
 
 def test_the_app_s_worktrees_are_found_in_the_main_checkout_from_any_worktree(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    worktrees: Worktrees,
 ) -> None:
-    (tmp_path / "gitconfig").write_text("", encoding="utf-8")  # none of the developer's
-    monkeypatch.setenv("GIT_CONFIG_GLOBAL", str(tmp_path / "gitconfig"))
-    monkeypatch.setenv("GIT_CONFIG_NOSYSTEM", "1")
-    for who in ("AUTHOR", "COMMITTER"):
-        monkeypatch.setenv(f"GIT_{who}_NAME", "Claude")
-        monkeypatch.setenv(f"GIT_{who}_EMAIL", "claude@example.com")
-    checkout = tmp_path / "Everest-Game"
-    session = checkout / ".claude" / "worktrees" / "admiring-cohen-eaf01e"
-    for args in (
-        ["init", "-q", "-b", "main", str(checkout)],
-        ["-C", str(checkout), "commit", "-q", "--allow-empty", "-m", "start"],
-        ["-C", str(checkout), "worktree", "add", "-q", "-b", "x", str(session)],
-    ):
-        subprocess.run(["git", *args], check=True, capture_output=True)
+    expected = (worktrees.checkout / ".claude" / "worktrees").resolve()
 
-    expected = (checkout / ".claude" / "worktrees").resolve()
-    assert app_worktrees(session).resolve() == expected
-    assert app_worktrees(checkout).resolve() == expected
+    for checkout in (worktrees.checkout, worktrees.app, worktrees.agent):
+        assert app_worktrees(checkout).resolve() == expected
 
 
 # --- a session's replies -------------------------------------------------------------------
