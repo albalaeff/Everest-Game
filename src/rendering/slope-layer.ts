@@ -48,6 +48,7 @@ import { Glacier } from "./glacier";
 import type { PartStretch } from "./glacier";
 import { GlacierDrawing } from "./glacier-drawing";
 import { GlacierIce } from "./glacier-ice";
+import type { GlacierPiece } from "./glacier-ice";
 import { HazardDrawing } from "./hazard-drawing";
 import { IceBody } from "./ice-body";
 import { IceSurface } from "./ice-surface";
@@ -355,6 +356,10 @@ export class SlopeLayer extends ParallaxLayer {
    * the rims of its cups, which glint where a headlamp's beam falls on them. */
   private readonly iceSheen = new Graphics();
   private glacierShines: readonly Point[] = [];
+  /** The glacier's ice still to be worked out, a strip a frame, the nearest the view first, so the
+   * picture opens at once and never stops for it; what isn't worked out yet shows its flat layers. */
+  private glacier: GlacierIce | null = null;
+  private readonly iceToCome: GlacierPiece[] = [];
   /** The bounce each ladder was last drawn at: a bouncing one is drawn every frame. */
   private readonly bounced = new Map<string, number>();
   /** The picture's seconds, which a ladder bounces on. */
@@ -817,6 +822,7 @@ export class SlopeLayer extends ParallaxLayer {
       this.drawSurface(size);
     }
     const view = SlopeLayer.inView(camera);
+    this.workOutIce(view);
     this.puffs.advance(seconds, atmosphere.gust);
     this.chips.advance(seconds);
     this.load();
@@ -1798,13 +1804,8 @@ export class SlopeLayer extends ParallaxLayer {
    * and its bare blue ice its own glaze, so the flat shade under the surface and the blue ice's flat
    * skin are left off. */
   private drawGlacierIce(glacier: GlacierIce): void {
-    for (const strip of glacier.strips()) {
-      const texture = this.picture(strip.columns, strip.rows, strip.pixels);
-      if (texture === null) {
-        continue;
-      }
-      this.glacierFaces.hang(glacier, strip, texture);
-    }
+    this.glacier = glacier;
+    this.iceToCome.push(...glacier.pieces());
     for (const line of glacier.sheen()) {
       SlopeLayer.lines(this.iceSheen, [line]);
     }
@@ -1817,6 +1818,33 @@ export class SlopeLayer extends ParallaxLayer {
     this.glacierShines = glacier.shines();
     this.shade.visible = false;
     this.iceSkin.visible = false;
+  }
+
+  /** The next strip of the glacier's ice worked out and hung, the nearest the view's middle, near
+   * the surface before deep down: one a frame, while any is to come. */
+  private workOutIce(view: InView): void {
+    const { glacier, iceToCome } = this;
+    if (glacier === null || iceToCome.length === 0) {
+      return;
+    }
+    const middle = (view.left + view.right) / 2;
+    const away = ({ left, right, band }: GlacierPiece): number =>
+      Math.max(0, left - middle, middle - right) + band.from * 10;
+    let nearest = 0;
+    for (const [index, piece] of iceToCome.entries()) {
+      if (away(piece) < away(iceToCome[nearest] ?? piece)) {
+        nearest = index;
+      }
+    }
+    const [piece] = iceToCome.splice(nearest, 1);
+    if (piece === undefined) {
+      return;
+    }
+    const strip = glacier.strip(piece.left, piece.right, piece.band);
+    const texture = this.picture(strip.columns, strip.rows, strip.pixels);
+    if (texture !== null) {
+      this.glacierFaces.hang(glacier, strip, texture);
+    }
   }
 
   /** What marks the snow, as `SlopeDetails` lays it: the sastrugi, the boot track, the walls. */

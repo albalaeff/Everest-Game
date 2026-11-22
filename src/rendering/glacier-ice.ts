@@ -21,6 +21,13 @@ export interface GlacierBand {
   readonly fade: number;
 }
 
+/** Where a strip of the glacier's ice goes: from `left` to `right` across, through `band`. */
+export interface GlacierPiece {
+  readonly left: number;
+  readonly right: number;
+  readonly band: GlacierBand;
+}
+
 /** A piece of the glacier's ice worked out: `columns` across from `left` to `right`, each hanging
  * from the surface at its x, and `rows` down through its band; its day colours, four bytes a
  * pixel, red, green, blue and how solid, row by row from the top left. */
@@ -96,6 +103,7 @@ interface Cup {
  * (which would flicker in stripes). */
 class Run {
   private readonly sums: Float64Array;
+  private readonly smoothed = new Map<number, Smoothed>();
 
   constructor(
     private readonly from: number,
@@ -116,12 +124,70 @@ class Run {
     return (high - low) / ((2 * half) / this.step);
   }
 
+  /** The averages over stretches `wide` long, one at each step, so a strip as fine as that looks
+   * each up at once: worked out once for each width. */
+  over(wide: number): Smoothed {
+    let smoothed = this.smoothed.get(wide);
+    if (smoothed === undefined) {
+      const values = new Float32Array(this.sums.length - 1);
+      for (let index = 0; index < values.length; index += 1) {
+        values[index] = this.average(this.from + (index + 0.5) * this.step, wide);
+      }
+      smoothed = new Smoothed(this.from, this.step, values);
+      this.smoothed.set(wide, smoothed);
+    }
+    return smoothed;
+  }
+
   /** The running sum up to `at`, between the steps. */
   private sum(at: number): number {
     const place = Math.min(Math.max((at - this.from) / this.step, 0), this.sums.length - 1);
     const below = Math.floor(place);
     const before = this.sums[below] ?? 0;
     return before + ((this.sums[below + 1] ?? before) - before) * (place - below);
+  }
+}
+
+/** Values worked out every `every` pixels of a strip, `across` of them in a row, eased to any
+ * pixel between them: what changes slowly over the face, worked out at a few of its pixels. */
+class Grid {
+  constructor(
+    private readonly values: Float32Array,
+    private readonly across: number,
+    private readonly every: number,
+  ) {}
+
+  /** The value at a pixel of the strip, between the four worked out round it. */
+  at(column: number, row: number): number {
+    const x = column / this.every;
+    const y = row / this.every;
+    const left = Math.floor(x);
+    const top = Math.floor(y);
+    const right = x - left;
+    const down = y - top;
+    const index = top * this.across + left;
+    const { values } = this;
+    const a = values[index] ?? 0;
+    const b = values[index + 1] ?? a;
+    const c = values[index + this.across] ?? a;
+    const d = values[index + this.across + 1] ?? c;
+    const upper = a + (b - a) * right;
+    return upper + (c + (d - c) * right - upper) * down;
+  }
+}
+
+/** A `Run` averaged over one width, a value at each of its steps. */
+class Smoothed {
+  constructor(
+    private readonly from: number,
+    private readonly step: number,
+    private readonly values: Float32Array,
+  ) {}
+
+  /** The average about `at`. */
+  at(at: number): number {
+    const index = Math.round((at - this.from) / this.step - 0.5);
+    return this.values[Math.min(Math.max(index, 0), this.values.length - 1)] ?? 0;
   }
 }
 
@@ -153,8 +219,8 @@ export class GlacierIce {
     { from: 0, to: 3, fine: 32, fade: 0.6 },
     { from: 2.4, to: 18, fine: 10, fade: 3 },
   ];
-  /** The widest a strip is, in pixels: a texture any phone takes. */
-  static readonly WIDEST = 2048;
+  /** The most pixels a strip has: few enough to work out within a frame, one a frame. */
+  static readonly MOST_PIXELS = 40_000;
   /** How far it fades out at its right end, past the section's, into the flat glacier. */
   static readonly FADE_OUT = 30;
   /** How deep the light comes down through the ice: it falls to a third every so many metres. */
@@ -259,17 +325,24 @@ export class GlacierIce {
     return Math.exp(-Math.max(depth, 0) / GlacierIce.LIGHT_DEPTH);
   }
 
-  /** All of it, band by band, in strips no wider than `WIDEST` pixels, left to right. */
-  strips(): IceStrip[] {
+  /** The strips it's worked out in, band by band, each of no more than `MOST_PIXELS`, left to
+   * right: where each goes, not yet worked out. */
+  pieces(): GlacierPiece[] {
     const { left, right } = this.reach;
-    const strips: IceStrip[] = [];
+    const pieces: GlacierPiece[] = [];
     for (const band of GlacierIce.BANDS) {
-      const wide = GlacierIce.WIDEST / band.fine;
+      const rows = Math.round((band.to - band.from) * band.fine);
+      const wide = Math.floor(GlacierIce.MOST_PIXELS / rows) / band.fine;
       for (let from = left; from < right; from += wide) {
-        strips.push(this.strip(from, Math.min(from + wide, right), band));
+        pieces.push({ left: from, right: Math.min(from + wide, right), band });
       }
     }
-    return strips;
+    return pieces;
+  }
+
+  /** All of it, worked out. */
+  strips(): IceStrip[] {
+    return this.pieces().map(({ left, right, band }) => this.strip(left, right, band));
   }
 
   /** One band of it from `left` to `right` across. */
@@ -697,6 +770,14 @@ class StripLayout {
       const share = Math.min(1, Math.max(0, (band.to - depth) / band.fade));
       return share * share * (3 - 2 * share);
     });
+    // Under the snow and the firn, or the bare ice's glaze, how much their light still counts.
+    const nears = depths.map((depth) => Math.exp(-depth / GLAZE.under));
+    const packets = glacier.packets.over(pixel);
+    const layers = glacier.layers.over(pixel);
+    const dusts = glacier.dust.over(pixel);
+    const laminae = glacier.laminae.over(pixel);
+    const lenses = glacier.lenses.over(pixel);
+    const { snow: snowShades, firn: firnShades, clear, bubbly } = shades;
     const shading = this.shading();
     // How much of the fine detail this band is fine enough to show.
     const detail = Math.min(1, Math.max(0, (fine - 10) / 18));
@@ -715,7 +796,6 @@ class StripLayout {
           snow * (share + CRUSTS.wander * (glacier.noise.at(x * 0.43 + index * 13.7, 1.3) * 2 - 1)),
       );
       const keeps = 1 - FIRN.keeps * Math.min(1, (firn - snow) / 1.4);
-      const kept = (depth: number): number => 1 - (1 - keeps) * Math.exp(-depth / GLAZE.under);
       for (let row = 0; row < rows; row += 1) {
         const depth = depths[row] ?? 0;
         if (depth < hollow) {
@@ -723,7 +803,7 @@ class StripLayout {
         }
         const index = row * columns + column;
         const y = top - depth;
-        const lit = shading[index] ?? 1;
+        const lit = shading.at(column, row);
         let red: number;
         let green: number;
         let blue: number;
@@ -736,37 +816,36 @@ class StripLayout {
           }
           const share = depth / Math.max(snow, 1e-3);
           const tone = (1 - 0.5 * share ** 1.4 - CRUSTS.dark * Math.max(crust, 0)) * (0.9 + 0.1 * lit);
-          [red, green, blue] = StripLayout.at(shades.snow, tone, STEPS);
+          const step = Math.round(Math.min(Math.max(tone, 0), 1) * (STEPS - 1)) * 3;
+          red = snowShades[step] ?? 0;
+          green = snowShades[step + 1] ?? 0;
+          blue = snowShades[step + 2] ?? 0;
         } else if (depth < firn) {
           const down = depth - snow;
           const share = down / Math.max(firn - snow, 1e-3);
           const wobble = 0.015 * (glacier.noise.at(x * 1.9, 3.3) - 0.5);
-          const line = glacier.laminae.average(down + wobble, pixel) * detail;
-          const lens = glacier.lenses.average(down + wobble, pixel) * detail;
-          // The firn turns to ice at its foot over a few centimetres.
+          const line = laminae.at(down + wobble) * detail;
+          const lens = lenses.at(down + wobble) * detail;
           const tone = (0.96 - 0.42 * share - FIRN.dark * line) * (0.85 + 0.15 * lit);
-          [red, green, blue] = StripLayout.at(shades.firn, tone, STEPS);
+          const step = Math.round(Math.min(Math.max(tone, 0), 1) * (STEPS - 1)) * 3;
+          red = firnShades[step] ?? 0;
+          green = firnShades[step + 1] ?? 0;
+          blue = firnShades[step + 2] ?? 0;
           glazed = FIRN.glassy * lens;
         } else {
           const runAt = run + depth;
-          const lensAt = StripLayout.bilinear(lensGrid, column, row, columns, rows);
+          const lensAt = lensGrid.at(column, row);
           const fineness = LENSES.least + (1 - LENSES.least) * lensAt;
-          let white = Math.min(
-            1,
-            Math.max(
-              0,
-              glacier.packets.average(runAt, pixel) + glacier.layers.average(runAt, pixel) * fineness,
-            ),
-          );
-          let dirt = glacier.dust.average(runAt, pixel);
-          let light = (lights[row] ?? 0) * kept(depth);
+          let white = Math.min(1, Math.max(0, packets.at(runAt) + layers.at(runAt) * fineness));
+          let dirt = dusts.at(runAt);
+          const near = nears[row] ?? 0;
+          let light = (lights[row] ?? 0) * (1 - (1 - keeps) * near);
           if (bare > 0) {
             // Clear ice up to the surface is blue, not white: what makes the ice under the snow
             // pale is the snow's and the firn's light, and bubbles. Deeper down the ice is the
             // glacier's, whatever lies on top.
-            const near = bare * Math.exp(-depth / GLAZE.under);
-            light *= 1 - GLAZE.darker * near;
-            white *= 1 - GLAZE.clearer * near;
+            light *= 1 - GLAZE.darker * bare * near;
+            white *= 1 - GLAZE.clearer * bare * near;
             const under = depth - hollow;
             const share = Math.max(0, 1 - under / GLAZE.deep);
             glazed = GLAZE.whitens * bare * share * share;
@@ -803,7 +882,6 @@ class StripLayout {
           }
           const tone = Math.min(1, light * lit);
           const step = Math.round(Math.min(Math.max(tone, 0), 1) * (STEPS - 1)) * 3;
-          const { clear, bubbly } = shades;
           red = (clear[step] ?? 0) + ((bubbly[step] ?? 0) - (clear[step] ?? 0)) * white;
           green = (clear[step + 1] ?? 0) + ((bubbly[step + 1] ?? 0) - (clear[step + 1] ?? 0)) * white;
           blue = (clear[step + 2] ?? 0) + ((bubbly[step + 2] ?? 0) - (clear[step + 2] ?? 0)) * white;
@@ -848,7 +926,7 @@ class StripLayout {
 
   /** How brightly each pixel's face is lit by its swells, as a share of a flat face's light: worked
    * out every few pixels and eased between. */
-  private shading(): Float32Array {
+  private shading(): Grid {
     const { glacier, left, band, columns, rows } = this;
     const { SWELLS, LIGHT, SKY, SHADING } = StripLayout;
     const every = SWELLS.every;
@@ -856,11 +934,11 @@ class StripLayout {
     const across = Math.ceil(columns / every) + 2;
     const down = Math.ceil(rows / every) + 2;
     const heights = new Float32Array(across * down);
-    for (let gridRow = 0; gridRow < down; gridRow += 1) {
-      const depth = band.from + gridRow * every * pixel;
-      for (let gridColumn = 0; gridColumn < across; gridColumn += 1) {
-        const x = left + gridColumn * every * pixel;
-        const y = glacier.top(x) - depth;
+    for (let gridColumn = 0; gridColumn < across; gridColumn += 1) {
+      const x = left + gridColumn * every * pixel;
+      const top = glacier.top(x);
+      for (let gridRow = 0; gridRow < down; gridRow += 1) {
+        const y = top - (band.from + gridRow * every * pixel);
         heights[gridRow * across + gridColumn] =
           SWELLS.high * (glacier.noise.fractal(x * SWELLS.across + 3.1, y * SWELLS.across + 5.7, 2) - 0.5);
       }
@@ -885,18 +963,12 @@ class StripLayout {
         lit[index] = 1 + SHADING * ((SKY + (1 - SKY) * facing) / flat - 1);
       }
     }
-    const shading = new Float32Array(columns * rows);
-    for (let row = 0; row < rows; row += 1) {
-      for (let column = 0; column < columns; column += 1) {
-        shading[row * columns + column] = StripLayout.eased(lit, across, column / every, row / every);
-      }
-    }
-    return shading;
+    return new Grid(lit, across, every);
   }
 
   /** How much of a packet's fine layers show at each few pixels: they fade in and out along their
    * length. */
-  private lensGrid(): { values: Float32Array; across: number; every: number } {
+  private lensGrid(): Grid {
     const { glacier, left, band, columns, rows } = this;
     const { LENSES, SWELLS } = StripLayout;
     const every = SWELLS.every;
@@ -915,40 +987,7 @@ class StripLayout {
         );
       }
     }
-    return { values, across, every };
-  }
-
-  /** A value of a grid every `every` pixels, eased to a pixel between its corners. */
-  private static bilinear(
-    grid: { values: Float32Array; across: number; every: number },
-    column: number,
-    row: number,
-    _columns: number,
-    _rows: number,
-  ): number {
-    return StripLayout.eased(grid.values, grid.across, column / grid.every, row / grid.every);
-  }
-
-  /** A grid's value `across` and `down` grid steps in, between its corners. */
-  private static eased(values: Float32Array, across: number, column: number, row: number): number {
-    const left = Math.floor(column);
-    const top = Math.floor(row);
-    const right = column - left;
-    const down = row - top;
-    const index = top * across + left;
-    const a = values[index] ?? 0;
-    const b = values[index + 1] ?? a;
-    const c = values[index + across] ?? a;
-    const d = values[index + across + 1] ?? c;
-    const upper = a + (b - a) * right;
-    const lower = c + (d - c) * right;
-    return upper + (lower - upper) * down;
-  }
-
-  /** A colour of `shades` at `tone`, as three channels. */
-  private static at(shades: Uint8Array, tone: number, steps: number): [number, number, number] {
-    const step = Math.round(Math.min(Math.max(tone, 0), 1) * (steps - 1)) * 3;
-    return [shades[step] ?? 0, shades[step + 1] ?? 0, shades[step + 2] ?? 0];
+    return new Grid(values, across, every);
   }
 
   /** The colours of the snow, the firn, the clear ice and the bubbly ice at each step of light,

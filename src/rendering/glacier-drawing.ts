@@ -18,9 +18,10 @@ export class GlacierDrawing extends Container {
   /** The most lamps it lights by: the expedition's climbers in view, at the most. */
   static readonly MOST_LAMPS = 8;
   /** How the lamps' light comes into the ice: down to a third every so many metres under the
-   * surface; round a lamp, as brightly as this share of its beam out to so many metres; and so
-   * much brighter than the light that makes it, where the ice takes it all. */
-  private static readonly INTO = { deep: 1.2, spill: 0.6, spillReach: 3, strong: 1.7 };
+   * surface; round a lamp, as brightly as this share of its beam out to so many metres; so much
+   * brighter than the light that makes it, where the ice takes it all; and spreading so far either
+   * side just under the surface, and more as it goes down. */
+  private static readonly INTO = { deep: 1.2, spill: 0.6, spillReach: 3, strong: 1.7, spread: 0.3 };
 
   private static program: GlProgram | null = null;
   private readonly lamps = new UniformGroup({
@@ -46,7 +47,7 @@ export class GlacierDrawing extends Container {
       (colour.green / 255) * INTO.strong,
       (colour.blue / 255) * INTO.strong,
     ]);
-    (uniforms.uInto as Float32Array).set([INTO.deep, INTO.spill, INTO.spillReach, 0]);
+    (uniforms.uInto as Float32Array).set([INTO.deep, INTO.spill, INTO.spillReach, INTO.spread]);
   }
 
   /** A strip of `glacier` hung from its surface, drawn from `texture`, its picture. */
@@ -149,6 +150,8 @@ export class GlacierDrawing extends Container {
           if (uLampCount > 0.0) {
             float depth = uBand.x + vUV.y * (uBand.y - uBand.x);
             vec2 surface = vec2(vPosition.x, vPosition.y + depth);
+            // The light spreads as it goes down: three points of the surface over it, so far apart.
+            float spread = uInto.w + 0.45 * depth;
             float light = 0.0;
             for (int index = 0; index < ${GlacierDrawing.MOST_LAMPS}; index++) {
               if (float(index) >= uLampCount) {
@@ -156,13 +159,17 @@ export class GlacierDrawing extends Container {
               }
               vec4 lamp = uLamps[index * 2];
               vec4 beam = uLamps[index * 2 + 1];
-              vec2 off = surface - lamp.xy;
-              float along = dot(off, lamp.zw);
-              float across = abs(-off.x * lamp.w + off.y * lamp.z);
-              float cone = atan(across, max(along, 1e-4)) / beam.y;
-              float lit = along > 0.0 && along < beam.x && cone < 1.0
-                ? beam.z * (1.0 - along / beam.x) * (1.0 - cone * cone)
-                : 0.0;
+              float lit = 0.0;
+              for (int tap = -1; tap <= 1; tap++) {
+                vec2 off = surface + vec2(float(tap) * spread, 0.0) - lamp.xy;
+                float along = dot(off, lamp.zw);
+                float across = abs(-off.x * lamp.w + off.y * lamp.z);
+                float cone = atan(across, max(along, 1e-4)) / beam.y;
+                float here = along > 0.0 && along < beam.x && cone < 1.0
+                  ? beam.z * (1.0 - along / beam.x) * (1.0 - cone * cone)
+                  : 0.0;
+                lit += here * (tap == 0 ? 0.5 : 0.25);
+              }
               float spilt = beam.z * uInto.y * max(0.0, 1.0 - length(vPosition - lamp.xy) / uInto.z);
               light = max(light, max(lit, spilt));
             }
