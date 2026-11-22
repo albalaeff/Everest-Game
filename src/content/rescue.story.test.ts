@@ -58,7 +58,9 @@ function rescued(
  */
 describe("Pemba rescues the player in the Khumbu Icefall (#241)", () => {
   it("splints a leg broken past the Popcorn's crevasses, and carries the player back across both ladders to Base Camp", () => {
-    const climb = climbing(3, (along) => along >= 150);
+    // A seed on which nobody slips on the way: on seed 3 Pemba's boots go on the blue ice he
+    // carries the player back over, since #290 changed what the seed draws.
+    const climb = climbing(6, (along) => along >= 150);
     const { physics, logbook } = climb.rules;
     const base = climb.mountain.route.base;
     physics.injure(PLAYER, { part: "leg", kind: "fracture" }, climb.expedition.step);

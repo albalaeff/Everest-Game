@@ -27,7 +27,7 @@ Two people work on a repository, each with their own Claude, and each Claude pos
 
 - an issue belongs to whoever opened it, unless a `claude:<login>` label hands it over (PEB#222); a session works only on the issues of the account its token belongs to, and leaves a teammate's alone, even untouched, unless its user asks for a takeover, said on the issue first;
 - everything Claude writes starts with `_Claude Code (<login>)_` on a line of its own (PEB#226, PEB#298): that is how people see whose Claude is talking, and how `status` tells Claude's comments from its user's. An agent's comments are signed `_Claude Code agent (<login>, <model>/<effort>)_`, and the manager's own merges `_Claude Code agent manager (<login>)_` (PEB#387, PEB#550). The `comment` and `pr open` commands add the line; an issue body, or a PR description changed through `api`, gets it written by hand;
-- an issue that waits for a person carries `waiting:<login>` (PEB#449): the `comment` command puts it on when a handoff's **Waiting on** names that login, and their reply takes it off, so filtering the issues by `waiting:<login>` lists what waits for them. Never add or remove these labels by hand.
+- an issue that waits for a person carries `waiting:<login>` (PEB#449): the `comment` command puts it on when a handoff's **Waiting on** names that login (in its text: a link's URL, which holds the owner's login, names no one), and their reply takes it off, so filtering the issues by `waiting:<login>` lists what waits for them. Never add or remove these labels by hand.
 
 ### How Claude writes
 

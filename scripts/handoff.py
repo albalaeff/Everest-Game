@@ -186,6 +186,11 @@ class Move:
     CI: ClassVar[re.Pattern[str]] = re.compile(r"(?<![\w-])CI(?![\w-])")  # not ci.yml
     # not "emergency", nor "осмыслить"
     MERGE: ClassVar[re.Pattern[str]] = re.compile(r"\b(?:merge|слить|влить|злити|влити)", re.I)
+    # Where a login names no one: a link's target ("[#297](https://github.com/albalaeff/…)"
+    # keeps "#297"), a URL, a reference to another repository's issue ("albalaeff/x#297").
+    LINK: ClassVar[re.Pattern[str]] = re.compile(r"\[(?P<text>[^\]]*)\]\([^)]*\)")
+    URL: ClassVar[re.Pattern[str]] = re.compile(r"(?:https?://|www\.)[^\s<>]+", re.I)
+    REFERENCE: ClassVar[re.Pattern[str]] = re.compile(r"[\w.-]+/[\w.-]+#\d+")
 
     @classmethod
     def of(cls, text: str) -> Move | None:
@@ -234,13 +239,17 @@ class Move:
         return claude_s and self.waiting is not None and not self.waits
 
     def people(self, logins: Iterable[str]) -> tuple[str, ...]:
-        """Those of `logins` it waits on: the ones its **Waiting on** names ("bateks's answer")."""
+        """Those of `logins` it waits on: the ones its **Waiting on** names ("bateks's answer").
+        A login inside a link's target or a URL names no one: every link to the repository
+        holds its owner's login ("CI on [#297](https://github.com/albalaeff/…)", on #284)."""
         if not self.waits:
             return ()
+        said = self.LINK.sub(r"\g<text>", self.waiting or "")
+        said = self.REFERENCE.sub("", self.URL.sub("", said))
         return tuple(
             login
             for login in logins
-            if re.search(rf"(?<![\w-]){re.escape(login)}(?![\w-])", self.waiting or "", re.I)
+            if re.search(rf"(?<![\w-]){re.escape(login)}(?![\w-])", said, re.I)
         )
 
     @property
