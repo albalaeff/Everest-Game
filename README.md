@@ -184,6 +184,28 @@ and the next run starts from there. A person's own edit to the wiki is kept, and
 When two machines' managers update it at once, the first to push wins, and the other drops its
 pages, as its log says.
 
+**The wiki with no manager.** Where no manager runs, `uv run python scripts/agent_manager.py
+wiki` does the same once, then ends (#295): the look, the agent in `<worktree_dir>/wiki` (its
+log in `.agent-runs/wiki.log`), the push, and a line on what it pushed. `--dry-run` says what
+it would run; `--model` and `--effort` give its agent a power of its own. It takes no issue
+and holds no manager's lock, so a session's watcher goes on; while a manager runs, in this
+checkout or the main one, it leaves the wiki to the manager. It exits 1 when the wiki couldn't
+be read or its pages weren't pushed. Run it every day from a checkout of its own on `develop`,
+not the one you work in, whose branch may lack it: a worktree, made once, brought to
+`origin/develop` before each run.
+
+```
+git worktree add --detach ../Everest-Game-wiki origin/develop     # once
+git -C ../Everest-Game-wiki fetch -q origin
+git -C ../Everest-Game-wiki switch -q --detach origin/develop
+cd ../Everest-Game-wiki && uv run python scripts/agent_manager.py wiki --effort high
+```
+
+A scheduled task of the Claude app runs the last three every morning on albalaeff's PC ("Everest
+wiki: daily update"); cron or Task Scheduler can do the same. The app starts its runs in the
+project's folder, on whatever branch is checked out there, so the task's prompt names the wiki's
+checkout.
+
 **How much it reads.** Every reply of an agent's reads its whole conversation again, so Claude
 Code compacts an agent's early, and a long run costs less: at a quarter of the window, about
 240K tokens, where a session's waits for about 967K (`compact_at_percent` in

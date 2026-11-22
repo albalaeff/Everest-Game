@@ -44,6 +44,7 @@ from scripts.agent_manager import (
     Warmup,
     Watcher,
     WikiJob,
+    WikiRun,
     Worktree,
 )
 from scripts.agents import (
@@ -52,7 +53,9 @@ from scripts.agents import (
     AgentPower,
     CompactShare,
     ManagerConfig,
+    ManagerLock,
     Priority,
+    WikiLock,
 )
 from scripts.check_setup import Check
 from scripts.claude_cost import IssueCost
@@ -2841,3 +2844,216 @@ def test_an_agent_s_test_database_is_made_and_dropped() -> None:
     assert database.create() is None
     assert database.create() is None  # there already: kept
     database.drop()
+
+
+# --- the wiki, once, where no manager runs (#295) ---------------------------------------------
+
+
+NOTHING_NEW = WikiNews("The wiki: nothing merged into develop since 3333333.")
+UNREAD = WikiNews("The wiki: couldn't tell what's new (git: exit 128).", failed=True)
+WIKI_LOG = Path(".agent-runs") / "wiki.log"
+
+
+class WikiAgent(FakeAgent):
+    log = WIKI_LOG
+
+
+class WikiLauncher(FakeLauncher):
+    """Starts the wiki's agents, one for each of `ends` in turn: each ends at once with its
+    code, runs on with None, or ends on the usage limit ("limit") or on a model the account
+    lacks (that model's name). `pushed`: whether a run that ended well pushed its pages; if
+    not, its worktree stays (`kept`). `instead`: the model the account falls back to (#4)."""
+
+    def __init__(self, *ends: int | str | None, pushed: bool = True) -> None:
+        super().__init__()
+        self.ends = list(ends)
+        self.pushed = pushed
+        self.instead = "opus"
+
+    def avoid(self, model: str) -> str:
+        super().avoid(model)
+        return self.instead
+
+    def launch(self, job: Job) -> FakeAgent:
+        self.tried.append(job.key)
+        if job.slot in self.refuse:
+            raise AgentError(self.why)
+        made = WikiAgent(job)
+        end = self.ends.pop(0)
+        if end == "limit":
+            made.end_on_the_limit()
+        elif isinstance(end, str):
+            made.end_on_a_missing_model(end)
+        else:
+            made.code = end
+        self.started.append(made)
+        return made
+
+    def kept(self, job: Job) -> bool:
+        return not self.pushed
+
+
+def wiki_run(
+    tmp_path: Path,
+    news: WikiNews = BEHIND,
+    launcher: WikiLauncher | None = None,
+    dry_run: bool = False,
+    sleep: Callable[[float], None] | None = None,
+) -> tuple[WikiRun, WikiLauncher, list[str]]:
+    """A run from the checkout `tmp_path`, whose main checkout is `tmp_path/main`, on a check
+    that finds `news`; what it says goes in the list."""
+    said: list[str] = []
+    fake = launcher or WikiLauncher(0)
+    runs = tmp_path / ".agent-runs"
+    main = tmp_path / "main" / ".agent-runs"
+    run = WikiRun(
+        lambda now: news,
+        fake,  # type: ignore[arg-type]
+        WikiLock(runs / "wiki.lock"),
+        (ManagerLock(runs / "manager.lock"), ManagerLock(main / "manager.lock")),
+        said.append,
+        dry_run=dry_run,
+        now=lambda: NOW,
+        sleep=sleep or (lambda seconds: None),
+    )
+    return run, fake, said
+
+
+def test_with_nothing_new_since_its_last_update_the_wiki_gets_no_agent(tmp_path: Path) -> None:
+    run, launcher, said = wiki_run(tmp_path, NOTHING_NEW)
+
+    assert run() == 0
+    assert said == [NOTHING_NEW.text] and launcher.tried == []
+
+
+def test_a_wiki_that_couldn_t_be_read_fails_the_run(tmp_path: Path) -> None:
+    # The scheduler that runs it every day can tell its person (cron mails a failure).
+    run, launcher, said = wiki_run(tmp_path, UNREAD)
+
+    assert run() == 1
+    assert said == [UNREAD.text] and launcher.tried == []
+
+
+def test_a_wiki_behind_develop_gets_its_agent_and_the_run_ends_with_it(tmp_path: Path) -> None:
+    # #295: what the manager's watcher and agent do every few hours (#126), once, on a
+    # machine where no manager runs: the run waits for the agent, then says what came of it.
+    lock = WikiLock(tmp_path / ".agent-runs" / "wiki.lock")
+    launcher = WikiLauncher(None)  # it runs on until the run has looked twice
+    looks: list[float] = []
+
+    def sleep(seconds: float) -> None:
+        assert lock.holder() is not None  # held while the agent runs
+        looks.append(seconds)
+        if len(looks) == 2:
+            launcher.started[-1].code = 0
+
+    run, _, said = wiki_run(tmp_path, launcher=launcher, sleep=sleep)
+
+    assert run() == 0
+    job = launcher.started[0].job
+    assert isinstance(job, WikiJob) and job.news == BEHIND and job.today == TODAY
+    assert looks == [WikiRun.EVERY, WikiRun.EVERY]
+    assert said == [
+        BEHIND.text,
+        f"the wiki behind develop: started, opus/xhigh; its log: {WIKI_LOG}",
+        "the wiki behind develop: finished 0",
+    ]
+    assert lock.holder() is None  # let go of at the end
+
+
+def test_a_wiki_whose_pages_weren_t_pushed_fails_the_run(tmp_path: Path) -> None:
+    # Its worktree stays, with the pages: the next run starts from them (`WikiClone.make`).
+    run, _, _ = wiki_run(tmp_path, launcher=WikiLauncher(0, pushed=False))
+
+    assert run() == 1
+
+
+def test_a_wiki_agent_that_failed_or_couldn_t_start_fails_the_run(tmp_path: Path) -> None:
+    failed, _, _ = wiki_run(tmp_path, launcher=WikiLauncher(1))
+    refused = WikiLauncher(0)
+    refused.refuse = {"wiki"}
+    run, _, said = wiki_run(tmp_path, launcher=refused)
+
+    assert failed() == 1
+    assert run() == 1
+    assert said[-1] == "the wiki behind develop: not started: its branch is checked out elsewhere"
+
+
+def test_on_a_model_the_account_lacks_the_wiki_s_agent_runs_again_on_the_next_one_down(
+    tmp_path: Path,
+) -> None:
+    # #4: as the manager's agents do; Fable is on some plans only.
+    run, launcher, said = wiki_run(tmp_path, launcher=WikiLauncher("fable", 0))
+
+    assert run() == 0
+    assert launcher.avoided == ["fable"] and len(launcher.started) == 2
+    assert "The account lacks the model fable: the wiki's agent runs on opus." in said
+
+
+def test_with_no_model_left_to_fall_back_to_the_run_fails(tmp_path: Path) -> None:
+    # The weakest model is never given up (`AgentPower.without`): no second try on it.
+    launcher = WikiLauncher("haiku", 0)
+    launcher.instead = "haiku"
+    run, _, _ = wiki_run(tmp_path, launcher=launcher)
+
+    assert run() == 1
+    assert len(launcher.started) == 1
+
+
+def test_a_wiki_agent_that_ended_on_the_usage_limit_fails_the_run(tmp_path: Path) -> None:
+    # It pushed nothing (#476): the next run covers these PRs too.
+    run, _, said = wiki_run(tmp_path, launcher=WikiLauncher("limit"))
+
+    assert run() == 1
+    assert said[-1] == "Usage limit: nothing pushed; the next run covers these PRs too."
+
+
+def test_ctrl_c_stops_the_wiki_s_agent_and_keeps_its_worktree(tmp_path: Path) -> None:
+    def interrupt(seconds: float) -> None:
+        raise KeyboardInterrupt
+
+    run, launcher, said = wiki_run(tmp_path, launcher=WikiLauncher(None), sleep=interrupt)
+
+    assert run() == 1
+    assert launcher.started[0].stopped
+    assert said[-1] == "the wiki behind develop: finished None"  # kept, as `Agent.finish` says
+
+
+@pytest.mark.parametrize(
+    "where", [".agent-runs", "main/.agent-runs"], ids=["here", "in the main checkout"]
+)
+def test_while_a_manager_runs_the_wiki_is_left_to_its_watcher(tmp_path: Path, where: str) -> None:
+    # #126: its watcher keeps the wiki, and its agent would share the wiki's worktree.
+    manager = ManagerLock(tmp_path / where / "manager.lock")
+    assert manager.acquire(NOW)
+    try:
+        run, launcher, said = wiki_run(tmp_path)
+        assert run() == 0
+    finally:
+        manager.release()
+
+    assert launcher.tried == []
+    assert said == [
+        f"The agent manager runs here (pid {os.getpid()}, since 2026-10-12 18:30): "
+        "its watcher keeps the wiki up to date."
+    ]
+
+
+def test_a_second_wiki_run_leaves_the_wiki_to_the_first(tmp_path: Path) -> None:
+    first = WikiLock(tmp_path / ".agent-runs" / "wiki.lock")
+    assert first.acquire(NOW)
+    try:
+        run, launcher, said = wiki_run(tmp_path)
+        assert run() == 0
+    finally:
+        first.release()
+
+    assert launcher.tried == []
+    assert said == [f"A wiki run already runs here (pid {os.getpid()}, since 2026-10-12 18:30)."]
+
+
+def test_a_dry_run_says_what_it_would_run_and_starts_nothing(tmp_path: Path) -> None:
+    run, launcher, said = wiki_run(tmp_path, dry_run=True)
+
+    assert run() == 0
+    assert said == [BEHIND.text, "would run the wiki behind develop"] and launcher.tried == []

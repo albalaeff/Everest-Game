@@ -13,6 +13,7 @@ from scripts.agents import (
     ManagerLock,
     Priority,
     WatchLock,
+    WikiLock,
 )
 
 pytestmark = pytest.mark.unit
@@ -47,6 +48,17 @@ def test_the_file_overrides_what_it_names(tmp_path: Path) -> None:
     assert config.max_parallel == 4
     assert config.watch_every_seconds == 300
     assert config.watcher_backoff_seconds == ManagerConfig().watcher_backoff_seconds
+
+
+def test_a_wiki_run_may_give_its_agent_another_power() -> None:
+    # #295: `agent_manager.py wiki --model opus --effort high`, for this run only.
+    config = ManagerConfig()
+
+    assert config.with_power("opus", "high").power == AgentPower("opus", "high")
+    assert config.with_power(effort="max").power == AgentPower("opus", "max")
+    assert config.with_power() == config
+    with pytest.raises(ValueError, match="model 'gpt'"):
+        config.with_power("gpt")
 
 
 def test_the_repository_s_file_says_the_defaults() -> None:
@@ -253,3 +265,18 @@ def test_a_session_s_watcher_holds_a_lock_of_its_own_naming_its_session(tmp_path
         mine.release()
 
     assert WatchLock(path, {}).another() is None
+
+
+def test_a_wiki_run_holds_a_lock_of_its_own(tmp_path: Path) -> None:
+    # #295: a second one in the checkout would start a second agent in the wiki's worktree.
+    path = tmp_path / ".agent-runs" / "wiki.lock"
+    first = WikiLock(path)
+
+    assert first.acquire(datetime(2026, 11, 22, 6, 17))
+    try:
+        assert not WikiLock(path).acquire(datetime(2026, 11, 22, 6, 18))
+        assert ManagerLock(tmp_path / ".agent-runs" / "manager.lock").holder() is None
+    finally:
+        first.release()
+
+    assert WikiLock(path).holder() is None

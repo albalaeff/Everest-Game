@@ -12,7 +12,9 @@ with none at all covers develop as it was at its latest commit.
 `scripts/github.py watch --json --wiki <hours>`, the agent manager's watcher, looks every
 `hours` (`WikiCheck`): when PRs merged into develop since the commit covered, it says so,
 and the manager starts the wiki agent (`agent_manager.WikiJob`). Chores and releases don't
-count: they change nothing a player or a developer reads about.
+count: they change nothing a player or a developer reads about. Where no manager runs,
+`scripts/agent_manager.py wiki` looks once and runs the same agent (`WikiRun`, #295), as a
+scheduler runs it every day.
 """
 
 from collections.abc import Callable, Mapping
@@ -74,12 +76,14 @@ class Covered:
 @dataclass(frozen=True, slots=True)
 class WikiNews:
     """What a check found: the PRs merged into develop since the commit the wiki covers
-    (`since`) up to `develop`, when there are any."""
+    (`since`) up to `develop`, when there are any; `failed` when it couldn't tell, which
+    fails a wiki run of its own (`agent_manager.WikiRun`, #295)."""
 
     text: str
     develop: str = ""
     since: str = ""
     pulls: tuple[int, ...] = ()
+    failed: bool = False
 
     @property
     def key(self) -> str:
@@ -143,7 +147,7 @@ class WikiCheck:
                 raise WikiUnreadable(f"develop has no commit {since[:7]}")
             merged = self._merged({commit["sha"] for commit in compared["commits"]})
         except (WikiUnreadable, httpx.HTTPError, KeyError, IndexError, ValueError) as error:
-            return WikiNews(f"The wiki: couldn't tell what's new ({error}).")
+            return WikiNews(f"The wiki: couldn't tell what's new ({error}).", failed=True)
         if not merged:
             return WikiNews(f"The wiki: nothing merged into develop since {since[:7]}.")
         develop = compared["commits"][-1]["sha"]
