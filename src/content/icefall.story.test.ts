@@ -138,8 +138,16 @@ describe("Experience on the ladders and ropes: a novice and a veteran, as fit as
    * and the typical client just above it. */
   const UNEVENTFUL = 12;
 
+  /** Each crossing's hours, once it's been made: the three stories ask for five between them,
+   * and the last, alone, came within its five seconds on a busy machine. */
+  const kept = new Map<string, number>();
+
   /** The hours a careful climber at a steady pace, with this experience, takes to Camp 1. */
   const hours = (experience: string): number => {
+    const known = kept.get(experience);
+    if (known !== undefined) {
+      return known;
+    }
     const mountain = new Mountain(knowledge);
     const rules = mountain.rules();
     const answers = { ...mountain.questionnaire.typical, experience };
@@ -152,6 +160,7 @@ describe("Experience on the ladders and ropes: a novice and a veteran, as fit as
     if (!crossing.until(mountain.route.destination.from, steps)) {
       throw new Error(`Still in the Icefall after ${LONGEST_HOURS} hours, with ${experience}`);
     }
+    kept.set(experience, rules.clock.elapsed / HOUR);
     return rules.clock.elapsed / HOUR;
   };
 
