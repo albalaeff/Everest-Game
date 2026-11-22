@@ -22,7 +22,7 @@ export class IceSurface {
   readonly points: readonly Point[];
   private readonly lid: Terrain;
   /** Each crevasse's lips, across. */
-  private readonly gaps: readonly { readonly left: number; readonly right: number }[];
+  readonly gaps: readonly { readonly left: number; readonly right: number }[];
 
   constructor(terrain: Terrain, crossings: readonly Crossing[]) {
     const spans = crossings.map(({ start, finish }) => {

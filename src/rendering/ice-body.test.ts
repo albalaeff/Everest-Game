@@ -84,6 +84,17 @@ describe("IceBody", () => {
     }
   });
 
+  it("says how deep its snow lies at any x across, as its cap's foot has it", () => {
+    const top = SURFACE.points.length;
+    const feet = body.cap.slice(top).reverse();
+
+    for (const [index, { x, y }] of SURFACE.points.entries()) {
+      expect(y - (feet[index]?.y ?? 0)).toBeCloseTo(body.capAt(x), 9);
+    }
+    expect(body.capAt(12.34)).toBeGreaterThanOrEqual(IceBody.CAP.min);
+    expect(body.capAt(12.34)).toBeLessThanOrEqual(IceBody.CAP.max);
+  });
+
   it("is the same ice on the same seed, and another on another", () => {
     expect(new IceBody(SURFACE, 9).bands).toEqual(body.bands);
     expect(new IceBody(SURFACE, 10).cap).not.toEqual(body.cap);
