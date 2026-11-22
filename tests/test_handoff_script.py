@@ -177,6 +177,29 @@ def test_the_people_waited_on_are_named_by_their_logins() -> None:
     assert nobody is not None and nobody.people(["bateks"]) == ()
 
 
+PR_297 = "https://github.com/albalaeff/Everest-Game/pull/297"
+
+
+@pytest.mark.parametrize(
+    ("waiting", "people"),
+    [
+        (f"CI on [#297]({PR_297}).", ()),
+        (f"CI on {PR_297}.", ()),
+        (f"CI on <{PR_297}>.", ()),
+        ("CI on albalaeff/Everest-Game#297.", ()),
+        (f"albalaeff's review of [#297]({PR_297}).", ("albalaeff",)),
+        ("[@bateks](https://github.com/bateks)'s answer.", ("bateks",)),
+    ],
+    ids=["a link", "a URL", "an autolink", "owner/repo#n", "a review", "a link to a person"],
+)
+def test_a_link_names_nobody_but_its_text_does(waiting: str, people: tuple[str, ...]) -> None:
+    # On #284 a handoff waiting on "CI on [#297](…/albalaeff/…)" put waiting:albalaeff on it:
+    # every link to the repository holds its owner's login.
+    move = Move.of(f"**Next:** merge once it's green (CI's). **Waiting on:** {waiting}")
+
+    assert move is not None and move.people(["albalaeff", "bateks"]) == people
+
+
 @pytest.mark.parametrize(
     ("waiting", "on_ci"),
     [
