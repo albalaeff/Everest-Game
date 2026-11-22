@@ -29,5 +29,6 @@ Each page was written in chat as its part was built (16–19 Nov 2026). The merg
 | Injury and rescue                                                                    | #241, #263, #279, #281 | [design/rescue.md](design/rescue.md)       |
 | Weather that changes, the forecast and the cold                                      | #272                   | [design/weather.md](design/weather.md)     |
 | The Icefall's walls of ice: their look by day and night, and the taller steps        | #290                   | [design/ice-walls.md](design/ice-walls.md) |
+| The glacier's ice under the route: its layers, its bare blue ice, a headlamp in it   | #306                   | [design/glacier-ice.md](design/glacier-ice.md) |
 
 A change that alters what a page says updates the page in the same PR.

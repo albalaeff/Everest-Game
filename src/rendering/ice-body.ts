@@ -39,15 +39,15 @@ export class IceBody {
   readonly bands: readonly IceBand[];
   /** Each layer's foot, left to right: the edges between the bands. */
   readonly edges: readonly (readonly Point[])[];
+  /** How the snow cap's foot wanders across. */
+  private readonly capWander: Wander;
 
   constructor(surface: IceSurface, seed: number) {
     const random = SeededRandom.fromSeed(seed);
     const { CAP, LAYERS, WANDER } = IceBody;
-    const capWander = new Wander(random, IceBody.CAP_EVERY);
-    const capDepth = (x: number): number =>
-      CAP.min + ((CAP.max - CAP.min) * (capWander.at(x) + 1)) / 2;
+    this.capWander = new Wander(random, IceBody.CAP_EVERY);
     const top = surface.points;
-    const capFoot = top.map(({ x, y }) => ({ x, y: y - capDepth(x) }));
+    const capFoot = top.map(({ x, y }) => ({ x, y: y - this.capAt(x) }));
     this.cap = [...top, ...[...capFoot].reverse()];
     const outline = IceBody.thinned(top);
     const edges = LAYERS.map((depth, index) => {
@@ -64,6 +64,12 @@ export class IceBody {
       const depth = ((LAYERS[index - 1] ?? (CAP.min + CAP.max) / 2) + (LAYERS[index] ?? 0)) / 2;
       return { outline: [...above, ...[...foot].reverse()], depth };
     });
+  }
+
+  /** How deep the snow cap lies at `x`. */
+  capAt(x: number): number {
+    const { CAP } = IceBody;
+    return CAP.min + ((CAP.max - CAP.min) * (this.capWander.at(x) + 1)) / 2;
   }
 
   /** The surface with fewer corners: one every `STEP` across, and every sharp turn's. */

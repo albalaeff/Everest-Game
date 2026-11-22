@@ -28,6 +28,14 @@ describe("GraphicsQuality", () => {
     expect(HIGH.fogBanks).toBeGreaterThan(MEDIUM.fogBanks);
   });
 
+  it("works the glacier's ice out pixel by pixel on Medium and High, and leaves Low its flat layers", () => {
+    const { LOW, MEDIUM, HIGH } = GraphicsQuality;
+
+    expect(LOW.glacierIce).toBe(false);
+    expect(MEDIUM.glacierIce).toBe(true);
+    expect(HIGH.glacierIce).toBe(true);
+  });
+
   it("steps through the levels, and round again", () => {
     const { LOW, MEDIUM, HIGH } = GraphicsQuality;
 

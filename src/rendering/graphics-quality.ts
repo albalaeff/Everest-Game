@@ -14,9 +14,10 @@ export interface OptionalLayers {
  * One of the three levels of the graphics setting (spec.md → Phone and PC: a quality setting
  * reduces the parallax layers and the particles): which optional layers, how many snowflakes,
  * puffs of blown snow (and as many of the air's glinting crystals) and banks of fog, whether the
- * sky's gradient is dithered, and a cap on how sharp the picture is drawn, in device pixels per
- * CSS pixel. Low loses beauty, never information: it keeps some blown snow, which tells the wind,
- * and some fog, which tells the weather.
+ * sky's gradient is dithered, whether the glacier's ice under the route is worked out pixel by
+ * pixel (`GlacierIce`) or its layers drawn flat, and a cap on how sharp the picture is drawn, in
+ * device pixels per CSS pixel. Low loses beauty, never information: it keeps some blown snow,
+ * which tells the wind, and some fog, which tells the weather.
  */
 export class GraphicsQuality {
   static readonly LOW = new GraphicsQuality(
@@ -25,6 +26,7 @@ export class GraphicsQuality {
     0,
     40,
     3,
+    false,
     false,
     1,
   );
@@ -35,6 +37,7 @@ export class GraphicsQuality {
     90,
     5,
     false,
+    true,
     1.5,
   );
   static readonly HIGH = new GraphicsQuality(
@@ -43,6 +46,7 @@ export class GraphicsQuality {
     300,
     180,
     8,
+    true,
     true,
     Infinity,
   );
@@ -59,6 +63,7 @@ export class GraphicsQuality {
     readonly motes: number,
     readonly fogBanks: number,
     readonly dithered: boolean,
+    readonly glacierIce: boolean,
     private readonly sharpnessCap: number,
   ) {}
 

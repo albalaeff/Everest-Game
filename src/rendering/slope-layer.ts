@@ -46,6 +46,9 @@ import { Crowd } from "./crowd";
 import { Drift } from "./drift";
 import { Glacier } from "./glacier";
 import type { PartStretch } from "./glacier";
+import { GlacierDrawing } from "./glacier-drawing";
+import { GlacierIce } from "./glacier-ice";
+import type { GlacierPiece } from "./glacier-ice";
 import { HazardDrawing } from "./hazard-drawing";
 import { IceBody } from "./ice-body";
 import { IceSurface } from "./ice-surface";
@@ -230,6 +233,15 @@ export class SlopeLayer extends ParallaxLayer {
   private static readonly ICE_STEP = 0.25;
   private static readonly ICE_SHEEN_METRES = 0.05;
   private static readonly ICE_GLINT = { every: 0.9, length: 0.28, under: 0.09 };
+  /** The glacier's ice worked out pixel by pixel (`GlacierIce`): its own seed, from the layer's;
+   * how far before Crampon Point it starts, under the moraine's rubble, and how far past the
+   * section's end it runs on, wider than 100 m of slope shows ahead there. */
+  private static readonly GLACIER_SEED = 8;
+  private static readonly GLACIER_BEFORE = 2;
+  private static readonly GLACIER_PAST = 160;
+  /** The bare ice's sheen (#190), where the glacier's ice is worked out: so wide, and as much of
+   * the hour's gloss as shows of it at night and by day. */
+  private static readonly SHEEN = { width: 0.025, night: 0.85, day: 0.6 };
   /** A ladder across a crevasse bounces (#190): metres of it for each unit of the physics' bounce,
    * how many times a second, and so many pieces its rails are drawn in while it does. */
   private static readonly BOUNCE_METRES = 0.035;
@@ -337,6 +349,17 @@ export class SlopeLayer extends ParallaxLayer {
   private readonly veil = new Graphics();
   /** The bare blue ice under the boots. */
   private readonly iceSkin = new Graphics();
+  /** The glacier's ice worked out pixel by pixel, strip by strip, each on a mesh that hangs from
+   * the surface, the headlamps' light coming into it; on Low, nothing. */
+  private readonly glacierFaces = new GlacierDrawing();
+  /** The bare ice's top where it throws back the sky, along its sun cups, in the hour's gloss; and
+   * the rims of its cups, which glint where a headlamp's beam falls on them. */
+  private readonly iceSheen = new Graphics();
+  private glacierShines: readonly Point[] = [];
+  /** The glacier's ice still to be worked out, a strip a frame, the nearest the view first, so the
+   * picture opens at once and never stops for it; what isn't worked out yet shows its flat layers. */
+  private glacier: GlacierIce | null = null;
+  private readonly iceToCome: GlacierPiece[] = [];
   /** The bounce each ladder was last drawn at: a bouncing one is drawn every frame. */
   private readonly bounced = new Map<string, number>();
   /** The picture's seconds, which a ladder bounces on. */
@@ -501,6 +524,8 @@ export class SlopeLayer extends ParallaxLayer {
     } | null = null,
     /** The devices in the climbers' hands (#271), or none: a picture of the slope alone. */
     private readonly hands: Hands | null = null,
+    /** Whether the glacier's ice is worked out pixel by pixel, or its layers drawn flat. */
+    glacierIce = false,
   ) {
     super("slope", { x: 1, y: 1 });
     this.chips = new IceChips(seed + SlopeLayer.CHIP_SEED);
@@ -557,7 +582,22 @@ export class SlopeLayer extends ParallaxLayer {
     this.hazards = new HazardDrawing(hazards, terrain, surface, this.softPuff, () =>
       this.figures.filter(({ view }) => view !== null && !view.dead).map(({ figure }) => figure.at),
     );
-    this.drawSnow(new IceBody(surface, seed + 5));
+    const iceBody = new IceBody(surface, seed + 5);
+    this.drawSnow(iceBody);
+    if (glacierIce) {
+      const last = this.ground.at(-1)?.x ?? 0;
+      const reach = {
+        left: (this.cramponPoint?.x ?? this.ground[0]?.x ?? 0) - SlopeLayer.GLACIER_BEFORE,
+        right: last - SlopeLayer.RUN_OUT_METRES + SlopeLayer.GLACIER_PAST,
+      };
+      const bare = this.physics.ice.map(({ from, to }) => ({
+        left: terrain.point(from).x,
+        right: terrain.point(to).x,
+      }));
+      this.drawGlacierIce(
+        new GlacierIce(surface, iceBody, bare, reach, seed + SlopeLayer.GLACIER_SEED),
+      );
+    }
     this.drawBlocks(surface, parts, seed + 7);
     this.drawDetails(new SlopeDetails(terrain, seed));
     this.drawGlacier(new Glacier(terrain, seed + 4), bare, camps);
@@ -569,6 +609,7 @@ export class SlopeLayer extends ParallaxLayer {
       this.blocks,
       this.hazards.seracs,
       this.snow,
+      this.glacierFaces,
       this.shade,
       this.sastrugi,
       this.wallFaces,
@@ -576,6 +617,7 @@ export class SlopeLayer extends ParallaxLayer {
       this.track,
       this.moraine,
       this.iceSkin,
+      this.iceSheen,
       this.surface,
       this.crevasses,
       this.rims,
@@ -705,6 +747,15 @@ export class SlopeLayer extends ParallaxLayer {
     }
   }
 
+  /** How the glacier's ice under the route is drawn: in flat layers (on Low), still being worked out
+   * a strip a frame, or worked out whole. */
+  get glacierIce(): "flat" | "working" | "worked" {
+    if (this.glacier === null) {
+      return "flat";
+    }
+    return this.iceToCome.length > 0 ? "working" : "worked";
+  }
+
   /** How many climbers are drawn. */
   get climbers(): number {
     return this.figures.length;
@@ -780,6 +831,7 @@ export class SlopeLayer extends ParallaxLayer {
       this.drawSurface(size);
     }
     const view = SlopeLayer.inView(camera);
+    this.workOutIce(view);
     this.puffs.advance(seconds, atmosphere.gust);
     this.chips.advance(seconds);
     this.load();
@@ -822,6 +874,7 @@ export class SlopeLayer extends ParallaxLayer {
         this.beams.push(figure.beam);
       }
     }
+    this.glacierFaces.light(this.beams);
     this.drawRescueLines(size);
     this.markPlayer(camera, size);
     this.elapsed = atmosphere.elapsed;
@@ -873,7 +926,9 @@ export class SlopeLayer extends ParallaxLayer {
       beams.length === 0
         ? []
         : this.iceWalls.filter(({ reach }) => reach.right >= view.left && reach.left <= view.right);
-    if (shown.length === 0) {
+    const shining =
+      beams.length > 0 && this.glacierShines.some(({ x }) => x >= view.left && x <= view.right);
+    if (shown.length === 0 && !shining) {
       if (this.flashShown) {
         wallFlash.clear();
         this.flashShown = false;
@@ -890,6 +945,19 @@ export class SlopeLayer extends ParallaxLayer {
     }
     wallFlash.clear();
     let flashed = false;
+    // The bare ice's cups glint where a beam falls on their rims.
+    for (const point of this.glacierShines) {
+      if (point.x < view.left || point.x > view.right) {
+        continue;
+      }
+      const light = Math.min(1, Math.max(0, ...beams.map((beam) => beam.lights(point))));
+      if (light > FLASH.least) {
+        wallFlash
+          .poly(SlopeLayer.star(point, FLASH.size * (0.5 + light)))
+          .fill({ color: Palette.LAMP, alpha: Math.min(1, light * FLASH.alpha) });
+        flashed = true;
+      }
+    }
     for (const { wall } of shown) {
       for (const { point, light } of wall.lit(beams, FLASH.least)) {
         wallFlash
@@ -916,6 +984,7 @@ export class SlopeLayer extends ParallaxLayer {
     if (this.tintedWith === null || atmosphere.recoloured(this.tintedWith)) {
       const { palette } = atmosphere;
       this.snow.tint = palette.snowTint;
+      this.glacierFaces.tint = palette.snowTint;
       this.blocks.tint = palette.faded(palette.snowTint, SlopeLayer.BLOCK_HAZE);
       this.shade.tint = palette.snowDeep;
       this.sastrugi.tint = palette.snowShade;
@@ -929,6 +998,9 @@ export class SlopeLayer extends ParallaxLayer {
       this.wallGloss.tint = palette.gloss;
       this.brittleBands.tint = palette.snowTint;
       this.iceSkin.tint = palette.snowTint;
+      this.iceSheen.tint = palette.gloss;
+      const { SHEEN } = SlopeLayer;
+      this.iceSheen.alpha = SHEEN.night + (SHEEN.day - SHEEN.night) * atmosphere.light.daylight;
       this.crevasses.tint = palette.crevasse;
       this.rims.tint = palette.snowTint;
       this.lips.tint = palette.snowTint;
@@ -1734,6 +1806,55 @@ export class SlopeLayer extends ParallaxLayer {
     });
   }
 
+  /** The glacier's ice under the route worked out pixel by pixel (`GlacierIce`), in the day's
+   * colours for the hour to tint: each strip of it on a mesh that hangs from the surface, so its
+   * columns go down from the ground wherever the ground climbs or drops. Its snow has its own shade
+   * and its bare blue ice its own glaze, so the flat shade under the surface and the blue ice's flat
+   * skin are left off. */
+  private drawGlacierIce(glacier: GlacierIce): void {
+    this.glacier = glacier;
+    this.iceToCome.push(...glacier.pieces());
+    for (const line of glacier.sheen()) {
+      SlopeLayer.lines(this.iceSheen, [line]);
+    }
+    this.iceSheen.stroke({
+      width: SlopeLayer.SHEEN.width,
+      color: 0xffffff,
+      cap: "round",
+      join: "round",
+    });
+    this.glacierShines = glacier.shines();
+    this.shade.visible = false;
+    this.iceSkin.visible = false;
+  }
+
+  /** The next strip of the glacier's ice worked out and hung, the nearest the view's middle, near
+   * the surface before deep down: one a frame, while any is to come. */
+  private workOutIce(view: InView): void {
+    const { glacier, iceToCome } = this;
+    if (glacier === null || iceToCome.length === 0) {
+      return;
+    }
+    const middle = (view.left + view.right) / 2;
+    const away = ({ left, right, band }: GlacierPiece): number =>
+      Math.max(0, left - middle, middle - right) + band.from * 10;
+    let nearest = 0;
+    for (const [index, piece] of iceToCome.entries()) {
+      if (away(piece) < away(iceToCome[nearest] ?? piece)) {
+        nearest = index;
+      }
+    }
+    const [piece] = iceToCome.splice(nearest, 1);
+    if (piece === undefined) {
+      return;
+    }
+    const strip = glacier.strip(piece.left, piece.right, piece.band);
+    const texture = this.picture(strip.columns, strip.rows, strip.pixels);
+    if (texture !== null) {
+      this.glacierFaces.hang(glacier, strip, texture);
+    }
+  }
+
   /** What marks the snow, as `SlopeDetails` lays it: the sastrugi, the boot track, the walls. */
   private drawDetails(details: SlopeDetails): void {
     for (const { from, to } of details.sastrugi) {
@@ -1972,23 +2093,33 @@ export class SlopeLayer extends ParallaxLayer {
   private reliefSprite(relief: IceRelief, pixels: Uint8ClampedArray): Sprite {
     const { columns, rows, box } = relief;
     const sprite = new Sprite();
-    const canvas = DOMAdapter.get().createCanvas(columns, rows);
-    const context = canvas.getContext("2d");
-    if (context === null) {
+    const texture = this.picture(columns, rows, pixels);
+    if (texture === null) {
       return sprite;
     }
-    const image = context.createImageData(columns, rows);
-    image.data.set(pixels);
-    context.putImageData(image, 0, 0);
-    // Far out, a screen's pixel takes in many of the picture's: its smaller copies keep the
-    // flutes from flickering as the view moves.
-    const texture = Texture.from({ resource: canvas, autoGenerateMipmaps: true });
-    this.reliefTextures.push(texture);
     sprite.texture = texture;
     // The layer's y is up: the picture hangs down from its box's top, as fine as it's drawn.
     sprite.position.set(box.left, box.top);
     sprite.scale.set(1 / IceRelief.PIXELS_A_METRE, -1 / IceRelief.PIXELS_A_METRE);
     return sprite;
+  }
+
+  /** A picture worked out pixel by pixel, `columns` by `rows`, as a texture kept to go with the
+   * layer; none where there's no canvas to make it on. */
+  private picture(columns: number, rows: number, pixels: Uint8ClampedArray): Texture | null {
+    const canvas = DOMAdapter.get().createCanvas(columns, rows);
+    const context = canvas.getContext("2d");
+    if (context === null) {
+      return null;
+    }
+    const image = context.createImageData(columns, rows);
+    image.data.set(pixels);
+    context.putImageData(image, 0, 0);
+    // Far out, a screen's pixel takes in many of the picture's: its smaller copies keep the fine
+    // detail from flickering as the view moves.
+    const texture = Texture.from({ resource: canvas, autoGenerateMipmaps: true });
+    this.reliefTextures.push(texture);
+    return texture;
   }
 
   /** Whether the ground between a ladder's ends dips under them both: a crevasse under it, not a
