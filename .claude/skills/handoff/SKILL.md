@@ -39,7 +39,7 @@ In order:
 
    On a Russian or Ukrainian issue the two fields are in its language, and the scripts read them as the English (PEB#593): `**Дальше:** <шаг> (ход Claude). **Ждём:** <что и где>, или ничего.`, `**Далі:** <крок> (хід Claude). **Чекаємо:** <що й де>, або нічого.` Whose move is `ход` or `хід` and one name (ход bateks, ход CI); a **Next** that's the merge says «слить» or «злити».
 
-   Name a person in **Waiting on** by their login (bateks's answer, albalaeff's review): the command puts `waiting:<login>` on the issue, so they find what waits for them, and their reply takes it off; nothing, CI or Claude's move takes these labels off (PEB#449). With `--closing`, a **Next** that's Claude's and nothing waited on make the issue "Claude's move": the next session, or the agent manager's next agent, starts on it.
+   Name a person in **Waiting on** by their login (bateks's answer, albalaeff's review): the command puts `waiting:<login>` on the issue, so they find what waits for them, and their reply takes it off; nothing, CI or Claude's move takes these labels off (PEB#449). A login inside a link's URL names no one, so "CI on [#297](…)" waits on CI alone. With `--closing`, a **Next** that's Claude's and nothing waited on make the issue "Claude's move": the next session, or the agent manager's next agent, starts on it.
 
    The command refuses while a reply waits unread (PEB#208): act on the reply first, or leave that issue alone; `status` shows the reply anyway.
 

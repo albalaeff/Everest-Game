@@ -1758,7 +1758,14 @@ def test_a_handoff_puts_on_the_label_of_whom_it_waits_on() -> None:
     assert said == "Labels: +waiting:albalaeff, -waiting:bateks"
 
 
-@pytest.mark.parametrize("waiting", ["nothing.", "CI on PR #452."])
+@pytest.mark.parametrize(
+    "waiting",
+    [
+        "nothing.",
+        "CI on PR #452.",
+        "CI on [#297](https://github.com/albalaeff/Everest-Game/pull/297).",  # #284
+    ],
+)
 def test_a_handoff_waiting_on_no_one_takes_the_labels_off(waiting: str) -> None:
     github = LabelledGitHub(["waiting:bateks", "waiting:albalaeff"], THERE)
 
