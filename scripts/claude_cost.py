@@ -7,22 +7,26 @@ as a name>/<session>.jsonl), with the tokens of every reply and the model that w
 Each reply is priced at its model's prices on its day (scripts/claude_prices.py), and
 counted for the issue its work names (`IssueNames`):
 
-- a command naming one: a comment on it (`scripts/github.py comment 390`), its API path
-  (`issues/390`), its branch (`feature/390-…`), its title (`scripts/github.py title 390`),
-  reading or closing it (`show 390`, `close 390`), or its PR's (`pr 401`, `merge 401`, #442);
-- else the worktree it works in, when that's named after one, as the agent manager names
-  them, `<worktree_dir>/<issue>` (`cd /c/git/worktrees/256`, `C:\\git\\worktrees\\256\\…`,
-  #293);
+- a command naming one, or a page read of it: a comment on it (`scripts/github.py comment
+  390`), its API path or its page (`issues/390`), its branch (`feature/390-…`), its title
+  (`scripts/github.py title 390`), reading or closing it (`show 390`, `close 390`), or its
+  PR's (`pr 401`, `merge 401`, #442). Not what a reply writes, a file's content, an edit or a
+  message: writing about an issue isn't working on it (#302);
+- else the worktree it works in, when that's another than the session's own: the issue the
+  agent manager named it after, `<worktree_dir>/<issue>` (`cd /c/git/worktrees/256`,
+  `C:\\git\\worktrees\\256\\…`, #293), or none, for one named after no issue (a chore's, an app
+  session's `.claude/worktrees/<name>`, #302);
 - else the branch the session was on, when it's an issue's, unless the session works in
-  such a worktree: the branch is that of its own folder, the one it was started in, which
+  another worktree: the branch is that of its own folder, the one it was started in, which
   may be on another session's issue (#293);
 - else the last issue the session named: the replies in between belong to it;
 - before a session names any, its upkeep (setup, the watcher) counts for none.
 
-A session works in such a worktree from a reply whose commands or file paths name it until
-one names a path in its own folder; an agent's own folder is its worktree, and a reply that
-names several worktrees (a clean-up's look over them) moves nothing. A file's content says
-nothing of where: only the commands, and the paths the tools are given (#293).
+A session works in another worktree from a reply whose commands or file paths name it until
+one names a path in its own folder; an agent's own folder is its worktree, an app session's
+its `.claude/worktrees/<name>`, and a reply that names several worktrees (a clean-up's look
+over them) moves nothing. A file's content says nothing of where: only the commands, and the
+paths the tools are given (#293).
 
 Each machine counts its own Claude's work; the sum over a session matches the total
 Claude Code itself logs for it ("cost-state").
@@ -69,20 +73,32 @@ def worktrees(root: Path = ROOT) -> list[Path]:
     return [root, *found]
 
 
-def agents_folder(root: Path = ROOT) -> Path:
-    """Where the session manager puts its agents' worktrees (#387): from the checkout's
-    agent-manager.toml, which git lists first among the worktrees."""
+def main_checkout(root: Path = ROOT) -> Path:
+    """The repository's main checkout, which git lists first among the worktrees."""
     listed = worktrees(root)
-    checkout = listed[1] if len(listed) > 1 else root
+    return listed[1] if len(listed) > 1 else root
+
+
+def agents_folder(root: Path = ROOT) -> Path:
+    """Where the session manager puts its agents' worktrees (#387): from the main
+    checkout's agent-manager.toml."""
+    checkout = main_checkout(root)
     return ManagerConfig.load(checkout).worktrees(checkout)
+
+
+def app_worktrees(root: Path = ROOT) -> Path:
+    """Where the Claude app puts a session's worktree when it starts one (#302): the main
+    checkout's .claude/worktrees."""
+    return main_checkout(root) / ".claude" / "worktrees"
 
 
 def session_logs(
     folders: Iterable[Path], logs: Path = LOGS, under: Iterable[Path] = ()
 ) -> list[Path]:
     """The session logs of these folders, and of every folder `under` these: the agents'
-    worktrees, gone once their work is on GitHub (#387). Wherever Claude Code keeps them (its
-    folder names differ only in case on Windows, by how the drive letter was typed)."""
+    worktrees, gone once their work is on GitHub (#387), and the Claude app's, gone once their
+    session is archived (#302). Wherever Claude Code keeps them (its folder names differ only
+    in case on Windows, by how the drive letter was typed)."""
     names = {log_folder(folder).lower() for folder in folders}
     inside = tuple(f"{log_folder(folder).lower()}-" for folder in under)
     if not logs.is_dir():
@@ -99,11 +115,16 @@ def session_logs(
 @dataclass(frozen=True, slots=True)
 class Place:
     """Where a reply worked, as its commands and the paths its tools were given say (#293):
-    in a worktree named after an issue (`worktree`, that issue) other than the session's own
-    folder, or in its own folder; neither, when they don't say."""
+    in a worktree other than the session's own folder (`worktree`, its folder's name), or in
+    its own folder; neither, when they don't say."""
 
-    worktree: int | None = None
+    worktree: str | None = None
     own_folder: bool = False
+
+    @property
+    def issue(self) -> int | None:
+        """The issue its worktree is named after; None for one named after none (#302)."""
+        return int(self.worktree) if self.worktree and self.worktree.isdigit() else None
 
 
 @dataclass(frozen=True, slots=True)
@@ -130,7 +151,7 @@ class Reply:
 
 class IssueNames:
     """The issues a piece of Claude's work names, by the patterns its commands use, and the
-    worktree named after one that it works in (#293)."""
+    worktree it works in (#293)."""
 
     PATTERNS: ClassVar[tuple[re.Pattern[str], ...]] = (
         re.compile(r"github\.py\s+(?:comment|title|show|close|pr|merge)\s+(\d+)"),
@@ -138,14 +159,15 @@ class IssueNames:
         re.compile(r"\bfeature/(\d+)-"),
     )
     BRANCH: ClassVar[re.Pattern[str]] = re.compile(r"^(?:feature|fix|chore)/(\d+)-")
-    WORKTREE: ClassVar[re.Pattern[str]] = re.compile(r"(?<![\w.-])worktrees[/\\]+(\d+)(?![\w.-])")
+    WORKTREE: ClassVar[re.Pattern[str]] = re.compile(r"(?<![\w.-])worktrees[/\\]+([\w.-]+)")
 
     @classmethod
-    def of_worktree(cls, where: str) -> int | None:
-        """The issue of the worktree `where` names that's named after it, as the agent
-        manager names them, <worktree_dir>/<issue> (#387): "/c/git/worktrees/256". None when
+    def worktree(cls, where: str) -> str | None:
+        """The worktree `where` names, by its folder in a `worktrees` folder: the agent
+        manager's, named after its issue, <worktree_dir>/<issue> (#387): "/c/git/worktrees/256";
+        or another, a chore's or the Claude app's, `.claude/worktrees/<name>` (#302). None when
         it names several: a look over them, as a clean-up takes, is work in none."""
-        found = {int(number) for number in cls.WORKTREE.findall(where)}
+        found = set(cls.WORKTREE.findall(where))
         return found.pop() if len(found) == 1 else None
 
     @classmethod
@@ -173,9 +195,10 @@ class Folder:
 
     def place(self, where: str) -> Place:
         """Where a reply worked, by `where`: the commands it ran and the paths its tools were
-        given. In this folder when they name a path in it, an agent's own worktree included."""
-        worktree = IssueNames.of_worktree(where)
-        if worktree is not None and worktree != IssueNames.of_worktree(self.path):
+        given. In this folder when they name a path in it, its own worktree included (an
+        agent's, an app session's)."""
+        worktree = IssueNames.worktree(where)
+        if worktree is not None and worktree != IssueNames.worktree(self.path):
             return Place(worktree=worktree)
         spelled = re.sub(r"[\\/]+", "/", where).lower()
         return Place(own_folder=bool(self.path) and self._spelled().search(spelled) is not None)
@@ -196,6 +219,8 @@ class SessionLog:
     checked out then, so a reply's branch is its first entry's, from when it was made
     (#413). The session's own folder is its first reply's `cwd` (#293)."""
 
+    # what in a tool's input names an issue: a command, or a page it reads (#302)
+    NAMED: ClassVar[tuple[str, ...]] = ("command", "url")
     # what in a tool's input says where it worked: a command, or the paths it was given
     WHERE: ClassVar[tuple[str, ...]] = (
         "command",
@@ -252,16 +277,21 @@ class SessionLog:
             if isinstance(block, dict) and block.get("type") == "tool_use"
         ]
 
-    @staticmethod
-    def _named(inputs: Sequence[Any]) -> list[int]:
-        text = "\n".join(json.dumps(one, ensure_ascii=False) for one in inputs)
-        return list(IssueNames.in_text(text))
+    @classmethod
+    def _named(cls, inputs: Sequence[Any]) -> list[int]:
+        """The issues the commands and the pages read name, not what was written (#302)."""
+        return list(IssueNames.in_text("\n".join(cls._given(inputs, cls.NAMED))))
 
     @classmethod
     def _where(cls, inputs: Sequence[Any]) -> list[str]:
         """Where the tools worked: the commands run and the paths given, not what was
         written (#293)."""
-        given = [one.get(key) for one in inputs if isinstance(one, dict) for key in cls.WHERE]
+        return cls._given(inputs, cls.WHERE)
+
+    @staticmethod
+    def _given(inputs: Sequence[Any], keys: Sequence[str]) -> list[str]:
+        """The text the tools were given under `keys`, a list's items each."""
+        given = [one.get(key) for one in inputs if isinstance(one, dict) for key in keys]
         listed = [
             item for value in given for item in (value if isinstance(value, list) else [value])
         ]
@@ -299,7 +329,7 @@ class Counting:
     worktree it works in, None while it's in its own folder (#293)."""
 
     named: int | None = None
-    worktree: int | None = None
+    worktree: str | None = None
 
     def issue(self, reply: Reply) -> int | None:
         """The issue `reply` counts for (None: upkeep), as the module's docstring says."""
@@ -310,7 +340,7 @@ class Counting:
         if reply.names:
             self.named = reply.names[-1]
         elif reply.place.worktree is not None:
-            self.named = reply.place.worktree
+            self.named = reply.place.issue  # none for a worktree of no issue (#302)
         elif self.worktree is None and reply.branch is not None:
             return reply.branch  # its own folder's branch: true of its work only there
         return self.named
@@ -376,7 +406,7 @@ class Ledger:
 
 def issue_cost(number: int, pulls: Iterable[int] = ()) -> IssueCost:
     """What `number` took on this machine, from its logs at the kept prices."""
-    logs = session_logs(worktrees(), under=[agents_folder()])
+    logs = session_logs(worktrees(), under=[agents_folder(), app_worktrees()])
     return Ledger(logs, PriceHistory.load()).issue(number, pulls)
 
 
