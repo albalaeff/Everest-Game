@@ -180,19 +180,17 @@
         </div>
         <div class="devices__tabs" role="tablist"></div>
         <div class="device" data-device="radio" role="tabpanel" hidden>
-          <div class="radio__device">
-            <div class="device__body radio">
-              <div class="device__screen radio__lcd" data-contact="yes">
-                <span class="radio__bars" aria-hidden="true"><i></i><i></i><i></i><i></i></span>
-                <span class="radio__air" data-read="air"></span>
-                <span class="radio__battery" aria-hidden="true"><i></i><i></i><i></i></span>
-                <span class="radio__channel" data-read="channel"></span>
-                <span class="radio__name" data-text="radio.channel"></span>
-              </div>
+          <div class="device__body radio">
+            <div class="device__screen radio__lcd" data-contact="yes">
+              <span class="radio__bars" aria-hidden="true"><i></i><i></i><i></i><i></i></span>
+              <span class="radio__air" data-read="air"></span>
+              <span class="radio__battery" aria-hidden="true"><i></i><i></i><i></i></span>
+              <span class="radio__channel" data-read="channel"></span>
+              <span class="radio__name" data-text="radio.channel"></span>
             </div>
-            <p class="radio__contact" data-read="contact" role="status"></p>
           </div>
-          <div class="radio__side">
+          <div class="device__side radio__side">
+            <p class="radio__contact" data-read="contact" role="status"></p>
             <ol class="radio__log" aria-live="polite"></ol>
             <div class="radio__phrases"></div>
           </div>
@@ -255,7 +253,7 @@
               <span class="watch__pages" aria-hidden="true"><i></i><i></i><i></i><i></i></span>
             </div>
           </div>
-          <div class="watch__side">
+          <div class="device__side watch__side">
             <p class="device__note" data-text="gps.note"></p>
           </div>
         </div>
@@ -294,7 +292,7 @@
               </dl>
             </div>
           </div>
-          <div class="meter__side">
+          <div class="device__side meter__side">
             <p class="meter__name" data-read="name" role="status"></p>
             <p class="meter__risk" data-read="risk" data-warn="no"></p>
             <p class="device__note" data-text="wind.note"></p>
@@ -331,7 +329,7 @@
               </p>
             </div>
           </div>
-          <div class="tracker__side">
+          <div class="device__side tracker__side">
             <dl>
               <div>
                 <dt data-text="tracker.points"></dt>

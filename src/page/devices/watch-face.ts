@@ -47,8 +47,11 @@ export class WatchFace extends DeviceFace {
    * was paused, if it is, and how far it had come then; and the stretches of the route it
    * recorded, as shares of the ground, the last still growing. */
   private skipped = { seconds: 0, metres: 0 };
-  private pausedAt: { readonly elapsed: number; readonly done: number; readonly along: number } | null =
-    null;
+  private pausedAt: {
+    readonly elapsed: number;
+    readonly done: number;
+    readonly along: number;
+  } | null = null;
   private recorded: { readonly from: number; to: number }[] = [{ from: 0, to: 0 }];
 
   constructor(

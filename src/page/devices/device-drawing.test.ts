@@ -5,12 +5,15 @@ import { MeterDrawing } from "./meter-drawing";
 import { RadioDrawing } from "./radio-drawing";
 import { WatchDrawing } from "./watch-drawing";
 
-/** Whether a box lies within the drawing. */
-const inside = (drawing: DeviceDrawing, box: DrawnBox): boolean =>
-  box.x >= 0 &&
-  box.y >= 0 &&
-  box.x + box.width <= drawing.width &&
-  box.y + box.height <= drawing.height;
+/** Whether a box lies within another. */
+const within = (box: DrawnBox, outer: DrawnBox): boolean =>
+  box.x >= outer.x &&
+  box.y >= outer.y &&
+  box.x + box.width <= outer.x + outer.width &&
+  box.y + box.height <= outer.y + outer.height;
+
+/** Whether a box lies within the part of the drawing the card shows. */
+const inside = (drawing: DeviceDrawing, box: DrawnBox): boolean => within(box, drawing.view);
 
 /** Whether two boxes overlap. */
 const overlap = (a: DrawnBox, b: DrawnBox): boolean =>
@@ -26,7 +29,15 @@ const DRAWINGS: readonly DeviceDrawing[] = [
 describe.each(DRAWINGS.map((drawing) => [drawing.name, drawing] as const))(
   "the %s drawn as the thing itself (#284)",
   (_name, drawing) => {
-    it("lays its screen and every control within the drawing, no two buttons on one spot", () => {
+    it("shows a part of itself at most, held up close", () => {
+      const all = { x: 0, y: 0, width: drawing.width, height: drawing.height };
+      expect(within(drawing.view, all)).toBe(true);
+      expect(drawing.svg()).toContain(
+        `viewBox="${drawing.view.x} ${drawing.view.y} ${drawing.view.width} ${drawing.view.height}"`,
+      );
+    });
+
+    it("lays its screen and every control within the part shown, no two buttons on one spot", () => {
       expect(inside(drawing, drawing.screen)).toBe(true);
       for (const control of drawing.controls) {
         expect(inside(drawing, control.box), control.name).toBe(true);

@@ -127,7 +127,11 @@ export class MeterFace extends DeviceFace {
       chill: MeterFace.figures(chill.chill, 0),
     };
     const hint = MeterFace.HINTS[this.screenShown];
-    const shown = !this.on ? " " : this.hint > 0 && hint !== undefined ? hint : figures[this.screenShown];
+    const shown = !this.on
+      ? " "
+      : this.hint > 0 && hint !== undefined
+        ? hint
+        : figures[this.screenShown];
     if (shown !== this.drawn) {
       this.drawn = shown;
       this.number.innerHTML = this.digits.svg(shown);

@@ -45,7 +45,10 @@ export abstract class DeviceFace {
     this.body = DeviceFace.inside(face, ".device__body");
     this.screen = DeviceFace.inside(this.body, ".device__screen");
     this.body.insertAdjacentHTML("afterbegin", drawing.svg());
-    this.body.style.setProperty("--ratio", `${drawing.width} / ${drawing.height}`);
+    // The part shown's shape, as a ratio and as a number the card's sizes are worked out with.
+    const { view } = drawing;
+    this.body.style.setProperty("--ratio", `${view.width} / ${view.height}`);
+    this.body.style.setProperty("--wide", (view.width / view.height).toFixed(4));
     this.place(this.screen, drawing.screen);
     for (const control of drawing.controls) {
       this.body.append(control.kind === "button" ? this.button(control) : this.part(control));

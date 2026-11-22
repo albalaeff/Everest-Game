@@ -20,6 +20,9 @@ export class MeterDrawing extends DeviceDrawing {
     ["right", 30],
   ];
   private static readonly BUTTON = { y: 80, width: 10, height: 9 };
+  /** The meter from its impeller down past its buttons: its foot, with the lanyard's hole, runs
+   * on past the card's edge. */
+  private static readonly VIEW: DrawnBox = { x: 0, y: 0, width: 48, height: 100 };
 
   readonly name = "meter";
   readonly width = 48;
@@ -33,15 +36,17 @@ export class MeterDrawing extends DeviceDrawing {
       push: [0, 0],
     },
     { name: "thermometer", kind: "part", box: { x: 2, y: 37, width: 7, height: 9 }, push: [0, 0] },
-    ...MeterDrawing.BUTTONS.map(
-      ([name, x]): DrawnControl => ({
-        name,
-        kind: "button",
-        box: { x: x - 0.5, y: 78.5, width: 11, height: 12 },
-        push: [0, 0.5],
-      }),
-    ),
+    ...MeterDrawing.BUTTONS.map(([name, x]): DrawnControl => ({
+      name,
+      kind: "button",
+      box: { x: x - 0.5, y: 78.5, width: 11, height: 12 },
+      push: [0, 0.5],
+    })),
   ];
+
+  override get view(): DrawnBox {
+    return MeterDrawing.VIEW;
+  }
 
   protected gradients(): string {
     return [
@@ -95,9 +100,13 @@ export class MeterDrawing extends DeviceDrawing {
   }
 
   protected parts(): string {
-    return [this.meterCase(), this.impeller(), this.thermometer(), this.screenFrame(), ...this.keys()].join(
-      "",
-    );
+    return [
+      this.meterCase(),
+      this.impeller(),
+      this.thermometer(),
+      this.screenFrame(),
+      ...this.keys(),
+    ].join("");
   }
 
   /** The case: round at its top, its corners rounded at its foot, lit down its left; the hole
@@ -127,7 +136,12 @@ export class MeterDrawing extends DeviceDrawing {
   }
 
   private screenFrame(): string {
-    return this.rect(MeterDrawing.FRAME, 3, this.paint("frame"), 'stroke="#5e4304" stroke-width="0.4"');
+    return this.rect(
+      MeterDrawing.FRAME,
+      3,
+      this.paint("frame"),
+      'stroke="#5e4304" stroke-width="0.4"',
+    );
   }
 
   /** The three buttons under the screen, each with its mark: ◄, ◐ and ►. */

@@ -165,7 +165,11 @@ export class RadioDrawing extends DeviceDrawing {
       return `<path d="M${ptt.x + 0.8} ${y}H${ptt.x + ptt.width}" stroke="#07080a" stroke-width="0.5"/>`;
     }).join("");
     const key = (y: number): string =>
-      this.rect({ x: ptt.x + 0.7, y, width: ptt.width - 0.7, height: 7.5 }, 1.8, this.paint("rubber"));
+      this.rect(
+        { x: ptt.x + 0.7, y, width: ptt.width - 0.7, height: 7.5 },
+        1.8,
+        this.paint("rubber"),
+      );
     return `${key(ptt.y - 11)}${key(ptt.y + ptt.height + 3.5)}${key(ptt.y + ptt.height + 13.5)}${this.cap("ptt", `${this.rect(ptt, 2.4, this.paint("rubber"))}${ribs}`)}`;
   }
 
@@ -184,8 +188,15 @@ export class RadioDrawing extends DeviceDrawing {
   /** Under the screen, two keys each side of the four-way pad with its OK, and the keypad. */
   private keys(): string {
     const small = (x: number, y: number): string =>
-      this.rect({ x, y, width: 8, height: 5.5 }, 1.6, this.paint("key"), 'stroke="#0b0c0e" stroke-width="0.3"');
-    const pad = `<circle cx="37.5" cy="151" r="8" fill="${this.paint("key")}" stroke="#0b0c0e" stroke-width="0.35"/><circle cx="37.5" cy="151" r="3.6" fill="#2f333a" stroke="#0b0c0e" stroke-width="0.35"/>${[0, 90, 180, 270]
+      this.rect(
+        { x, y, width: 8, height: 5.5 },
+        1.6,
+        this.paint("key"),
+        'stroke="#0b0c0e" stroke-width="0.3"',
+      );
+    const pad = `<circle cx="37.5" cy="151" r="8" fill="${this.paint("key")}" stroke="#0b0c0e" stroke-width="0.35"/><circle cx="37.5" cy="151" r="3.6" fill="#2f333a" stroke="#0b0c0e" stroke-width="0.35"/>${[
+      0, 90, 180, 270,
+    ]
       .map(
         (turn) =>
           `<path d="M37.5 144.6l1.1 1.4h-2.2z" fill="#0b0c0e" transform="rotate(${turn} 37.5 151)"/>`,

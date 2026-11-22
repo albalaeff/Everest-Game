@@ -681,6 +681,30 @@
       ]
     },
     {
+      "id": "gear.radio-handheld",
+      "kind": "fact",
+      "claim": "A professional handheld radio, as expeditions carry, is a black case of about 130 × 55 × 36 mm and 0.33 kg with its battery, its antenna standing from its top: a channel knob, a volume knob and a light on its top beside an orange emergency button; push-to-talk on its left side; on its front a speaker grille, a screen, a four-way pad and a keypad. Its light is green while it sends.",
+      "status": "source only",
+      "versions": [
+        {
+          "note": "The MOTOTRBO DP4801e: 130 × 55 × 36 mm and 0.33 kg with its 2100 mAh battery; a colour screen, a full keypad, five programmable buttons and an orange emergency button.",
+          "source": {
+            "title": "Motorola Solutions: MOTOTRBO DP4000e Series → Specifications",
+            "url": "https://www.motorolasolutions.com/content/dam/msi/docs/EA_Collaterals/ENGLISH/MOTOTRBO/Portables/dp4000e_datasheet_eng.pdf"
+          },
+          "checked": "2026-11-22"
+        },
+        {
+          "note": "On its top a tall channel knob, the volume knob at the front left, the light and the emergency button by the antenna; push-to-talk and side buttons on its left; on its front the speaker, the screen, the menu keys, a four-way pad and a 3 × 4 keypad. Its light is green while it sends, yellow while it scans, and blinks red for a low battery or an emergency. The guide is the explosion-proof DP4801 Ex's, whose front matches the DP4801e's.",
+          "source": {
+            "title": "Motorola Solutions: MOTOTRBO DP4801 Ex User Guide → Radio Controls; LED Indicators",
+            "url": "https://www.alphatronmarine.com/files/secured/docuware_documents/342-DMR+Motorola+DP4801Ex+User+Manual++20-2-2013.pdf"
+          },
+          "checked": "2026-11-22"
+        }
+      ]
+    },
+    {
       "id": "gear.recco-reflector",
       "kind": "fact",
       "claim": "A RECCO reflector is passive: a small tag with no battery, never switched on, that a searcher's detector finds by radar.",
@@ -773,6 +797,38 @@
             "url": "https://www.alanarnette.com/2024/03/05/everest-2024-nepals-gps-chip-plan-has-major-problems/"
           },
           "checked": "2026-11-17"
+        }
+      ]
+    },
+    {
+      "id": "gear.messenger-layout",
+      "kind": "fact",
+      "claim": "A palm-sized satellite messenger is a red or black case of about 52 × 99 mm and 0.1 kg, its antenna's housing at its top left and its power button on its top at the right, with a square monochrome screen of 23 mm that isn't a touch screen: ▲ over ▼ on its left side, OK over back on its right, each marked beside the screen, and the SOS under a red cap low on its right side, lifted and held until a countdown ends.",
+      "status": "source only",
+      "versions": [
+        {
+          "note": "The inReach Mini 2: the antenna at the top left; ▲ and ▼ on the left side scroll, OK and back on the right select and cancel, each marked beside the screen; the SOS under its cap low on the right, held until the countdown ends; power on the top at the right; a main menu of Check In, Send Message, Start or Stop Tracking and more.",
+          "source": {
+            "title": "Garmin: inReach Mini 2 Owner's Manual → Device Overview",
+            "url": "https://www8.garmin.com/manuals/webhelp/GUID-802DEF62-EBB2-463C-8C51-C58FB29F89E3/EN-US/inReach_Mini_2_OM_EN-US.pdf"
+          },
+          "checked": "2026-11-22"
+        },
+        {
+          "note": "51.7 × 99.0 × 26.1 mm, 0.1 kg; a monochrome transflective memory-in-pixel screen of 23 × 23 mm, 176 × 176 pixels, not a touch screen.",
+          "source": {
+            "title": "Garmin: inReach Mini 2 Product Specifications",
+            "url": "https://cdn.shopify.com/s/files/1/0509/2730/4853/files/Garmin_Product_Specs_-_inReach_Mini_2.pdf"
+          },
+          "checked": "2026-11-22"
+        },
+        {
+          "note": "Sold in Flame Red and in Black.",
+          "source": {
+            "title": "Campsaver: Garmin inReach Mini 2",
+            "url": "https://www.campsaver.com/garmin-inreach-mini-2-gps.html"
+          },
+          "checked": "2026-11-22"
         }
       ]
     },
@@ -915,6 +971,30 @@
       ]
     },
     {
+      "id": "gear.watch-buttons",
+      "kind": "fact",
+      "claim": "An outdoor GPS watch has a round screen of about 33 mm, made to read in the sun, in a case of 47 mm, and five buttons named on its bezel: LIGHT, UP and DOWN on its left, START·STOP and BACK on its right. UP and DOWN go through its pages, START starts and stops the activity it records, BACK goes back; the screen is lit for a few seconds after a press.",
+      "status": "source only",
+      "versions": [
+        {
+          "note": "The fēnix 7: LIGHT at 10 o'clock turns the backlight on; UP·MENU at 9 and DOWN at 8 scroll through the widgets and the data screens; START·STOP at 2 o'clock, with its red accent, selects, and starts and stops an activity; BACK·LAP at 4 goes back.",
+          "source": {
+            "title": "Garmin: fēnix 7 Standard/Solar/Pro Series Owner's Manual → Buttons",
+            "url": "https://www8.garmin.com/manuals/webhelp/GUID-C001C335-A8EC-4A41-AB0E-BAC434259F92/EN-US/fenix_7_Series_OM_EN-US.pdf"
+          },
+          "checked": "2026-11-22"
+        },
+        {
+          "note": "The 47 mm fēnix 7: 47 × 47 × 14.5 mm, 0.079 kg, a round transflective memory-in-pixel screen of 33.02 mm, 260 × 260 pixels.",
+          "source": {
+            "title": "GPS Central: Garmin fenix 7 Series Specifications",
+            "url": "https://woo.gpscentral.ca/wp-content/uploads/Garmin_fenix7_Series_Specifications.pdf"
+          },
+          "checked": "2026-11-22"
+        }
+      ]
+    },
+    {
       "id": "gear.wind-meter",
       "kind": "fact",
       "claim": "A pocket weather meter reads the wind's speed as it is now, on average and at its strongest, with the air's temperature and the wind chill; climbers have carried them on Everest.",
@@ -942,7 +1022,12 @@
       "id": "gear.client-electronics",
       "kind": "question",
       "question": "Which electronics does a client carry through the Icefall today, and which stay with the guide or at Base Camp: a radio of their own, a satellite messenger, a GPS watch, a wind meter, an avalanche transceiver? At which places does a team call Base Camp from the Icefall, and where in it does a handheld radio lose Base Camp? The game gives the client all four devices, and loses the radio and the sky only where a climber hangs in a crevasse (#260).",
-      "about": ["gear.radio-each-climber", "gear.radio-limits", "gear.gps-limits", "gear.wind-meter"]
+      "about": [
+        "gear.radio-each-climber",
+        "gear.radio-limits",
+        "gear.gps-limits",
+        "gear.wind-meter"
+      ]
     },
     {
       "id": "gear.wind-meter-readings",
@@ -991,6 +1076,38 @@
       ]
     },
     {
+      "id": "gear.wind-meter-layout",
+      "kind": "fact",
+      "claim": "A pocket weather meter is a case of about 122 × 42 mm with a 25 mm impeller at its top, a thermistor's window at its left, a segment screen under them with one big number at a time, its sign and unit on a line under it, and three buttons under the screen, ◄ ◐ ►. ◐ switches it on, lights it for 10 seconds, and held for 3 seconds switches it off; ◄ and ► step through its screens, the wind's to its strongest and its average, each screen's name flashing first.",
+      "status": "source only",
+      "versions": [
+        {
+          "note": "From the top: the impeller, the thermistor's window at the left, the screen, and ◄ ◐ ► in a row. ◐ switches it on, gives 10 seconds of light, and held 3 seconds switches it off; ◄ and ► change screens, and on the wind's step to MAX and AVG; a hint such as SPd, dEG or chill flashes first; one big number, with its icon and units on a line under it.",
+          "source": {
+            "title": "Kestrel: User Guide, Kestrel 1000, 2000, 2500, 3000, 3500, 4000",
+            "url": "https://kestrelmeters.com/mwdownloads/download/link/id/8"
+          },
+          "checked": "2026-11-22"
+        },
+        {
+          "note": "The Kestrel 2000 and 2500: 122 × 48 × 28 mm and 0.102 kg with their cover; a 25 mm impeller that can be replaced; a reflective screen with 9 mm digits, 5 on the 2500, lit green.",
+          "source": {
+            "title": "Nielsen-Kellerman: Kestrel Certificate of Conformity → Specifications",
+            "url": "https://giscenter.isu.edu/research/Techpg/wind/pdf/Kestrel_specs.pdf"
+          },
+          "checked": "2026-11-22"
+        },
+        {
+          "note": "The Kestrel 2500 alone: 122 × 42 × 20 mm and 0.065 kg, gold; the 2500NV olive drab.",
+          "source": {
+            "title": "Richard Paul Russell: Kestrel 2500 data sheet",
+            "url": "https://cdn.shopify.com/s/files/1/0902/9209/3252/files/K2500_data_sheet.pdf"
+          },
+          "checked": "2026-11-22"
+        }
+      ]
+    },
+    {
       "id": "gear.messenger-weather",
       "kind": "fact",
       "claim": "A satellite messenger asks for a weather forecast by message, basic, premium or marine, for where it is or a place chosen; the forecast can take several minutes to come back, and it needs a clear view of the sky.",
@@ -1013,9 +1130,7 @@
       "status": "source only",
       "value": 5,
       "unit": "min",
-      "fitted_to": [
-        "gear.messenger-weather"
-      ],
+      "fitted_to": ["gear.messenger-weather"],
       "fitted": "2026-11-21"
     }
   ]

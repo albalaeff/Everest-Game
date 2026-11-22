@@ -33,10 +33,18 @@ export class WatchDrawing extends DeviceDrawing {
   private static readonly STRAP = 22;
 
   readonly name = "watch";
+  /** The case and the strap's first centimetre above and below it, fading off: the rest of the
+   * strap runs on past the card's edge. */
+  private static readonly VIEW: DrawnBox = { x: 0, y: 12, width: 64, height: 68 };
+
   readonly width = 64;
   readonly height = 92;
   readonly screen: DrawnBox;
   readonly controls: readonly DrawnControl[];
+
+  override get view(): DrawnBox {
+    return WatchDrawing.VIEW;
+  }
 
   constructor() {
     super();
@@ -58,37 +66,62 @@ export class WatchDrawing extends DeviceDrawing {
 
   protected gradients(): string {
     return [
-      this.linear("strap", [
-        [0, "#16181c"],
-        [0.5, "#24272d"],
-        [1, "#121418"],
-      ], [0, 0], [1, 0]),
-      this.linear("case", [
-        [0, "#5b616b"],
-        [0.45, "#262a31"],
-        [1, "#0d0f12"],
-      ], [0.2, 0], [0.8, 1]),
-      this.linear("bezel", [
-        [0, "#f2f4f6"],
-        [0.3, "#a9b0b8"],
-        [0.55, "#6c737c"],
-        [0.8, "#c6ccd2"],
-        [1, "#7c838c"],
-      ], [0.15, 0], [0.85, 1]),
-      this.linear("button", [
-        [0, "#e9ecef"],
-        [0.5, "#8d949c"],
-        [1, "#4a5058"],
-      ], [0, 0], [1, 1]),
-      `<mask id="${this.id("strap-ends")}"><rect width="64" height="92" fill="url(#${this.id("fade-mask")})"/></mask>`,
-      `<linearGradient id="${this.id("fade-mask")}" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#000"/><stop offset="0.14" stop-color="#fff"/><stop offset="0.86" stop-color="#fff"/><stop offset="1" stop-color="#000"/></linearGradient>`,
+      this.linear(
+        "strap",
+        [
+          [0, "#16181c"],
+          [0.5, "#24272d"],
+          [1, "#121418"],
+        ],
+        [0, 0],
+        [1, 0],
+      ),
+      this.linear(
+        "case",
+        [
+          [0, "#5b616b"],
+          [0.45, "#262a31"],
+          [1, "#0d0f12"],
+        ],
+        [0.2, 0],
+        [0.8, 1],
+      ),
+      this.linear(
+        "bezel",
+        [
+          [0, "#f2f4f6"],
+          [0.3, "#a9b0b8"],
+          [0.55, "#6c737c"],
+          [0.8, "#c6ccd2"],
+          [1, "#7c838c"],
+        ],
+        [0.15, 0],
+        [0.85, 1],
+      ),
+      this.linear(
+        "button",
+        [
+          [0, "#e9ecef"],
+          [0.5, "#8d949c"],
+          [1, "#4a5058"],
+        ],
+        [0, 0],
+        [1, 1],
+      ),
+      `<mask id="${this.id("strap-ends")}">${this.rect(WatchDrawing.VIEW, 0, `url(#${this.id("fade-mask")})`)}</mask>`,
+      `<linearGradient id="${this.id("fade-mask")}" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#000"/><stop offset="0.12" stop-color="#fff"/><stop offset="0.88" stop-color="#fff"/><stop offset="1" stop-color="#000"/></linearGradient>`,
     ].join("");
   }
 
   protected parts(): string {
-    return [this.strap(), this.lugs(), ...this.buttons(), this.watchCase(), this.bezel(), this.glass()].join(
-      "",
-    );
+    return [
+      this.strap(),
+      this.lugs(),
+      ...this.buttons(),
+      this.watchCase(),
+      this.bezel(),
+      this.glass(),
+    ].join("");
   }
 
   /** The strap above and below the case, its holes below, fading off where the card ends. */

@@ -35,25 +35,33 @@ export abstract class DeviceDrawing {
   abstract readonly screen: DrawnBox;
   abstract readonly controls: readonly DrawnControl[];
 
+  /** The part of the drawing the card shows: all of it, unless a strap or the foot of a case
+   * runs on past the card's edge, as with a thing held up close, so its screen is bigger. */
+  get view(): DrawnBox {
+    return { x: 0, y: 0, width: this.width, height: this.height };
+  }
+
   /** The drawing as an SVG of its own, hidden from screen readers: the buttons laid over it
    * carry the names. */
   svg(): string {
-    const { width, height } = this;
-    return `<svg class="device__drawing" viewBox="0 0 ${width} ${height}" aria-hidden="true"><defs>${this.gradients()}</defs>${this.parts()}</svg>`;
+    const { x, y, width, height } = this.view;
+    const box = [x, y, width, height].map((value) => DeviceDrawing.n(value)).join(" ");
+    return `<svg class="device__drawing" viewBox="${box}" aria-hidden="true"><defs>${this.gradients()}</defs>${this.parts()}</svg>`;
   }
 
-  /** A box as shares of the drawing, in per cent: where the page lays what goes over it. */
+  /** A box as shares of the part shown, in per cent: where the page lays what goes over it. */
   share(box: DrawnBox): {
     readonly left: number;
     readonly top: number;
     readonly width: number;
     readonly height: number;
   } {
+    const { view } = this;
     return {
-      left: (box.x / this.width) * 100,
-      top: (box.y / this.height) * 100,
-      width: (box.width / this.width) * 100,
-      height: (box.height / this.height) * 100,
+      left: ((box.x - view.x) / view.width) * 100,
+      top: ((box.y - view.y) / view.height) * 100,
+      width: (box.width / view.width) * 100,
+      height: (box.height / view.height) * 100,
     };
   }
 

@@ -27,24 +27,29 @@ export class MessengerDrawing extends DeviceDrawing {
     ];
   private static readonly KEY = { height: 10, out: 1.6 };
   private static readonly SOS: DrawnBox = { x: 55, y: 68, width: 3.4, height: 15 };
+  /** The messenger from the foot of its antenna's housing down past its SOS: held up close, so
+   * its screen reads, its top and its foot run on past the card's edges. */
+  private static readonly VIEW: DrawnBox = { x: 0, y: 9, width: 60, height: 81 };
 
   readonly name = "messenger";
   readonly width = 60;
   readonly height = 106;
   readonly screen = MessengerDrawing.GLASS;
   readonly controls: readonly DrawnControl[] = [
-    { name: "antenna", kind: "part", box: { x: 6, y: 2, width: 24, height: 12 }, push: [0, 0] },
+    { name: "antenna", kind: "part", box: { x: 6, y: 9, width: 24, height: 6 }, push: [0, 0] },
     { name: "power", kind: "part", box: { x: 40, y: 9, width: 10, height: 6 }, push: [0, 0] },
-    ...MessengerDrawing.SIDE_KEYS.map(
-      ([name, side, y]): DrawnControl => ({
-        name,
-        kind: "button",
-        box: { x: side === -1 ? 0 : 50, y: y - 1, width: 10, height: 12 },
-        push: [-side * 0.9, 0],
-      }),
-    ),
+    ...MessengerDrawing.SIDE_KEYS.map(([name, side, y]): DrawnControl => ({
+      name,
+      kind: "button",
+      box: { x: side === -1 ? 0 : 50, y: y - 1, width: 10, height: 12 },
+      push: [-side * 0.9, 0],
+    })),
     { name: "sos", kind: "button", box: { x: 49, y: 66, width: 11, height: 19 }, push: [-0.8, 0] },
   ];
+
+  override get view(): DrawnBox {
+    return MessengerDrawing.VIEW;
+  }
 
   protected gradients(): string {
     return [
@@ -117,7 +122,12 @@ export class MessengerDrawing extends DeviceDrawing {
       const left = side === -1 ? x - out : x + width - 1.4;
       return this.cap(
         name,
-        this.rect({ x: left, y, width: out + 1.4, height }, 1.2, this.paint("key"), 'stroke="#0b0c0e" stroke-width="0.3"'),
+        this.rect(
+          { x: left, y, width: out + 1.4, height },
+          1.2,
+          this.paint("key"),
+          'stroke="#0b0c0e" stroke-width="0.3"',
+        ),
       );
     });
   }

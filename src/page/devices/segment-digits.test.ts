@@ -54,11 +54,13 @@ describe("SegmentDigits: a segment screen's figures (#284)", () => {
     expect(() => new SegmentDigits(0, 10)).toThrow(RangeError);
   });
 
-  it("draws an SVG as wide as its cells and as high as its figures, hidden from screen readers", () => {
+  it("draws an SVG as wide as its cells and as high as its figures, at the right of a wider screen, hidden from screen readers", () => {
     const digits = new SegmentDigits(3, 20);
     const svg = digits.svg("12");
 
-    expect(svg).toMatch(/^<svg class="segments" viewBox="0 0 [\d.]+ 20" aria-hidden="true">/);
+    expect(svg).toMatch(
+      /^<svg class="segments" viewBox="0 0 [\d.]+ 20" preserveAspectRatio="xMaxYMid meet" aria-hidden="true">/,
+    );
     expect(digits.width).toBeGreaterThan(3 * 0.54 * 20);
     expect(digits.width).toBeLessThan(3 * 20);
   });

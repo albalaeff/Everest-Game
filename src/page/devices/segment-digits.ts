@@ -60,7 +60,7 @@ export class SegmentDigits {
    * screen reader, which reads the words beside it. */
   svg(text: string): string {
     const { width, height } = this;
-    return `<svg class="segments" viewBox="0 0 ${width.toFixed(2)} ${height}" aria-hidden="true">${this.markup(text)}</svg>`;
+    return `<svg class="segments" viewBox="0 0 ${width.toFixed(2)} ${height}" preserveAspectRatio="xMaxYMid meet" aria-hidden="true">${this.markup(text)}</svg>`;
   }
 
   /** The bars of `text`, lit and faint, right-aligned in the cells. */

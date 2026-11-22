@@ -22,7 +22,12 @@ export class MessengerMenu {
 
   /** The rows for a tracker that's `tracking` or not, with a `forecast` come back or none. */
   static rows(tracking: boolean, forecast: boolean): readonly MessengerRow[] {
-    return [tracking ? "stop" : "track", "check-in", "weather", ...(forecast ? (["forecast"] as const) : [])];
+    return [
+      tracking ? "stop" : "track",
+      "check-in",
+      "weather",
+      ...(forecast ? (["forecast"] as const) : []),
+    ];
   }
 
   get screen(): MessengerScreen {

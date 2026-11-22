@@ -4883,9 +4883,16 @@ main:has(#tent:not([hidden])) #self-check {
   top: calc(var(--edge-top) + 9.5rem);
   right: var(--edge-right);
   z-index: 3;
-  width: min(33rem, calc(100vw - var(--edge-left) - var(--edge-right)));
-  /* Down to the controls along the bottom, wherever the window's width has wrapped them to: the
-   * panel measures their top as it opens (--floor). Never so short that nothing shows. */
+  display: grid;
+  grid-template:
+    "tabs head" auto
+    "device device" minmax(0, 1fr) / minmax(0, 1fr) auto;
+  gap: 0.75rem 0.6rem;
+  width: min(35rem, calc(100vw - var(--edge-left) - var(--edge-right)));
+  /* As tall as a device held up close needs, and down to the controls along the bottom at most,
+   * wherever the window's width has wrapped them to: the panel measures their top as it opens
+   * (--floor). Never so short that nothing shows. The device in hand fills what's left. */
+  height: 38rem;
   max-height: max(
     12rem,
     calc(var(--floor, 100vh - var(--edge-bottom) - 4rem) - var(--edge-top) - 10rem)
@@ -4923,11 +4930,27 @@ main:has(#tent:not([hidden])) #self-check {
   opacity: 0.45;
 }
 
+#devices > .self-check__header {
+  grid-area: head;
+}
+
+/* The card's name and its line over it, for a screen reader: the tabs say what the card is, and
+ * the device in hand has their room. */
+#devices > .self-check__header > div {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
 .devices__tabs {
   display: flex;
+  grid-area: tabs;
   flex-wrap: wrap;
   gap: 0.5rem;
-  margin: 0.7rem 0 0.8rem;
+  margin: 0;
 }
 
 .devices__tabs button {
@@ -4944,15 +4967,26 @@ main:has(#tent:not([hidden])) #self-check {
   color: var(--rope-ink);
 }
 
+/* The device in hand, held up close: as tall as the room under the tabs, its words beside it. */
 .device {
   display: grid;
-  grid-template-columns: 11.5rem 1fr;
+  grid-area: device;
+  grid-template-columns: auto minmax(0, 1fr);
   gap: 1.1rem;
   align-items: start;
+  min-height: 0;
+  container-type: size;
 }
 
-.device[data-device="gps"] {
-  grid-template-columns: 1fr;
+/* What's beside the device: what it has heard and sent, and its notes, scrolled on their own
+ * when they're longer than the device is tall. */
+.device__side {
+  display: grid;
+  gap: 0.6rem;
+  align-content: start;
+  max-height: 100cqh;
+  overflow-y: auto;
+  overscroll-behavior: contain;
 }
 
 .device__note {
@@ -4987,6 +5021,8 @@ main:has(#tent:not([hidden])) #self-check {
  * scale with it; the screen's words in shares of its width (cqw). */
 .device__body {
   position: relative;
+  justify-self: center;
+  height: min(100cqh, calc(var(--share, 0.6) * 100cqw / var(--wide, 1)));
   aspect-ratio: var(--ratio);
   container-type: inline-size;
 }
@@ -5092,13 +5128,8 @@ main:has(#tent:not([hidden])) #self-check {
 /* The handheld radio: its black case beside the log, and its screen a grey-green LCD with dark
  * figures, the signal's bars, TX or RX, and the battery, amber in its own light. The light on its
  * top: red as it sends, green as it hears. */
-.radio__device {
-  display: grid;
-  justify-items: center;
-}
-
 .radio {
-  width: 6.4rem;
+  --share: 0.32;
 }
 
 .radio__lcd {
@@ -5159,7 +5190,7 @@ main:has(#tent:not([hidden])) #self-check {
 
 .radio__air {
   grid-area: air;
-  font-size: 7.5cqw;
+  font-size: 9cqw;
   text-align: center;
 }
 
@@ -5186,7 +5217,7 @@ main:has(#tent:not([hidden])) #self-check {
 
 .radio__name {
   grid-area: name;
-  font-size: 10cqw;
+  font-size: 12cqw;
   text-align: right;
 }
 
@@ -5205,18 +5236,21 @@ main:has(#tent:not([hidden])) #self-check {
 }
 
 .radio__contact {
-  margin: 0.5rem 0 0;
+  margin: 0;
   color: var(--muted);
   font-size: 0.875rem;
   line-height: 1.3;
-  text-align: center;
+}
+
+.radio__contact:empty {
+  display: none;
 }
 
 .radio__log {
   display: grid;
   gap: 0.4rem;
   max-height: 6rem;
-  margin: 0 0 0.75rem;
+  margin: 0;
   padding: 0.6rem 0.7rem;
   overflow-y: auto;
   border: 1px solid rgb(255 255 255 / 14%);
@@ -5245,15 +5279,18 @@ main:has(#tent:not([hidden])) #self-check {
   font-style: italic;
 }
 
-/* The ready phrases, two abreast, and the call for help across the foot. */
+/* The ready phrases, two abreast, and the call for help across the foot: low enough that all of
+ * them show beside the radio. */
 .radio__phrases {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 0.5rem;
+  gap: 0.4rem;
 }
 
 #devices .radio__phrases button {
-  padding: 0 0.5rem;
+  min-height: 2.3rem;
+  padding: 0.2rem 0.5rem;
+  line-height: 1.15;
   white-space: normal;
 }
 
@@ -5263,14 +5300,13 @@ main:has(#tent:not([hidden])) #self-check {
 
 /* The GPS watch: a round screen in its steel bezel, a page at a time, grey with dark figures as a
  * screen made to read in the sun is, and white in its own light; the page's place among the
- * others at its right edge. */
+ * others down its left edge, as a Garmin shows it. */
 .device[data-device="gps"] {
-  grid-template-columns: 15rem 1fr;
   align-items: center;
 }
 
 .watch {
-  width: 15rem;
+  --share: 0.58;
 }
 
 .watch__screen {
@@ -5279,11 +5315,11 @@ main:has(#tent:not([hidden])) #self-check {
   gap: 1.2cqw;
   align-items: center;
   justify-content: center;
-  padding: 6cqw 9cqw;
+  padding: 6cqw;
   border-radius: 50%;
   background: radial-gradient(circle at 50% 38%, #e3e9de, #c5cdbf 72%, #b1baab);
   color: #0d1b22;
-  font-size: 4.6cqw;
+  font-size: 4.2cqw;
   line-height: 1.15;
   text-align: center;
 }
@@ -5294,10 +5330,10 @@ main:has(#tent:not([hidden])) #self-check {
 }
 
 .watch__where {
-  max-width: 80%;
+  max-width: 76%;
   margin: 0;
   overflow: hidden;
-  font-size: 4.2cqw;
+  font-size: 3.6cqw;
   font-weight: 800;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -5312,7 +5348,7 @@ main:has(#tent:not([hidden])) #self-check {
 }
 
 .watch__label {
-  font-size: 4.2cqw;
+  font-size: 3.6cqw;
   font-weight: 700;
   letter-spacing: 0.04em;
   text-transform: uppercase;
@@ -5320,7 +5356,7 @@ main:has(#tent:not([hidden])) #self-check {
 }
 
 .watch__big {
-  font-size: 11.5cqw;
+  font-size: 9cqw;
   font-variant-numeric: tabular-nums;
   font-weight: 800;
   letter-spacing: -0.02em;
@@ -5330,32 +5366,36 @@ main:has(#tent:not([hidden])) #self-check {
 
 #devices .watch__pair {
   display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 1cqw 3cqw;
-  width: 100%;
-  margin-top: 1cqw;
-  padding-top: 1.4cqw;
+  gap: 0.6cqw;
+  width: 84%;
+  margin-top: 0.6cqw;
+  padding-top: 1.2cqw;
   border-top: 0.4cqw solid rgb(13 27 34 / 30%);
 }
 
 #devices .watch__pair div {
-  display: grid;
-  gap: 0.3cqw;
-  justify-items: center;
+  display: flex;
+  gap: 2cqw;
+  align-items: baseline;
+  justify-content: space-between;
 }
 
 .watch__pair dt {
-  font-size: 3.4cqw;
+  overflow: hidden;
+  font-size: 2.8cqw;
   font-weight: 700;
-  letter-spacing: 0.03em;
+  letter-spacing: 0.02em;
+  text-align: left;
+  text-overflow: ellipsis;
   text-transform: uppercase;
+  white-space: nowrap;
   opacity: 0.75;
 }
 
 #devices .watch__pair dd {
-  font-size: 5.4cqw;
+  font-size: 4.2cqw;
   font-weight: 800;
-  text-align: center;
+  text-align: right;
   white-space: nowrap;
 }
 
@@ -5425,10 +5465,11 @@ main:has(#tent:not([hidden])) #self-check {
   opacity: 0.4;
 }
 
-/* Paused: the word across the screen's foot, blinking as a watch's does. */
+/* Paused: the word across the screen's top, over where the climber is, blinking as a watch's
+ * does. */
 .watch__paused {
   position: absolute;
-  bottom: 8cqw;
+  top: 6.5cqw;
   display: none;
   margin: 0;
   padding: 0.6cqw 2.4cqw;
@@ -5446,17 +5487,21 @@ main:has(#tent:not([hidden])) #self-check {
   display: block;
 }
 
+.watch__screen[data-paused="yes"] .watch__where {
+  visibility: hidden;
+}
+
 @keyframes watch-blink {
   50% {
     opacity: 0.25;
   }
 }
 
-/* Where the page is among the four: a dot each down its right edge, the shown one filled. */
+/* Where the page is among the four: a dot each down its left edge, the shown one filled. */
 .watch__pages {
   position: absolute;
   top: 50%;
-  right: 3.4cqw;
+  left: 3.4cqw;
   display: grid;
   gap: 1.4cqw;
   translate: 0 -50%;
@@ -5480,15 +5525,22 @@ main:has(#tent:not([hidden])) #self-check {
   align-self: center;
 }
 
+/* The meter's foot and the messenger's top and foot run on past the card's edges. */
+.meter .device__drawing {
+  -webkit-mask: linear-gradient(180deg, #000 90%, transparent);
+  mask: linear-gradient(180deg, #000 90%, transparent);
+}
+
+.messenger .device__drawing {
+  -webkit-mask: linear-gradient(180deg, transparent, #000 7%, #000 90%, transparent);
+  mask: linear-gradient(180deg, transparent, #000 7%, #000 90%, transparent);
+}
+
 /* The pocket weather meter: its gold case beside the wind's name and the risk of frostbite, its
  * impeller turning as fast as the wind blows, and its segment screen of one big number with the
  * screen's sign and unit under it, green in its own light. */
-.device[data-device="wind"] {
-  grid-template-columns: 7.2rem 1fr;
-}
-
 .meter {
-  width: 7.2rem;
+  --share: 0.36;
 }
 
 .meter__vanes {
@@ -5528,7 +5580,8 @@ main:has(#tent:not([hidden])) #self-check {
 }
 
 .meter__number .segments {
-  margin-left: auto;
+  width: 100%;
+  height: 100%;
 }
 
 /* The line under the number: the screen's sign, MAX or AVG, and the unit. */
@@ -5637,23 +5690,19 @@ main:has(#tent:not([hidden])) #self-check {
 /* The satellite messenger: its red case beside what it has sent, and its square screen: grey
  * with dark words, white in its own light; the battery, the sky and the time along its top; the
  * bar on the row it's on; the forecast a day at a time; the SOS's count while it's held. */
-.device[data-device="tracker"] {
-  grid-template-columns: 12.5rem 1fr;
-}
-
 .messenger {
-  width: 12.5rem;
+  --share: 0.55;
 }
 
 .messenger__screen {
   display: flex;
   flex-direction: column;
-  gap: 1.4cqw;
-  padding: 2cqw 2.4cqw;
+  gap: 1cqw;
+  padding: 1.4cqw 1.8cqw;
   border-radius: 1cqw;
   background: linear-gradient(180deg, #d6dccf, #bfc7b8);
   color: #11181c;
-  font-size: 3.6cqw;
+  font-size: 4.4cqw;
   font-weight: 700;
   line-height: 1.15;
 }
@@ -5669,9 +5718,9 @@ main:has(#tent:not([hidden])) #self-check {
   align-items: center;
   justify-content: space-between;
   margin: 0;
-  padding-bottom: 0.8cqw;
+  padding-bottom: 0.6cqw;
   border-bottom: 0.4cqw solid currentcolor;
-  font-size: 3cqw;
+  font-size: 3.4cqw;
 }
 
 .messenger__battery {
@@ -5720,7 +5769,7 @@ main:has(#tent:not([hidden])) #self-check {
 }
 
 .messenger__state {
-  font-size: 3.4cqw;
+  font-size: 4cqw;
 }
 
 /* Tracking: a mark that it's on, beside the words. */
@@ -5749,7 +5798,7 @@ main:has(#tent:not([hidden])) #self-check {
   width: 100%;
   min-width: 0;
   min-height: 0;
-  padding: 0.7cqw 1.4cqw;
+  padding: 0.4cqw 1cqw;
   border: 0;
   border-radius: 0.6cqw;
   background: none;
@@ -5773,7 +5822,7 @@ main:has(#tent:not([hidden])) #self-check {
 
 .messenger__status {
   margin: auto 0 0;
-  font-size: 3.2cqw;
+  font-size: 3.8cqw;
 }
 
 .messenger__status:empty {
@@ -5788,13 +5837,13 @@ main:has(#tent:not([hidden])) #self-check {
 }
 
 .messenger__forecast strong {
-  font-size: 3.4cqw;
+  font-size: 4cqw;
 }
 
 .messenger__table {
   width: 100%;
   border-collapse: collapse;
-  font-size: 3.2cqw;
+  font-size: 3.8cqw;
 }
 
 .messenger__table th {
@@ -5850,7 +5899,7 @@ main:has(#tent:not([hidden])) #self-check {
   border-radius: 0.8cqw;
   background: #11181c;
   color: #d6dccf;
-  font-size: 3.4cqw;
+  font-size: 4cqw;
 }
 
 .messenger[data-holding="sos"] .messenger__countdown {
@@ -5883,48 +5932,20 @@ main:has(#tent:not([hidden])) #self-check {
   right: auto;
   left: var(--edge-left);
   z-index: 4;
-  width: min(33rem, calc(100vw - var(--edge-left) - var(--edge-right) - 15rem));
+  width: min(35rem, calc(100vw - var(--edge-left) - var(--edge-right) - 15rem));
   max-height: calc(100vh - var(--edge-top) - var(--edge-bottom) - 3.75rem);
   padding: 0.7rem 0.8rem;
 }
 
-/* A narrow card, as a phone held sideways has: each device a little smaller, the watch and the
- * messenger over what's beside them, so their screens stay readable, and the title gives its
- * line to the devices' tabs. */
+/* A narrow card, as a phone's beside the tent has: the device and its words closer, the words a
+ * little smaller. */
 @container devices (max-width: 27rem) {
   .device {
     gap: 0.6rem;
   }
 
-  .device[data-device="radio"] {
-    grid-template-columns: 5.6rem 1fr;
-  }
-
-  .radio {
-    width: 5.6rem;
-  }
-
-  .device[data-device="gps"],
-  .device[data-device="tracker"] {
-    grid-template-columns: 1fr;
-    justify-items: center;
-  }
-
-  .watch,
-  .messenger {
-    width: min(100%, 14rem);
-  }
-
-  .device[data-device="wind"] {
-    grid-template-columns: 6rem 1fr;
-  }
-
-  .meter {
-    width: 6rem;
-  }
-
-  .radio__contact {
-    margin: 0.3rem 0 0;
+  .device__side {
+    font-size: 0.875rem;
   }
 
   .radio__log {
@@ -5932,12 +5953,38 @@ main:has(#tent:not([hidden])) #self-check {
   }
 }
 
-.touch #devices .eyebrow {
-  display: none;
-}
+/* A phone on its side: the tabs and Close down the card's left, so the device in hand has the
+ * card's whole height. */
+@media (max-height: 31.25rem) and (orientation: landscape) {
+  .touch #devices {
+    grid-template:
+      "tabs device" minmax(0, 1fr)
+      "head device" auto / 5.6rem minmax(0, 1fr);
+  }
 
-.touch .devices__tabs {
-  margin: 0.5rem 0 0.6rem;
+  .touch .devices__tabs {
+    flex-direction: column;
+    flex-wrap: nowrap;
+    gap: 0.3rem;
+  }
+
+  .touch #devices {
+    row-gap: 0.3rem;
+  }
+
+  /* A finger's 44 points each, so the five fit down a phone's height. */
+  .touch .devices__tabs button,
+  .touch #devices > .self-check__header > button {
+    flex: none;
+    width: 100%;
+    min-height: 44px;
+    padding: 0 0.4rem;
+  }
+
+  .touch .radio__log {
+    max-height: 3.6rem;
+    padding: 0.4rem 0.6rem;
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {

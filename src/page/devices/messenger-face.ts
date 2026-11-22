@@ -24,13 +24,14 @@ export class MessengerFace extends DeviceFace {
   private static readonly SOS_MILLISECONDS = 3000;
 
   /** Each row's words but the forecast's. */
-  private static readonly LABELS: Readonly<Record<Exclude<MessengerRow, "forecast">, DeviceTextName>> =
-    {
-      track: "tracker.track",
-      stop: "tracker.stop",
-      "check-in": "tracker.check-in",
-      weather: "tracker.weather",
-    };
+  private static readonly LABELS: Readonly<
+    Record<Exclude<MessengerRow, "forecast">, DeviceTextName>
+  > = {
+    track: "tracker.track",
+    stop: "tracker.stop",
+    "check-in": "tracker.check-in",
+    weather: "tracker.weather",
+  };
 
   private readonly readings = new Readings();
   private readonly menu = new MessengerMenu();
@@ -98,7 +99,11 @@ export class MessengerFace extends DeviceFace {
                   ? texts.say("tracker.weather-coming")
                   : "",
     );
-    DeviceFace.mark(this.find("[data-read='status']"), "sos", tracker.sos === "none" ? "no" : "yes");
+    DeviceFace.mark(
+      this.find("[data-read='status']"),
+      "sos",
+      tracker.sos === "none" ? "no" : "yes",
+    );
     this.drawRows(flat);
     const sos = this.control("sos");
     const sosOff = flat || tracker.sos !== "none";
@@ -154,7 +159,9 @@ export class MessengerFace extends DeviceFace {
         }),
       );
     }
-    for (const [index, button] of [...this.list.querySelectorAll<HTMLButtonElement>("button")].entries()) {
+    for (const [index, button] of [
+      ...this.list.querySelectorAll<HTMLButtonElement>("button"),
+    ].entries()) {
       const off = flat || (button.dataset.row === "weather" && (weather.asking || weather.coming));
       if (button.disabled !== off) {
         button.disabled = off;
