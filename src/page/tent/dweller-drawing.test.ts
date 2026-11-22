@@ -393,8 +393,9 @@ describe("DwellerDrawing: the person in the tent as a drawing (#258, #264, #269,
     expect(crawling.shown).toBeLessThan(1);
     expect(numbers(crawling.all)[0]).toBeLessThan(SEAT.x - 200);
     expect(numbers(crawling.all)[1]).toBeLessThan(SEAT.y - 30);
-    // Sitting, the thigh is out across the mats; kneeling, it's down under the hips.
-    expect(Math.abs(down(sitting.limbs.thigh0))).toBeLessThan(0.3);
+    // Sitting, the thigh rises out to the knee, up as a man in a down suit sits cross-legged
+    // (#285); kneeling, it's down under the hips.
+    expect(down(sitting.limbs.thigh0)).toBeLessThan(-0.4);
     expect(down(crawling.limbs.thigh0)).toBeGreaterThan(0.7);
   });
 

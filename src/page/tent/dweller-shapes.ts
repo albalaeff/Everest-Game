@@ -4,6 +4,7 @@ import type { Outline, Padded } from "../../rendering/figure-shapes";
 import { FrontShapes } from "../../rendering/front-shapes";
 import type { Quilted } from "../../rendering/front-shapes";
 import type { Spot } from "./dweller-pose";
+import { LegBones } from "./leg-bones";
 
 /** A part of the down suit in its own frame, in the tent's pixels: along +x from its root at the
  * origin, as long as its bone; its outline, the bands of down between its seams, and the seams. */
@@ -29,15 +30,6 @@ export interface DwellerBody {
   readonly collarBack: Outline;
   readonly collar: readonly [Outline, Outline];
   readonly hood: Outline;
-}
-
-/** The legs' joints, from the hips, in the tent's pixels: each hip, knee, ankle and the toe of
- * the bootie, the leg on the viewer's left first. */
-export interface LegJoints {
-  readonly hips: readonly [Spot, Spot];
-  readonly knees: readonly [Spot, Spot];
-  readonly ankles: readonly [Spot, Spot];
-  readonly toes: readonly [Spot, Spot];
 }
 
 /**
@@ -82,8 +74,8 @@ export class DwellerShapes {
    * thigh and the shin. A hand's length is its own (`DwellerHands.WRIST`). */
   static readonly UPPER_ARM = ClimberPose.UPPER_ARM * DwellerShapes.SCALE;
   static readonly FOREARM = ClimberPose.FOREARM * DwellerShapes.SCALE;
-  static readonly THIGH = ClimberPose.THIGH * DwellerShapes.SCALE;
-  static readonly SHIN = ClimberPose.SHIN * DwellerShapes.SCALE;
+  static readonly THIGH = (LegBones.MAN.thigh / 1000) * DwellerShapes.SCALE;
+  static readonly SHIN = (LegBones.MAN.shin / 1000) * DwellerShapes.SCALE;
   /** The suit's cuff round the wrist, the side figure's: from 7 cm short of it to 2 cm short. */
   static readonly CUFF = { from: 0.07 * DwellerShapes.SCALE, to: 0.02 * DwellerShapes.SCALE };
   /** A down bootie: as long as a foot in its down, and as thick each side of its middle. */
@@ -93,43 +85,6 @@ export class DwellerShapes {
   };
   /** How far down the chest the zip is undone, from the collar's top. */
   private static readonly UNZIPPED = 0.15;
-  /** The legs crossed, sitting: the hips, the knees out to the sides on the mats, each ankle
-   * under the other knee, the shin of the leg on the viewer's right in front, and the booties'
-   * toes. On hands and knees: the knees under the hips, the shins trailing behind. */
-  private static readonly CROSSED: LegJoints = {
-    hips: [
-      { x: -FrontShapes.LEGS.hip * DwellerShapes.SCALE, y: 3 },
-      { x: FrontShapes.LEGS.hip * DwellerShapes.SCALE, y: 3 },
-    ],
-    knees: [
-      { x: -102, y: 2 },
-      { x: 102, y: 2 },
-    ],
-    ankles: [
-      { x: 16, y: 10 },
-      { x: -16, y: 8 },
-    ],
-    toes: [
-      { x: 84, y: 20 },
-      { x: -84, y: 17 },
-    ],
-  };
-  private static readonly KNELT: LegJoints = {
-    hips: DwellerShapes.CROSSED.hips,
-    knees: [
-      { x: -8, y: 1 },
-      { x: 8, y: 1 },
-    ],
-    ankles: [
-      { x: 96, y: 5 },
-      { x: 110, y: 5 },
-    ],
-    toes: [
-      { x: 132, y: 1 },
-      { x: 146, y: 1 },
-    ],
-  };
-
   readonly body: DwellerBody = DwellerShapes.dressed();
   readonly upperArm = DwellerShapes.part("upperArm", DwellerShapes.UPPER_ARM);
   readonly forearm = DwellerShapes.part("forearm", DwellerShapes.FOREARM);
@@ -166,27 +121,6 @@ export class DwellerShapes {
       Infinity,
     ),
   ];
-
-  /** The legs' joints `under` of the way from crossed, sitting, to under the body on hands and
-   * knees, the hips `rise` pixels off the seat: the knees, the shins and the booties stay on the
-   * mats. */
-  legs(under: number, rise = 0): LegJoints {
-    const share = Math.min(1, Math.max(0, under));
-    const mix = (from: readonly [Spot, Spot], to: readonly [Spot, Spot]): readonly [Spot, Spot] => [
-      DwellerShapes.between(from[0], { x: to[0].x, y: to[0].y + rise }, share),
-      DwellerShapes.between(from[1], { x: to[1].x, y: to[1].y + rise }, share),
-    ];
-    const { CROSSED, KNELT } = DwellerShapes;
-    return {
-      hips: [
-        DwellerShapes.between(CROSSED.hips[0], KNELT.hips[0], share),
-        DwellerShapes.between(CROSSED.hips[1], KNELT.hips[1], share),
-      ],
-      knees: mix(CROSSED.knees, KNELT.knees),
-      ankles: mix(CROSSED.ankles, KNELT.ankles),
-      toes: mix(CROSSED.toes, KNELT.toes),
-    };
-  }
 
   /** A quilted part of the suit, `length` long along +x, in pixels. */
   private static part(padded: Exclude<Padded, "neck">, length: number): SuitPart {
@@ -321,9 +255,5 @@ export class DwellerShapes {
   private static pixels(outline: Outline, origin: Spot): Outline {
     const { SCALE } = DwellerShapes;
     return outline.map(({ x, y }) => ({ x: (x - origin.x) * SCALE, y: -(y - origin.y) * SCALE }));
-  }
-
-  private static between(from: Spot, to: Spot, share: number): Spot {
-    return { x: from.x + (to.x - from.x) * share, y: from.y + (to.y - from.y) * share };
   }
 }
