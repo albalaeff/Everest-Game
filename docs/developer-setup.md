@@ -105,7 +105,8 @@ works for the other developer's Claude after an issue is handed over with `claud
 
 So to move to another machine, close the session on the old one first: two sessions as one
 login would both start the same new issue. On one machine, a second session beside one that
-watches takes no issue: its watcher ends, saying so, and it does only what you ask (PEB#597).
+watches takes no issue, in whichever worktree of the repository either one is (#307): its
+watcher ends, saying so, and it does only what you ask (PEB#597).
 Then open the repository on the new one and say hello. What stays with each machine: how you
 like Claude to work (its memory; `memory-seed/` has a starting set) and what runs there.
 `scripts/github.py cost` counts every machine, from what each one's handoffs recorded.

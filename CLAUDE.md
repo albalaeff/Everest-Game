@@ -17,7 +17,7 @@ Everest is a 2D browser simulator-trainer for climbing Everest by the South rout
 
 ## Sessions
 
-At the start of every session, before anything else and unasked, run `/carryon` ([.claude/skills/carryon/SKILL.md](.claude/skills/carryon/SKILL.md), PEB#342, PEB#399): it checks the machine, carries on the work from the handoffs and starts the watcher. When the watcher ends, act on what it prints, then start it again, every time, unasked. It is the only way to watch: no `/loop`, scheduled task or periodic scan of your own, even when asked to "check every hour". While the agent manager, or another session's watcher, runs on the machine, the watcher ends at once, saying so, and the session takes no issue: only what its user asks directly (PEB#597).
+At the start of every session, before anything else and unasked, run `/carryon` ([.claude/skills/carryon/SKILL.md](.claude/skills/carryon/SKILL.md), PEB#342, PEB#399): it checks the machine, carries on the work from the handoffs and starts the watcher. When the watcher ends, act on what it prints, then start it again, every time, unasked. It is the only way to watch: no `/loop`, scheduled task or periodic scan of your own, even when asked to "check every hour". While the agent manager, or another session's watcher, runs on the machine, in any worktree of the repository (#307), the watcher ends at once, saying so, and the session takes no issue: only what its user asks directly (PEB#597).
 
 Before a session is compacted or closed, `/handoff` ([.claude/skills/handoff/SKILL.md](.claude/skills/handoff/SKILL.md), PEB#349) puts its work where the next session finds it, on any machine; the Stop hook asks for it in time.
 

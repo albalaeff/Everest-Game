@@ -1,10 +1,11 @@
 """What the session manager (scripts/agent_manager.py, #387) and the scripts its agents run
 share: the repository's one long-lived branch (`MAIN`, #300), its settings, how often the
-watcher looks (`WATCH_EVERY`, #445), the lock that says it runs, the labels it reads
+watcher looks (`WATCH_EVERY`, #445), the locks that say what runs, the labels it reads
 (`LABEL_FAMILIES`), which agent is talking, and where Claude Code compacts a conversation.
 
     agent-manager.toml   the manager's settings (`ManagerConfig`), the defaults when it's missing
-    .agent-runs/         its lock and each agent's log, on this machine only (gitignored)
+    .agent-runs/         each agent's log, on this machine only (gitignored); the main
+                         checkout's holds the locks too, for every worktree (#307)
 
 An agent is headless Claude Code in a worktree of its own, started for one issue with the
 model and effort the issue's labels ask for (`AgentPower`), in the turn its priority label
@@ -15,14 +16,17 @@ the more its issue's `compact:*` label gives (#152); what it writes for after th
 While the manager holds its lock (`ManagerLock`), a session's watcher ends: the agents take
 the issues (CLAUDE.md → Sessions). A session's watcher holds one of its own (`WatchLock`,
 #597), so a second session on the machine takes no issue either; and a wiki run with no
-manager, one of its own too (`WikiLock`, #295).
+manager, one of its own too (`WikiLock`, #295). Each is a file in the main checkout's
+.agent-runs/, the same from any worktree of the repository (`main_checkout`, #307): a
+session's in the Claude app, which gives each session a worktree of its own, or an agent's.
 """
 
 import os
 import re
+import subprocess
 import sys
 import tomllib
-from collections.abc import Iterable, Mapping
+from collections.abc import Callable, Iterable, Mapping
 from dataclasses import dataclass, fields, replace
 from datetime import datetime
 from pathlib import Path
@@ -39,6 +43,26 @@ NOTES = Path(".agent-runs") / "notes.md"
 # Seconds between the watcher's looks at GitHub (#445): a session's, and the manager's unless
 # agent-manager.toml says otherwise (`ManagerConfig.watch_every_seconds`).
 WATCH_EVERY = 2 * 60
+Run = Callable[..., subprocess.CompletedProcess[str]]
+
+
+def main_checkout(run: Run = subprocess.run, root: Path = ROOT) -> Path:
+    """The repository's main checkout, from it or from any of its worktrees (a Claude app
+    session's, an agent's): the folder of the Git directory they share. `root` itself where
+    there's no Git, or no repository."""
+    try:
+        found = run(
+            ["git", "rev-parse", "--path-format=absolute", "--git-common-dir"],
+            capture_output=True,
+            text=True,
+            check=False,
+            cwd=root,
+        )
+    except OSError:  # no Git
+        return root
+    if found.returncode != 0:
+        return root
+    return Path(found.stdout.strip()).parent
 
 
 @dataclass(frozen=True, slots=True)
@@ -299,15 +323,22 @@ class ManagerConfig:
 
 
 class RunLock:
-    """Held by a running process: an operating-system lock on a file in .agent-runs/, so one
-    that died holds nothing. The file says who holds it (`who`: its pid, and what a kind of
-    lock adds), and since when."""
+    """Held by a running process: an operating-system lock on a file in the main checkout's
+    .agent-runs/, so that it holds in every worktree of the repository (#307), and one that
+    died holds nothing. The file says who holds it (`who`: its pid, and what a kind of lock
+    adds), the checkout it runs in, and since when."""
 
+    NAME: ClassVar[str]  # its file's, in .agent-runs/
     AT: ClassVar[int] = 1 << 20  # Windows locks bytes: one far past the text, which stays readable
 
-    def __init__(self, path: Path, who: str | None = None) -> None:
-        self.path = path
-        self.who = who or f"pid {os.getpid()}"
+    def __init__(
+        self, path: Path | None = None, who: str | None = None, checkout: Path = ROOT
+    ) -> None:
+        """For a process in `checkout`; its file `path`, by default the one in the main
+        checkout of `checkout`'s repository."""
+        self.path = path or main_checkout(root=checkout) / RUNS.name / self.NAME
+        holder = who or f"pid {os.getpid()}"
+        self.who = f"{holder}, in {checkout}"
         self._file: IO[bytes] | None = None
 
     def acquire(self, since: datetime) -> bool:
@@ -332,8 +363,8 @@ class RunLock:
         self.path.unlink(missing_ok=True)
 
     def holder(self) -> str | None:
-        """What the process holding it wrote ("pid 4242, since 2026-10-12 18:02"); None when
-        none does."""
+        """What the process holding it wrote ("pid 4242, in /srv/everest, since 2026-10-12
+        18:02"); None when none does."""
         if not self.path.exists():
             return None
         with self.path.open("a+b") as file:
@@ -373,35 +404,40 @@ class RunLock:
 class ManagerLock(RunLock):
     """The running manager's (#387). While it's held, a session's `scripts/github.py watch`
     ends, and no second manager starts: two of them, or a manager and a session, would both
-    start the same issue."""
+    start the same issue. That holds in every worktree of the repository (#307): a manager
+    in the main checkout ends a session's watcher in a worktree."""
 
-    def __init__(self, path: Path = RUNS / "manager.lock") -> None:
-        super().__init__(path)
+    NAME = "manager.lock"
 
 
 class WikiLock(RunLock):
-    """A wiki run's, `scripts/agent_manager.py wiki` (#295). While it's held, a second one in
-    the checkout says so and ends, rather than start a second agent in the wiki's worktree."""
+    """A wiki run's, `scripts/agent_manager.py wiki` (#295). While it's held, a second one on
+    the machine says so and ends, rather than start a second agent in the wiki's worktree,
+    `<worktree_dir>/wiki`: the same one from the main checkout as from a worktree beside it
+    (#307)."""
 
-    def __init__(self, path: Path = RUNS / "wiki.lock") -> None:
-        super().__init__(path)
+    NAME = "wiki.lock"
 
 
 class WatchLock(RunLock):
     """A session's watcher's (#597). While it's held, a second session's watcher on this
-    machine ends: two sessions as one login would both start the same new issue. The file
-    names the session too (Claude Code's `CLAUDE_CODE_SESSION_ID`, in the environment of
-    the commands it runs), so that `handoffs` in that session tells its own watcher from
-    another session's (`another`)."""
+    machine ends, whichever worktree of the repository it runs in (#307): two sessions as
+    one login would both start the same new issue. The file names the session too (Claude
+    Code's `CLAUDE_CODE_SESSION_ID`, in the environment of the commands it runs), so that
+    `handoffs` in that session tells its own watcher from another session's (`another`)."""
 
+    NAME = "watch.lock"
     SESSION: ClassVar[str] = "CLAUDE_CODE_SESSION_ID"
 
     def __init__(
-        self, path: Path = RUNS / "watch.lock", env: Mapping[str, str] = os.environ
+        self,
+        path: Path | None = None,
+        env: Mapping[str, str] = os.environ,
+        checkout: Path = ROOT,
     ) -> None:
         self.session = env.get(self.SESSION, "")
         who = f"pid {os.getpid()}, session {self.session}" if self.session else None
-        super().__init__(path, who)
+        super().__init__(path, who, checkout)
 
     def another(self) -> str | None:
         """What another session's watcher holding it wrote; None when nobody holds it, or
