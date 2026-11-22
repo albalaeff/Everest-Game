@@ -24,7 +24,7 @@ The camps' tents were rebuilt on 17–18 Nov 2026: true to size and detailed out
 - Night: the tent is dark and lit by its lamp; the lamp is out while they sleep.
 - Layout: on a PC the picture is above and the panel along the bottom; on a phone on its side the panel is down the right; upright the picture is on top. Where the whole tent doesn't fit, the picture follows what the person does.
 
-## The person (#264, #267, #269, #274, #277)
+## The person (#264, #267, #269, #274, #277, #285)
 
 - The slope's climber, sitting: the bones of `ClimberPose` at 300 px a metre, and the quilted down suit of the slope's front view, each part shaded toward the lamp and each baffle puffed. The hood is down and the collar open on the base layer; down booties.
 - The head is three-dimensional, at a real head's size and proportions, turned a little toward the stove. The face is drawn front on from its measurements and wrapped round the head: no outlines, but soft light and shade, a few days' stubble, sunburn, the goggles' paler band and a ribbed beanie.
@@ -40,6 +40,15 @@ The camps' tents were rebuilt on 17–18 Nov 2026: true to size and detailed out
 - Each grip closes every finger's joints until the finger touches what it holds, and the thumb round it the other way (or over the fingers round a thin handle): round a bottle or a lump of snow; tight on the stirring spoon, the pot's handle, a lighter; round the guitar's neck; a pen's pinch for the eating spoon, a bar, the pick, the pouch's seal; a flat pouch by its side (fingers over its face, thumb behind) or by its top, hanging under the fingers; open, relaxed or spread flat.
 - Drawn as it's seen (`DwellerHands.drawn`): each bone a rounded, tapered shape, shorter as it points at the viewer; nails where a fingertip's back faces the viewer; the palm round its rim; each part in front of or behind the sleeve's cuff and the held thing by its depth. So the back, the palm and the side show as the hand turns, and a bottle is in the fingers.
 - What's held is drawn in its own frame, upright or tipped as the pose has it; the pot, carried by its near handle, is behind the arm. The bottle, the pouch, the pot and the spoon are the tent's own drawings: what a hand takes is hidden where it stood. A pouch set down on the lap stands there.
+
+### Legs (#285)
+
+- albalaeff found the legs "cringe": three flat parts slid between two hand-placed drawings, the knees folded flat on the mat. Each leg is now a real leg in three dimensions (`LegBones`, `src/page/tent/leg-bones.ts`): the hip, the knee, the ankle, the heel, the ball of the foot and the toes, at a median man's lengths from ANSUR II (2012): thigh 409 mm, shin 419 mm, ankle 73 mm off the floor, foot 271 mm, its ball 201 mm from the heel.
+- It's set by its joints' angles, in the order clinicians measure the hip (Grood and Suntay): bent forward, swung out, turned out; the knee bent; the ankle pointed or flexed. Each stays within a healthy man's range (the CDC's study, men aged 20 to 44): the hip bends 130° forward and 17° back, the knee 138°, the ankle 13° up and 55° down.
+- Sitting cross-legged within those ranges, a man in a down suit has his knees well up, about 16 cm above his hips, with the pelvis rolled back 30°. The thighs rise out to the knees, and the shins cross with the right one in front by about 13 cm (`DwellerLegs`). The hands rest on the raised knees.
+- Kneeling to crawl in and out, the hips rise to a kneel's height (100 px, about 33 cm above the seat), with the thighs upright under them, the knees on the mat, the shins back along it and the toes pointed. The way between the two eases every joint's angle and the hips' turn, so no leg jumps or bends past its range.
+- Drawn as seen: each part as long as its bone, shorter as it points at the viewer, the far leg whole before the near one.
+- The tests hold the legs to their ranges and to a smooth move frame by frame, with no foot through the mat and the shins crossing apart.
 
 ### Arms (#269, #274)
 

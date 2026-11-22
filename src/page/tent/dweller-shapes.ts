@@ -40,8 +40,8 @@ export interface DwellerBody {
  * as long as its bone and as thick as the suit's down (`FigureShapes.DOWN`), with the side
  * figure's seams. In the tent the suit's harness, pack and boots are off: its zip is undone to the
  * chest with the base layer showing, its hood lies down behind the neck, and down booties are on
- * the feet. Sitting, the legs are crossed in front, the knees out to the sides on the mats; on
- * hands and knees, they're under the body. The shapes are cut once; a pose only moves them.
+ * the feet. The legs are a measured man's (#285): `DwellerLegs` poses them in three dimensions.
+ * The shapes are cut once; a pose only moves them.
  */
 export class DwellerShapes {
   /** The tent's pixels a metre (`TentArt.SCALE`). */
