@@ -1,6 +1,7 @@
 """scripts/claude_cost.py: what Claude's work on an issue cost, from its logs (#390)."""
 
 import json
+import subprocess
 from datetime import UTC, date, datetime
 from decimal import Decimal
 from pathlib import Path
@@ -15,6 +16,7 @@ from scripts.claude_cost import (
     SessionLog,
     Title,
     actual_text,
+    app_worktrees,
     estimate_text,
     log_folder,
     session_logs,
@@ -103,6 +105,42 @@ def test_the_agents_worktrees_count_even_once_they_re_gone(tmp_path: Path) -> No
     found = session_logs([], logs=tmp_path, under=[Path("c:\\git\\worktrees")])
 
     assert [log.name for log in found] == ["a.jsonl"]
+
+
+def test_the_app_s_worktrees_count_even_once_they_re_gone(tmp_path: Path) -> None:
+    # #302: the Claude app removes a session's worktree, .claude/worktrees/<name>, when the
+    # session is archived; its log stays.
+    write_log(tmp_path / "C--git-Everest-Game--claude-worktrees-admiring-cohen-eaf01e", "a", [])
+    write_log(tmp_path / "C--git-Everest-Game--claude-skills", "b", [])  # not a worktree
+
+    app = Path("C:\\git\\Everest-Game\\.claude\\worktrees")  # `app_worktrees` of the checkout
+
+    found = session_logs([], logs=tmp_path, under=[app])
+
+    assert [log.name for log in found] == ["a.jsonl"]
+
+
+def test_the_app_s_worktrees_are_found_in_the_main_checkout_from_any_worktree(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    (tmp_path / "gitconfig").write_text("", encoding="utf-8")  # none of the developer's
+    monkeypatch.setenv("GIT_CONFIG_GLOBAL", str(tmp_path / "gitconfig"))
+    monkeypatch.setenv("GIT_CONFIG_NOSYSTEM", "1")
+    for who in ("AUTHOR", "COMMITTER"):
+        monkeypatch.setenv(f"GIT_{who}_NAME", "Claude")
+        monkeypatch.setenv(f"GIT_{who}_EMAIL", "claude@example.com")
+    checkout = tmp_path / "Everest-Game"
+    session = checkout / ".claude" / "worktrees" / "admiring-cohen-eaf01e"
+    for args in (
+        ["init", "-q", "-b", "main", str(checkout)],
+        ["-C", str(checkout), "commit", "-q", "--allow-empty", "-m", "start"],
+        ["-C", str(checkout), "worktree", "add", "-q", "-b", "x", str(session)],
+    ):
+        subprocess.run(["git", *args], check=True, capture_output=True)
+
+    expected = (checkout / ".claude" / "worktrees").resolve()
+    assert app_worktrees(session).resolve() == expected
+    assert app_worktrees(checkout).resolve() == expected
 
 
 # --- a session's replies -------------------------------------------------------------------
@@ -244,23 +282,24 @@ def test_sessions_are_read_one_by_one(tmp_path: Path) -> None:
 
 
 @pytest.mark.parametrize(
-    ("where", "issue"),
+    ("where", "worktree"),
     [
-        ("cd /c/git/worktrees/256 && npm test", 256),
-        ("C:\\git\\worktrees\\256\\src\\physics\\ladder.ts", 256),
-        ("C:/git/worktrees/256/src/physics/ladder.ts", 256),
-        ("git worktree add -b feature/256-rope /c/git/worktrees/256 origin/main", 256),
-        ("cd /c/git/worktrees/256 && cat /c/git/worktrees/256/README.md", 256),
+        ("cd /c/git/worktrees/256 && npm test", "256"),
+        ("C:\\git\\worktrees\\256\\src\\physics\\ladder.ts", "256"),
+        ("C:/git/worktrees/256/src/physics/ladder.ts", "256"),
+        ("git worktree add -b feature/256-rope /c/git/worktrees/256 origin/main", "256"),
+        ("cd /c/git/worktrees/256 && cat /c/git/worktrees/256/README.md", "256"),
+        ("cd /c/git/worktrees/chore-merged-branches && uv run pytest", "chore-merged-branches"),
+        (f"{HOME}\\.claude\\worktrees\\admiring-cohen-eaf01e\\x.py", "admiring-cohen-eaf01e"),
         # a look over several, as a clean-up takes, is work in none of them
         ("for d in /c/git/worktrees/294 /c/git/worktrees/55; do ls -A $d; done", None),
         ("ls /c/git/worktrees/", None),
-        ("C:\\git\\Everest-Game\\.claude\\worktrees\\admiring-cohen-eaf01e\\x.py", None),
         ("cd /c/git/PersonalExchangeBot-worktrees/390", None),  # another folder
     ],
 )
-def test_what_names_a_numbered_worktree(where: str, issue: int | None) -> None:
-    # The agent manager's naming, <worktree_dir>/<issue> (#387).
-    assert IssueNames.of_worktree(where) == issue
+def test_which_worktree_a_command_or_a_path_names(where: str, worktree: str | None) -> None:
+    # The agent manager's, <worktree_dir>/<issue> (#387), and the Claude app's (#302).
+    assert IssueNames.worktree(where) == worktree
 
 
 def test_a_session_s_work_in_another_worktree_counts_for_its_issue_not_its_folder_s_branch(
@@ -392,6 +431,79 @@ def test_a_worktree_only_quoted_in_what_a_reply_writes_moves_nothing(tmp_path: P
     counted = [issue for issue, _ in Ledger([log], PRICES).counted()]
 
     assert counted == [284, 284]
+
+
+def test_work_in_a_worktree_of_no_issue_counts_for_none_not_the_branch(tmp_path: Path) -> None:
+    # #302: the main folder's session made a chore's worktree (PR #289) while on #272's
+    # branch: the chore went to #272.
+    chore = "C:\\git\\worktrees\\chore-merged-branches"
+    log = write_log(
+        tmp_path,
+        "s",
+        [
+            reply("m1", 0, branch=WEATHER, commands=("uv run python scripts/github.py show 272",)),
+            reply("m2", 1, branch=WEATHER, commands=(f"cd {chore} && uv run pytest",)),
+            reply("m3", 2, branch=WEATHER, tools=({"file_path": f"{chore}\\README.md"},)),
+            reply("m4", 3, branch=WEATHER),  # its answer
+            reply("m5", 4, branch=WEATHER, tools=({"file_path": f"{HOME}\\src\\weather.ts"},)),
+        ],
+    )
+
+    counted = [issue for issue, _ in Ledger([log], PRICES).counted()]
+
+    assert counted == [272, None, None, None, 272]
+
+
+def test_an_app_session_s_own_worktree_is_its_own_folder(tmp_path: Path) -> None:
+    # #302: a session of the Claude app works in .claude/worktrees/<name>, on its own branch.
+    own, branch = f"{HOME}\\.claude\\worktrees\\admiring-cohen-eaf01e", "feature/302-cost-gaps"
+    log = write_log(
+        tmp_path,
+        "s",
+        [
+            reply("m1", 0, cwd=own, branch=branch, tools=({"file_path": f"{own}\\a.py"},)),
+            reply("m2", 1, cwd=own, branch=branch, commands=("cd /c/git/worktrees/256 && ls",)),
+            reply("m3", 2, cwd=own, branch=branch),  # still looking there
+            reply("m4", 3, cwd=own, branch=branch, tools=({"file_path": f"{own}\\b.py"},)),
+        ],
+    )
+
+    counted = [issue for issue, _ in Ledger([log], PRICES).counted()]
+
+    assert counted == [302, 256, 256, 302]
+
+
+@pytest.mark.parametrize(
+    "written",
+    [
+        {"file_path": f"{HOME}\\.agent-runs\\note.md", "content": "github.py title 256 --done"},
+        {"file_path": f"{HOME}\\CLAUDE.md", "old_string": "x", "new_string": "issues/256"},
+        {"to": "main", "message": "run `scripts/github.py title 256 --done` from main"},
+        {"description": "Read it", "prompt": "Run `uv run python scripts/github.py show 256`."},
+    ],
+    ids=["a file", "an edit", "a message", "a subagent's task"],
+)
+def test_what_a_reply_writes_names_no_issue(tmp_path: Path, written: dict[str, str]) -> None:
+    # #302: $5.34 of #256's [$83] was #293's session writing `title 256 --done` in its notes.
+    log = write_log(
+        tmp_path,
+        "s",
+        [
+            reply("m1", 0, commands=("uv run python scripts/github.py comment 302 c.md",)),
+            reply("m2", 1, tools=(written,)),
+        ],
+    )
+
+    counted = [issue for issue, _ in Ledger([log], PRICES).counted()]
+
+    assert counted == [302, 302]
+
+
+def test_a_page_read_names_its_issue(tmp_path: Path) -> None:
+    page = {"url": "https://github.com/albalaeff/Everest-Game/issues/17"}  # a browser's, a fetch's
+    log = write_log(tmp_path, "s", [reply("m1", 0, tools=(page,))])
+
+    assert [issue for issue, _ in Ledger([log], PRICES).counted()] == [17]
 
 
 # --- the title -----------------------------------------------------------------------------
