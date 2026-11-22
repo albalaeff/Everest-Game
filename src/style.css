@@ -5127,7 +5127,8 @@ main:has(#tent:not([hidden])) #self-check {
 
 /* The handheld radio: its black case beside the log, and its screen a grey-green LCD with dark
  * figures, the signal's bars, TX or RX, and the battery, amber in its own light. The light on its
- * top: red as it sends, green as it hears. */
+ * top: green as it sends, and blinking green as it hears a call, as a MOTOTRBO radio's is
+ * (gear.radio-handheld). */
 .radio {
   --share: 0.32;
 }
@@ -5225,14 +5226,19 @@ main:has(#tent:not([hidden])) #self-check {
   transition: fill 0.1s;
 }
 
-.radio[data-air="tx"] .radio__led {
-  fill: #ff3b2f;
-  filter: drop-shadow(0 0 1.4px #ff3b2f);
+.radio:is([data-air="tx"], [data-air="rx"]) .radio__led {
+  fill: #39e46b;
+  filter: drop-shadow(0 0 1.4px #39e46b);
 }
 
 .radio[data-air="rx"] .radio__led {
-  fill: #39e46b;
-  filter: drop-shadow(0 0 1.4px #39e46b);
+  animation: radio-blink 0.5s steps(2, jump-none) infinite;
+}
+
+@keyframes radio-blink {
+  50% {
+    opacity: 0.3;
+  }
 }
 
 .radio__contact {
@@ -5990,7 +5996,8 @@ main:has(#tent:not([hidden])) #self-check {
 @media (prefers-reduced-motion: reduce) {
   .meter__vanes,
   .watch__paused,
-  .messenger__countdown i {
+  .messenger__countdown i,
+  .radio__led {
     animation: none;
   }
 }

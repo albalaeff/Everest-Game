@@ -20,11 +20,11 @@ type Answer = {
 
 /**
  * The handheld radio on the card (#284): drawn as the thing itself, its screen the channel, the
- * signal's bars and the battery, and TX or RX as it sends or hears; the light on its top red as
- * it sends and green as it hears. Beside it, what the climber can say, a phrase a button, and the
- * log of what was said: a phrase presses the push-to-talk and holds it while it's said, and Base
- * Camp's answer comes a moment later, from the mountain as it was when the phrase was said. The
- * radio's last lines are the screen's alone: the climb keeps the calls.
+ * signal's bars and the battery, and TX or RX as it sends or hears; the light on its top green as
+ * it sends and blinking green as it hears. Beside it, what the climber can say, a phrase a button,
+ * and the log of what was said: a phrase presses the push-to-talk and holds it while it's said,
+ * and Base Camp's answer comes a moment later, from the mountain as it was when the phrase was
+ * said. The radio's last lines are the screen's alone: the climb keeps the calls.
  */
 export class RadioFace extends DeviceFace {
   /** The seconds of play the push-to-talk is held for a phrase, Base Camp takes to answer, and
