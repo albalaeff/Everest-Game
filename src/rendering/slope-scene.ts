@@ -283,6 +283,7 @@ export class SlopeScene {
       tentSizes,
       jolts,
       devices,
+      this.quality.glacierIce,
     );
     this.snow = flakes > 0 ? new SnowLayer(flakes, width, height) : null;
     const behind = this.skylines.filter((layer) => layer.depth.x < 1);

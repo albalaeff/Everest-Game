@@ -128,15 +128,52 @@ export class Palette {
   /** Blue ice, and the inside of a crevasse at its lips, deep blue, going black as it goes down. */
   static readonly ICE = 0xa6d4f2;
   static readonly CREVASSE = 0x1f5f9f;
-  /** The glacier seen from the side, by day (#184): pale just under its snow, blue a few metres
-   * down, and darker as the light through the ice fades, at these depths in metres. */
+  /** The glacier seen from the side, by day (#184): pale just under its snow, turquoise a few
+   * metres down, and darker as the light through the ice fades, at these depths in metres; its ice
+   * as `GlacierIce` works it out has these colours on the whole, so where that fades into it, or
+   * Low draws it flat, the one runs on into the other. */
   static readonly GLACIER: readonly (readonly [depth: number, colour: number])[] = [
-    [1, 0xcfeaf9],
-    [4, 0x9dcbec],
-    [9, 0x5f97cb],
-    [16, 0x33669c],
-    [24, 0x214a78],
+    [1, 0xc4e5f0],
+    [4, 0x76b1d3],
+    [9, 0x3b739d],
+    [16, 0x22496f],
+    [24, 0x1a3b5a],
   ];
+  /** The glacier's ice under the route as it's worked out (`GlacierIce`), by day, for the hour to
+   * tint, by how much of the light from above comes down to it, from none to all: its snow, white
+   * and greying to its foot; its firn, grey-white with a blue cast; its clear ice, near white just
+   * under the firn, turquoise, blue, then navy deep down; its bubbly ice, whiter and greyer at the
+   * same light; the glaze of its bare blue ice, where it throws back the sky; and the dust a layer
+   * of it carries. */
+  static readonly GLACIER_SNOW: readonly (readonly [light: number, colour: number])[] = [
+    [0, 0xd3dee9],
+    [0.55, 0xeaf0f6],
+    [1, 0xf8fafc],
+  ];
+  static readonly GLACIER_FIRN: readonly (readonly [light: number, colour: number])[] = [
+    [0, 0x9fb7cf],
+    [0.6, 0xcbd9e6],
+    [1, 0xe4ecf3],
+  ];
+  static readonly CLEAR_ICE: readonly (readonly [light: number, colour: number])[] = [
+    [0, 0x10304d],
+    [0.12, 0x184871],
+    [0.25, 0x216797],
+    [0.42, 0x378dbd],
+    [0.6, 0x5fb2d7],
+    [0.78, 0x98d5eb],
+    [0.92, 0xc6eaf5],
+    [1, 0xdff3fa],
+  ];
+  static readonly BUBBLY_ICE: readonly (readonly [light: number, colour: number])[] = [
+    [0, 0x223c5b],
+    [0.2, 0x44648a],
+    [0.45, 0x88a8c5],
+    [0.7, 0xc4d7e5],
+    [1, 0xedf3f8],
+  ];
+  static readonly GLAZE = 0xe4f7fd;
+  static readonly ICE_DUST = 0x77746f;
   /** The light through the ice by a crevasse's wall or a bare face, by day, at these metres
    * under its top: bright under the snow, blue, and dark where it fades. */
   static readonly LIT_ICE: readonly (readonly [depth: number, colour: number])[] = [
