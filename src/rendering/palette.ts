@@ -177,11 +177,12 @@ export class Palette {
   /** Bare blue ice under the boots, by day: glossy, with a wet sheen along its top (#190). */
   static readonly BLUE_ICE = 0x7fc0ea;
   static readonly ICE_SHEEN = 0xf2fbff;
-  /** The icicles under a lip of snow, and the streaks down a wall's bare ice. */
+  /** The icicles under a lip of snow. */
   static readonly ICICLE = 0xe4f5ff;
-  /** Brittle ice on a face: chalky and pale, where a pick bites poorly. */
+  /** Brittle ice on a face: chalky and pale, where a pick bites poorly, and its cracks into the
+   * sound ice round it. */
   static readonly BRITTLE = 0xe9f0f4;
-  static readonly STREAK = 0x6fa6d4;
+  static readonly CRACK = 0x6fa6d4;
   static readonly LOADED = 0xffffff;
   static readonly ROCK = 0x3a3d48;
   /** The moraine Base Camp stands on, rubble bare of snow: navy under the stars, darker than the

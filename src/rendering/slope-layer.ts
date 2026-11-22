@@ -259,9 +259,10 @@ export class SlopeLayer extends ParallaxLayer {
   /** How far under a ladder's lower end the ground between its ends goes for a crevasse to lie
    * under it. */
   private static readonly DIP_METRES = 1;
-  /** The streaks down a wall's bare ice: how wide, and how strong. */
-  private static readonly STREAK_METRES = 0.035;
-  private static readonly STREAK_ALPHA = 0.55;
+  /** The cracks of a band of brittle ice into the sound ice round it: how wide, and how
+   * strong. */
+  private static readonly CRACK_METRES = 0.035;
+  private static readonly CRACK_ALPHA = 0.55;
   /** A wall's ice (#290), as shares of the gloss: how much of what it throws back of the sky's
    * light shows over it at night, and by day, when its own picture has it; the scars up a step
    * climbed on the tools; and the light down an icicle, so wide. */
@@ -353,15 +354,16 @@ export class SlopeLayer extends ParallaxLayer {
   private readonly sastrugi = new Graphics();
   private readonly track = new Graphics();
   private readonly walls = new Graphics();
-  /** The walls' glassy ice catching the light (#290): their reflections, edges, glints, the light
-   * beside their runnels, the scars up a step climbed on the tools and the icicles' light, in the
-   * hour's gloss; a band of brittle ice over them, chalky and dull; and where a headlamp's beam
-   * falls on them, flashing in its light, each frame it does. */
+  /** What catches the light on the walls' ice besides the ice itself (#290): the scars up a step
+   * climbed on the tools and the light down the icicles of their lips, in the hour's gloss; a band
+   * of brittle ice over them, chalky and dull; and the glints at their highlights where a
+   * headlamp's beam falls on them, each frame it does. */
   private readonly wallGloss = new Graphics();
   private readonly brittleBands = new Graphics();
   private readonly wallFlash = new Graphics();
-  /** The walls' ice, each a relief worked out and lit (`IceRelief`), tinted by the hour; their
-   * highlights apart, in the hour's gloss; and the textures they're drawn from. */
+  /** The walls' ice, each a relief worked out and lit (`IceRelief`), tinted by the hour; what
+   * they throw back of the sky's light apart, shown at night in the hour's gloss; and the
+   * textures they're drawn from. */
   private readonly wallFaces = new Container();
   private readonly wallShine = new Container();
   private readonly reliefTextures: Texture[] = [];
@@ -861,8 +863,9 @@ export class SlopeLayer extends ParallaxLayer {
     this.drawVeil(camera, atmosphere);
   }
 
-  /** The walls' glassy ice where the headlamps' beams fall on it, in view, flashing in their light
-   * (#290); nothing drawn again while no beam is on. */
+  /** The walls' ice in the headlamps' light, in view (#290): a glint at each of its highlights a
+   * beam falls on, and the strips of its picture by day, each as bright as the lamps light the
+   * face there; nothing drawn again while no lamp is on. */
   private flash(view: InView): void {
     const { beams, wallFlash } = this;
     const { FLASH, LAMPLIT } = SlopeLayer;
@@ -1845,9 +1848,10 @@ export class SlopeLayer extends ParallaxLayer {
   /** The ice where the ladders cross it, and the steps of it the route climbs with none, in the
    * day's colours for the hour to tint (#184): each crevasse's inside going black as it goes down,
    * the light through the ice along its walls, the snow at its foot and on its steps; each wall's
-   * bare face of glassy ice, its streaks and the light it throws back (#290), and on a step with
-   * no ladder its bulge, its scars and its bands of brittle ice, pale and edged; and the lips of
-   * snow on them all, with their icicles. */
+   * ice, a relief worked out and lit (#290, `IceRelief`), with what it throws back of the night's
+   * sky and its strips for the headlamps to light, and on a step with no ladder the scars up it
+   * and its bands of brittle ice, pale and edged; and the lips of snow on them all, with their
+   * icicles. */
   private drawIce(terrain: Terrain, seed: number): void {
     const { flat } = SlopeLayer;
     const cornices = [];
@@ -1870,9 +1874,9 @@ export class SlopeLayer extends ParallaxLayer {
           this.brittleBands.poly(flat(band.outline)).fill(Palette.BRITTLE);
           SlopeLayer.lines(this.brittleBands, band.cracks);
           this.brittleBands.stroke({
-            width: SlopeLayer.STREAK_METRES,
-            color: Palette.STREAK,
-            alpha: SlopeLayer.STREAK_ALPHA,
+            width: SlopeLayer.CRACK_METRES,
+            color: Palette.CRACK,
+            alpha: SlopeLayer.CRACK_ALPHA,
             cap: "round",
           });
         }

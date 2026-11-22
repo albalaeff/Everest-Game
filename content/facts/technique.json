@@ -850,7 +850,7 @@
     {
       "id": "technique.rappel-speed",
       "kind": "coefficient",
-      "claim": "How fast a fresh climber at sea level lowers themselves down a step of ice too steep to walk, on the fixed rope that runs down it, through their descender, in metres a second, at a whole stride: their front points against the ice, their cowstails on the rope. Fitted so that the way down from Camp 1 keeps the hours the sources give it, the Icefall's steps of ice with no ladder rappelled about as fast as a ladder down them would be climbed.",
+      "claim": "How fast a fresh climber at sea level lowers themselves down a step of ice too steep to walk, on the fixed rope that runs down it, through their descender, in metres a second, at a whole stride: their front points against the ice, their cowstails on the rope. Fitted so that the way down from Camp 1 takes the hours it took before the Icefall's steps of ice with no ladder were made taller, 4.6 to 6 m high (#290): a step is rappelled in about the time the lower one took, far quicker than a ladder down the same wall is climbed.",
       "status": "source only",
       "value": 1.05,
       "unit": "m/s",
@@ -859,12 +859,12 @@
         "route.icefall-ice-steps",
         "time.camp-2-to-base-camp"
       ],
-      "fitted": "2026-11-21"
+      "fitted": "2026-11-22"
     },
     {
       "id": "technique.ice-climb-speed",
       "kind": "coefficient",
-      "claim": "How fast a fresh climber at sea level climbs ice too steep to walk on two ice tools and their front points, in metres a second, at a whole stride: a pick swung in, the feet walked up under it. Fitted with the Icefall's steps of ice, which have no ladder, to the hours the sources give the crossing: a step a few metres high takes some minutes of the mountain's time, longer than a ladder up it would, and longer still on the ice axe alone.",
+      "claim": "How fast a fresh climber at sea level climbs ice too steep to walk on two ice tools and their front points, in metres a second, at a whole stride: a pick swung in, the feet walked up under it. Fitted with the Icefall's steps of ice, which have no ladder and are 4.6 to 6 m high (#290), to the hours the sources give the crossing: a step takes some minutes of the mountain's time, about as long on two tools as a ladder up it would, and longer on the ice axe alone.",
       "status": "source only",
       "value": 0.35,
       "unit": "m/s",
@@ -873,7 +873,7 @@
         "route.icefall-ice-steps",
         "time.base-camp-to-camp-1"
       ],
-      "fitted": "2026-11-21"
+      "fitted": "2026-11-22"
     },
     {
       "id": "technique.ice-climb-one-tool",
