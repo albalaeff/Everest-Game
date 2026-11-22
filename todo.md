@@ -32,9 +32,9 @@ Tasks marked *Iteration 1–3* are planned into the board's first two-week itera
 
 ### Workflow for each task
 - [ ] Take `postponed` off its issue (or put `claude:bateks` on it): Claude starts it with a plan comment and an estimate
-- [ ] Branch from the latest `develop`: `feature/<issue>-<short-description>`
+- [ ] Branch from the latest `main`: `feature/<issue>-<short-description>`
 - [ ] Tests first; run the Done gate locally; commit often
-- [ ] Open a PR into `develop` (`Closes #<issue>`) that ticks the task's items here; merge (squash) when CI is green
+- [ ] Open a PR into `main` (`Closes #<issue>`) that ticks the task's items here; merge (squash) when CI is green
 
 ---
 
@@ -89,7 +89,7 @@ Tasks marked *Iteration 1–3* are planned into the board's first two-week itera
 
 ### Task 8: Game project: TypeScript build, tests and CI ([#16](https://github.com/albalaeff/Everest-Game/issues/16)) · *Iteration 1*
 - [x] TypeScript with a bundler, Vitest, Playwright with phone emulation, lint and format; their checks run in CI next to the template's
-- [x] Every merge into `develop` publishes a preview build that opens on a PC and a phone
+- [x] Every merge into `main` publishes a preview build that opens on a PC and a phone
 - [x] README and docs/conventions.md say how to run and test the game
 - [x] Done gate
 

@@ -38,7 +38,7 @@ fi
 echo
 echo "Installing the dependencies (uv sync) ..."
 uv sync --quiet || exit 1
-git config core.hooksPath .githooks  # pushes to develop and master are refused
+git config core.hooksPath .githooks  # pushes to main are refused
 if [ -f .env.example ] && [ ! -f .env ]; then
   cp .env.example .env
   echo "Made .env from .env.example: fill in what's blank in it."

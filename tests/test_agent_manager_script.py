@@ -86,7 +86,7 @@ THRASHING = (  # #152: Claude Code's words, as #26's run of 2026-11-05 ended on 
 )
 SERVER = "postgresql://everest:everest@localhost:5433/everest_test"  # the tests' database server
 BEHIND = WikiNews(  # #126: what the watcher found the wiki lacks
-    "The wiki is behind develop: 2 PRs merged since 3333333 (#124, #127).",
+    "The wiki is behind main: 2 PRs merged since 3333333 (#124, #127).",
     "1" * 40,
     "3" * 40,
     (124, 127),
@@ -137,7 +137,7 @@ def test_a_line_of_the_watcher_s_is_a_job() -> None:
     assert isinstance(prices_job, PricesJob) and prices_job.slot == "prices"
     wiki_job = Job.of(BEHIND.data(), TODAY)
     assert isinstance(wiki_job, WikiJob) and wiki_job.news == BEHIND and wiki_job.slot == "wiki"
-    assert Job.of({"type": "note", "text": "Pulled develop"}, TODAY) is None
+    assert Job.of({"type": "note", "text": "Pulled main"}, TODAY) is None
 
 
 def test_a_pr_s_job_is_its_issue_s() -> None:
@@ -283,9 +283,8 @@ class StateGitHub:
         return entry | {"labels": self.labels if number == 7 else []}
 
 
-@pytest.mark.parametrize("label", ["postponed", "release"])
-def test_a_job_whose_issue_is_set_aside_meanwhile_is_no_longer_due(label: str) -> None:
-    # "release": opened bare, then labelled, it's release-cut.yml's to answer (#517).
+def test_a_job_whose_issue_is_set_aside_meanwhile_is_no_longer_due() -> None:
+    label = "postponed"
     job = IssueJob(task())
 
     assert job.still_due(StateGitHub([]), ME)  # type: ignore[arg-type]
@@ -324,17 +323,17 @@ def test_a_job_whose_issue_is_blocked_meanwhile_is_no_longer_due(found: Task) ->
     assert not job.still_due(StateGitHub([], labels=["after:16"]), ME)  # type: ignore[arg-type]
 
 
-def test_an_agent_woken_by_a_merge_merges_develop_in_first() -> None:
-    # #107: #18's branch carried #16's and #17's commits; their squashes fold into develop.
+def test_an_agent_woken_by_a_merge_merges_main_in_first() -> None:
+    # #107: #18's branch carried #16's and #17's commits; their squashes fold into main.
     job = IssueJob(replace(task(18, "unblocked", issue=18), woken=(16, 17)))
 
     assert str(job) == "#18 (what it builds on has merged)"
     assert (
         "of bateks/PersonalExchangeBot: what it builds on has merged. #16, #17 merged since "
-        "Claude's last word: begin by merging `origin/develop` into the branch "
+        "Claude's last word: begin by merging `origin/main` into the branch "
         "(docs/conventions.md → Git workflow).\n\n"
     ) in job.prompt(SLUG, "feature/18-x")
-    assert "origin/develop" not in IssueJob(task()).prompt(SLUG, "feature/7-x")
+    assert "origin/main" not in IssueJob(task()).prompt(SLUG, "feature/7-x")
 
 
 def test_a_waiting_job_answered_meanwhile_is_no_longer_due() -> None:
@@ -459,14 +458,14 @@ def wiki_agent(tmp_path: Path, job: Publishing) -> Agent:
 
 
 def test_a_wiki_run_that_ended_well_is_published_and_its_worktree_goes(tmp_path: Path) -> None:
-    job = Publishing("the wiki pushed (3 files changed, develop at 1111111)")
+    job = Publishing("the wiki pushed (3 files changed, main at 1111111)")
     made = wiki_agent(tmp_path, job)
 
     line = made.finish(0)
 
     assert job.concluded == [made.worktree.path]
     assert line == (
-        "the wiki behind develop: done, the wiki pushed (3 files changed, develop at 1111111); "
+        "the wiki behind main: done, the wiki pushed (3 files changed, main at 1111111); "
         "worktree removed"
     )
 
@@ -492,7 +491,7 @@ def test_a_wiki_run_that_didn_t_end_well_publishes_nothing(
 
 
 def test_a_wiki_run_that_ended_on_the_usage_limit_publishes_nothing(tmp_path: Path) -> None:
-    # It did nothing: the commit would mark develop covered with no page changed.
+    # It did nothing: the commit would mark main covered with no page changed.
     job = Publishing("the wiki pushed")
     made = wiki_agent(tmp_path, job)
     result = {"type": "result", "is_error": True, "result": SESSION_LIMIT, "total_cost_usd": 0}
@@ -530,19 +529,19 @@ class FakeUv:
         return subprocess.CompletedProcess(command, self.code, "", self.stderr)
 
 
-def test_a_new_branch_s_worktree_starts_from_origin_develop(tmp_path: Path) -> None:
+def test_a_new_branch_s_worktree_starts_from_origin_main(tmp_path: Path) -> None:
     path = tmp_path / "7"
     fake = FakeGit(
         {
             "fetch -q --prune origin": "",
-            f"worktree add --no-track -B feature/7-x {path} origin/develop": "",
+            f"worktree add --no-track -B feature/7-x {path} origin/main": "",
         }
     )
 
     said = Worktree(path, "feature/7-x", Git(tmp_path, fake), FakeUv().warmup).ready()
 
-    assert said == "new, from origin/develop; warmed in 8 s: .venv made"  # no caches to copy
-    assert f"worktree add --no-track -B feature/7-x {path} origin/develop" in fake.commands
+    assert said == "new, from origin/main; warmed in 8 s: .venv made"  # no caches to copy
+    assert f"worktree add --no-track -B feature/7-x {path} origin/main" in fake.commands
 
 
 def test_a_branch_on_origin_is_checked_out_as_it_is_there(tmp_path: Path) -> None:
@@ -613,7 +612,7 @@ def test_a_new_worktree_gets_the_checkout_s_caches_and_a_venv_of_its_own(tmp_pat
     fake = FakeGit(
         {
             "fetch -q --prune origin": "",
-            f"worktree add --no-track -B feature/7-x {path} origin/develop": "",
+            f"worktree add --no-track -B feature/7-x {path} origin/main": "",
         }
     )
     uv = FakeUv()
@@ -621,8 +620,7 @@ def test_a_new_worktree_gets_the_checkout_s_caches_and_a_venv_of_its_own(tmp_pat
     said = Worktree(path, "feature/7-x", Git(checkout, fake), uv.warmup).ready()
 
     assert said == (
-        "new, from origin/develop; "
-        "warmed in 8 s: .mypy_cache copied, .hypothesis copied, .venv made"
+        "new, from origin/main; warmed in 8 s: .mypy_cache copied, .hypothesis copied, .venv made"
     )
     copy = path / ".mypy_cache" / "3.14" / "fxbot" / "main.meta.ff"
     assert copy.read_bytes() == b"cached"
@@ -703,8 +701,7 @@ def test_a_branch_checked_out_elsewhere_says_to_switch_that_checkout_back(
         Worktree(path, "feature/7-x", Git(tmp_path, fake)).ready()
 
     assert str(raised.value) == (
-        f"git worktree add: {refusal} (switch that checkout back to develop: "
-        "`git switch develop` there)"
+        f"git worktree add: {refusal} (switch that checkout back to main: `git switch main` there)"
     )
 
 
@@ -763,11 +760,11 @@ class Repositories:
         self.github = root / "github.git"
         self.checkout = root / "repo"
         self.path = root / "7"
-        self.git(root, "init", "-q", "--bare", "-b", "develop", str(self.github))
-        self.git(root, "init", "-q", "-b", "develop", str(self.checkout))
+        self.git(root, "init", "-q", "--bare", "-b", "main", str(self.github))
+        self.git(root, "init", "-q", "-b", "main", str(self.checkout))
         self.commit(self.checkout, {"README.md": "fxbot\n", "docs/old.md": "old\n"})
         self.git(self.checkout, "remote", "add", "origin", str(self.github))
-        self.git(self.checkout, "push", "-q", "origin", "develop")
+        self.git(self.checkout, "push", "-q", "origin", "main")
 
     @staticmethod
     def git(at: Path, *args: str) -> str:
@@ -777,10 +774,10 @@ class Repositories:
         return done.stdout.strip()
 
     def branch(self, upstream: str = "--no-track") -> None:
-        """The agent's worktree, from origin/develop: with no upstream, as the manager makes
-        it, or one that `--track`s origin/develop, as `git switch -c … origin/develop` does."""
+        """The agent's worktree, from origin/main: with no upstream, as the manager makes
+        it, or one that `--track`s origin/main, as `git switch -c … origin/main` does."""
         add = ("worktree", "add", "-q", upstream, "-b", self.BRANCH, str(self.path))
-        self.git(self.checkout, *add, "origin/develop")
+        self.git(self.checkout, *add, "origin/main")
 
     def commit(self, at: Path, files: Mapping[str, str | None]) -> None:
         """Writes the files, removes those given None, and commits them."""
@@ -799,17 +796,17 @@ class Repositories:
         self.git(self.path, "push", "-q", "origin", self.BRANCH)
 
     def squash_merge(self) -> None:
-        """GitHub squash-merges the PR into develop, then deletes its branch."""
-        tree = f"{self.BRANCH}^{{tree}}"  # develop hasn't moved since the branch left it
-        squashed = self.git(self.github, "commit-tree", tree, "-p", "develop", "-m", "The work")
-        self.git(self.github, "update-ref", "refs/heads/develop", squashed)
+        """GitHub squash-merges the PR into main, then deletes its branch."""
+        tree = f"{self.BRANCH}^{{tree}}"  # main hasn't moved since the branch left it
+        squashed = self.git(self.github, "commit-tree", tree, "-p", "main", "-m", "The work")
+        self.git(self.github, "update-ref", "refs/heads/main", squashed)
         self.git(self.github, "update-ref", "-d", f"refs/heads/{self.BRANCH}")
 
-    def develop_changes(self, files: Mapping[str, str | None]) -> None:
+    def main_changes(self, files: Mapping[str, str | None]) -> None:
         """Another PR, merged after this one."""
-        self.git(self.checkout, "pull", "-q", "--ff-only", "origin", "develop")
+        self.git(self.checkout, "pull", "-q", "--ff-only", "origin", "main")
         self.commit(self.checkout, files)
-        self.git(self.checkout, "push", "-q", "origin", "develop")
+        self.git(self.checkout, "push", "-q", "origin", "main")
 
     def leftover(self) -> str | None:
         return Worktree(self.path, self.BRANCH, Git(self.checkout)).leftover()
@@ -829,7 +826,7 @@ def repositories(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Repositorie
     return Repositories(tmp_path)
 
 
-@pytest.mark.parametrize("upstream", ["--no-track", "--track"], ids=["none", "develop's"])
+@pytest.mark.parametrize("upstream", ["--no-track", "--track"], ids=["none", "main's"])
 def test_a_squash_merged_branch_s_worktree_goes_though_no_upstream_is_gone(
     repositories: Repositories, upstream: str
 ) -> None:
@@ -844,7 +841,7 @@ def test_a_squash_merged_branch_s_worktree_goes_though_no_upstream_is_gone(
     assert repositories.leftover() is None
 
 
-def test_commits_develop_hasn_t_got_keep_the_worktree(repositories: Repositories) -> None:
+def test_commits_main_hasn_t_got_keep_the_worktree(repositories: Repositories) -> None:
     repositories.branch()
     repositories.commit(repositories.path, {"README.md": "fxbot, better\n"})
     repositories.push()
@@ -854,13 +851,13 @@ def test_commits_develop_hasn_t_got_keep_the_worktree(repositories: Repositories
     assert repositories.leftover() == "2 commits not on origin"
 
 
-def test_a_file_develop_changed_since_keeps_the_worktree(repositories: Repositories) -> None:
-    # As before #436: whether develop's change came after the branch's isn't told, so it stays.
+def test_a_file_main_changed_since_keeps_the_worktree(repositories: Repositories) -> None:
+    # As before #436: whether main's change came after the branch's isn't told, so it stays.
     repositories.branch()
     repositories.commit(repositories.path, {"README.md": "fxbot, better\n"})
     repositories.push()
     repositories.squash_merge()
-    repositories.develop_changes({"README.md": "fxbot, better still\n"})
+    repositories.main_changes({"README.md": "fxbot, better still\n"})
 
     assert repositories.leftover() == "1 commit not on origin"
 
@@ -1408,7 +1405,7 @@ class MergeGitHub:
             "state": "open",
             "title": "Location rule: finer",
             "body": "Closes #7",
-            "base": {"ref": "develop"},
+            "base": {"ref": "main"},
             "head": {"sha": "a", "ref": "feature/7-location-rule"},
             "mergeable": True,
             "mergeable_state": "clean",
@@ -1514,15 +1511,14 @@ def test_a_green_pr_is_merged_with_the_closing_comment_its_agent_left() -> None:
         "Cost: $3 (estimate ~$40).\n\n"
         "**Next:** nothing; the merge closes it. **Waiting on:** nothing.\n\n"
         "<details><summary>For the next session</summary>\n\n"
-        "- Branch: `feature/7-location-rule`, merged into `develop` by squash; GitHub deletes it.\n"
+        "- Branch: `feature/7-location-rule`, merged into `main` by squash; GitHub deletes it.\n"
         "- PR: #9, merged by the agent manager once CI was green (#550).\n\n"
         "</details>\n\n"
         f"{HandoffMark(HERE, MERGED_AT, Decimal('2.6'), closing=True)}"
     )
     assert github.asked[2][2]["sha"] == "a"  # the commit CI ran on: GitHub refuses a newer one
     assert line == (
-        "merged it itself, no agent: Merged PR #9 into develop as c98c72b: "
-        "Location rule: finer (#9)"
+        "merged it itself, no agent: Merged PR #9 into main as c98c72b: Location rule: finer (#9)"
     )
     assert slept == []
     # Claude's word, not a person's reply waiting for an agent.
@@ -1631,7 +1627,7 @@ REFUSALS: list[tuple[Callable[[MergeGitHub], object], str]] = [
 def test_a_merge_any_check_fails_goes_to_an_agent_with_nothing_written(
     change: Callable[[MergeGitHub], object], why: str
 ) -> None:
-    # #525 (green, but conflicting with develop) would have gone to an agent, as before.
+    # #525 (green, but conflicting with main) would have gone to an agent, as before.
     github = MergeGitHub()
     change(github)
     made, _ = self_merge(github)
@@ -2053,7 +2049,7 @@ def test_a_job_that_can_t_start_is_tried_again_at_the_watcher_s_next_look() -> N
     assert launcher.tried == ["#7 to start"] * 2
     assert len(said) == 1
 
-    launcher.refuse.clear()  # the checkout is back on develop
+    launcher.refuse.clear()  # the checkout is back on main
     clock.now += WATCH_EVERY
     made.tick()
     assert started(launcher) == ["#7 to start"]
@@ -2557,11 +2553,11 @@ def test_the_watcher_s_tasks_go_to_the_scheduler_and_its_notes_are_said() -> Non
     manager = AgentManager(None, heard, Backoff(1, 1), said.append, today=lambda: TODAY)  # type: ignore[arg-type]
 
     manager.hear(json.dumps(task().data()))
-    manager.hear(json.dumps({"type": "note", "text": "Pulled develop: a..b."}))
+    manager.hear(json.dumps({"type": "note", "text": "Pulled main: a..b."}))
     manager.hear("Traceback (most recent call last):")
 
     assert [job.key for job in heard.jobs] == ["#7 to start"]
-    assert said == ["watcher: Pulled develop: a..b.", "watcher: Traceback (most recent call last):"]
+    assert said == ["watcher: Pulled main: a..b.", "watcher: Traceback (most recent call last):"]
 
 
 def test_a_trial_run_takes_only_its_issues() -> None:
@@ -2849,7 +2845,7 @@ def test_an_agent_s_test_database_is_made_and_dropped() -> None:
 # --- the wiki, once, where no manager runs (#295) ---------------------------------------------
 
 
-NOTHING_NEW = WikiNews("The wiki: nothing merged into develop since 3333333.")
+NOTHING_NEW = WikiNews("The wiki: nothing merged into main since 3333333.")
 UNREAD = WikiNews("The wiki: couldn't tell what's new (git: exit 128).", failed=True)
 WIKI_LOG = Path(".agent-runs") / "wiki.log"
 
@@ -2934,7 +2930,7 @@ def test_a_wiki_that_couldn_t_be_read_fails_the_run(tmp_path: Path) -> None:
     assert said == [UNREAD.text] and launcher.tried == []
 
 
-def test_a_wiki_behind_develop_gets_its_agent_and_the_run_ends_with_it(tmp_path: Path) -> None:
+def test_a_wiki_behind_main_gets_its_agent_and_the_run_ends_with_it(tmp_path: Path) -> None:
     # #295: what the manager's watcher and agent do every few hours (#126), once, on a
     # machine where no manager runs: the run waits for the agent, then says what came of it.
     lock = WikiLock(tmp_path / ".agent-runs" / "wiki.lock")
@@ -2955,8 +2951,8 @@ def test_a_wiki_behind_develop_gets_its_agent_and_the_run_ends_with_it(tmp_path:
     assert looks == [WikiRun.EVERY, WikiRun.EVERY]
     assert said == [
         BEHIND.text,
-        f"the wiki behind develop: started, opus/xhigh; its log: {WIKI_LOG}",
-        "the wiki behind develop: finished 0",
+        f"the wiki behind main: started, opus/xhigh; its log: {WIKI_LOG}",
+        "the wiki behind main: finished 0",
     ]
     assert lock.holder() is None  # let go of at the end
 
@@ -2976,7 +2972,7 @@ def test_a_wiki_agent_that_failed_or_couldn_t_start_fails_the_run(tmp_path: Path
 
     assert failed() == 1
     assert run() == 1
-    assert said[-1] == "the wiki behind develop: not started: its branch is checked out elsewhere"
+    assert said[-1] == "the wiki behind main: not started: its branch is checked out elsewhere"
 
 
 def test_on_a_model_the_account_lacks_the_wiki_s_agent_runs_again_on_the_next_one_down(
@@ -3016,7 +3012,7 @@ def test_ctrl_c_stops_the_wiki_s_agent_and_keeps_its_worktree(tmp_path: Path) ->
 
     assert run() == 1
     assert launcher.started[0].stopped
-    assert said[-1] == "the wiki behind develop: finished None"  # kept, as `Agent.finish` says
+    assert said[-1] == "the wiki behind main: finished None"  # kept, as `Agent.finish` says
 
 
 @pytest.mark.parametrize(
@@ -3056,4 +3052,4 @@ def test_a_dry_run_says_what_it_would_run_and_starts_nothing(tmp_path: Path) -> 
     run, launcher, said = wiki_run(tmp_path, dry_run=True)
 
     assert run() == 0
-    assert said == [BEHIND.text, "would run the wiki behind develop"] and launcher.tried == []
+    assert said == [BEHIND.text, "would run the wiki behind main"] and launcher.tried == []

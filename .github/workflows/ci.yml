@@ -1,19 +1,18 @@
 name: CI
 
-# Every pull request is checked before it may be merged; develop and master are checked
-# again after each merge. Task branches aren't checked on push: their PR is. A release PR,
-# into master, then goes live on trial (`deploy`, PEB#510).
+# Every pull request is checked before it may be merged; main is checked again after each
+# merge, then published (`preview`; GitHub flow, #300). Task branches aren't checked on push:
+# their PR is.
 on:
   pull_request:
   push:
-    branches: [develop, master]
+    branches: [main]
   workflow_dispatch:
 
 concurrency:
-  # One run per PR (a newer push cancels the older run); merges to develop/master all run. A
-  # release PR's run is never cut off, since it may be deploying: the newer one waits for it.
+  # One run per PR (a newer push cancels the older run); merges to main all run.
   group: ci-${{ github.event.pull_request.number || github.ref }}
-  cancel-in-progress: ${{ github.event_name == 'pull_request' && github.base_ref != 'master' }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:
   checks:
@@ -75,7 +74,7 @@ jobs:
 
   secrets:
     # No secret in the history (PEB#59, PEB#538): gitleaks over every commit of what's checked
-    # out, a PR's with develop's or what's live on a push, but for the findings .gitleaksignore
+    # out, a PR's with main's, or main's on a push, but for the findings .gitleaksignore
     # lists. Not every branch's (PEB#546): a stray branch's finding would fail every PR. It
     # prints what it finds redacted: the log is as public as the repository.
     runs-on: ubuntu-latest
@@ -111,11 +110,11 @@ jobs:
         run: gitleaks git --redact --verbose --no-banner
 
   preview:
-    # Every merge into develop goes on GitHub Pages once the rest has passed, with its room
-    # server on Cloudflare first (docs/production.md → The preview). Run by hand on develop, it
-    # publishes develop again.
+    # Every merge into main goes on GitHub Pages once the rest has passed, with its room
+    # server on Cloudflare first (docs/production.md → The game). Run by hand on main, it
+    # publishes main again.
     needs: [checks, secrets]
-    if: github.event_name != 'pull_request' && github.ref == 'refs/heads/develop'
+    if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
     timeout-minutes: 10
     permissions:
@@ -156,16 +155,3 @@ jobs:
 
       - id: deployment
         uses: actions/deploy-pages@v5
-
-  deploy:
-    # A release PR goes live on trial once the rest has passed, so merging it confirms a
-    # release that runs (docs/production.md → A release). Any other PR into master fails here.
-    needs: [checks, secrets]
-    if: github.event_name == 'pull_request' && github.base_ref == 'master'
-    uses: ./.github/workflows/release-tool.yml
-    with:
-      command: deploy
-    secrets: inherit
-    permissions:
-      contents: read
-      pull-requests: write

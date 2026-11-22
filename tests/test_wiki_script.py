@@ -1,4 +1,4 @@
-"""scripts/wiki.py: what the wiki lacks of develop, and its pages pushed (#126)."""
+"""scripts/wiki.py: what the wiki lacks of main, and its pages pushed (#126)."""
 
 import subprocess
 from collections.abc import Mapping
@@ -14,7 +14,7 @@ from scripts.wiki import Covered, WikiCheck, WikiClone, WikiNews, WikiUnpublishe
 pytestmark = pytest.mark.unit
 
 NOW = datetime(2026, 11, 3, 18, 0)
-FEATURE, CHORE, OLD = "1" * 40, "2" * 40, "3" * 40  # develop's merges
+FEATURE, CHORE, OLD = "1" * 40, "2" * 40, "3" * 40  # main's merges
 
 
 def git(at: Path, *args: str) -> str:
@@ -42,7 +42,7 @@ class Wiki:
 
     def log(self) -> list[str]:
         """The wiki's commits on GitHub, the latest first: each subject, and its trailer."""
-        found = git(self.remote, "log", "--format=%s|%(trailers:key=Develop,valueonly)")
+        found = git(self.remote, "log", "--format=%s|%(trailers:key=Main,key=Develop,valueonly)")
         return [line for line in found.splitlines() if line]  # the trailer ends in a newline
 
 
@@ -59,8 +59,8 @@ def wiki(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Wiki:
     return Wiki(tmp_path)
 
 
-class DevelopGitHub:
-    """Develop's commits since a wiki's (`compare`), and the PRs merged into it."""
+class MainGitHub:
+    """Main's commits since a wiki's (`compare`), and the PRs merged into it."""
 
     def __init__(self) -> None:
         self.asked: list[str] = []
@@ -89,7 +89,7 @@ def pull(number: int, sha: str | None, branch: str, merged: str | None) -> dict[
     return {"number": number, "merge_commit_sha": sha, "head": {"ref": branch}, "merged_at": merged}
 
 
-def check(wiki: Wiki, github: DevelopGitHub, tmp_path: Path, hours: float = 6) -> WikiCheck:
+def check(wiki: Wiki, github: MainGitHub, tmp_path: Path, hours: float = 6) -> WikiCheck:
     runs = tmp_path / ".agent-runs"
     return WikiCheck(github, wiki.origin, hours, Git(tmp_path), runs / "wiki.git", runs / "checked")
 
@@ -103,35 +103,42 @@ def test_the_wiki_is_the_project_s_remote_with_wiki_before_git() -> None:
 def test_the_wiki_covers_its_latest_trailer_and_a_person_s_edit_since_moves_nothing() -> None:
     log = (
         "2026-11-03T15:00:00+01:00\nA person's edit\n\x1e"
-        f"2026-11-03T12:00:00+01:00\nUp to date with develop: #127\n\nDevelop: {FEATURE}\n\x1e"
-        f"2026-11-02T12:00:00+01:00\nUp to date with develop\n\nDevelop: {OLD}\n\x1e"
+        f"2026-11-03T12:00:00+01:00\nUp to date with main: #127\n\nMain: {FEATURE}\n\x1e"
+        f"2026-11-02T12:00:00+01:00\nUp to date with main\n\nMain: {OLD}\n\x1e"
     )
 
     assert Covered.read(log) == Covered(FEATURE, datetime.fromisoformat("2026-11-03T15:00+01:00"))
 
 
-def test_a_wiki_with_no_trailer_covers_develop_as_it_was_at_its_latest_commit(
+def test_a_trailer_from_before_the_branch_was_main_still_counts() -> None:
+    # #300: the wiki's commits named the commit covered `Develop:` while the branch was develop.
+    log = f"2026-11-03T12:00:00+01:00\nUp to date with develop: #127\n\nDevelop: {FEATURE}\n\x1e"
+
+    assert Covered.read(log).sha == FEATURE
+
+
+def test_a_wiki_with_no_trailer_covers_main_as_it_was_at_its_latest_commit(
     wiki: Wiki, tmp_path: Path
 ) -> None:
     # #126: the wiki was written by hand, from the repository as it was then.
     wiki.commit({"Home.md": "# Everest\n"}, "The game's wiki")
-    github = DevelopGitHub()
+    github = MainGitHub()
 
     news = check(wiki, github, tmp_path).run(NOW)
 
     until = next(path for path in github.asked if path.startswith("commits?"))
-    assert until.startswith("commits?sha=develop&until=2") and until.endswith("Z&per_page=1")
-    assert f"compare/{OLD}...develop" in github.asked
+    assert until.startswith("commits?sha=main&until=2") and until.endswith("Z&per_page=1")
+    assert f"compare/{OLD}...main" in github.asked
     assert news == WikiNews(
-        f"The wiki is behind develop: 1 PR merged since {OLD[:7]} (#127).", CHORE, OLD, (127,)
+        f"The wiki is behind main: 1 PR merged since {OLD[:7]} (#127).", CHORE, OLD, (127,)
     )
 
 
 def test_the_check_starts_from_the_trailer_and_reads_the_wiki_again_once_it_moved(
     wiki: Wiki, tmp_path: Path
 ) -> None:
-    wiki.commit({"Home.md": "# Everest\n"}, "Up to date with develop", f"Develop: {OLD}")
-    github = DevelopGitHub()
+    wiki.commit({"Home.md": "# Everest\n"}, "Up to date with main", f"Develop: {OLD}")
+    github = MainGitHub()
     made = check(wiki, github, tmp_path)
     assert made.run(NOW).pulls == (127,)
 
@@ -140,14 +147,14 @@ def test_the_check_starts_from_the_trailer_and_reads_the_wiki_again_once_it_move
 
     news = made.run(NOW)
 
-    assert f"compare/{FEATURE}...develop" in github.asked
-    assert news == WikiNews(f"The wiki: nothing merged into develop since {FEATURE[:7]}.")
+    assert f"compare/{FEATURE}...main" in github.asked
+    assert news == WikiNews(f"The wiki: nothing merged into main since {FEATURE[:7]}.")
     assert not news.failed
     assert not any(path.startswith("commits?") for path in github.asked)
 
 
 def test_it_looks_every_few_hours_a_failure_too(wiki: Wiki, tmp_path: Path) -> None:
-    made = check(wiki, DevelopGitHub(), tmp_path, hours=6)  # the wiki has no commit yet
+    made = check(wiki, MainGitHub(), tmp_path, hours=6)  # the wiki has no commit yet
 
     first = made(lambda: NOW)
 
@@ -158,16 +165,14 @@ def test_it_looks_every_few_hours_a_failure_too(wiki: Wiki, tmp_path: Path) -> N
 
 
 def test_news_goes_to_the_manager_and_back_as_it_was() -> None:
-    news = WikiNews("The wiki is behind develop: …", FEATURE, OLD, (124, 127))
+    news = WikiNews("The wiki is behind main: …", FEATURE, OLD, (124, 127))
 
     assert news.key == f"wiki: {FEATURE}"
     assert WikiNews.of(news.data()) == news
     assert news.data()["type"] == "wiki"
 
 
-def test_the_pages_are_pushed_with_the_develop_commit_they_cover(
-    wiki: Wiki, tmp_path: Path
-) -> None:
+def test_the_pages_are_pushed_with_the_main_commit_they_cover(wiki: Wiki, tmp_path: Path) -> None:
     wiki.commit({"Home.md": "# Everest\n"}, "The game's wiki")
     clone = WikiClone(tmp_path / "worktree" / ".agent-runs" / "wiki", Git(tmp_path))
     assert clone.make(wiki.origin) == "the wiki cloned"
@@ -177,16 +182,16 @@ def test_the_pages_are_pushed_with_the_develop_commit_they_cover(
 
     said = clone.publish(FEATURE, (124, 127))
 
-    assert said == f"the wiki pushed (2 files changed, develop at {FEATURE[:7]})"
+    assert said == f"the wiki pushed (2 files changed, main at {FEATURE[:7]})"
     assert wiki.log() == [
-        f"Up to date with develop: #124, #127|{FEATURE}",
+        f"Up to date with main: #124, #127|{FEATURE}",
         "A person's edit meanwhile|",
         "The game's wiki|",
     ]
     assert clone.make(wiki.origin) == "the wiki's clone kept from before"
 
 
-def test_with_nothing_to_change_the_develop_commit_covered_is_pushed_still(
+def test_with_nothing_to_change_the_main_commit_covered_is_pushed_still(
     wiki: Wiki, tmp_path: Path
 ) -> None:
     # Else the next check finds the same PRs, and another agent reads them again.
@@ -194,10 +199,8 @@ def test_with_nothing_to_change_the_develop_commit_covered_is_pushed_still(
     clone = WikiClone(tmp_path / "wiki", Git(tmp_path))
     clone.make(wiki.origin)
 
-    assert (
-        clone.publish(FEATURE, (128,)) == f"the wiki pushed (no change, develop at {FEATURE[:7]})"
-    )
-    assert wiki.log()[0] == f"Up to date with develop: #128|{FEATURE}"
+    assert clone.publish(FEATURE, (128,)) == f"the wiki pushed (no change, main at {FEATURE[:7]})"
+    assert wiki.log()[0] == f"Up to date with main: #128|{FEATURE}"
 
 
 def test_a_wiki_that_can_t_be_cloned_or_pushed_says_why(wiki: Wiki, tmp_path: Path) -> None:
@@ -230,8 +233,8 @@ def test_pages_another_run_has_pushed_meanwhile_are_dropped_not_said_twice(
 
 def test_a_time_with_an_offset_is_asked_of_github_in_utc(wiki: Wiki, tmp_path: Path) -> None:
     # A "+01:00" in a query string reads as a space.
-    github = DevelopGitHub()
+    github = MainGitHub()
 
-    check(wiki, github, tmp_path)._develop_at(datetime(2026, 11, 3, 12, 13, tzinfo=UTC))
+    check(wiki, github, tmp_path)._main_at(datetime(2026, 11, 3, 12, 13, tzinfo=UTC))
 
-    assert github.asked == ["commits?sha=develop&until=2026-11-03T12:13:00Z&per_page=1"]
+    assert github.asked == ["commits?sha=main&until=2026-11-03T12:13:00Z&per_page=1"]

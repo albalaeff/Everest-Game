@@ -1,7 +1,7 @@
 """What the session manager (scripts/agent_manager.py, #387) and the scripts its agents run
-share: its settings, how often the watcher looks (`WATCH_EVERY`, #445), the lock that says it
-runs, the labels it reads (`LABEL_FAMILIES`), which agent is talking, and where Claude Code
-compacts a conversation.
+share: the repository's one long-lived branch (`MAIN`, #300), its settings, how often the
+watcher looks (`WATCH_EVERY`, #445), the lock that says it runs, the labels it reads
+(`LABEL_FAMILIES`), which agent is talking, and where Claude Code compacts a conversation.
 
     agent-manager.toml   the manager's settings (`ManagerConfig`), the defaults when it's missing
     .agent-runs/         its lock and each agent's log, on this machine only (gitignored)
@@ -29,6 +29,9 @@ from pathlib import Path
 from typing import IO, ClassVar
 
 ROOT = Path(__file__).resolve().parents[1]
+# The one long-lived branch (GitHub flow, #300): each task branches from it and merges into it
+# by a PR, every merge into it is published, and every machine follows it while idle (#347).
+MAIN = "main"
 RUNS = ROOT / ".agent-runs"
 # What an agent writes in its worktree before Claude Code compacts its conversation, and gets
 # back after (scripts/handoff_due.py, #155): gitignored, as all of .agent-runs/ is.

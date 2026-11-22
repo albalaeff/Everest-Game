@@ -114,7 +114,7 @@ def uv(which: Which = shutil.which) -> Check:
 def git_hooks(run: Run = subprocess.run) -> Check:
     found = _run(run, ["git", "config", "core.hooksPath"])
     if found is not None and found.stdout.strip() == ".githooks":
-        return Check("Git hooks", True, "on: pushes to develop and master are refused")
+        return Check("Git hooks", True, "on: pushes to main are refused")
     return Check("Git hooks", False, "off", "git config core.hooksPath .githooks")
 
 

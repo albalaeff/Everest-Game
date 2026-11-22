@@ -20,7 +20,7 @@ end, after a wait that grows with each failure). For each task:
 - the agent's power: the issue's `model:*` and `effort:*` labels, the stronger of two in a
   family, else agent-manager.toml's defaults (`AgentPower`);
 - its worktree, <worktree_dir>/<issue>, on the issue's branch, or a new
-  `feature/<issue>-<title>` from origin/develop (`Worktree`); a new one gets the checkout's
+  `feature/<issue>-<title>` from origin/main (`Worktree`); a new one gets the checkout's
   caches and a .venv of its own first, so the agent doesn't start cold (`Warmup`);
 - its own test database, `everest_<issue>_test`, when the project has one, so two agents'
   tests don't drop each other's tables (`TestDatabase`);
@@ -38,7 +38,7 @@ A green PR's merge needs no agent when the one that opened the PR left the closi
 its handoff: the manager checks the PR and merges it itself (`SelfMerge`, #550), and starts an
 agent, told why, only when a check fails.
 
-When PRs merged into develop since the wiki last caught up, which the watcher looks at every
+When PRs merged into main since the wiki last caught up, which the watcher looks at every
 few hours, an agent updates the wiki's pages in a clone the manager made, and the manager
 pushes them (`WikiJob`, #126). `wiki` does that once with no manager, for a scheduler to run
 every day (`WikiRun`, #295).
@@ -100,6 +100,7 @@ import httpx  # noqa: E402
 
 from scripts.agents import (  # noqa: E402
     LABEL_FAMILIES,
+    MAIN,
     NOTES,
     RUNS,
     WATCH_EVERY,
@@ -115,7 +116,6 @@ from scripts.claude_cost import IssueCost, Title, issue_cost  # noqa: E402
 from scripts.github import (  # noqa: E402
     CLOSES,
     POSTPONED,
-    RELEASE_LABEL,
     CiRuns,
     Conversation,
     Dependencies,
@@ -246,8 +246,8 @@ class IssueJob(Job):
         "Claude's move": "the next move is Claude's",
         "unblocked": "what it builds on has merged",
     }
-    MERGE_DEVELOP: ClassVar[str] = (
-        " {what} merged since Claude's last word: begin by merging `origin/develop` into the "
+    MERGE_MAIN: ClassVar[str] = (
+        " {what} merged since Claude's last word: begin by merging `origin/main` into the "
         "branch (docs/conventions.md → Git workflow)."
     )
 
@@ -294,7 +294,7 @@ class IssueJob(Job):
         subject = f"issue {what}" if task.issue is not None else what
         unmerged = f" The manager left the merge to you: {self.unmerged}." if self.unmerged else ""
         woken = ", ".join(f"#{number}" for number in task.woken)
-        merge = self.MERGE_DEVELOP.format(what=woken) if woken else ""
+        merge = self.MERGE_MAIN.format(what=woken) if woken else ""
         return (
             f"{self.INTRO}, for {subject} of {slug}: {self.why()}.{unmerged}{merge}\n\n"
             f"{self.RULES.format(what=what)} Read it with `uv run python scripts/github.py "
@@ -347,7 +347,7 @@ class IssueJob(Job):
         return Dependencies(github).hold(entry, item, comments).to_do  # blocked meanwhile? #107
 
     def _set_aside(self, github: GitHub) -> bool:
-        """A PR's issue postponed meanwhile, or labelled `release`: the PR waits with it
+        """A PR's issue postponed meanwhile: the PR waits with it
         (`SetAside`, #540); and so it does when the issue is blocked (`Dependencies`, #107)."""
         entry = github.call("GET", f"issues/{self.task.issue}")
         return entry["state"] == "open" and (
@@ -374,7 +374,7 @@ class PricesJob(Job):
         return f"chore/claude-prices-{self.today:%Y-%m-%d}"
 
     def prepare(self, worktree: Path, git: Git) -> None:
-        """Moves the new rows into the worktree, so the checkout follows develop again."""
+        """Moves the new rows into the worktree, so the checkout follows main again."""
         (worktree / self.FILE).write_bytes((git.root / self.FILE).read_bytes())
         git.ok("checkout", "--", self.FILE)
 
@@ -383,7 +383,7 @@ class PricesJob(Job):
             f"{self.INTRO}, on {branch} of {slug}: the watcher read new prices of Claude's "
             f"API ({self.text}), and {self.FILE} here has the new rows.\n\n"
             f"{self.RULES.format(what='them')} Commit them, push the branch and open a "
-            'small chore PR into develop, with no issue ("Working from GitHub issues"). Then '
+            'small chore PR into main, with no issue ("Working from GitHub issues"). Then '
             "post on the PR the handoff that carries the closing comment "
             '("Working from GitHub issues", step 4; `--handoff --closing`) and stop: once '
             "CI is green, the manager merges it (#550)."
@@ -391,9 +391,9 @@ class PricesJob(Job):
 
 
 class WikiJob(Job):
-    """The wiki behind develop (#126): PRs merged since the commit it covers, which the
+    """The wiki behind main (#126): PRs merged since the commit it covers, which the
     watcher found (`WikiCheck`). The manager clones the wiki into the worktree, the agent
-    changes its pages, and the manager commits and pushes them, naming the develop commit
+    changes its pages, and the manager commits and pushes them, naming the main commit
     the worktree is on, so the next check starts from there (`WikiClone`). One run covers
     every merge since the last."""
 
@@ -406,10 +406,10 @@ class WikiJob(Job):
         self.slot = "wiki"
 
     def __str__(self) -> str:
-        return "the wiki behind develop"
+        return "the wiki behind main"
 
     def branch(self, git: Git) -> str:
-        """Develop as the PRs left it; never pushed: the work is in the wiki's clone."""
+        """Main as the PRs left it; never pushed: the work is in the wiki's clone."""
         return f"wiki/{self.today:%Y-%m-%d}"
 
     def prepare(self, worktree: Path, git: Git) -> None:
@@ -419,9 +419,9 @@ class WikiJob(Job):
             raise AgentError(str(error)) from None
 
     def conclude(self, worktree: Path, git: Git) -> str | None:
-        develop = git.out("rev-parse", "HEAD", at=str(worktree))
+        tip = git.out("rev-parse", "HEAD", at=str(worktree))
         try:
-            return self._clone(worktree, git).publish(develop, self.news.pulls)
+            return self._clone(worktree, git).publish(tip, self.news.pulls)
         except WikiUnpublished as error:
             raise AgentError(str(error)) from None
 
@@ -434,7 +434,7 @@ class WikiJob(Job):
             f"{self.INTRO}, on {branch} of {slug}: {self.news.text}\n\n"
             f"{self.RULES.format(what='the wiki')} Bring the project's wiki up to date with "
             f"those PRs ({pulls}): its clone is in {self.FOLDER} here, and this worktree is "
-            "develop as they left it. Change nothing else here and post nothing on GitHub. "
+            "main as they left it. Change nothing else here and post nothing on GitHub. "
             "For each PR, read what it changed and why: `uv run python scripts/github.py pr "
             "<n>`, the closing comment on the issue it closes (`uv run python "
             "scripts/github.py show <issue>`), and its commit (`git log`, `git show`). Then "
@@ -446,7 +446,7 @@ class WikiJob(Job):
             f"{self.today.day} {self.today:%B %Y}. Add a line for each PR to Changelog.md, "
             "newest first, its number linked to its page; make the page, linked from Home.md and "
             "_Sidebar.md, if the wiki has none. Don't commit or push: once you end, the "
-            "manager commits the pages, naming the develop commit they cover, and pushes "
+            "manager commits the pages, naming the main commit they cover, and pushes "
             "them. End with a line or two on what you changed."
         )
 
@@ -522,7 +522,7 @@ class Worktree:
     git: Git
     warmup: Warmup = field(default_factory=Warmup)
 
-    DEVELOP: ClassVar[str] = "origin/develop"  # where a new branch starts, and PRs go
+    START: ClassVar[str] = f"origin/{MAIN}"  # where a new branch starts, and PRs go
     # git's words for a branch checked out in another worktree, before 2.42 and since
     ELSEWHERE: ClassVar[re.Pattern[str]] = re.compile(r"(?:checked out|used by worktree) at '")
 
@@ -543,13 +543,13 @@ class Worktree:
         elif on_origin:
             args, said = ["-B", self.branch, where, f"origin/{self.branch}"], "from origin"
         else:
-            args = ["--no-track", "-B", self.branch, where, self.DEVELOP]
-            said = f"new, from {self.DEVELOP}"
+            args = ["--no-track", "-B", self.branch, where, self.START]
+            said = f"new, from {self.START}"
         done = self.git.run("worktree", "add", *args)
         if done.returncode != 0:
             refused = str(done.stderr).strip()
             if self.ELSEWHERE.search(refused):  # #409: a person ran an agent's commands there
-                refused += " (switch that checkout back to develop: `git switch develop` there)"
+                refused += f" (switch that checkout back to {MAIN}: `git switch {MAIN}` there)"
             raise AgentError(f"git worktree add: {refused}")
         return f"{said}; {self.warmup.warm(self.git.root, self.path)}"
 
@@ -567,22 +567,22 @@ class Worktree:
         track = self.git.out("for-each-ref", "--format=%(upstream:track)", f"refs/heads/{branch}")
         if "[gone]" in track:  # merged, and GitHub deleted the branch
             return None
-        if self._in_develop():  # merged, with no upstream of its own to be gone (#436)
+        if self._in_main():  # merged, with no upstream of its own to be gone (#436)
             return None
         return f"{plural(own, 'commit')} not on origin"
 
-    def _in_develop(self) -> bool:
-        """Whether every file the branch changed since it left develop is in origin/develop
-        as the branch has it: then nothing in its commits is missing from GitHub, as after
-        the squash merge of a branch pushed without -u, whose upstream, none or develop's,
-        is never [gone] (#436). A file develop changed since keeps it, as git failing does."""
+    def _in_main(self) -> bool:
+        """Whether every file the branch changed since it left main is in origin/main as
+        the branch has it: then nothing in its commits is missing from GitHub, as after the
+        squash merge of a branch pushed without -u, whose upstream, none or main's, is never
+        [gone] (#436). A file main changed since keeps it, as git failing does."""
         at = str(self.path)
-        base = self.git.out("merge-base", self.DEVELOP, "HEAD", at=at)
+        base = self.git.out("merge-base", self.START, "HEAD", at=at)
         if not base:
             return False
         names = ("diff", "--name-only", "--no-renames", "-z")  # a move: both its paths
         changed = self.git.paths(*names, base, "HEAD", at=at)  # by the branch
-        unlike = self.git.paths(*names, self.DEVELOP, "HEAD", at=at)  # in develop otherwise
+        unlike = self.git.paths(*names, self.START, "HEAD", at=at)  # in main otherwise
         return changed is not None and unlike is not None and changed.isdisjoint(unlike)
 
     def remove(self) -> None:
@@ -1204,7 +1204,7 @@ class SelfMerge:
     2026-10-12 to 16 were an agent doing just that, in about ten turns for $0.35.
 
     It merges only when every check holds (`check`): the PR open, at the commit CI ran on,
-    going into develop, and mergeable as GitHub says; every CI run there a success; its
+    going into main, and mergeable as GitHub says; every CI run there a success; its
     description closing the issue; the issue and the PR open, neither set aside nor waiting
     on a person; the last word on them Claude's handoff, carrying the closing comment, with
     the merge as its **Next**; no review since; and no worktree holding work. Then, as step 5
@@ -1231,7 +1231,7 @@ class SelfMerge:
     DONE: ClassVar[str] = "**Next:** nothing; the merge closes it. **Waiting on:** nothing."
     DETAILS: ClassVar[str] = (
         "<details><summary>For the next session</summary>\n\n"
-        "- Branch: `{branch}`, merged into `develop` by squash; GitHub deletes it.\n"
+        "- Branch: `{branch}`, merged into `main` by squash; GitHub deletes it.\n"
         "- PR: #{number}, merged by the agent manager once CI was green (#550).\n\n"
         "</details>"
     )
@@ -1316,7 +1316,7 @@ class SelfMerge:
         number, names = entry["number"], label_names(entry)
         if entry["state"] != "open":
             raise NotMerged(f"#{number} is closed")
-        if aside := [name for name in names if name in (POSTPONED, RELEASE_LABEL)]:
+        if aside := [name for name in names if name == POSTPONED]:
             raise NotMerged(f"#{number} is set aside ({', '.join(aside)})")
         if waiting := [name for name in names if name.startswith(WaitingLabels.PREFIX)]:
             raise NotMerged(f"#{number} waits on someone ({', '.join(waiting)})")
@@ -2053,7 +2053,7 @@ class WikiRun:
     """`scripts/agent_manager.py wiki`: what the manager's watcher and wiki agent do every few
     hours (#126), done once, then an end, for a machine where no manager runs; a scheduler
     runs it every day (README → Agents → The wiki). It looks at once, whatever
-    `wiki_every_hours` says (`check`), and when PRs merged into develop since the commit the
+    `wiki_every_hours` says (`check`), and when PRs merged into main since the commit the
     wiki covers, it starts the wiki's agent as the manager would (`launcher`), waits for its
     end, and says what came of it.
 

@@ -26,6 +26,7 @@ from decimal import Decimal, InvalidOperation
 from pathlib import Path
 from typing import Any, ClassVar
 
+from scripts.agents import MAIN
 from scripts.claude_cost import log_folder
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -409,7 +410,7 @@ class IssueBranch:
     subject: str
     ahead: int  # commits here that origin hasn't
     behind: int  # commits on origin that aren't here
-    behind_develop: int  # commits on origin/develop it hasn't got
+    behind_main: int  # commits on origin/main it hasn't got
 
     REFS: ClassVar[tuple[str, ...]] = (
         "for-each-ref",
@@ -443,16 +444,16 @@ class IssueBranch:
             behind, ahead = (int(side) for side in sides) if len(sides) == 2 else (0, 0)
         tip = origin or local or ""
         subject = git.out("log", "-1", "--format=%s", tip)
-        behind_develop = git.count("rev-list", "--count", f"{tip}..origin/develop")
-        return cls(name, origin, local, subject, ahead, behind, behind_develop)
+        behind_main = git.count("rev-list", "--count", f"{tip}..origin/{MAIN}")
+        return cls(name, origin, local, subject, ahead, behind, behind_main)
 
     def __str__(self) -> str:
         if self.origin is None:
             said = f"{self.name}: only here, never pushed, at {self._at(self.local)}"
         else:
             said = f"{self.name}: on origin at {self._at(self.origin)}; {self._here()}"
-        if self.behind_develop:
-            said += f"; develop has {plural(self.behind_develop, 'commit')} it hasn't"
+        if self.behind_main:
+            said += f"; {MAIN} has {plural(self.behind_main, 'commit')} it hasn't"
         return said
 
     def _at(self, commit: str | None) -> str:

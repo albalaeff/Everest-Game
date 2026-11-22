@@ -4,7 +4,7 @@ import io
 import json
 import subprocess
 from collections.abc import Callable, Iterable, Sequence
-from datetime import UTC, date, datetime
+from datetime import UTC, datetime
 from decimal import Decimal
 from pathlib import Path
 
@@ -28,8 +28,6 @@ from scripts.github import (
     Item,
     JsonOutput,
     PullRequests,
-    ReleaseCut,
-    ReleaseLabel,
     Task,
     WaitingLabels,
     another_watching,
@@ -37,7 +35,7 @@ from scripts.github import (
     block,
     builds_on,
     by_claude,
-    follow_develop,
+    follow_main,
     look,
     post_comment,
     repo_slug,
@@ -422,7 +420,7 @@ def test_status_says_when_it_looked(capsys: pytest.CaptureFixture[str]) -> None:
     assert first == "Acting as bateks on bateks/PersonalExchangeBot, 2026-10-07 06:47."
 
 
-# --- a postponed issue is left out (#309), and a release's (#517) ----------------------------
+# --- a postponed issue is left out (#309) --------------------------------------------------
 
 
 class BoardGitHub:
@@ -441,9 +439,8 @@ class BoardGitHub:
         return self.issues if path.startswith("issues?") else []
 
 
-@pytest.mark.parametrize("label", ["postponed", "release"])
-def test_a_postponed_issue_is_left_out(label: str, capsys: pytest.CaptureFixture[str]) -> None:
-    # "release": release-cut.yml answers it and closes it (#517), nobody's task meanwhile.
+def test_a_postponed_issue_is_left_out(capsys: pytest.CaptureFixture[str]) -> None:
+    label = "postponed"
     github = BoardGitHub(
         [
             issue(number=7),
@@ -605,7 +602,7 @@ def test_the_merge_of_what_it_builds_on_wakes_it(capsys: pytest.CaptureFixture[s
 
 def test_what_closed_before_claude_s_last_word_wakes_nothing() -> None:
     github = ChangingGitHub([building(18, "Depends on #17 and #99")])  # #99: a typo, not there
-    github.comments[18] = [said_at("16:30", "Merged develop in; CI runs.")]
+    github.comments[18] = [said_at("16:30", "Merged main in; CI runs.")]
     github.closed[17] = closed(17, "16:00")
 
     seen = look(github, lambda: LATER)  # type: ignore[arg-type]
@@ -764,8 +761,8 @@ def test_it_looks_every_two_minutes() -> None:
     assert slept == [120, 120, 120]
 
 
-def test_it_follows_develop_every_ten_minutes_not_at_every_look() -> None:
-    # #445: each `follow_develop` is a `git fetch`; it keeps the ten minutes #347 gave it.
+def test_it_follows_main_every_ten_minutes_not_at_every_look() -> None:
+    # #445: each `follow_main` is a `git fetch`; it keeps the ten minutes #347 gave it.
     slept: list[float] = []
     followed: list[int] = []  # how many looks had gone by at each
 
@@ -850,14 +847,14 @@ def test_a_rerun_s_key_says_its_attempt_and_a_first_one_s_is_as_it_was(
     assert said(capsys)[0]["key"] == key
 
 
-# --- keeping develop up to date (#347) -------------------------------------------------------
+# --- keeping main up to date (#347) -------------------------------------------------------
 
 
 class Repo:
-    """A fake `git` for `follow_develop`: the checkout, and what origin/develop has."""
+    """A fake `git` for `follow_main`: the checkout, and what origin/main has."""
 
     def __init__(
-        self, branch: str = "develop", dirty: bool = False, ahead: int = 0, behind: int = 2
+        self, branch: str = "main", dirty: bool = False, ahead: int = 0, behind: int = 2
     ) -> None:
         self.branch, self.dirty, self.ahead, self.behind = branch, dirty, ahead, behind
         self.head, self.commands = "a" * 40, []  # type: list[str]
@@ -873,28 +870,28 @@ class Repo:
                 out = self.head
             case ["status", *_]:
                 out = " M fxbot/x.py" if self.dirty else ""
-            case ["rev-list", "--count", "origin/develop..HEAD"]:
+            case ["rev-list", "--count", "origin/main..HEAD"]:
                 out = str(self.ahead)
-            case ["rev-list", "--count", "HEAD..origin/develop"]:
+            case ["rev-list", "--count", "HEAD..origin/main"]:
                 out = str(self.behind)
             case ["merge", "--ff-only", *_]:
                 self.head, self.behind = "b" * 40, 0
         return subprocess.CompletedProcess(command, 0, out + "\n", "")
 
 
-def test_an_idle_develop_is_pulled() -> None:
+def test_an_idle_main_is_pulled() -> None:
     repo = Repo()
 
-    said = follow_develop(repo)
+    said = follow_main(repo)
 
-    assert "merge --ff-only -q origin/develop" in repo.commands
-    assert said == "Pulled develop: aaaaaaa..bbbbbbb."
+    assert "merge --ff-only -q origin/main" in repo.commands
+    assert said == "Pulled main: aaaaaaa..bbbbbbb."
 
 
 def test_up_to_date_nothing_happens() -> None:
     repo = Repo(behind=0)
 
-    assert follow_develop(repo) is None
+    assert follow_main(repo) is None
     assert not any(c.startswith("merge") for c in repo.commands)
 
 
@@ -904,15 +901,15 @@ def test_up_to_date_nothing_happens() -> None:
     ids=["busy on a branch", "uncommitted changes"],
 )
 def test_busy_it_only_fetches(repo: Repo) -> None:
-    assert follow_develop(repo) is None
+    assert follow_main(repo) is None
     assert repo.commands[0].startswith("fetch")
     assert not any(c.startswith("merge") for c in repo.commands)
 
 
-def test_develop_with_commits_of_its_own_is_left_alone() -> None:
+def test_main_with_commits_of_its_own_is_left_alone() -> None:
     repo = Repo(ahead=1)
 
-    said = follow_develop(repo)
+    said = follow_main(repo)
 
     assert not any(c.startswith("merge") for c in repo.commands)
     assert said is not None and "1 commit of its own" in said
@@ -922,14 +919,14 @@ def test_no_network_no_pull() -> None:
     def offline(command: Sequence[str], **_: object) -> subprocess.CompletedProcess[str]:
         return subprocess.CompletedProcess(command, 128, "", "fatal: unable to access")
 
-    assert follow_develop(offline) is None
+    assert follow_main(offline) is None
 
 
 def test_watch_pulls_without_ending(capsys: pytest.CaptureFixture[str]) -> None:
     """A pull isn't something for Claude to do: it's said in a line, and watching goes on.
-    The same word twice (develop still ahead) is said once."""
+    The same word twice (main still ahead) is said once."""
     github = ChangingGitHub([])
-    said = iter(["Pulled develop: aaaaaaa..bbbbbbb.", None, "ahead", "ahead"])
+    said = iter(["Pulled main: aaaaaaa..bbbbbbb.", None, "ahead", "ahead"])
 
     watch(
         github,  # type: ignore[arg-type]
@@ -941,7 +938,7 @@ def test_watch_pulls_without_ending(capsys: pytest.CaptureFixture[str]) -> None:
     )
 
     assert capsys.readouterr().out.splitlines() == [
-        "Pulled develop: aaaaaaa..bbbbbbb.",
+        "Pulled main: aaaaaaa..bbbbbbb.",
         "ahead",
         "Nothing new to do (11:00–11:00).",
     ]
@@ -1263,15 +1260,15 @@ def test_for_a_program_new_prices_are_a_task_and_the_rest_notes(
 
     watch(
         github,  # type: ignore[arg-type]
-        every=600,  # develop's pull at each look
+        every=600,  # main's pull at each look
         sleep=github.sleep,
-        follow=lambda: "Pulled develop: aaaaaaa..bbbbbbb.",
+        follow=lambda: "Pulled main: aaaaaaa..bbbbbbb.",
         prices=lambda: next(news),
         output=JsonOutput(),
     )
 
     assert said(capsys) == [
-        {"type": "note", "text": "Pulled develop: aaaaaaa..bbbbbbb."},
+        {"type": "note", "text": "Pulled main: aaaaaaa..bbbbbbb."},
         {"type": "note", "text": "Claude's prices: unchanged (4 models)."},
         {
             "type": "prices",
@@ -1287,14 +1284,14 @@ def test_for_the_manager_prs_the_wiki_lacks_are_a_task_and_the_rest_notes(
     # #126: the wiki's check ends watching with what it found, as new prices do.
     github = ChangingGitHub([])
     behind = WikiNews(
-        "The wiki is behind develop: 1 PR merged since aaaaaaa (#127).", "b", "a", (127,)
+        "The wiki is behind main: 1 PR merged since aaaaaaa (#127).", "b", "a", (127,)
     )
-    news = iter([None, WikiNews("The wiki: nothing merged into develop since aaaaaaa."), behind])
+    news = iter([None, WikiNews("The wiki: nothing merged into main since aaaaaaa."), behind])
 
     watch(github, every=600, sleep=github.sleep, wiki=lambda: next(news), output=JsonOutput())  # type: ignore[arg-type]
 
     assert said(capsys) == [
-        {"type": "note", "text": "The wiki: nothing merged into develop since aaaaaaa."},
+        {"type": "note", "text": "The wiki: nothing merged into main since aaaaaaa."},
         behind.data(),
     ]
 
@@ -1475,7 +1472,7 @@ def test_handoffs_show_where_each_issue_stands_and_what_is_only_here() -> None:
                 "rev-parse --verify -q refs/heads/feature/399-handoff": tip,
                 f"rev-list --left-right --count {tip}...{tip}": "0\t0",
                 f"log -1 --format=%s {tip}": "Handoff marks",
-                f"rev-list --count {tip}..origin/develop": "0",
+                f"rev-list --count {tip}..origin/main": "0",
                 "worktree list --porcelain": f"worktree {CHECKOUT}\nHEAD {tip}\n"
                 "branch refs/heads/feature/399-handoff\n",
                 "status --porcelain": "",
@@ -1534,7 +1531,7 @@ def test_an_agent_carries_on_from_its_own_issue_alone() -> None:
                 " ".join(IssueBranch.REFS): "refs/heads/feature/399-handoff",
                 "rev-parse --verify -q refs/heads/feature/399-handoff": tip,
                 f"log -1 --format=%s {tip}": "Handoff marks",
-                f"rev-list --count {tip}..origin/develop": "0",
+                f"rev-list --count {tip}..origin/main": "0",
                 "worktree list --porcelain": worktrees,
                 f"{CHECKOUT}: status --porcelain": " M scripts/handoff.py",
                 "C:/git/worktrees/387: status --porcelain": " M scripts/agents.py",
@@ -1952,7 +1949,7 @@ PULL: dict[str, object] = {
     "merged": False,
     "mergeable_state": "clean",
     "head": {"ref": "feature/456-ci-read", "sha": HEAD},
-    "base": {"ref": "develop"},
+    "base": {"ref": "main"},
     "body": "Closes #456",
 }
 PULL_LINE = "PR #457 [open] A finished CI run is a task only until Claude speaks after it (#456)"
@@ -1964,7 +1961,7 @@ def test_api_says_a_pr_in_brief() -> None:
     assert str(Answer.of(PULL)).splitlines() == [
         PULL_LINE,
         "https://github.com/bateks/PersonalExchangeBot/pull/457",
-        f"feature/456-ci-read → develop at {HEAD}; mergeable_state: clean",
+        f"feature/456-ci-read → main at {HEAD}; mergeable_state: clean",
     ]
 
 
@@ -2089,7 +2086,7 @@ def test_pr_open_opens_it_signed(monkeypatch: pytest.MonkeyPatch) -> None:
     # CLAUDE.md: a PR description Claude writes says whose Claude it is, as a comment does.
     monkeypatch.delenv(AgentPower.MODEL_ENV, raising=False)  # a person's session
     github = PullGitHub(PULL)
-    asked = {"title": "x", "head": "feature/456-ci-read", "base": "develop", "body": "Closes #456"}
+    asked = {"title": "x", "head": "feature/456-ci-read", "base": "main", "body": "Closes #456"}
 
     text = PullRequests(github).open(asked)  # type: ignore[arg-type]
 
@@ -2097,7 +2094,7 @@ def test_pr_open_opens_it_signed(monkeypatch: pytest.MonkeyPatch) -> None:
     assert text == str(Entry(PULL))
 
 
-def test_merge_squashes_it_into_develop_titled_after_it() -> None:
+def test_merge_squashes_it_into_main_titled_after_it() -> None:
     # docs/conventions.md: one commit per task, titled after the PR, its description the body.
     github = PullGitHub(PULL)
 
@@ -2116,7 +2113,7 @@ def test_merge_squashes_it_into_develop_titled_after_it() -> None:
             },
         )
     ]
-    assert said == f"Merged PR #457 into develop as c98c72b: {title}"
+    assert said == f"Merged PR #457 into main as c98c72b: {title}"
 
 
 def test_merge_at_a_commit_is_refused_by_github_if_the_branch_moved_since() -> None:
@@ -2128,196 +2125,14 @@ def test_merge_at_a_commit_is_refused_by_github_if_the_branch_moved_since() -> N
     assert [body["sha"] for _, _, body in github.asked] == ["f" * 40]  # type: ignore[index]
 
 
-def test_merge_into_anything_but_develop_is_refused() -> None:
-    # CLAUDE.md: never into master; a release PR is a merge commit, and a person's call.
-    github = PullGitHub(PULL | {"base": {"ref": "master"}})
+def test_merge_into_anything_but_main_is_refused() -> None:
+    # #300: main is the one long-lived branch; a PR into another is someone's mistake.
+    github = PullGitHub(PULL | {"base": {"ref": "feature/455-other"}})
 
-    with pytest.raises(SystemExit, match="develop"):
+    with pytest.raises(SystemExit, match="main"):
         PullRequests(github).merge(457)  # type: ignore[arg-type]
 
     assert github.asked == []
-
-
-# --- a release (#510) --------------------------------------------------------------------------
-
-TIP = "e" * 40  # develop's
-TODAY = date(2026, 10, 16)
-
-
-class ReleaseGitHub:
-    """develop `ahead` of master, with the release branches (`refs`) and the branches of the
-    release PRs (`pulls`) there are; what it's asked to make, it notes, and answers as GitHub."""
-
-    def __init__(
-        self,
-        ahead: int = 2,
-        refs: Sequence[str] = (),
-        pulls: Sequence[str] = (),
-        pending: bool = False,  # a release PR open
-    ) -> None:
-        self.ahead = ahead
-        self.refs = refs
-        self.pulls = pulls
-        self.pending = pending
-        self.asked: list[tuple[str, str, dict[str, str]]] = []
-
-    def call(self, method: str, path: str, body: dict[str, str] | None = None) -> object:
-        if method != "GET":
-            assert body is not None
-            self.asked.append((method, path, body))
-            if path == "git/refs":
-                return {"ref": body["ref"], "object": {"sha": TIP}}
-            if path.startswith("issues/"):  # the labelled issue: a comment, then closed (#517)
-                return issue(number=517) | {"state": "closed", "html_url": "https://x/517"}
-            head = {"ref": body["head"], "sha": TIP}
-            return PULL | {
-                "number": 520,
-                "title": body["title"],
-                "head": head,
-                "base": {"ref": "master"},
-            }
-        if path == "/user":
-            return {"login": ME}
-        if path == "pulls?state=open&base=master":
-            return [PULL | {"base": {"ref": "master"}}] if self.pending else []
-        if path == "branches/develop":
-            return {"commit": {"sha": TIP}}
-        if path == f"compare/master...{TIP}":
-            said = [f"Change {n} (#{500 + n})\n\nWhat it does." for n in range(1, self.ahead + 1)]
-            return {"ahead_by": self.ahead, "commits": [{"commit": {"message": m}} for m in said]}
-        if path == "git/matching-refs/heads/release/2026-10-16":
-            today = [name for name in self.refs if name.startswith("release/2026-10-16")]
-            return [{"ref": f"refs/heads/{name}"} for name in today]
-        if path == "pulls?state=all&base=master&per_page=100":
-            return [{"head": {"ref": name}} for name in self.pulls]
-        raise AssertionError(path)
-
-
-def test_release_cuts_a_branch_at_develop_s_tip_and_opens_its_pr_into_master(
-    monkeypatch: pytest.MonkeyPatch,
-) -> None:
-    monkeypatch.delenv(AgentPower.MODEL_ENV, raising=False)  # a person's session
-    github = ReleaseGitHub()
-
-    said = ReleaseCut(github, today=lambda: TODAY).cut()  # type: ignore[arg-type]
-
-    [branch, pull] = github.asked
-    assert branch == ("POST", "git/refs", {"ref": "refs/heads/release/2026-10-16-01", "sha": TIP})
-    assert pull[:2] == ("POST", "pulls")
-    asked = pull[2]
-    assert (asked["title"], asked["head"], asked["base"]) == (
-        "Release 2026-10-16-01",
-        "release/2026-10-16-01",
-        "master",
-    )
-    assert asked["body"].startswith(
-        f"_Claude Code ({ME})_\n\ndevelop at eeeeeee, 2 commits master hasn't. Once CI passes,"
-    )
-    assert "\n\n- Change 1 (#501)\n- Change 2 (#502)\n\n" in asked["body"]
-    assert asked["body"].endswith(f"\n\n{GENERATED}")
-    assert said.splitlines()[0] == "PR #520 [open] Release 2026-10-16-01"
-
-
-@pytest.mark.parametrize(
-    ("refs", "pulls", "name"),
-    [
-        (["release/2026-10-16-01"], [], "release/2026-10-16-02"),
-        ([], ["release/2026-10-16-01", "release/2026-10-16-02"], "release/2026-10-16-03"),
-        (["release/2026-10-16"], [], "release/2026-10-16-02"),
-        ([], ["release/2026-10-15-04", "release/2026-10-16-fix"], "release/2026-10-16-01"),
-    ],
-    ids=["a branch", "merged, branches gone", "unnumbered", "another day's"],
-)
-def test_a_second_release_that_day_is_numbered_after_the_first(
-    refs: list[str], pulls: list[str], name: str
-) -> None:
-    github = ReleaseGitHub(refs=refs, pulls=pulls)
-
-    ReleaseCut(github, today=lambda: TODAY).cut()  # type: ignore[arg-type]
-
-    assert github.asked[0][2] == {"ref": f"refs/heads/{name}", "sha": TIP}
-
-
-@pytest.mark.parametrize(
-    ("github", "why"),
-    [
-        (ReleaseGitHub(ahead=0), "develop has nothing master hasn't"),
-        (ReleaseGitHub(pending=True), "PR #457 .* is open: merge or close it first"),
-    ],
-    ids=["nothing new", "a release PR open"],
-)
-def test_release_is_refused_with_nothing_new_or_a_release_pr_open(
-    github: ReleaseGitHub, why: str
-) -> None:
-    with pytest.raises(SystemExit, match=why):
-        ReleaseCut(github, today=lambda: TODAY).cut()  # type: ignore[arg-type]
-
-    assert github.asked == []
-
-
-# The label `release` on an issue (#517): release-cut.yml cuts it on GitHub's runner.
-
-WORKFLOW = f"_Release workflow ({ME})_"  # no Claude talks there
-
-
-def test_a_release_labelled_on_an_issue_is_cut_and_the_issue_closed_with_its_pr() -> None:
-    github = ReleaseGitHub()
-
-    said = ReleaseLabel(github, today=lambda: TODAY, issue=517).answer()  # type: ignore[arg-type]
-
-    [branch, pull, comment, closed] = github.asked
-    assert branch[2]["ref"] == "refs/heads/release/2026-10-16-01"
-    assert pull[2]["body"].startswith(f"{WORKFLOW}\n\ndevelop at eeeeeee, 2 commits master")
-    assert GENERATED not in pull[2]["body"]
-    expected = (
-        "**Cut:** #520, `release/2026-10-16-01` at develop's eeeeeee. Once CI passes, it's"
-        " live on prod on trial: merge the PR to confirm it, or close it to roll it back."
-    )
-    assert comment == ("POST", "issues/517/comments", {"body": f"{WORKFLOW}\n\n{expected}"})
-    assert closed == ("PATCH", "issues/517", {"state": "closed", "state_reason": "completed"})
-    assert said == expected
-
-
-@pytest.mark.parametrize(
-    ("github", "why"),
-    [
-        (ReleaseGitHub(ahead=0), "develop has nothing master hasn't: nothing to release."),
-        (ReleaseGitHub(pending=True), f"{PULL_LINE} is open: merge or close it first."),
-    ],
-    ids=["nothing new", "a release PR open"],
-)
-def test_a_release_refused_says_why_on_its_issue_and_closes_it(
-    github: ReleaseGitHub, why: str
-) -> None:
-    # One release at a time: a second label, while the first's PR is open, names that PR.
-    said = ReleaseLabel(github, today=lambda: TODAY, issue=517).answer()  # type: ignore[arg-type]
-
-    [comment, closed] = github.asked
-    assert comment == ("POST", "issues/517/comments", {"body": f"{WORKFLOW}\n\n**Not cut:** {why}"})
-    assert closed == ("PATCH", "issues/517", {"state": "closed", "state_reason": "not_planned"})
-    assert said == f"**Not cut:** {why}"
-
-
-def test_a_release_pr_is_listed_apart_and_never_a_task() -> None:
-    # On prod on trial once CI passes, then a person merges or closes it: neither CI's result
-    # nor its report of the deploy, a comment on the PR, is for Claude.
-    pr = {
-        **issue(number=12),
-        "title": "Release 2026-10-16-01",
-        "pull_request": {},
-        "body": sign("develop at eeeeeee"),
-    }
-    github = ChangingGitHub([pr])
-    head = {"sha": TIP, "ref": "release/2026-10-16-01"}
-    github.pulls = [{"number": 12, "draft": False, "head": head, "base": {"ref": "master"}}]
-    github.comments[12] = [comment("**Live on trial:** …", author="github-actions[bot]")]
-    github.runs[TIP] = [run("CI", "completed", "success", ended="10:50")]
-
-    seen = look(github, now=lambda: datetime(2026, 10, 16, 11, 0))  # type: ignore[arg-type]
-
-    assert seen.tasks == ()
-    assert "\nReleases (" in seen.text
-    assert "  PR #12 Release 2026-10-16-01 [CI: success]" in seen.text
 
 
 # --- what it prints (#358) -------------------------------------------------------------------
