@@ -321,8 +321,8 @@ export class DwellerPose {
   static readonly TO_MEALS = 45;
   /** Where the hands rest, on the knees; and the pack, from the seat they move to for it. */
   private static readonly KNEES: readonly [Spot, Spot] = [
-    { x: -84, y: -24 },
-    { x: 86, y: -24 },
+    { x: -82, y: -38 },
+    { x: 84, y: -38 },
   ];
   private static readonly PACK: Spot = { x: -150, y: -104 };
   /** The guitar on the lap: where its strings are strummed, and the ends of the stretch of its
@@ -755,8 +755,8 @@ export class DwellerPose {
     const rub = (2 * Math.PI * t) / 0.95;
     const near = DwellerPose.along(t, [
       [0, KNEES[0]],
-      [0.75, { x: -190, y: -34 }],
-      [2.45, { x: -190, y: -34 }],
+      [0.75, { x: -190, y: -30 }],
+      [2.45, { x: -190, y: -30 }],
       [3.2, KNEES[0]],
     ]);
     const far = DwellerPose.along(t, [
