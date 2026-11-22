@@ -250,7 +250,9 @@ def test_sessions_are_read_one_by_one(tmp_path: Path) -> None:
         ("C:\\git\\worktrees\\256\\src\\physics\\ladder.ts", 256),
         ("C:/git/worktrees/256/src/physics/ladder.ts", 256),
         ("git worktree add -b feature/256-rope /c/git/worktrees/256 origin/develop", 256),
-        ("cd /c/git/worktrees/256 && diff ladder.ts /c/git/worktrees/301/ladder.ts", 301),
+        ("cd /c/git/worktrees/256 && cat /c/git/worktrees/256/README.md", 256),
+        # a look over several, as a clean-up takes, is work in none of them
+        ("for d in /c/git/worktrees/294 /c/git/worktrees/55; do ls -A $d; done", None),
         ("ls /c/git/worktrees/", None),
         ("C:\\git\\Everest-Game\\.claude\\worktrees\\admiring-cohen-eaf01e\\x.py", None),
         ("cd /c/git/PersonalExchangeBot-worktrees/390", None),  # another folder

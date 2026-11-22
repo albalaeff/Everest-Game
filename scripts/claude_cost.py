@@ -20,8 +20,9 @@ counted for the issue its work names (`IssueNames`):
 - before a session names any, its upkeep (setup, the watcher) counts for none.
 
 A session works in such a worktree from a reply whose commands or file paths name it until
-one names a path in its own folder; an agent's own folder is its worktree. A file's content
-says nothing of where: only the commands, and the paths the tools are given (#293).
+one names a path in its own folder; an agent's own folder is its worktree, and a reply that
+names several worktrees (a clean-up's look over them) moves nothing. A file's content says
+nothing of where: only the commands, and the paths the tools are given (#293).
 
 Each machine counts its own Claude's work; the sum over a session matches the total
 Claude Code itself logs for it ("cost-state").
@@ -141,10 +142,11 @@ class IssueNames:
 
     @classmethod
     def of_worktree(cls, where: str) -> int | None:
-        """The issue of the last worktree `where` names that's named after its issue, as the
-        agent manager names them, <worktree_dir>/<issue> (#387): "/c/git/worktrees/256"."""
-        found = cls.WORKTREE.findall(where)
-        return int(found[-1]) if found else None
+        """The issue of the worktree `where` names that's named after it, as the agent
+        manager names them, <worktree_dir>/<issue> (#387): "/c/git/worktrees/256". None when
+        it names several: a look over them, as a clean-up takes, is work in none."""
+        found = {int(number) for number in cls.WORKTREE.findall(where)}
+        return found.pop() if len(found) == 1 else None
 
     @classmethod
     def in_text(cls, text: str) -> tuple[int, ...]:
