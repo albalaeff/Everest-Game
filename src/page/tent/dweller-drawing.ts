@@ -1,8 +1,9 @@
 import type { Outline } from "../../rendering/figure-shapes";
 import { DwellerHands } from "./dweller-hands";
 import type { HandDrawing, Held } from "./dweller-hands";
-import type { Grip } from "./hand-bones";
+import type { Grip, Vector3 } from "./hand-bones";
 import { DwellerHead } from "./dweller-head";
+import { DwellerLegs } from "./dweller-legs";
 import { DwellerNeck } from "./dweller-neck";
 import type { NeckFrame } from "./dweller-neck";
 import { DwellerPose } from "./dweller-pose";
@@ -33,6 +34,12 @@ export interface LimbFrame {
   readonly puff: "end" | "root";
 }
 
+/** A bootie's end seen end on: where its round cap is, and how much of it shows, 0 to 1. */
+export interface ToeCap {
+  readonly transform: string;
+  readonly shown: number;
+}
+
 /** The person's drawing this frame: what each of its parts is set to. Transforms and paths are
  * SVG's own text; the rest are numbers. */
 export interface DwellerFrame {
@@ -43,6 +50,9 @@ export interface DwellerFrame {
   /** The body, leaning about the hips. */
   readonly torso: string;
   readonly limbs: Readonly<Record<LimbName, LimbFrame>>;
+  /** Each bootie's end that faces the viewer (#285): where its round cap is, and how much of it
+   * shows, all of it when the foot points straight at the viewer. */
+  readonly toes: readonly [ToeCap, ToeCap];
   /** Each hand as it's drawn, in its three places; how it's closed; what it holds, and where
    * that is and how it's turned. */
   readonly hands: readonly [HandDrawing, HandDrawing];
@@ -96,6 +106,8 @@ export class DwellerDrawing {
    * far the foot that keeps time turns, in degrees. */
   private static readonly CRAWL = { from: 24, to: 52 };
   private static readonly TAP = 14;
+  /** How far under the figure's origin its hips are. */
+  private static readonly HIPS = 3;
   /** Everywhere, as a path: what a clip that hides nothing shows. */
   static readonly EVERYWHERE = "M-2000 -2000H2000V2000H-2000Z";
   /** The guitar on the lap: its body on the right thigh, its neck rising to the left hand. */
@@ -116,6 +128,8 @@ export class DwellerDrawing {
   private readonly neck = new DwellerNeck();
   private readonly shapes = new DwellerShapes();
   private readonly pose = new DwellerPose();
+
+  private readonly legs = new DwellerLegs();
 
   /** `seat` is where the figure's hips are in the picture, sitting. */
   constructor(private readonly seat: Spot) {}
@@ -150,8 +164,13 @@ ${hands[side].place(`hand${side}`)}`;
     };
     const thigh = (side: 0 | 1): string =>
       DwellerDrawing.limb(`thigh${side}`, shapes.thigh, "suit");
+    // A bootie pointing at the viewer is seen end on: its round toe, lit from above, over the
+    // rim of its sole on the mat.
+    const { half } = DwellerShapes.BOOTIE;
+    const toe = (side: 0 | 1): string =>
+      `<g class="dw-toe" data-part="toe${side}"><ellipse class="dw-toe-sole" cx="0" cy="${(half * 0.42).toFixed(1)}" rx="${(half * 1.05).toFixed(1)}" ry="${(half * 0.62).toFixed(1)}"/><ellipse class="dw-toe-cap" rx="${(half * 1.05).toFixed(1)}" ry="${(half * 0.86).toFixed(1)}"/></g>`;
     const shin = (side: 0 | 1): string =>
-      `${DwellerDrawing.limb(`shin${side}`, shapes.shin, "suit", shapes.shinPanel, "dw-panel")}${DwellerDrawing.limb(`foot${side}`, shapes.bootie, "booties", shapes.soles[side], "dw-sole")}`;
+      `${DwellerDrawing.limb(`shin${side}`, shapes.shin, "suit", shapes.shinPanel, "dw-panel")}${DwellerDrawing.limb(`foot${side}`, shapes.bootie, "booties", shapes.soles[side], "dw-sole")}${toe(side)}`;
     const clip = (id: string, part: string, d: string): string =>
       `<clipPath id="${id}" clipPathUnits="userSpaceOnUse"><path${part} clip-rule="evenodd" d="${d}"/></clipPath>`;
     return `<defs>${DwellerDrawing.defs()}${this.neck.defs()}${hands[0].defs()}${hands[1].defs()}${clip("dw-pot", "", DwellerDrawing.POT_HOLE)}${clip("dw-dip", ' data-part="dip"', EVERYWHERE)}</defs>
@@ -159,7 +178,7 @@ ${hands[side].place(`hand${side}`)}`;
 <g clip-path="url(#dw-pot)"><g class="dw-rest" transform="translate(${SPOON_LEFT.at.x.toFixed(1)} ${SPOON_LEFT.at.y.toFixed(1)}) rotate(${SPOON_LEFT.aim.toFixed(1)})">${DwellerHands.stirrer()}</g></g>
 <g class="dw-upper-arms">${upper(1)}${upper(0)}</g>
 <g class="dw-torso" data-part="torso">${this.body()}</g>
-<g class="dw-legs">${thigh(0)}${thigh(1)}${shin(0)}${shin(1)}</g>
+<g class="dw-legs">${thigh(0)}${shin(0)}${thigh(1)}${shin(1)}</g>
 <g class="dw-lap" data-part="guitar" transform="translate(${LAP.x} ${LAP.y}) rotate(${LAP.turn}) scale(${LAP.size})">${TentArt.guitar()}</g>
 <g class="dw-set" data-part="pouch"><g transform="translate(0 ${DwellerHands.POUCH_HELD})">${TentArt.pouch(true)}</g></g>
 ${arm(1)}
@@ -171,7 +190,7 @@ ${arm(0)}
 
   /** What `look` sets the figure's parts to. */
   frame(look: DwellerLook): DwellerFrame {
-    const { seat, pose, shapes } = this;
+    const { seat, pose } = this;
     const joints = pose.joints(look);
     const text = (value: number): string => DwellerDrawing.text(value);
     const seated = `translate(${text(seat.x + look.shift)} ${text(seat.y - look.rise)})`;
@@ -195,12 +214,28 @@ ${arm(0)}
     const holds: readonly [Held, Held] = [look.hands[0].holds, look.hands[1].holds];
     const { CRAWL } = DwellerDrawing;
     const under = DwellerDrawing.smooth((look.lean - CRAWL.from) / (CRAWL.to - CRAWL.from));
-    const legs = shapes.legs(under, look.rise);
+    // The legs in three dimensions (#285), seen from the front: each part as long as its bone,
+    // drawn shorter as it points at the viewer.
+    const [left, right] = this.legs.legs(under);
+    const seen = (point: Vector3): Spot => ({ x: point.x, y: point.y + DwellerDrawing.HIPS });
     const tapped = DwellerDrawing.about(
-      legs.ankles[1],
-      legs.toes[1],
+      seen(right.ankle),
+      seen(right.toe),
       -DwellerDrawing.TAP * look.tap,
     );
+    const foot = (leg: typeof left): number => leg.toe.minus(leg.ankle).size;
+    // The end of each bootie toward the viewer, its toe or its heel, drawn round as it's seen end
+    // on: back from the tip by the bootie's thickness, toward the ankle.
+    const cap = (leg: typeof left, tip: Spot): ToeCap => {
+      const along = leg.toe.minus(leg.heel).unit();
+      const end = along.z >= 0 ? tip : seen(leg.heel);
+      const ankle = seen(leg.ankle);
+      const back = Math.hypot(ankle.x - end.x, ankle.y - end.y);
+      const pull = back < 1e-6 ? 0 : Math.min(1, DwellerShapes.BOOTIE.half / back);
+      const at = { x: end.x + (ankle.x - end.x) * pull, y: end.y + (ankle.y - end.y) * pull };
+      const endOn = DwellerDrawing.smooth((Math.abs(along.z) - 0.45) / 0.35);
+      return { transform: `translate(${text(at.x)} ${text(at.y)})`, shown: endOn };
+    };
     return {
       all: look.turned ? `${seated} scale(-1 1)` : seated,
       shown: Math.min(1, Math.max(0, look.shown * (1 - look.lying))),
@@ -210,13 +245,14 @@ ${arm(0)}
         fore0: near.fore,
         upper1: far.upper,
         fore1: far.fore,
-        thigh0: limb(legs.hips[0], legs.knees[0], DwellerShapes.THIGH),
-        shin0: limb(legs.knees[0], legs.ankles[0], DwellerShapes.SHIN),
-        foot0: limb(legs.ankles[0], legs.toes[0], DwellerShapes.BOOTIE.length),
-        thigh1: limb(legs.hips[1], legs.knees[1], DwellerShapes.THIGH),
-        shin1: limb(legs.knees[1], legs.ankles[1], DwellerShapes.SHIN),
-        foot1: limb(legs.ankles[1], tapped, DwellerShapes.BOOTIE.length),
+        thigh0: limb(seen(left.hip), seen(left.knee), DwellerShapes.THIGH),
+        shin0: limb(seen(left.knee), seen(left.ankle), DwellerShapes.SHIN),
+        foot0: limb(seen(left.ankle), seen(left.toe), foot(left)),
+        thigh1: limb(seen(right.hip), seen(right.knee), DwellerShapes.THIGH),
+        shin1: limb(seen(right.knee), seen(right.ankle), DwellerShapes.SHIN),
+        foot1: limb(seen(right.ankle), tapped, foot(right)),
       },
+      toes: [cap(left, seen(left.toe)), cap(right, tapped)],
       hands: [hand(0), hand(1)],
       grips: [DwellerHands.GRIPS[holds[0]], DwellerHands.GRIPS[holds[1]]],
       holds,

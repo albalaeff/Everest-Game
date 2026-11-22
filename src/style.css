@@ -6001,3 +6001,14 @@ main:has(#tent:not([hidden])) #self-check {
     animation: none;
   }
 }
+
+/* A bootie seen end on (#285): its round toe in the booties' colour, lit from above, over the
+ * dark rim of its sole. */
+.dw-toe-cap {
+  fill: url("#dw-booties-plus");
+}
+
+.dw-toe-sole {
+  fill: #191b22;
+  opacity: 0.85;
+}

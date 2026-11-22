@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import { LegBones } from "./leg-bones";
 import { ClimberPose } from "../../rendering/climber-pose";
 import { FigureShapes } from "../../rendering/figure-shapes";
 import type { Outline } from "../../rendering/figure-shapes";
@@ -27,11 +28,11 @@ describe("DwellerShapes: the person in the tent on the slope climber's bones and
     expect(SCALE).toBe(TentArt.SCALE);
   });
 
-  it("gives the arms and the legs the slope climber's bones", () => {
+  it("gives the arms the slope climber's bones, and the legs a measured man's (#285)", () => {
     expect(DwellerShapes.UPPER_ARM).toBeCloseTo(ClimberPose.UPPER_ARM * SCALE, 9);
     expect(DwellerShapes.FOREARM).toBeCloseTo(ClimberPose.FOREARM * SCALE, 9);
-    expect(DwellerShapes.THIGH).toBeCloseTo(ClimberPose.THIGH * SCALE, 9);
-    expect(DwellerShapes.SHIN).toBeCloseTo(ClimberPose.SHIN * SCALE, 9);
+    expect(DwellerShapes.THIGH).toBeCloseTo((LegBones.MAN.thigh / 1000) * SCALE, 9);
+    expect(DwellerShapes.SHIN).toBeCloseTo((LegBones.MAN.shin / 1000) * SCALE, 9);
     for (const [part, length] of [
       [shapes.upperArm, DwellerShapes.UPPER_ARM],
       [shapes.forearm, DwellerShapes.FOREARM],
@@ -108,41 +109,6 @@ describe("DwellerShapes: the person in the tent on the slope climber's bones and
     expect(extent(baseLayer).top).toBeGreaterThan(chin - 2);
     expect(extent(hood).top).toBeGreaterThan(chin - 2);
     expect(extent(hood).bottom).toBeLessThan(DwellerShapes.SHOULDERS[0].y + 6);
-  });
-
-  it("crosses the legs sitting: knees out to the sides, each ankle under the other knee, no bone longer than it is", () => {
-    const { hips, knees, ankles, toes } = shapes.legs(0);
-
-    for (const side of [0, 1] as const) {
-      const out = side === 0 ? -1 : 1;
-      expect(knees[side].x * out).toBeGreaterThan(Math.abs(hips[side].x) + 40);
-      expect(ankles[side].x * out).toBeLessThan(0);
-      expect(toes[side].x * out).toBeLessThan(-40);
-      expect(Math.hypot(knees[side].x - hips[side].x, knees[side].y - hips[side].y)).toBeLessThan(
-        DwellerShapes.THIGH,
-      );
-      expect(
-        Math.hypot(ankles[side].x - knees[side].x, ankles[side].y - knees[side].y),
-      ).toBeLessThanOrEqual(DwellerShapes.SHIN);
-    }
-  });
-
-  it("puts the knees under the hips on hands and knees, the shins trailing behind, on the mats however high the hips", () => {
-    const rise = 46;
-    const { hips, knees, ankles } = shapes.legs(1, rise);
-    const between = shapes.legs(0.5, rise);
-    const mats = FrontShapes.CROTCH * SCALE + rise;
-
-    for (const side of [0, 1] as const) {
-      expect(Math.abs(knees[side].x)).toBeLessThan(20);
-      expect(knees[side].y).toBeGreaterThan(hips[side].y + 40);
-      expect(knees[side].y + FigureShapes.DOWN.shin.root * SCALE).toBeCloseTo(mats, 0);
-      expect(ankles[side].x).toBeGreaterThan(knees[side].x + 80);
-      expect(between.knees[side].x).toBeCloseTo(
-        (knees[side].x + shapes.legs(0).knees[side].x) / 2,
-        9,
-      );
-    }
   });
 
   it("puts a cuff on the sleeve's end, and a down bootie on each foot", () => {

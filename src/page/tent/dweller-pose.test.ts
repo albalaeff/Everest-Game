@@ -154,7 +154,9 @@ describe("DwellerPose: the arms and the hands (#269, #274)", () => {
       const most = act === "wake" ? 60 : act === "fill" ? 45 : 25;
       for (const { joints } of frames(act, 30)) {
         for (const side of [0, 1] as const) {
-          expect(joints.shoulders[side].y - joints.elbows[side].y).toBeLessThan(most);
+          expect(joints.shoulders[side].y - joints.elbows[side].y, `${act} ${side}`).toBeLessThan(
+            most,
+          );
         }
       }
     }
