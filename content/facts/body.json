@@ -974,6 +974,204 @@
       "unit": "h/h",
       "fitted_to": ["body.acute-sleep-loss"],
       "fitted": "2026-11-17"
+    },
+    {
+      "id": "body.thigh-length",
+      "kind": "fact",
+      "claim": "A man's thigh, from the hip to the knee, is about this long.",
+      "status": "source only",
+      "versions": [
+        {
+          "value": 409,
+          "unit": "mm",
+          "note": "The men's mean of the US Army's 4,082 men measured in 2012: the thigh link, the height between the trochanterion and the lateral femoral epicondyle standing, 40.93 cm (D29, p. 290).",
+          "source": {
+            "title": "Gordon et al.: 2012 Anthropometric Survey of U.S. Army Personnel: Methods and Summary Statistics (NATICK/TR-15/007)",
+            "url": "https://tools.openlab.psu.edu/publicData/ANSURII-TR15-007.pdf"
+          },
+          "checked": "2026-11-22"
+        }
+      ]
+    },
+    {
+      "id": "body.shin-length",
+      "kind": "fact",
+      "claim": "A man's shin, from the knee to the ankle, is about this long.",
+      "status": "source only",
+      "versions": [
+        {
+          "value": 419,
+          "unit": "mm",
+          "note": "The men's mean of the US Army's 4,082 men measured in 2012: the calf link, the height between the lateral femoral epicondyle and the lateral malleolus standing, 41.88 cm (D6, p. 244).",
+          "source": {
+            "title": "Gordon et al.: 2012 Anthropometric Survey of U.S. Army Personnel: Methods and Summary Statistics (NATICK/TR-15/007)",
+            "url": "https://tools.openlab.psu.edu/publicData/ANSURII-TR15-007.pdf"
+          },
+          "checked": "2026-11-22"
+        }
+      ]
+    },
+    {
+      "id": "body.ankle-height",
+      "kind": "fact",
+      "claim": "A man's ankle, the knob on the outside of it, is about this high off the floor, standing.",
+      "status": "source only",
+      "versions": [
+        {
+          "value": 73,
+          "unit": "mm",
+          "note": "The men's mean of the US Army's 4,082 men measured in 2012: lateral malleolus height, 7.29 cm (p. 162).",
+          "source": {
+            "title": "Gordon et al.: 2012 Anthropometric Survey of U.S. Army Personnel: Methods and Summary Statistics (NATICK/TR-15/007)",
+            "url": "https://tools.openlab.psu.edu/publicData/ANSURII-TR15-007.pdf"
+          },
+          "checked": "2026-11-22"
+        }
+      ]
+    },
+    {
+      "id": "body.foot-length",
+      "kind": "fact",
+      "claim": "A man's foot is about this long, from the back of the heel to the toes' tip.",
+      "status": "source only",
+      "versions": [
+        {
+          "value": 271,
+          "unit": "mm",
+          "note": "The men's mean of the US Army's 4,082 men measured in 2012: foot length, 27.12 cm (p. 116).",
+          "source": {
+            "title": "Gordon et al.: 2012 Anthropometric Survey of U.S. Army Personnel: Methods and Summary Statistics (NATICK/TR-15/007)",
+            "url": "https://tools.openlab.psu.edu/publicData/ANSURII-TR15-007.pdf"
+          },
+          "checked": "2026-11-22"
+        }
+      ]
+    },
+    {
+      "id": "body.ball-of-foot-length",
+      "kind": "fact",
+      "claim": "The ball of a man's foot, the big toe's joint, is about this far from the back of the heel.",
+      "status": "source only",
+      "versions": [
+        {
+          "value": 201,
+          "unit": "mm",
+          "note": "The men's mean of the US Army's 4,082 men measured in 2012: ball of foot length, 20.09 cm (p. 58).",
+          "source": {
+            "title": "Gordon et al.: 2012 Anthropometric Survey of U.S. Army Personnel: Methods and Summary Statistics (NATICK/TR-15/007)",
+            "url": "https://tools.openlab.psu.edu/publicData/ANSURII-TR15-007.pdf"
+          },
+          "checked": "2026-11-22"
+        }
+      ]
+    },
+    {
+      "id": "body.foot-breadth",
+      "kind": "fact",
+      "claim": "A man's foot is about this wide.",
+      "status": "source only",
+      "versions": [
+        {
+          "value": 102,
+          "unit": "mm",
+          "note": "The men's mean of the US Army's 4,082 men measured in 2012: foot breadth, horizontal, 10.19 cm (p. 114).",
+          "source": {
+            "title": "Gordon et al.: 2012 Anthropometric Survey of U.S. Army Personnel: Methods and Summary Statistics (NATICK/TR-15/007)",
+            "url": "https://tools.openlab.psu.edu/publicData/ANSURII-TR15-007.pdf"
+          },
+          "checked": "2026-11-22"
+        }
+      ]
+    },
+    {
+      "id": "body.hip-flexion",
+      "kind": "fact",
+      "claim": "A healthy man's hip bends forward about this far, the thigh toward the chest.",
+      "status": "source only",
+      "versions": [
+        {
+          "value": 130,
+          "unit": "°",
+          "note": "Men aged 20–44, measured passively with a goniometer by physical therapists: 130.4 (95% interval 129.0–131.8).",
+          "source": {
+            "title": "CDC: Joint Range of Motion Study → Reference Values for Normal Joint Range of Motion, ages 20–44",
+            "url": "https://archive.cdc.gov/www_cdc_gov/ncbddd/jointrom/index.html"
+          },
+          "checked": "2026-11-22"
+        }
+      ]
+    },
+    {
+      "id": "body.hip-extension",
+      "kind": "fact",
+      "claim": "A healthy man's hip bends back about this far, the thigh behind the body.",
+      "status": "source only",
+      "versions": [
+        {
+          "value": 17,
+          "unit": "°",
+          "note": "Men aged 20–44, measured passively with a goniometer: 17.4 (16.3–18.5).",
+          "source": {
+            "title": "CDC: Joint Range of Motion Study → Reference Values for Normal Joint Range of Motion, ages 20–44",
+            "url": "https://archive.cdc.gov/www_cdc_gov/ncbddd/jointrom/index.html"
+          },
+          "checked": "2026-11-22"
+        }
+      ]
+    },
+    {
+      "id": "body.knee-flexion",
+      "kind": "fact",
+      "claim": "A healthy man's knee bends about this far.",
+      "status": "source only",
+      "versions": [
+        {
+          "value": 138,
+          "unit": "°",
+          "note": "Men aged 20–44, measured passively with a goniometer: 137.7 (136.5–138.9).",
+          "source": {
+            "title": "CDC: Joint Range of Motion Study → Reference Values for Normal Joint Range of Motion, ages 20–44",
+            "url": "https://archive.cdc.gov/www_cdc_gov/ncbddd/jointrom/index.html"
+          },
+          "checked": "2026-11-22"
+        }
+      ]
+    },
+    {
+      "id": "body.ankle-dorsiflexion",
+      "kind": "fact",
+      "claim": "A healthy man's ankle flexes up about this far, the toes toward the shin.",
+      "status": "source only",
+      "versions": [
+        {
+          "value": 13,
+          "unit": "°",
+          "note": "Men aged 20–44, measured passively with a goniometer: 12.7 (11.6–13.8).",
+          "source": {
+            "title": "CDC: Joint Range of Motion Study → Reference Values for Normal Joint Range of Motion, ages 20–44",
+            "url": "https://archive.cdc.gov/www_cdc_gov/ncbddd/jointrom/index.html"
+          },
+          "checked": "2026-11-22"
+        }
+      ]
+    },
+    {
+      "id": "body.ankle-plantarflexion",
+      "kind": "fact",
+      "claim": "A healthy man's ankle points about this far, the toes away from the shin.",
+      "status": "source only",
+      "versions": [
+        {
+          "value": 55,
+          "unit": "°",
+          "note": "Men aged 20–44, measured passively with a goniometer: 54.6 (53.2–56.0).",
+          "source": {
+            "title": "CDC: Joint Range of Motion Study → Reference Values for Normal Joint Range of Motion, ages 20–44",
+            "url": "https://archive.cdc.gov/www_cdc_gov/ncbddd/jointrom/index.html"
+          },
+          "checked": "2026-11-22"
+        }
+      ]
     }
   ]
 }
