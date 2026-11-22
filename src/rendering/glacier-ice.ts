@@ -441,8 +441,7 @@ export class GlacierIce {
     }
     const cracks = (block?.cracks ?? []).filter(
       (crack) =>
-        Math.abs(x - crack.x) <
-        Math.abs(crack.lean) * crack.long + crack.wander + crack.wide + 0.1,
+        Math.abs(x - crack.x) < Math.abs(crack.lean) * crack.long + crack.wander + crack.wide + 0.1,
     );
     return { top, bare, snow, firn: snow + firnDeep * (1 - bare), run, hollow, rim, cracks };
   }
@@ -625,7 +624,9 @@ export class GlacierIce {
           wander: SEAM.wander,
         });
       }
-      const veins = Math.floor(random.fraction() * (BLOCKS.veins.most + 1) * Math.min(1, wide / 12));
+      const veins = Math.floor(
+        random.fraction() * (BLOCKS.veins.most + 1) * Math.min(1, wide / 12),
+      );
       for (let vein = 0; vein < veins; vein += 1) {
         const x = left + random.fraction() * wide;
         cracks.push({
@@ -669,7 +670,11 @@ export class GlacierIce {
     // The hairline cracks down from the top of bare ice, in the blocks they're in.
     const { BARE } = GlacierIce;
     for (const { left, right } of this.bare) {
-      for (let x = left + between(BARE.hairlines.apart); x < right; x += between(BARE.hairlines.apart)) {
+      for (
+        let x = left + between(BARE.hairlines.apart);
+        x < right;
+        x += between(BARE.hairlines.apart)
+      ) {
         const block = blocks[this.blockAt(x)];
         (block?.cracks as IceCrack[] | undefined)?.push({
           kind: "hairline",
@@ -692,7 +697,7 @@ export class GlacierIce {
       range.min + random.fraction() * (range.max - range.min);
     const cups: Cup[] = [];
     for (const { left, right } of bare) {
-      for (let x = left - BARE.runout; x < right + BARE.runout; ) {
+      for (let x = left - BARE.runout; x < right + BARE.runout;) {
         const half = between(BARE.cups.half);
         cups.push({ x: x + half, half, deep: between(BARE.cups.deep) });
         x += 2 * half;
@@ -789,7 +794,10 @@ class StripLayout {
       const x = left + (column + 0.5) * pixel;
       const at = glacier.column(x);
       const { top, bare, snow, firn, run, hollow, rim, cracks } = at;
-      const outside = Math.min(1, Math.max(0, (x - (reach.right - GlacierIce.FADE_OUT)) / GlacierIce.FADE_OUT));
+      const outside = Math.min(
+        1,
+        Math.max(0, (x - (reach.right - GlacierIce.FADE_OUT)) / GlacierIce.FADE_OUT),
+      );
       const across = 1 - outside * outside * (3 - 2 * outside);
       const crusts = CRUSTS.at.map(
         (share, index) =>
@@ -815,7 +823,8 @@ class StripLayout {
             crust = Math.max(crust, Math.min(1, (CRUSTS.thick / 2 - off) / pixel + 0.5));
           }
           const share = depth / Math.max(snow, 1e-3);
-          const tone = (1 - 0.5 * share ** 1.4 - CRUSTS.dark * Math.max(crust, 0)) * (0.9 + 0.1 * lit);
+          const tone =
+            (1 - 0.5 * share ** 1.4 - CRUSTS.dark * Math.max(crust, 0)) * (0.9 + 0.1 * lit);
           const step = Math.round(Math.min(Math.max(tone, 0), 1) * (STEPS - 1)) * 3;
           red = snowShades[step] ?? 0;
           green = snowShades[step + 1] ?? 0;
@@ -877,14 +886,19 @@ class StripLayout {
           }
           // Bubbles, more in the white ice.
           const chance = (BUBBLES.clear + (BUBBLES.white - BUBBLES.clear) * white) * detail;
-          if (chance > 0 && StripLayout.hash(Math.round(x * fine), Math.round(depth * fine)) < chance) {
+          if (
+            chance > 0 &&
+            StripLayout.hash(Math.round(x * fine), Math.round(depth * fine)) < chance
+          ) {
             mark = Math.max(mark, BUBBLES.bright);
           }
           const tone = Math.min(1, light * lit);
           const step = Math.round(Math.min(Math.max(tone, 0), 1) * (STEPS - 1)) * 3;
           red = (clear[step] ?? 0) + ((bubbly[step] ?? 0) - (clear[step] ?? 0)) * white;
-          green = (clear[step + 1] ?? 0) + ((bubbly[step + 1] ?? 0) - (clear[step + 1] ?? 0)) * white;
-          blue = (clear[step + 2] ?? 0) + ((bubbly[step + 2] ?? 0) - (clear[step + 2] ?? 0)) * white;
+          green =
+            (clear[step + 1] ?? 0) + ((bubbly[step + 1] ?? 0) - (clear[step + 1] ?? 0)) * white;
+          blue =
+            (clear[step + 2] ?? 0) + ((bubbly[step + 2] ?? 0) - (clear[step + 2] ?? 0)) * white;
           const dusty = dirt * (0.4 + 0.6 * tone);
           red += (dust.red - red) * dusty;
           green += (dust.green - green) * dusty;
@@ -909,7 +923,13 @@ class StripLayout {
   }
 
   /** How much of a pixel `x` across at `y`, so big, lies on a crack, 0 to 1, its ends tapering. */
-  private static onCrack(glacier: GlacierIce, crack: IceCrack, x: number, y: number, pixel: number): number {
+  private static onCrack(
+    glacier: GlacierIce,
+    crack: IceCrack,
+    x: number,
+    y: number,
+    pixel: number,
+  ): number {
     const down = crack.y - y;
     if (down < 0 || down > crack.long) {
       return 0;
@@ -917,8 +937,13 @@ class StripLayout {
     const wandered =
       crack.wander === 0 ? 0 : crack.wander * glacier.seam.at(y * 1.3 + crack.x * 3.1);
     // Across a leaning crack the distance is shorter than straight across.
-    const off = Math.abs(x - (crack.x + crack.lean * down + wandered)) / Math.sqrt(1 + crack.lean * crack.lean);
-    const taper = crack.kind === "seam" ? 1 : Math.min(1, Math.min(down, crack.long - down) / (0.25 * crack.long + 0.05));
+    const off =
+      Math.abs(x - (crack.x + crack.lean * down + wandered)) /
+      Math.sqrt(1 + crack.lean * crack.lean);
+    const taper =
+      crack.kind === "seam"
+        ? 1
+        : Math.min(1, Math.min(down, crack.long - down) / (0.25 * crack.long + 0.05));
     const half = (crack.wide * taper) / 2;
     const covered = Math.min(1, Math.max(0, (half - off) / pixel + 0.5));
     return covered * Math.min(1, (2 * half) / pixel + 0.25);
@@ -940,11 +965,16 @@ class StripLayout {
       for (let gridRow = 0; gridRow < down; gridRow += 1) {
         const y = top - (band.from + gridRow * every * pixel);
         heights[gridRow * across + gridColumn] =
-          SWELLS.high * (glacier.noise.fractal(x * SWELLS.across + 3.1, y * SWELLS.across + 5.7, 2) - 0.5);
+          SWELLS.high *
+          (glacier.noise.fractal(x * SWELLS.across + 3.1, y * SWELLS.across + 5.7, 2) - 0.5);
       }
     }
     const length = Math.hypot(LIGHT.right, LIGHT.down, LIGHT.out);
-    const [lightRight, lightDown, lightOut] = [LIGHT.right / length, LIGHT.down / length, LIGHT.out / length];
+    const [lightRight, lightDown, lightOut] = [
+      LIGHT.right / length,
+      LIGHT.down / length,
+      LIGHT.out / length,
+    ];
     const flat = SKY + (1 - SKY) * lightOut;
     const lit = new Float32Array(across * down);
     const step = every * pixel;
@@ -959,7 +989,10 @@ class StripLayout {
         const tiltRight = -(right - leftOf) / (2 * step);
         const tiltDown = -(under - over) / (2 * step);
         const size = Math.sqrt(tiltRight * tiltRight + tiltDown * tiltDown + 1);
-        const facing = Math.max(0, (tiltRight * lightRight + tiltDown * lightDown + lightOut) / size);
+        const facing = Math.max(
+          0,
+          (tiltRight * lightRight + tiltDown * lightDown + lightOut) / size,
+        );
         lit[index] = 1 + SHADING * ((SKY + (1 - SKY) * facing) / flat - 1);
       }
     }
@@ -992,7 +1025,12 @@ class StripLayout {
 
   /** The colours of the snow, the firn, the clear ice and the bubbly ice at each step of light,
    * worked out once. */
-  private static shades(): { snow: Uint8Array; firn: Uint8Array; clear: Uint8Array; bubbly: Uint8Array } {
+  private static shades(): {
+    snow: Uint8Array;
+    firn: Uint8Array;
+    clear: Uint8Array;
+    bubbly: Uint8Array;
+  } {
     if (StripLayout.shadesCache === null) {
       const of = (stops: readonly (readonly [number, number])[]): Uint8Array => {
         const { STEPS } = StripLayout;

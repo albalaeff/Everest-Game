@@ -307,6 +307,7 @@ export class SlopeScene {
     dataset.flakes = String(this.snow?.flakes ?? 0);
     dataset.climbers = String(this.slope?.climbers ?? 0);
     dataset.tents = String(this.slope?.tents ?? 0);
+    dataset.glacier = this.slope?.glacierIce ?? "flat";
     dataset.facing = this.slope?.playerFacesViewer === true ? "viewer" : "side";
     dataset.passage = this.slope?.playerPassage ?? "outside";
     dataset.frames = String(this.frames);

@@ -747,6 +747,15 @@ export class SlopeLayer extends ParallaxLayer {
     }
   }
 
+  /** How the glacier's ice under the route is drawn: in flat layers (on Low), still being worked out
+   * a strip a frame, or worked out whole. */
+  get glacierIce(): "flat" | "working" | "worked" {
+    if (this.glacier === null) {
+      return "flat";
+    }
+    return this.iceToCome.length > 0 ? "working" : "worked";
+  }
+
   /** How many climbers are drawn. */
   get climbers(): number {
     return this.figures.length;
@@ -918,8 +927,7 @@ export class SlopeLayer extends ParallaxLayer {
         ? []
         : this.iceWalls.filter(({ reach }) => reach.right >= view.left && reach.left <= view.right);
     const shining =
-      beams.length > 0 &&
-      this.glacierShines.some(({ x }) => x >= view.left && x <= view.right);
+      beams.length > 0 && this.glacierShines.some(({ x }) => x >= view.left && x <= view.right);
     if (shown.length === 0 && !shining) {
       if (this.flashShown) {
         wallFlash.clear();

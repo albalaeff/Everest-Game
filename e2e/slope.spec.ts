@@ -306,6 +306,23 @@ test.describe("the graphics setting", () => {
     expect(await drawn(page, "flakes")).toBe("120");
   });
 
+  test("works the glacier's ice out on High, a strip a frame, and keeps Low's flat layers", async ({
+    page,
+    hasTouch,
+  }) => {
+    test.skip(hasTouch, "a PC's story");
+    // Its fifty strips at one a frame, at a headless browser's few frames a second.
+    test.slow();
+    await openTheGame(page);
+
+    await expect(page.locator("#slope")).toHaveAttribute("data-glacier", "worked", {
+      timeout: 60_000,
+    });
+    await graphics(page).click();
+    await expect(graphics(page)).toHaveText("Graphics: Low");
+    await expect(page.locator("#slope")).toHaveAttribute("data-glacier", "flat");
+  });
+
   test("steps through the levels at each press, and keeps the choice on the device", async ({
     page,
     hasTouch,
