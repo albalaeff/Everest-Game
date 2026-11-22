@@ -78,6 +78,15 @@ test("a climber uses each device where they stand: the radio, the watch, the met
   await expect(reading(page, "gps", "left")).toHaveText(/^\d\.\d km$/);
   await expect(reading(page, "gps", "sun")).toHaveText("06:00");
   await expect(reading(page, "gps", "arrival")).toHaveText("--");
+  // A page at a time, ▼ to the next, as an outdoor watch turns them (#284); START pauses the
+  // activity, and the watch says so.
+  const watch = panel(page).locator('[data-device="gps"]');
+  const face = watch.locator(".watch__screen");
+  await expect(face).toHaveAttribute("data-page", "altitude");
+  await watch.getByRole("button", { name: "Down", exact: true }).click();
+  await expect(face).toHaveAttribute("data-page", "map");
+  await watch.getByRole("button", { name: /^Start/ }).click();
+  await expect(face).toHaveAttribute("data-paused", "yes");
 
   // The weather meter: the still of a clear night, around −10 °C, which the little wind there is
   // makes feel like −14 on bare skin. The night warms toward dawn as the story goes on, past −10
@@ -90,6 +99,11 @@ test("a climber uses each device where they stand: the radio, the watch, the met
   await expect(reading(page, "wind", "risk")).toHaveText(
     "Frostbite risk: moderate. Keep your face and hands covered.",
   );
+  // One number on its screen at a time: ► steps from the wind to its strongest (#284).
+  const meter = panel(page).locator('[data-device="wind"]');
+  await expect(meter.locator(".meter__lcd")).toHaveAttribute("data-screen", "wind");
+  await meter.getByRole("button", { name: "►", exact: true }).click();
+  await expect(meter.locator(".meter__lcd")).toHaveAttribute("data-screen", "max");
 });
 
 test("the keys open the devices, go between them, and close them", async ({ page, hasTouch }) => {
@@ -180,7 +194,7 @@ test("hanging in a crevasse, the radio has no contact, the watch no fix and the 
   await expect(log).toContainText("Only static. Nothing gets out from down here.", WALKING);
 
   await page.keyboard.press("ArrowRight");
-  await expect(reading(page, "gps", "where")).toHaveText("No fix: no sky down here");
+  await expect(reading(page, "gps", "where")).toHaveText("No GPS: no sky");
   // The last fix stays on the screen: the lip they fell from.
   await expect(reading(page, "gps", "altitude")).toHaveText(/^5,\d{3} m$/);
   await expect(panel(page).locator(".watch__dot")).toHaveAttribute("cx", /^\d/);
