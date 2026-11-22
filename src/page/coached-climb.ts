@@ -63,6 +63,13 @@ export class CoachedClimb implements CoachWorld, PointerWorld {
     );
   }
 
+  othersOn(ladder: string): number {
+    return this.physics.climbers.filter((id) => {
+      const other = id === this.climberId ? null : this.physics.climber(id);
+      return other !== null && other.ladder === ladder && !other.falling && !other.dead;
+    }).length;
+  }
+
   casualty(): CasualtyStage | null {
     const { physics } = this;
     const me = physics.climber(this.climberId);

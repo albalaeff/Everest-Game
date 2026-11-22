@@ -60,6 +60,8 @@ class World implements CoachWorld {
   passer = false;
   conditions: Record<string, LadderCondition> = {};
   partner = false;
+  /** How many others are on each ladder (#256). */
+  on: Record<string, number> = {};
   hurt: CasualtyStage | null = null;
   ice = [{ from: 70, to: 80 }];
   zones: readonly HazardZone[] = [{ id: "seracs", kind: "serac", from: 90, to: 100 }];
@@ -112,6 +114,10 @@ class World implements CoachWorld {
 
   partnerHangs(): boolean {
     return this.partner;
+  }
+
+  othersOn(ladder: string): number {
+    return this.on[ladder] ?? 0;
   }
 
   casualty(): CasualtyStage | null {
@@ -472,6 +478,44 @@ describe("Coach: the warnings, whenever they matter", () => {
     expect(after(fresh().coach, bounced)).toBe("ladder-bounced");
     expect(brief).not.toBe("front-points");
     expect(held).toBe("front-points");
+  });
+
+  it("says to wait at the end of a ladder someone's on, one at a time, until the player has waited and crossed one alone (#256)", () => {
+    const { coach } = fresh();
+    const world = new World();
+    world.view = standing(4, { moving: true, walking: "right" });
+    after(coach, world);
+    world.view = standing(49.5, { first: "one", second: "one" });
+    world.on = { crevasse: 1 };
+    const taken = after(coach, world, Coach.LEAST_SECONDS);
+    const still = after(coach, world, Coach.LEAST_SECONDS);
+    // Clear, the player crosses alone: the tip has done its job.
+    world.on = {};
+    world.view = standing(52, { ladder: "crevasse", moving: true, walking: "right" });
+    after(coach, world, Coach.LEAST_SECONDS);
+    world.view = standing(39.5);
+    world.on = { wall: 1 };
+    const again = after(coach, world, Coach.LEAST_SECONDS);
+
+    expect(taken).toBe("ladder-wait");
+    expect(still).toBe("ladder-wait");
+    expect(again).not.toBe("ladder-wait");
+  });
+
+  it("warns the player on a ladder with someone else on it, whenever it happens, before its bounce (#256)", () => {
+    const { coach } = fresh();
+    const world = new World();
+    world.view = standing(53, { ladder: "crevasse", stillChance: 0.2 });
+    world.on = { crevasse: 1 };
+    const shared = after(coach, world);
+    world.on = {};
+    const alone = after(coach, world, Coach.LEAST_SECONDS);
+    world.on = { crevasse: 1 };
+
+    expect(shared).toBe("ladder-shared");
+    expect(Coach.isWarning("ladder-shared")).toBe(true);
+    expect(alone).toBe("ladder-bounced");
+    expect(after(coach, world, Coach.LEAST_SECONDS)).toBe("ladder-shared");
   });
 
   it("says a broken ladder is being lashed back to one waiting at its end (#209)", () => {

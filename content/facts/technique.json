@@ -190,7 +190,7 @@
     {
       "id": "technique.fastest-walk",
       "kind": "coefficient",
-      "claim": "The fastest a climber walks in crampons, in metres a second, whatever power they have to spare: down a slope and on the flat their footing holds them to it, so their steps take less of their power and tire them less. Fitted with the walking power and the ladder speeds so that the way down the Icefall takes about 2.5 hours, the 4 from Camp 2 to Base Camp shared between the Icefall and the Western Cwm as the way up's 5 and 3 are: 2.9, with the climb eased (technique.uphill-cost-share) and the careful steps on ice and ladders (#190).",
+      "claim": "The fastest a climber walks in crampons, in metres a second, whatever power they have to spare: down a slope and on the flat their footing holds them to it, so their steps take less of their power and tire them less. Fitted with the walking power and the ladder speeds so that the way down the Icefall takes about 2.5 hours, the 4 from Camp 2 to Base Camp shared between the Icefall and the Western Cwm as the way up's 5 and 3 are: 2.9, with the climb eased (technique.uphill-cost-share) and the careful steps on ice and ladders (#190), 3.0 with a clip at each anchor on the way (#278); 3.2 once the walls' ladders are climbed down no faster than up them (#256). Faster, it barely shortens the way down, where most of the walking is held back by the stride's power on gentle ground, and the ladders drawn at life size take twelve times their real minutes either way while only the way up's walking is eased.",
       "status": "source only",
       "value": 0.7,
       "unit": "m/s",
@@ -259,19 +259,50 @@
       "fitted": "2026-11-06"
     },
     {
-      "id": "technique.ladder-speed-down",
-      "kind": "coefficient",
-      "claim": "How fast that climber comes down a wall a ladder stands against, in metres a second: three times as fast as up it, as down the fixed rope beside it (technique.down-a-fixed-rope asks how climbers go down one). Fitted with the crossing speed and the fastest walk to the Icefall's hours down, which go down 48 m of its walls and up 18.",
+      "id": "technique.ladder-down-slower",
+      "kind": "fact",
+      "claim": "How much slower a climber goes down a ladder than up it at their own pace, as a share of the speed up: the game comes down a wall's ladder at the speed up it less this share, where the footing holds them back (#256). Nothing makes it quicker in crampons: no source measures them on rungs, and climbers tell of the points catching on them (technique.ladder-down-cost says why the breath holds them back less on the way down).",
       "status": "source only",
-      "value": 0.9,
-      "unit": "m/s",
-      "fitted_to": [
-        "time.camp-2-to-base-camp",
-        "time.base-camp-to-camp-1",
-        "time.camp-1-to-camp-2",
-        "route.icefall-ladders"
-      ],
-      "fitted": "2026-11-06"
+      "versions": [
+        {
+          "value": 0.088,
+          "unit": "1",
+          "note": "Nineteen firefighters in their own work boots and gloves, with a 9 kg pack, up and down ladders at 30°, 52.5° and 75° at a self-selected normal pace, about 0.4 m/s: climbing down was 8.8% slower than climbing up (p = 0.0003).",
+          "source": {
+            "title": "Simeonov et al. 2020, Effects of Aerial Ladder Rung Spacing on Firefighter Climbing Biomechanics (Applied Ergonomics) → 3.1 Climbing speed",
+            "url": "https://pmc.ncbi.nlm.nih.gov/articles/PMC10111962/"
+          },
+          "checked": "2026-11-21"
+        }
+      ]
+    },
+    {
+      "id": "technique.ladder-down-cost",
+      "kind": "fact",
+      "claim": "What a metre down a ladder costs a climber, as a share of what a metre up it costs: the oxygen they take up descending against ascending. The game buys a climber's speed down a wall's ladder with their stride's power at this share of the cost up it, so the altitude and tiredness slow them less on the way down, and the rungs take only a share of their power where their footing holds them back (#256).",
+      "status": "source only",
+      "versions": [
+        {
+          "value": 0.74,
+          "unit": "1",
+          "note": "Kamon 1970, as the review cites it: oxygen uptake 26% lower descending a ladder ergometer than ascending it.",
+          "source": {
+            "title": "Milligan, O'Halloran and Tipton, An Ergonomics Assessment of Three Simulated 120 m Ladder Ascents (University of Portsmouth) → Introduction",
+            "url": "https://pure.port.ac.uk/ws/files/18011694/An_Ergonomics_Assessment.pdf"
+          },
+          "checked": "2026-11-21"
+        },
+        {
+          "value": 0.54,
+          "unit": "1",
+          "note": "Barron et al. 2017, as the review cites it: oxygen uptake 46% lower descending a 30 m vertical ladder than in its ascent of 3 min 45 s; a share by the minute, the descent's time not given.",
+          "source": {
+            "title": "Milligan, O'Halloran and Tipton, An Ergonomics Assessment of Three Simulated 120 m Ladder Ascents (University of Portsmouth) → Introduction",
+            "url": "https://pure.port.ac.uk/ws/files/18011694/An_Ergonomics_Assessment.pdf"
+          },
+          "checked": "2026-11-21"
+        }
+      ]
     },
     {
       "id": "technique.ladder-slip",
@@ -472,12 +503,54 @@
     {
       "id": "technique.ladder-creak",
       "kind": "coefficient",
-      "claim": "How many of the mountain's seconds a ladder staged to break creaks and shifts under a climber before it breaks (#209): long enough to clip in, a second and a quarter of play at the mountain's pace (time.compression). The moving glacier shifts and drops ladders (route.icefall-hazards).",
+      "claim": "How many of the mountain's seconds a ladder staged to break creaks and shifts under a climber before it breaks (#209), and one sliding off its lip under two before it falls (#256): long enough to clip in, a second and a quarter of play at the mountain's pace (time.compression). The moving glacier shifts and drops ladders (route.icefall-hazards).",
       "status": "source only",
       "value": 90,
       "unit": "s",
       "fitted_to": ["route.icefall-hazards", "route.icefall-lessons"],
       "fitted": "2026-11-08"
+    },
+    {
+      "id": "technique.one-on-a-ladder",
+      "kind": "fact",
+      "claim": "The Icefall Doctors ask every climber in the Khumbu Icefall to cross its ladders one at a time, and the high-altitude workers to carry lighter loads so as not to overload them: the game's coach says so at a ladder someone is on, its Sherpa never steps onto one, and a ladder with two on it can slide off its lip (#256).",
+      "status": "source only",
+      "versions": [
+        {
+          "note": "Among the precautions the Ice Doctors ask of everyone when the route opened: only one climber on any ladder at a time; lighter loads for the high-altitude workers, to avoid overloading the ladders; harnesses clipped to the safety ropes on the ladders.",
+          "source": {
+            "title": "Explorersweb: Everest: Icefall Open but Climbers Advised to Hurry Through It (18 April 2024)",
+            "url": "https://explorersweb.com/everest-risky-terrain-icefall/"
+          },
+          "checked": "2026-11-21"
+        }
+      ]
+    },
+    {
+      "id": "technique.ladder-slid-in",
+      "kind": "fact",
+      "claim": "On 9 May 2018 two Sherpas fell into a crevasse in the Icefall when the ladders they were crossing gave way: the ladder lay too near the crevasse's edge, and as the second Sherpa stepped onto it, its end slid in and took them both down. They were clipped to the safety lines, which held them, and neither was hurt.",
+      "status": "source only",
+      "versions": [
+        {
+          "note": "Filmed by Nobukazu Kuriki's crew. The clipped safety lines probably prevented a disaster; the ladders are adjusted daily, the Icefall always moving.",
+          "source": {
+            "title": "Snowbrains: VIDEO: Sherpas Fall in to Crevasse on Everest when Ladder Collapses Beneath Them (17 May 2018)",
+            "url": "https://snowbrains.com/sherpas-fall-crevasse-everest"
+          },
+          "checked": "2026-11-21"
+        }
+      ]
+    },
+    {
+      "id": "technique.ladder-overload-slip",
+      "kind": "coefficient",
+      "claim": "The chance that a ladder across a crevasse slides off its lip as a climber steps onto it with someone already on it (#256), as one did under a second Sherpa in 2018 (technique.ladder-slid-in): it creaks, then falls with whoever is on it, the end they stepped on from torn free, and the ropes hold those clipped. No source counts how often a shared crossing ends so: a playability choice that makes the Icefall Doctors' rule (technique.one-on-a-ladder) matter without making every shared crossing a fall, about one in ten.",
+      "status": "source only",
+      "value": 0.1,
+      "unit": "1",
+      "fitted_to": ["technique.one-on-a-ladder", "technique.ladder-slid-in"],
+      "fitted": "2026-11-21"
     },
     {
       "id": "technique.ladder-reset",
@@ -578,12 +651,12 @@
     {
       "id": "technique.novice-share",
       "kind": "coefficient",
-      "claim": "The share of the speed on a ladder and clipped to a fixed rope of a climber who has never used crampons, a jumar or a ladder, against one with alpine climbs behind them, whom the ladder speeds and the walking power are fitted to. Fitted so that such a climber, as fit as the typical client, takes about the middle of the hours the sources give a first crossing of the Icefall, 5, where a typical client who never stops at an anchor takes 3.8: 5.0.",
+      "claim": "The share of the speed on a ladder and clipped to a fixed rope of a climber who has never used crampons, a jumar or a ladder, against one with alpine climbs behind them, whom the ladder speeds and the walking power are fitted to. Fitted so that such a climber, as fit as the typical client, takes about the middle of the hours the sources give a first crossing of the Icefall, 5, where a typical client who never stops at an anchor takes 3.8: 5.0. Stopping at each anchor for their clips, as the stories' careful walker does, they took 4.3 and 5.5 before #256; since, they also wait their turn at the ladders Pemba is on and climb the walls' ladders down no faster than up them: the typical client takes 4.8 and the novice 5.9, near the 6 the sources give foreigners on a first rotation.",
       "status": "source only",
       "value": 0.77,
       "unit": "1",
       "fitted_to": ["time.base-camp-to-camp-1", "route.icefall-ladders"],
-      "fitted": "2026-11-08"
+      "fitted": "2026-11-21"
     },
     {
       "id": "technique.veteran-share",
@@ -659,8 +732,12 @@
     {
       "id": "technique.ladder-up",
       "kind": "question",
-      "question": "How does a climber go up a ladder stood against an ice wall: clipped to what, and what holds a slip? The game climbs at 0.3 m/s at sea level and comes down at 0.9, as fast as down the rope beside it, less at altitude.",
-      "about": ["technique.ladder-speed-up", "technique.ladder-speed-down"]
+      "question": "How does a climber go up a ladder stood against an ice wall, and down it: clipped to what, facing it or not, and what holds a slip? Down it, do clients climb the rungs, or go down the rope beside it on a descender or an arm wrap? The game climbs at 0.3 m/s at sea level, slower at altitude, and climbs down the rungs 8.8% slower than that, as firefighters did, its altitude slowing them less (#256).",
+      "about": [
+        "technique.ladder-speed-up",
+        "technique.ladder-down-slower",
+        "technique.ladder-down-cost"
+      ]
     },
     {
       "id": "technique.jumar",
@@ -686,7 +763,7 @@
     {
       "id": "technique.speed-by-steepness",
       "kind": "question",
-      "question": "How fast does a climber walk on ground of each steepness, up and down, in crampons and with a pack, and how much slower on a ladder? The game's walking costs what Minetti et al. measured on a treadmill, read as rise over run, from 24° down to 24° up, each metre of height costing the same past that up to 60°; a climber walks on 2.2 W/kg at sea level, before the altitude and the pack take their share, and no faster than 0.7 m/s whatever they have to spare. The power, the fastest walk and the ladder speeds are fitted to the hours the sources give the Icefall, up and down, not measured.",
+      "question": "How fast does a climber walk on ground of each steepness, up and down, in crampons and with a pack, and how much slower on a ladder? The game's walking costs what Minetti et al. measured on a treadmill, read as rise over run, from 24° down to 24° up, each metre of height costing the same past that up to 60°; a climber walks on 2.2 W/kg at sea level, before the altitude and the pack take their share, and no faster than 0.7 m/s whatever they have to spare. The power, the fastest walk and the ladder speeds up and across are fitted to the hours the sources give the Icefall, up and down, not measured; down a ladder goes 8.8% slower than up it and costs about two thirds of it, as firefighters and ladder ergometers measured at sea level (#256). How much slower are crampons on the rungs, going down?",
       "about": [
         "technique.walking-cost-gradients",
         "technique.walking-efficiency-gradient",
@@ -694,7 +771,8 @@
         "technique.fastest-walk",
         "technique.ladder-speed-across",
         "technique.ladder-speed-up",
-        "technique.ladder-speed-down"
+        "technique.ladder-down-slower",
+        "technique.ladder-down-cost"
       ]
     },
     {

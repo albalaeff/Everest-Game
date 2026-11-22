@@ -27,6 +27,15 @@ export interface LadderFooting {
   readonly ends: readonly [number, number];
 }
 
+/** As far as a rope reaches, in the figure's metres from the climber's point (#256): where it's
+ * tied off, at both anchors of a fixed rope or the one of a rescue line, and how long it is
+ * between them, or down from it to their hold. A point no further from its anchors together than
+ * its length is one it comes to; a hand that takes the jumar further can't, and lets it go. */
+export interface RopeReach {
+  readonly anchors: readonly Joint[];
+  readonly length: number;
+}
+
 /** What the pose is made of this frame: the climber as the physics shows them, how they feel. */
 export interface PoseState {
   /** How far they've come, in the figure's metres: across the ground or a ladder over a crevasse
@@ -51,9 +60,9 @@ export interface PoseState {
   readonly carabiner: Joint | null;
   /** Whether their hand slides the jumar up the rope: its key is held. */
   readonly sliding: boolean;
-  /** How far the rope runs on from the jumar to its nearer anchor, in the figure's metres: the
-   * most it comes up off where it lies. */
-  readonly slack: number;
+  /** As far as the rope the jumar is on reaches (#256): none, if not said, and it comes wherever
+   * the hand takes it. */
+  readonly rope?: RopeReach | null;
   readonly ladder: LadderFooting | null;
   /** How steady their steps look, from 1, steady, to 0, as likely to slip as a step gets
    * (#208): the climber wobbles below `WOBBLE.from`. */
@@ -502,8 +511,8 @@ export class ClimberPose {
   private static readonly REACH = 0.995;
   /** Where the near hand holds the jumar when the rope is out of its reach, from the shoulder:
    * the rope is lifted to it. How much of each step pushes the jumar up the rope; it grips for
-   * the rest. How much shorter than that lift the rope to the anchor gets as the hand lets go:
-   * nearer, the rope can't come up to it. */
+   * the rest. How far short of the hand the rope's reach falls as the hand lets go (#256): the
+   * rope can't come up to it there, tied off at its anchors. */
   private static readonly JUMAR_HOLD: Joint = { x: 0.34, y: -0.3 };
   private static readonly JUMAR_PUSH = 0.7;
   private static readonly LET_GO = 0.3;
@@ -845,7 +854,9 @@ export class ClimberPose {
   private readonly tools = new IceTools();
   private short = -Infinity;
   private crouch = 0;
-  private lift = 0;
+  /** Where the hand held the jumar last, in the figure's metres from the climber's point, as the
+   * rope's reach is (#256). */
+  private handOn: Joint | null = null;
   private pushing = 0;
   /** How hard the hand pulls on the jumar this frame (#232). */
   private pulling = 0;
@@ -1015,15 +1026,30 @@ export class ClimberPose {
     return hold !== null && inTheAir && hold.y > 0.05 ? hold : null;
   }
 
+  /** How much further the rope reaches than to where the hand held the jumar last, in the
+   * figure's metres (#256): below nought, it can't come up to the hand there; all the way with no
+   * rope said, or no hand on it yet. */
+  private spareAt(state: PoseState): number {
+    const { rope = null } = state;
+    const hand = this.handOn;
+    if (rope === null || hand === null) {
+      return Infinity;
+    }
+    return rope.anchors.reduce(
+      (left, anchor) => left - Math.hypot(hand.x - anchor.x, hand.y - anchor.y),
+      rope.length,
+    );
+  }
+
   /** The clocks: the halt, the hand on the jumar, the rest step, the reach to the second
    * carabiner, the fall and the getting up. */
   private keepTime(frame: number, share: number, state: PoseState, mode: Mode): void {
     const upright = mode === "walk" || mode === "rungs" || mode === "wall";
     this.standing += ((state.moving && upright ? 0 : 1) - this.standing) * share;
-    // The hand lets the jumar go where the rope runs on to its anchor less far than it lifts it;
+    // The hand lets the jumar go where the rope can't come to it, tied off at its anchors (#256);
     // the near hand holds it, or the far one once the near one has the axe, and neither on two
     // tools.
-    const grip = ClimberPose.smooth(1 + (state.slack - this.lift) / ClimberPose.LET_GO);
+    const grip = ClimberPose.smooth(1 + this.spareAt(state) / ClimberPose.LET_GO);
     const [nearFree, farFree] = this.tools.handsFree;
     const free = nearFree || farFree;
     // A device comes out in the near hand (#271), and the far one takes the jumar from it.
@@ -1484,11 +1510,12 @@ export class ClimberPose {
       this.pulling = state.moving && !onRungs ? Math.sin(Math.PI * gripping) * steep * going : 0;
       const x = shoulder.x + ClimberPose.JUMAR_HOLD.x;
       const y = shoulder.y + ClimberPose.JUMAR_HOLD.y;
-      this.heldAt = {
+      const heldAt = {
         x: x + (onX - x) * within + along.x * ahead,
         y: y + (onY - y) * within + along.y * ahead,
       };
-      this.lift = Math.hypot(this.heldAt.x - onX, this.heldAt.y - onY);
+      this.heldAt = heldAt;
+      this.handOn = { x: heldAt.x + offset.x, y: heldAt.y + offset.y };
     }
     const held = this.heldAt;
     const side = this.jumarSide;

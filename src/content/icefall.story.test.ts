@@ -82,8 +82,9 @@ function crossed(
 
 /**
  * The Khumbu Icefall (#26): a careful climber at a steady pace, clipped in all the way, takes
- * the hours the sources give, in their faster half: they stop at each anchor for their clips'
- * seconds, as a player does (#197), but never longer, and the game eases the climb up its slopes
+ * the hours the sources give, short of their middle: they stop at each anchor for their clips'
+ * seconds, as a player does (#197), but never longer, and wait their turn at each ladder Pemba is
+ * on, one at a time (technique.one-on-a-ladder, #256), and the game eases the climb up its slopes
  * (technique.uphill-cost-share, #186); and the one who sets off in the night runs a fraction of
  * the risk of one who sets off in the morning (route.icefall-lessons).
  */
@@ -101,13 +102,15 @@ describe("Base Camp to Camp 1 at a steady pace, clipped in all the way", () => {
   );
   const hours = rules.clock.elapsed / HOUR;
 
-  it("reaches Camp 1 within the hours the sources give a first crossing, in their faster half", () => {
+  it("reaches Camp 1 within the hours the sources give a first crossing, short of their middle, waiting its turn at the ladders", () => {
     const sources = mountain.route.hours;
     const middle = knowledge.number("time.base-camp-to-camp-1");
 
     expect(arrived).toBe(true);
     expect(hours).toBeGreaterThan(sources.min + 0.25);
-    expect(hours).toBeLessThan(middle - 0.5);
+    // In their faster half until the ladders were crossed one at a time (#256): the waits for
+    // Pemba to get off them take about half an hour of it.
+    expect(hours).toBeLessThan(middle);
   });
 
   it("climbs every ladder on the way, and the steps of ice with none on the tools, and the rope holds any fall of more than a slide (#208)", () => {
@@ -147,10 +150,14 @@ describe("Experience on the ladders and ropes: a novice and a veteran, as fit as
     return rules.clock.elapsed / HOUR;
   };
 
-  it("takes one who has never used crampons, a jumar or a ladder about the middle of the hours the sources give", () => {
+  it("takes one who has never used crampons, a jumar or a ladder past the middle of the hours the sources give, short of their longest", () => {
     const middle = knowledge.number("time.base-camp-to-camp-1");
+    const novice = hours("none");
 
-    expect(Math.abs(hours("none") - middle)).toBeLessThan(0.5);
+    // About the middle until the ladders were crossed one at a time (#256): near the 6 hours a
+    // source gives foreigners on their first rotation.
+    expect(novice).toBeGreaterThan(middle + 0.5);
+    expect(novice).toBeLessThan(sources.max - 0.5);
   });
 
   it("takes one who has climbed an 8,000 m peak about the shortest the sources give", () => {
@@ -212,9 +219,12 @@ describe("The cost of the steps: down from Camp 1, and up with a heavier pack", 
     const down = (knowledge.number("time.camp-2-to-base-camp") * icefall) / (icefall + cwm);
 
     expect(hours).toBeLessThan(up.hours);
-    // Within about half an hour: at the mountain's pace a step of play is 3.6 of its seconds, and
-    // a clip at each anchor down takes whole steps, a few minutes over the way down (#278).
-    expect(Math.abs(hours - down)).toBeLessThan(0.55);
+    // Within about three quarters of an hour: at the mountain's pace a step of play is 3.6 of its
+    // seconds, and a clip at each anchor down takes whole steps, a few minutes over the way down
+    // (#278); and the walls' ladders are climbed down no faster than up them (#256), each taking
+    // twelve times its real minutes as the ladders drawn at life size do, which only the way up's
+    // eased walking makes up for (technique.fastest-walk).
+    expect(Math.abs(hours - down)).toBeLessThan(0.75);
   });
 
   it("tires a climber less for each hour of the way down than of the way up", () => {

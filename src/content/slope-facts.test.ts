@@ -85,13 +85,31 @@ describe("SlopeFacts: the slope physics' numbers from the knowledge base", () =>
     expect(slipFree).toBeLessThan(steepest);
   });
 
-  it("crosses, climbs and comes down a ladder at the fitted speeds sped up, slipping at one chance a metre", () => {
+  it("crosses and climbs a ladder at the fitted speeds sped up, and comes down it slower than up, slipping at one chance a metre", () => {
+    const up = number("technique.ladder-speed-up") * speedUp;
+
     expect(settings.ladderSpeed).toEqual([
-      [-SlopeFacts.WALL, number("technique.ladder-speed-down") * speedUp],
+      [-SlopeFacts.WALL, up * (1 - number("technique.ladder-down-slower"))],
       [0, number("technique.ladder-speed-across") * speedUp],
-      [SlopeFacts.WALL, number("technique.ladder-speed-up") * speedUp],
+      [SlopeFacts.WALL, up],
     ]);
     expect(settings.ladderSlipChance).toEqual([[0, number("technique.ladder-slip")]]);
+  });
+
+  it("costs a metre down a ladder the middle of what the sources measured of a metre up it (#256)", () => {
+    const { min, max } = range("technique.ladder-down-cost");
+
+    expect(settings.ladderDownCost).toBeCloseTo((min + max) / 2, 10);
+    expect(settings.ladderDownCost).toBeGreaterThan(0.5);
+    expect(settings.ladderDownCost).toBeLessThan(0.75);
+  });
+
+  it("slides a ladder off its lip under two at the fitted chance a shared crossing, as in life, not sped up (#256)", () => {
+    const { overload } = settings.ladderBreak;
+
+    expect(overload).toBe(number("technique.ladder-overload-slip"));
+    expect(overload).toBeGreaterThan(0);
+    expect(overload).toBeLessThan(0.5);
   });
 
   it("slips on blue ice and a bouncing ladder at the fitted chances a metre, its bounce dying away sped up, and lands at life size", () => {

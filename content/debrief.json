@@ -27,6 +27,7 @@
     "training-ladder.pulled": "the rope held you, and your partner pulled you out",
     "training-ladder.pulled-by-sherpa": "the rope held you, and Pemba pulled you out",
     "training-ladder.fell": "no rope held you",
+    "two-on-ladder": "Ladder slid off its edge with two of you on it",
     "count": "{count}",
     "hours": "{hours} h {minutes} min",
     "minutes": "{minutes} min",
@@ -59,7 +60,8 @@
     "died.cornice": "A cornice broke under you.",
     "died.fall": "You fell {drop} m, with no rope to hold you. Clip in before the ice and the ladders: the rope turns a fall into a scare.",
     "died.fall-crampon": "You fell {drop} m, with no rope to hold you, on a crampon that had come loose. It began at Base Camp: check your crampons before you set off, and clip in before the ice and the ladders.",
-    "died.ladder": "The ladder broke under you, and no rope held you: you fell {drop} m. Clip in before you step onto a ladder."
+    "died.ladder": "The ladder broke under you, and no rope held you: you fell {drop} m. Clip in before you step onto a ladder.",
+    "died.ladder-two-on": "The ladder slid off its edge under two of you, and no rope held you: you fell {drop} m. Cross a ladder one at a time, and clip in before you step onto it."
   },
   "ru": {
     "you-died": "Ты погиб",
@@ -89,6 +91,7 @@
     "training-ladder.pulled": "верёвка удержала, и напарник тебя вытащил",
     "training-ladder.pulled-by-sherpa": "верёвка удержала, и Пемба тебя вытащил",
     "training-ladder.fell": "никакая верёвка не удержала",
+    "two-on-ladder": "Лестница соскользнула с кромки под вами двоими",
     "count": "{count}",
     "hours": "{hours} ч {minutes} мин",
     "minutes": "{minutes} мин",
@@ -121,6 +124,7 @@
     "died.cornice": "Под тобой обломился карниз.",
     "died.fall": "Ты упал с высоты {drop} м, и никакая верёвка тебя не удержала. Пристёгивайся до льда и лестниц: верёвка превращает падение в испуг.",
     "died.fall-crampon": "Ты упал с высоты {drop} м на расстегнувшейся кошке, и никакая верёвка тебя не удержала. Всё началось в базовом лагере: проверяй кошки перед выходом и пристёгивайся до льда и лестниц.",
-    "died.ladder": "Лестница сорвалась под тобой, и никакая верёвка не удержала: ты упал с высоты {drop} м. Пристёгивайся до того, как ступить на лестницу."
+    "died.ladder": "Лестница сорвалась под тобой, и никакая верёвка не удержала: ты упал с высоты {drop} м. Пристёгивайся до того, как ступить на лестницу.",
+    "died.ladder-two-on": "Лестница соскользнула с кромки под вами двоими, и никакая верёвка не удержала: ты упал с высоты {drop} м. По лестнице ходят по одному, и пристёгивайся до того, как ступить на неё."
   }
 }

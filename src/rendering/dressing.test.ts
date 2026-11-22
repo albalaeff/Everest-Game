@@ -27,7 +27,6 @@ const STANDING: PoseState = {
   jumar: null,
   carabiner: null,
   sliding: false,
-  slack: 10,
   ladder: null,
   footing: 1,
   hauling: false,

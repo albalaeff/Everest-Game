@@ -1,6 +1,6 @@
 import type { ClimberView, Point, RescueLineView, Terrain, Way } from "../physics";
 import type { BodyView, HandView } from "../simulation";
-import type { Joint, LadderFooting, PoseState, Tending } from "./climber-pose";
+import type { Joint, LadderFooting, PoseState, RopeReach, Tending } from "./climber-pose";
 import { DeviceHold } from "./device-hold";
 import { HaulPath } from "./haul-path";
 import type { PickIn } from "./ice-tools";
@@ -13,6 +13,8 @@ export interface ReadSlope {
   readonly terrain: Terrain;
   ladder(id: string): readonly Point[];
   rope(id: string): readonly Point[];
+  /** How long a rope is between its anchors, in metres: as far as it reaches (#256). */
+  ropeLength(id: string): number;
   readonly lines: readonly RescueLineView[];
 }
 
@@ -249,12 +251,12 @@ export class ClimberReading {
       jumar: this.local(hold === null ? drawn.jumar : hold.point, at),
       carabiner: this.local(drawn.carabiner, at),
       sliding: view.jumarHeld || (hold !== null && view.moving),
-      slack:
-        hold !== null
-          ? hold.fromTop / grown
+      rope:
+        hold !== null && anchor !== null
+          ? { anchors: [this.local(anchor, at) ?? { x: 0, y: 0 }], length: hold.fromTop / grown }
           : view.first === null || drawn.jumar === null
-            ? 0
-            : ClimberReading.toAnchor(this.slope.rope(view.first), drawn.jumar) / grown,
+            ? null
+            : this.reach(view.first, at, grown),
       ladder:
         along === null || heading === null
           ? null
@@ -534,32 +536,18 @@ export class ClimberReading {
     };
   }
 
-  /** How far a rope runs from `point` on it to its nearer end, its anchor: along its `chain`,
-   * from where on it the point is nearest. */
-  private static toAnchor(chain: readonly Point[], point: Point): number {
-    let along = 0;
-    let total = 0;
-    let nearest = Infinity;
-    for (let link = 1; link < chain.length; link += 1) {
-      const from = chain[link - 1];
-      const to = chain[link];
-      if (from === undefined || to === undefined) {
-        continue;
-      }
-      const dx = to.x - from.x;
-      const dy = to.y - from.y;
-      const length = Math.hypot(dx, dy);
-      const onIt =
-        length > 0 ? ((point.x - from.x) * dx + (point.y - from.y) * dy) / length ** 2 : 0;
-      const share = Math.min(Math.max(onIt, 0), 1);
-      const away = Math.hypot(from.x + dx * share - point.x, from.y + dy * share - point.y);
-      if (away < nearest) {
-        nearest = away;
-        along = total + length * share;
-      }
-      total += length;
+  /** As far as the fixed rope `id` reaches, in the figure's metres from `at` (#256): its two
+   * anchors, where it's tied off, and its length between them. */
+  private reach(id: string, at: Point, grown: number): RopeReach | null {
+    const chain = this.slope.rope(id);
+    const [first, last] = [chain[0], chain.at(-1)];
+    if (first === undefined || last === undefined) {
+      return null;
     }
-    return Math.min(along, total - along);
+    return {
+      anchors: [this.local(first, at) ?? first, this.local(last, at) ?? last],
+      length: this.slope.ropeLength(id) / grown,
+    };
   }
 
   private static heading(start: Point, finish: Point): Point {

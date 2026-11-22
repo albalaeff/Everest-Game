@@ -37,6 +37,8 @@ const slope: ReadSlope = {
   terrain,
   ladder: (id) => LADDERS[id] ?? [],
   rope: (id) => ROPES[id] ?? [],
+  // The rope up the rise is 5 m long, half a metre of it slack (#256).
+  ropeLength: (id) => (ROPES[id] === undefined ? 0 : 5),
   lines: [],
 };
 const BODY: BodyView = { tiredness: "fresh", symptoms: [], oximeter: 90, pace: "steady" };
@@ -296,18 +298,31 @@ describe("ClimberReading", () => {
     expect(state.carabiner).toBeNull();
   });
 
-  it("measures the rope from the jumar to its nearer anchor, in the figure's metres", () => {
+  it("hands the pose the rope the jumar is on, its anchors and its length, in the figure's metres (#256)", () => {
     const reading = new ClimberReading(slope);
-    const up = Math.hypot(2, 1);
     const low = reading.read(view({ first: "rise" }), BODY, drawn(11, 0.5, 2, { x: 11, y: 0.5 }));
     const high = reading.read(
-      view({ first: "rise" }),
+      view({ first: "rise", walking: "left" }),
       BODY,
       drawn(13, 1.5, 1, { x: 13.6, y: 1.8 }),
     );
 
-    expect(low.slack).toBeCloseTo(up / 4, 9);
-    expect(high.slack).toBeCloseTo(up / 5, 9);
+    expect(low.rope).toEqual({
+      anchors: [
+        { x: -0.5, y: -0.25 },
+        { x: 1.5, y: 0.75 },
+      ],
+      length: 2.5,
+    });
+    // Facing left, x the way they face.
+    expect(high.rope).toEqual({
+      anchors: [
+        { x: 3, y: -1.5 },
+        { x: -1, y: 0.5 },
+      ],
+      length: 5,
+    });
+    expect(reading.read(view(), BODY, drawn(11, 0.5)).rope).toBeNull();
   });
 });
 
@@ -374,7 +389,9 @@ describe("ClimberReading: a casualty and their rescuer (#241)", () => {
 
     expect(low.jumar?.x).toBeCloseTo(0, 9);
     expect(low.jumar?.y).toBeCloseTo(0.7, 9);
-    expect(low.slack).toBeCloseTo(1.3, 9);
+    // The rope above them, from its anchor 2 m up, as far as their hold on it.
+    expect(low.rope?.anchors).toEqual([{ x: 0, y: 2 }]);
+    expect(low.rope?.length).toBeCloseTo(1.3, 9);
     expect(low).toMatchObject({ sliding: true, onIce: true, falling: false });
     expect(still.sliding).toBe(false);
     expect(tied).toEqual({
@@ -385,7 +402,7 @@ describe("ClimberReading: a casualty and their rescuer (#241)", () => {
       ],
     });
     expect(high.jumar?.y).toBeCloseTo(0.5, 9);
-    expect(high.slack).toBe(0);
+    expect(high.rope?.length).toBe(0);
     // Off the line, nothing holds them.
     reading.read(view(), BODY, drawn(21, 5));
     expect(reading.onLine).toBeNull();

@@ -51,7 +51,9 @@ export type CoachTip =
   | "gust"
   | "ladder-twist"
   | "passing"
+  | "ladder-shared"
   | "ladder-bounced"
+  | "ladder-wait"
   | "front-points";
 
 /** What a rescuer does next for a partner who lies hurt and can't walk (#241), as the coach
@@ -78,6 +80,8 @@ export interface CoachWorld {
   ladderCondition(id: string): LadderCondition;
   /** Whether someone else hangs on the rope (#209), for the player to pull out. */
   partnerHangs(): boolean;
+  /** How many climbers besides the player are on a ladder now, on their feet (#256). */
+  othersOn(ladder: string): number;
   /** What the player does next for a partner who lies hurt and can't walk, or none while nobody
    * does, or while someone else carries them (#241). */
   casualty(): CasualtyStage | null;
@@ -187,6 +191,7 @@ export class Coach {
     "passing",
     "stopped-under-seracs",
     "unclipped",
+    "ladder-shared",
     "ladder-bounced",
     "front-points",
     "careless",
@@ -194,6 +199,7 @@ export class Coach {
     "crampon-loose",
     "lamp",
     "ladder-broken",
+    "ladder-wait",
     "on-ice",
     "ice-wall",
     "ice-down",
@@ -237,6 +243,7 @@ export class Coach {
     "passing",
     "stopped-under-seracs",
     "unclipped",
+    "ladder-shared",
     "ladder-bounced",
     "front-points",
     "careless",
@@ -269,6 +276,9 @@ export class Coach {
    * needs of them now (#241). */
   private sprained = 0;
   private casualty: CasualtyStage | null = null;
+  /** Whether the player has been told to wait their turn at a ladder (#256): crossing one alone
+   * after that, they've learnt it. */
+  private waited = false;
 
   constructor(private readonly storage: CoachStorage | null) {
     this.done = new Set(Coach.kept(storage));
@@ -329,7 +339,12 @@ export class Coach {
     if (view.ladder !== null) {
       const kind = this.kindOf(world, view.ladder);
       this.learn(kind === "across" ? "crossing" : kind === "up" ? "ladder-up" : "ladder-down");
+      // Told to wait their turn, and now on a ladder nobody else is on: done (#256).
+      if (this.waited && world.othersOn(view.ladder) === 0) {
+        this.learn("ladder-wait");
+      }
     }
+    this.waited ||= this.shown === "ladder-wait";
     if (view.onIce) {
       // Onto the ice from its lip, they've stepped down onto it; from anywhere else, climbed it.
       this.learn(this.wallBefore === "lip" || this.wallBefore === "rope" ? "ice-down" : "ice-wall");
@@ -437,8 +452,12 @@ export class Coach {
         return !view.falling && world.jolt() === "gust";
       case "passing":
         return !view.falling && world.passing();
+      case "ladder-shared":
+        return view.ladder !== null && !view.falling && world.othersOn(view.ladder) > 0;
       case "ladder-bounced":
         return view.ladder !== null && !view.falling && view.stillChance > 0;
+      case "ladder-wait":
+        return !view.falling && this.atATakenLadder(world, view);
       case "front-points":
         return this.stance >= Coach.STANCE_SECONDS;
       case "haul":
@@ -545,6 +564,20 @@ export class Coach {
         Math.hypot(point.x - view.x, point.y - view.y) <= Coach.NEAR_LADDER;
       // A ladder's `from` end is its first point: the foot of one up a wall, the top of one down.
       return kind === "across" ? near(start) || near(end) : near(start);
+    });
+  }
+
+  /** Whether the player stands at either end of a ladder someone else is on (#256): one at a
+   * time, they wait their turn. */
+  private atATakenLadder(world: CoachWorld, view: ClimberView): boolean {
+    if (view.ladder !== null) {
+      return false;
+    }
+    const near = (point: Point | undefined): boolean =>
+      point !== undefined && Math.hypot(point.x - view.x, point.y - view.y) <= Coach.NEAR_LADDER;
+    return world.ladders.some((id) => {
+      const [start, end] = world.ladder(id);
+      return world.othersOn(id) > 0 && (near(start) || near(end));
     });
   }
 

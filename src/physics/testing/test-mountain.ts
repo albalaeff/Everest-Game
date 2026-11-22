@@ -27,6 +27,8 @@ export class TestMountain {
   /** Friction 0.4 holds a slide on ground up to about 22°, and slips come past 25°: on 45° every
    * step slips. A whole stride walks the flat at the fastest walk, 1 m/s, on all its power; down a
    * gentle slope at it on less, and up one slower; past 45°, each metre of height costs the same.
+   * A metre down a wall's ladder costs three quarters of a metre up it, so a whole stride comes
+   * down at its footing's speed on all its power, as fast as before #256 on any lesser stride.
    * A ladder's rungs slip a twentieth of the time a metre; there's no ice, and no ladder bounces,
    * unless a test lays them; and no landing kills, unless a test says so. A clip goes on at once,
    * standing still never slips, and nobody passing anyone jolts them (#197), unless a test says
@@ -62,6 +64,7 @@ export class TestMountain {
       [0, 0.5],
       [90, 0.3],
     ],
+    ladderDownCost: 0.75,
     ladderSlipChance: [[0, 0.05]],
     footing: {
       ice: 0,
@@ -76,7 +79,7 @@ export class TestMountain {
     lethalLanding: 1000,
     climbBack: 0.5,
     rappel: 1,
-    ladderBreak: { creak: 1, reset: 10 },
+    ladderBreak: { creak: 1, reset: 10, overload: 0 },
     haul: { speed: 0.5, reach: 3 },
     knock: 3,
     arrestSpeed: 5,

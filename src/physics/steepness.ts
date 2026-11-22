@@ -46,6 +46,11 @@ export class Steepness {
   static ofGradient(gradient: number): Steepness {
     return Steepness.ofWay(1, gradient);
   }
+
+  /** The same way gone the other way: down what this goes up, and up what it goes down. */
+  get reversed(): Steepness {
+    return new Steepness(-this.sine);
+  }
 }
 
 /**

@@ -59,11 +59,14 @@ export class SlopeFacts {
         [slipFree, 0],
         [steepest, slip],
       ],
+      // Down a wall's ladder their footing holds them to the speed up it, less what they lose
+      // coming down (#256), and their power buys it at the cost a metre down takes.
       ladderSpeed: [
-        [-SlopeFacts.WALL, fast("ladder-speed-down")],
+        [-SlopeFacts.WALL, fast("ladder-speed-up") * (1 - number("ladder-down-slower"))],
         [0, fast("ladder-speed-across")],
         [SlopeFacts.WALL, fast("ladder-speed-up")],
       ],
+      ladderDownCost: number("ladder-down-cost"),
       ladderSlipChance: [[0, number("ladder-slip")]],
       footing: {
         ice: number("ice-slip"),
@@ -92,7 +95,12 @@ export class SlopeFacts {
       lethalLanding: number("lethal-landing"),
       climbBack: fast("climb-back-speed"),
       rappel: fast("rappel-speed"),
-      ladderBreak: { creak: seconds("ladder-creak"), reset: minutes("ladder-reset") },
+      // A ladder slides off its lip under two once a step, not a second (#256): as in life.
+      ladderBreak: {
+        creak: seconds("ladder-creak"),
+        reset: minutes("ladder-reset"),
+        overload: number("ladder-overload-slip"),
+      },
       haul: { speed: fast("haul-speed"), reach: number("haul-reach") },
       knock: number("knock-speed"),
       arrestSpeed: number("arrest-speed"),

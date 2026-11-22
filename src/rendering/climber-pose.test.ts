@@ -20,7 +20,6 @@ const state = (over: Partial<PoseState> = {}): PoseState => ({
   jumar: null,
   carabiner: null,
   sliding: false,
-  slack: 10,
   ladder: null,
   footing: 1,
   hauling: false,
@@ -673,17 +672,51 @@ describe("ClimberPose", () => {
 
   it("lets the jumar go near an anchor, where the rope can't come up to the hand", () => {
     const onTheSnow = { x: 0.6, y: 0 };
+    // A long slack rope, and a taut one tied off 20 cm behind the jumar (#256).
+    const slack = {
+      anchors: [
+        { x: -10, y: 0 },
+        { x: 10, y: 0 },
+      ],
+      length: 21,
+    };
+    const taut = {
+      anchors: [
+        { x: 0.4, y: 0 },
+        { x: 10, y: 0 },
+      ],
+      length: 9.6,
+    };
     const climber = new ClimberPose();
-    climber.advance(5, state({ jumar: onTheSnow, slack: 3 }));
-    const lifted = climber.advance(FRAME, state({ jumar: onTheSnow, slack: 3 }));
-    climber.advance(5, state({ jumar: onTheSnow, slack: 0.2 }));
-    const left = climber.advance(FRAME, state({ jumar: onTheSnow, slack: 0.2 }));
+    climber.advance(5, state({ jumar: onTheSnow, rope: slack }));
+    const lifted = climber.advance(FRAME, state({ jumar: onTheSnow, rope: slack }));
+    climber.advance(5, state({ jumar: onTheSnow, rope: taut }));
+    const left = climber.advance(FRAME, state({ jumar: onTheSnow, rope: taut }));
     const standing = new ClimberPose().advance(5, state());
 
     expect(lifted.jumar?.y).toBeGreaterThan(0.6);
     expect(length(left.jumar ?? { x: 0, y: 0 }, onTheSnow)).toBeLessThan(1e-6);
     expect(length(left.arms[0].end, standing.arms[0].end)).toBeLessThan(1e-6);
     expect(left.lean).toBeCloseTo(standing.lean, 6);
+  });
+
+  it("lets the jumar go past the rope's last anchor: the rope comes no further than its slack pulls it (#256)", () => {
+    // A step past where the rope is tied off, its slack pulled out to the jumar behind them.
+    const behind = { x: -0.7, y: 0 };
+    const past = {
+      anchors: [
+        { x: -9, y: 0 },
+        { x: -1, y: 0 },
+      ],
+      length: 8.6,
+    };
+    const climber = new ClimberPose();
+    // The first frame finds the hand on it; the next ones, how far the rope comes to it.
+    climber.advance(FRAME, state({ jumar: behind, rope: past }));
+    climber.advance(5, state({ jumar: behind, rope: past }));
+    const left = climber.advance(FRAME, state({ jumar: behind, rope: past }));
+
+    expect(length(left.jumar ?? { x: 0, y: 0 }, behind)).toBeLessThan(1e-6);
   });
 
   it("pushes the jumar up the rope in strokes while its key is held, gripping between", () => {

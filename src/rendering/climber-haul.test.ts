@@ -40,6 +40,7 @@ const slope: ReadSlope = {
   terrain,
   ladder: () => [],
   rope: () => [],
+  ropeLength: () => 0,
   lines: [{ id: "line", top: 0, foot: 0, shape: SHAPE, built: 1 }],
 };
 const BODY: BodyView = { tiredness: "fresh", symptoms: [], oximeter: 90, pace: "steady" };
