@@ -10,9 +10,18 @@ counted for the issue its work names (`IssueNames`):
 - a command naming one: a comment on it (`scripts/github.py comment 390`), its API path
   (`issues/390`), its branch (`feature/390-…`), its title (`scripts/github.py title 390`),
   reading or closing it (`show 390`, `close 390`), or its PR's (`pr 401`, `merge 401`, #442);
-- else the branch the session was on, when it's an issue's;
+- else the worktree it works in, when that's named after one, as the agent manager names
+  them, `<worktree_dir>/<issue>` (`cd /c/git/worktrees/256`, `C:\\git\\worktrees\\256\\…`,
+  #293);
+- else the branch the session was on, when it's an issue's, unless the session works in
+  such a worktree: the branch is that of its own folder, the one it was started in, which
+  may be on another session's issue (#293);
 - else the last issue the session named: the replies in between belong to it;
 - before a session names any, its upkeep (setup, the watcher) counts for none.
+
+A session works in such a worktree from a reply whose commands or file paths name it until
+one names a path in its own folder; an agent's own folder is its worktree. A file's content
+says nothing of where: only the commands, and the paths the tools are given (#293).
 
 Each machine counts its own Claude's work; the sum over a session matches the total
 Claude Code itself logs for it ("cost-state").
@@ -87,9 +96,19 @@ def session_logs(
 
 
 @dataclass(frozen=True, slots=True)
+class Place:
+    """Where a reply worked, as its commands and the paths its tools were given say (#293):
+    in a worktree named after an issue (`worktree`, that issue) other than the session's own
+    folder, or in its own folder; neither, when they don't say."""
+
+    worktree: int | None = None
+    own_folder: bool = False
+
+
+@dataclass(frozen=True, slots=True)
 class Reply:
-    """One of Claude's replies: when, by which model, its tokens, and the issues its work
-    names (in order)."""
+    """One of Claude's replies: when, by which model, its tokens, the issues its work names
+    (in order), and where it worked."""
 
     at: datetime
     model: str
@@ -97,6 +116,7 @@ class Reply:
     fast: bool = False
     names: tuple[int, ...] = ()
     branch: int | None = None  # the issue whose branch the session was on
+    place: Place = Place()
 
     def cost(self, prices: PriceHistory) -> Decimal | None:
         """In dollars; None when its model has no prices kept."""
@@ -108,7 +128,8 @@ class Reply:
 
 
 class IssueNames:
-    """The issues a piece of Claude's work names, by the patterns its commands use."""
+    """The issues a piece of Claude's work names, by the patterns its commands use, and the
+    worktree named after one that it works in (#293)."""
 
     PATTERNS: ClassVar[tuple[re.Pattern[str], ...]] = (
         re.compile(r"github\.py\s+(?:comment|title|show|close|pr|merge)\s+(\d+)"),
@@ -116,6 +137,14 @@ class IssueNames:
         re.compile(r"\bfeature/(\d+)-"),
     )
     BRANCH: ClassVar[re.Pattern[str]] = re.compile(r"^(?:feature|fix|chore)/(\d+)-")
+    WORKTREE: ClassVar[re.Pattern[str]] = re.compile(r"(?<![\w.-])worktrees[/\\]+(\d+)(?![\w.-])")
+
+    @classmethod
+    def of_worktree(cls, where: str) -> int | None:
+        """The issue of the last worktree `where` names that's named after its issue, as the
+        agent manager names them, <worktree_dir>/<issue> (#387): "/c/git/worktrees/256"."""
+        found = cls.WORKTREE.findall(where)
+        return int(found[-1]) if found else None
 
     @classmethod
     def in_text(cls, text: str) -> tuple[int, ...]:
@@ -132,12 +161,49 @@ class IssueNames:
         return int(match[1]) if match else None
 
 
+@dataclass(frozen=True, slots=True)
+class Folder:
+    """A session's own folder, the one it was started in, whose branch its log stamps on
+    every reply (#293). Its tools write it "C:\\git\\Everest-Game", "C:/git/Everest-Game"
+    or, in Git Bash, "/c/git/Everest-Game", in any case."""
+
+    path: str  # "" when the log doesn't say
+
+    def place(self, where: str) -> Place:
+        """Where a reply worked, by `where`: the commands it ran and the paths its tools were
+        given. In this folder when they name a path in it, an agent's own worktree included."""
+        worktree = IssueNames.of_worktree(where)
+        if worktree is not None and worktree != IssueNames.of_worktree(self.path):
+            return Place(worktree=worktree)
+        spelled = re.sub(r"[\\/]+", "/", where).lower()
+        return Place(own_folder=bool(self.path) and self._spelled().search(spelled) is not None)
+
+    def _spelled(self) -> re.Pattern[str]:
+        path = re.sub(r"[\\/]+", "/", self.path).rstrip("/").lower()
+        spellings = [path]
+        if re.match(r"[a-z]:/", path):  # Git Bash's /c/git for C:\git
+            spellings.append(f"/{path[0]}{path[2:]}")
+        either = "|".join(re.escape(spelling) for spelling in spellings)
+        return re.compile(rf"(?<![\w.-])(?:{either})(?![\w.-])")
+
+
 class SessionLog:
     """A session's log: its replies, once each. Claude Code writes a reply as several
     entries (one per block of it), each with the reply's usage: the last one counts. In a
     long session it also writes older entries again, each copy stamped with the branch
     checked out then, so a reply's branch is its first entry's, from when it was made
-    (#413)."""
+    (#413). The session's own folder is its first reply's `cwd` (#293)."""
+
+    # what in a tool's input says where it worked: a command, or the paths it was given
+    WHERE: ClassVar[tuple[str, ...]] = (
+        "command",
+        "file_path",
+        "notebook_path",
+        "path",
+        "cwd",
+        "files",  # SendUserFile's
+        "paths",
+    )
 
     def __init__(self, path: Path) -> None:
         self.path = path
@@ -146,6 +212,8 @@ class SessionLog:
         last: dict[str, Mapping[str, Any]] = {}
         branch: dict[str, str | None] = {}
         names: dict[str, list[int]] = {}
+        where: dict[str, list[str]] = {}
+        folder: Folder | None = None
         with self.path.open(encoding="utf-8") as file:
             for line in file:
                 if '"usage"' not in line:  # not a reply: skipped unparsed, logs grow large
@@ -159,23 +227,48 @@ class SessionLog:
                 key = f"{entry['message'].get('id')}|{entry.get('requestId')}"
                 last[key] = entry
                 branch.setdefault(key, entry.get("gitBranch"))
-                names.setdefault(key, []).extend(self._named(entry["message"]))
-        return [self._reply(entry, tuple(names[key]), branch[key]) for key, entry in last.items()]
+                if folder is None and entry.get("cwd"):
+                    folder = Folder(entry["cwd"])
+                inputs = self._inputs(entry["message"])
+                names.setdefault(key, []).extend(self._named(inputs))
+                where.setdefault(key, []).extend(self._where(inputs))
+        own = folder or Folder("")
+        return [
+            self._reply(entry, tuple(names[key]), branch[key], own.place("\n".join(where[key])))
+            for key, entry in last.items()
+        ]
 
     @staticmethod
-    def _named(message: Mapping[str, Any]) -> list[int]:
+    def _inputs(message: Mapping[str, Any]) -> list[Any]:
+        """The inputs of the tools a reply used."""
         content = message.get("content")
         if not isinstance(content, list):
             return []
-        commands = [
-            json.dumps(block.get("input"), ensure_ascii=False)
+        return [
+            block.get("input")
             for block in content
             if isinstance(block, dict) and block.get("type") == "tool_use"
         ]
-        return list(IssueNames.in_text("\n".join(commands)))
 
     @staticmethod
-    def _reply(entry: Mapping[str, Any], names: tuple[int, ...], branch: str | None) -> Reply:
+    def _named(inputs: Sequence[Any]) -> list[int]:
+        text = "\n".join(json.dumps(one, ensure_ascii=False) for one in inputs)
+        return list(IssueNames.in_text(text))
+
+    @classmethod
+    def _where(cls, inputs: Sequence[Any]) -> list[str]:
+        """Where the tools worked: the commands run and the paths given, not what was
+        written (#293)."""
+        given = [one.get(key) for one in inputs if isinstance(one, dict) for key in cls.WHERE]
+        listed = [
+            item for value in given for item in (value if isinstance(value, list) else [value])
+        ]
+        return [text for text in listed if isinstance(text, str)]
+
+    @staticmethod
+    def _reply(
+        entry: Mapping[str, Any], names: tuple[int, ...], branch: str | None, place: Place
+    ) -> Reply:
         usage = entry["message"]["usage"]
         cache = usage.get("cache_creation") or {}
         written = usage.get("cache_creation_input_tokens") or 0
@@ -194,7 +287,31 @@ class SessionLog:
             fast=usage.get("speed") == "fast",
             names=names,
             branch=IssueNames.of_branch(branch),
+            place=place,
         )
+
+
+@dataclass(slots=True)
+class Counting:
+    """One session's replies counted in turn, oldest first: the last issue it named, and the
+    worktree it works in, None while it's in its own folder (#293)."""
+
+    named: int | None = None
+    worktree: int | None = None
+
+    def issue(self, reply: Reply) -> int | None:
+        """The issue `reply` counts for (None: upkeep), as the module's docstring says."""
+        if reply.place.worktree is not None:
+            self.worktree = reply.place.worktree
+        elif reply.place.own_folder:
+            self.worktree = None
+        if reply.names:
+            self.named = reply.names[-1]
+        elif reply.place.worktree is not None:
+            self.named = reply.place.worktree
+        elif self.worktree is None and reply.branch is not None:
+            return reply.branch  # its own folder's branch: true of its work only there
+        return self.named
 
 
 @dataclass(slots=True)
@@ -241,15 +358,9 @@ class Ledger:
     def counted(self) -> Iterator[tuple[int | None, Reply]]:
         """Each reply with the issue it counts for (None: upkeep), session by session."""
         for log in self._logs:
-            current = None
+            counting = Counting()
             for reply in sorted(SessionLog(log).replies(), key=lambda reply: reply.at):
-                if reply.names:
-                    current = reply.names[-1]
-                    yield reply.names[-1], reply
-                elif reply.branch is not None:
-                    yield reply.branch, reply
-                else:
-                    yield current, reply
+                yield counting.issue(reply), reply
 
     def issue(self, number: int, pulls: Iterable[int] = ()) -> IssueCost:
         """What `number` took, its `pulls` (the PRs that close it) included."""
