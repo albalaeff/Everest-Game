@@ -103,6 +103,95 @@ describe("SlopePhysics: anchors between ropes", () => {
   });
 });
 
+describe("SlopePhysics: a clip at an anchor two ropes share (#305)", () => {
+  /** A rope along the flat to the foot of `TestMountain.WALL`'s wall, the ladder's own up it from
+   * that anchor to its top, and a third on from there along the ledge: each starts where the last
+   * ends, at the ladder's ends, where a step stops. */
+  const inALine = (along: number): SlopeLayout =>
+    TestMountain.WALL.layout(
+      [{ id: "anna", along }],
+      [
+        { id: "flat", from: 10, to: 20, length: 10.5 },
+        { id: "wall", from: 20, to: 30, length: 10.5 },
+        { id: "ledge", from: 30, to: 40, length: 10.5 },
+      ],
+      [{ id: "ladder", from: 20, to: 30 }],
+    );
+  /** Both cowstails across at an anchor, the second first, one always on. */
+  const across = [unclip("anna", "second"), clip("anna", "second")];
+  const jumarAcross = [unclip("anna", "first"), clip("anna", "first")];
+
+  it("takes the rope that goes on up at a ladder's foot, where the one they came on ends", () => {
+    const climb = new Climb(TestMountain.CALM, inALine(17));
+    climb.play(200, [
+      clip("anna", "first"),
+      clip("anna", "second"),
+      jumar("anna", true),
+      walk("anna", "right"),
+    ]);
+    const atTheFoot = climb.physics.climber("anna");
+    const within = climb.physics.ropeWithin("anna");
+    climb.play(1, across);
+    const half = climb.physics.climber("anna");
+    climb.play(1, jumarAcross);
+
+    expect(atTheFoot).toMatchObject({ x: 20, y: 0, first: "flat", second: "flat" });
+    expect(within).toBe("wall");
+    expect(half).toMatchObject({ first: "flat", second: "wall" });
+    expect(climb.physics.climber("anna")).toMatchObject({ first: "wall", second: "wall" });
+  });
+
+  it("takes the next rope again at the ladder's top, and climbs all of it on its own rope", () => {
+    const climb = new Climb(TestMountain.CALM, inALine(17));
+    climb.play(200, [
+      clip("anna", "first"),
+      clip("anna", "second"),
+      jumar("anna", true),
+      walk("anna", "right"),
+    ]);
+    climb.play(1, across);
+    climb.play(1, jumarAcross);
+    climb.play(2400, [walk("anna", "up")]);
+    const atTheTop = climb.physics.climber("anna");
+
+    expect(atTheTop).toMatchObject({ x: 20, y: 10, ladder: null, heldBack: null });
+    expect(atTheTop).toMatchObject({ first: "wall", second: "wall" });
+    expect(climb.physics.ropeWithin("anna")).toBe("ledge");
+  });
+
+  it("takes the rope that goes on down at the ladder's top and at its foot, coming down", () => {
+    const climb = new Climb(TestMountain.CALM, inALine(33));
+    climb.play(200, [
+      clip("anna", "first"),
+      clip("anna", "second"),
+      jumar("anna", true),
+      walk("anna", "left"),
+    ]);
+    const atTheTop = climb.physics.climber("anna");
+    const within = climb.physics.ropeWithin("anna");
+    climb.play(1, across);
+    climb.play(1, jumarAcross);
+    const onTheWalls = climb.physics.climber("anna");
+    climb.play(2400, [walk("anna", "down")]);
+
+    expect(atTheTop).toMatchObject({ x: 20, y: 10, first: "ledge", second: "ledge" });
+    expect(within).toBe("wall");
+    expect(onTheWalls).toMatchObject({ first: "wall", second: "wall" });
+    expect(climb.physics.climber("anna")).toMatchObject({ x: 20, y: 0, ladder: null });
+    expect(climb.physics.ropeWithin("anna")).toBe("flat");
+  });
+
+  it("takes the nearer rope wherever one is nearer, whichever way they face", () => {
+    // A metre short of the anchor, facing it, the rope she walks along; a cowstail past it, held
+    // there, the next one, as before.
+    const short = new Climb(TestMountain.CALM, onTheLine(up(29)));
+    const past = toTheAnchor();
+
+    expect(short.physics.ropeWithin("anna")).toBe("lower");
+    expect(past.physics.ropeWithin("anna")).toBe("upper");
+  });
+});
+
 describe("SlopePhysics: what held a climber back (#247)", () => {
   /** A rope along the flat to the foot of `TestMountain.WALL`'s wall, its ladder up the wall. */
   const toTheWall = (along: number): SlopeLayout =>

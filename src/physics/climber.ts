@@ -927,7 +927,7 @@ export class Climber {
       !going(action.cowstail)
     ) {
       if (this.falling === null) {
-        const nearest = slope.ropeWithin(this.where(slope));
+        const nearest = this.ropeInReach(slope);
         const seconds = slope.settings.clip / this.technique;
         if (nearest !== null && !(seconds > 0)) {
           this.clip(action.cowstail, new Carabiner(nearest.rope, nearest.slide));
@@ -975,6 +975,13 @@ export class Climber {
       // A pick swung into the ice, or the front points kicked into it: the step takes it.
       this.swing = { tool: action.tool, x: action.x, y: action.y };
     }
+  }
+
+  /** The rope a clip of theirs would take now, and where on it: the nearest within a cowstail's
+   * reach of their feet, or of their body in a fall; at an anchor two ropes share, the one that
+   * goes on the way they face (`Slope.ropeWithin`, #305). None out of reach of every rope. */
+  ropeInReach(slope: Slope): { readonly rope: Rope; readonly slide: Slide } | null {
+    return slope.ropeWithin(this.where(slope), this.facing);
   }
 
   /** Into a tent, under cover, or out of it (#258): going in, they stop where they stand, side
@@ -1450,7 +1457,7 @@ export class Climber {
         lip?.along ??
         (from.ladder === null
           ? this.offTheFace(from.along, slope)
-          : slope.ladder(from.ladder).nearerEnd(body).along);
+          : this.endInReach(slope.ladder(from.ladder), body, slope).along);
       const away = exit - surface.along;
       if (Math.abs(away) <= step) {
         this.stand(falling, exit);
@@ -1506,8 +1513,11 @@ export class Climber {
     return ladder.condition === "broken" ? ladder.nearerEnd(falling.body) : null;
   }
 
-  /** Where a hanging climber would be pulled up to: their way back up the rope; none for one on
-   * their feet, or not hanging (#209). */
+  /** Where a hanging climber would be pulled up to: their way back up the rope, to the ground or
+   * the rung they slipped off; off a face of ice, to its lip, up the rope that goes there, where
+   * a partner can stand (#305), and where their rope reaches no higher, only to where they
+   * slipped, which nobody stands by: they let themselves down to its foot (`offTheFace`). None
+   * for one on their feet, or not hanging (#209). */
   liftPoint(slope: Slope): Point | null {
     const { falling } = this;
     if (falling === null || falling.from === null || !this.hangs(slope)) {
@@ -1518,16 +1528,21 @@ export class Climber {
       return lip.point;
     }
     const { from } = falling;
-    return from.ladder === null
-      ? slope.terrain.point(from.along)
-      : slope.ladder(from.ladder).point(from.rung);
+    if (from.ladder !== null) {
+      return slope.ladder(from.ladder).point(from.rung);
+    }
+    const face = slope.faces.at(from.along);
+    const upIt = face !== null && this.offTheFace(from.along, slope) === face.top;
+    return slope.terrain.point(upIt ? face.top : from.along);
   }
 
   /** Where a hauler can haul them up from (#239): within the haul's reach of their way back up
    * the rope; and, hanging off a ladder that stands, of either of its ends across a crevasse, or
    * of its top up a wall: the rope along it is anchored past its ends, and whoever pulls it in at
    * one brings them up there. Against one of a crevasse's walls, only its own lip (#256): the
-   * other's rope would drag them along the ice, down the wall. None for one who doesn't hang. */
+   * other's rope would drag them along the ice, down the wall. An end is one only where every rope
+   * they hang on reaches it (#305): hanging on the rope they came on, anchored short of the
+   * ladder, nobody pulls them up the ladder's own. None for one who doesn't hang. */
   haulPoints(slope: Slope): readonly HaulPoint[] {
     const lift = this.liftPoint(slope);
     const falling = this.falling;
@@ -1544,16 +1559,42 @@ export class Climber {
       return [own];
     }
     const ends = ladder.ends.map((along) => ({ point: slope.terrain.point(along), lip: along }));
+    const inReach = (end: HaulPoint): readonly HaulPoint[] =>
+      this.ropesReach(end.point, slope) ? [end] : [];
     if (!ladder.across) {
-      return [own, ends.reduce((high, end) => (end.point.y > high.point.y ? end : high))];
+      const top = ends.reduce((high, end) => (end.point.y > high.point.y ? end : high));
+      return [own, ...inReach(top)];
     }
     const surface = slope.terrain.nearest(falling.body);
     if (Climber.distance(surface, falling.body) > Climber.TOUCH) {
-      return [own, ...ends];
+      return [own, ...ends.flatMap(inReach)];
     }
     const nearer = (end: HaulPoint & { readonly lip: number }): number =>
       Math.abs(end.lip - surface.along);
-    return [own, ends.reduce((near, end) => (nearer(end) < nearer(near) ? end : near))];
+    return [own, ...inReach(ends.reduce((near, end) => (nearer(end) < nearer(near) ? end : near)))];
+  }
+
+  /** Whether every rope they're clipped to reaches `point`: its length lets them be there, on a
+   * carabiner that runs, as the jumar does while they climb back or are hauled. */
+  private ropesReach(point: Point, slope: Slope): boolean {
+    const { cowstail } = slope.settings;
+    return this.carabiners.every((carabiner) => carabiner.lets(point, cowstail, false));
+  }
+
+  /** The end of the ladder they hang off that they come back to along the ice: the one nearer
+   * their body, or the other where their ropes reach only that. */
+  private endInReach(
+    ladder: Ladder,
+    body: Point,
+    slope: Slope,
+  ): { readonly along: number; readonly point: Point } {
+    const nearer = ladder.nearerEnd(body);
+    const [other] = ladder.ends.filter((along) => along !== nearer.along);
+    if (other === undefined || this.ropesReach(nearer.point, slope)) {
+      return nearer;
+    }
+    const point = slope.terrain.point(other);
+    return this.ropesReach(point, slope) ? { along: other, point } : nearer;
   }
 
   /** Whether they can haul someone now: holding the haul, on their feet on the ground, alive and
@@ -2419,17 +2460,15 @@ export class Climber {
   }
 
   /** Where a climber who slipped at `along` gets back on their feet: there, or, off a face of
-   * ice, where nobody stands, at its top, up the rope they hang on; or at its foot, where that
-   * rope is anchored below the face and reaches no higher (#197): they let themselves down to it. */
+   * ice, where nobody stands, at its top, up the rope they hang on; or at its foot, where a rope
+   * of theirs is anchored below the face and reaches no higher (#197): they let themselves down
+   * to it. */
   private offTheFace(along: number, slope: Slope): number {
     const face = slope.faces.at(along);
     if (face === null || along === face.foot || along === face.top) {
       return along;
     }
-    const top = slope.terrain.point(face.top);
-    const { cowstail } = slope.settings;
-    const reaches = this.carabiners.some((carabiner) => carabiner.lets(top, cowstail, false));
-    return reaches || this.carabiners.length === 0 ? face.top : face.foot;
+    return this.ropesReach(slope.terrain.point(face.top), slope) ? face.top : face.foot;
   }
 
   private static distance(from: Point, to: Point): number {

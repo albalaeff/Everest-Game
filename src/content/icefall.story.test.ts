@@ -365,6 +365,190 @@ describe("Pemba and a client hanging at the big crevasse (#239)", () => {
   });
 });
 
+/**
+ * The walls' ladders whose rope begins at the anchor the last one ends at, the upper wall's and
+ * the crux's (#305): a careful climber moves their cowstails onto the ladder's rope at its foot;
+ * one who doesn't and slips off it lands at its foot on the rope they came on, and nobody at its
+ * top hauls them up a rope they aren't on.
+ */
+describe("The walls' ladders where one rope ends and the ladder's begins (#305)", () => {
+  const WALLS = ["upper-wall", "high-wall"];
+
+  it("takes the careful walker and Pemba up each on its own rope, their cowstails across at its foot before they step on", () => {
+    const mountain = new Mountain(knowledge);
+    const rules = mountain.rules();
+    const expedition = Expedition.start(
+      mountain.scenario(SEED, undefined, undefined, false),
+      rules.all,
+    );
+    const crossing = new Crossing(expedition, rules.physics, Section.PLAYER);
+    const pemba = mountain.route.sherpa ?? "";
+    const top = Math.max(
+      ...mountain.route.layout.ladders.filter(({ id }) => WALLS.includes(id)).map(({ to }) => to),
+    );
+    /** The ropes each climber's cowstails were on, on each of the walls' ladders. */
+    const on = new Map<string, Set<string | null>>();
+    const steps = LONGEST_HOURS * HOUR * (1 / rules.clock.secondsAStep);
+    for (let step = 0; step < steps && rules.physics.along(Section.PLAYER) < top + 1; step += 1) {
+      crossing.step();
+      for (const climber of [Section.PLAYER, pemba]) {
+        const { ladder, first, second } = rules.physics.climber(climber);
+        if (ladder !== null && WALLS.includes(ladder)) {
+          const ropes = on.get(`${climber} on ${ladder}`) ?? new Set();
+          on.set(`${climber} on ${ladder}`, ropes.add(first).add(second));
+        }
+      }
+    }
+
+    // On this route a wall's ladder and the rope along it share a name.
+    expect(Object.fromEntries([...on].map(([who, ropes]) => [who, [...ropes]]))).toEqual({
+      [`${pemba} on upper-wall`]: ["upper-wall"],
+      [`${Section.PLAYER} on upper-wall`]: ["upper-wall"],
+      [`${pemba} on high-wall`]: ["high-wall"],
+      [`${Section.PLAYER} on high-wall`]: ["high-wall"],
+    });
+  });
+
+  it.each(WALLS)(
+    "lands a client who climbs the %s's ladder on the rope they came on, and slips, at its foot, Pemba at its top hauling nothing",
+    (wall) => {
+      const mountain = new Mountain(knowledge);
+      const rules = mountain.rules();
+      const scenario = mountain.scenario(SEED, undefined, undefined, false);
+      const { layout } = mountain.route;
+      const ladder = layout.ladders.find(({ id }) => id === wall);
+      const pemba = mountain.route.sherpa;
+      if (ladder === undefined || pemba === null) {
+        throw new Error(`The Icefall has no ladder ${wall}, or no Sherpa`);
+      }
+      // Pemba half a metre short of its foot, the player 3 m behind him, both in reach of the
+      // rope that ends there.
+      const climbers = layout.climbers.map((climber) => ({
+        ...climber,
+        along: climber.id === Section.PLAYER ? ladder.from - 3.5 : ladder.from - 0.5,
+      }));
+      const physics = SlopePhysics.start({ ...layout, climbers });
+      const expedition = Expedition.start(
+        { ...scenario, start: { ...scenario.start, [SlopePhysics.NAME]: physics } },
+        rules.all,
+      );
+      const player = () => rules.physics.climber(Section.PLAYER);
+      const until = (done: () => boolean, steps: number): boolean => {
+        for (let step = 0; step < steps && !done(); step += 1) {
+          expedition.advance();
+        }
+        return done();
+      };
+      const came = rules.physics.ropeWithin(Section.PLAYER);
+
+      // The player clips in, takes a step and stands: Pemba goes up first, and holds the
+      // ladder's line from its top.
+      expedition.advance([
+        { kind: "clip", climber: Section.PLAYER, cowstail: "second" },
+        { kind: "clip", climber: Section.PLAYER, cowstail: "first" },
+        { kind: "jumar", climber: Section.PLAYER, held: true },
+      ]);
+      until(() => player().first !== null && player().second !== null, 400);
+      expedition.advance([{ kind: "walk", climber: Section.PLAYER, direction: "right" }]);
+      expedition.advance([{ kind: "walk", climber: Section.PLAYER, direction: "stop" }]);
+      const holding = until(() => rules.sherpa.view.doing === "holding", 2000);
+      // Then they walk to its foot and straight up it, changing nothing, until the rope they came
+      // on stops them; there their foot slips, and they do nothing more.
+      expedition.advance([{ kind: "walk", climber: Section.PLAYER, direction: "right" }]);
+      until(() => !player().moving, 400);
+      expedition.advance([{ kind: "walk", climber: Section.PLAYER, direction: "up" }]);
+      const stopped = until(() => player().heldBack === "rope", 600);
+      const stood = player();
+      rules.physics.upset(Section.PLAYER, expedition.step);
+      const points = rules.physics.haulPoints(Section.PLAYER);
+      expedition.advance([{ kind: "walk", climber: Section.PLAYER, direction: "stop" }]);
+      let hauled = false;
+      const out = until(() => {
+        hauled ||= rules.physics.climber(pemba).hauling;
+        return !player().falling;
+      }, 600);
+      const foot = rules.physics.terrain.point(ladder.from);
+
+      expect(holding).toBe(true);
+      expect(stopped).toBe(true);
+      expect(came).not.toBe(wall);
+      expect(stood).toMatchObject({ ladder: wall, first: came, second: came });
+      // Up it by the rope's slack and two cowstails, no more.
+      expect(stood.y - foot.y).toBeGreaterThan(1);
+      expect(stood.y - foot.y).toBeLessThan(2.5);
+      // Only back to their rung: the ladder's top is past that rope's reach.
+      expect(points).toEqual([{ x: stood.x, y: stood.y }]);
+      expect(out).toBe(true);
+      expect(hauled).toBe(false);
+      expect(player()).toMatchObject({ dead: false, ladder: null, first: came, second: came });
+      expect(rules.physics.along(Section.PLAYER)).toBeLessThanOrEqual(ladder.from);
+      expect(ladder.from - rules.physics.along(Section.PLAYER)).toBeLessThan(2);
+      expect(player().falls.at(-1)).toMatchObject({ held: true });
+      expect(player().falls.at(-1)?.pulled).toBeUndefined();
+    },
+  );
+});
+
+describe("Pemba and a client hanging low on the crux's step of ice (#305)", () => {
+  it("hauls them up it from its lip, from further below than the haul's reach", () => {
+    const mountain = new Mountain(knowledge);
+    const rules = mountain.rules();
+    const scenario = mountain.scenario(SEED, undefined, undefined, false);
+    const { layout } = mountain.route;
+    const pemba = mountain.route.sherpa;
+    const step = rules.physics.bareFaces.at(-1);
+    if (step === undefined || pemba === null) {
+      throw new Error("The Icefall has no step of ice, or no Sherpa");
+    }
+    // The player a metre short of its foot; Pemba a quarter of a metre past its lip, where he
+    // waits for them.
+    const climbers = layout.climbers.map((climber) => ({
+      ...climber,
+      along: climber.id === Section.PLAYER ? step.foot - 1 : step.top + 0.25,
+    }));
+    const physics = SlopePhysics.start({ ...layout, climbers });
+    const expedition = Expedition.start(
+      { ...scenario, start: { ...scenario.start, [SlopePhysics.NAME]: physics } },
+      rules.all,
+    );
+    const crossing = new Crossing(expedition, rules.physics, Section.PLAYER);
+    const player = () => rules.physics.climber(Section.PLAYER);
+    const lip = rules.physics.terrain.point(step.top);
+    const foot = rules.physics.terrain.point(step.foot);
+    const reach = mountain.route.settings.haul.reach;
+
+    // The careful walker's picks take them a metre and a half up it; there their feet slip, and
+    // they do nothing more.
+    for (let taken = 0; taken < 2000 && player().y < foot.y + 1.5; taken += 1) {
+      crossing.step();
+    }
+    const climbing = player();
+    rules.physics.upset(Section.PLAYER, expedition.step);
+    expedition.advance([{ kind: "walk", climber: Section.PLAYER, direction: "stop" }]);
+    for (let settled = 0; settled < 80; settled += 1) {
+      expedition.advance();
+    }
+    const hung = player();
+    const lift = rules.physics.liftPoint(Section.PLAYER);
+    let hauling = false;
+    let out = false;
+    for (let waited = 0; waited < 3000 && !out; waited += 1) {
+      expedition.advance();
+      hauling ||= rules.physics.climber(pemba).hauling;
+      out = !player().falling;
+    }
+
+    expect(climbing).toMatchObject({ onIce: true, falling: false });
+    expect(hung).toMatchObject({ hanging: true, dead: false });
+    expect(lip.y - hung.y).toBeGreaterThan(reach);
+    expect(lift).toEqual(lip);
+    expect(hauling).toBe(true);
+    expect(out).toBe(true);
+    expect(player()).toMatchObject({ x: lip.x, y: lip.y, onIce: false, dead: false });
+    expect(player().falls.at(-1)).toMatchObject({ held: true, pulled: true, pulledBy: [pemba] });
+  });
+});
+
 describe("Leaving early is safer: the night's crossing against the morning's", () => {
   /** The chance a hazard goes on the climber, summed over every step they're under one, on a
    * crossing that sets off at `time`. */

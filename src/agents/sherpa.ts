@@ -386,13 +386,21 @@ export class Sherpa implements Rule {
       return { ...plan, way: this.onTheGround(me) ? null : this.forward(me), haul: false };
     }
     const afoot = this.onTheGround(me);
-    if (Math.abs(client.spot - along) <= Sherpa.AT && afoot) {
+    if (this.atHaulSpot(client.spot, along) && afoot) {
       return { ...plan, way: null, haul: true };
     }
     const way = this.move(this.toward(client.spot, along), along);
     const here = this.physics.terrain.point(along);
     const inReach = client.points.some((point) => this.within(point, here));
     return { ...plan, way, haul: way === null && afoot && inReach };
+  }
+
+  /** Whether he's where he hauls from, `spot`: on it; or, at the lip of a step of ice, a lip's
+   * reach short of it, since a step nearer would take him down the step (#305). */
+  private atHaulSpot(spot: number, along: number): boolean {
+    const wall = this.physics.iceWall(this.loaded.climber);
+    const atALip = wall === "lip" || wall === "rope";
+    return Math.abs(spot - along) <= (atALip ? Sherpa.AT_LADDER : Sherpa.AT);
   }
 
   /**
