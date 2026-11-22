@@ -348,9 +348,9 @@ def test_a_session_gets_back_the_latest_handoff_on_its_branch_s_issue(tmp_path: 
     assert "The hooks are written." not in found  # for people: Handoff.brief
 
 
-def test_a_session_on_develop_with_no_handoff_or_offline_gets_nothing(tmp_path: Path) -> None:
+def test_a_session_on_main_with_no_handoff_or_offline_gets_nothing(tmp_path: Path) -> None:
     session, asked = Session(tmp_path), []
-    assert session.compacted(put_back=put_back("develop", [comment(HANDOFF)], asked)) is None
+    assert session.compacted(put_back=put_back("main", [comment(HANDOFF)], asked)) is None
     assert asked == []  # GitHub isn't asked
     assert (
         session.compacted(put_back=put_back("feature/155-x", [comment("A word.")], asked)) is None

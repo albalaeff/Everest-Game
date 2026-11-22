@@ -364,7 +364,7 @@ def test_a_move_in_russian_or_ukrainian_names_the_merge_and_waits_on_ci(
 
 
 BRANCHES = " ".join(LocalWork.BRANCHES)
-ONE_WORKTREE = f"worktree {CHECKOUT}\nHEAD {'a' * 40}\nbranch refs/heads/develop\n"
+ONE_WORKTREE = f"worktree {CHECKOUT}\nHEAD {'a' * 40}\nbranch refs/heads/main\n"
 
 
 def test_nothing_is_only_here() -> None:
@@ -373,7 +373,7 @@ def test_nothing_is_only_here() -> None:
             {
                 "worktree list --porcelain": ONE_WORKTREE,
                 "status --porcelain": "",
-                BRANCHES: "develop\torigin/develop\t",
+                BRANCHES: "main\torigin/main\t",
                 "stash list": "",
             }
         )
@@ -390,7 +390,7 @@ def test_what_is_only_here_in_every_worktree() -> None:
     )
     branches = "\n".join(
         [
-            "develop\torigin/develop\t",
+            "main\torigin/main\t",
             "feature/399-handoff\torigin/feature/399-handoff\t[ahead 2]",
             "feature/387-agents\torigin/feature/387-agents\t[ahead 1, behind 3]",
             "feature/372-rule\t\t",  # never pushed, with commits of its own
@@ -402,7 +402,7 @@ def test_what_is_only_here_in_every_worktree() -> None:
     unpushed = {"feature/399-handoff": 2, "feature/387-agents": 1, "feature/372-rule": 3}
     own = {
         f"rev-list --count {name} --not --remotes=origin": str(unpushed.get(name, 0))
-        for name in ("develop", "feature/399-handoff", "feature/387-agents")
+        for name in ("main", "feature/399-handoff", "feature/387-agents")
         + ("feature/372-rule", "feature/380-empty", "screenshots")
     }
     work = LocalWork.collect(
@@ -413,7 +413,7 @@ def test_what_is_only_here_in_every_worktree() -> None:
                 "C:/git/worktrees/387: status --porcelain": "",
                 BRANCHES: branches,
                 **own,
-                "stash list": "stash@{0}: WIP on develop: 9c17d9f Prices",
+                "stash list": "stash@{0}: WIP on main: 9c17d9f Prices",
             }
         )
     )
@@ -423,7 +423,7 @@ def test_what_is_only_here_in_every_worktree() -> None:
         "feature/399-handoff: 2 commits not pushed",
         "feature/387-agents: 1 commit not pushed (and origin has 3 more)",
         "feature/372-rule: never pushed, 3 commits of its own",
-        "stash@{0}: WIP on develop: 9c17d9f Prices",
+        "stash@{0}: WIP on main: 9c17d9f Prices",
     )
     assert work.text().splitlines()[0] == "Only on this machine:"
 
@@ -452,7 +452,7 @@ def test_an_issue_s_branch_on_origin_and_here() -> None:
     origin, here = "a" * 40, "b" * 40
     refs = "\n".join(
         [
-            "refs/heads/develop",
+            "refs/heads/main",
             "refs/heads/feature/399-handoff",
             "refs/remotes/origin/feature/399-handoff",
             "refs/remotes/origin/feature/3990-another-issue",
@@ -467,7 +467,7 @@ def test_an_issue_s_branch_on_origin_and_here() -> None:
                 "rev-parse --verify -q refs/heads/feature/399-handoff": here,
                 f"rev-list --left-right --count {origin}...{here}": "1\t2",
                 f"log -1 --format=%s {origin}": "wip: the carryon skill",
-                f"rev-list --count {origin}..origin/develop": "4",
+                f"rev-list --count {origin}..origin/main": "4",
             }
         ),
     )
@@ -477,7 +477,7 @@ def test_an_issue_s_branch_on_origin_and_here() -> None:
     )
     assert str(found[0]) == (
         "feature/399-handoff: on origin at aaaaaaa (wip: the carryon skill); "
-        "here 2 commits ahead and 1 behind; develop has 4 commits it hasn't"
+        "here 2 commits ahead and 1 behind; main has 4 commits it hasn't"
     )
 
 
@@ -488,7 +488,7 @@ def test_a_branch_only_here_or_only_on_origin() -> None:
 
     assert str(only_here) == "feature/372-rule: only here, never pushed, at ccccccc (Drop the rule)"
     assert str(only_there) == "feature/372-rule: on origin at ccccccc (Drop the rule); not here"
-    assert IssueBranch.find(372, git({REFS: "refs/heads/develop"})) == ()
+    assert IssueBranch.find(372, git({REFS: "refs/heads/main"})) == ()
 
 
 # --- one issue, as a session finds it ---------------------------------------------------------

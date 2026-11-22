@@ -23,14 +23,14 @@ Start the session: check the machine, pick up the work where the last session le
    - its branch: `git switch <branch>` (it tracks origin's), or `git pull --ff-only` if it's here already;
    - commits or changes of this machine's own on it (the "Only on this machine" lines) come from a session here: keep them; if origin has moved too, rebase onto it, and ask when they conflict;
    - a `wip:` commit on top is half-done work: go on from it; the squash merge folds it away;
-   - when `develop` has moved on, rebase onto `origin/develop` before the PR (docs/conventions.md → Git workflow);
+   - when `main` has moved on, rebase onto `origin/main` before the PR (docs/conventions.md → Git workflow);
    - the handoff's notes are where to start, not the truth: read again the files they name.
 
 6. **What this machine runs:**
    - **The watcher**, unless step 2 said the manager or another session's watcher runs here: `uv run python scripts/github.py watch` in the background, the Bash tool's `run_in_background` with `timeout: 7200000` (the default 30 minutes would stop it early). It runs only while the session is open, and one runs per machine (PEB#597).
      - If the agent manager, or another session's watcher, runs on this machine, the watcher ends at once and says so: don't start it again, and take no issue yourself; the manager's agents, or that session, take them (README → Agents). Two sessions as one login would both start the same new issue, on one machine as on two.
      - It looks every 2 minutes by itself (PEB#445) and ends only when something new needs doing, printing it as `status` does: act on it, then start it again. So Claude is woken only when there's something to do (PEB#314). After 110 minutes it ends anyway with "Nothing new to do (…)": start it again, every time, unasked.
-     - Every ten minutes it also pulls `develop` while the machine is idle (`develop` checked out, nothing uncommitted, no local commits of its own), so a merge from either machine reaches what runs here within ten minutes (PEB#347). Work on a task branch is never touched; a line in its output says what it pulled, or why it couldn't. So go back to `develop` when a task is done: on a task branch, nothing is pulled.
+     - Every ten minutes it also pulls `main` while the machine is idle (`main` checked out, nothing uncommitted, no local commits of its own), so a merge from either machine reaches what runs here within ten minutes (PEB#347). Work on a task branch is never touched; a line in its output says what it pulled, or why it couldn't. So go back to `develop` when a task is done: on a task branch, nothing is pulled.
      - Once a day it also reads Claude's API prices into `docs/claude-prices.csv` (PEB#390); when they've changed it ends with that: commit the new rows in a small `chore/…` PR.
    - **The app's dev runner**, if the project has one (README → Local development), when this machine's memory says it ran here, or your user asks.
 

@@ -9,13 +9,13 @@ the one `origin` points to.
                                                             waiting, Claude's move (a closing
                                                             handoff says Claude goes on, #449),
                                                             CI finished; stale issues flagged,
-                                                            those labelled postponed or release
-                                                            left out, with their PRs (#540);
+                                                            those labelled postponed left out,
+                                                            with their PRs (#540);
                                                             blocked while what they build on
                                                             is open, unblocked once it merges
                                                             (#107)
     uv run python scripts/github.py watch                  waits until something new does,
-                                                            pulling develop when idle (#347);
+                                                            pulling main when idle (#347);
                                                             one per machine (#597); --json for
                                                             the agent manager (#387), --wiki 6
                                                             with it: is the wiki behind (#126)
@@ -40,15 +40,8 @@ the one `origin` points to.
                                                             id: filter it with grep
     uv run python scripts/github.py pr 457                  a PR in brief, with its CI (#442)
     uv run python scripts/github.py pr open pr.json         opens one, its description signed
-    uv run python scripts/github.py merge 457               squashes it into develop
-    uv run python scripts/github.py release                 a release branch at develop's tip
-                                                            and its PR into master (#510): on
-                                                            prod on trial once CI passes; a
-                                                            person merges or closes it
-    uv run python scripts/github.py release --issue 517     the same, for an issue labelled
-                                                            release (release-cut.yml, #517):
-                                                            what came of it goes there, and
-                                                            the issue is closed
+    uv run python scripts/github.py merge 457               squashes it into main, which is
+                                                            then published (#300)
     uv run python scripts/github.py close 180               closes an issue or PR
     uv run python scripts/github.py blocked 18 --by 17      #18 builds on #17:
                                                             GitHub's own "blocked by", which
@@ -91,7 +84,7 @@ import sys
 import time
 from collections.abc import Callable, Iterable, Mapping, Sequence
 from dataclasses import asdict, dataclass, field, replace
-from datetime import date, datetime, timedelta
+from datetime import datetime, timedelta
 from decimal import Decimal
 from pathlib import Path
 from typing import Any, ClassVar
@@ -104,6 +97,7 @@ sys.path.insert(0, str(ROOT))  # run as a script, it still finds scripts
 
 from scripts.agents import (  # noqa: E402
     LABEL_FAMILIES,
+    MAIN,
     WATCH_EVERY,
     AgentPower,
     ManagerLock,
@@ -282,8 +276,6 @@ class GitHub:
 GENERATED = "Generated with [Claude Code]"  # the line ending a PR Claude opened
 HANDED_TO = "claude:"  # a `claude:<login>` label: the issue is for that login's Claude (#222)
 POSTPONED = "postponed"  # a label: nothing to do until it goes, so `status` leaves it out (#309)
-RELEASE_LABEL = "release"  # a label: release-cut.yml cuts a release for it (`ReleaseLabel`, #517)
-RELEASE_INTO = "master"  # a release PR's base (docs/production.md → A release, #510)
 
 
 def signature(login: str | None, agent: AgentPower | None = None) -> str:
@@ -336,10 +328,9 @@ class Item:
     # "to start": mine, no comment from Claude yet; "reply waiting": someone wrote after
     # Claude's last word; "Claude's move": Claude's last word is a closing handoff that says
     # Claude goes on, waiting on nothing (#449); "in progress": Claude's word is the last;
-    # "theirs": someone else's (see `owner`), so not this session's to work on; "release": a
-    # release PR (`releasing`), a person's to merge or close; "blocked": what it builds on is
-    # open, "unblocked": it has closed since Claude's last word, which was the last
-    # (`Dependencies`, #107). Claude's words: its comments, and a PR it opened.
+    # "theirs": someone else's (see `owner`), so not this session's to work on; "blocked":
+    # what it builds on is open, "unblocked": it has closed since Claude's last word, which
+    # was the last (`Dependencies`, #107). Claude's words: its comments, and a PR it opened.
     state: str
     owner: str
     stale: bool = False  # in progress, and nobody moves on it (`Conversation`, #449)
@@ -499,15 +490,8 @@ class CiRuns:
 
 def left_out(issue: Mapping[str, Any]) -> bool:
     """Nobody's task, so `status`, `handoffs` and the agent manager pass it by: postponed
-    (#309), or labelled `release`, which release-cut.yml answers and closes (#517)."""
-    return any(label["name"] in (POSTPONED, RELEASE_LABEL) for label in issue.get("labels") or [])
-
-
-def releasing(pull: Mapping[str, Any] | None) -> bool:
-    """A release PR (#510): on prod on trial once its CI passes, then a person merges or
-    closes it. Never a task for Claude: what's said on it, CI's report of the deploy first,
-    is for that person."""
-    return pull is not None and (pull.get("base") or {}).get("ref") == RELEASE_INTO
+    (#309)."""
+    return any(label["name"] == POSTPONED for label in issue.get("labels") or [])
 
 
 def label_names(entry: Mapping[str, Any]) -> tuple[str, ...]:
@@ -538,7 +522,7 @@ class Dependencies:
     it, so its branch carried both of theirs and its PR couldn't merge, and nothing woke an
     agent when they merged). While any of it is open the issue is blocked: no task, its PRs
     with it (`look`). Once all of it is closed, what closed since Claude's last word wakes it:
-    the agent merges `develop` in first. A chain holds by itself: #18 waits on #17, which
+    the agent merges `main` in first. A chain holds by itself: #18 waits on #17, which
     waits on #16. `open_now`: the open issues and PRs, when a look has listed them; else each
     is asked for."""
 
@@ -550,7 +534,7 @@ class Dependencies:
     ) -> Item:
         """`item`, the issue `entry`'s as its `comments` say, blocked or woken. Woken, one in
         progress is "unblocked": Claude's move. One to start needs nothing more: its branch
-        comes from `develop`."""
+        comes from `main`."""
         if "pull_request" in entry or item.state == "theirs":
             return item
         if blockers := self.blockers(entry):
@@ -626,7 +610,7 @@ class Task:
     `watch --json` says each as JSON for the session manager (#387): `issue` is the issue the
     work is for, a PR's the one it closes (None when it closes none), and `labels` are that
     issue's, which say how strong an agent it takes, and how soon. `woken` names what the
-    issue builds on that merged since Claude's last word: its agent merges `develop` in first
+    issue builds on that merged since Claude's last word: its agent merges `main` in first
     (#107)."""
 
     key: str
@@ -757,10 +741,10 @@ class SetAside:
 
     def holds(self, entry: Mapping[str, Any], pull: Mapping[str, Any] | None) -> bool:
         """Whether `entry`, an open issue or PR (`pull`: GitHub's PR, when it is one), is
-        left out. A release PR never is: a person merges or closes it (`releasing`)."""
+        left out."""
         if left_out(entry):
             return True
-        return pull is not None and not releasing(pull) and Task.issue_of(pull) in self.issues
+        return pull is not None and Task.issue_of(pull) in self.issues
 
 
 @dataclass(frozen=True, slots=True)
@@ -857,13 +841,12 @@ def status(github: GitHub, now: Callable[[], datetime] = datetime.now) -> None:
 
 def look(github: GitHub, now: Callable[[], datetime] = datetime.now) -> Look:
     """What needs doing, and when this look was taken (#230: the loop's replies look alike).
-    A postponed issue, or a release's, is left out before its comments are read (`left_out`,
-    #309, #517), and so is its PR, CI included (`SetAside`, #540). A reply from someone
-    an issue waits on takes their label off it (`WaitingLabels.replied`, #449). CI's result
-    is left out once Claude has spoken after it (#456): a restart of the agent manager, whose
-    watcher says every task as it begins, would start an agent for each PR. A release PR is
-    listed apart, and is never a task (`releasing`, #510). An issue that builds on an open one
-    is blocked, with its PRs, and woken once that closes (`Dependencies`, #107)."""
+    A postponed issue is left out before its comments are read (`left_out`, #309), and so is
+    its PR, CI included (`SetAside`, #540). A reply from someone an issue waits on takes their
+    label off it (`WaitingLabels.replied`, #449). CI's result is left out once Claude has
+    spoken after it (#456): a restart of the agent manager, whose watcher says every task as
+    it begins, would start an agent for each PR. An issue that builds on an open one is
+    blocked, with its PRs, and woken once that closes (`Dependencies`, #107)."""
     me = github.call("GET", "/user")["login"]
     at = now()
     lines = [f"Acting as {me} on {github.slug}, {at:%Y-%m-%d %H:%M}."]
@@ -883,17 +866,13 @@ def look(github: GitHub, now: Callable[[], datetime] = datetime.now) -> Look:
     items: list[tuple[Item, bool, Mapping[str, Any], Any]] = []
     for entry in open_items:
         number = int(entry["number"])
-        if releasing(pulls.get(number)):
-            release = Item(number, str(entry["title"]), "release", owner(entry))
-            items.append((release, True, entry, []))
-            continue
         mine = owner(entry) == me
         comments = github.call("GET", f"issues/{number}/comments?per_page=100") if mine else []
         item = dependencies.hold(entry, Conversation(entry, comments, me).item(at), comments)
         items.append((item, "pull_request" in entry, entry, comments))
     blocked = {item.number: item.waits_on for item, _, _, _ in items if item.state == "blocked"}
     for n, (item, is_pull, entry, comments) in enumerate(items):
-        if not is_pull or item.state in ("theirs", "release"):
+        if not is_pull or item.state == "theirs":
             continue
         for_issue = Task.issue_of(pulls.get(item.number, entry))
         if for_issue is not None and for_issue in blocked:
@@ -918,7 +897,6 @@ def look(github: GitHub, now: Callable[[], datetime] = datetime.now) -> Look:
         ("unblocked", "Unblocked (what they build on has closed since Claude's last word)"),
         ("in progress", "In progress (Claude's word is the last)"),
         ("blocked", "Blocked (what they build on is open: no agent starts on them)"),
-        ("release", "Releases (on prod on trial once CI passes: a person merges or closes them)"),
     ):
         found = [(item, is_pull) for item, is_pull, _, _ in items if item.state == state]
         if not found:
@@ -932,7 +910,7 @@ def look(github: GitHub, now: Callable[[], datetime] = datetime.now) -> Look:
                 draft = " (draft)" if pull["draft"] else ""
                 runs = CiRuns.at(github, pull["head"]["sha"])
                 line += f"{draft} [{runs}]"
-                if runs.finished and item.state not in ("release", "blocked"):
+                if runs.finished and item.state != "blocked":
                     task = Task.ci_finished(item, pull, runs, labels)
                     threads = [
                         known[n]
@@ -967,15 +945,15 @@ def numbered(numbers: Iterable[int]) -> str:
     return ", ".join(f"#{number}" for number in numbers)
 
 
-FOLLOWED = "develop"  # the branch every machine follows while idle (#347)
+FOLLOWED = MAIN  # the branch every machine follows while idle (#347)
 
 
-def follow_develop(run: Run = subprocess.run) -> str | None:
-    """Brings `develop` up to date while this machine is idle (#347), so what either Claude
+def follow_main(run: Run = subprocess.run) -> str | None:
+    """Brings `main` up to date while this machine is idle (#347), so what either Claude
     merged reaches what runs here without anyone pulling.
 
-    Idle means `develop` checked out with no uncommitted changes; on a task branch it only
-    fetches. A `develop` with commits of its own is never overwritten: it says so instead.
+    Idle means `main` checked out with no uncommitted changes; on a task branch it only
+    fetches. A `main` with commits of its own is never overwritten: it says so instead.
     What it did, in a line, or None when there was nothing to do."""
 
     def git(*args: str) -> subprocess.CompletedProcess[str]:
@@ -1006,7 +984,7 @@ def follow_develop(run: Run = subprocess.run) -> str | None:
     return f"Pulled {FOLLOWED}: {before[:7]}..{out('rev-parse', 'HEAD')[:7]}."
 
 
-FOLLOW_EVERY = 10 * 60  # seconds between pulls of develop: each is a `git fetch` (#445)
+FOLLOW_EVERY = 10 * 60  # seconds between pulls of main: each is a `git fetch` (#445)
 WATCH_LONGEST = 110 * 60  # under the 2 hours a background job gets in Claude Code
 
 
@@ -1137,7 +1115,7 @@ def watch(
     it ends anyway, saying so in one line, before a background job's time runs out.
 
     Every ten minutes of it (`FOLLOW_EVERY`), not at each look, it also runs `follow`, which
-    keeps `develop` up to date while the machine is idle (#347, `follow_develop`, as the
+    keeps `main` up to date while the machine is idle (#347, `follow_main`, as the
     command does): what it did is said in a line, the same word once, and watching goes on.
     And `prices` reads Claude's prices once a day (#390, `DailyCheck`): a change is
     something to do, so it ends with it. So is a PR the wiki lacks, which `wiki` looks for
@@ -1393,7 +1371,7 @@ class PullRequests:
 
     github: GitHub
 
-    INTO: ClassVar[str] = "develop"  # where a task's PR goes (docs/conventions.md)
+    INTO: ClassVar[str] = MAIN  # where a task's PR goes (docs/conventions.md)
 
     def brief(self, number: int) -> str:
         """The PR as `api` says it, and its CI as `ci` does."""
@@ -1408,11 +1386,10 @@ class PullRequests:
         return str(Entry(self.github.call("POST", "pulls", {**asked, "body": body})))
 
     def merge(self, number: int, at: str | None = None) -> str:
-        """Squashes it into develop as docs/conventions.md says: one commit, titled after the
+        """Squashes it into main as docs/conventions.md says: one commit, titled after the
         PR, with its description as the body. At the commit it was looked at, or at `at`,
         the one the agent manager checked (#550): GitHub refuses it if the branch has moved
-        since. Never into master (CLAUDE.md): a release is a merge commit, and a person's
-        call."""
+        since."""
         pull = self.github.call("GET", f"pulls/{number}")
         if (base := pull["base"]["ref"]) != self.INTO:
             raise SystemExit(
@@ -1430,119 +1407,6 @@ class PullRequests:
             },
         )
         return f"Merged PR #{number} into {self.INTO} as {merged['sha'][:7]}: {title}"
-
-
-# --- a release (#510) ------------------------------------------------------------------------
-
-
-@dataclass(frozen=True, slots=True)
-class ReleaseCut:
-    """`release`: a release branch at develop's tip, and its PR into master. Once CI passes,
-    the release is on prod on trial; merging the PR confirms it, closing it rolls prod back
-    (docs/production.md → A release). A person merges or closes it, never Claude: `merge`
-    refuses it. Named after the day, numbered from 01: release/2026-10-16-01, then -02."""
-
-    github: GitHub
-    today: Callable[[], date] = date.today
-
-    FROM: ClassVar[str] = "develop"
-
-    def cut(self) -> str:
-        """The PR opened, as `api` says one."""
-        return str(Entry(self._open()))
-
-    def _open(self) -> Mapping[str, Any]:
-        """The branch, then its PR, as GitHub answers it. Refused (`ReleaseRefused`) while a
-        release PR is open, or when develop has nothing master hasn't."""
-        if pending := self.github.call("GET", f"pulls?state=open&base={RELEASE_INTO}"):
-            raise ReleaseRefused(f"{Entry(pending[0]).headline} is open: merge or close it first.")
-        tip = str(self.github.call("GET", f"branches/{self.FROM}")["commit"]["sha"])
-        news = self.github.call("GET", f"compare/{RELEASE_INTO}...{tip}")
-        if not news["ahead_by"]:
-            raise ReleaseRefused(
-                f"{self.FROM} has nothing {RELEASE_INTO} hasn't: nothing to release."
-            )
-        name = self._name()
-        self.github.call("POST", "git/refs", {"ref": f"refs/heads/{name}", "sha": tip})
-        me = self.github.call("GET", "/user")["login"]
-        asked = {
-            "title": f"Release {name.removeprefix('release/')}",
-            "head": name,
-            "base": RELEASE_INTO,
-            "body": self._signed(self._description(tip, news), me),
-        }
-        return dict(self.github.call("POST", "pulls", asked))
-
-    def _signed(self, text: str, me: str) -> str:
-        """Claude's PR: whose Claude first, the line of a PR Claude opened last."""
-        generated = f"{text}\n\n🤖 {GENERATED}(https://claude.com/claude-code)"
-        return sign(generated, me, AgentPower.of_agent())
-
-    def _name(self) -> str:
-        """release/<today>-NN, one more than the last of today's, a branch or a PR's: once
-        merged, its branch is gone. An unnumbered release/<today> counts as 01."""
-        day = f"release/{self.today():%Y-%m-%d}"
-        refs = self.github.call("GET", f"git/matching-refs/heads/{day}")
-        pulls = self.github.call("GET", f"pulls?state=all&base={RELEASE_INTO}&per_page=100")
-        names = [str(ref["ref"]).removeprefix("refs/heads/") for ref in refs]
-        names += [str(pull["head"]["ref"]) for pull in pulls]
-        numbered = re.compile(re.escape(day) + r"(?:-(\d+))?")
-        found = [numbered.fullmatch(name) for name in names]
-        last = max((int(match[1] or 1) for match in found if match), default=0)
-        return f"{day}-{last + 1:02d}"
-
-    def _description(self, tip: str, news: Mapping[str, Any]) -> str:
-        """What a person reads first: what's in it, and what merging or closing it does."""
-        commits = "\n".join(
-            f"- {str(commit['commit']['message']).splitlines()[0]}" for commit in news["commits"]
-        )
-        return (
-            f"{self.FROM} at {tip[:7]}, {news['ahead_by']} commits {RELEASE_INTO} hasn't. Once"
-            " CI passes, it goes live on prod on trial, and CI says here how that went. Try"
-            " it out, then **merge** this PR to confirm the release, or **close** it to"
-            " roll prod back (docs/production.md → A release).\n\n"
-            f"{commits}"
-        )
-
-
-class ReleaseRefused(SystemExit):
-    """No release cut, and why: a release PR is open, or there's nothing to release. From
-    the command line, it ends the script with that, as any refusal does."""
-
-
-@dataclass(frozen=True, slots=True)
-class ReleaseLabel(ReleaseCut):
-    """The label `release` on #`issue` (#517): release-cut.yml cuts the release on GitHub's
-    runner, with a person's token (`RELEASE_TOKEN`), since a PR opened with Actions' own
-    starts no CI. What came of it goes on the issue, which is then closed: from there the
-    release lives on its PR. No Claude talks here, so the workflow signs what it writes."""
-
-    issue: int = field(kw_only=True)
-
-    SIGNATURE: ClassVar[str] = "_Release workflow ({login})_"
-
-    def answer(self) -> str:
-        """Cuts it, and says so on the issue: closed as done, or, refused, as not planned
-        (one release at a time: a second label names the first's PR). What it said."""
-        try:
-            pull = self._open()
-        except ReleaseRefused as refused:
-            said, reason = f"**Not cut:** {refused}", "not_planned"
-        else:
-            head, reason = pull["head"], "completed"
-            said = (
-                f"**Cut:** #{pull['number']}, `{head['ref']}` at {self.FROM}'s {head['sha'][:7]}."
-                " Once CI passes, it's live on prod on trial: merge the PR to confirm it, or"
-                " close it to roll it back."
-            )
-        me = self.github.call("GET", "/user")["login"]
-        self.github.call("POST", f"issues/{self.issue}/comments", {"body": self._signed(said, me)})
-        closed = {"state": "closed", "state_reason": reason}
-        self.github.call("PATCH", f"issues/{self.issue}", closed)
-        return said
-
-    def _signed(self, text: str, me: str) -> str:
-        return f"{self.SIGNATURE.format(login=me)}\n\n{text}"
 
 
 # --- what the work cost (#390) -------------------------------------------------------------
@@ -1809,16 +1673,8 @@ def main(argv: Sequence[str] | None = None) -> None:
     pulling = commands.add_parser("pr", help="a PR in brief, with its CI; or open one (#442)")
     pulling.add_argument("what", help='the PR\'s number, or "open" to open one')
     pulling.add_argument("file", nargs="?", help="after open: a JSON file with the PR's fields")
-    merging = commands.add_parser("merge", help="squash a PR into develop, titled after it")
+    merging = commands.add_parser("merge", help="squash a PR into main, titled after it")
     merging.add_argument("number", type=int)
-    cutting = commands.add_parser(
-        "release", help="a release branch from develop, its PR into master"
-    )
-    cutting.add_argument(
-        "--issue",
-        type=int,
-        help="the issue labelled release (#517): what came of it goes there, and it's closed",
-    )
     closing = commands.add_parser("close", help="close an issue or PR, after Claude's comment")
     closing.add_argument("number", type=int)
     closing.add_argument(
@@ -1858,7 +1714,7 @@ def main(argv: Sequence[str] | None = None) -> None:
             github,
             every=args.every * 60,
             longest=args.longest * 60,
-            follow=follow_develop,
+            follow=follow_main,
             prices=DailyCheck(),
             wiki=WikiCheck(github, remote, args.wiki) if args.wiki else lambda: None,
             output=JsonOutput(),
@@ -1876,7 +1732,7 @@ def main(argv: Sequence[str] | None = None) -> None:
                 github,
                 every=args.every * 60,
                 longest=args.longest * 60,
-                follow=follow_develop,
+                follow=follow_main,
                 prices=DailyCheck(),
                 output=TextOutput(),
                 stop=manager_running,
@@ -1912,10 +1768,6 @@ def main(argv: Sequence[str] | None = None) -> None:
         print(PullRequests(github).brief(int(args.what)))
     elif args.command == "merge":
         print(PullRequests(github).merge(args.number))
-    elif args.command == "release" and args.issue is not None:
-        print(ReleaseLabel(github, issue=args.issue).answer())
-    elif args.command == "release":
-        print(ReleaseCut(github).cut())
     elif args.command == "close":
         print(IssueThread(github, args.number).close(read=args.read))
     elif args.command == "blocked":

@@ -36,7 +36,7 @@ watcher_backoff_max_seconds = 600
 # stopped for compacting again and again (#152), and a person may on one they know is big.
 compact_at_percent = 25
 
-# How often the watcher looks whether PRs merged into develop since the wiki was last brought
+# How often the watcher looks whether PRs merged into main since the wiki was last brought
 # up to date, in hours (#126): when some have, an agent updates the wiki, one run for all of
 # them. 0: never.
 wiki_every_hours = 6

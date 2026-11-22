@@ -20,12 +20,12 @@ A change to `scripts/` or to the docs alone follows this file only. (Fill the ta
 ## Git workflow
 
 - Every task is a GitHub issue ([CLAUDE.md](../CLAUDE.md) → Working from GitHub issues).
-- `develop` is the integration branch; `master` holds the releases confirmed live. Both change only through pull requests.
-- For a task: branch from the latest `develop` as `feature/<issue>-<short-description>` (`fix/…` or `chore/…` where that fits), commit often, push the branch, and open a PR into `develop` whose description says `Closes #<issue>` (the template asks for it).
-- CI runs on every PR and on every push to `develop` and `master`. Merge only when it's green, by **squash**: one commit per task on `develop`, titled after the PR, with its description as the body. Then delete the task branch.
-- A task that builds on one not merged yet says so, with GitHub's own "blocked by" (`scripts/github.py blocked <issue> --by <n>`), `Depends on #<n>` in its issue or an `after:<n>` label, and waits for it ([workflow.md](workflow.md) → What an issue builds on). Begun before that one merged: branch from that one, and after the first merges, rebase onto `develop` (`git rebase --onto origin/develop <old base>`) before opening the PR. An automatic permission mode may refuse a force push after a rebase: merge `origin/develop` into the branch instead and push normally; the squash folds the merge away.
-- A release is a PR into `master` from a `release/<date>-NN` branch cut at `develop`'s tip (`-01`, then `-02` for the day's next), never from `develop` itself: GitHub deletes a merged PR's head branch, and on PEB#339 that took `develop` with it. `scripts/github.py release` cuts the branch and opens the PR, and so does the label `release` on an issue, from GitHub (PEB#517). Once its checks pass, CI deploys it on trial; a person tries it, then merges it (a merge commit, so `master` keeps the task commits) to confirm it, or closes it to roll back ([production.md](production.md) → A release, PEB#510). Housekeeping goes in a small `chore/…` PR first; such PRs and release PRs need no issue.
-- The repository's settings (README → Repository settings): `develop` is the default branch, so a merged PR's `Closes #<issue>` closes the issue (PEB#55); a ruleset lets `develop` and `master` change only through a PR with CI green, by squash or merge commit, with no force pushes or deletions; `git config core.hooksPath .githooks` makes `git push` refuse `develop` and `master` from your clone before GitHub does.
+- GitHub flow (#300): `main` is the only long-lived branch. Every task branches from it and comes back to it by a pull request, and every merge into it is published ([production.md](production.md) → The game). It changes only through pull requests.
+- For a task: branch from the latest `main` as `feature/<issue>-<short-description>` (`fix/…` or `chore/…` where that fits), commit often, push the branch, and open a PR into `main` whose description says `Closes #<issue>` (the template asks for it).
+- CI runs on every PR and on every push to `main`. Merge only when it's green, by **squash**: one commit per task on `main`, titled after the PR, with its description as the body. Then delete the task branch.
+- A task that builds on one not merged yet says so, with GitHub's own "blocked by" (`scripts/github.py blocked <issue> --by <n>`), `Depends on #<n>` in its issue or an `after:<n>` label, and waits for it ([workflow.md](workflow.md) → What an issue builds on). Begun before that one merged: branch from that one, and after the first merges, rebase onto `main` (`git rebase --onto origin/main <old base>`) before opening the PR. An automatic permission mode may refuse a force push after a rebase: merge `origin/main` into the branch instead and push normally; the squash folds the merge away.
+- Housekeeping goes in a small `chore/…` PR; such PRs need no issue. A PR never comes from `main` itself: GitHub deletes a merged PR's head branch, and on PEB#339 that took the long-lived branch with it.
+- The repository's settings (README → Repository settings): `main` is the default branch, so a merged PR's `Closes #<issue>` closes the issue (PEB#55); a ruleset lets `main` change only through a PR with CI green, by squash, with no force pushes or deletions; `git config core.hooksPath .githooks` makes `git push` refuse `main` from your clone before GitHub does.
 
 ## Modules
 
@@ -91,6 +91,6 @@ A step is done when:
 3. `uv run mypy scripts` passes.
 4. `uv run pytest` passes.
 5. The game's own checks pass (its lint, format, type check, Vitest and Playwright); README → Tests names them.
-6. CI is green on the task's PR, and the PR is merged into `develop`.
+6. CI is green on the task's PR, and the PR is merged into `main`.
 7. Nothing is left unwired: every new piece of code is reachable from an entry point, or is used by the very next step.
 8. The code it adds or touches follows **Objects** above.

@@ -38,7 +38,7 @@ def reply(
     output: int = 1_000_000,  # $20 at Opus 5.5's prices
     commands: tuple[str, ...] = (),
     tools: tuple[dict[str, Any], ...] = (),  # other tools' inputs: {"file_path": …}
-    branch: str = "develop",
+    branch: str = "main",
     model: str = OPUS,
     speed: str = "standard",
     cwd: str = HOME,
@@ -181,7 +181,7 @@ def test_replies_count_for_the_issue_their_work_names_then_the_ones_after_it(
             reply("m3", 2),  # reading code for it
             reply("m4", 3, branch="feature/390-cost-in-dollars"),  # on #390's branch
             reply("m5", 4, commands=("uv run python scripts/github.py comment 354 c.md",)),
-            reply("m6", 5),  # back on develop: still #354
+            reply("m6", 5),  # back on main: still #354
         ],
     )
 
@@ -249,7 +249,7 @@ def test_sessions_are_read_one_by_one(tmp_path: Path) -> None:
         ("cd /c/git/worktrees/256 && npm test", 256),
         ("C:\\git\\worktrees\\256\\src\\physics\\ladder.ts", 256),
         ("C:/git/worktrees/256/src/physics/ladder.ts", 256),
-        ("git worktree add -b feature/256-rope /c/git/worktrees/256 origin/develop", 256),
+        ("git worktree add -b feature/256-rope /c/git/worktrees/256 origin/main", 256),
         ("cd /c/git/worktrees/256 && cat /c/git/worktrees/256/README.md", 256),
         # a look over several, as a clean-up takes, is work in none of them
         ("for d in /c/git/worktrees/294 /c/git/worktrees/55; do ls -A $d; done", None),

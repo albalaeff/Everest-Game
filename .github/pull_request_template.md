@@ -1,4 +1,4 @@
-<!-- Title: what changes, in plain words. One task (issue) per PR, into `develop`. -->
+<!-- Title: what changes, in plain words. One task (issue) per PR, into `main`. -->
 
 Closes #
 

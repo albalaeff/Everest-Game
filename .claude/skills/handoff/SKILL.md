@@ -13,7 +13,7 @@ In order:
 
 2. **Leave nothing that matters only here.** For each line under "Only on this machine":
    - finished work: commit it on its task branch and push;
-   - unfinished work: commit it as `wip: <what's half done>` on its task branch and push. If the issue has no branch yet, create it (docs/conventions.md → Git workflow). Never commit to `develop` or `master`. With a PR open, CI runs on the WIP; nothing merges before the work is done and green anyway;
+   - unfinished work: commit it as `wip: <what's half done>` on its task branch and push. If the issue has no branch yet, create it (docs/conventions.md → Git workflow). Never commit to `main`. With a PR open, CI runs on the WIP; nothing merges before the work is done and green anyway;
    - a stash: apply it on its branch and commit it as WIP, or drop it if it's stale;
    - a branch never pushed: push it, or delete it if it's dead.
 

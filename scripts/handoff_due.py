@@ -313,7 +313,7 @@ class PutBack(Hook):
         )
 
     def _handoff(self, git: Git) -> str | None:
-        """None on develop, on a branch of no issue, on an issue with no handoff, or when
+        """None on main, on a branch of no issue, on an issue with no handoff, or when
         GitHub can't be reached."""
         number = IssueNames.of_branch(git.out("rev-parse", "--abbrev-ref", "HEAD"))
         if number is None:

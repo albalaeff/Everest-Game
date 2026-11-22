@@ -125,7 +125,7 @@ of watching on.
 
 A task whose agent can't start is tried again at the watcher's next look, two minutes later,
 and the manager says why once. Most often its branch is checked out in the checkout, after you
-ran commands an agent asked for: `git switch develop` there, and the next try starts it.
+ran commands an agent asked for: `git switch main` there, and the next try starts it.
 
 When the account hits Claude's usage limit, an agent ends at once, having done nothing. The
 manager keeps its task and starts no agent until the time the limit names, saying so once
@@ -159,7 +159,7 @@ a task waits counts at the next look; a running agent is never stopped for a hig
 **What an issue builds on.** An issue blocked by #16 in GitHub's own relation
 (`scripts/github.py blocked 18 --by 16`), or with a `Depends on #16` line or an `after:16`
 label, is blocked while #16 is open: no agent starts on it or its PR, and the console says what it waits
-on. When #16 closes, the next look wakes it, and its agent merges `develop` in first
+on. When #16 closes, the next look wakes it, and its agent merges `main` in first
 (docs/workflow.md → What an issue builds on).
 
 **A green PR's merge.** The agent that opens a PR leaves the closing comment in its
@@ -173,13 +173,13 @@ the console line say which check failed. `--dry-run` says which merges the manag
 itself.
 
 **The wiki.** Every 6 hours (`wiki_every_hours` in agent-manager.toml) the watcher looks for PRs
-merged into `develop` since the wiki was last brought up to date (#126), chores and releases
+merged into `main` since the wiki was last brought up to date (#126), chores
 aside. When there are some, the manager clones the
-[wiki](https://github.com/albalaeff/Everest-Game/wiki) into a worktree on `develop`
+[wiki](https://github.com/albalaeff/Everest-Game/wiki) into a worktree on `main`
 (`.agent-runs/wiki`), and an agent reads those PRs and their issues' closing comments and
 updates the pages they touch, the "where it stands" dates and the Changelog. Then the manager
 commits the pages and pushes them straight to the wiki, with no review: the wiki's history
-undoes any edit. The commit's `Develop: <sha>` trailer names the last `develop` commit covered,
+undoes any edit. The commit's `Main: <sha>` trailer (`Develop:` before #300) names the last `main` commit covered,
 and the next run starts from there. A person's own edit to the wiki is kept, and moves nothing.
 When two machines' managers update it at once, the first to push wins, and the other drops its
 pages, as its log says.
@@ -190,14 +190,14 @@ log in `.agent-runs/wiki.log`), the push, and a line on what it pushed. `--dry-r
 it would run; `--model` and `--effort` give its agent a power of its own. It takes no issue
 and holds no manager's lock, so a session's watcher goes on; while a manager runs, in this
 checkout or the main one, it leaves the wiki to the manager. It exits 1 when the wiki couldn't
-be read or its pages weren't pushed. Run it every day from a checkout of its own on `develop`,
+be read or its pages weren't pushed. Run it every day from a checkout of its own on `main`,
 not the one you work in, whose branch may lack it: a worktree, made once, brought to
-`origin/develop` before each run.
+`origin/main` before each run.
 
 ```
-git worktree add --detach ../Everest-Game-wiki origin/develop     # once
+git worktree add --detach ../Everest-Game-wiki origin/main        # once
 git -C ../Everest-Game-wiki fetch -q origin
-git -C ../Everest-Game-wiki switch -q --detach origin/develop
+git -C ../Everest-Game-wiki switch -q --detach origin/main
 cd ../Everest-Game-wiki && uv run python scripts/agent_manager.py wiki --effort high
 ```
 
@@ -295,12 +295,12 @@ npm run e2e -- --project=iphone   # on one of them
 
 How to write code and tests here, and the definition of done, are in
 [docs/conventions.md](docs/conventions.md). Every change goes through a pull request into
-`develop`, and CI runs all of the above.
+`main`, and CI runs all of the above.
 
 CI also scans for what mustn't be in the repository:
 
-- **Secrets.** Every PR and every push to `develop` and `master` runs gitleaks over the
-  branch's whole history, a PR's with `develop`'s (the job `secrets` in `ci.yml`), and prints
+- **Secrets.** Every PR and every push to `main` runs gitleaks over the
+  branch's whole history, a PR's with `main`'s (the job `secrets` in `ci.yml`), and prints
   what it finds redacted. Not every branch's, so a finding on one branch fails only
   that branch's PR. `.gitleaksignore` lists the findings that aren't secrets, by fingerprint.
   By hand, every branch: `gitleaks git --log-opts=--all`.
@@ -327,7 +327,7 @@ One failure isn't the change's:
 
 ## Deployment
 
-The game is a static site, to be published free on GitHub Pages or itch.io, with a small room server on Cloudflare for co-op ([spec.md](spec.md) → Technical architecture). Every merge into `develop` is published as a preview, at https://albalaeff.github.io/Everest-Game/, to open on a PC or a phone, with its room server deployed first ([docs/production.md](docs/production.md) → The preview). The release flow is in place already: a release is a PR from a `release/<date>-NN` branch into `master`, cut by `scripts/github.py release` or the label `release` on an issue. Once its checks pass, CI runs the deploy step of `.github/workflows/release-tool.yml`, which is a stub until the game has a build to publish: it says so on the PR and passes. Merging the PR confirms the release, closing it rolls back: the same workflow's `confirm` and `rollback`. [docs/production.md](docs/production.md) is where the hosting, the pipeline and its secrets get written down.
+The game is a static site, published free on GitHub Pages, with a small room server on Cloudflare for co-op ([spec.md](spec.md) → Technical architecture). The repository follows GitHub flow (#300): `main` is its only long-lived branch, and every merge into it is published, at https://albalaeff.github.io/Everest-Game/, to open on a PC or a phone, with its room server deployed first ([docs/production.md](docs/production.md) → The game). [docs/production.md](docs/production.md) is where the hosting and its secrets get written down.
 
 ## The project board
 
@@ -354,10 +354,10 @@ Every issue is a card on the [project board](https://github.com/users/albalaeff/
 
 Set once on GitHub, by the owner:
 
-- **Default branch `develop`**, so a merged PR's `Closes #n` closes the issue and the scripts' `status` reads the right thing. Push `develop` and `master` first.
-- **Rulesets:** "develop and master": both change only through a PR with the `checks` job green, by squash or merge commit, no force pushes or deletions. "master: deployed": `master` also wants `deploy / release-tool` green, so a release is merged only once it's live (add the check once it has run on the first release PR).
+- **Default branch `main`**, the only long-lived one (#300), so a merged PR's `Closes #n` closes the issue and the scripts' `status` reads the right thing.
+- **Ruleset:** "main": it changes only through a PR with the `checks` job green, by squash, no force pushes or deletions.
 - **Automatically delete head branches:** Settings → General → Pull Requests, so GitHub deletes a merged PR's branch, as [docs/workflow.md](docs/workflow.md) expects; without it, every merged branch stays on GitHub. `scripts/check_setup.py` says when it's off.
-- **GitHub Pages:** Settings → Pages → Source: *GitHub Actions*, for the preview. Without it the job `preview` fails, on `develop` only.
-- **Labels:** `scripts/setup.sh` makes `model:*`, `effort:*`, `priority:*` and `compact:*`; `claude:<login>` for each developer (hand an issue to their Claude); `postponed`; `release`. The `waiting:<login>` labels are made by the scripts.
-- **Secrets** (Settings → Secrets and variables → Actions): `RELEASE_TOKEN`, a person's fine-grained token with read and write access to Contents, Issues and Pull requests, for `release-cut.yml` (a PR opened with Actions' own token starts no CI); `PROJECT_TOKEN`, the board's owner's classic token with only the `project` scope, for `board.yml` (a fine-grained token can't reach a project a user owns: [github.com/settings/tokens/new?scopes=project](https://github.com/settings/tokens/new?scopes=project&description=Everest%20board) fills it in); `CLOUDFLARE_API_TOKEN` and `CLOUDFLARE_ACCOUNT_ID` for the room server ([docs/production.md](docs/production.md)); the deploy's own once the stub in `release-tool.yml` is filled in.
-- **Each clone:** `git config core.hooksPath .githooks` refuses pushes to `develop` and `master` before GitHub does (`scripts/setup.sh` does it).
+- **GitHub Pages:** Settings → Pages → Source: *GitHub Actions*, for the game, and the environment `github-pages` taking deploys from `main` (Settings → Environments). Without them the job `preview` fails, on `main` only.
+- **Labels:** `scripts/setup.sh` makes `model:*`, `effort:*`, `priority:*` and `compact:*`; `claude:<login>` for each developer (hand an issue to their Claude); `postponed`. The `waiting:<login>` labels are made by the scripts.
+- **Secrets** (Settings → Secrets and variables → Actions): `PROJECT_TOKEN`, the board's owner's classic token with only the `project` scope, for `board.yml` (a fine-grained token can't reach a project a user owns: [github.com/settings/tokens/new?scopes=project](https://github.com/settings/tokens/new?scopes=project&description=Everest%20board) fills it in); `CLOUDFLARE_API_TOKEN` and `CLOUDFLARE_ACCOUNT_ID` for the room server ([docs/production.md](docs/production.md)).
+- **Each clone:** `git config core.hooksPath .githooks` refuses pushes to `main` before GitHub does (`scripts/setup.sh` does it).

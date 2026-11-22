@@ -4,4 +4,4 @@
 - [Comment on pickup](comment-on-pickup.md) — comment on an issue the moment it's taken, before reading code
 - [OOP approach](oop-approach.md) — the user wants OOP everywhere; the shared rule is docs/conventions.md → Objects (DoD item 8)
 - [Review to issues](review-to-issues.md) — a review's findings become a few issues grouped by the piece they touch, one agent each, effort:max, every finding kept, siblings cross-linked
-- [Merge without asking](merge-without-asking.md) — issues are picked up, PR'd and merged into develop without asking each time; never master
+- [Merge without asking](merge-without-asking.md) — issues are picked up, PR'd and merged into main without asking each time
