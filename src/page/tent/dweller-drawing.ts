@@ -34,6 +34,12 @@ export interface LimbFrame {
   readonly puff: "end" | "root";
 }
 
+/** A bootie's end seen end on: where its round cap is, and how much of it shows, 0 to 1. */
+export interface ToeCap {
+  readonly transform: string;
+  readonly shown: number;
+}
+
 /** The person's drawing this frame: what each of its parts is set to. Transforms and paths are
  * SVG's own text; the rest are numbers. */
 export interface DwellerFrame {
@@ -44,6 +50,9 @@ export interface DwellerFrame {
   /** The body, leaning about the hips. */
   readonly torso: string;
   readonly limbs: Readonly<Record<LimbName, LimbFrame>>;
+  /** Each bootie's end that faces the viewer (#285): where its round cap is, and how much of it
+   * shows, all of it when the foot points straight at the viewer. */
+  readonly toes: readonly [ToeCap, ToeCap];
   /** Each hand as it's drawn, in its three places; how it's closed; what it holds, and where
    * that is and how it's turned. */
   readonly hands: readonly [HandDrawing, HandDrawing];
@@ -155,8 +164,13 @@ ${hands[side].place(`hand${side}`)}`;
     };
     const thigh = (side: 0 | 1): string =>
       DwellerDrawing.limb(`thigh${side}`, shapes.thigh, "suit");
+    // A bootie pointing at the viewer is seen end on: its round toe, lit from above, over the
+    // rim of its sole on the mat.
+    const { half } = DwellerShapes.BOOTIE;
+    const toe = (side: 0 | 1): string =>
+      `<g class="dw-toe" data-part="toe${side}"><ellipse class="dw-toe-sole" cx="0" cy="${(half * 0.42).toFixed(1)}" rx="${(half * 1.05).toFixed(1)}" ry="${(half * 0.62).toFixed(1)}"/><ellipse class="dw-toe-cap" rx="${(half * 1.05).toFixed(1)}" ry="${(half * 0.86).toFixed(1)}"/></g>`;
     const shin = (side: 0 | 1): string =>
-      `${DwellerDrawing.limb(`shin${side}`, shapes.shin, "suit", shapes.shinPanel, "dw-panel")}${DwellerDrawing.limb(`foot${side}`, shapes.bootie, "booties", shapes.soles[side], "dw-sole")}`;
+      `${DwellerDrawing.limb(`shin${side}`, shapes.shin, "suit", shapes.shinPanel, "dw-panel")}${DwellerDrawing.limb(`foot${side}`, shapes.bootie, "booties", shapes.soles[side], "dw-sole")}${toe(side)}`;
     const clip = (id: string, part: string, d: string): string =>
       `<clipPath id="${id}" clipPathUnits="userSpaceOnUse"><path${part} clip-rule="evenodd" d="${d}"/></clipPath>`;
     return `<defs>${DwellerDrawing.defs()}${this.neck.defs()}${hands[0].defs()}${hands[1].defs()}${clip("dw-pot", "", DwellerDrawing.POT_HOLE)}${clip("dw-dip", ' data-part="dip"', EVERYWHERE)}</defs>
@@ -210,6 +224,18 @@ ${arm(0)}
       -DwellerDrawing.TAP * look.tap,
     );
     const foot = (leg: typeof left): number => leg.toe.minus(leg.ankle).size;
+    // The end of each bootie toward the viewer, its toe or its heel, drawn round as it's seen end
+    // on: back from the tip by the bootie's thickness, toward the ankle.
+    const cap = (leg: typeof left, tip: Spot): ToeCap => {
+      const along = leg.toe.minus(leg.heel).unit();
+      const end = along.z >= 0 ? tip : seen(leg.heel);
+      const ankle = seen(leg.ankle);
+      const back = Math.hypot(ankle.x - end.x, ankle.y - end.y);
+      const pull = back < 1e-6 ? 0 : Math.min(1, DwellerShapes.BOOTIE.half / back);
+      const at = { x: end.x + (ankle.x - end.x) * pull, y: end.y + (ankle.y - end.y) * pull };
+      const endOn = DwellerDrawing.smooth((Math.abs(along.z) - 0.45) / 0.35);
+      return { transform: `translate(${text(at.x)} ${text(at.y)})`, shown: endOn };
+    };
     return {
       all: look.turned ? `${seated} scale(-1 1)` : seated,
       shown: Math.min(1, Math.max(0, look.shown * (1 - look.lying))),
@@ -226,6 +252,7 @@ ${arm(0)}
         shin1: limb(seen(right.knee), seen(right.ankle), DwellerShapes.SHIN),
         foot1: limb(seen(right.ankle), tapped, foot(right)),
       },
+      toes: [cap(left, seen(left.toe)), cap(right, tapped)],
       hands: [hand(0), hand(1)],
       grips: [DwellerHands.GRIPS[holds[0]], DwellerHands.GRIPS[holds[1]]],
       holds,

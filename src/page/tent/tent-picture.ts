@@ -169,6 +169,10 @@ export class TentPicture {
       set(name, "data-lit", limb.lit);
       set(name, "data-puff", limb.puff);
     }
+    for (const side of [0, 1] as const) {
+      set(`toe${side}`, "transform", frame.toes[side].transform);
+      set(`toe${side}`, "opacity", frame.toes[side].shown.toFixed(2));
+    }
     for (const name of DwellerDrawing.DROPPED) {
       set(`${name}-drop`, "transform", DwellerDrawing.drop(frame.limbs[name]));
     }

@@ -97,12 +97,13 @@ export class DwellerShapes {
     DwellerShapes.FOREARM - DwellerShapes.CUFF.from,
     DwellerShapes.FOREARM - DwellerShapes.CUFF.to,
   );
-  /** The dark panel down the shin, as the slope's suit has, from `FigureShapes.SHIN_PANEL`
-   * below the knee to the ankle. */
+  /** The dark scuff guard round the shin's foot, as a down suit has over the ankle where a
+   * crampon or the other boot would catch it: its lowest third (#285). The slope's whole dark
+   * shin panel read in the tent as a slab across each crossed shin. */
   readonly shinPanel: Outline = FigureShapes.band(
     this.shin.outline,
     FigureShapes.AHEAD,
-    FigureShapes.SHIN_PANEL * DwellerShapes.SCALE,
+    DwellerShapes.SHIN * 0.66,
     Infinity,
   );
   /** A down bootie along +x from the ankle, and its sole along one side: toward +y, or -y. */
