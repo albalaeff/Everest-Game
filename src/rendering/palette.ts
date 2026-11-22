@@ -146,6 +146,29 @@ export class Palette {
     [9, 0x25578f],
     [16, 0x0c2546],
   ];
+  /** A wall's ice (#290), by day, from a grey-white wall to an aqua one, by how much light falls
+   * on it: the deep blue of its hollows and the undersides of its tiers, the blue of its shaded
+   * sides, pale where the light falls and near white where it falls full. */
+  static readonly GREY_ICE: readonly (readonly [light: number, colour: number])[] = [
+    [0, 0x2c5a8c],
+    [0.3, 0x5f93bf],
+    [0.58, 0x9bc6e0],
+    [0.8, 0xd3e8f3],
+    [1, 0xfafeff],
+  ];
+  static readonly AQUA_ICE: readonly (readonly [light: number, colour: number])[] = [
+    [0, 0x0f4f8f],
+    [0.3, 0x1c86c6],
+    [0.58, 0x4fc0e8],
+    [0.8, 0xaee9f8],
+    [1, 0xf3fdff],
+  ];
+  /** The light a wall's glassy ice throws back (#290): white by day, the sky's pale blue under the
+   * stars, so its reflections show on the dark ice at night. */
+  static readonly NIGHT_GLOSS = 0xb4c6f0;
+  static readonly DAY_GLOSS = 0xffffff;
+  /** How much of the glow a reflection catches at dawn and dusk. */
+  private static readonly GLOSS_GLOW = 0.4;
   /** The blocks and towers of ice standing behind the route, by day: a little hazier than the
    * ice the climbers cross, their faces away from the light in shade. */
   static readonly BLOCK = 0xb4d6ee;
@@ -154,11 +177,12 @@ export class Palette {
   /** Bare blue ice under the boots, by day: glossy, with a wet sheen along its top (#190). */
   static readonly BLUE_ICE = 0x7fc0ea;
   static readonly ICE_SHEEN = 0xf2fbff;
-  /** The icicles under a lip of snow, and the streaks down a wall's bare ice. */
+  /** The icicles under a lip of snow. */
   static readonly ICICLE = 0xe4f5ff;
-  /** Brittle ice on a face: chalky and pale, where a pick bites poorly. */
+  /** Brittle ice on a face: chalky and pale, where a pick bites poorly, and its cracks into the
+   * sound ice round it. */
   static readonly BRITTLE = 0xe9f0f4;
-  static readonly STREAK = 0x6fa6d4;
+  static readonly CRACK = 0x6fa6d4;
   static readonly LOADED = 0xffffff;
   static readonly ROCK = 0x3a3d48;
   /** The moraine Base Camp stands on, rubble bare of snow: navy under the stars, darker than the
@@ -243,6 +267,8 @@ export class Palette {
   /** A crevasse's inside at its lips, and the moraine's rubble, in the snow's light. */
   readonly crevasse: number;
   readonly moraine: number;
+  /** The light a wall's glassy ice throws back this hour (#290): the sky's, the glow's at dawn. */
+  readonly gloss: number;
 
   constructor(light: DayLight, air: ThinAir, look: WeatherLook) {
     const { daylight, glow } = light;
@@ -299,22 +325,43 @@ export class Palette {
     this.track = Palette.tinted(this.snowTint, Palette.TRACK);
     this.crevasse = Palette.tinted(this.snowTint, Palette.CREVASSE);
     this.moraine = Palette.mix(Palette.NIGHT_MORAINE, Palette.DAY_MORAINE, skylight);
+    this.gloss = Palette.mix(
+      Palette.mix(Palette.NIGHT_GLOSS, Palette.DAY_GLOSS, skylight),
+      warmed,
+      sunGlow * Palette.GLOSS_GLOW,
+    );
+  }
+
+  /** A wall's ice by day (#290), `aqua` of the way from grey-white to aqua, in so much `light`,
+   * from none, the blue of its hollows, to all of it, near white: the slope tints it by the
+   * hour. */
+  static ice(aqua: number, light: number): number {
+    return Palette.mix(
+      Palette.along(Palette.GREY_ICE, light),
+      Palette.along(Palette.AQUA_ICE, light),
+      aqua,
+    );
+  }
+
+  /** The colour `at` a place along `stops`, each a place and its colour, in order: the first's
+   * before it, the last's past it, and between two, the colour between theirs. */
+  static along(stops: readonly (readonly [at: number, colour: number])[], at: number): number {
+    const [first] = stops;
+    let colour = first?.[1] ?? 0;
+    for (const [index, [place, next]] of stops.entries()) {
+      const [before, from] = stops[index - 1] ?? [place, next];
+      if (at >= place) {
+        colour = next;
+      } else if (at > before) {
+        colour = Palette.mix(from, next, (at - before) / (place - before));
+      }
+    }
+    return colour;
   }
 
   /** The glacier's ice `depth` metres under its surface, by day: the slope tints it by the hour. */
   static glacier(depth: number): number {
-    const { GLACIER } = Palette;
-    const [first] = GLACIER;
-    let colour = first?.[1] ?? Palette.ICE;
-    for (const [index, [deeper, next]] of GLACIER.entries()) {
-      const [shallower, from] = GLACIER[index - 1] ?? [deeper, next];
-      if (depth >= deeper) {
-        colour = next;
-      } else if (depth > shallower) {
-        colour = Palette.mix(from, next, (depth - shallower) / (deeper - shallower));
-      }
-    }
-    return colour;
+    return Palette.along(Palette.GLACIER, depth);
   }
 
   /** A colour `share` of the way into the haze: a layer's, by how far behind the slope it is. */

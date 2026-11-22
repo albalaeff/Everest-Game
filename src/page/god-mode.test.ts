@@ -242,7 +242,7 @@ describe("GodMode: scenarios staged on the spot", () => {
     const gust = god.jolt("gust");
     const twist = god.jolt("twist");
     god.teleport("ladder:wide-crevasse");
-    god.teleport(200);
+    god.teleport(202);
 
     expect([gust, twist]).toEqual([true, false]);
     expect(god.jolt("twist")).toBe(true);

@@ -179,6 +179,58 @@ describe("Palette", () => {
     }
   });
 
+  it("colours a wall's ice by the light on it, from the blue of its hollows to near white, grey-white or aqua, apart from the snow in shade (#290)", () => {
+    const blueness = (colour: number): number => {
+      const { red, blue } = Palette.channels(colour);
+      return blue - red;
+    };
+    for (const aqua of [0, 0.5, 1]) {
+      const lights = [0, 0.2, 0.4, 0.6, 0.8, 1].map((light) => Palette.ice(aqua, light));
+      for (const [index, colour] of lights.entries()) {
+        expect(Palette.brightness(colour)).toBeGreaterThan(
+          Palette.brightness(lights[index - 1] ?? 0x000000),
+        );
+        expect(blueness(colour)).toBeGreaterThan(0);
+      }
+      const [hollow] = lights;
+      const full = lights.at(-1) ?? 0;
+      expect(Palette.brightness(full)).toBeGreaterThan(240);
+      expect(blueness(hollow ?? 0)).toBeGreaterThan(70);
+      // Its hollows are darker than the snow in shade, by day and tinted by the night.
+      const night = at(3);
+      expect(Palette.contrast(hollow ?? 0, Palette.SNOW_SHADE)).toBeGreaterThan(2);
+      expect(Palette.brightness(Palette.tinted(hollow ?? 0, night.snowTint))).toBeLessThan(
+        Palette.brightness(Palette.tinted(Palette.SNOW_SHADE, night.snowTint)) - 10,
+      );
+    }
+    expect(blueness(Palette.ice(1, 0.4))).toBeGreaterThan(blueness(Palette.ice(0, 0.4)) + 40);
+    expect(Palette.ice(0.5, 0.4)).toBe(Palette.mix(Palette.ice(0, 0.4), Palette.ice(1, 0.4), 0.5));
+  });
+
+  it("throws the light back off wet ice white by day and in the sky's pale blue at night, brighter than the night's snow (#290)", () => {
+    const { red, blue } = Palette.channels(at(3).gloss);
+    expect(blue - red).toBeGreaterThan(20);
+    for (const hours of [3, 4]) {
+      const night = at(hours);
+      expect(Palette.brightness(night.gloss)).toBeGreaterThan(
+        Palette.brightness(Palette.tinted(Palette.SNOW, night.snowTint)) * 2.5,
+      );
+    }
+    expect(Palette.brightness(at(12).gloss)).toBeGreaterThan(245);
+  });
+
+  it("finds the colour at a place along its stops: the ends' past them, and between two, theirs mixed", () => {
+    const stops = [
+      [1, 0x000000],
+      [3, 0x808080],
+      [4, 0xffffff],
+    ] as const;
+    expect(Palette.along(stops, 0)).toBe(0x000000);
+    expect(Palette.along(stops, 2)).toBe(0x404040);
+    expect(Palette.along(stops, 3)).toBe(0x808080);
+    expect(Palette.along(stops, 9)).toBe(0xffffff);
+  });
+
   it("darkens the glacier's ice as it goes down under the snow, blue all the way", () => {
     const depths = [0, 1, 2.5, 4, 6, 9, 12, 16, 20, 24, 40];
     const colours = depths.map((depth) => Palette.glacier(depth));

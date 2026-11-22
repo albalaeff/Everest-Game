@@ -80,12 +80,12 @@ test("the panel goes to a ladder from its list, to metres along the ground and t
   // The slot's ladder, from the list: on their feet, clipped in a step short of it, Pemba with them.
   await panel(page).getByLabel("Go to").selectOption("ladder:slot");
   await panel(page).locator('[data-form="place"]').getByRole("button", { name: "Go" }).click();
-  expect(slot).toBe(259.25);
+  expect(slot).toBe(260.625);
   await expect.poll(() => along(page), WALKING).toBe(slot);
   const player = await seen(page, "player");
   expect(player).toMatchObject({ dead: false, falling: false, ladder: null });
   expect(player?.first).not.toBeNull();
-  await expect(panel(page)).toContainText("You: 259.3 m along");
+  await expect(panel(page)).toContainText("You: 260.6 m along");
   const pemba = await page.evaluate(() => window.everest.god?.where.sherpa ?? Number.NaN);
   expect(pemba).toBeGreaterThanOrEqual(slot);
   expect(pemba).toBeLessThan(slot + 40);

@@ -332,13 +332,14 @@ describe("Section: the Khumbu Icefall from content/route/icefall.json", () => {
 
     expect(steps.map(({ foot }) => partAt(foot))).toEqual(["popcorn", "maze", "upper-icefall"]);
     for (const { foot, top } of steps) {
-      // Up the route, a few metres high, as the Icefall's walls climbed on the rope are.
-      const height = terrain.point(top).y - terrain.point(foot).y;
       expect(top).toBeGreaterThan(foot);
-      expect(height).toBeGreaterThan(2);
-      expect(height).toBeLessThan(4);
       expect(ropes.some((rope) => rope.from <= foot && rope.to > top)).toBe(true);
     }
+    // Up the route, walls to stand under and look up at (#290), as the Icefall's walls climbed on
+    // the rope are: each taller than the one before, to the crux.
+    expect(steps.map(({ foot, top }) => terrain.point(top).y - terrain.point(foot).y)).toEqual([
+      4.625, 5, 6,
+    ]);
     // The crux is above a ladder: up it to a ledge, and on up the ice.
     expect(below?.id).toBe("high-wall");
   });
