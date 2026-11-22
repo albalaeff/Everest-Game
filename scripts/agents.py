@@ -14,7 +14,8 @@ share of the window at which Claude Code compacts its conversation (`CompactShar
 the more its issue's `compact:*` label gives (#152); what it writes for after that is `NOTES`.
 While the manager holds its lock (`ManagerLock`), a session's watcher ends: the agents take
 the issues (CLAUDE.md → Sessions). A session's watcher holds one of its own (`WatchLock`,
-#597), so a second session on the machine takes no issue either.
+#597), so a second session on the machine takes no issue either; and a wiki run with no
+manager, one of its own too (`WikiLock`, #295).
 """
 
 import os
@@ -22,7 +23,7 @@ import re
 import sys
 import tomllib
 from collections.abc import Iterable, Mapping
-from dataclasses import dataclass, fields
+from dataclasses import dataclass, fields, replace
 from datetime import datetime
 from pathlib import Path
 from typing import IO, ClassVar
@@ -275,6 +276,15 @@ class ManagerConfig:
         """An agent's power when its issue has no label for it."""
         return AgentPower(self.default_model, self.default_effort)
 
+    def with_power(self, model: str | None = None, effort: str | None = None) -> ManagerConfig:
+        """These settings with the agents' power changed where given: a wiki run's
+        `--model` and `--effort` (#295). ValueError for one Claude Code doesn't name."""
+        return replace(
+            self,
+            default_model=model or self.default_model,
+            default_effort=effort or self.default_effort,
+        )
+
     @property
     def compaction(self) -> CompactShare:
         """Where Claude Code compacts an agent's conversation."""
@@ -363,6 +373,14 @@ class ManagerLock(RunLock):
     start the same issue."""
 
     def __init__(self, path: Path = RUNS / "manager.lock") -> None:
+        super().__init__(path)
+
+
+class WikiLock(RunLock):
+    """A wiki run's, `scripts/agent_manager.py wiki` (#295). While it's held, a second one in
+    the checkout says so and ends, rather than start a second agent in the wiki's worktree."""
+
+    def __init__(self, path: Path = RUNS / "wiki.lock") -> None:
         super().__init__(path)
 
 

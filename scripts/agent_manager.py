@@ -8,6 +8,9 @@ its own, so that nobody watches handoffs or starts sessions again.
     uv run python scripts/agent_manager.py labels      puts the model:*, effort:*,
                                                        priority:* and compact:* labels on
                                                        the repository (scripts/setup.sh does)
+    uv run python scripts/agent_manager.py wiki        brings the wiki up to date now, then
+                                                       ends, where no manager runs (#295):
+                                                       --model, --effort for its agent
 
 It runs the watcher, `scripts/github.py watch --json`, as its child: the watcher decides what
 needs doing, as it did for a session, looking every two minutes unless agent-manager.toml says
@@ -37,7 +40,8 @@ agent, told why, only when a check fails.
 
 When PRs merged into develop since the wiki last caught up, which the watcher looks at every
 few hours, an agent updates the wiki's pages in a clone the manager made, and the manager
-pushes them (`WikiJob`, #126).
+pushes them (`WikiJob`, #126). `wiki` does that once with no manager, for a scheduler to run
+every day (`WikiRun`, #295).
 
 One agent per issue, at most `max_parallel` at once, and a green PR's merge besides, in a lane
 of its own (#485): the rest wait their turn, a merge first, then by the issue's `priority:*`
@@ -104,8 +108,9 @@ from scripts.agents import (  # noqa: E402
     ManagerConfig,
     ManagerLock,
     Priority,
+    WikiLock,
 )
-from scripts.check_setup import Check, Toolchain  # noqa: E402
+from scripts.check_setup import Check, Toolchain, main_checkout  # noqa: E402
 from scripts.claude_cost import IssueCost, Title, issue_cost  # noqa: E402
 from scripts.github import (  # noqa: E402
     CLOSES,
@@ -128,7 +133,7 @@ from scripts.github import (  # noqa: E402
     utf8_output,
 )
 from scripts.handoff import Git, Handoff, IssueBranch, Machine, Run, plural  # noqa: E402
-from scripts.wiki import WikiClone, WikiNews, WikiUnpublished  # noqa: E402
+from scripts.wiki import WikiCheck, WikiClone, WikiNews, WikiUnpublished  # noqa: E402
 
 Say = Callable[[str], None]
 
@@ -2040,6 +2045,92 @@ class AgentManager:
         return False
 
 
+# --- the wiki, once, where no manager runs (#295) ---------------------------------------------
+
+
+@dataclass(frozen=True, slots=True)
+class WikiRun:
+    """`scripts/agent_manager.py wiki`: what the manager's watcher and wiki agent do every few
+    hours (#126), done once, then an end, for a machine where no manager runs; a scheduler
+    runs it every day (README → Agents → The wiki). It looks at once, whatever
+    `wiki_every_hours` says (`check`), and when PRs merged into develop since the commit the
+    wiki covers, it starts the wiki's agent as the manager would (`launcher`), waits for its
+    end, and says what came of it.
+
+    It takes no issue and holds no manager's lock, so a session's watcher on the machine goes
+    on (#597). While a manager runs, in this checkout or the main one (`managers`), the
+    manager's watcher keeps the wiki and this does nothing; and while another wiki run holds
+    `lock`, neither does this, rather than start a second agent in the wiki's worktree."""
+
+    check: Callable[[datetime], WikiNews]  # `WikiCheck.run`
+    launcher: Launcher
+    lock: WikiLock
+    managers: tuple[ManagerLock, ...]
+    say: Say
+    dry_run: bool = False
+    now: Callable[[], datetime] = datetime.now  # naive, as the watcher's check takes it
+    sleep: Callable[[float], None] = time.sleep
+
+    EVERY: ClassVar[float] = 5  # seconds between looks at the running agent
+
+    def __call__(self) -> int:
+        """Does it; the exit status: 0 when the wiki is up to date (its pages pushed, or
+        nothing new) or left to a manager or another run, 1 when it isn't."""
+        for manager in self.managers:
+            if (held := manager.holder()) is not None:
+                self.say(
+                    f"The agent manager runs here ({held}): its watcher keeps the wiki up to date."
+                )
+                return 0
+        if not self.dry_run and not self.lock.acquire(self.now()):
+            self.say(f"A wiki run already runs here ({self.lock.holder()}).")
+            return 0
+        try:
+            return self._run()
+        finally:
+            self.lock.release()
+
+    def _run(self) -> int:
+        news = self.check(self.now())
+        self.say(news.text)
+        if not news.pulls:
+            return 1 if news.failed else 0
+        job = WikiJob(news, self.now().date())
+        if self.dry_run:
+            self.say(self.launcher.plan(job))
+            return 0
+        while True:
+            try:
+                agent = self.launcher.launch(job)
+            except AgentError as error:
+                self.say(f"{job}: not started: {error}")
+                return 1
+            self.say(f"{job}: started, {agent}; its log: {agent.log}")
+            code = self._wait(agent)
+            self.say(agent.finish(code))
+            if agent.unavailable is None:
+                break
+            lacking = agent.unavailable.model  # #4: the next model down, as the manager does
+            instead = self.launcher.avoid(lacking)
+            if instead == lacking:  # the weakest, which is never given up
+                return 1
+            self.say(f"The account lacks the model {lacking}: the wiki's agent runs on {instead}.")
+        if agent.limit is not None:  # #476: it did nothing
+            self.say("Usage limit: nothing pushed; the next run covers these PRs too.")
+            return 1
+        return 0 if code == 0 and not self.launcher.kept(job) else 1
+
+    def _wait(self, agent: Agent) -> int | None:
+        """Its exit code once it ends; None when Ctrl+C stopped it, keeping its worktree."""
+        try:
+            while (code := agent.poll()) is None:
+                self.sleep(self.EVERY)
+        except KeyboardInterrupt:
+            agent.stop()
+            return None
+        return code
+
+
 # --- the labels ------------------------------------------------------------------------------
 
 
@@ -2076,16 +2167,21 @@ def main(argv: Sequence[str] | None = None) -> None:
     parser = argparse.ArgumentParser(
         prog="scripts/agent_manager.py", description=__doc__.split("\n")[0]
     )
-    parser.add_argument("command", nargs="?", choices=["run", "labels"], default="run")
+    parser.add_argument("command", nargs="?", choices=["run", "labels", "wiki"], default="run")
     parser.add_argument("--dry-run", action="store_true", help="say what it would run")
     parser.add_argument("--once", action="store_true", help="what needs doing now, then end")
     parser.add_argument(
         "--issue", type=int, action="append", default=[], help="only this issue's tasks"
     )
+    parser.add_argument("--model", choices=AgentPower.MODELS, help="wiki: its agent's model")
+    parser.add_argument("--effort", choices=AgentPower.EFFORTS, help="wiki: its agent's effort")
     args = parser.parse_args(argv)
+    if (args.model or args.effort) and args.command != "wiki":
+        parser.error("--model and --effort are for wiki: an issue's agent takes its labels")
 
     git = Git(ROOT)
-    github = GitHub(repo_slug(git.out("remote", "get-url", "origin")), token())
+    origin = git.out("remote", "get-url", "origin")
+    github = GitHub(repo_slug(origin), token())
     if args.command == "labels":
         made = Labels(github).ensure()
         print(f"Made: {', '.join(made)}." if made else "The labels are all there.")
@@ -2098,11 +2194,27 @@ def main(argv: Sequence[str] | None = None) -> None:
             "No `claude` on the PATH: the agents are Claude Code's command line. "
             "scripts/check_setup.py says how to install it."
         )
+    server = config.test_database_url or os.environ.get("TEST_DATABASE_URL", "")
+    if args.command == "wiki":  # #295
+        wiki = WikiRun(
+            WikiCheck(github, origin, config.wiki_every_hours).run,
+            Launcher(
+                config.with_power(args.model, args.effort),
+                git,
+                claude or "claude",
+                github.slug,
+                database=lambda slot: TestDatabase(slot, server),
+            ),
+            WikiLock(),
+            (ManagerLock(), ManagerLock(main_checkout() / RUNS.name / "manager.lock")),
+            Console().say,
+            dry_run=args.dry_run,
+        )
+        raise SystemExit(wiki())
     lock = ManagerLock()
     if not args.dry_run and not lock.acquire(datetime.now()):
         raise SystemExit(f"An agent manager already runs here ({lock.holder()}).")
     me = github.call("GET", "/user")["login"]
-    server = config.test_database_url or os.environ.get("TEST_DATABASE_URL", "")
     launcher = Launcher(
         config,
         git,

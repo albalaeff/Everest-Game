@@ -142,6 +142,7 @@ def test_the_check_starts_from_the_trailer_and_reads_the_wiki_again_once_it_move
 
     assert f"compare/{FEATURE}...develop" in github.asked
     assert news == WikiNews(f"The wiki: nothing merged into develop since {FEATURE[:7]}.")
+    assert not news.failed
     assert not any(path.startswith("commits?") for path in github.asked)
 
 
@@ -151,6 +152,7 @@ def test_it_looks_every_few_hours_a_failure_too(wiki: Wiki, tmp_path: Path) -> N
     first = made(lambda: NOW)
 
     assert first is not None and first.text.startswith("The wiki: couldn't tell what's new")
+    assert first.failed  # #295: a run of its own says it failed; nothing new isn't a failure
     assert made(lambda: NOW.replace(hour=23)) is None
     assert made(lambda: NOW.replace(day=4)) is not None
 
