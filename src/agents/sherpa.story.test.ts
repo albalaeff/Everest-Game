@@ -489,6 +489,65 @@ describe("A Sherpa and a client hanging on a step of ice (#305)", () => {
     expect(anna).toMatchObject({ x: 20, y: 10, onIce: false, dead: false });
     expect(anna.falls).toMatchObject([{ held: true, pulled: true, pulledBy: ["pemba"] }]);
   });
+
+  it("comes down the step to its foot for one who hangs low on it between two ropes, the one below letting her no higher, and helps her down", () => {
+    // The wall of ice, a rope along the flat that ends at its foot and one up it from there to
+    // its lip; Anna a metre short of it on two tools, Pemba 2 m past its lip.
+    const climb = new GuidedClimb({
+      layout: TestMountain.WALL.layout(
+        [
+          { id: "anna", along: 19, gear: { jumar: true, tools: 2 } },
+          { id: "pemba", along: 32 },
+        ],
+        [
+          { id: "below", from: 10, to: 20, length: 10.5 },
+          { id: "fixed", from: 20, to: 30, length: 10.2 },
+        ],
+      ),
+      sherpa: { climber: "pemba", clients: ["anna"], arrival: { from: 50, to: 60 } },
+    });
+    climb.play(steps(5));
+    // Her second cowstail on the rope along the flat, her jumar on the step's at its foot; five
+    // picks, each 1.9 m over her feet, take her as far up as the rope below lets her, under 2 m.
+    climb.play(steps(2), [
+      clip("anna", "second"),
+      { kind: "jumar", climber: "anna", held: true },
+      walk("anna", "right"),
+    ]);
+    climb.play(1, [clip("anna", "first")]);
+    for (let pick = 0; pick < 5; pick += 1) {
+      const { y } = climb.physics.climber("anna");
+      climb.play(steps(1.5), [
+        { kind: "tool", climber: "anna", tool: "ice-axe", x: 20, y: y + 1.9 },
+        walk("anna", "up"),
+      ]);
+    }
+    const climbing = climb.physics.climber("anna");
+    // There her feet slip, and she does nothing.
+    climb.physics.upset("anna", 0);
+    climb.play(steps(2), [walk("anna", "stop")]);
+    const hung = climb.physics.climber("anna");
+    let lowered = false;
+    const hauling = climb.until(() => {
+      const pemba = climb.physics.climber("pemba");
+      lowered ||= pemba.lowering;
+      return pemba.hauling;
+    }, steps(60));
+    const from = climb.along("pemba");
+    const out = climb.until(() => !climb.physics.climber("anna").falling, steps(20));
+    const anna = climb.physics.climber("anna");
+
+    expect(climbing).toMatchObject({ onIce: true, first: "fixed", second: "below" });
+    expect(climbing.heldBack).toBe("rope");
+    expect(hung).toMatchObject({ hanging: true, first: "fixed", second: "below" });
+    expect(hung.y).toBeGreaterThan(0.3);
+    expect(lowered).toBe(true);
+    expect(hauling).toBe(true);
+    expect(Math.abs(from - 20)).toBeLessThan(0.4);
+    expect(out).toBe(true);
+    expect(anna).toMatchObject({ x: 20, y: 0, onIce: false, dead: false });
+    expect(anna.falls).toMatchObject([{ held: true, pulled: true, pulledBy: ["pemba"] }]);
+  });
 });
 
 describe("A Sherpa under a hazard", () => {

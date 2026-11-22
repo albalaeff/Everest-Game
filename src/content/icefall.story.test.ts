@@ -132,10 +132,11 @@ describe("Base Camp to Camp 1 at a steady pace, clipped in all the way", () => {
 
 describe("Experience on the ladders and ropes: a novice and a veteran, as fit as the typical client", () => {
   const sources = new Mountain(knowledge).route.hours;
-  /** A seed on which none of the three has an accident to wait out: on the crossings' own, since
-   * the steps of ice are taller and the seed draws otherwise (#290), the novice slips unroped on
-   * the blue ice at 144 m, falls 4 m, and is carried down with a broken leg. */
-  const UNEVENTFUL = 2;
+  /** A seed on which none of the three slips, and so none waits for Pemba's haul: on the
+   * crossings' own the novice slips on the crux's step of ice; and on seed 2, since the cowstails
+   * go across at the walls' ladders and the seed draws otherwise (#305), the novice does there,
+   * and the typical client just above it. */
+  const UNEVENTFUL = 12;
 
   /** The hours a careful climber at a steady pace, with this experience, takes to Camp 1. */
   const hours = (experience: string): number => {
@@ -409,6 +410,30 @@ describe("The walls' ladders where one rope ends and the ladder's begins (#305)"
     });
   });
 
+  it.each([
+    [76, "high-wall"],
+    [156, "upper-wall"],
+  ])(
+    "brings a novice to Camp 1 on seed %i, where they hung off the %s's ladder for good, on the rope below it, Pemba hauling at its top",
+    (seed) => {
+      const mountain = new Mountain(knowledge);
+      const rules = mountain.rules();
+      const answers = { ...mountain.questionnaire.typical, experience: "none" };
+      const expedition = Expedition.start(
+        mountain.scenario(seed, answers, undefined, false),
+        rules.all,
+      );
+      const crossing = new Crossing(expedition, rules.physics, Section.PLAYER);
+      const steps = LONGEST_HOURS * HOUR * (1 / rules.clock.secondsAStep);
+      const arrived = crossing.until(mountain.route.destination.from, steps);
+      const player = rules.physics.climber(Section.PLAYER);
+
+      expect(arrived).toBe(true);
+      expect(player).toMatchObject({ dead: false, falling: false });
+      expect(rules.clock.elapsed / HOUR).toBeLessThan(mountain.route.hours.max - 0.5);
+    },
+  );
+
   it.each(WALLS)(
     "lands a client who climbs the %s's ladder on the rope they came on, and slips, at its foot, Pemba at its top hauling nothing",
     (wall) => {
@@ -490,13 +515,22 @@ describe("The walls' ladders where one rope ends and the ladder's begins (#305)"
 });
 
 describe("Pemba and a client hanging low on the crux's step of ice (#305)", () => {
+  /** The Icefall's steps of ice with no ladder, as its physics finds them on the route's own
+   * start, bottom to top: the last is the crux's. */
+  const stepsOfIce = (): readonly { readonly foot: number; readonly top: number }[] => {
+    const mountain = new Mountain(knowledge);
+    const rules = mountain.rules();
+    Expedition.start(mountain.scenario(SEED, undefined, undefined, false), rules.all);
+    return rules.physics.bareFaces;
+  };
+
   it("hauls them up it from its lip, from further below than the haul's reach", () => {
     const mountain = new Mountain(knowledge);
     const rules = mountain.rules();
     const scenario = mountain.scenario(SEED, undefined, undefined, false);
     const { layout } = mountain.route;
     const pemba = mountain.route.sherpa;
-    const step = rules.physics.bareFaces.at(-1);
+    const step = stepsOfIce().at(-1);
     if (step === undefined || pemba === null) {
       throw new Error("The Icefall has no step of ice, or no Sherpa");
     }
@@ -525,9 +559,6 @@ describe("Pemba and a client hanging low on the crux's step of ice (#305)", () =
     const climbing = player();
     rules.physics.upset(Section.PLAYER, expedition.step);
     expedition.advance([{ kind: "walk", climber: Section.PLAYER, direction: "stop" }]);
-    for (let settled = 0; settled < 80; settled += 1) {
-      expedition.advance();
-    }
     const hung = player();
     const lift = rules.physics.liftPoint(Section.PLAYER);
     let hauling = false;

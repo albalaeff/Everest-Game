@@ -321,9 +321,10 @@ class Carabiner {
     return new Carabiner(this.rope, this.slide);
   }
 
-  /** Slides along the rope to where it's nearest the climber. */
-  slideToward(climber: Point): void {
-    this.slide = this.rope.slideToward(this.slide, climber);
+  /** Slides along the rope to where it's nearest the climber, a cowstail of `reach` away, and
+   * where the rope still reaches them from both its anchors: where it would hold them, gripping. */
+  slideToward(climber: Point, reach: number): void {
+    this.slide = this.rope.slideToward(this.slide, climber, reach);
   }
 
   /** Whether the rope lets its climber be at a point: anywhere its length reaches while this
@@ -1348,7 +1349,7 @@ export class Climber {
     const where = this.where(slope);
     for (const carabiner of this.carabiners) {
       if (!this.grips(carabiner)) {
-        carabiner.slideToward(where);
+        carabiner.slideToward(where, slope.settings.cowstail);
       }
     }
   }
@@ -1513,11 +1514,11 @@ export class Climber {
     return ladder.condition === "broken" ? ladder.nearerEnd(falling.body) : null;
   }
 
-  /** Where a hanging climber would be pulled up to: their way back up the rope, to the ground or
-   * the rung they slipped off; off a face of ice, to its lip, up the rope that goes there, where
-   * a partner can stand (#305), and where their rope reaches no higher, only to where they
-   * slipped, which nobody stands by: they let themselves down to its foot (`offTheFace`). None
-   * for one on their feet, or not hanging (#209). */
+  /** Where a hanging climber would be brought back onto their feet: their way back up the rope,
+   * to the ground or the rung they slipped off; and off a face of ice, where they slipped being
+   * no place a partner can stand by, the end of it they come off it at (`offTheFace`, #305): its
+   * lip, up the rope that goes there, or its foot, a rope of theirs reaching no higher, where a
+   * partner helps them down. None for one on their feet, or not hanging (#209). */
   liftPoint(slope: Slope): Point | null {
     const { falling } = this;
     if (falling === null || falling.from === null || !this.hangs(slope)) {
@@ -1531,9 +1532,7 @@ export class Climber {
     if (from.ladder !== null) {
       return slope.ladder(from.ladder).point(from.rung);
     }
-    const face = slope.faces.at(from.along);
-    const upIt = face !== null && this.offTheFace(from.along, slope) === face.top;
-    return slope.terrain.point(upIt ? face.top : from.along);
+    return slope.terrain.point(this.offTheFace(from.along, slope));
   }
 
   /** Where a hauler can haul them up from (#239): within the haul's reach of their way back up

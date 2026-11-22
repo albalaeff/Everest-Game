@@ -294,6 +294,40 @@ describe("SlopePhysics: the jumar", () => {
     expect(distance(slid, BOTTOM)).toBeLessThanOrEqual(HELD_WITHIN + 0.01);
   });
 
+  it("grips where its climber stands past the rope's last anchor, the slack taken up: a slip there is held with no jerk (#305)", () => {
+    const climb = toTheAnchor();
+    const stood = climb.physics.climber("anna");
+
+    climb.physics.upset("anna", 0);
+    climb.play(400, [walk("anna", "stop")]);
+    const anna = climb.physics.climber("anna");
+    const [fall] = anna.falls;
+
+    expect(distance(stood, ANCHOR)).toBeGreaterThan(HELD_WITHIN - 0.05);
+    expect(anna).toMatchObject({ first: "lower", falling: false });
+    expect(anna.falls).toHaveLength(1);
+    // Down the slope past the anchor, as far below it as she stood above it, under 2 m of height,
+    // at the few metres a second a slide that long comes to: nothing snaps her back to the anchor.
+    expect(anna.y).toBeLessThan(ANCHOR.y);
+    expect(distance(anna, ANCHOR)).toBeLessThanOrEqual(HELD_WITHIN + 0.05);
+    expect(fall?.drop).toBeLessThan(2);
+    expect(fall?.speed).toBeLessThan(6);
+  });
+
+  it("lets a climber stopped past the last anchor walk back down with the jumar let go where it is (#305)", () => {
+    const climb = toTheAnchor();
+    const stopped = climb.physics.climber("anna");
+
+    climb.play(200, [jumar("anna", false), walk("anna", "left")]);
+    const anna = climb.physics.climber("anna");
+
+    // To the anchor and as far below it again, where the jumar holds her.
+    expect(anna.y).toBeLessThan(ANCHOR.y);
+    expect(distance(anna, stopped)).toBeGreaterThan(2 * HELD_WITHIN - 0.1);
+    expect(distance(anna, ANCHOR)).toBeLessThanOrEqual(HELD_WITHIN + 0.01);
+    expect(anna).toMatchObject({ first: "lower", moving: false, heldBack: "jumar" });
+  });
+
   it("shows where each carabiner is on its rope, within a cowstail of its climber, for the picture", () => {
     const climb = new Climb(TestMountain.CALM, onTheLine(up(15)));
     const unclipped = climb.physics.climber("anna");

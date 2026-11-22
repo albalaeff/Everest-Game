@@ -503,7 +503,10 @@ export class Slope {
    * takes. Of ropes as near as each other, at the anchor one ends at and the next begins at, the
    * one with the most of it lying the way the climber faces, `facing` (#305): the rope that goes
    * on, whichever was laid first. */
-  ropeWithin(climber: Point, facing: Way = 1): { readonly rope: Rope; readonly slide: Slide } | null {
+  ropeWithin(
+    climber: Point,
+    facing: Way = 1,
+  ): { readonly rope: Rope; readonly slide: Slide } | null {
     let found: {
       readonly rope: Rope;
       readonly slide: Slide;

@@ -54,7 +54,8 @@ export interface PointerWorld {
   /** Where the next pick bites well on that face, going up: above the feet, clear of brittle ice,
    * or over its lip once that's within reach; or none. */
   pickSpot(): Point | null;
-  /** Where a partner who hangs on the rope comes up: the edge to stand at; or none. */
+  /** Where a partner who hangs on the rope comes back onto their feet: the place to stand at,
+   * an edge, or the foot of a step of ice (#305); or none. */
   liftPoint(): Point | null;
 }
 
