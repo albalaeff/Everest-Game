@@ -27,6 +27,8 @@ D = Decimal
 OPUS = "claude-opus-5-5"
 PRICES = PriceHistory()
 PRICES.record([ModelPrice(OPUS, ALL, Price(D(4), D(20), D("0.20"), D(5), D(8)))], date(2026, 10, 1))
+HOME = "C:\\git\\Everest-Game"  # the folder the session was started in, its own
+WEATHER, DEVICES = "feature/272-weather", "feature/284-devices-drawn"  # its branches in turn
 
 
 def reply(
@@ -35,18 +37,23 @@ def reply(
     *,
     output: int = 1_000_000,  # $20 at Opus 5.5's prices
     commands: tuple[str, ...] = (),
+    tools: tuple[dict[str, Any], ...] = (),  # other tools' inputs: {"file_path": …}
     branch: str = "develop",
     model: str = OPUS,
     speed: str = "standard",
+    cwd: str = HOME,
 ) -> dict[str, Any]:
-    """A log entry of Claude's: a reply, with the commands it ran."""
+    """A log entry of Claude's: a reply, with the commands it ran and the other tools it
+    used."""
     content: list[dict[str, Any]] = [{"type": "text", "text": "On it."}]
     content += [{"type": "tool_use", "input": {"command": command}} for command in commands]
+    content += [{"type": "tool_use", "input": dict(tool)} for tool in tools]
     return {
         "type": "assistant",
         "timestamp": f"2026-10-12T10:{minute:02d}:00.000Z",
         "requestId": f"req_{message_id}",
         "gitBranch": branch,
+        "cwd": cwd,
         "message": {
             "id": message_id,
             "model": model,
@@ -231,6 +238,160 @@ def test_sessions_are_read_one_by_one(tmp_path: Path) -> None:
     counted = [issue for issue, _ in Ledger([first, second], PRICES).counted()]
 
     assert counted == [7, None]
+
+
+# --- a session working in another worktree (#293) -------------------------------------------
+
+
+@pytest.mark.parametrize(
+    ("where", "issue"),
+    [
+        ("cd /c/git/worktrees/256 && npm test", 256),
+        ("C:\\git\\worktrees\\256\\src\\physics\\ladder.ts", 256),
+        ("C:/git/worktrees/256/src/physics/ladder.ts", 256),
+        ("git worktree add -b feature/256-rope /c/git/worktrees/256 origin/develop", 256),
+        ("cd /c/git/worktrees/256 && cat /c/git/worktrees/256/README.md", 256),
+        # a look over several, as a clean-up takes, is work in none of them
+        ("for d in /c/git/worktrees/294 /c/git/worktrees/55; do ls -A $d; done", None),
+        ("ls /c/git/worktrees/", None),
+        ("C:\\git\\Everest-Game\\.claude\\worktrees\\admiring-cohen-eaf01e\\x.py", None),
+        ("cd /c/git/PersonalExchangeBot-worktrees/390", None),  # another folder
+    ],
+)
+def test_what_names_a_numbered_worktree(where: str, issue: int | None) -> None:
+    # The agent manager's naming, <worktree_dir>/<issue> (#387).
+    assert IssueNames.of_worktree(where) == issue
+
+
+def test_a_session_s_work_in_another_worktree_counts_for_its_issue_not_its_folder_s_branch(
+    tmp_path: Path,
+) -> None:
+    # #256's session worked in C:\git\worktrees\256 while its own folder was on #272's
+    # branch, then #284's: $45 of its $65 went to #272.
+    log = write_log(
+        tmp_path,
+        "s",
+        [
+            reply("m1", 0, branch=WEATHER, commands=("uv run python scripts/github.py show 256",)),
+            reply("m2", 1, branch=WEATHER),  # still in its own folder: its branch's, as before
+            reply("m3", 2, branch=WEATHER, commands=("cd /c/git/worktrees/256 && npm test",)),
+            reply("m4", 3, branch=WEATHER, tools=({"file_path": "C:\\git\\worktrees\\256\\a.ts"},)),
+            reply("m5", 4, branch=DEVICES),  # the answer, as its own folder moved on to #284
+            reply("m6", 5, branch=DEVICES, tools=({"query": "ladder descent speed"},)),
+        ],
+    )
+
+    counted = [(issue, item.at.minute) for issue, item in Ledger([log], PRICES).counted()]
+
+    assert counted == [(256, 0), (272, 1), (256, 2), (256, 3), (256, 4), (256, 5)]
+
+
+def test_in_a_worktree_the_issue_it_names_takes_the_replies_after_it(tmp_path: Path) -> None:
+    log = write_log(
+        tmp_path,
+        "s",
+        [
+            reply("m1", 0, branch=DEVICES, commands=("cd /c/git/worktrees/256 && npm test",)),
+            reply("m2", 1, branch=DEVICES, commands=("uv run python scripts/github.py pr 292",)),
+            reply("m3", 2, branch=DEVICES),  # reading its CI
+            reply("m4", 3, branch=DEVICES, tools=({"file_path": "C:\\git\\worktrees\\256\\a.ts"},)),
+        ],
+    )
+
+    counted = [issue for issue, _ in Ledger([log], PRICES).counted()]
+
+    assert counted == [256, 292, 292, 256]
+    assert Ledger([log], PRICES).issue(256, pulls=[292]).replies == 4
+
+
+@pytest.mark.parametrize(
+    ("where", "back"),
+    [
+        ({"file_path": "C:\\git\\Everest-Game\\src\\devices.ts"}, True),
+        ({"command": "cd /c/git/Everest-Game && npm test"}, True),
+        ({"path": "c:/git/everest-game/docs"}, True),
+        ({"command": "ls C:\\git\\Everest-Game"}, True),
+        ({"file_path": "C:\\git\\Everest-Game-old\\src\\devices.ts"}, False),  # beside it
+        ({"command": "npm test"}, False),  # where it ran isn't said
+        ({"file_path": "C:\\Users\\alexa\\.claude\\memory\\note.md"}, False),
+    ],
+)
+def test_a_path_in_its_own_folder_brings_a_session_back_to_its_branch(
+    tmp_path: Path, where: dict[str, str], back: bool
+) -> None:
+    log = write_log(
+        tmp_path,
+        "s",
+        [
+            reply("m1", 0, branch=DEVICES, commands=("cd /c/git/worktrees/256 && git log -3",)),
+            reply("m2", 1, branch=DEVICES, tools=(where,)),
+            reply("m3", 2, branch=DEVICES),
+        ],
+    )
+
+    counted = [issue for issue, _ in Ledger([log], PRICES).counted()]
+
+    assert counted == ([256, 284, 284] if back else [256, 256, 256])
+
+
+def test_the_files_a_reply_shows_say_where_it_worked(tmp_path: Path) -> None:
+    shots = {"files": ["C:\\git\\worktrees\\256\\before.png", "C:\\git\\worktrees\\256\\after.png"]}
+    log = write_log(
+        tmp_path,
+        "s",
+        [
+            reply(
+                "m1", 0, branch=DEVICES, commands=("cd /c/git/Everest-Game && git worktree prune",)
+            ),
+            reply("m2", 1, branch=DEVICES, tools=(shots,)),  # SendUserFile
+            reply("m3", 2, branch=DEVICES),
+        ],
+    )
+
+    counted = [issue for issue, _ in Ledger([log], PRICES).counted()]
+
+    assert counted == [284, 256, 256]
+
+
+def test_an_agent_in_its_own_worktree_counts_for_its_branch_as_before(tmp_path: Path) -> None:
+    # An agent's own folder is its worktree (#387): naming it is no move.
+    own, branch = "C:\\git\\worktrees\\256", "feature/256-rope-ladders"
+    log = write_log(
+        tmp_path,
+        "s",
+        [
+            reply("m1", 0, cwd=own, branch=branch, tools=({"file_path": f"{own}\\src\\a.ts"},)),
+            reply(
+                "m2",
+                1,
+                cwd=own,
+                branch=branch,
+                commands=("uv run python scripts/github.py show 255",),
+            ),
+            reply("m3", 2, cwd=own, branch=branch),
+        ],
+    )
+
+    counted = [issue for issue, _ in Ledger([log], PRICES).counted()]
+
+    assert counted == [256, 255, 256]
+
+
+def test_a_worktree_only_quoted_in_what_a_reply_writes_moves_nothing(tmp_path: Path) -> None:
+    # Where the work is: its commands and file paths, not the text it writes.
+    note = {"file_path": f"{HOME}\\notes.md", "content": "cd /c/git/worktrees/256 && npm test"}
+    log = write_log(
+        tmp_path,
+        "s",
+        [
+            reply("m1", 0, branch=DEVICES, tools=(note,)),
+            reply("m2", 1, branch=DEVICES),
+        ],
+    )
+
+    counted = [issue for issue, _ in Ledger([log], PRICES).counted()]
+
+    assert counted == [284, 284]
 
 
 # --- the title -----------------------------------------------------------------------------
