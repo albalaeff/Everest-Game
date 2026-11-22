@@ -383,7 +383,7 @@ export class DwellerPose {
    * degrees; and how far off the mats the hips are on hands and knees. */
   private static readonly TO_BED = 130;
   private static readonly LAID_BACK = 64;
-  private static readonly ON_KNEES = 46;
+  private static readonly ON_KNEES = 100;
   /** The way the back of the fist on the stirring spoon faces: to the stove's side, and up. */
   private static readonly ON_SPOON: Point = { x: 0.85, y: -0.5, z: 0.1 };
   /** By the stove: how far they lean to it and how far the head bows. */
@@ -1799,7 +1799,7 @@ export class DwellerPose {
   private static entering(share: number, inward: boolean): DwellerLook {
     // In from the door on hands and knees, and up onto the seat.
     const along = DwellerPose.ease(share / 0.7);
-    const up = DwellerPose.ease((share - 0.55) / 0.45);
+    const up = DwellerPose.ease((share - 0.4) / 0.6);
     const crawl = Math.sin(2 * Math.PI * 2.2 * share);
     const { KNEES, ON_KNEES, AT_KNEES } = DwellerPose;
     const palm = (side: 0 | 1, at: Spot): HandLook => ({

@@ -22,12 +22,14 @@ export class DwellerLegs {
     { flex: 90, spread: 30, turn: 44, knee: 138, point: -5 },
     { flex: 90, spread: 30, turn: 44, knee: 120, point: 7 },
   ];
-  /** Kneeling: the hips turned toward the door, and leaning toward the hands. */
+  /** Kneeling: the hips turned toward the door and leaning toward the hands as far as the body
+   * does (`DwellerPose`'s crawl), the thighs upright under them, the knees on the mat, the shins
+   * back along it and the toes pointed. */
   static readonly YAW = -70;
-  static readonly LEAN = 40;
+  static readonly LEAN = 62;
   static readonly KNEELING: readonly [LegSet, LegSet] = [
-    { flex: 100, spread: 6, turn: 0, knee: 125, point: 50 },
-    { flex: 100, spread: 6, turn: 0, knee: 125, point: 50 },
+    { flex: 62, spread: 0, turn: 0, knee: 90, point: 50 },
+    { flex: 62, spread: 0, turn: 0, knee: 90, point: 50 },
   ];
 
   private readonly bones = new LegBones();
