@@ -1172,6 +1172,96 @@
           "checked": "2026-11-22"
         }
       ]
+    },
+    {
+      "id": "body.hip-abduction",
+      "kind": "fact",
+      "claim": "A healthy man's hip swings his thigh out to the side about this far.",
+      "status": "source only",
+      "versions": [
+        {
+          "value": 38.5,
+          "unit": "°",
+          "note": "105 hips of healthy men aged 30–40 from Göteborg, measured passively with a goniometer as the AAOS handbook describes, supine: abduction 38.8 (SD 7.0) right, 38.4 (7.3) left; mean 38.5.",
+          "source": {
+            "title": "Roaas & Andersson: Normal range of motion of the hip, knee and ankle joints in male subjects, 30–40 years of age (Acta Orthopaedica Scandinavica 53:205–208, 1982) → Table 1",
+            "url": "https://actaorthop.org/actao/article/download/28654/33535/82106"
+          },
+          "checked": "2026-11-22"
+        }
+      ]
+    },
+    {
+      "id": "body.hip-adduction",
+      "kind": "fact",
+      "claim": "A healthy man's hip swings his thigh in across the other about this far.",
+      "status": "source only",
+      "versions": [
+        {
+          "value": 30.5,
+          "unit": "°",
+          "note": "105 hips of healthy men aged 30–40 from Göteborg, measured passively with a goniometer as the AAOS handbook describes, supine: adduction 30.5 (SD 7.3) on each side.",
+          "source": {
+            "title": "Roaas & Andersson: Normal range of motion of the hip, knee and ankle joints in male subjects, 30–40 years of age (Acta Orthopaedica Scandinavica 53:205–208, 1982) → Table 1",
+            "url": "https://actaorthop.org/actao/article/download/28654/33535/82106"
+          },
+          "checked": "2026-11-22"
+        }
+      ]
+    },
+    {
+      "id": "body.hip-internal-rotation",
+      "kind": "fact",
+      "claim": "A healthy man's hip turns his thigh in about this far.",
+      "status": "source only",
+      "versions": [
+        {
+          "value": 32.5,
+          "unit": "°",
+          "note": "105 hips of healthy men aged 30–40 from Göteborg, measured passively with a goniometer as the AAOS handbook describes, prone with the knee bent: internal rotation 32.6 (SD 8.2) right, 32.5 (8.2) left.",
+          "source": {
+            "title": "Roaas & Andersson: Normal range of motion of the hip, knee and ankle joints in male subjects, 30–40 years of age (Acta Orthopaedica Scandinavica 53:205–208, 1982) → Table 1",
+            "url": "https://actaorthop.org/actao/article/download/28654/33535/82106"
+          },
+          "checked": "2026-11-22"
+        }
+      ]
+    },
+    {
+      "id": "body.hip-external-rotation",
+      "kind": "fact",
+      "claim": "A healthy man's hip turns his thigh out about this far.",
+      "status": "source only",
+      "versions": [
+        {
+          "value": 44,
+          "unit": "°",
+          "note": "Boone & Azen's men aged 20–54, as the same table compares: external rotation 44.2 (SD 4.8). The table's own men, 30–40, turned out 33.6 (6.8), and the AAOS handbook gives 48: the measurements differ with the method.",
+          "source": {
+            "title": "Roaas & Andersson: Normal range of motion of the hip, knee and ankle joints in male subjects, 30–40 years of age (Acta Orthopaedica Scandinavica 53:205–208, 1982) → Table 1",
+            "url": "https://actaorthop.org/actao/article/download/28654/33535/82106"
+          },
+          "checked": "2026-11-22"
+        }
+      ]
+    },
+    {
+      "id": "body.knee-hyperextension",
+      "kind": "fact",
+      "claim": "A healthy man's knee straightens about this far past straight.",
+      "status": "source only",
+      "versions": [
+        {
+          "value": 1.6,
+          "unit": "°",
+          "note": "90 knees of healthy men aged 30–40 from Göteborg, measured passively with a goniometer as the AAOS handbook describes, supine: extension -1.6 (SD 2.8) right, -1.7 (3.0) left, hyperextension recorded as minus degrees.",
+          "source": {
+            "title": "Roaas & Andersson: Normal range of motion of the hip, knee and ankle joints in male subjects, 30–40 years of age (Acta Orthopaedica Scandinavica 53:205–208, 1982) → Table 1",
+            "url": "https://actaorthop.org/actao/article/download/28654/33535/82106"
+          },
+          "checked": "2026-11-22"
+        }
+      ]
     }
   ]
 }

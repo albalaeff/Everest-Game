@@ -59,10 +59,11 @@ export interface LegLengths {
  * 2012: from the hip to the knee and the knee to the ankle, the ankle off the floor, and the foot
  * to the ball and the toes (body.thigh-length, body.shin-length, body.ankle-height,
  * body.foot-length, body.ball-of-foot-length). Set by its joints' angles (`LegSet`), each within
- * the range a healthy man's joint bends (body.hip-flexion, body.hip-extension, body.knee-flexion,
- * body.ankle-dorsiflexion, body.ankle-plantarflexion), it gives the leg's joints in three
- * dimensions at the tent's scale, so a drawing shows it as it's seen and a test holds every pose
- * to its joints.
+ * the range a healthy man's joint bends (body.hip-flexion, body.hip-extension,
+ * body.hip-abduction, body.hip-adduction, body.hip-internal-rotation, body.hip-external-rotation,
+ * body.knee-flexion, body.knee-hyperextension, body.ankle-dorsiflexion,
+ * body.ankle-plantarflexion), it gives the leg's joints in three dimensions at the tent's scale,
+ * so a drawing shows it as it's seen and a test holds every pose to its joints.
  */
 export class LegBones {
   /** The tent's pixels in a millimetre: 300 to a metre. */
@@ -80,8 +81,8 @@ export class LegBones {
    * its turn in and out; the knee's; the ankle's flex up and point down. */
   static readonly RANGES: Readonly<Record<keyof LegSet, Range>> = {
     flex: [-17, 130],
-    spread: [-14, 38],
-    turn: [-33, 44],
+    spread: [-30, 38],
+    turn: [-32, 44],
     knee: [-1, 138],
     point: [-13, 55],
   };
