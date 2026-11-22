@@ -6,9 +6,17 @@ import { goOnWithTheClimb, openTheGame } from "./climb";
 /**
  * The slope as the page draws it. Playwright can't read a WebGL canvas, so the scene writes what
  * it draws into `#slope`'s data attributes, and `window.everest.pixelAt` reads a pixel back.
- * It's drawn as a new device starts, not on the other stories' Low (playwright.config.ts).
+ * It's drawn as a new device starts, not on the other stories' Low (playwright.config.ts), but in
+ * their clear sky: a new climb's weather turns from its seed (#272), and about one climb in ten
+ * set off under a cloudy night, which the night's stories here don't expect.
  */
-test.use({ storageState: { cookies: [], origins: [] } });
+test.use({
+  storageState: async ({ baseURL }, use) => {
+    const origin = new URL(baseURL ?? "http://localhost:4173").origin;
+    const localStorage = [{ name: "everest.weather", value: "clear" }];
+    await use({ cookies: [], origins: [{ origin, localStorage }] });
+  },
+});
 
 /** What the scene says of itself in `#slope`'s data attributes. */
 async function drawn(page: Page, what: string): Promise<string> {
