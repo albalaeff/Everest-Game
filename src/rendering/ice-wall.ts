@@ -3,7 +3,7 @@ import { SeededRandom } from "../simulation";
 import type { Beam } from "./beam";
 import { Cornice } from "./cornice";
 import { IceRelief } from "./ice-relief";
-import type { ReliefPlace } from "./ice-relief";
+import type { ReliefLevel } from "./ice-relief";
 import { Wander } from "./wander";
 
 /** A band of brittle ice across a face, as the picture draws it: its outline, closed, and the
@@ -28,12 +28,16 @@ export interface BrittleBand {
 export class IceWall {
   /** How far back into the ice its bare face shows, from the least to the most, and how long its
    * waves are. */
-  static readonly FACE = { min: 1.2, max: 2.1 };
+  static readonly FACE = { min: 1.5, max: 2.6 };
   private static readonly FACE_EVERY = 2.2;
   /** How finely the line its bare ice shows back to follows the face, and how far it wanders, so
    * short a way down, ragged as a crevasse's lit ice (#290). */
   private static readonly DRAWN_EVERY = 0.15;
   static readonly RAGGED = { every: 0.32, most: 0.28 };
+  /** Its bare ice stays in its own block of the glacier (#290): where the ground behind the face
+   * drops under a point of it, a crevasse behind the wall, the ice shows no further back than
+   * this far short of the drop, felt for this finely, and never less than so far. */
+  static readonly BLOCK = { clear: 0.25, every: 0.125, least: 0.4, under: 0.05 };
   /** How far into the face the scars stay off its inner edge, as a share of its width there. */
   private static readonly INSIDE = 0.92;
   /** A step climbed on the tools leans out at its top (#290): how far out past its face its bulge
@@ -72,6 +76,9 @@ export class IceWall {
     high: { min: 0.22, max: 0.55 },
   } as const;
   private static readonly APRON_POINTS = 8;
+  /** The light a headlamp spills round itself onto the ice near it (#290): as strong as this
+   * share of the lamp at the lamp, and gone so many metres from it. */
+  private static readonly SPILL = { strong: 0.9, reach: 3.5 };
   /** How much air the relief's box keeps past the face's furthest edge, for its lumps. */
   private static readonly MARGIN = 0.15;
   /** How near two lengths along the ground are to be the same point. */
@@ -151,10 +158,10 @@ export class IceWall {
     const { FACE, RAGGED } = IceWall;
     const deep = (y: number): number => FACE.min + ((FACE.max - FACE.min) * (wander.at(y) + 1)) / 2;
     const ragged = new Wander(random, RAGGED.every);
-    this.inner = IceWall.resampled(face, IceWall.DRAWN_EVERY).map(({ x, y }) => ({
-      x: x + into * (deep(y) + RAGGED.most * ragged.at(y + 13)),
-      y,
-    }));
+    this.inner = IceWall.resampled(face, IceWall.DRAWN_EVERY).map(({ x, y }) => {
+      const back = deep(y) + RAGGED.most * ragged.at(y + 13);
+      return { x: x + into * IceWall.solid(terrain, { x, y }, into, back), y };
+    });
     this.face = [...face, ...[...this.inner].reverse()];
     const step = SeededRandom.fromSeed(seed * 31 + IceWall.STEP_SEED);
     this.bulge = tools ? this.leanOut(top, step) : [];
@@ -170,8 +177,9 @@ export class IceWall {
     const right = Math.max(...xs) + (into === 1 ? 0 : margin);
     this.relief = new IceRelief(
       { left, top: top.y, width: right - left, height: top.y - foot.y },
-      (x, y) => this.place(x, y),
+      (y) => this.level(y),
       SeededRandom.fromSeed(seed * 31 + IceWall.ICE_SEED),
+      tools,
     );
     this.scars = tools ? this.scar(this.lip, foot.y, step) : [];
     this.shines = [...this.relief.shines, ...this.scars.flatMap((scar) => scar.slice(0, 1))];
@@ -181,13 +189,7 @@ export class IceWall {
    * shining points a lamp lights from the open side of its face, never from inside the ice
    * (#290). */
   lit(beams: readonly Beam[], least: number): { readonly point: Point; readonly light: number }[] {
-    const { line, into } = this;
-    const top = line[0]?.y ?? 0;
-    const foot = line.at(-1)?.y ?? top;
-    const facing = beams.filter(({ from }) => {
-      const edge = IceWall.across(line, Math.min(Math.max(from.y, foot), top));
-      return (from.x - edge) * into < 0;
-    });
+    const facing = this.facing(beams);
     if (facing.length === 0) {
       return [];
     }
@@ -199,6 +201,35 @@ export class IceWall {
       }
     }
     return lit;
+  }
+
+  /** How brightly the lamps of `beams` light its face at each of `heights`, 0 to 1 (#290): a
+   * beam that falls on it there, and round any lamp before it the light it spills, which lights
+   * the ice near it whichever way the lamp looks. Only the lamps on the open side of its face. */
+  lamplight(beams: readonly Beam[], heights: readonly number[]): number[] {
+    const { SPILL } = IceWall;
+    const facing = this.facing(beams);
+    return heights.map((y) => {
+      const point = { x: IceWall.across(this.line, y), y };
+      let most = 0;
+      for (const beam of facing) {
+        const away = Math.hypot(point.x - beam.from.x, point.y - beam.from.y);
+        const spilt = beam.strength * SPILL.strong * Math.max(0, 1 - away / SPILL.reach);
+        most = Math.max(most, spilt, beam.lights(point));
+      }
+      return Math.min(1, most);
+    });
+  }
+
+  /** The beams whose lamps are on the open side of its face, not inside its ice. */
+  private facing(beams: readonly Beam[]): Beam[] {
+    const { line, into } = this;
+    const top = line[0]?.y ?? 0;
+    const foot = line.at(-1)?.y ?? top;
+    return beams.filter(({ from }) => {
+      const edge = IceWall.across(line, Math.min(Math.max(from.y, foot), top));
+      return (from.x - edge) * into < 0;
+    });
   }
 
   /** A band of brittle ice across the face between heights `low` and `high`, as far as the face
@@ -259,22 +290,21 @@ export class IceWall {
     return y >= footOf ? IceWall.outermost(bulge, y, into) : IceWall.across(line, y);
   }
 
-  /** Where a point of the picture is on the face, for its relief; null above its top and below
-   * its foot. */
-  private place(x: number, y: number): ReliefPlace | null {
+  /** Where the face is at height `y`, for its relief; null above its top and below its foot. */
+  private level(y: number): ReliefLevel | null {
     const { line, into } = this;
     const top = line[0]?.y ?? 0;
     const foot = line.at(-1)?.y ?? top;
     if (y > top || y < foot) {
       return null;
     }
-    const ground = IceWall.across(line, y);
-    const lean = (ground - this.edge(y)) * into;
+    const edge = this.edge(y);
     return {
-      across: (x - ground) * into + lean,
-      deep: (IceWall.across(this.inner, y) - ground) * into + lean,
+      edge,
+      into,
+      deep: (IceWall.across(this.inner, y) - edge) * into,
       down: top - y,
-      lean,
+      lean: (IceWall.across(line, y) - edge) * into,
       up: y - foot,
       bank: this.bank,
     };
@@ -370,6 +400,18 @@ export class IceWall {
     const back = IceWall.across(this.inner, y);
     const most = Math.abs(back - edge) * IceWall.INSIDE;
     return { x: edge + this.into * Math.min(reach, most), y };
+  }
+
+  /** How far the glacier is solid behind the face at `point`, up to `most`: as far as the ground
+   * stays over the point's height, short of where it drops under it. */
+  private static solid(terrain: Terrain, { x, y }: Point, into: 1 | -1, most: number): number {
+    const { BLOCK } = IceWall;
+    for (let back = BLOCK.every; back <= most; back += BLOCK.every) {
+      if (terrain.height(x + into * back) < y - BLOCK.under) {
+        return Math.min(most, Math.max(BLOCK.least, back - BLOCK.clear));
+      }
+    }
+    return most;
   }
 
   /** `line` with a point every `every` metres or nearer down each of its segments, its own corners

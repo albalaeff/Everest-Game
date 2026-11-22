@@ -5,6 +5,7 @@ import {
   Graphics,
   Particle,
   ParticleContainer,
+  Rectangle,
   Sprite,
   Texture,
 } from "pixi.js";
@@ -50,7 +51,7 @@ import { IceBody } from "./ice-body";
 import { IceSurface } from "./ice-surface";
 import { IceTowers } from "./ice-towers";
 import type { TowerSizes } from "./ice-towers";
-import type { IceRelief } from "./ice-relief";
+import { IceRelief } from "./ice-relief";
 import { IceWall } from "./ice-wall";
 import { LadderBow } from "./ladder-bow";
 import { LadderShake } from "./ladder-shake";
@@ -261,14 +262,19 @@ export class SlopeLayer extends ParallaxLayer {
   /** The streaks down a wall's bare ice: how wide, and how strong. */
   private static readonly STREAK_METRES = 0.035;
   private static readonly STREAK_ALPHA = 0.55;
-  /** A wall's ice (#290), as shares of the gloss: how much of its highlights show over it; the
-   * scars up a step climbed on the tools; and the light down an icicle, so wide. */
+  /** A wall's ice (#290), as shares of the gloss: how much of what it throws back of the sky's
+   * light shows over it at night, and by day, when its own picture has it; the scars up a step
+   * climbed on the tools; and the light down an icicle, so wide. */
   private static readonly GLOSS = {
-    shine: { night: 0.8, day: 0.3 },
+    shine: { night: 0.65, day: 0 },
     scarAlpha: 0.7,
     icicle: 0.014,
     icicleAlpha: 0.6,
   } as const;
+  /** A wall's ice in the headlamps' light (#290): its picture by day shown again in strips so
+   * tall down the face, each as brightly as the lamps light the face there, the brightest so
+   * strong; and the least light that shows. */
+  private static readonly LAMPLIT = { strip: 0.25, alpha: 0.92, least: 0.02 };
   /** A headlamp's beam on a wall's wet ice (#290): the least light that shows, and each glint, a
    * star so big in the full beam, its points so thin, and so much brighter than the light that
    * makes it. */
@@ -359,9 +365,20 @@ export class SlopeLayer extends ParallaxLayer {
   private readonly wallFaces = new Container();
   private readonly wallShine = new Container();
   private readonly reliefTextures: Texture[] = [];
-  /** The walls drawn, for the headlamps to shine on: each one and how far across it reaches. */
-  private readonly iceWalls: { readonly wall: IceWall; readonly reach: InView }[] = [];
+  /** The walls' ice in the headlamps' light: strips of each wall's picture by day, in the day's
+   * own colours, shown where the lamps light the face. */
+  private readonly wallLamp = new Container();
+  /** The walls drawn, for the headlamps to shine on: each one, how far across it reaches, and the
+   * strips of its picture the lamps light, with the height of each one's middle. */
+  private readonly iceWalls: {
+    readonly wall: IceWall;
+    readonly reach: InView;
+    readonly strips: readonly Sprite[];
+    readonly heights: readonly number[];
+  }[] = [];
+  private readonly stripTextures: Texture[] = [];
   private flashShown = false;
+  private lamplitShown = false;
   private readonly surface = new Graphics();
   /** The camps' tents, behind the climbers and, for one somebody goes into, over them (#258). */
   /** Where a tent's button is pinned: so far along its body from its door, and above its fly,
@@ -562,6 +579,7 @@ export class SlopeLayer extends ParallaxLayer {
       this.rims,
       this.lips,
       this.wallShine,
+      this.wallLamp,
       this.wallGloss,
       this.brittleBands,
       this.wallFlash,
@@ -675,6 +693,10 @@ export class SlopeLayer extends ParallaxLayer {
     super.destroy(options);
     if (this.softPuff !== Texture.WHITE) {
       this.softPuff.destroy(true);
+    }
+    // The strips first: they're cut from the reliefs' own pictures.
+    for (const texture of this.stripTextures) {
+      texture.destroy();
     }
     for (const texture of this.reliefTextures) {
       texture.destroy(true);
@@ -843,7 +865,7 @@ export class SlopeLayer extends ParallaxLayer {
    * (#290); nothing drawn again while no beam is on. */
   private flash(view: InView): void {
     const { beams, wallFlash } = this;
-    const { FLASH } = SlopeLayer;
+    const { FLASH, LAMPLIT } = SlopeLayer;
     const shown =
       beams.length === 0
         ? []
@@ -852,6 +874,14 @@ export class SlopeLayer extends ParallaxLayer {
       if (this.flashShown) {
         wallFlash.clear();
         this.flashShown = false;
+      }
+      if (this.lamplitShown) {
+        for (const { strips } of this.iceWalls) {
+          for (const strip of strips) {
+            strip.visible = false;
+          }
+        }
+        this.lamplitShown = false;
       }
       return;
     }
@@ -866,6 +896,16 @@ export class SlopeLayer extends ParallaxLayer {
       }
     }
     this.flashShown = flashed;
+    // Its ice in the lamps' light, in the day's colours: each strip as bright as the face there.
+    for (const { wall, strips, heights } of this.iceWalls) {
+      const lights = shown.some((one) => one.wall === wall) ? wall.lamplight(beams, heights) : [];
+      for (const [index, strip] of strips.entries()) {
+        const light = lights[index] ?? 0;
+        strip.visible = light > LAMPLIT.least;
+        strip.alpha = light * LAMPLIT.alpha;
+      }
+    }
+    this.lamplitShown = true;
   }
 
   /** The snow and the ice in the hour's light: tinted again when the colours change. */
@@ -1883,17 +1923,44 @@ export class SlopeLayer extends ParallaxLayer {
    * of the picks and front points up a step climbed on the tools. Kept for the headlamps to shine
    * on. */
   private drawWall(wall: IceWall): void {
-    const { flat, GLOSS } = SlopeLayer;
+    const { flat, GLOSS, LAMPLIT } = SlopeLayer;
     const { relief } = wall;
-    this.wallFaces.addChild(this.reliefSprite(relief, relief.ice));
+    const { box, columns, rows } = relief;
+    const fine = IceRelief.PIXELS_A_METRE;
+    const face = this.reliefSprite(relief, relief.ice);
+    this.wallFaces.addChild(face);
     this.wallShine.addChild(this.reliefSprite(relief, relief.gloss));
+    // The same picture again in strips down the face, for the lamps to light.
+    const strips: Sprite[] = [];
+    const heights: number[] = [];
+    const tall = Math.max(1, Math.round(LAMPLIT.strip * fine));
+    for (let row = 0; row < rows && face.texture !== Texture.EMPTY; row += tall) {
+      const high = Math.min(tall, rows - row);
+      const texture = new Texture({
+        source: face.texture.source,
+        frame: new Rectangle(0, row, columns, high),
+      });
+      this.stripTextures.push(texture);
+      const strip = new Sprite(texture);
+      strip.position.set(box.left, box.top - row / fine);
+      strip.scale.set(1 / fine, -1 / fine);
+      strip.visible = false;
+      this.wallLamp.addChild(strip);
+      strips.push(strip);
+      heights.push(box.top - (row + high / 2) / fine);
+    }
     if (wall.apron.length > 0) {
       this.walls.poly(flat(wall.apron)).fill(Palette.SNOW);
     }
     for (const scar of wall.scars) {
       this.wallGloss.poly(flat(scar)).fill({ color: 0xffffff, alpha: GLOSS.scarAlpha });
     }
-    this.iceWalls.push({ wall, reach: SlopeLayer.across([...wall.face, ...wall.bulge]) });
+    this.iceWalls.push({
+      wall,
+      reach: SlopeLayer.across([...wall.face, ...wall.bulge]),
+      strips,
+      heights,
+    });
   }
 
   /** A relief's `pixels` as a sprite where its box is, in the layer's metres; its texture kept,
@@ -1909,12 +1976,14 @@ export class SlopeLayer extends ParallaxLayer {
     const image = context.createImageData(columns, rows);
     image.data.set(pixels);
     context.putImageData(image, 0, 0);
-    const texture = Texture.from(canvas);
+    // Far out, a screen's pixel takes in many of the picture's: its smaller copies keep the
+    // flutes from flickering as the view moves.
+    const texture = Texture.from({ resource: canvas, autoGenerateMipmaps: true });
     this.reliefTextures.push(texture);
     sprite.texture = texture;
-    // The layer's y is up: the picture hangs down from its box's top.
+    // The layer's y is up: the picture hangs down from its box's top, as fine as it's drawn.
     sprite.position.set(box.left, box.top);
-    sprite.scale.set(box.width / columns, -box.height / rows);
+    sprite.scale.set(1 / IceRelief.PIXELS_A_METRE, -1 / IceRelief.PIXELS_A_METRE);
     return sprite;
   }
 

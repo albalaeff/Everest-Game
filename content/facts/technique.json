@@ -938,12 +938,12 @@
     {
       "id": "technique.ice-climb-slip",
       "kind": "coefficient",
-      "claim": "The chance that a metre climbed on steep ice slips, for a climber on two tools whose picks bite well: about one slip in 250 m. Fitted so that a careful climber rarely comes off a wall of the Icefall, and a careless one does.",
+      "claim": "The chance that a metre climbed on steep ice slips, for a climber on two tools whose picks bite well: about one slip in 450 m. Fitted so that a careful climber rarely comes off a wall of the Icefall, and a careless one does: on the axe alone, the metres of one of its steps of ice with no ladder, 4.6 to 6 m high, bring a careful climber off it about one time in twenty, as they did before the steps were made taller (#290).",
       "status": "source only",
-      "value": 0.004,
+      "value": 0.0022,
       "unit": "1/m",
-      "fitted_to": ["technique.front-pointing", "route.icefall-lessons"],
-      "fitted": "2026-11-12"
+      "fitted_to": ["technique.front-pointing", "route.icefall-lessons", "route.icefall-ice-steps"],
+      "fitted": "2026-11-22"
     },
     {
       "id": "technique.ice-climb-one-tool-slip",
@@ -968,12 +968,12 @@
     {
       "id": "technique.axe-swing-slip",
       "kind": "coefficient",
-      "claim": "The chance that a swing comes off for a climber on the ice axe alone, who stands on their front points with no pick in the ice while it swings: about one swing in a hundred, more for one who is spent.",
+      "claim": "The chance that a swing comes off for a climber on the ice axe alone, who stands on their front points with no pick in the ice while it swings: about one swing in 180, more for one who is spent. Fitted with technique.ice-climb-slip so that the swings up one of the Icefall's steps of ice with no ladder, 4.6 to 6 m high, bring a careful climber off it about as often as the metres climbed do, as they did before the steps were made taller (#290).",
       "status": "source only",
-      "value": 0.01,
+      "value": 0.0055,
       "unit": "1",
-      "fitted_to": ["technique.front-pointing", "route.icefall-lessons"],
-      "fitted": "2026-11-12"
+      "fitted_to": ["technique.front-pointing", "route.icefall-lessons", "route.icefall-ice-steps"],
+      "fitted": "2026-11-22"
     },
     {
       "id": "technique.ice-hang-effort",

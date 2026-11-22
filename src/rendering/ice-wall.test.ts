@@ -174,6 +174,48 @@ describe("IceWall", () => {
     expect(UP.lip).toBeCloseTo(underTheLip(UP), 9);
   });
 
+  it("keeps a step climbed on the tools bare of snow, whatever its seed draws: its ice says where to climb (#290)", () => {
+    for (let seed = 1; seed <= 12; seed += 1) {
+      const ends = [
+        { x: 10, y: 0 },
+        { x: 10.375, y: 6 },
+      ] as const;
+      const step = new IceWall(TERRAIN, ends[0], ends[1], seed, true);
+      const ladder = new IceWall(TERRAIN, ends[0], ends[1], seed);
+      expect(step.relief.character.snow).toBeLessThanOrEqual(0.12);
+      expect(step.relief.character.snow).toBeLessThanOrEqual(ladder.relief.character.snow);
+    }
+  });
+
+  it("keeps its bare ice in its own block of the glacier: short of a crevasse behind the wall, as far back as usual where there's none (#290)", () => {
+    // The same wall, with a crevasse 1.5 m behind its face from its top down to 2 m.
+    const cut = new Terrain([
+      [0, 0],
+      [10, 0],
+      [10.375, 0.5],
+      [10.375, 6],
+      [11.875, 6],
+      [11.875, 2],
+      [13, 2],
+      [13, 6],
+      [20, 6],
+    ]);
+    const wall = new IceWall(cut, { x: 10, y: 0 }, { x: 10.375, y: 6 }, 2);
+    const { BLOCK } = IceWall;
+    const back = wall.face.slice(3);
+    for (const { x, y } of back.filter((point) => point.y > 2.2)) {
+      expect(x).toBeLessThanOrEqual(11.875 - BLOCK.clear + BLOCK.every + 1e-9);
+      expect(x).toBeGreaterThanOrEqual(10.375 + BLOCK.least - 1e-9);
+      expect(solidAt(wall, { x: 11.9, y })).toBe(0);
+    }
+    // Under the crevasse's floor the block is whole again.
+    const under = back.filter((point) => point.y < 1.8 && point.y > 0.6);
+    expect(Math.max(...xs(under))).toBeGreaterThan(11.875);
+    // And the wall with no crevasse behind it shows its ice further back up there.
+    const whole = UP.face.slice(3).filter((point) => point.y > 2.2);
+    expect(Math.max(...xs(whole))).toBeGreaterThan(11.875);
+  });
+
   it("shines in a lamp's light at its ice's highlights, and at the scars up a step climbed on the tools (#290)", () => {
     expect(UP.shines.length).toBeGreaterThan(10);
     for (const point of UP.shines) {
@@ -225,7 +267,7 @@ describe("IceWall", () => {
     }
   });
 
-  it("flashes in a headlamp's beam that falls on its face from the open side, brighter nearer the lamp, and not in one from inside the ice or turned away (#290)", () => {
+  it("flashes in a headlamp's beam that falls on its face from the open side, each point as brightly as the beam lights it, and not in one from inside the ice or turned away (#290)", () => {
     // A climber at the foot, their lamp at 1.7 m, looking up the face; one on its top; one
     // facing back down the route.
     const atTheFoot = new Beam({ x: 9.4, y: 1.7 }, 0.6, 6, 0.45, 1);
@@ -237,14 +279,48 @@ describe("IceWall", () => {
     for (const { point, light } of lit) {
       expect(onTheIce(point, UP)).toBe(true);
       expect(light).toBeGreaterThan(0.05);
-      expect(light).toBeLessThanOrEqual(1);
+      expect(light).toBeCloseTo(Math.min(1, atTheFoot.lights(point)), 9);
     }
-    const nearest = [...lit].sort((one, other) => one.point.y - other.point.y)[0];
-    const farthest = [...lit].sort((one, other) => other.point.y - one.point.y)[0];
-    expect(nearest?.light ?? 0).toBeGreaterThan(farthest?.light ?? 1);
+    const lights = lit.map(({ light }) => light);
+    expect(Math.max(...lights)).toBeGreaterThan(Math.min(...lights) * 2);
     expect(UP.lit([onTop], 0.05)).toEqual([]);
     expect(UP.lit([turnedAway], 0.05)).toEqual([]);
     expect(UP.lit([], 0.05)).toEqual([]);
+  });
+
+  it("is lit by a headlamp before it, height by height: brightest in the beam and round the lamp, by the light it spills whichever way it looks, dark far from it and from inside the ice (#290)", () => {
+    const heights = [0.75, 1.7, 2.5, 4, 5.5];
+    // A climber at the foot, their lamp at 1.7 m, looking level at the face.
+    const level = new Beam({ x: 9.4, y: 1.7 }, 0, 7, 0.26, 1);
+    const [low, atTheLamp, over, high, top] = UP.lamplight([level], heights);
+    expect(atTheLamp).toBeGreaterThan(0.6);
+    expect(atTheLamp).toBeLessThanOrEqual(1);
+    // Out of the beam, the light the lamp spills, less the further from it, and none past its
+    // reach.
+    expect(low).toBeGreaterThan(0.3);
+    expect(low).toBeLessThan(atTheLamp ?? 0);
+    expect(over).toBeGreaterThan(0.3);
+    expect(high).toBeGreaterThan(0);
+    expect(high).toBeLessThan(over ?? 0);
+    expect(top).toBe(0);
+    // Turned away, the lamp still spills its light on the ice beside it; at half its strength,
+    // half as much.
+    const away = new Beam({ x: 9.4, y: 1.7 }, Math.PI, 7, 0.26, 1);
+    const dim = new Beam({ x: 9.4, y: 1.7 }, Math.PI, 7, 0.26, 0.5);
+    const [, beside] = UP.lamplight([away], heights);
+    const [, dimmer] = UP.lamplight([dim], heights);
+    expect(beside).toBeGreaterThan(0.5);
+    expect(beside).toBeLessThan(atTheLamp ?? 0);
+    expect(dimmer).toBeCloseTo((beside ?? 0) / 2, 9);
+    // A lamp inside the ice, on the wall's top, lights none of its face; nor does no lamp.
+    const onTop = new Beam({ x: 11.5, y: 7.7 }, -2.4, 7, 0.26, 1);
+    expect(UP.lamplight([onTop], heights)).toEqual([0, 0, 0, 0, 0]);
+    expect(UP.lamplight([], heights)).toEqual([0, 0, 0, 0, 0]);
+    // Two lamps: each height by the one that lights it more.
+    const higher = new Beam({ x: 9.6, y: 5.3 }, 0, 7, 0.26, 1);
+    const both = UP.lamplight([level, higher], heights);
+    expect(both[1]).toBe(atTheLamp);
+    expect(both[4]).toBeGreaterThan(0.6);
   });
 
   it("drifts snow against its foot: up from the snow in front of it to the face, where its ice's bank of snow goes on (#290)", () => {

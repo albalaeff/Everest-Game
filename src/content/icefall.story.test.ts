@@ -132,6 +132,10 @@ describe("Base Camp to Camp 1 at a steady pace, clipped in all the way", () => {
 
 describe("Experience on the ladders and ropes: a novice and a veteran, as fit as the typical client", () => {
   const sources = new Mountain(knowledge).route.hours;
+  /** A seed on which none of the three has an accident to wait out: on the crossings' own, since
+   * the steps of ice are taller and the seed draws otherwise (#290), the novice slips unroped on
+   * the blue ice at 144 m, falls 4 m, and is carried down with a broken leg. */
+  const UNEVENTFUL = 2;
 
   /** The hours a careful climber at a steady pace, with this experience, takes to Camp 1. */
   const hours = (experience: string): number => {
@@ -139,7 +143,7 @@ describe("Experience on the ladders and ropes: a novice and a veteran, as fit as
     const rules = mountain.rules();
     const answers = { ...mountain.questionnaire.typical, experience };
     const expedition = Expedition.start(
-      mountain.scenario(SEED, answers, undefined, false),
+      mountain.scenario(UNEVENTFUL, answers, undefined, false),
       rules.all,
     );
     const crossing = new Crossing(expedition, rules.physics, Section.PLAYER);

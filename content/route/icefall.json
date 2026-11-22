@@ -226,7 +226,7 @@
       { "from": 312.625, "to": 319.75 },
       { "from": 502.75, "to": 507.875 }
     ],
-    "brittle": [{ "from": 519.4, "to": 519.8 }],
+    "brittle": [{ "from": 516.9, "to": 517.3 }],
     "ropes": [
       { "id": "approach", "from": 20, "to": 32, "length": 12.5 },
       { "id": "block", "from": 33, "to": 36, "length": 3.5 },

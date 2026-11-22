@@ -150,16 +150,18 @@ export class Palette {
    * on it: the deep blue of its hollows and the undersides of its tiers, the blue of its shaded
    * sides, pale where the light falls and near white where it falls full. */
   static readonly GREY_ICE: readonly (readonly [light: number, colour: number])[] = [
-    [0, 0x3d6a90],
-    [0.4, 0x84a8c2],
-    [0.7, 0xc4d9e6],
-    [1, 0xf3f9fc],
+    [0, 0x2c5a8c],
+    [0.3, 0x5f93bf],
+    [0.58, 0x9bc6e0],
+    [0.8, 0xd3e8f3],
+    [1, 0xfafeff],
   ];
   static readonly AQUA_ICE: readonly (readonly [light: number, colour: number])[] = [
-    [0, 0x1f6cae],
-    [0.4, 0x5cb2e2],
-    [0.7, 0xb2e4f5],
-    [1, 0xf0fcff],
+    [0, 0x0f4f8f],
+    [0.3, 0x1c86c6],
+    [0.58, 0x4fc0e8],
+    [0.8, 0xaee9f8],
+    [1, 0xf3fdff],
   ];
   /** The light a wall's glassy ice throws back (#290): white by day, the sky's pale blue under the
    * stars, so its reflections show on the dark ice at night. */

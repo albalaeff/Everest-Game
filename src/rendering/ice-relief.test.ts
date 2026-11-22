@@ -2,29 +2,29 @@ import { describe, expect, it } from "vitest";
 
 import { SeededRandom } from "../simulation";
 import { IceRelief } from "./ice-relief";
-import type { ReliefBox, ReliefPlace } from "./ice-relief";
+import type { ReliefBox, ReliefLevel } from "./ice-relief";
 
 /** A face 6 m high, its edge at x 10 and its ice to the right, 1.5 m of it showing; the box has
  * half a metre of air to its left. */
 const BOX: ReliefBox = { left: 9.5, top: 6, width: 2.5, height: 6 };
-const upright = (x: number, y: number): ReliefPlace | null =>
-  y > 6 || y < 0 ? null : { across: x - 10, deep: 1.5, down: 6 - y, lean: 0, up: y, bank: 0 };
+const upright = (y: number): ReliefLevel | null =>
+  y > 6 || y < 0 ? null : { edge: 10, into: 1, deep: 1.5, down: 6 - y, lean: 0, up: y, bank: 0 };
 /** The same face, leaning out 0.3 m in a bulge over its top 0.8 m, round under its nose. */
-const bulging = (x: number, y: number): ReliefPlace | null => {
-  const into = Math.min(Math.max((y - 5.2) / 0.4, 0), 1);
-  const lean = 0.3 * into * into * (3 - 2 * into);
+const bulging = (y: number): ReliefLevel | null => {
+  const share = Math.min(Math.max((y - 5.2) / 0.4, 0), 1);
+  const lean = 0.3 * share * share * (3 - 2 * share);
   return y > 6 || y < 0
     ? null
-    : { across: x - 10 + lean, deep: 1.5 + lean, down: 6 - y, lean, up: y, bank: 0 };
+    : { edge: 10 - lean, into: 1, deep: 1.5 + lean, down: 6 - y, lean, up: y, bank: 0 };
 };
 /** The same face, with snow banked half a metre up its foot. */
-const banked = (x: number, y: number): ReliefPlace | null => {
-  const at = upright(x, y);
+const banked = (y: number): ReliefLevel | null => {
+  const at = upright(y);
   return at === null ? null : { ...at, bank: 0.5 };
 };
-const relief = (seed: number, place = upright): IceRelief =>
-  new IceRelief(BOX, place, SeededRandom.fromSeed(seed));
-/** A bare, fluted wall: seed 9 draws little snow. */
+const relief = (seed: number, level = upright, bare = false): IceRelief =>
+  new IceRelief(BOX, level, SeededRandom.fromSeed(seed), bare);
+/** A bare wall: seed 9 draws little snow. */
 const RELIEF = relief(9);
 
 /** A pixel of a relief's ice at a point of the box: its colour's channels and how solid it is. */
@@ -71,12 +71,12 @@ describe("IceRelief", () => {
       expect(pixel(RELIEF, 11.47, y).solid).toBeLessThan(0.25);
       expect(pixel(RELIEF, 11.9, y).solid).toBe(0);
     }
-    // Half way across, it's neither whole nor gone everywhere: the line is ragged.
-    const halfway = Array.from(
+    // Most of the way across, it's neither whole nor gone everywhere: the line is ragged.
+    const fading = Array.from(
       { length: 24 },
-      (_, step) => pixel(RELIEF, 10.95, 0.125 + step * 0.25).solid,
+      (_, step) => pixel(RELIEF, 11.22, 0.125 + step * 0.25).solid,
     );
-    expect(Math.max(...halfway) - Math.min(...halfway)).toBeGreaterThan(0.1);
+    expect(Math.max(...fading) - Math.min(...fading)).toBeGreaterThan(0.1);
   });
 
   it("stands its lumps out past the face's edge here and there, so the wall's outline is uneven", () => {
@@ -88,7 +88,7 @@ describe("IceRelief", () => {
     expect(proud.some((out) => !out)).toBe(true);
   });
 
-  it("lights the ice from above and the open side: near white where the light falls, blue in its hollows and under its tiers", () => {
+  it("lights the ice from above and the picture's left: near white where the light falls, blue in its creases and under its tiers", () => {
     const pixels = solid(RELIEF);
     const bright = pixels.filter(({ bright: value }) => value > 225);
     const dark = pixels.filter(({ bright: value }) => value < 150);
@@ -100,9 +100,10 @@ describe("IceRelief", () => {
     expect(mean(dark)).toBeGreaterThan(mean(bright) + 25);
   });
 
-  it("throws the light back in highlights, kept apart for the night's sky and a lamp, only on its ice", () => {
+  it("keeps apart what it throws back of the night's sky: white, only where it's solid, the more the lighter its ice is by day, and its highlights for a lamp", () => {
     const { gloss, ice } = RELIEF;
     let shining = 0;
+    const thrown = { light: 0, lights: 0, dark: 0, darks: 0 };
     for (let byte = 0; byte < gloss.length; byte += 4) {
       const strength = gloss[byte + 3] ?? 0;
       if (strength > 0) {
@@ -112,15 +113,69 @@ describe("IceRelief", () => {
       if (strength > 120) {
         shining += 1;
       }
+      if ((ice[byte + 3] ?? 0) > 250) {
+        const bright = ((ice[byte] ?? 0) + (ice[byte + 1] ?? 0) + (ice[byte + 2] ?? 0)) / 3;
+        if (bright > 200) {
+          thrown.light += strength;
+          thrown.lights += 1;
+        } else if (bright < 140) {
+          thrown.dark += strength;
+          thrown.darks += 1;
+        }
+      }
     }
     expect(shining).toBeGreaterThan(1000);
+    expect(thrown.light / thrown.lights).toBeGreaterThan((thrown.dark / thrown.darks) * 3);
     expect(RELIEF.shines.length).toBeGreaterThan(5);
     for (const { x, y } of RELIEF.shines) {
       expect(pixel(RELIEF, x, y).solid).toBeGreaterThan(0.5);
     }
   });
 
-  it("is a different wall on each seed: some bare, some fluted, some pitted, some under snow, grey or aqua", () => {
+  it("hangs in tiers: across the face, bands in the shade of an overhang, darker than the ice over them, with the points of its icicles standing light in them", () => {
+    // Each row's ice near the face's edge: how light it is, and how often it goes from light to
+    // dark and back along the row, as icicles over a dark band do.
+    const rows = Array.from({ length: RELIEF.rows }, (_, row) => {
+      const y = 6 - (row + 0.5) / IceRelief.PIXELS_A_METRE;
+      const lights = Array.from({ length: 40 }, (_, step) => {
+        const { red, green, blue } = pixel(RELIEF, 10.05 + step * 0.02, y);
+        return (red + green + blue) / 3;
+      });
+      const mean = lights.reduce((sum, light) => sum + light, 0) / lights.length;
+      const turns = lights.filter(
+        (light, index) => index > 0 && light > 170 !== (lights[index - 1] ?? light) > 170,
+      ).length;
+      return { mean, turns };
+    });
+    const means = rows.map(({ mean }) => mean);
+    const overall = means.reduce((sum, mean) => sum + mean, 0) / means.length;
+    // A band a quarter of a metre tall, much darker than the face is over all.
+    const band = Math.round(0.25 * IceRelief.PIXELS_A_METRE);
+    const bands = means
+      .slice(0, means.length - band)
+      .map((_, row) => means.slice(row, row + band).reduce((sum, mean) => sum + mean, 0) / band);
+    expect(Math.min(...bands)).toBeLessThan(overall - 30);
+    // And rows the light crosses many times: icicles side by side over the dark.
+    expect(rows.filter(({ turns }) => turns >= 6).length).toBeGreaterThan(10);
+  });
+
+  it("leaves a face climbed on the tools bare of snow, whatever its seed draws", () => {
+    const white = (one: IceRelief): number => {
+      const pixels = solid(one);
+      return (
+        pixels.filter(({ bright, blueness }) => bright > 215 && blueness < 30).length /
+        pixels.length
+      );
+    };
+    for (let seed = 1; seed <= 12; seed += 1) {
+      const bare = relief(seed, upright, true);
+      expect(bare.character.snow).toBeLessThanOrEqual(0.12);
+      expect(bare.character.snow).toBeLessThanOrEqual(relief(seed).character.snow);
+      expect(white(bare)).toBeLessThan(0.3);
+    }
+  });
+
+  it("is a different wall on each seed: some bare, some fluted, some pitted, some under snow tier by tier, grey or aqua", () => {
     const reliefs = Array.from({ length: 30 }, (_, seed) => relief(seed + 1));
     const characters = reliefs.map(({ character }) => character);
     const snowy = reliefs.filter(({ character }) => character.snow > 0.5);

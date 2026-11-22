@@ -18,10 +18,10 @@ const coach = (page: Page) => page.locator("#coach");
 /** Where the Popcorn's step is in content/route/icefall.json: its face across, its lip's height,
  * and along the ground a little short of its foot, and between its lip and the anchor back from
  * it. */
-const STEP = { x: 57.875, lip: 13.5, before: 83.6, onTop: 87.5 };
+const STEP = { x: 57.875, lip: 13.5, before: 83.25, onTop: 89.25 };
 /** The crux: its face across, its ledge's height and along the ground on the ledge, and its band
  * of brittle ice, 1.9 to 2.3 m up it. */
-const CRUX = { x: 214.5, ledge: 39, onTheLedge: 516.5, brittle: 40.95 };
+const CRUX = { x: 214.5, ledge: 36.5, onTheLedge: 514, brittle: 38.45 };
 
 /** The expedition's chance set so that none of its next thousand draws comes up below a
  * hundredth, nor any of its next 5,000 below a thousandth (src/simulation/seeded-random.ts): a pick
