@@ -26,7 +26,7 @@ Each page was written in chat as its part was built (16–19 Nov 2026). The merg
 | The main menu: Everest before dawn, with the route to the summit                     | #248, #249             | [design/main-menu.md](design/main-menu.md) |
 | The climber's devices: a radio, a GPS watch, a weather meter and a satellite tracker | #260, #261, #275       | [design/devices.md](design/devices.md)     |
 | The camps' tents: the way in, the inside and the person in it                        | #258 to #282           | [design/tents.md](design/tents.md)         |
-| Injury and rescue                                                                    | #241, #263, #279, #281 | [design/rescue.md](design/rescue.md)       |
+| Injury and rescue                                                                    | #241 to #281, #305     | [design/rescue.md](design/rescue.md)       |
 | Weather that changes, the forecast and the cold                                      | #272                   | [design/weather.md](design/weather.md)     |
 | The Icefall's walls of ice: their look by day and night, and the taller steps        | #290                   | [design/ice-walls.md](design/ice-walls.md) |
 | The glacier's ice under the route: its layers, its bare blue ice, a headlamp in it   | #306                   | [design/glacier-ice.md](design/glacier-ice.md) |

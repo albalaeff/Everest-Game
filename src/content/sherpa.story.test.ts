@@ -61,9 +61,10 @@ function guided(seed: number, careful: boolean, training: boolean) {
 
 describe("Pemba guides the player through the Khumbu Icefall (#212)", () => {
   it("leads a careful player all the way to Camp 1, first across every ladder, holding its line from the far end, and never waits under the seracs", () => {
-    // A seed with no slip of the player's to wait out (#278): seed 3 has two on the steps of ice,
-    // taller since #290, and seed 4 one.
-    const { mountain, rules, arrived, ahead, held, longestStill } = guided(2, true, false);
+    // A seed with no slip of the player's to wait out (#278): on seed 2 they slip just above the
+    // crux's step of ice, since the cowstails go across at the walls' ladders and the seed draws
+    // otherwise (#305), and on seed 3 at the foot of the first step.
+    const { mountain, rules, arrived, ahead, held, longestStill } = guided(12, true, false);
     const pemba = rules.physics.climber(SHERPA);
 
     expect(arrived).toBe(true);
