@@ -281,6 +281,7 @@ export class IcefallScene {
       snow: baker.bake(TextureBaker.SNOW),
       ice: baker.bake(TextureBaker.ICE),
       stone: baker.bake(TextureBaker.STONE),
+      tracks: baker.bake(TextureBaker.TRACKS, 512),
     };
     const shape = new GlacierShape(
       physics.terrain,

@@ -8,6 +8,7 @@ export interface GroundTextures {
   readonly snow: Texture;
   readonly ice: Texture;
   readonly stone: Texture;
+  readonly tracks: Texture;
 }
 
 /**
@@ -20,8 +21,9 @@ export interface GroundTextures {
  */
 export class GroundMaterial extends ShaderMaterial {
   private static readonly VERTEX = /* glsl */ `
-    in float aDepth; in float aKind; in float aOpen;
+    in float aDepth; in float aKind; in float aOpen; in float aSide;
     out vec3 vPoint; out vec3 vNormal; out float vDepth; out float vKind; out float vOpen;
+    out float vSide;
     void main() {
       vec4 point = vec4(position, 1.0);
       vNormal = normal;
@@ -29,7 +31,7 @@ export class GroundMaterial extends ShaderMaterial {
         point = instanceMatrix * point;
         vNormal = normalize(transpose(inverse(mat3(instanceMatrix))) * normal);
       #endif
-      vPoint = point.xyz; vDepth = aDepth; vKind = aKind; vOpen = aOpen;
+      vPoint = point.xyz; vDepth = aDepth; vKind = aKind; vOpen = aOpen; vSide = aSide;
       gl_Position = projectionMatrix * viewMatrix * point;
     }
   `;
@@ -37,7 +39,9 @@ export class GroundMaterial extends ShaderMaterial {
   private static readonly FRAGMENT = /* glsl */ `
     precision highp float;
     uniform sampler2D uSnow; uniform sampler2D uIce; uniform sampler2D uStone;
+    uniform sampler2D uTracks;
     in vec3 vPoint; in vec3 vNormal; in float vDepth; in float vKind; in float vOpen;
+    in float vSide;
     out highp vec4 fragment;
     ${SceneLight.GLSL}
     void main() {
@@ -64,9 +68,18 @@ export class GroundMaterial extends ShaderMaterial {
       float stone = clamp(vKind - 1.0, 0.0, 1.0);
       float trodden = clamp(-vKind, 0.0, 1.0);
 
-      vec4 prints = texture(uSnow, vPoint.xz * 1.9 + 0.13);
+      // The boots' tracks down the trail's middle: two sets of strides out of step with one
+      // another, so no stretch of it repeats, the deeper print showing.
+      vec3 prints = vec3(0.5, 0.5, 0.0);
+      if (trodden > 0.01) {
+        vec2 along = vec2(vSide * 1.25 + 0.5, -vPoint.z * 0.8);
+        vec3 one = texture(uTracks, along).rgb;
+        vec3 other = texture(uTracks, vec2(1.0 - along.x, along.y * 0.87 + 0.31)).rgb;
+        prints = one.b > other.b ? one : other;
+        prints = mix(vec3(0.5, 0.5, 0.0), prints, smoothstep(0.0, 0.5, trodden));
+      }
       vec3 flatTilt = vec3(grain.r - 0.5, 0.0, grain.g - 0.5) * (0.14 + 0.5 * near)
-                    + vec3(prints.r - 0.5, 0.0, prints.g - 0.5) * 1.3 * trodden * near
+                    + vec3(prints.r - 0.5, 0.0, -(prints.g - 0.5)) * 2.9 * exp(-distance / 60.0)
                     + vec3(drift.r - 0.5, 0.0, drift.g - 0.5) * 0.9;
       vec3 snowNormal = normalize(normal + flatTilt);
       vec3 tangent = normalize(cross(vec3(0.0, 1.0, 0.0), normal) + vec3(1e-4, 0.0, 0.0));
@@ -92,7 +105,7 @@ export class GroundMaterial extends ShaderMaterial {
       // New snow is whiter than old, in drifts, and a glacier's snow greyer in wide patches.
       float aged = texture(uSnow, vPoint.xz * 0.0043 + 0.61).b;
       vec3 white = mix(vec3(0.80, 0.85, 0.91), vec3(0.94, 0.96, 0.975), 0.25 + 0.75 * drift.b) * (0.9 + 0.1 * aged)
-                 * (1.0 - trodden * (0.05 + 0.1 * prints.b));
+                 * (1.0 - 0.3 * prints.b) + vec3(-0.02, 0.0, 0.02) * prints.b;
       vec3 colour = mix(ice, white, snow);
       if (stone > 0.0) {
         vec4 rubble = texture(uStone, vPoint.xz * 0.55);
@@ -159,6 +172,7 @@ export class GroundMaterial extends ShaderMaterial {
         uSnow: { value: textures.snow },
         uIce: { value: textures.ice },
         uStone: { value: textures.stone },
+        uTracks: { value: textures.tracks },
       },
       vertexShader: GroundMaterial.VERTEX,
       fragmentShader: GroundMaterial.FRAGMENT,

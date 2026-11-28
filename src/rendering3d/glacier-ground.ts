@@ -12,6 +12,9 @@ interface Sheet {
   readonly positions: Float32Array;
   readonly depths: Float32Array;
   readonly kinds: Float32Array;
+  /** How far to the side of the trail's middle each point is, in metres: the boots' tracks
+   * are drawn by it. Far off, away from the trail. */
+  readonly sides: Float32Array;
 }
 
 /**
@@ -28,6 +31,8 @@ export class GlacierGround {
   /** The field's: how far apart its rows are up the valley, its first columns, and how much
    * wider each next gap is; and how far it starts inside the corridor's edge, and under it. */
   private static readonly FIELD = { rows: 1, first: 1, wider: 1.05, overlap: 2, under: 0.25 };
+  /** What a point away from the trail has for its distance to the side of it, in metres. */
+  private static readonly OFF_THE_TRAIL = 99;
   /** How many rows a piece of the corridor has, and of the field. */
   private static readonly PIECE = { corridor: 64, field: 48 };
 
@@ -78,7 +83,7 @@ export class GlacierGround {
         const point = shape.across(row, side);
         const z = Math.min(point.z, furthest[c] ?? point.z);
         furthest[c] = z;
-        GlacierGround.put(sheet, r, c, { ...point, z }, shape.kind(row, side));
+        GlacierGround.put(sheet, r, c, { ...point, z }, shape.kind(row, side), side);
       }
     }
     return sheet;
@@ -127,6 +132,7 @@ export class GlacierGround {
       positions: new Float32Array(rows * columns * 3),
       depths: new Float32Array(rows * columns),
       kinds: new Float32Array(rows * columns),
+      sides: new Float32Array(rows * columns).fill(GlacierGround.OFF_THE_TRAIL),
     };
   }
 
@@ -136,6 +142,7 @@ export class GlacierGround {
     column: number,
     point: GroundPoint,
     kind: number,
+    side = GlacierGround.OFF_THE_TRAIL,
   ): void {
     const index = row * sheet.columns + column;
     sheet.positions[3 * index] = point.x;
@@ -143,6 +150,7 @@ export class GlacierGround {
     sheet.positions[3 * index + 2] = point.z;
     sheet.depths[index] = point.depth;
     sheet.kinds[index] = kind;
+    sheet.sides[index] = side;
   }
 
   /** A sheet's meshes: its points shared by them all, lit as one surface, and each piece's own
@@ -158,6 +166,7 @@ export class GlacierGround {
     const normal = new BufferAttribute(GlacierGround.normals(sheet), 3);
     const depth = new BufferAttribute(sheet.depths, 1);
     const kind = new BufferAttribute(sheet.kinds, 1);
+    const side = new BufferAttribute(sheet.sides, 1);
     const open = new BufferAttribute(sky.over(positions, rows, columns), 1);
     const meshes: Mesh[] = [];
     const corner = new Vector3();
@@ -178,6 +187,7 @@ export class GlacierGround {
       geometry.setAttribute("normal", normal);
       geometry.setAttribute("aDepth", depth);
       geometry.setAttribute("aKind", kind);
+      geometry.setAttribute("aSide", side);
       geometry.setAttribute("aOpen", open);
       geometry.setIndex(new BufferAttribute(indices, 1));
       const sphere = new Sphere();

@@ -106,6 +106,45 @@ export class TextureBaker {
     }
   `;
 
+  /** The boots' tracks along the trail, 0.8 m across the texture and 1.25 m along it, a
+   * stride: the trench hundreds of boots have packed down the trail's middle, a left print and
+   * a right one in it, each with the marks of a crampon's points. The snow's slopes in red and
+   * green, how deep it is trodden in blue. */
+  static readonly TRACKS = /* glsl */ `
+    /** A boot's print about its own middle, in metres, toe to +y: 0 outside, 1 inside. */
+    float bootPrint(vec2 at) {
+      // Narrower at the heel than at the ball.
+      float half_ = 0.05 + 0.012 * smoothstep(-0.12, 0.06, at.y);
+      float round_ = length(vec2(at.x / half_, at.y / 0.155));
+      return 1.0 - smoothstep(0.78, 1.0, round_);
+    }
+    /** A crampon's points under a print: two rows of five down the sole. */
+    float points(vec2 at) {
+      vec2 cell = vec2(abs(at.x) - 0.034, mod(at.y + 0.135, 0.056) - 0.028);
+      float inSole = step(abs(at.y), 0.135);
+      return (1.0 - smoothstep(0.004, 0.011, length(cell))) * inSole;
+    }
+    float height(vec2 uv) {
+      // Whole strides repeat along the texture: the left print, and the right half a stride on.
+      vec2 at = vec2(uv.x * 0.8 - 0.4, uv.y * 1.25);
+      vec2 left = vec2(at.x + 0.1, mod(at.y + 0.3125, 1.25) - 0.625);
+      vec2 right = vec2(at.x - 0.1, mod(at.y + 0.9375, 1.25) - 0.625);
+      float trench = exp(-(at.x * at.x) / 0.05);
+      float churned = fractal(uv, vec2(9.0, 14.0), 3) * 0.6 + fractal(uv, vec2(40.0, 60.0), 2) * 0.4;
+      float prints = max(bootPrint(left), bootPrint(right));
+      float spikes = max(points(left), points(right));
+      return -0.03 * trench * (0.5 + churned) - 0.045 * prints - 0.012 * spikes * prints;
+    }
+    vec4 pattern(vec2 uv) {
+      float step = 1.0 / 512.0;
+      float here = height(uv);
+      // The slopes in metres a metre: the texture is 0.8 m one way and 1.25 m the other.
+      vec2 slope = vec2((height(uv + vec2(step, 0.0)) - here) / (step * 0.8),
+                        (height(uv + vec2(0.0, step)) - here) / (step * 1.25));
+      return vec4(clamp(0.5 - slope * 0.35, 0.0, 1.0), clamp(-here / 0.09, 0.0, 1.0), 1.0);
+    }
+  `;
+
   /** Stone: the moraine's rubble under Base Camp, stones of every size lying against one
    * another. Each stone's rounded top in red and green, its own shade in blue, and the dark gaps
    * between the stones in alpha. */

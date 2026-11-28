@@ -19,6 +19,7 @@ describe("the Icefall's meshes, against a laptop's budget", () => {
     snow: null as never,
     ice: null as never,
     stone: null as never,
+    tracks: null as never,
   });
   const ground = new GlacierGround(shape, material);
   const fine = new SeracField(shape, material, IcefallForTests.SEED, true);
