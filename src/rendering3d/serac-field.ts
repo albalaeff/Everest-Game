@@ -10,7 +10,7 @@ import {
   Euler,
 } from "three";
 import type { Material } from "three";
-import { mergeVertices } from "three/examples/jsm/utils/BufferGeometryUtils.js";
+import { mergeVertices, toCreasedNormals } from "three/examples/jsm/utils/BufferGeometryUtils.js";
 
 import { FieldNoise } from "./field-noise";
 import { GlacierShape } from "./glacier-shape";
@@ -41,7 +41,7 @@ export interface Serac {
  */
 export class SeracField {
   /** How many shapes there are, and how finely each is cut near the trail and far from it. */
-  private static readonly SHAPES = 8;
+  private static readonly SHAPES = 12;
   private static readonly FINE = [6, 9, 6] as const;
   private static readonly COARSE = [3, 4, 3] as const;
   /** The grid the towers are scattered on, in metres, one at most to a square. */
@@ -52,6 +52,11 @@ export class SeracField {
   private static readonly BAND = 90;
   /** How far the trail's edge stays clear of a tower's side, in metres. */
   private static readonly CLEAR = 2.4;
+  /** The edges of a tower sharper than this, in radians, are drawn as edges: where it broke. */
+  private static readonly CREASE = 0.62;
+  /** A tower this tall has blocks fallen from it lying round its foot, in metres; and how big
+   * the biggest of them is beside it. */
+  private static readonly SHEDS = { from: 3.5, share: 0.3 };
 
   readonly group = new Group();
   readonly triangles: number;
@@ -157,6 +162,39 @@ export class SeracField {
           shape: Math.floor(noise.corner(column, row, 10) * SeracField.SHAPES),
           near: reach < NEAR,
         });
+        if (height < SeracField.SHEDS.from || reach > NEAR) {
+          continue;
+        }
+        // The blocks that have come off it, lying where they fell, tipped any way.
+        for (let block = 0; block < 2; block += 1) {
+          const layer = 20 + block * 5;
+          const round = noise.corner(column, row, layer) * Math.PI * 2;
+          const off = half + 0.4 + noise.corner(column, row, layer + 1) * height * 0.5;
+          const blockX = x + Math.cos(round) * off;
+          const blockUp = upValley + Math.sin(round) * off;
+          const size = Math.min(
+            height * SeracField.SHEDS.share * (0.35 + 0.65 * noise.corner(column, row, layer + 2)),
+            2.6,
+          );
+          if (
+            Math.abs(blockX - shape.asideOf(blockUp)) < size + CLEAR ||
+            shape.crevassed(blockX, -blockUp, size)
+          ) {
+            continue;
+          }
+          seracs.push({
+            x: blockX,
+            y: shape.floor(blockX, -blockUp).y - 0.3 * size,
+            z: -blockUp,
+            width: size * (1 + 0.8 * noise.corner(column, row, layer + 3)),
+            height: size,
+            depth: size * (0.8 + 0.6 * noise.corner(column, row, layer + 4)),
+            turn: round * 3,
+            lean: (noise.corner(column, row, layer + 3) - 0.5) * 1.1,
+            shape: Math.floor(noise.corner(column, row, layer + 4) * SeracField.SHAPES),
+            near: false,
+          });
+        }
       }
     }
     return seracs;
@@ -174,7 +212,10 @@ export class SeracField {
   }
 
   /** A block of ice: a box cut down by fracture planes, most of them near upright as ice
-   * cleaves, under a slanted top; undercut a little at its foot, and lumpy. */
+   * cleaves, under a slanted top. One in three stands as a block, flat-topped; one as a spire;
+   * one as a fin, thin one way. Each is melted in at its foot on the side the sun works on,
+   * some are split down from the top, and all are a little lumpy. Where two fractures meet the
+   * edge is drawn sharp, as broken ice is. */
   private static shape(
     noise: FieldNoise,
     [across, up, deep]: readonly [number, number, number],
@@ -185,12 +226,13 @@ export class SeracField {
     box.deleteAttribute("normal");
     const geometry = mergeVertices(box, 1e-4);
     const position = geometry.getAttribute("position");
+    const kind = Math.floor(noise.corner(40, 0) * 3);
     const planes: { normal: Vector3; far: number }[] = [];
-    for (let cut = 0; cut < 13; cut += 1) {
+    for (let cut = 0; cut < 11; cut += 1) {
       const round = noise.corner(cut, 0) * Math.PI * 2;
       const tip =
-        noise.corner(cut, 1) < 0.6
-          ? (noise.corner(cut, 2) - 0.5) * 0.5
+        noise.corner(cut, 1) < 0.7
+          ? (noise.corner(cut, 2) - 0.5) * 0.4
           : (noise.corner(cut, 2) - 0.15) * 1.2;
       const normal = new Vector3(
         Math.cos(round) * Math.cos(tip),
@@ -199,21 +241,33 @@ export class SeracField {
       );
       const whole = Math.abs(normal.x) / 2 + Math.abs(normal.z) / 2 + Math.max(normal.y, 0);
       const least = Math.max(normal.y, 0) * 0.5;
-      planes.push({ normal, far: least + (whole - least) * (0.48 + 0.48 * noise.corner(cut, 3)) });
+      planes.push({ normal, far: least + (whole - least) * (0.5 + 0.46 * noise.corner(cut, 3)) });
     }
-    // A broken top: two slants that meet in a ridge, or one alone.
-    for (const slant of [0, 1]) {
+    // A broken top: two slants that meet in a ridge, or one alone; a block's is nearly level.
+    const slant = kind === 0 ? 0.35 : 1.3;
+    for (const side of [0, 1]) {
       const top = new Vector3(
-        (noise.corner(20 + slant, 0) - 0.5) * 1.3,
+        (noise.corner(20 + side, 0) - 0.5) * slant,
         1,
-        (noise.corner(20 + slant, 1) - 0.5) * 1.3,
+        (noise.corner(20 + side, 1) - 0.5) * slant,
       ).normalize();
-      planes.push({ normal: top, far: (0.7 + 0.26 * noise.corner(20 + slant, 2)) * top.y });
+      planes.push({ normal: top, far: (0.72 + 0.26 * noise.corner(20 + side, 2)) * top.y });
     }
-    // Some stand as slabs, some taper to a spire, and each leans its own way.
-    const taper = 0.55 * Math.pow(noise.corner(30, 0), 2);
-    const shearX = (noise.corner(30, 1) - 0.5) * 0.3;
-    const shearZ = (noise.corner(30, 2) - 0.5) * 0.3;
+    const taper =
+      kind === 1 ? 0.5 + 0.3 * noise.corner(30, 0) : 0.3 * Math.pow(noise.corner(30, 0), 2);
+    const thin = kind === 2 ? 0.4 + 0.2 * noise.corner(30, 3) : 1;
+    const shearX = (noise.corner(30, 1) - 0.5) * 0.36;
+    const shearZ = (noise.corner(30, 2) - 0.5) * 0.36;
+    // The melt at the foot: which side, and how far in.
+    const meltRound = noise.corner(31, 0) * Math.PI * 2;
+    const melt = 0.1 + 0.16 * noise.corner(31, 1);
+    // The split down from the top: where across it, how wide and how deep; half have none.
+    const split = {
+      at: (noise.corner(32, 0) - 0.5) * 0.5,
+      wide: 0.07 + 0.08 * noise.corner(32, 1),
+      deep: noise.corner(32, 2) < 0.5 ? 0 : 0.2 + 0.3 * noise.corner(32, 3),
+      turn: noise.corner(32, 4) * Math.PI,
+    };
     const point = new Vector3();
     for (let index = 0; index < position.count; index += 1) {
       point.fromBufferAttribute(position, index);
@@ -224,30 +278,37 @@ export class SeracField {
         }
       }
       const height = point.y;
-      const pinch =
-        (1 - 0.12 * Math.sin(Math.min(height * 1.7, 1) * Math.PI)) * (1 - taper * height);
+      const acrossSplit = point.x * Math.cos(split.turn) + point.z * Math.sin(split.turn);
+      const inSplit = Math.exp(-(((acrossSplit - split.at) / split.wide) ** 2));
+      point.y -= split.deep * inSplit * FieldNoise.smooth(0.35, 0.8, height);
+      const pinch = 1 - taper * height;
       point.x *= pinch;
-      point.z *= pinch;
+      point.z *= pinch * thin;
       const out = Math.hypot(point.x, point.z) || 1;
+      const facing = (point.x * Math.cos(meltRound) + point.z * Math.sin(meltRound)) / out;
+      const notch =
+        melt * Math.max(facing, 0) * Math.exp(-(((height - 0.16) / 0.11) ** 2)) +
+        0.05 * Math.exp(-(((height - 0.1) / 0.1) ** 2));
       const big =
         noise.fractal(point.x * 1.4 + point.y * 0.9, point.z * 1.4 - point.y * 0.6, 2, 30) - 0.5;
       const small =
         noise.fractal(point.x * 4.5 + point.y * 2, point.z * 4.5 + point.y * 3, 2, 32) - 0.5;
-      const push = (big * 0.3 + small * 0.1) * Math.min(height * 5, 1);
+      const push = (big * 0.22 + small * 0.06) * Math.min(height * 5, 1) - notch;
       point.x += (point.x / out) * push + shearX * height;
       point.z += (point.z / out) * push + shearZ * height;
-      point.y += (noise.fractal(point.x * 3, point.z * 3, 2, 31) - 0.5) * 0.16 * height;
+      point.y += (noise.fractal(point.x * 3, point.z * 3, 2, 31) - 0.5) * 0.1 * height;
       position.setXYZ(index, point.x, point.y, point.z);
     }
-    geometry.computeVertexNormals();
-    geometry.setAttribute("aDepth", new BufferAttribute(new Float32Array(position.count), 1));
-    geometry.setAttribute("aKind", new BufferAttribute(new Float32Array(position.count), 1));
+    const creased = mergeVertices(toCreasedNormals(geometry, SeracField.CREASE), 1e-4);
+    const points = creased.getAttribute("position");
+    creased.setAttribute("aDepth", new BufferAttribute(new Float32Array(points.count), 1));
+    creased.setAttribute("aKind", new BufferAttribute(new Float32Array(points.count), 1));
     // A tower's foot stands among its neighbours and in its own shade: less of the sky there.
-    const open = new Float32Array(position.count);
-    for (let index = 0; index < position.count; index += 1) {
-      open[index] = 0.5 + 0.5 * FieldNoise.smooth(0, 0.45, position.getY(index));
+    const open = new Float32Array(points.count);
+    for (let index = 0; index < points.count; index += 1) {
+      open[index] = 0.5 + 0.5 * FieldNoise.smooth(0, 0.45, points.getY(index));
     }
-    geometry.setAttribute("aOpen", new BufferAttribute(open, 1));
-    return geometry;
+    creased.setAttribute("aOpen", new BufferAttribute(open, 1));
+    return creased;
   }
 }
