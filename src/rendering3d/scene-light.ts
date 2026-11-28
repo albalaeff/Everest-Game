@@ -175,9 +175,11 @@ export class SceneLight {
     uniforms.uSkyColor.value
       .setRGB(0.3 + 0.3 * grey, 0.44 + 0.2 * grey, 0.74 - 0.05 * grey)
       .multiplyScalar(0.62 * sky + 0.012 * night);
+    // What the snow all round throws back up: about half of the sun's light on it and a
+    // little of the sky's, so a face in shade on a glacier is far from dark.
     uniforms.uBounceColor.value
-      .setRGB(0.5, 0.52, 0.56)
-      .multiplyScalar(0.42 * sky * (0.35 + 0.65 * open * Math.sqrt(up)) + 0.004 * night);
+      .setRGB(0.5, 0.53, 0.58)
+      .multiplyScalar(0.3 * sky + 0.5 * sunStrength * up + 0.004 * night);
     const haze = 0.00007 + 0.004 * look.haze + 0.03 * look.fog + 0.012 * look.mist;
     uniforms.uFogDensity.value = haze;
     uniforms.uFogColor.value
@@ -186,7 +188,7 @@ export class SceneLight {
     uniforms.uFogGlow.value.setRGB(1, 0.62, 0.34).multiplyScalar(0.5 * light.glow * open);
     const lamp = lampLit ? light.lamps : 0;
     uniforms.uLampColor.value.setRGB(1, 0.93, 0.8).multiplyScalar(1.1 * lamp);
-    uniforms.uExposure.value = 0.6 + 1.5 * night + 0.5 * (1 - day) * (1 - night);
+    uniforms.uExposure.value = 0.47 + 1.6 * night + 0.6 * (1 - day) * (1 - night);
     uniforms.uSeconds.value = seconds;
   }
 

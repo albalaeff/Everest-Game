@@ -56,6 +56,8 @@ export class SeracField {
   readonly group = new Group();
   readonly triangles: number;
   readonly count: number;
+  /** The towers themselves: where each stands and how big it is. */
+  readonly seracs: readonly Serac[];
 
   /** `detailed` draws the towers near the trail in full; without it they're all drawn as the
    * far ones are, a quarter of the triangles, for the lowest level of the graphics setting. */
@@ -102,6 +104,7 @@ export class SeracField {
     }
     this.triangles = triangles;
     this.count = seracs.length;
+    this.seracs = seracs;
   }
 
   /** Where the towers stand: one square of the grid at a time, by the level's seed. */
@@ -239,6 +242,12 @@ export class SeracField {
     geometry.computeVertexNormals();
     geometry.setAttribute("aDepth", new BufferAttribute(new Float32Array(position.count), 1));
     geometry.setAttribute("aKind", new BufferAttribute(new Float32Array(position.count), 1));
+    // A tower's foot stands among its neighbours and in its own shade: less of the sky there.
+    const open = new Float32Array(position.count);
+    for (let index = 0; index < position.count; index += 1) {
+      open[index] = 0.5 + 0.5 * FieldNoise.smooth(0, 0.45, position.getY(index));
+    }
+    geometry.setAttribute("aOpen", new BufferAttribute(open, 1));
     return geometry;
   }
 }

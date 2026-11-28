@@ -70,35 +70,39 @@ export class TextureBaker {
     }
   `;
 
-  /** Ice: its surface's slopes in red and green, broken into flat facets as fractured ice is,
-   * large ones with small chips on them; the year's layers in blue, running across the texture;
-   * and the white lines of the fractures between the facets, with bubbles, in alpha. */
+  /** Ice: its surface's slopes in red and green, the scallops the sun and the wind melt into a
+   * face with sharp rims between them, the runnels down it and its grain, cut by the cracks
+   * it broke along; the year's layers in blue, running across the texture;
+   * and the cracks themselves in alpha. */
   static readonly ICE = /* glsl */ `
-    /** The facet a point is in, among \`cells\` each way: its own tilt, and how near its edge. */
-    vec3 facet(vec2 uv, float cells) {
-      vec2 at = uv * cells; vec2 cell = floor(at); vec2 share = fract(at);
-      float nearest = 9.0; float next = 9.0; vec2 own = vec2(0.0);
-      for (int j = -1; j <= 1; j++) for (int i = -1; i <= 1; i++) {
-        vec2 step = vec2(float(i), float(j));
-        vec2 other = mod(cell + step, cells);
-        vec2 centre = vec2(corner(other, cells), corner(other + 17.3, cells));
-        vec2 off = step + centre - share; float distance = dot(off, off);
-        if (distance < nearest) { next = nearest; nearest = distance; own = other; }
-        else if (distance < next) { next = distance; }
-      }
-      return vec3(corner(own + 3.1, cells) - 0.5, corner(own + 9.7, cells) - 0.5, sqrt(next) - sqrt(nearest));
+    /** The cracks at a point, 0 to 1: ice cleaves upright, along the crevasses, and level,
+     * along its layers, so its cracks are wandering lines of those two kinds, each showing
+     * for a stretch and closing again. */
+    float cracks(vec2 uv) {
+      float wander = fractal(uv, vec2(3.0, 3.0), 3) - 0.5;
+      float u = uv.x * 3.0 + wander * 0.9 + (fractal(uv, vec2(2.0, 5.0), 2) - 0.5) * 0.5;
+      float upright = 1.0 - smoothstep(0.0, 0.02, abs(fract(u) - 0.5));
+      upright *= smoothstep(0.55, 0.66, fractal(uv + vec2(0.0, 0.3), vec2(3.0, 2.0), 2));
+      float v = uv.y * 3.0 + wander * 0.5 + (fractal(uv + 0.5, vec2(4.0, 2.0), 2) - 0.5) * 0.4;
+      float level = 1.0 - smoothstep(0.0, 0.018, abs(fract(v) - 0.5));
+      level *= smoothstep(0.56, 0.66, fractal(uv + vec2(0.4, 0.0), vec2(2.0, 4.0), 2));
+      return max(upright, level * 0.7);
+    }
+    float height(vec2 uv) {
+      float wander = fractal(uv, vec2(3.0, 3.0), 3);
+      vec2 bent = uv + (wander - 0.5) * 0.05;
+      float cups = 1.0 - abs(2.0 * fractal(bent, vec2(11.0, 9.0), 3) - 1.0);
+      float runnels = fractal(bent, vec2(34.0, 4.0), 3);
+      float grain = fractal(uv, vec2(80.0, 80.0), 3);
+      return cups * cups * 0.3 + runnels * 0.2 + grain * 0.06 - cracks(uv) * 0.25;
     }
     vec4 pattern(vec2 uv) {
+      float step = 1.0 / 1024.0;
+      float here = height(uv);
+      vec2 slope = vec2(height(uv + vec2(step, 0.0)) - here, height(uv + vec2(0.0, step)) - here) / step;
       float wander = fractal(uv, vec2(3.0, 3.0), 3);
-      vec2 bent = uv + (wander - 0.5) * 0.03;
-      vec3 big = facet(bent, 5.0);
-      vec3 chip = facet(bent + 0.37, 19.0);
-      float fine = fractal(uv, vec2(64.0, 64.0), 2) - 0.5;
-      vec2 tilt = big.xy * 0.55 + chip.xy * 0.3 * smoothstep(0.0, 0.25, big.z) + fine * 0.05;
       float layers = fractal(uv + vec2(0.0, wander * 0.08), vec2(2.0, 26.0), 4);
-      float fracture = 1.0 - smoothstep(0.0, 0.035, big.z);
-      float hairline = (1.0 - smoothstep(0.0, 0.05, chip.z)) * 0.35;
-      return vec4(clamp(0.5 + tilt, 0.0, 1.0), layers, max(fracture, hairline));
+      return vec4(clamp(0.5 - slope * 0.035, 0.0, 1.0), layers, cracks(uv));
     }
   `;
 

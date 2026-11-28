@@ -72,16 +72,29 @@ export class ValleyWalls {
             vec4 broad = texture(uStone, vPoint.xz * 0.0011);
             vec4 fine = texture(uStone, vec2(vPoint.x + vPoint.z, vPoint.y) * 0.006);
             vec4 drift = texture(uSnow, vPoint.xz * 0.0031);
-            vec3 rough = normalize(normal + vec3(fine.r - 0.5, 0.0, fine.g - 0.5) * 0.3 + vec3(broad.r - 0.5, 0.0, broad.g - 0.5) * 0.3);
-            float lying = normal.y + (broad.b - 0.5) * 0.36 + (fine.b - 0.5) * 0.22;
-            float snow = smoothstep(0.52, 0.62, lying);
+            // Ribs and flutings: fine along a face and long down it, as avalanches cut them.
+            bool sideways = abs(normal.x) > abs(normal.z);
+            float along = sideways ? vPoint.z : vPoint.x;
+            vec3 acrossFace = sideways ? vec3(0.0, 0.0, 1.0) : vec3(1.0, 0.0, 0.0);
+            float steep = 1.0 - normal.y;
+            vec4 ribs = texture(uSnow, vec2(along * 0.0042 + broad.b * 0.4, vPoint.y * 0.0006));
+            vec4 flutes = texture(uSnow, vec2(along * 0.019, vPoint.y * 0.0016 + broad.b));
+            float cut = ((ribs.b - 0.5) * 1.6 + (flutes.b - 0.5) * 0.8) * smoothstep(0.15, 0.5, steep);
+            vec3 fluted = normalize(normal + acrossFace * ((ribs.r - 0.5) * 2.4 + (flutes.r - 0.5) * 1.5) * smoothstep(0.12, 0.45, steep));
+            vec3 rough = normalize(fluted + vec3(fine.r - 0.5, 0.0, fine.g - 0.5) * 0.35 + vec3(broad.r - 0.5, 0.0, broad.g - 0.5) * 0.3);
+            float lying = normal.y + (broad.b - 0.5) * 0.36 + (fine.b - 0.5) * 0.2 + cut * 0.22;
+            float snow = smoothstep(0.5, 0.6, lying);
             float strata = texture(uStone, vec2(vPoint.x * 0.0004, vPoint.y * 0.004 + broad.b * 0.3)).b;
-            vec3 rock = mix(vec3(0.07, 0.065, 0.065), vec3(0.24, 0.20, 0.17), strata * 0.7 + fine.b * 0.3);
-            vec3 colour = mix(rock, vec3(0.93, 0.95, 0.97) * (0.9 + 0.1 * drift.b), snow);
-            vec3 surface = normalize(mix(rough, normal + (drift.rgb - 0.5).xzy * vec3(0.3, 0.0, 0.3), snow));
+            vec3 rock = mix(vec3(0.06, 0.056, 0.058), vec3(0.23, 0.19, 0.16), strata * 0.7 + fine.b * 0.3);
+            // A band of paler, yellower rock across the faces, as the Himalaya's have.
+            rock = mix(rock, vec3(0.34, 0.28, 0.19), 0.6 * smoothstep(0.62, 0.72, strata) * (1.0 - smoothstep(0.78, 0.86, strata)));
+            vec3 colour = mix(rock, vec3(0.93, 0.95, 0.97) * (0.88 + 0.12 * drift.b), snow);
+            vec3 surface = normalize(mix(rough, fluted + (drift.rgb - 0.5).xzy * vec3(0.25, 0.0, 0.25), snow));
+            // A gully holds less of the sky than the rib beside it.
+            float open = 1.0 - 0.45 * smoothstep(0.0, -0.5, cut) * smoothstep(0.15, 0.5, steep);
             float towards = max(dot(surface, uSunDir), 0.0);
-            vec3 ambient = mix(uBounceColor, uSkyColor, surface.y * 0.5 + 0.5);
-            vec3 shaded = colour * (ambient + uSunColor * towards);
+            vec3 ambient = mix(uBounceColor * 0.6, uSkyColor, surface.y * 0.5 + 0.5) * open;
+            vec3 shaded = colour * (ambient + uSunColor * towards * (0.5 + 0.5 * open));
             fragment = vec4(toScreen(throughAir(shaded, vPoint)), 1.0);
           }
         `,
@@ -108,25 +121,28 @@ export class ValleyWalls {
     };
     const wanderLeft = 220 * (noise.fractal(z * 0.0007, 3.1, 3, 5) - 0.5);
     const wanderRight = 220 * (noise.fractal(z * 0.0006, 9.7, 3, 9) - 0.5);
-    // The West Shoulder climbs towards Everest up the valley; Nuptse's ridge stays high.
-    const crestLeft =
-      (620 + 0.22 * Math.max(upValley, 0)) * (0.75 + 0.5 * noise.fractal(z / 900, 1.3, 3, 21));
-    const crestRight = 980 * (0.72 + 0.56 * noise.fractal(z / 1100, 4.4, 3, 33));
+    // A ridge is its summits and the cols between them, a couple of kilometres apart: the West
+    // Shoulder climbs towards Everest up the valley; Nuptse's ridge stays high.
+    const summits = (at: number, layer: number): number => {
+      const peak = noise.ridged(at / 2400, layer, 2, layer);
+      return 0.72 + 0.5 * peak;
+    };
+    const crestLeft = (1150 + 0.2 * Math.max(upValley, 0)) * summits(z, 21);
+    const crestRight = 1650 * summits(z + 700, 33);
     const behind = 1 - 0.55 * FieldNoise.smooth(200, -1400, upValley);
-    const left = crestLeft * behind * rise(-x - edge + wanderLeft, 1150);
-    const right = crestRight * behind * rise(x - edge + wanderRight, 1500);
+    const left = crestLeft * behind * rise(-x - edge + wanderLeft, 1350);
+    const right = crestRight * behind * rise(x - edge + wanderRight, 1750);
     const headAt = upValley - 5200 + 500 * (noise.fractal(x / 2500, 0.3, 3, 41) - 0.5);
-    const head =
-      1350 * rise(headAt + 1700, 1700) * (0.75 + 0.5 * noise.fractal(x / 1800, 7.7, 3, 43));
+    const head = 2300 * rise(headAt + 2300, 2300) * summits(x + 1300, 43);
     let height = Math.max(left + right, head);
     const mass = Math.min(height / 300, 1);
     if (mass > 0) {
-      height *= 1 + 0.45 * (noise.ridged(x / 800, z / 800, 5, 50) - 0.45);
-      height += mass * 110 * (noise.ridged(x / 240, z / 240, 4, 60) - 0.4);
-      // Flutings: fine across the face and long down it.
-      const [along, down] = head > left + right ? [x, z] : [z, x];
-      const wobble = 60 * (noise.fractal(down / 300, along / 300, 2, 71) - 0.5);
-      height += mass * 70 * (noise.ridged((along + wobble) / 140, down / 1000, 3, 73) - 0.35);
+      // Buttresses and bowls, and a crest that is a knife's edge of rock in some stretches and
+      // a smooth one of snow in others. Nothing finer than the mesh can carry: the ribs and
+      // the flutings down a face are the shader's.
+      height *= 1 + 0.5 * (noise.ridged(x / 900, z / 900, 4, 50) - 0.45);
+      const jagged = noise.fractal(x / 1500, z / 1500, 2, 55);
+      height += mass * 190 * jagged * jagged * (noise.ridged(x / 380, z / 380, 2, 60) - 0.4);
     }
     const inside = Math.abs(x) < GlacierShape.HALF_WIDTH - 25 ? 1 : 0;
     const apron = Math.max(Math.abs(x) - 170, 0) ** 2 * 0.004 * (1 - inside);

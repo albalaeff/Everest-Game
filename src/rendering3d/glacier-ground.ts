@@ -3,6 +3,7 @@ import type { Material } from "three";
 
 import { GlacierShape } from "./glacier-shape";
 import type { GroundPoint } from "./glacier-shape";
+import { SkyShare } from "./sky-share";
 
 /** A sheet of ground: points in rows and columns, as the meshes are cut from. */
 interface Sheet {
@@ -34,7 +35,8 @@ export class GlacierGround {
   /** How many triangles the ground has in all. */
   readonly triangles: number;
 
-  constructor(shape: GlacierShape, material: Material) {
+  /** `sky` knows what stands on the ground and keeps the sky off it (`SkyShare`). */
+  constructor(shape: GlacierShape, material: Material, sky: SkyShare = new SkyShare([])) {
     const corridor = GlacierGround.corridor(shape);
     const left = GlacierGround.field(shape, -1);
     const right = GlacierGround.field(shape, 1);
@@ -44,7 +46,7 @@ export class GlacierGround {
       [left, GlacierGround.PIECE.field],
       [right, GlacierGround.PIECE.field],
     ] as const) {
-      for (const mesh of GlacierGround.meshes(sheet, piece, material)) {
+      for (const mesh of GlacierGround.meshes(sheet, piece, material, sky)) {
         this.group.add(mesh);
         triangles += (mesh.geometry.index?.count ?? 0) / 3;
       }
@@ -145,12 +147,18 @@ export class GlacierGround {
 
   /** A sheet's meshes: its points shared by them all, lit as one surface, and each piece's own
    * triangles, a band of rows across it. */
-  private static meshes(sheet: Sheet, piece: number, material: Material): readonly Mesh[] {
+  private static meshes(
+    sheet: Sheet,
+    piece: number,
+    material: Material,
+    sky: SkyShare,
+  ): readonly Mesh[] {
     const { rows, columns, positions } = sheet;
     const position = new BufferAttribute(positions, 3);
     const normal = new BufferAttribute(GlacierGround.normals(sheet), 3);
     const depth = new BufferAttribute(sheet.depths, 1);
     const kind = new BufferAttribute(sheet.kinds, 1);
+    const open = new BufferAttribute(sky.over(positions, rows, columns), 1);
     const meshes: Mesh[] = [];
     const corner = new Vector3();
     for (let from = 0; from < rows - 1; from += piece) {
@@ -170,6 +178,7 @@ export class GlacierGround {
       geometry.setAttribute("normal", normal);
       geometry.setAttribute("aDepth", depth);
       geometry.setAttribute("aKind", kind);
+      geometry.setAttribute("aOpen", open);
       geometry.setIndex(new BufferAttribute(indices, 1));
       const sphere = new Sphere();
       const points: Vector3[] = [];

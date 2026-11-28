@@ -17,6 +17,7 @@ import { SceneLight } from "./scene-light";
 import { SeracField } from "./serac-field";
 import { Sharpness } from "./sharpness";
 import { SkyDome } from "./sky-dome";
+import { SkyShare } from "./sky-share";
 import { SunShadows } from "./sun-shadows";
 import { TextureBaker } from "./texture-baker";
 import { Trail } from "./trail";
@@ -289,13 +290,13 @@ export class IcefallScene {
       IcefallScene.LEVEL_SEED,
     );
     const material = new GroundMaterial(this.light, textures);
-    const ground = new GlacierGround(shape, material);
     const seracs = new SeracField(
       shape,
       material,
       IcefallScene.LEVEL_SEED,
       this.quality.name !== "low",
     );
+    const ground = new GlacierGround(shape, material, new SkyShare(seracs.seracs));
     const walls = new ValleyWalls(
       shape,
       this.light,
