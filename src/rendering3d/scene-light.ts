@@ -185,8 +185,8 @@ export class SceneLight {
       .multiplyScalar(0.01 + 0.9 * light.daylight);
     uniforms.uFogGlow.value.setRGB(1, 0.62, 0.34).multiplyScalar(0.5 * light.glow * open);
     const lamp = lampLit ? light.lamps : 0;
-    uniforms.uLampColor.value.setRGB(1, 0.93, 0.8).multiplyScalar(2.6 * lamp);
-    uniforms.uExposure.value = 0.6 + 1.9 * night + 0.5 * (1 - day) * (1 - night);
+    uniforms.uLampColor.value.setRGB(1, 0.93, 0.8).multiplyScalar(1.1 * lamp);
+    uniforms.uExposure.value = 0.6 + 1.5 * night + 0.5 * (1 - day) * (1 - night);
     uniforms.uSeconds.value = seconds;
   }
 

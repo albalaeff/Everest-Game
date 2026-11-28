@@ -39,6 +39,8 @@ export class Climbers {
   /** How far in a frame is a climber put somewhere, not walked there, in metres. */
   private static readonly JUMP = 1.5;
   private static readonly COWSTAIL_POINTS = 7;
+  /** How near the player another climber is stood aside, and how far aside, in metres. */
+  private static readonly ELBOW_ROOM = 0.7;
 
   readonly group = new Group();
   private readonly drawn: readonly Drawn[];
@@ -122,7 +124,16 @@ export class Climbers {
       const metres = far > Climbers.JUMP ? 0 : far * forwards;
       drawn.last = at;
 
-      const place = this.trail.place(at);
+      // Nobody stands inside anybody: one who has come up beside the player stands a step to
+      // the left of the trail, off the rope's side.
+      const self = views[this.drawn.findIndex(({ id }) => id === player)];
+      const beside =
+        drawn.id !== player &&
+        self !== undefined &&
+        Math.hypot(at.x - self.x, at.y - self.y) < Climbers.ELBOW_ROOM
+          ? -Climbers.ELBOW_ROOM
+          : 0;
+      const place = this.trail.place(at, beside);
       const back =
         mode === "upright"
           ? Climbers.OFF_THE_WALL

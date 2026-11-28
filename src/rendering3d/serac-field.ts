@@ -1,6 +1,7 @@
 import {
   BoxGeometry,
   BufferAttribute,
+  BufferGeometry,
   Group,
   InstancedMesh,
   Matrix4,
@@ -8,7 +9,7 @@ import {
   Vector3,
   Euler,
 } from "three";
-import type { BufferGeometry, Material } from "three";
+import type { Material } from "three";
 import { mergeVertices } from "three/examples/jsm/utils/BufferGeometryUtils.js";
 
 import { FieldNoise } from "./field-noise";
@@ -77,7 +78,14 @@ export class SeracField {
       if (geometry === undefined) {
         continue;
       }
-      const mesh = new InstancedMesh(geometry, material, group.length);
+      // A geometry of its own over the shape's shared points: three.js keeps a mesh's vertex
+      // set-up by its geometry, and meshes that shared one would set it up again every draw.
+      const own = new BufferGeometry();
+      for (const [name, attribute] of Object.entries(geometry.attributes)) {
+        own.setAttribute(name, attribute);
+      }
+      own.setIndex(geometry.index);
+      const mesh = new InstancedMesh(own, material, group.length);
       for (const [index, serac] of group.entries()) {
         turn.setFromEuler(new Euler(serac.lean * 0.6, serac.turn, serac.lean, "YXZ"));
         matrix.compose(

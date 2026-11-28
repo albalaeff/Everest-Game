@@ -112,6 +112,8 @@ export class SunShadows {
   private readonly near: ShadowMap;
   private readonly drawnFor = new Vector3();
   private rested = Number.POSITIVE_INFINITY;
+  /** How many times the wide map has been drawn: the stories and a measurement read it. */
+  redrawn = 0;
 
   constructor(
     private readonly light: SceneLight,
@@ -133,6 +135,7 @@ export class SunShadows {
       this.far.draw(renderer, scene, player, toLight, uniforms.uShadowMatrix.value);
       this.drawnFor.copy(toLight);
       this.rested = 0;
+      this.redrawn += 1;
     }
     this.near.draw(renderer, scene, player, toLight, uniforms.uNearShadowMatrix.value);
   }

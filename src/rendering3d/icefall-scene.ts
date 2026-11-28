@@ -60,6 +60,10 @@ export class IcefallScene {
   private frames = 0;
   private seconds = 0;
   private triangles = 0;
+  /** The milliseconds of a frame the page's own code takes, the game's steps and the picture's
+   * orders to the graphics card: lately, and at the longest lately. */
+  private busy = 0;
+  private busiest = 0;
 
   constructor(
     private readonly host: HTMLElement,
@@ -103,8 +107,12 @@ export class IcefallScene {
   eachFrame(frame: (seconds: number, nowMilliseconds: number) => void): void {
     let last: number | null = null;
     this.renderer?.setAnimationLoop((now: number) => {
+      const began = performance.now();
       frame(last === null ? 0 : (now - last) / 1000, now);
       last = now;
+      const took = performance.now() - began;
+      this.busy += (took - this.busy) * 0.05;
+      this.busiest = Math.max(this.busiest * 0.995, took);
     });
   }
 
@@ -315,6 +323,8 @@ export class IcefallScene {
     dataset.quality = this.quality.name;
     dataset.frames = String(this.frames);
     dataset.triangles = String(this.triangles);
+    dataset.busy = `${this.busy.toFixed(1)} ${this.busiest.toFixed(1)}`;
+    dataset.shadows = String(this.shadows?.redrawn ?? 0);
     dataset.sharpness = (this.renderer?.getPixelRatio() ?? 0).toFixed(2);
     dataset.camera = `${x.toFixed(2)} ${y.toFixed(2)} ${z.toFixed(2)}`;
     dataset.facing = `${this.look.yaw.toFixed(2)} ${this.look.pitch.toFixed(2)}`;
