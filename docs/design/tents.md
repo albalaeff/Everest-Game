@@ -31,7 +31,7 @@ The camps' tents were rebuilt on 17–18 Nov 2026: true to size and detailed out
 - The neck (#277): drawn each frame from the base layer's collar up into the head, under the jaw and the ear (`DwellerNeck`), so it bends as the head turns, tilts and sways, and never shows beside the jaw. albalaeff found the old one "awful": a pale wedge beside the jaw whenever the body leaned. Lit on its near side, in the jaw's shadow, the stubble a little way down it, the muscle from behind the ear. The base layer's collar is a man's neck wide, round at its ends, its back drawn behind the neck.
 - The measurements are `Features` in `src/page/tent/dweller-head.ts`: cheeks, jaw, chin, eyes, brows, nose, lips, ears, stubble. albalaeff's plan: players will build and customise their own character in the game later, face parts included, so a character editor sets these. Colours are a set of their own (`Appearance`): suit, yoke, skin, hair, eyes, hat, booties, base layer.
 - The upper arms are drawn behind the body with their whole round tops (#267). The shoulder always covers the joint, so an arm never comes away from the body, whichever way it turns. The forearms and hands are in front. Clipping the sleeves' tops at the shoulders instead (in #266) left a flat cut and a gap whenever an arm left the side.
-- Decided in chat: no image generator or painted images. Everything is drawn in code.
+- Drawn in code, by the rule of the time; albalaeff lifted it on 28 Nov 2026 ([../design.md](../design.md) → Decided in chat).
 
 ### Hands (#274)
 

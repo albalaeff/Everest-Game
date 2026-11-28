@@ -11,7 +11,7 @@ The targets: 60 frames a second on an average laptop and 30 on a mid-range phone
 - **A steady rate beats a high one.** A rate that wavers feels worse than a steady 30, and a phone that runs flat out heats up, then slows down ([Android Developers, Netmarble and ADPF](https://developer.android.com/stories/games/netmarble-got-adpf)). A phone that can't hold 60 is held at 30 (Pixi's `Ticker.maxFPS`), and the quality steps down before the rate wavers.
   - *In Everest:* the levels of `GraphicsQuality`; the cap, with #90.
   - *Check:* on the phones of #92 after 20 minutes of climbing, not in the first: the slowest frames, and how warm the phone is.
-- **The first visit plays within 5 seconds on a mid-range phone, and the download is under 20 MB** ([RAIL](https://web.dev/articles/rail); [../../spec.md](../../spec.md)). The graphics and the sound are made in code, so what weighs is the code and the content; later visits come from the service worker (#61).
+- **The first visit plays within 5 seconds on a mid-range phone, and the download is under 20 MB** ([RAIL](https://web.dev/articles/rail); [../../spec.md](../../spec.md)). Images, models and sounds weigh in it with the code and the content; later visits come from the service worker (#61).
   - *Check:* the build's size from `npm run build`; the first load on the phones of #92.
 
 ## PixiJS
