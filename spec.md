@@ -243,7 +243,7 @@ The visual target is the Everest scene on [albalaeff.eu](https://albalaeff.eu/#g
 - Summit night: an almost black screen, a cone of light from the headlamp and the lights of other groups.
 - Hypoxia can be seen and felt: a narrowing field of view, muted colours, slower reactions. With cerebral edema the controls become imprecise, but the game stays playable.
 
-**Sound** (synthesized in the browser, no licensed recordings)
+**Sound** (synthesized, recorded or generated: whatever sounds most real)
 
 - Wind whose strength you hear before you see it.
 - Breathing that speeds up with altitude; the hiss of the regulator, which falls silent when it fails.
@@ -304,7 +304,7 @@ The game is a static TypeScript website that runs in the browser on a PC and on 
 | Tests | Physiology models, balance, end-to-end scenarios, screenshots, on PC and phone screens | Vitest, Playwright (with phone emulation) |
 | Network and rooms | Room by code, shared simulation on the server, chat, radio, reconnection | Cloudflare Workers and Durable Objects, WebSocket |
 
-Targets: 60 frames per second on an average laptop and 30 on a mid-range phone, a download under 20 MB, works in Chrome, Firefox, Edge and Safari, and on phones in Chrome on Android and Safari on iPhone. All graphics and sound are generated in code, so no licences for third-party assets are needed.
+Targets: 60 frames per second on an average laptop and 30 on a mid-range phone, a download under 20 MB, works in Chrome, Firefox, Edge and Safari, and on phones in Chrome on Android and Safari on iPhone. Graphics and sound may be code, images, 3D models, recordings or generated assets ([docs/design.md](docs/design.md) → Decided in chat); what others made keeps its licence and credit.
 
 ## Development plan
 
