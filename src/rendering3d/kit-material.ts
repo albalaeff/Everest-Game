@@ -38,7 +38,7 @@ export class KitMaterial extends ShaderMaterial {
       float towards = dot(normal, uSunDir);
       // Cloth lets a little light round its edge: the shaded side is never flat.
       float diffuse = max(towards * 0.9 + 0.1, 0.0) * lit;
-      vec3 ambient = mix(uBounceColor * 1.6, uSkyColor, normal.y * 0.5 + 0.5);
+      vec3 ambient = mix(uBounceColor * 0.8, uSkyColor, normal.y * 0.5 + 0.5);
       float shine = pow(max(dot(normal, normalize(toEye + uSunDir)), 0.0), uGloss) * uShine * lit;
       float edge = pow(1.0 - max(dot(normal, toEye), 0.0), 3.0);
       vec3 away = uLampPos - vPoint;

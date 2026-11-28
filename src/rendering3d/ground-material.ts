@@ -67,7 +67,7 @@ export class GroundMaterial extends ShaderMaterial {
       vec4 prints = texture(uSnow, vPoint.xz * 1.9 + 0.13);
       vec3 flatTilt = vec3(grain.r - 0.5, 0.0, grain.g - 0.5) * (0.14 + 0.5 * near)
                     + vec3(prints.r - 0.5, 0.0, prints.g - 0.5) * 1.3 * trodden * near
-                    + vec3(drift.r - 0.5, 0.0, drift.g - 0.5) * 0.6;
+                    + vec3(drift.r - 0.5, 0.0, drift.g - 0.5) * 0.9;
       vec3 snowNormal = normalize(normal + flatTilt);
       vec3 tangent = normalize(cross(vec3(0.0, 1.0, 0.0), normal) + vec3(1e-4, 0.0, 0.0));
       vec3 upFace = cross(normal, tangent);
@@ -117,7 +117,7 @@ export class GroundMaterial extends ShaderMaterial {
       vec3 ambient = mix(uBounceColor * (0.3 + 0.7 * open), uSkyColor * open, surface.y * 0.5 + 0.5);
       float towards = dot(surface, uSunDir);
       // Snow passes light on under its surface: the edge of a shadow is soft and a little warm.
-      float diffuse = mix(max(towards, 0.0), max(towards * 0.85 + 0.15, 0.0), snow) * lit;
+      float diffuse = mix(max(towards, 0.0), max(towards * 0.92 + 0.08, 0.0), snow) * lit;
 
       vec3 half_ = normalize(toEye + uSunDir);
       float gloss = mix(110.0, 16.0, max(snow, stone));

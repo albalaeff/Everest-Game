@@ -13,7 +13,7 @@ import {
 import type { Vector3 } from "three";
 
 import { FieldNoise } from "./field-noise";
-import type { SceneLight } from "./scene-light";
+import { SceneLight } from "./scene-light";
 import { SunShadows } from "./sun-shadows";
 
 /**
@@ -51,6 +51,7 @@ export class SkyDome {
         uniform vec3 uZenith; uniform vec3 uHorizon; uniform vec3 uGlow; uniform vec3 uSunAt;
         uniform float uDisc; uniform float uExposure;
         varying vec3 vWay;
+        ${SceneLight.FILM}
         void main() {
           vec3 way = normalize(vWay);
           float up = max(way.y, 0.0);
@@ -62,9 +63,7 @@ export class SkyDome {
                            + vec3(1.0, 0.92, 0.8) * pow(toSun, 700.0) * 2.5
                            + vec3(1.0, 0.97, 0.92) * smoothstep(0.99986, 0.99995, toSun) * 40.0);
           colour = mix(colour, uHorizon * 0.7, smoothstep(0.0, -0.25, way.y));
-          vec3 x = colour * uExposure;
-          vec3 mapped = (x * (2.51 * x + 0.03)) / (x * (2.43 * x + 0.59) + 0.14);
-          gl_FragColor = vec4(pow(clamp(mapped, 0.0, 1.0), vec3(1.0 / 2.2)), 1.0);
+          gl_FragColor = vec4(filmed(colour * uExposure), 1.0);
         }
       `,
     });

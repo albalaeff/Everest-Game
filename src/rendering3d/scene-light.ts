@@ -42,8 +42,20 @@ export class SceneLight {
   /** The moon: a fixed light high behind the climber's right shoulder, for the night's shadows. */
   private static readonly MOON = new Vector3(0.45, 0.62, 0.64).normalize();
 
+  /** An exposed colour as the screen shows it. Snow in the sun is the brightest thing there
+   * is, and a curve that flattens the bright end makes one white of every slope: this one keeps
+   * a slope turned from the sun a clear step darker than one turned to it, and burns out only
+   * at the glints, a quarter brighter than the snow. */
+  static readonly FILM = /* glsl */ `
+    vec3 filmed(vec3 x) {
+      vec3 mapped = x * (1.0 + x / 2.56) / (1.0 + x);
+      return pow(clamp(mapped, 0.0, 1.0), vec3(1.0 / 2.2));
+    }
+  `;
+
   /** The GLSL every lit surface shares: the uniforms, the shadows, the light and the air. */
   static readonly GLSL = /* glsl */ `
+    ${SceneLight.FILM}
     uniform vec3 uSunDir; uniform vec3 uSunColor; uniform vec3 uSkyColor; uniform vec3 uBounceColor;
     uniform vec3 uFogColor; uniform vec3 uFogGlow; uniform float uFogDensity;
     uniform vec3 uLampPos; uniform vec3 uLampDir; uniform vec3 uLampColor;
@@ -96,9 +108,7 @@ export class SceneLight {
 
     /** A lit colour as the screen shows it: the camera's exposure, a film's shoulder, sRGB. */
     vec3 toScreen(vec3 colour) {
-      vec3 x = colour * uExposure;
-      vec3 mapped = (x * (2.51 * x + 0.03)) / (x * (2.43 * x + 0.59) + 0.14);
-      return pow(clamp(mapped, 0.0, 1.0), vec3(1.0 / 2.2));
+      return filmed(colour * uExposure);
     }
   `;
 
@@ -174,11 +184,11 @@ export class SceneLight {
     const sky = 0.02 + 0.98 * light.daylight;
     uniforms.uSkyColor.value
       .setRGB(0.3 + 0.3 * grey, 0.44 + 0.2 * grey, 0.74 - 0.05 * grey)
-      .multiplyScalar(0.62 * sky + 0.012 * night);
+      .multiplyScalar(0.72 * sky + 0.012 * night);
     // What the snow all round throws back up: about half of the sun's light on it and a
     // little of the sky's, so a face in shade on a glacier is far from dark.
     uniforms.uBounceColor.value
-      .setRGB(0.5, 0.53, 0.58)
+      .setRGB(0.46, 0.52, 0.62)
       .multiplyScalar(0.3 * sky + 0.5 * sunStrength * up + 0.004 * night);
     const haze = 0.00007 + 0.004 * look.haze + 0.03 * look.fog + 0.012 * look.mist;
     uniforms.uFogDensity.value = haze;
@@ -188,7 +198,7 @@ export class SceneLight {
     uniforms.uFogGlow.value.setRGB(1, 0.62, 0.34).multiplyScalar(0.5 * light.glow * open);
     const lamp = lampLit ? light.lamps : 0;
     uniforms.uLampColor.value.setRGB(1, 0.93, 0.8).multiplyScalar(1.1 * lamp);
-    uniforms.uExposure.value = 0.47 + 1.6 * night + 0.6 * (1 - day) * (1 - night);
+    uniforms.uExposure.value = 0.59 + 1.6 * night + 0.6 * (1 - day) * (1 - night);
     uniforms.uSeconds.value = seconds;
   }
 
