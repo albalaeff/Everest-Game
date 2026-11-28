@@ -62,6 +62,7 @@ import type { GodTextName } from "./god-panel";
 import { InventoryPanel } from "./inventory-panel";
 import type { PackTextName } from "./pack-list";
 import { PackScreen } from "./pack-screen";
+import { FirstPersonSink } from "./first-person-sink";
 import { GameLoop } from "./game-loop";
 import type { Played } from "./game-loop";
 import { KeptClimber } from "./kept-climber";
@@ -130,6 +131,9 @@ export interface PageHooks {
   hand(climber: ClimberId): HandView;
   /** The god mode's places and powers, with `?god` alone (#245). */
   god?: GodHooks;
+  /** Turns the climber's head in the 3D picture, with `?3d` alone (#311): radians to the left
+   * of up the valley, and up from level. */
+  look?(yaw: number, pitch: number): void;
 }
 
 /** A climb as the page plays it: alone or in a room, it's the same from here. */
@@ -353,30 +357,32 @@ export class GamePage {
       window.matchMedia("(pointer: coarse)").matches,
     );
     const host = this.elements.find("#slope");
-    const scene = new SlopeScene(
-      host,
-      camera,
-      {
-        physics,
-        hazards: rules.hazards,
-        clock: rules.clock,
-        body: rules.body,
-        oxygen: rules.oxygen,
-        lamps: rules.lamps,
-        camps: this.mountain.route.camps,
-        tentSizes: this.mountain.tents.sizes,
-        parts: this.mountain.route.parts,
-        climbers: scenario.climbers,
-        player,
-        npcs: scenario.npcs ?? [],
-        seed: scenario.seed,
-        ropeStretch: this.mountain.ropeStretch,
-        jolts: rules.jolts,
-        devices: rules.devices,
-        weather: rules.weather,
-      },
-      choice.chosen,
-    );
+    const world = {
+      physics,
+      hazards: rules.hazards,
+      clock: rules.clock,
+      body: rules.body,
+      oxygen: rules.oxygen,
+      lamps: rules.lamps,
+      camps: this.mountain.route.camps,
+      tentSizes: this.mountain.tents.sizes,
+      parts: this.mountain.route.parts,
+      climbers: scenario.climbers,
+      player,
+      npcs: scenario.npcs ?? [],
+      seed: scenario.seed,
+      ropeStretch: this.mountain.ropeStretch,
+      jolts: rules.jolts,
+      devices: rules.devices,
+      weather: rules.weather,
+    };
+    // The Icefall in 3D, through the climber's own eyes, with `?3d` (#311): its code is fetched
+    // only then, so the 2D game's page stays as small as it was.
+    const threeD = new URL(window.location.href).searchParams.has("3d")
+      ? await import("../rendering3d")
+      : null;
+    const icefall = threeD === null ? null : new threeD.IcefallScene(host, world, choice.chosen);
+    const scene = icefall ?? new SlopeScene(host, camera, world, choice.chosen);
     const received = new ReceivedActions(this.elements.find("#received"));
     const zoom = new ZoomControl(
       zoomChoice,
@@ -384,7 +390,18 @@ export class GamePage {
       this.elements.find("#controls .view output"),
       texts.rendering.metres,
     );
-    const sink = new EverySink([climb.sink, new ZoomSink(zoom), received]);
+    // In first person the pushes are forward, back and a turn of the head (#311).
+    const firstPerson =
+      threeD === null || icefall === null
+        ? null
+        : new FirstPersonSink(
+            climb.sink,
+            new threeD.RouteSteering(physics),
+            player,
+            () => physics.climber(player).facing,
+            icefall,
+          );
+    const sink = new EverySink([firstPerson ?? climb.sink, new ZoomSink(zoom), received]);
     new ControlsPage(window, texts.controls, player, camera, sink);
     const { warmth } = this.mountain.hazardSettings();
     const sunClock = new SunClock(warmth);
@@ -563,6 +580,7 @@ export class GamePage {
     const afterFrame = (seconds: number): void => {
       // Before the death is read: an immortal player stands up again (#245).
       god?.update(seconds);
+      firstPerson?.update(seconds);
       pace?.update();
       godPanel?.update();
       climbInterface.update();
@@ -587,6 +605,13 @@ export class GamePage {
       climber: (climber) => physics.climber(climber),
       hand: (climber) => rules.devices.hand(climber),
       ...(god === null ? {} : { god }),
+      ...(icefall === null
+        ? {}
+        : {
+            look: (yaw: number, pitch: number) => {
+              icefall.look.face(yaw, pitch);
+            },
+          }),
     });
     if (await scene.open(window)) {
       drawn = true;

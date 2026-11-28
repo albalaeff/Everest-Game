@@ -11,8 +11,9 @@ Every change to this codebase follows the rules in this file, and those of each 
 | the slope physics: `src/physics/` | [conventions/slope-physics.md](conventions/slope-physics.md) |
 | the agents: `src/agents/` | [conventions/agents.md](conventions/agents.md) |
 | the rendering and the page: `src/rendering/`, `src/page/` | [conventions/rendering.md](conventions/rendering.md) |
+| the 3D picture: `src/rendering3d/`, and the page's `FirstPersonSink` | [conventions/rendering-3d.md](conventions/rendering-3d.md) |
 | the room server: `src/room/`, and the page's `RoomClient` | [conventions/room-server.md](conventions/room-server.md) |
-| what the player sees, hears or touches: `src/rendering/`, `src/interface/`, `src/input/`, `src/page/`, `index.html`, `src/style.css`, the texts in `content/` | [guidelines.md](guidelines.md), the design guidelines, and its page for the change |
+| what the player sees, hears or touches: `src/rendering/`, `src/rendering3d/`, `src/interface/`, `src/input/`, `src/page/`, `index.html`, `src/style.css`, the texts in `content/` | [guidelines.md](guidelines.md), the design guidelines, and its page for the change |
 | the game's other areas, once they have rules of their own | their file in `docs/conventions/`, named here when it comes |
 
 A change to `scripts/` or to the docs alone follows this file only. (Fill the table in as areas get rules of their own, one file each in `docs/conventions/`; [../spec.md](../spec.md) is what the game's areas implement.)
@@ -40,7 +41,7 @@ simulation core  →  agents, slope physics  →  the room server
 |---|---|
 | **Simulation core** | Body, oxygen, weather, time, hazards. Pure: no DOM, no network, no wall clock, no randomness but the seeded generator it's given, and the content data handed to it, not read by it. A fixed time step; the same seed and actions give the same expedition in a browser, in a test and on the room server. |
 | **Agents and slope physics** | Sherpas, clients, other expeditions and queues; movement, ropes, falls. On the core's state only. |
-| **Rendering, interface, sound** | PixiJS, HTML and CSS, Web Audio. They read the simulation and send it the player's actions, and hold no game state of their own. |
+| **Rendering, interface, sound** | PixiJS for the 2D picture and three.js for the 3D one (#311), HTML and CSS, Web Audio. They read the simulation and send it the player's actions, and hold no game state of their own. |
 | **Content and knowledge base** | JSON data: the route, scenarios, events, the facts with their sources and check dates, the RU and EN texts. Written by people, never by code; `src/content/` reads it (`Mountain`: the route and the rules with their numbers), and the page and the room server hand it to the core and the interface. |
 | **Saves** | IndexedDB in the browser for progress, settings and the expedition history (`src/saves/`: the climb alone, so far); the room server for co-op expeditions. A save is the core's state and its seed, so the core's state serialises whole. |
 | **Room server** | Cloudflare Workers and Durable Objects. Runs the same core and agents, with no rendering; the browsers send actions and receive every step to take, after a save to start from ([conventions/room-server.md](conventions/room-server.md)). |
