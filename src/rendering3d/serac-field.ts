@@ -56,9 +56,11 @@ export class SeracField {
   readonly triangles: number;
   readonly count: number;
 
-  constructor(shape: GlacierShape, material: Material, seed: number) {
+  /** `detailed` draws the towers near the trail in full; without it they're all drawn as the
+   * far ones are, a quarter of the triangles, for the lowest level of the graphics setting. */
+  constructor(shape: GlacierShape, material: Material, seed: number, detailed: boolean) {
     const seracs = SeracField.stand(shape, seed);
-    const fine = SeracField.shapes(seed, SeracField.FINE);
+    const fine = SeracField.shapes(seed, detailed ? SeracField.FINE : SeracField.COARSE);
     const coarse = SeracField.shapes(seed, SeracField.COARSE);
     const groups = new Map<string, Serac[]>();
     for (const serac of seracs) {
@@ -173,47 +175,57 @@ export class SeracField {
     const geometry = mergeVertices(box, 1e-4);
     const position = geometry.getAttribute("position");
     const planes: { normal: Vector3; far: number }[] = [];
-    for (let cut = 0; cut < 11; cut += 1) {
+    for (let cut = 0; cut < 13; cut += 1) {
       const round = noise.corner(cut, 0) * Math.PI * 2;
       const tip =
-        noise.corner(cut, 1) < 0.72
-          ? (noise.corner(cut, 2) - 0.5) * 0.3
-          : (noise.corner(cut, 2) - 0.2) * 1.1;
+        noise.corner(cut, 1) < 0.6
+          ? (noise.corner(cut, 2) - 0.5) * 0.5
+          : (noise.corner(cut, 2) - 0.15) * 1.2;
       const normal = new Vector3(
         Math.cos(round) * Math.cos(tip),
         Math.sin(tip),
         Math.sin(round) * Math.cos(tip),
       );
       const whole = Math.abs(normal.x) / 2 + Math.abs(normal.z) / 2 + Math.max(normal.y, 0);
-      const least = Math.max(normal.y, 0) * 0.55;
-      planes.push({ normal, far: least + (whole - least) * (0.6 + 0.34 * noise.corner(cut, 3)) });
+      const least = Math.max(normal.y, 0) * 0.5;
+      planes.push({ normal, far: least + (whole - least) * (0.48 + 0.48 * noise.corner(cut, 3)) });
     }
-    const top = new Vector3(
-      (noise.corner(20, 0) - 0.5) * 0.8,
-      1,
-      (noise.corner(20, 1) - 0.5) * 0.8,
-    ).normalize();
-    planes.push({ normal: top, far: (0.78 + 0.16 * noise.corner(20, 2)) * top.y });
+    // A broken top: two slants that meet in a ridge, or one alone.
+    for (const slant of [0, 1]) {
+      const top = new Vector3(
+        (noise.corner(20 + slant, 0) - 0.5) * 1.3,
+        1,
+        (noise.corner(20 + slant, 1) - 0.5) * 1.3,
+      ).normalize();
+      planes.push({ normal: top, far: (0.7 + 0.26 * noise.corner(20 + slant, 2)) * top.y });
+    }
+    // Some stand as slabs, some taper to a spire, and each leans its own way.
+    const taper = 0.55 * Math.pow(noise.corner(30, 0), 2);
+    const shearX = (noise.corner(30, 1) - 0.5) * 0.3;
+    const shearZ = (noise.corner(30, 2) - 0.5) * 0.3;
     const point = new Vector3();
     for (let index = 0; index < position.count; index += 1) {
       point.fromBufferAttribute(position, index);
-      const height = point.y;
-      const pinch = 1 - 0.13 * Math.sin(Math.min(height * 1.7, 1) * Math.PI);
-      point.x *= pinch;
-      point.z *= pinch;
       for (const { normal, far } of planes) {
         const over = normal.dot(point) - far;
         if (over > 0) {
           point.addScaledVector(normal, -over);
         }
       }
+      const height = point.y;
+      const pinch =
+        (1 - 0.12 * Math.sin(Math.min(height * 1.7, 1) * Math.PI)) * (1 - taper * height);
+      point.x *= pinch;
+      point.z *= pinch;
       const out = Math.hypot(point.x, point.z) || 1;
-      const lumps =
-        noise.fractal(point.x * 2.3 + point.y * 1.1, point.z * 2.3 - point.y * 0.7, 2, 30) - 0.5;
-      const push = lumps * 0.16 * Math.min(height * 5, 1);
-      point.x += (point.x / out) * push;
-      point.z += (point.z / out) * push;
-      point.y += (noise.fractal(point.x * 3, point.z * 3, 2, 31) - 0.5) * 0.1 * height;
+      const big =
+        noise.fractal(point.x * 1.4 + point.y * 0.9, point.z * 1.4 - point.y * 0.6, 2, 30) - 0.5;
+      const small =
+        noise.fractal(point.x * 4.5 + point.y * 2, point.z * 4.5 + point.y * 3, 2, 32) - 0.5;
+      const push = (big * 0.3 + small * 0.1) * Math.min(height * 5, 1);
+      point.x += (point.x / out) * push + shearX * height;
+      point.z += (point.z / out) * push + shearZ * height;
+      point.y += (noise.fractal(point.x * 3, point.z * 3, 2, 31) - 0.5) * 0.16 * height;
       position.setXYZ(index, point.x, point.y, point.z);
     }
     geometry.computeVertexNormals();

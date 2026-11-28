@@ -15,6 +15,7 @@ import { KitMaterial } from "./kit-material";
 import { RouteKit } from "./route-kit";
 import { SceneLight } from "./scene-light";
 import { SeracField } from "./serac-field";
+import { Sharpness } from "./sharpness";
 import { SkyDome } from "./sky-dome";
 import { SunShadows } from "./sun-shadows";
 import { TextureBaker } from "./texture-baker";
@@ -31,6 +32,13 @@ import { ValleyWalls } from "./valley-walls";
 export class IcefallScene {
   /** The level's own seed: the same Icefall on every climb, as a place is. */
   private static readonly LEVEL_SEED = 311;
+  /** A climber's reach with a tool, in metres: how far ahead of their feet the ice is swung at,
+   * how low the head tips before the hand goes to the crampons, in radians, and how high over
+   * the feet a pick goes in, from the shoulder to a full stretch (`technique.pick-lock-off`,
+   * `technique.pick-reach`: a little inside both, so a swing where they look always reaches). */
+  private static readonly ARM = { AHEAD: 0.3, FEET: -0.9, SHOULDER: 1.45, STRETCH: 2.15 };
+  /** How high a climber's eyes are over their feet, standing, in metres. */
+  private static readonly EYES = 1.62;
   /** How wide the climber sees, in degrees up and down. */
   private static readonly FIELD_OF_VIEW = 68;
 
@@ -46,6 +54,8 @@ export class IcefallScene {
   private kit: RouteKit | null = null;
   private climbers: Climbers | null = null;
   private atmosphere: Atmosphere;
+  private sharpness: Sharpness;
+  private devicePixelRatio = 1;
   private covered = false;
   private frames = 0;
   private seconds = 0;
@@ -62,6 +72,7 @@ export class IcefallScene {
     this.camera.layers.enable(SunShadows.CLIMBERS);
     this.camera.layers.enable(SunShadows.SKY);
     this.camera.rotation.order = "YXZ";
+    this.sharpness = new Sharpness(quality.name);
   }
 
   /** Opens the canvas in the host and builds the level: false when the browser can't draw. */
@@ -73,12 +84,13 @@ export class IcefallScene {
       return Promise.resolve(false);
     }
     this.renderer = renderer;
-    renderer.setPixelRatio(this.quality.resolution(window.devicePixelRatio));
-    renderer.setSize(window.innerWidth, window.innerHeight);
+    this.devicePixelRatio = window.devicePixelRatio;
+    this.resize(renderer);
     renderer.autoClear = true;
     this.host.append(renderer.domElement);
     window.addEventListener("resize", () => {
-      renderer.setSize(window.innerWidth, window.innerHeight);
+      this.devicePixelRatio = window.devicePixelRatio;
+      this.resize(renderer);
     });
     this.look.listen(renderer.domElement, window.document);
     this.build(renderer);
@@ -96,10 +108,15 @@ export class IcefallScene {
     });
   }
 
-  /** Another level of the graphics setting: the picture as sharp as it allows. */
+  /** Another level of the graphics setting: the picture as sharp as it allows from now, and
+   * the towers and the shadows as fine as it allows from the next time the level is opened. */
   setQuality(quality: GraphicsQuality, devicePixelRatio: number): void {
     this.quality = quality;
-    this.renderer?.setPixelRatio(quality.resolution(devicePixelRatio));
+    this.sharpness = new Sharpness(quality.name);
+    this.devicePixelRatio = devicePixelRatio;
+    if (this.renderer !== null) {
+      this.resize(this.renderer);
+    }
   }
 
   /** A frame, `between` the steps: the eye where the climber is drawn, looking where the head
@@ -110,6 +127,9 @@ export class IcefallScene {
       return;
     }
     this.seconds += seconds;
+    if (this.sharpness.frame(seconds)) {
+      this.resize(renderer);
+    }
     this.climbers?.update(seconds, between, this.look.yaw);
     const feet = this.climbers?.playerFeet ?? this.eye;
     this.kit?.update(feet);
@@ -168,6 +188,21 @@ export class IcefallScene {
     return this.climbers?.playerWay ?? 1;
   }
 
+  /** The tool the player's hand goes to where they look, and the point of the physics' plane it
+   * goes to: looking down at their boots, the crampons, at the ice under their toes; otherwise
+   * the ice axe, into the ice an arm's length ahead, as high as they look, between the shoulder
+   * and a full stretch. */
+  aim(): { readonly tool: "ice-axe" | "crampons"; readonly x: number; readonly y: number } {
+    const { x, y } = this.world.physics.climber(this.world.player);
+    const { AHEAD, FEET, SHOULDER, STRETCH } = IcefallScene.ARM;
+    const ahead = x + this.way * AHEAD;
+    if (this.look.pitch < FEET) {
+      return { tool: "crampons", x: ahead, y: y - 2 * AHEAD };
+    }
+    const high = IcefallScene.EYES + 3 * AHEAD * Math.tan(this.look.pitch);
+    return { tool: "ice-axe", x: ahead, y: y + Math.min(Math.max(high, SHOULDER), STRETCH) };
+  }
+
   /** Stops drawing while a screen covers the whole picture, as the tent's inside does. */
   cover(covered: boolean): void {
     this.covered = covered;
@@ -209,6 +244,16 @@ export class IcefallScene {
     return [...pixel];
   }
 
+  /** The canvas over the whole page, as sharp as the level and the frame rate allow. */
+  private resize(renderer: WebGLRenderer): void {
+    const { innerWidth, innerHeight } = this.host.ownerDocument.defaultView ?? {
+      innerWidth: 1,
+      innerHeight: 1,
+    };
+    renderer.setPixelRatio(this.sharpness.ratio(innerWidth, innerHeight, this.devicePixelRatio));
+    renderer.setSize(innerWidth, innerHeight);
+  }
+
   /** The sky as it turns, or the hazards' weather, steady. */
   private get turning(): SkyTurn {
     const { weather, hazards } = this.world;
@@ -237,7 +282,12 @@ export class IcefallScene {
     );
     const material = new GroundMaterial(this.light, textures);
     const ground = new GlacierGround(shape, material);
-    const seracs = new SeracField(shape, material, IcefallScene.LEVEL_SEED);
+    const seracs = new SeracField(
+      shape,
+      material,
+      IcefallScene.LEVEL_SEED,
+      this.quality.name !== "low",
+    );
     const walls = new ValleyWalls(
       shape,
       this.light,
@@ -254,7 +304,7 @@ export class IcefallScene {
     this.scene.add(this.kit.group, this.climbers.group);
     this.sky = new SkyDome(this.light);
     this.scene.add(this.sky.group);
-    this.shadows = new SunShadows(this.light, 2048);
+    this.shadows = new SunShadows(this.light, this.quality.name === "low" ? 1024 : 2048);
   }
 
   /** What the picture drew, in `#slope`'s data attributes, for the page's stories. */
@@ -265,7 +315,9 @@ export class IcefallScene {
     dataset.quality = this.quality.name;
     dataset.frames = String(this.frames);
     dataset.triangles = String(this.triangles);
+    dataset.sharpness = (this.renderer?.getPixelRatio() ?? 0).toFixed(2);
     dataset.camera = `${x.toFixed(2)} ${y.toFixed(2)} ${z.toFixed(2)}`;
+    dataset.facing = `${this.look.yaw.toFixed(2)} ${this.look.pitch.toFixed(2)}`;
     dataset.phase = this.atmosphere.light.phase;
     dataset.weather = this.atmosphere.look.weather;
   }

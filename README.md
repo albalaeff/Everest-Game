@@ -7,6 +7,7 @@ A 2D browser game: a simulator-trainer for climbing Everest by the South route. 
 - [Architecture](#architecture)
 - [Local development](#local-development)
 - [God mode](#god-mode)
+- [The game in 3D](#the-game-in-3d)
 - [Agents](#agents)
 - [Tests](#tests)
 - [Deployment](#deployment)
@@ -17,7 +18,7 @@ A 2D browser game: a simulator-trainer for climbing Everest by the South route. 
 
 The game is a static TypeScript site that runs in the browser ([spec.md](spec.md) → Technical architecture): a simulation core (body, oxygen, weather, time, hazards; the same result for the same seed), agents and slope physics on it, PixiJS rendering with HTML and CSS for the interface and Web Audio for sound, and JSON content: the route, the scenarios, and the knowledge base of facts with their sources. For co-op, a room server on Cloudflare Workers runs the same core. [docs/conventions.md](docs/conventions.md) → Modules has the rules between them, and [docs/guidelines.md](docs/guidelines.md) how the game looks, sounds and handles.
 
-The game's project is at the root of the repository: Vite builds `index.html` and `src/` into the static site, on Node 24 and npm. So far it's the simulation core in `src/simulation/` ([docs/conventions/simulation-core.md](docs/conventions/simulation-core.md)), the slope physics on it in `src/physics/` ([docs/conventions/slope-physics.md](docs/conventions/slope-physics.md)), the agents in `src/agents/`, Pemba the climbers' Sherpa first ([docs/conventions/agents.md](docs/conventions/agents.md)), the input layer in `src/input/` ([docs/conventions/input.md](docs/conventions/input.md)), the interface in `src/interface/` (the disclaimer the game opens on, with its beta mark while any record of the knowledge base isn't `expert-reviewed`), the PixiJS rendering in `src/rendering/` and the page that runs the game in `src/page/` ([docs/conventions/rendering.md](docs/conventions/rendering.md)): a climber crossing the Khumbu Icefall from Base Camp to Camp 1 (`content/route/icefall.json`, read by `src/content/`), with the camera following, alone, saved on the device (`src/saves/`), or with a friend, in a room of the room server (`src/room/`, [docs/conventions/room-server.md](docs/conventions/room-server.md)); the other modules come with their issues. Beside it the repository holds the spec, the workflow ([CLAUDE.md](CLAUDE.md), `scripts/`, `.claude/`), the docs and the knowledge base: the fact records in `content/facts/` ([docs/conventions/knowledge-base.md](docs/conventions/knowledge-base.md)).
+The game's project is at the root of the repository: Vite builds `index.html` and `src/` into the static site, on Node 24 and npm. So far it's the simulation core in `src/simulation/` ([docs/conventions/simulation-core.md](docs/conventions/simulation-core.md)), the slope physics on it in `src/physics/` ([docs/conventions/slope-physics.md](docs/conventions/slope-physics.md)), the agents in `src/agents/`, Pemba the climbers' Sherpa first ([docs/conventions/agents.md](docs/conventions/agents.md)), the input layer in `src/input/` ([docs/conventions/input.md](docs/conventions/input.md)), the interface in `src/interface/` (the disclaimer the game opens on, with its beta mark while any record of the knowledge base isn't `expert-reviewed`), the PixiJS rendering in `src/rendering/` and the page that runs the game in `src/page/` ([docs/conventions/rendering.md](docs/conventions/rendering.md)), with the three.js picture of the Icefall in first person beside it in `src/rendering3d/`, opened with `?3d` ([docs/conventions/rendering-3d.md](docs/conventions/rendering-3d.md), #311): a climber crossing the Khumbu Icefall from Base Camp to Camp 1 (`content/route/icefall.json`, read by `src/content/`), with the camera following, alone, saved on the device (`src/saves/`), or with a friend, in a room of the room server (`src/room/`, [docs/conventions/room-server.md](docs/conventions/room-server.md)); the other modules come with their issues. Beside it the repository holds the spec, the workflow ([CLAUDE.md](CLAUDE.md), `scripts/`, `.claude/`), the docs and the knowledge base: the fact records in `content/facts/` ([docs/conventions/knowledge-base.md](docs/conventions/knowledge-base.md)).
 
 ## Local development
 
@@ -71,6 +72,16 @@ A page served on this machine finds the room server on its own host; `npm run ro
   ```
 
 - **In a story:** `openTheGameAsGod` in `e2e/climb.ts` sets off with it, and `e2e/god.spec.ts` uses it; `e2e/rescue.spec.ts` stages an injury with it and runs a rescue's long waits faster.
+
+## The game in 3D
+
+`?3d` in the address (`http://localhost:5173/?3d`, or the live site's) draws the climb alone through the climber's own eyes, in three dimensions (#311): the Icefall, on the same simulation as the 2D game, which stays as it is without it. `?3d&god` adds the god mode's powers.
+
+- **Looking:** a click on the picture takes hold of the mouse, which then turns the head (Esc lets it go); looking down shows your own body. `A` and `D` turn the head too.
+- **Walking:** `W` goes forward, the way you look along the route, onto the ladders and up them; `S` goes back. The other keys are the 2D game's.
+- **Tools:** a click swings the ice axe into the ice in front of you, as high as you look; looking down at your boots, it's the crampons.
+- **How fast it draws:** the test machine is a laptop with Intel UHD graphics at 1920×1080, and the game holds 60 frames a second there. `#slope`'s `data-triangles` says how much the level asks of a graphics card, and `[Graphics]` sets the budget of pixels; a picture whose frames run long is drawn softer by itself ([docs/conventions/rendering-3d.md](docs/conventions/rendering-3d.md)). To measure a change, start Chromium with `--disable-gpu-vsync --disable-frame-rate-limit` and count the frames `requestAnimationFrame` gets in a few seconds: without the screen's 60 a second holding it back, that is what the card can do.
+- **A script** has `window.everest.look(yaw, pitch)`, the head's turn in radians, left of up the valley and up from level.
 
 ## Agents
 

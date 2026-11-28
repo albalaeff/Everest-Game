@@ -42,7 +42,6 @@ import {
   ZoomControl,
 } from "../rendering";
 import type { RenderingTexts } from "../rendering";
-import { IcefallScene, RouteSteering } from "../rendering3d";
 import type { RoomCode } from "../room/room-code";
 import { IndexedDbStore } from "../saves";
 import type { ExpeditionStore } from "../saves";
@@ -377,10 +376,13 @@ export class GamePage {
       devices: rules.devices,
       weather: rules.weather,
     };
-    // The Icefall in 3D, through the climber's own eyes, with `?3d` (#311).
-    const scene = new URL(window.location.href).searchParams.has("3d")
-      ? new IcefallScene(host, world, choice.chosen)
-      : new SlopeScene(host, camera, world, choice.chosen);
+    // The Icefall in 3D, through the climber's own eyes, with `?3d` (#311): its code is fetched
+    // only then, so the 2D game's page stays as small as it was.
+    const threeD = new URL(window.location.href).searchParams.has("3d")
+      ? await import("../rendering3d")
+      : null;
+    const icefall = threeD === null ? null : new threeD.IcefallScene(host, world, choice.chosen);
+    const scene = icefall ?? new SlopeScene(host, camera, world, choice.chosen);
     const received = new ReceivedActions(this.elements.find("#received"));
     const zoom = new ZoomControl(
       zoomChoice,
@@ -390,15 +392,15 @@ export class GamePage {
     );
     // In first person the pushes are forward, back and a turn of the head (#311).
     const firstPerson =
-      scene instanceof IcefallScene
-        ? new FirstPersonSink(
+      threeD === null || icefall === null
+        ? null
+        : new FirstPersonSink(
             climb.sink,
-            new RouteSteering(physics),
+            new threeD.RouteSteering(physics),
             player,
             () => physics.climber(player).facing,
-            scene,
-          )
-        : null;
+            icefall,
+          );
     const sink = new EverySink([firstPerson ?? climb.sink, new ZoomSink(zoom), received]);
     new ControlsPage(window, texts.controls, player, camera, sink);
     const { warmth } = this.mountain.hazardSettings();
@@ -603,13 +605,13 @@ export class GamePage {
       climber: (climber) => physics.climber(climber),
       hand: (climber) => rules.devices.hand(climber),
       ...(god === null ? {} : { god }),
-      ...(scene instanceof IcefallScene
-        ? {
+      ...(icefall === null
+        ? {}
+        : {
             look: (yaw: number, pitch: number) => {
-              scene.look.face(yaw, pitch);
+              icefall.look.face(yaw, pitch);
             },
-          }
-        : {}),
+          }),
     });
     if (await scene.open(window)) {
       drawn = true;

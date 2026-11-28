@@ -123,7 +123,12 @@ export class Climbers {
       drawn.last = at;
 
       const place = this.trail.place(at);
-      const back = mode === "upright" ? Climbers.OFF_THE_WALL : 0;
+      const back =
+        mode === "upright"
+          ? Climbers.OFF_THE_WALL
+          : mode === "ground"
+            ? this.offAWall(physics.along(drawn.id), drawn.way, view)
+            : 0;
       const lying = mode === "down" ? 1 : 0;
       drawn.figure.place(
         place.x + Math.sin(drawn.heading) * back,
@@ -168,6 +173,21 @@ export class Climbers {
     return own === undefined
       ? into.copy(this.feet)
       : own.figure.eyes(yaw - own.heading, pitch, into);
+  }
+
+  /** How far back from where the physics has their feet a climber on the ground stands, in
+   * metres: a body's depth off a wall that rises just in front of them, so they stand at its
+   * foot and not in it; nought in the open. */
+  private offAWall(along: number, way: 1 | -1, view: ClimberView): number {
+    const { terrain } = this.world.physics;
+    let back = 0;
+    for (const ahead of [0.6, 1.2, 2]) {
+      const point = terrain.point(along + way * ahead);
+      if (point.y - view.y > 0.5) {
+        back = Math.max(back, Climbers.OFF_THE_WALL + 0.08 - Math.abs(point.x - view.x));
+      }
+    }
+    return back;
   }
 
   /** How a climber is moving, as the picture poses them. */

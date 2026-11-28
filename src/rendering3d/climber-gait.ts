@@ -122,7 +122,7 @@ export class ClimberGait {
       const forward = Math.sin(2 * Math.PI * (phase + foot * 0.5)) * 0.15 * pace;
       return across
         ? { x: side * 0.4, y: hips.y + 0.06, z: -0.16 }
-        : { x: side * 0.27, y: hips.y + 0.02 + Math.abs(forward) * 0.2, z: -0.05 - forward };
+        : { x: side * 0.255, y: hips.y - 0.1 + Math.abs(forward) * 0.25, z: -0.06 - forward };
     };
     return {
       hips,

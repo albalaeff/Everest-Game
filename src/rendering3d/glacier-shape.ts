@@ -179,11 +179,15 @@ export class GlacierShape {
   }
 
   /** What the ground is made of at a row's point `side` metres off the trail: 0 for the
-   * glacier's snow, up to 1 where the trail walks bare ice, and up to 2 on the moraine's rubble. */
+   * glacier's snow, up to 1 where the trail walks bare ice, and up to 2 on the moraine's rubble;
+   * and down to −1 on snow the climbers' boots have trodden, along the trail's middle. */
   kind(row: Row, side: number): number {
     const bare = this.ice.some(({ from, to }) => row.along >= from - 0.5 && row.along <= to + 0.5);
     const onIce = bare ? 1 - FieldNoise.smooth(2.5, 7, Math.abs(side)) : 0;
-    return Math.max(onIce, this.rubble(row.x, this.trail.aside(row.x) + side));
+    const hard = Math.max(onIce, this.rubble(row.x, this.trail.aside(row.x) + side));
+    const onRoute = row.along >= 0 && row.along <= this.terrain.length && !row.steep;
+    const trodden = onRoute ? 1 - FieldNoise.smooth(0.3, 0.85, Math.abs(side)) : 0;
+    return hard > 0.02 ? hard : -trodden;
   }
 
   /** How much of the ground is the moraine's rubble at a point of the world, 0 to 2: all of it

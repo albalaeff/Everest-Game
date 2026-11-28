@@ -178,7 +178,7 @@ export class SceneLight {
     uniforms.uBounceColor.value
       .setRGB(0.5, 0.52, 0.56)
       .multiplyScalar(0.42 * sky * (0.35 + 0.65 * open * Math.sqrt(up)) + 0.004 * night);
-    const haze = 0.0009 + 0.0035 * look.haze + 0.03 * look.fog + 0.012 * look.mist;
+    const haze = 0.00007 + 0.004 * look.haze + 0.03 * look.fog + 0.012 * look.mist;
     uniforms.uFogDensity.value = haze;
     uniforms.uFogColor.value
       .setRGB(0.42 + 0.25 * grey, 0.56 + 0.14 * grey, 0.8 - 0.06 * grey)

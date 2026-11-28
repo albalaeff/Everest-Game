@@ -177,9 +177,9 @@ export class ClimberFigure {
         wrists[side],
         ClimberFigure.UPPER_ARM,
         ClimberFigure.FOREARM,
-        out * 0.5,
-        -0.6,
-        0.6,
+        out * 0.25,
+        -0.5,
+        0.85,
         this.upperArms[side],
         this.forearms[side],
       );
@@ -265,7 +265,6 @@ export class ClimberFigure {
       .ball(helmet, { at: [0, 0.165, 0.005], size: [0.132, 0.105, 0.145] }, 16)
       .ball(Palette.GOGGLES, { at: [0, 0.135, -0.082], size: [0.085, 0.04, 0.045] })
       .box(Palette.LAMP_CASE, { at: [0, 0.2, -0.14], size: [0.05, 0.035, 0.03] })
-      .box(Palette.STRAP, { at: [0, 0.16, 0.005], size: [0.268, 0.02, 0.294] })
       .build();
   }
 

@@ -62,8 +62,11 @@ export class GroundMaterial extends ShaderMaterial {
       float bare = clamp(vKind, 0.0, 1.0);
       snow *= 1.0 - 0.85 * bare * smoothstep(0.35, 0.6, grain.b + drift.b * 0.4);
       float stone = clamp(vKind - 1.0, 0.0, 1.0);
+      float trodden = clamp(-vKind, 0.0, 1.0);
 
+      vec4 prints = texture(uSnow, vPoint.xz * 1.9 + 0.13);
       vec3 flatTilt = vec3(grain.r - 0.5, 0.0, grain.g - 0.5) * (0.08 + 0.3 * near)
+                    + vec3(prints.r - 0.5, 0.0, prints.g - 0.5) * 1.3 * trodden * near
                     + vec3(drift.r - 0.5, 0.0, drift.g - 0.5) * 0.35;
       vec3 snowNormal = normalize(normal + flatTilt);
       vec3 tangent = normalize(cross(vec3(0.0, 1.0, 0.0), normal) + vec3(1e-4, 0.0, 0.0));
@@ -74,20 +77,28 @@ export class GroundMaterial extends ShaderMaterial {
 
       float deep = smoothstep(0.5, 9.0, vDepth);
       vec3 ice = mix(vec3(0.80, 0.89, 0.94), vec3(0.42, 0.64, 0.80), smoothstep(0.3, 0.75, layers.b));
-      ice = mix(ice, vec3(0.90, 0.95, 0.98), max(chips.a * 0.45 * near, layers.a * 0.3));
+      ice = mix(ice, vec3(0.90, 0.95, 0.98), max(chips.a * 0.3 * near, layers.a * 0.1));
+      // Frost and wind-blown snow cling to a face in patches.
+      float frost = smoothstep(0.45, 0.75, grain.b * 0.6 + drift.b * 0.5 + chips.b * 0.2 - 0.12) * (1.0 - smoothstep(0.5, 3.0, vDepth));
+      ice = mix(ice, vec3(0.92, 0.95, 0.97), frost * 0.55);
       ice = mix(ice, vec3(0.03, 0.19, 0.38), deep);
       ice = mix(ice, vec3(0.003, 0.028, 0.075), smoothstep(6.0, 24.0, vDepth));
-      vec3 white = vec3(0.93, 0.95, 0.97) * (0.9 + 0.1 * drift.b);
+      vec3 white = vec3(0.93, 0.95, 0.97) * (0.9 + 0.1 * drift.b) * (1.0 - trodden * (0.05 + 0.1 * prints.b));
       vec3 colour = mix(ice, white, snow);
       if (stone > 0.0) {
-        vec4 rubble = texture(uStone, vPoint.xz * 0.31);
-        vec4 boulders = texture(uStone, vPoint.xz * 0.043 + 0.2);
-        vec3 rock = mix(vec3(0.16, 0.15, 0.145), vec3(0.42, 0.39, 0.36), rubble.b * 0.6 + boulders.b * 0.4);
-        float patches = smoothstep(0.68, 0.82, drift.b + (1.0 - stone) * 0.6);
-        colour = mix(rock, colour, max(patches, 1.0 - stone));
-        vec3 rockNormal = normalize(normal + vec3(rubble.r - 0.5, 0.0, rubble.g - 0.5) * 0.8 + vec3(boulders.r - 0.5, 0.0, boulders.g - 0.5) * 0.7);
-        surface = normalize(mix(rockNormal, surface, max(patches, 1.0 - stone)));
-        snow = max(snow * max(patches, 1.0 - stone), 0.0);
+        vec4 rubble = texture(uStone, vPoint.xz * 0.55);
+        vec4 scree = texture(uStone, vPoint.xz * 0.19 + 0.2);
+        float shade = rubble.b * 0.6 + scree.b * 0.4;
+        vec3 rock = mix(vec3(0.07, 0.068, 0.07), vec3(0.33, 0.30, 0.27), shade);
+        rock = mix(rock, vec3(0.27, 0.19, 0.13), smoothstep(0.75, 0.95, scree.b) * 0.6);
+        rock *= 1.0 - 0.75 * max(rubble.a * near, scree.a * 0.8);
+        float patches = smoothstep(0.7, 0.84, drift.b + (1.0 - stone) * 0.6);
+        float kept = max(patches, 1.0 - stone);
+        colour = mix(rock, colour, kept);
+        vec3 rockNormal = normalize(normal + vec3(rubble.r - 0.5, 0.0, rubble.g - 0.5) * (0.4 + 2.2 * near)
+                                           + vec3(scree.r - 0.5, 0.0, scree.g - 0.5) * 2.0);
+        surface = normalize(mix(rockNormal, surface, kept));
+        snow *= kept;
       }
 
       float lit = sunlit(vPoint, normal);
@@ -104,6 +115,10 @@ export class GroundMaterial extends ShaderMaterial {
       float crystal = step(0.972, grain.a) * snow * near;
       float glint = crystal * pow(max(dot(surface, half_), 0.0), 5.0) * 3.0 * lit;
       float edge = pow(1.0 - max(dot(surface, toEye), 0.0), 5.0);
+      // Ice mirrors what's round it: the sky off a facet that tips up, the lit snow off one
+      // that tips down, so each facet of a broken face has its own light.
+      vec3 bounced = reflect(-toEye, surface);
+      vec3 mirrored = mix(uBounceColor * 2.2, uSkyColor * 1.5, smoothstep(-0.3, 0.5, bounced.y));
 
       vec3 toLamp;
       vec3 away = uLampPos - vPoint;
@@ -117,7 +132,7 @@ export class GroundMaterial extends ShaderMaterial {
       vec3 shaded = colour * (ambient + uSunColor * diffuse + lamp * lampOn)
                   + uSunColor * (shine + glint)
                   + lamp * lampShine
-                  + uSkyColor * edge * sheen * 0.6 * open;
+                  + mirrored * (0.1 + 0.9 * edge) * sheen * 0.75 * open;
       // Thin ice with the sun behind it glows from inside.
       float through = pow(max(dot(-toEye, uSunDir), 0.0), 3.0) * (1.0 - snow) * (1.0 - deep);
       shaded += vec3(0.07, 0.34, 0.46) * uSunColor * through * 0.1;

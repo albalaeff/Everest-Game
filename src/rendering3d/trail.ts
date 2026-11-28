@@ -18,12 +18,11 @@ export interface Spot {
  */
 export class Trail {
   /** The bends: how long each is in metres along the valley, how far it swings the trail, and
-   * where in its swing it starts. Long lazy ones and a shorter one on them, so no bend is sharper
-   * than a climber on a fixed line takes. */
+   * where in its swing it starts. A long lazy one and a shorter one on it, so the trail never
+   * turns more than 25° off the valley's line, as a fixed line doesn't. */
   private static readonly BENDS = [
-    { length: 96, swing: 5.2, start: 0.7 },
-    { length: 41, swing: 1.9, start: 2.3 },
-    { length: 23, swing: 0.6, start: 4.1 },
+    { length: 96, swing: 3.8, start: 0.7 },
+    { length: 41, swing: 1.2, start: 2.3 },
   ];
   /** How far from a camp's end the bends are at their full swing: the camps lie straight. */
   private static readonly EASE_IN = 30;

@@ -19,7 +19,7 @@ export class ValleyWalls {
   private static readonly STEP = 48;
   private static readonly ACROSS = 4200;
   private static readonly BEHIND = 2200;
-  private static readonly AHEAD = 6600;
+  private static readonly AHEAD = 7400;
 
   readonly mesh: Mesh;
   readonly triangles: number;
@@ -94,40 +94,42 @@ export class ValleyWalls {
   }
 
   /** How high the ground is at a point of the world past the glacier's edge: the glacier's own
-   * ground under the mesh where the glacier is, and the walls rising from its sides. */
+   * ground under the mesh where the glacier is; the valley's sides rising from its edges, gently
+   * at first and then steeply to their crests a kilometre and more off, so the sky stays wide
+   * over the climb; the Cwm opening above the Icefall; and Lhotse's wall across its head. */
   private static height(shape: GlacierShape, noise: FieldNoise, x: number, z: number): number {
     const upValley = -z;
-    const edge = GlacierShape.HALF_WIDTH - 25;
     const floor =
-      shape.surfaceAt(Math.min(Math.max(upValley, -80), 400)) + Math.max(upValley - 400, 0) * 0.06;
-    const peak = (share: number): number =>
-      share < 0 ? 0 : share < 1 ? Math.pow(share, 1.5) : Math.max(0, 1 - (share - 1) * 0.8);
-    const wanderLeft = 260 * (noise.fractal(z * 0.0007, 3.1, 3, 5) - 0.5);
-    const wanderRight = 260 * (noise.fractal(z * 0.0006, 9.7, 3, 9) - 0.5);
-    const tallLeft = 1250 * (0.7 + 0.65 * noise.fractal(z / 1300, 1.3, 3, 21));
-    const tallRight = 1600 * (0.7 + 0.6 * noise.fractal(z / 1500, 4.4, 3, 33));
-    const left = tallLeft * peak((-x - edge + wanderLeft) / 2100);
-    const right = tallRight * peak((x - edge + wanderRight) / 2500);
+      shape.surfaceAt(Math.min(Math.max(upValley, -80), 400)) + Math.max(upValley - 400, 0) * 0.07;
+    const edge = GlacierShape.HALF_WIDTH - 25 + Math.max(upValley - 300, 0) * 0.1;
+    const rise = (off: number, width: number): number => {
+      const share = Math.max(off, 0) / width;
+      return share < 1 ? Math.pow(share, 1.6) : Math.max(1 - (share - 1) * 0.7, 0);
+    };
+    const wanderLeft = 220 * (noise.fractal(z * 0.0007, 3.1, 3, 5) - 0.5);
+    const wanderRight = 220 * (noise.fractal(z * 0.0006, 9.7, 3, 9) - 0.5);
+    // The West Shoulder climbs towards Everest up the valley; Nuptse's ridge stays high.
+    const crestLeft =
+      (620 + 0.22 * Math.max(upValley, 0)) * (0.75 + 0.5 * noise.fractal(z / 900, 1.3, 3, 21));
+    const crestRight = 980 * (0.72 + 0.56 * noise.fractal(z / 1100, 4.4, 3, 33));
+    const behind = 1 - 0.55 * FieldNoise.smooth(200, -1400, upValley);
+    const left = crestLeft * behind * rise(-x - edge + wanderLeft, 1150);
+    const right = crestRight * behind * rise(x - edge + wanderRight, 1500);
+    const headAt = upValley - 5200 + 500 * (noise.fractal(x / 2500, 0.3, 3, 41) - 0.5);
     const head =
-      1900 *
-      peak((upValley - 3400 + 400 * (noise.fractal(x / 2500, 0.3, 3, 41) - 0.5)) / 2600) *
-      (0.75 + 0.5 * noise.fractal(x / 1800, 7.7, 3, 43));
-    let height = left + right + head;
-    const mass = Math.min(height / 400, 1);
+      1350 * rise(headAt + 1700, 1700) * (0.75 + 0.5 * noise.fractal(x / 1800, 7.7, 3, 43));
+    let height = Math.max(left + right, head);
+    const mass = Math.min(height / 300, 1);
     if (mass > 0) {
-      height *= 1 + 0.5 * (noise.ridged(x / 900, z / 900, 5, 50) - 0.45);
-      height += mass * 140 * (noise.ridged(x / 260, z / 260, 4, 60) - 0.4);
+      height *= 1 + 0.45 * (noise.ridged(x / 800, z / 800, 5, 50) - 0.45);
+      height += mass * 110 * (noise.ridged(x / 240, z / 240, 4, 60) - 0.4);
       // Flutings: fine across the face and long down it.
       const [along, down] = head > left + right ? [x, z] : [z, x];
       const wobble = 60 * (noise.fractal(down / 300, along / 300, 2, 71) - 0.5);
-      height += mass * 90 * (noise.ridged((along + wobble) / 150, down / 1100, 3, 73) - 0.35);
+      height += mass * 70 * (noise.ridged((along + wobble) / 140, down / 1000, 3, 73) - 0.35);
     }
-    const inside = Math.abs(x) < edge ? 1 : 0;
-    return (
-      floor +
-      Math.max(height, 0) -
-      12 * inside +
-      Math.max(Math.abs(x) - 170, 0) ** 2 * 0.004 * (1 - inside)
-    );
+    const inside = Math.abs(x) < GlacierShape.HALF_WIDTH - 25 ? 1 : 0;
+    const apron = Math.max(Math.abs(x) - 170, 0) ** 2 * 0.004 * (1 - inside);
+    return floor + Math.max(height, 0) - 12 * inside + Math.min(apron, 60);
   }
 }

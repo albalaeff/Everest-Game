@@ -98,26 +98,42 @@ export class TextureBaker {
       float layers = fractal(uv + vec2(0.0, wander * 0.08), vec2(2.0, 26.0), 4);
       float fracture = 1.0 - smoothstep(0.0, 0.035, big.z);
       float hairline = (1.0 - smoothstep(0.0, 0.05, chip.z)) * 0.35;
-      float bubbles = smoothstep(0.66, 0.84, fractal(uv, vec2(40.0, 40.0), 2)) * 0.5;
-      return vec4(clamp(0.5 + tilt, 0.0, 1.0), layers, max(max(fracture, hairline), bubbles));
+      return vec4(clamp(0.5 + tilt, 0.0, 1.0), layers, max(fracture, hairline));
     }
   `;
 
-  /** Stone: the moraine's rubble under Base Camp. Slopes in red and green, the stones' own
-   * shade in blue, and the grit between them in alpha. */
+  /** Stone: the moraine's rubble under Base Camp, stones of every size lying against one
+   * another. Each stone's rounded top in red and green, its own shade in blue, and the dark gaps
+   * between the stones in alpha. */
   static readonly STONE = /* glsl */ `
-    float height(vec2 uv) {
-      float stones = fractal(uv, vec2(9.0, 9.0), 4);
-      float sharp = abs(fractal(uv + 0.4, vec2(17.0, 17.0), 3) - 0.5) * 2.0;
-      return stones * 0.6 + (1.0 - sharp) * 0.35;
+    /** The stone a point is on, among \`cells\` each way: the way to its middle, its own number,
+     * and how near its edge. */
+    vec4 stoneAt(vec2 uv, float cells) {
+      vec2 at = uv * cells; vec2 cell = floor(at); vec2 share = fract(at);
+      float nearest = 9.0; float next = 9.0; vec2 own = vec2(0.0); vec2 toMiddle = vec2(0.0);
+      for (int j = -1; j <= 1; j++) for (int i = -1; i <= 1; i++) {
+        vec2 step = vec2(float(i), float(j));
+        vec2 other = mod(cell + step, cells);
+        vec2 centre = vec2(corner(other, cells), corner(other + 17.3, cells));
+        vec2 off = step + centre - share; float distance = dot(off, off);
+        if (distance < nearest) { next = nearest; nearest = distance; own = other; toMiddle = off; }
+        else if (distance < next) { next = distance; }
+      }
+      return vec4(toMiddle, corner(own + 3.1, cells), sqrt(next) - sqrt(nearest));
     }
     vec4 pattern(vec2 uv) {
-      float step = 1.0 / 1024.0;
-      float here = height(uv);
-      vec2 slope = vec2(height(uv + vec2(step, 0.0)) - here, height(uv + vec2(0.0, step)) - here) / step;
-      float shade = fractal(uv + 0.7, vec2(11.0, 11.0), 4);
-      float grit = fractal(uv, vec2(80.0, 80.0), 2);
-      return vec4(clamp(0.5 - slope * 0.05, 0.0, 1.0), shade, grit);
+      float wander = fractal(uv, vec2(4.0, 4.0), 3) - 0.5;
+      vec4 big = stoneAt(uv + wander * 0.03, 7.0);
+      vec4 small = stoneAt(uv + 0.41 + wander * 0.02, 23.0);
+      // A big stone here and there, small ones between.
+      float isBig = step(0.62, big.z) * smoothstep(0.02, 0.1, big.w);
+      vec4 stone = mix(small, big, isBig);
+      float gap = 1.0 - smoothstep(0.0, 0.09, stone.w);
+      float grit = fractal(uv, vec2(90.0, 90.0), 3);
+      // Rounded: the top tips away from the middle, more towards the edge.
+      vec2 tilt = -stone.xy * (0.5 + 1.2 * (1.0 - smoothstep(0.0, 0.35, stone.w))) + (grit - 0.5) * 0.25;
+      float shade = stone.z * 0.65 + fractal(uv + 0.7, vec2(5.0, 5.0), 3) * 0.25 + grit * 0.1;
+      return vec4(clamp(0.5 + tilt * 0.5, 0.0, 1.0), shade, gap);
     }
   `;
 
