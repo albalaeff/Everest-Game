@@ -190,9 +190,29 @@ export class Rope {
     return Rope.along(this.linkOf(index), share);
   }
 
-  /** Slides a carabiner from where it is to the point of the rope nearest a climber, link by
-   * link: it runs along the rope, and can't jump across a loop of it. */
-  slideToward(slide: Slide, point: Point): Slide {
+  /** Slides a carabiner from where it is to the point of the rope nearest a climber a cowstail of
+   * `reach` away, link by link: it runs along the rope, and can't jump across a loop of it. It
+   * stops where the rope on each side of it still reaches them (`reaching`). */
+  slideToward(slide: Slide, climber: Point, reach: number): Slide {
+    return this.reaching(this.nearestFrom(slide, climber), climber, reach);
+  }
+
+  /** The place nearest `slide` where a carabiner can be with its climber at `point`: no nearer an
+   * anchor than leaves rope on that side, with a cowstail of `reach`, to reach them, as a jumar
+   * that grips there asks (`letsAt`). The chain's links lie only about where the rope does: a
+   * climber past its last anchor lifts the rope's end to them, where the chain's nearest point is
+   * the anchor, and a jumar that gripped there would snap them back to it when they slip (#305).
+   * Wherever the rope lets them be (`lets`) there is such a place; further out, where it's least
+   * short of them on both sides. */
+  reaching(slide: Slide, point: Point, reach: number): Slide {
+    const least = Rope.distance(point, this.from) - reach;
+    const most = this.length + reach - Rope.distance(point, this.to);
+    const within = least <= most ? Math.min(Math.max(slide, least), most) : (least + most) / 2;
+    return Math.min(Math.max(within, 0), this.length);
+  }
+
+  /** The point of the rope nearest a point, going link by link from `slide`. */
+  private nearestFrom(slide: Slide, point: Point): Slide {
     let index = this.linkAt(slide);
     let share = Rope.share(this.linkOf(index), point);
     let distance = Rope.distance(Rope.along(this.linkOf(index), share), point);

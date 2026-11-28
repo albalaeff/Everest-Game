@@ -209,6 +209,9 @@ export class Slope {
   /** How many climbers it takes to haul a fallen ladder back up by its ropes, and the most whose
    * strides count (#228): a ladder's weight, two pairs of hands. */
   static readonly HANDS = 2;
+  /** How near each other two ropes' distances from a climber are for the ropes to be as near, in
+   * metres: at an anchor they share, where both are at the climber's feet. The engine's number. */
+  private static readonly AS_NEAR = 1e-9;
 
   readonly walking: Walking;
   readonly slipChance: SteepnessCurve;
@@ -221,6 +224,9 @@ export class Slope {
   readonly faces: Faces;
   /** The rescue lines thrown on it, built or half built, in the order they were begun (#241). */
   readonly lines = new Map<string, RescueLine>();
+  /** Whether each rope's first anchor is the one further back along the ground, once asked: the
+   * anchors stay where they're laid. */
+  private readonly upTheRoute = new Map<Rope, boolean>();
 
   constructor(
     readonly settings: SlopeSettings,
@@ -493,17 +499,49 @@ export class Slope {
     return stop;
   }
 
-  /** The rope nearest a climber within a cowstail's reach, if any, and where on it. */
-  ropeWithin(climber: Point): { readonly rope: Rope; readonly slide: Slide } | null {
-    let found: { readonly rope: Rope; readonly slide: Slide; readonly distance: number } | null =
-      null;
+  /** The rope nearest a climber within a cowstail's reach, if any, and where on it: what a clip
+   * takes. Of ropes as near as each other, at the anchor one ends at and the next begins at, the
+   * one with the most of it lying the way the climber faces, `facing` (#305): the rope that goes
+   * on, whichever was laid first. */
+  ropeWithin(
+    climber: Point,
+    facing: Way = 1,
+  ): { readonly rope: Rope; readonly slide: Slide } | null {
+    let found: {
+      readonly rope: Rope;
+      readonly slide: Slide;
+      readonly distance: number;
+      readonly ahead: number;
+    } | null = null;
     for (const rope of this.ropes.values()) {
       const { slide, distance } = rope.nearest(climber);
-      if (distance <= this.settings.cowstail && distance < (found?.distance ?? Infinity)) {
-        found = { rope, slide, distance };
+      if (distance > this.settings.cowstail) {
+        continue;
+      }
+      const ahead = this.goesOn(rope, facing) ? rope.length - slide : slide;
+      const nearer = found === null || distance < found.distance - Slope.AS_NEAR;
+      const further = found !== null && distance > found.distance + Slope.AS_NEAR;
+      if (nearer || (!further && ahead > (found?.ahead ?? 0))) {
+        found = { rope, slide, distance, ahead };
       }
     }
     return found;
+  }
+
+  /** Whether a rope runs from its first anchor to its second the way `facing` points along the
+   * ground. */
+  private goesOn(rope: Rope, facing: Way): boolean {
+    let upTheRoute = this.upTheRoute.get(rope);
+    if (upTheRoute === undefined) {
+      const { shape } = rope;
+      const [first, last] = [shape[0], shape.at(-1)];
+      upTheRoute =
+        first === undefined ||
+        last === undefined ||
+        this.terrain.nearest(first).along <= this.terrain.nearest(last).along;
+      this.upTheRoute.set(rope, upTheRoute);
+    }
+    return upTheRoute === facing > 0;
   }
 
   /** Each climber passed on the ground this step by another on a rope they share, within the

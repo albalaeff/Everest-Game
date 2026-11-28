@@ -341,14 +341,14 @@ export class SlopePhysics implements Rule, HazardGround, JoltGround, Legs, Campg
   }
 
   /** The rope nearest a climber's feet within a cowstail's reach, or none: what a clip would
-   * take. */
+   * take. At an anchor two ropes share, the one that goes on the way they face (#305). */
   ropeWithin(id: ClimberId): string | null {
-    const { x, y } = this.climber(id);
-    return this.loaded.ropeWithin({ x, y })?.rope.id ?? null;
+    return this.climberFor(id).ropeInReach(this.loaded)?.rope.id ?? null;
   }
 
-  /** Where a climber hanging on their rope would be hauled up to, their way back up it; none for
-   * one on their feet, or not hanging (#209): where the Sherpa's agent goes to pull them out
+  /** Where a climber hanging on their rope would be brought back onto their feet: their way
+   * back up it, or off a face of ice, the end of it their ropes let them come off at (#305); none
+   * for one on their feet, or not hanging (#209): where the Sherpa's agent goes to pull them out
    * (#212). */
   liftPoint(id: ClimberId): Point | null {
     return this.climberFor(id).liftPoint(this.loaded);

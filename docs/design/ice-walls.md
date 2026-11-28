@@ -26,4 +26,3 @@ So a wall's ice isn't drawn as shapes: it's worked out as a surface and lit, and
 
 - A careful climber on the axe alone still slips on a step more often than before, 0.42 times a crossing against 0.22 over 100 seeds: they stand longer on their front points, behind Pemba. Slips elsewhere fell from 0.92 to 0.45, the Popcorn's icy hummock now being level. Say if the steps should be gentler or harder.
 - The reliefs take about a tenth of a second to work out for the whole route on a desk, once, as the slope is drawn; nobody has timed it on a phone.
-- A novice was left hanging on their rope, never hauled out, in 2 crossings of 40 (none in 40 on the route before): not looked into here.

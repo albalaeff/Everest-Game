@@ -255,10 +255,13 @@ agents running finish their work, and the manager ends once they have. Ctrl+C ag
 them too; their worktrees stay as they are. Esc meanwhile cancels the soft stop, for a
 Ctrl+C pressed by mistake: the watcher starts again, and what waited is taken again at its
 first look. Esc needs a terminal: in a pipe or a service the soft stop can't be cancelled.
-While the manager runs, a Claude Code session in VS Code doesn't watch or take issues (its
-watcher ends, saying so), so the two never start the same issue; it watches again once the
-manager is stopped. A second session beside one that watches takes none either: one watcher
-runs per machine. To move to another machine, stop the manager here first.
+While the manager runs, a Claude Code session, in VS Code or the Claude app, doesn't watch
+or take issues (its watcher ends, saying so), so the two never start the same issue; it
+watches again once the manager is stopped. A second session beside one that watches takes
+none either: one watcher runs per machine. That holds in every worktree of the repository,
+such as the one of its own the Claude app gives each session: the locks that say what runs
+are in the main checkout's `.agent-runs/` (#307). To move to another machine, stop the
+manager here first.
 
 ## Tests
 

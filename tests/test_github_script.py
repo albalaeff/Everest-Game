@@ -2,6 +2,7 @@
 
 import io
 import json
+import os
 import subprocess
 from collections.abc import Callable, Iterable, Sequence
 from datetime import UTC, datetime
@@ -11,7 +12,7 @@ from pathlib import Path
 import httpx
 import pytest
 
-from scripts.agents import AgentPower
+from scripts.agents import AgentPower, ManagerLock, WatchLock
 from scripts.claude_cost import IssueCost
 from scripts.claude_prices import PriceNews
 from scripts.github import (
@@ -37,6 +38,7 @@ from scripts.github import (
     by_claude,
     follow_main,
     look,
+    manager_running,
     post_comment,
     repo_slug,
     sign,
@@ -48,7 +50,7 @@ from scripts.github import (
 )
 from scripts.handoff import STALE, Git, HandoffMark, IssueBranch, LocalWork, Machine
 from scripts.wiki import WikiNews
-from tests.fakes import FakeGit
+from tests.fakes import FakeGit, Worktrees
 
 pytestmark = pytest.mark.unit
 
@@ -1705,6 +1707,46 @@ def test_another_session_s_watcher_means_this_session_takes_no_issue() -> None:
         "Another session's watcher runs on this machine (pid 4242, session 0ther, since"
     )
     assert another_watching(Held(None)) is None  # type: ignore[arg-type]
+
+
+def test_a_session_in_one_worktree_sees_where_another_session_watches(
+    worktrees: Worktrees,
+) -> None:
+    # #307: each Claude app session has a worktree of its own; one watcher holds for them all.
+    session = WatchLock.SESSION
+    watching = WatchLock(env={session: "9fec4b62"}, checkout=worktrees.app)
+    assert watching.acquire(datetime(2026, 11, 22, 3, 3))
+    try:
+        said = another_watching(WatchLock(env={session: "0ther"}, checkout=worktrees.agent))
+        own = another_watching(WatchLock(env={session: "9fec4b62"}, checkout=worktrees.checkout))
+    finally:
+        watching.release()
+
+    assert said == (
+        f"Another session's watcher runs on this machine (pid {os.getpid()}, session 9fec4b62, "
+        f"in {worktrees.app}, since 2026-11-22 03:03): it takes the issues, and this session "
+        "takes none, only what its user asks (CLAUDE.md → Sessions)."
+    )
+    assert own is None  # its own watcher, from whichever folder it looks
+
+
+def test_a_manager_in_the_main_checkout_stops_a_session_s_watcher_in_a_worktree(
+    worktrees: Worktrees,
+) -> None:
+    # #307: `manager_running` is what ends a session's `watch`, and its `handoffs` says it.
+    manager = ManagerLock(checkout=worktrees.checkout)
+    assert manager.acquire(datetime(2026, 11, 22, 3, 5))
+    try:
+        said = manager_running(ManagerLock(checkout=worktrees.app))
+    finally:
+        manager.release()
+
+    assert said == (
+        f"The agent manager runs on this machine (pid {os.getpid()}, in {worktrees.checkout}, "
+        "since 2026-11-22 03:05): its agents take the issues, and this session takes none "
+        "(CLAUDE.md → Sessions)."
+    )
+    assert manager_running(ManagerLock(checkout=worktrees.app)) is None
 
 
 # --- the waiting:<login> labels (#449) ---------------------------------------------------------

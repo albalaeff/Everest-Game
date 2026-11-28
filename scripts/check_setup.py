@@ -39,6 +39,7 @@ sys.path.insert(0, str(ROOT))  # run as a script, it still finds scripts
 
 from scripts import claude_prices as prices  # noqa: E402
 from scripts import github  # noqa: E402
+from scripts.agents import main_checkout  # noqa: E402
 from scripts.handoff import plural  # noqa: E402
 
 Run = Callable[..., subprocess.CompletedProcess[str]]
@@ -381,14 +382,6 @@ def claude_cli(which: Which = shutil.which, run: Run = subprocess.run) -> Check:
 
 
 CLAUDE_CONFIG = Path(os.environ.get("CLAUDE_CONFIG_DIR") or Path.home()) / ".claude.json"
-
-
-def main_checkout(run: Run = subprocess.run) -> Path:
-    """The repository's main checkout, also when this runs in one of its worktrees."""
-    found = _run(run, ["git", "rev-parse", "--path-format=absolute", "--git-common-dir"])
-    if found is None or found.returncode != 0:
-        return ROOT
-    return Path(found.stdout.strip()).parent
 
 
 def claude_trust(config: Path = CLAUDE_CONFIG, root: Path = ROOT) -> Check:

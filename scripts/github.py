@@ -16,8 +16,9 @@ the one `origin` points to.
                                                             (#107)
     uv run python scripts/github.py watch                  waits until something new does,
                                                             pulling main when idle (#347);
-                                                            one per machine (#597); --json for
-                                                            the agent manager (#387), --wiki 6
+                                                            one per machine (#597), in any
+                                                            worktree (#307); --json for the
+                                                            agent manager (#387), --wiki 6
                                                             with it: is the wiki behind (#126)
     uv run python scripts/github.py comment 180 note.md     comment on an issue or PR (signed);
                                                             --read: the replies since are read;
@@ -1065,7 +1066,8 @@ class JsonOutput(WatchOutput):
 
 def manager_running(lock: ManagerLock | None = None) -> str | None:
     """Why a session's `watch` ends, and its `handoffs` shows no handoff: the agent manager
-    runs on this machine, and its agents take the issues (#387). None while it doesn't."""
+    runs on this machine, in any worktree of the repository (#307), and its agents take the
+    issues (#387). None while it doesn't."""
     holder = (lock or ManagerLock()).holder()
     if holder is None:
         return None
@@ -1077,8 +1079,8 @@ def manager_running(lock: ManagerLock | None = None) -> str | None:
 
 def another_watching(lock: WatchLock | None = None) -> str | None:
     """Why a session's `watch` ends, and its `handoffs` shows no handoff (#597): another
-    session's watcher runs on this machine, and takes the issues. None while none does, or
-    the one running is this session's own."""
+    session's watcher runs on this machine, in any worktree of the repository (#307), and
+    takes the issues. None while none does, or the one running is this session's own."""
     held = (lock or WatchLock()).another()
     if held is None:
         return None
@@ -1720,7 +1722,8 @@ def main(argv: Sequence[str] | None = None) -> None:
             output=JsonOutput(),
         )
     elif args.command == "watch":
-        # A session's: one per machine (#597), and it ends while the manager runs.
+        # A session's: one per machine (#597), whichever worktree it runs in (#307), and it
+        # ends while the manager runs.
         lock = WatchLock()
         if not lock.acquire(datetime.now()):
             print(
